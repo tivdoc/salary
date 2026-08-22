@@ -45,7 +45,10 @@ export function validateInvoice4uClearingLog(
 
   const paymentId = textValue(log.PaymentId);
   const clearingLogId = textValue(log.Id);
-  const confirmationNumber = textValue(log.ClearingConfirmationNumber);
+  const confirmationNumber =
+    textValue(log.ClearingConfirmationNumber) ??
+    textValue(log.ClearingTraceId) ??
+    textValue(log.TransactionId);
   if (!paymentId || !clearingLogId || !confirmationNumber) {
     throw new PaymentVerificationError("reference_missing");
   }

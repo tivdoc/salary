@@ -66,6 +66,45 @@ describe("Invoice4u clearing verification", () => {
     );
   });
 
+  it("accepts Cardcom clearing trace when Invoice4u omits its confirmation number", () => {
+    expect(
+      validateInvoice4uClearingLog(
+        { ...validLog, ClearingConfirmationNumber: null, ClearingTraceId: "trace-7788" },
+        "68871",
+      ).confirmationNumber,
+    ).toBe("trace-7788");
+  });
+
+  it("falls back to the provider transaction ID when no confirmation or trace exists", () => {
+    expect(
+      validateInvoice4uClearingLog(
+        {
+          ...validLog,
+          ClearingConfirmationNumber: null,
+          ClearingTraceId: null,
+          TransactionId: "transaction-9911",
+        },
+        "68871",
+      ).confirmationNumber,
+    ).toBe("transaction-9911");
+  });
+
+  it("rejects a transaction without any real confirmation, trace, or transaction ID", () => {
+    expectCode(
+      () =>
+        validateInvoice4uClearingLog(
+          {
+            ...validLog,
+            ClearingConfirmationNumber: null,
+            ClearingTraceId: null,
+            TransactionId: null,
+          },
+          "68871",
+        ),
+      "reference_missing",
+    );
+  });
+
   it("rejects a clearing log that was not created for this case", () => {
     expectCode(
       () => validateInvoice4uClearingLog(validLog, "other-clearing-log"),
