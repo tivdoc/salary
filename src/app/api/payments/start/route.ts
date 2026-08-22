@@ -17,6 +17,7 @@ export async function POST() {
     return NextResponse.json({ error: "תיק הבדיקה לא נמצא. יש להתחיל מחדש." }, { status: 401 });
   }
 
+  let failureStage = "load_case";
   try {
     const supabase = getSupabaseAdmin();
     const [caseResult, documentResult] = await Promise.all([
@@ -80,6 +81,7 @@ export async function POST() {
       analytics_reported_at: null,
       idempotency_key: idempotencyKey,
     };
+    failureStage = "persist_pending_payment";
     const pendingPayment = existingPayment
       ? await supabase
           .from("payments")
@@ -98,6 +100,7 @@ export async function POST() {
       return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
     }
 
+    failureStage = "mark_case_pending";
     const { error: updateError } = await supabase
       .from("cases")
       .update({
@@ -109,6 +112,7 @@ export async function POST() {
       .not("payment_status", "in", "(paid,verified)");
     if (updateError) throw updateError;
 
+    failureStage = "request_provider_checkout";
     const checkout = await new Invoice4uClient().createCheckout({
       caseId: salaryCase.public_id,
       orderId,
@@ -119,6 +123,7 @@ export async function POST() {
       amount: INITIAL_CHECK_PRICE,
       currency: INITIAL_CHECK_CURRENCY,
     });
+    failureStage = "persist_provider_checkout";
     const persistedPayment = await supabase
       .from("payments")
       .update({
@@ -144,7 +149,7 @@ export async function POST() {
   } catch (error) {
     console.error(
       "Payment handoff failed",
-      invoice4uErrorCode(error) ?? "internal_error",
+      invoice4uErrorCode(error) ?? `internal_${failureStage}`,
     );
     return NextResponse.json(
       { error: "לא הצלחנו לפתוח את עמוד התשלום כרגע. אפשר לנסות שוב." },
