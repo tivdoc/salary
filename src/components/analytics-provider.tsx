@@ -8,19 +8,22 @@ export function AnalyticsProvider() {
 
   return (
     <>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy="afterInteractive"
-      />
-      <Script id="tivdoc-ga4" strategy="afterInteractive">
-        {`
+      <script
+        id="tivdoc-ga4"
+        dangerouslySetInnerHTML={{
+          __html: `
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           window.gtag = gtag;
           gtag('js', new Date());
           gtag('config', '${measurementId}', { send_page_view: true });
-        `}
-      </Script>
+        `,
+        }}
+      />
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+        strategy="afterInteractive"
+      />
     </>
   );
 }
