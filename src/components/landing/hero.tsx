@@ -6,6 +6,7 @@ export function Hero() {
     <section className="hero">
       <div className="shell hero__grid">
         <div className="hero__copy">
+          <p className="eyebrow hero__eyebrow">בדיקה ראשונית של שכר וזכויות</p>
           <h1>
             יכול להיות שהמעסיק חייב לך אלפי שקלים.
             <mark>תבדוק לפני התלוש הבא.</mark>
@@ -15,9 +16,9 @@ export function Hero() {
           </p>
           <div className="hero__actions">
             <TrackedLink className="button button--primary button--large" href="/check" eventName="start_check">
-              התחל בדיקה — 9.99 ₪
+              התחל בדיקה <span aria-hidden="true">|</span> 9.99 ₪
             </TrackedLink>
-            <span>תלוש אחד מספיק כדי להתחיל • לוקח כמה דקות</span>
+            <span>תלוש אחד מספיק. לוקח כמה דקות.</span>
           </div>
         </div>
         <div className="hero__visual">
