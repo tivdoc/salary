@@ -11,6 +11,14 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 
+function safeInternalErrorCode(error: unknown, stage: string) {
+  const code =
+    error && typeof error === "object" ? (error as Record<string, unknown>).code : null;
+  return typeof code === "string" && /^[A-Za-z0-9_]{1,32}$/.test(code)
+    ? `internal_${stage}_${code}`
+    : `internal_${stage}`;
+}
+
 export async function POST() {
   const caseId = await readCaseIdFromCookie();
   if (!caseId) {
@@ -149,7 +157,7 @@ export async function POST() {
   } catch (error) {
     console.error(
       "Payment handoff failed",
-      invoice4uErrorCode(error) ?? `internal_${failureStage}`,
+      invoice4uErrorCode(error) ?? safeInternalErrorCode(error, failureStage),
     );
     return NextResponse.json(
       { error: "לא הצלחנו לפתוח את עמוד התשלום כרגע. אפשר לנסות שוב." },
