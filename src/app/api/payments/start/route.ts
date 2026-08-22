@@ -136,6 +136,7 @@ export async function POST() {
       .from("payments")
       .update({
         provider_payment_id: checkout.paymentId,
+        provider_clearing_log_id: checkout.clearingLogId,
         provider_redirect_url: checkout.url,
       })
       .eq("id", pendingPayment.data.id)

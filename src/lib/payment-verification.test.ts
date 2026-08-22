@@ -29,7 +29,7 @@ function expectCode(action: () => unknown, code: PaymentVerificationError["code"
 
 describe("Invoice4u clearing verification", () => {
   it("accepts a successful 9.99 ILS transaction with real references", () => {
-    expect(validateInvoice4uClearingLog(validLog, "45668")).toEqual({
+    expect(validateInvoice4uClearingLog(validLog, "68871")).toEqual({
       paymentId: "45668",
       clearingLogId: "68871",
       confirmationNumber: "1117795",
@@ -40,36 +40,36 @@ describe("Invoice4u clearing verification", () => {
 
   it("rejects a wrong amount", () => {
     expectCode(
-      () => validateInvoice4uClearingLog({ ...validLog, Amount: 9.98 }, "45668"),
+      () => validateInvoice4uClearingLog({ ...validLog, Amount: 9.98 }, "68871"),
       "amount_mismatch",
     );
   });
 
   it("rejects a wrong currency", () => {
     expectCode(
-      () => validateInvoice4uClearingLog({ ...validLog, CurrencyName: "USD" }, "45668"),
+      () => validateInvoice4uClearingLog({ ...validLog, CurrencyName: "USD" }, "68871"),
       "currency_mismatch",
     );
   });
 
   it("rejects a failed transaction", () => {
     expectCode(
-      () => validateInvoice4uClearingLog({ ...validLog, IsSuccess: false }, "45668"),
+      () => validateInvoice4uClearingLog({ ...validLog, IsSuccess: false }, "68871"),
       "transaction_failed",
     );
   });
 
   it("rejects a missing provider reference", () => {
     expectCode(
-      () => validateInvoice4uClearingLog({ ...validLog, Id: null }, "45668"),
+      () => validateInvoice4uClearingLog({ ...validLog, Id: null }, "68871"),
       "reference_missing",
     );
   });
 
-  it("rejects a PaymentId that was not created for this case", () => {
+  it("rejects a clearing log that was not created for this case", () => {
     expectCode(
-      () => validateInvoice4uClearingLog(validLog, "other-payment"),
-      "payment_id_mismatch",
+      () => validateInvoice4uClearingLog(validLog, "other-clearing-log"),
+      "clearing_log_mismatch",
     );
   });
 

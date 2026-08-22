@@ -19,12 +19,12 @@ export async function verifyPendingInvoice4uPayment(
   const supabase = getSupabaseAdmin();
   const { data: payment, error: paymentError } = await supabase
     .from("payments")
-    .select("id,status,provider_reference,provider_payment_id")
+    .select("id,status,provider_reference,provider_payment_id,provider_clearing_log_id")
     .eq("case_id", caseId)
     .eq("idempotency_key", `${caseId}:initial-check`)
     .maybeSingle();
   if (paymentError) throw paymentError;
-  if (!payment?.provider_payment_id) return "pending";
+  if (!payment?.provider_clearing_log_id) return "pending";
 
   if (
     payment.status === "verified" &&
@@ -38,12 +38,14 @@ export async function verifyPendingInvoice4uPayment(
     return "already_verified";
   }
 
-  const clearingLog = await new Invoice4uClient().getClearingLog(payment.provider_payment_id);
+  const clearingLog = await new Invoice4uClient().getClearingLogById(
+    payment.provider_clearing_log_id,
+  );
   if (!clearingLog) return "pending";
 
   let transaction;
   try {
-    transaction = validateInvoice4uClearingLog(clearingLog, payment.provider_payment_id);
+    transaction = validateInvoice4uClearingLog(clearingLog, payment.provider_clearing_log_id);
   } catch (error) {
     if (error instanceof PaymentVerificationError && error.code === "transaction_failed") {
       await Promise.all([
@@ -62,8 +64,8 @@ export async function verifyPendingInvoice4uPayment(
     "verify_salary_payment",
     {
       target_case_id: caseId,
-      expected_payment_id: transaction.paymentId,
-      observed_clearing_log_id: transaction.clearingLogId,
+      expected_clearing_log_id: transaction.clearingLogId,
+      observed_payment_id: transaction.paymentId,
       observed_confirmation_number: transaction.confirmationNumber,
       observed_amount: transaction.amount,
       observed_currency: transaction.currency,

@@ -5,7 +5,7 @@ export type PaymentVerificationErrorCode =
   | "transaction_failed"
   | "amount_mismatch"
   | "currency_mismatch"
-  | "payment_id_mismatch"
+  | "clearing_log_mismatch"
   | "transaction_reused";
 
 export class PaymentVerificationError extends Error {
@@ -39,7 +39,7 @@ function amountInAgorot(value: unknown) {
 
 export function validateInvoice4uClearingLog(
   log: Invoice4uClearingLog | null,
-  expectedPaymentId: string,
+  expectedClearingLogId: string,
 ): VerifiedInvoice4uTransaction {
   if (!log) throw new PaymentVerificationError("reference_missing");
 
@@ -49,8 +49,8 @@ export function validateInvoice4uClearingLog(
   if (!paymentId || !clearingLogId || !confirmationNumber) {
     throw new PaymentVerificationError("reference_missing");
   }
-  if (paymentId !== expectedPaymentId) {
-    throw new PaymentVerificationError("payment_id_mismatch");
+  if (clearingLogId !== expectedClearingLogId) {
+    throw new PaymentVerificationError("clearing_log_mismatch");
   }
 
   const errors = Array.isArray(log.Errors) ? log.Errors : [];

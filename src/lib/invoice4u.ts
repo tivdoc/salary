@@ -25,7 +25,8 @@ type CheckoutInput = {
 
 export type Invoice4uCheckout = {
   url: string;
-  paymentId: string;
+  clearingLogId: string;
+  paymentId: string | null;
 };
 
 function unwrapWcfPayload(value: unknown): unknown {
@@ -163,7 +164,9 @@ export class Invoice4uClient {
     const rejectionCode = providerRejectionCode(payload);
     if (rejectionCode) throw new Invoice4uApiError(rejectionCode);
 
-    const paymentId = openInfoValue(payload, "PaymentId");
+    const rawPaymentId = openInfoValue(payload, "PaymentId");
+    const clearingLogId = openInfoValue(payload, "I4UClearingLogId");
+    const paymentId = rawPaymentId && rawPaymentId !== "0" ? rawPaymentId : null;
     const url = typeof payload.ClearingRedirectUrl === "string" ? payload.ClearingRedirectUrl : "";
     let parsedUrl: URL;
     try {
@@ -171,16 +174,16 @@ export class Invoice4uClient {
     } catch {
       throw new Invoice4uApiError("missing_checkout_url");
     }
-    if (parsedUrl.protocol !== "https:" || !paymentId) {
+    if (parsedUrl.protocol !== "https:" || !clearingLogId) {
       throw new Invoice4uApiError("invalid_checkout_session");
     }
 
-    return { url: parsedUrl.toString(), paymentId };
+    return { url: parsedUrl.toString(), clearingLogId, paymentId };
   }
 
-  async getClearingLog(paymentId: string): Promise<Invoice4uClearingLog | null> {
-    const response = await this.post("GetClearingLogByParams", {
-      searchParams: { PaymentId: paymentId },
+  async getClearingLogById(clearingLogId: string): Promise<Invoice4uClearingLog | null> {
+    const response = await this.post("GetClearingLogById", {
+      clearingLogId,
       token: this.apiKey,
     });
     if (!response) return null;
@@ -190,7 +193,7 @@ export class Invoice4uClient {
       (candidate) =>
         candidate &&
         typeof candidate === "object" &&
-        String((candidate as Record<string, unknown>).PaymentId ?? "") === paymentId,
+        String((candidate as Record<string, unknown>).Id ?? "") === clearingLogId,
     );
     if (!match || typeof match !== "object" || Array.isArray(match)) return null;
     return match as Invoice4uClearingLog;

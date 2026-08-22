@@ -19,10 +19,24 @@ create unique index if not exists payments_provider_clearing_log_id_unique_idx
   on public.payments(provider_clearing_log_id)
   where provider_clearing_log_id is not null;
 
-create or replace function public.verify_salary_payment(
+update public.payments payment
+set provider_payment_id = null,
+    provider_redirect_url = null
+where payment.provider_payment_id = '0'
+  and payment.status = 'pending'
+  and payment.provider_clearing_log_id is null
+  and exists (
+    select 1 from public.cases salary_case
+    where salary_case.id = payment.case_id
+      and salary_case.email like 'qa+invoice4u-%@tivdoc.com'
+  );
+
+drop function if exists public.verify_salary_payment(uuid, text, text, text, numeric, text);
+
+create function public.verify_salary_payment(
   target_case_id uuid,
-  expected_payment_id text,
-  observed_clearing_log_id text,
+  expected_clearing_log_id text,
+  observed_payment_id text,
   observed_confirmation_number text,
   observed_amount numeric,
   observed_currency text
@@ -36,8 +50,8 @@ declare
   payment_row public.payments%rowtype;
   case_public_id text;
 begin
-  if expected_payment_id is null or btrim(expected_payment_id) = ''
-    or observed_clearing_log_id is null or btrim(observed_clearing_log_id) = ''
+  if expected_clearing_log_id is null or btrim(expected_clearing_log_id) = ''
+    or observed_payment_id is null or btrim(observed_payment_id) in ('', '0')
     or observed_confirmation_number is null or btrim(observed_confirmation_number) = '' then
     raise exception 'Invoice4u transaction identifiers are required';
   end if;
@@ -69,7 +83,7 @@ begin
   if payment_row.provider <> 'invoice4u'
     or payment_row.amount <> 9.99
     or upper(payment_row.currency::text) <> 'ILS'
-    or payment_row.provider_payment_id is distinct from expected_payment_id
+    or payment_row.provider_clearing_log_id is distinct from expected_clearing_log_id
     or payment_row.provider_order_id is distinct from 'tivdoc-salary:' || case_public_id then
     raise exception 'Stored payment does not match the Invoice4u transaction';
   end if;
@@ -79,17 +93,18 @@ begin
     from public.payments other_payment
     where other_payment.case_id <> target_case_id
       and (
-        other_payment.provider_payment_id = expected_payment_id
-        or other_payment.provider_reference = observed_clearing_log_id
-        or other_payment.provider_clearing_log_id = observed_clearing_log_id
+        other_payment.provider_payment_id = observed_payment_id
+        or other_payment.provider_reference = expected_clearing_log_id
+        or other_payment.provider_clearing_log_id = expected_clearing_log_id
       )
   ) then
     raise exception 'Invoice4u transaction is already assigned to another case';
   end if;
 
   if payment_row.status = 'verified' then
-    if payment_row.provider_reference = observed_clearing_log_id
-      and payment_row.provider_clearing_log_id = observed_clearing_log_id then
+    if payment_row.provider_reference = expected_clearing_log_id
+      and payment_row.provider_clearing_log_id = expected_clearing_log_id
+      and payment_row.provider_payment_id = observed_payment_id then
       return false;
     end if;
     raise exception 'A different transaction already verified this payment';
@@ -97,8 +112,9 @@ begin
 
   update public.payments
   set status = 'verified',
-      provider_reference = observed_clearing_log_id,
-      provider_clearing_log_id = observed_clearing_log_id,
+      provider_payment_id = observed_payment_id,
+      provider_reference = expected_clearing_log_id,
+      provider_clearing_log_id = expected_clearing_log_id,
       provider_confirmation_number = observed_confirmation_number,
       verified_at = now()
   where id = payment_row.id;
