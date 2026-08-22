@@ -8,22 +8,23 @@ export function AnalyticsProvider() {
 
   return (
     <>
-      <script
-        id="tivdoc-ga4"
-        dangerouslySetInnerHTML={{
-          __html: `
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+        strategy="afterInteractive"
+      />
+      <Script id="tivdoc-ga4" strategy="afterInteractive">
+        {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           window.gtag = gtag;
           gtag('js', new Date());
           gtag('config', '${measurementId}', { send_page_view: true });
-        `,
-        }}
-      />
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy="afterInteractive"
-      />
+          (window.tivdocAnalyticsQueue || []).forEach(function(queued) {
+            gtag('event', queued.eventName, queued.params);
+          });
+          window.tivdocAnalyticsQueue = [];
+        `}
+      </Script>
     </>
   );
 }

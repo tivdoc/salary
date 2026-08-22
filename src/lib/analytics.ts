@@ -17,10 +17,20 @@ export type AnalyticsEvent =
 declare global {
   interface Window {
     gtag?: (command: "event", eventName: string, params?: Record<string, unknown>) => void;
+    tivdocAnalyticsQueue?: Array<{
+      eventName: AnalyticsEvent;
+      params?: Record<string, unknown>;
+    }>;
   }
 }
 
 export function trackEvent(eventName: AnalyticsEvent, params?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
-  window.gtag?.("event", eventName, params);
+  if (window.gtag) {
+    window.gtag("event", eventName, params);
+    return;
+  }
+
+  window.tivdocAnalyticsQueue = window.tivdocAnalyticsQueue || [];
+  window.tivdocAnalyticsQueue.push({ eventName, params });
 }
