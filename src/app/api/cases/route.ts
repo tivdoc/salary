@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { setCaseCookie } from "@/lib/case-cookie";
+import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
+import { metaEventId } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { questionnaireSchema } from "@/lib/validation";
 
@@ -50,8 +52,31 @@ export async function POST(request: Request) {
 
     await setCaseCookie(created.id);
 
+    const eventId = metaEventId("Lead", created.public_id);
+    const context = metaRequestContext(request, "/check");
+    const metaDelivery = await sendMetaCapiEvent({
+      eventName: "Lead",
+      eventId,
+      eventSourceUrl: context.eventSourceUrl,
+      customer: {
+        firstName: parsed.data.firstName,
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+        clientIpAddress: context.clientIpAddress,
+        clientUserAgent: context.clientUserAgent,
+        fbp: context.fbp,
+        fbc: context.fbc,
+      },
+    });
+    if (metaDelivery.status === "failed") {
+      console.warn("Meta Lead delivery deferred", metaDelivery.code);
+    }
+
     return NextResponse.json(
-      { publicId: created.public_id },
+      {
+        publicId: created.public_id,
+        metaEvent: { eventName: "Lead", eventId },
+      },
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

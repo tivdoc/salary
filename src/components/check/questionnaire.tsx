@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
+import { metaEventDescriptor, trackMetaBrowserEventOnce } from "@/lib/meta-browser";
 import { questionnaireSchema } from "@/lib/validation";
 
 type FormState = {
@@ -140,6 +141,8 @@ export function Questionnaire() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "פתיחת הבדיקה נכשלה");
       sessionStorage.setItem("tivdoc-public-id", result.publicId);
+      const metaEvent = metaEventDescriptor(result.metaEvent);
+      if (metaEvent) trackMetaBrowserEventOnce(metaEvent);
       trackEvent("questionnaire_completed");
       router.push("/check/upload");
     } catch (caught) {

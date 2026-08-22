@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle, ClockCountdown, WarningCircle } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
+import { metaEventDescriptor, trackMetaBrowserEventOnce } from "@/lib/meta-browser";
 
 type CaseStatus = {
   publicId: string;
@@ -11,6 +12,7 @@ type CaseStatus = {
   paymentStatus: string;
   paymentVerified: boolean;
   trackPaymentCompleted: boolean;
+  metaEvent?: unknown;
 };
 
 export function ReceivedStatus() {
@@ -33,6 +35,10 @@ export function ReceivedStatus() {
         if (!active) return;
         setData(result);
         setError("");
+        const metaEvent = metaEventDescriptor(result.metaEvent);
+        if (result.paymentVerified && metaEvent?.eventName === "Purchase") {
+          trackMetaBrowserEventOnce(metaEvent);
+        }
         if (result.trackPaymentCompleted && !paymentTracked.current) {
           paymentTracked.current = true;
           trackEvent("payment_completed", { value: 9.99, currency: "ILS" });

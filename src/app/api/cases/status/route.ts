@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentVerified } from "@/lib/case-status";
+import { deliverVerifiedMetaPurchase } from "@/lib/meta-purchase";
 import { verifyPendingInvoice4uPayment } from "@/lib/verify-payment";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   const caseId = await readCaseIdFromCookie();
   if (!caseId) {
     return NextResponse.json({ error: "לא נמצא תיק בדיקה בדפדפן הזה" }, { status: 401 });
@@ -20,6 +21,7 @@ export async function GET() {
     } catch {
       // Provider outages must not make the saved case unavailable to the user.
     }
+    await deliverVerifiedMetaPurchase(caseId, request);
     const [caseResult, paymentResult] = await Promise.all([
       supabase
         .from("cases")
@@ -28,7 +30,7 @@ export async function GET() {
         .single(),
       supabase
         .from("payments")
-        .select("status,provider_reference,analytics_reported_at,created_at")
+        .select("status,provider_reference,analytics_reported_at,meta_purchase_event_id,created_at")
         .eq("case_id", caseId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -49,6 +51,14 @@ export async function GET() {
       });
       trackPaymentCompleted = !claim.error && claim.data === true;
     }
+    const metaEvent =
+      paymentVerified && payment?.meta_purchase_event_id
+        ? {
+            eventName: "Purchase",
+            eventId: payment.meta_purchase_event_id,
+            customData: { value: 9.99, currency: "ILS" },
+          }
+        : null;
     return NextResponse.json(
       {
         publicId: salaryCase.public_id,
@@ -56,6 +66,7 @@ export async function GET() {
         paymentStatus,
         paymentVerified,
         trackPaymentCompleted,
+        metaEvent,
         createdAt: salaryCase.created_at,
       },
       { headers: { "Cache-Control": "no-store" } },

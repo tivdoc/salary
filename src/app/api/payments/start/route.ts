@@ -11,6 +11,8 @@ import {
   isInvoice4uCheckoutReusable,
 } from "@/lib/payment";
 import { Invoice4uClient, invoice4uErrorCode } from "@/lib/invoice4u";
+import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
+import { metaEventId, type MetaEventDescriptor } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -23,7 +25,52 @@ function safeInternalErrorCode(error: unknown, stage: string) {
     : `internal_${stage}`;
 }
 
-export async function POST() {
+type SalaryCaseForMeta = {
+  first_name: string;
+  email: string;
+  phone: string;
+};
+
+async function deliverCheckoutMeta(
+  request: Request,
+  payment: { id: string; eventId: string; sentAt: string | null },
+  salaryCase: SalaryCaseForMeta,
+) {
+  const descriptor: MetaEventDescriptor = {
+    eventName: "InitiateCheckout",
+    eventId: payment.eventId,
+    customData: { value: INITIAL_CHECK_PRICE, currency: INITIAL_CHECK_CURRENCY },
+  };
+  if (payment.sentAt) return descriptor;
+
+  const context = metaRequestContext(request, "/check/payment");
+  const delivery = await sendMetaCapiEvent({
+    ...descriptor,
+    eventSourceUrl: context.eventSourceUrl,
+    customer: {
+      firstName: salaryCase.first_name,
+      email: salaryCase.email,
+      phone: salaryCase.phone,
+      clientIpAddress: context.clientIpAddress,
+      clientUserAgent: context.clientUserAgent,
+      fbp: context.fbp,
+      fbc: context.fbc,
+    },
+  });
+  if (delivery.status === "sent") {
+    const result = await getSupabaseAdmin()
+      .from("payments")
+      .update({ meta_checkout_sent_at: new Date().toISOString() })
+      .eq("id", payment.id)
+      .is("meta_checkout_sent_at", null);
+    if (result.error) console.warn("Meta checkout delivery marker failed", result.error.code);
+  } else if (delivery.status === "failed") {
+    console.warn("Meta checkout delivery deferred", delivery.code);
+  }
+  return descriptor;
+}
+
+export async function POST(request: Request) {
   const caseId = await readCaseIdFromCookie();
   if (!caseId) {
     return NextResponse.json({ error: "תיק הבדיקה לא נמצא. יש להתחיל מחדש." }, { status: 401 });
@@ -63,7 +110,7 @@ export async function POST() {
     const orderId = invoice4uOrderIdForCase(salaryCase.public_id);
     const { data: existingPayment, error: existingPaymentError } = await supabase
       .from("payments")
-      .select("id,status,provider_redirect_url,provider_checkout_created_at")
+      .select("id,status,provider_redirect_url,provider_checkout_created_at,meta_checkout_event_id,meta_checkout_sent_at")
       .eq("idempotency_key", idempotencyKey)
       .maybeSingle();
     if (existingPaymentError) throw existingPaymentError;
@@ -77,9 +124,30 @@ export async function POST() {
         existingPayment.provider_checkout_created_at,
       )
     ) {
+      const eventId =
+        existingPayment.meta_checkout_event_id ??
+        metaEventId("InitiateCheckout", existingPayment.id);
+      if (!existingPayment.meta_checkout_event_id) {
+        const eventUpdate = await supabase
+          .from("payments")
+          .update({ meta_checkout_event_id: eventId })
+          .eq("id", existingPayment.id)
+          .is("meta_checkout_event_id", null);
+        if (eventUpdate.error) throw eventUpdate.error;
+      }
+      const metaEvent = await deliverCheckoutMeta(
+        request,
+        {
+          id: existingPayment.id,
+          eventId,
+          sentAt: existingPayment.meta_checkout_sent_at,
+        },
+        salaryCase,
+      );
       return NextResponse.json({
         url: existingPayment.provider_redirect_url,
         publicId: salaryCase.public_id,
+        metaEvent,
       });
     }
 
@@ -151,6 +219,7 @@ export async function POST() {
       currency: INITIAL_CHECK_CURRENCY,
     });
     failureStage = "persist_provider_checkout";
+    const checkoutEventId = metaEventId("InitiateCheckout", pendingPayment.data.id);
     const persistedPayment = await supabase
       .from("payments")
       .update({
@@ -158,10 +227,11 @@ export async function POST() {
         provider_clearing_log_id: checkout.clearingLogId,
         provider_redirect_url: checkout.url,
         provider_checkout_created_at: new Date().toISOString(),
+        meta_checkout_event_id: checkoutEventId,
       })
       .eq("id", pendingPayment.data.id)
       .neq("status", "verified")
-      .select("status,provider_redirect_url")
+      .select("status,provider_redirect_url,meta_checkout_sent_at")
       .maybeSingle();
     if (persistedPayment.error) throw persistedPayment.error;
     if (!persistedPayment.data || persistedPayment.data.status === "verified") {
@@ -171,9 +241,20 @@ export async function POST() {
       throw new Error("Invoice4u checkout URL was not persisted");
     }
 
+    const metaEvent = await deliverCheckoutMeta(
+      request,
+      {
+        id: pendingPayment.data.id,
+        eventId: checkoutEventId,
+        sentAt: persistedPayment.data.meta_checkout_sent_at,
+      },
+      salaryCase,
+    );
+
     return NextResponse.json({
       url: persistedPayment.data.provider_redirect_url,
       publicId: salaryCase.public_id,
+      metaEvent,
     });
   } catch (error) {
     console.error(

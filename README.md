@@ -13,6 +13,7 @@ The project intentionally does not include OCR, a salary-law engine, AI analysis
 - Supabase Postgres and private Storage
 - Invoice4u hosted payment adapter
 - GA4 event tracking
+- Meta Pixel and Conversions API tracking (disabled when unconfigured)
 - Vitest for validation and payment-state tests
 
 ## Local setup
@@ -42,6 +43,10 @@ The landing page and static routes run without external credentials. Creating a 
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Route-handler access to private case data and Storage |
 | `CASE_TOKEN_SECRET` | Server only | Signs the HttpOnly case cookie; use at least 32 random characters |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Public | GA4 measurement ID |
+| `NEXT_PUBLIC_META_PIXEL_ID` | Public | Meta Pixel/Dataset ID used by the browser Pixel |
+| `META_CAPI_ACCESS_TOKEN` | Server only | Meta Conversions API access token |
+| `META_DATASET_ID` | Server only | Optional Dataset ID when it differs from the Pixel ID |
+| `META_CAPI_TEST_EVENT_CODE` | Server only | Optional temporary Events Manager Test Events code |
 | `INVOICE4U_PAYMENT_URL` | Server only | Existing Invoice4u hosted payment-page URL |
 | `NEXT_PUBLIC_SITE_URL` | Public | Canonical site URL, for example a Vercel Preview URL |
 

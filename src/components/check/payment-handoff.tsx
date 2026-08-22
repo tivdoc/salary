@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowSquareOut, CheckCircle, LockKey } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
+import { metaEventDescriptor, trackMetaBrowserEventOnce } from "@/lib/meta-browser";
 
 export function PaymentHandoff() {
   const [loading, setLoading] = useState(false);
@@ -15,6 +16,8 @@ export function PaymentHandoff() {
       const response = await fetch("/api/payments/start", { method: "POST" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "פתיחת התשלום נכשלה");
+      const metaEvent = metaEventDescriptor(result.metaEvent);
+      if (metaEvent) trackMetaBrowserEventOnce(metaEvent);
       trackEvent("payment_started", { value: 9.99, currency: "ILS" });
       window.location.assign(result.url);
     } catch (caught) {

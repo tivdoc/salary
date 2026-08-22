@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { setCaseCookie } from "@/lib/case-cookie";
 import { hashPaymentReturnToken, isPaymentReturnToken } from "@/lib/payment";
 import { paymentReturnDestination } from "@/lib/payment-return";
+import { deliverVerifiedMetaPurchase } from "@/lib/meta-purchase";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { verifyPendingInvoice4uPayment } from "@/lib/verify-payment";
 
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
     }
 
     await verifyPendingInvoice4uPayment(payment.case_id);
+    await deliverVerifiedMetaPurchase(payment.case_id, request);
     await setCaseCookie(payment.case_id);
     await supabase
       .from("payments")
