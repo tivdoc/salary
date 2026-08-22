@@ -47,6 +47,7 @@ export async function POST() {
     }
 
     const idempotencyKey = `${caseId}:initial-check`;
+    const orderId = invoice4uOrderIdForCase(salaryCase.public_id);
     const { data: existingPayment, error: existingPaymentError } = await supabase
       .from("payments")
       .select("id,status,provider_redirect_url")
@@ -63,27 +64,15 @@ export async function POST() {
       });
     }
 
-    const orderId = invoice4uOrderIdForCase(salaryCase.public_id);
-    const checkout = await new Invoice4uClient().createCheckout({
-      caseId: salaryCase.public_id,
-      orderId,
-      fullName: salaryCase.first_name,
-      phone: salaryCase.phone,
-      email: salaryCase.email,
-      returnUrl: getPaymentReturnUrl(),
-      amount: INITIAL_CHECK_PRICE,
-      currency: INITIAL_CHECK_CURRENCY,
-    });
-
-    const paymentValues = {
+    const pendingPaymentValues = {
       case_id: caseId,
       provider: "invoice4u",
       amount: INITIAL_CHECK_PRICE,
       currency: INITIAL_CHECK_CURRENCY,
       status: "pending",
-      provider_payment_id: checkout.paymentId,
+      provider_payment_id: null,
       provider_order_id: orderId,
-      provider_redirect_url: checkout.url,
+      provider_redirect_url: null,
       provider_reference: null,
       provider_clearing_log_id: null,
       provider_confirmation_number: null,
@@ -91,25 +80,22 @@ export async function POST() {
       analytics_reported_at: null,
       idempotency_key: idempotencyKey,
     };
-    const persistedPayment = existingPayment
+    const pendingPayment = existingPayment
       ? await supabase
           .from("payments")
-          .update(paymentValues)
+          .update(pendingPaymentValues)
           .eq("id", existingPayment.id)
           .neq("status", "verified")
-          .select("status,provider_redirect_url")
+          .select("id,status")
           .maybeSingle()
       : await supabase
           .from("payments")
-          .insert(paymentValues)
-          .select("status,provider_redirect_url")
+          .insert(pendingPaymentValues)
+          .select("id,status")
           .single();
-    if (persistedPayment.error) throw persistedPayment.error;
-    if (!persistedPayment.data || persistedPayment.data.status === "verified") {
+    if (pendingPayment.error) throw pendingPayment.error;
+    if (!pendingPayment.data || pendingPayment.data.status === "verified") {
       return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
-    }
-    if (!persistedPayment.data.provider_redirect_url) {
-      throw new Error("Invoice4u checkout URL was not persisted");
     }
 
     const { error: updateError } = await supabase
@@ -122,6 +108,34 @@ export async function POST() {
       .eq("id", caseId)
       .not("payment_status", "in", "(paid,verified)");
     if (updateError) throw updateError;
+
+    const checkout = await new Invoice4uClient().createCheckout({
+      caseId: salaryCase.public_id,
+      orderId,
+      fullName: salaryCase.first_name,
+      phone: salaryCase.phone,
+      email: salaryCase.email,
+      returnUrl: getPaymentReturnUrl(),
+      amount: INITIAL_CHECK_PRICE,
+      currency: INITIAL_CHECK_CURRENCY,
+    });
+    const persistedPayment = await supabase
+      .from("payments")
+      .update({
+        provider_payment_id: checkout.paymentId,
+        provider_redirect_url: checkout.url,
+      })
+      .eq("id", pendingPayment.data.id)
+      .neq("status", "verified")
+      .select("status,provider_redirect_url")
+      .maybeSingle();
+    if (persistedPayment.error) throw persistedPayment.error;
+    if (!persistedPayment.data || persistedPayment.data.status === "verified") {
+      return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
+    }
+    if (!persistedPayment.data.provider_redirect_url) {
+      throw new Error("Invoice4u checkout URL was not persisted");
+    }
 
     return NextResponse.json({
       url: persistedPayment.data.provider_redirect_url,
