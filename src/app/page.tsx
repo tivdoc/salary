@@ -93,7 +93,7 @@ export default function Home() {
               <p>את התלוש הבא כבר תסתכל עליו אחרת.</p>
               <h2 id="final-title">תבדוק לפני התלוש הבא.</h2>
               <TrackedLink className="button button--primary button--large" href="/check" eventName="start_check">
-                התחל בדיקה — 9.90 ₪
+                התחל בדיקה — 9.99 ₪
               </TrackedLink>
               <span>תלוש אחד מספיק כדי להתחיל.</span>
             </div>

@@ -1,4 +1,4 @@
-export const INITIAL_CHECK_PRICE = 9.9;
+export const INITIAL_CHECK_PRICE = 9.99;
 export const INITIAL_CHECK_CURRENCY = "ILS";
 
 export interface PaymentHandoff {

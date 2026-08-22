@@ -34,7 +34,7 @@ export function ReceivedStatus() {
         setError("");
         if (result.paymentVerified && !paymentTracked.current) {
           paymentTracked.current = true;
-          trackEvent("payment_completed", { value: 9.9, currency: "ILS" });
+          trackEvent("payment_completed", { value: 9.99, currency: "ILS" });
         }
         if (!result.paymentVerified && attempts < 8) {
           timer = setTimeout(load, 4_000);

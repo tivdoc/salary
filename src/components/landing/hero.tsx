@@ -15,7 +15,7 @@ export function Hero() {
           </p>
           <div className="hero__actions">
             <TrackedLink className="button button--primary button--large" href="/check" eventName="start_check">
-              התחל בדיקה — 9.90 ₪
+              התחל בדיקה — 9.99 ₪
             </TrackedLink>
             <span>תלוש אחד מספיק כדי להתחיל • לוקח כמה דקות</span>
           </div>
