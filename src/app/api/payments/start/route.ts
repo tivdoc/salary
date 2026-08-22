@@ -5,6 +5,7 @@ import {
   INITIAL_CHECK_PRICE,
   getPaymentReturnUrl,
   invoice4uOrderIdForCase,
+  isInvoice4uCheckoutReusable,
 } from "@/lib/payment";
 import { Invoice4uClient, invoice4uErrorCode } from "@/lib/invoice4u";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -59,14 +60,20 @@ export async function POST() {
     const orderId = invoice4uOrderIdForCase(salaryCase.public_id);
     const { data: existingPayment, error: existingPaymentError } = await supabase
       .from("payments")
-      .select("id,status,provider_redirect_url")
+      .select("id,status,provider_redirect_url,provider_checkout_created_at")
       .eq("idempotency_key", idempotencyKey)
       .maybeSingle();
     if (existingPaymentError) throw existingPaymentError;
     if (existingPayment?.status === "verified") {
       return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
     }
-    if (existingPayment?.status === "pending" && existingPayment.provider_redirect_url) {
+    if (
+      existingPayment?.status === "pending" &&
+      isInvoice4uCheckoutReusable(
+        existingPayment.provider_redirect_url,
+        existingPayment.provider_checkout_created_at,
+      )
+    ) {
       return NextResponse.json({
         url: existingPayment.provider_redirect_url,
         publicId: salaryCase.public_id,
@@ -82,6 +89,7 @@ export async function POST() {
       provider_payment_id: null,
       provider_order_id: orderId,
       provider_redirect_url: null,
+      provider_checkout_created_at: null,
       provider_reference: null,
       provider_clearing_log_id: null,
       provider_confirmation_number: null,
@@ -138,6 +146,7 @@ export async function POST() {
         provider_payment_id: checkout.paymentId,
         provider_clearing_log_id: checkout.clearingLogId,
         provider_redirect_url: checkout.url,
+        provider_checkout_created_at: new Date().toISOString(),
       })
       .eq("id", pendingPayment.data.id)
       .neq("status", "verified")

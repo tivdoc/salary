@@ -1,5 +1,21 @@
 export const INITIAL_CHECK_PRICE = 9.99;
 export const INITIAL_CHECK_CURRENCY = "ILS";
+export const INVOICE4U_CHECKOUT_TTL_MS = 10 * 60 * 1000;
+
+export function isInvoice4uCheckoutReusable(
+  url: string | null,
+  createdAt: string | null,
+  now = Date.now(),
+) {
+  if (!url || !createdAt) return false;
+
+  const createdAtMs = Date.parse(createdAt);
+  return (
+    Number.isFinite(createdAtMs) &&
+    createdAtMs <= now &&
+    now - createdAtMs < INVOICE4U_CHECKOUT_TTL_MS
+  );
+}
 
 export function invoice4uOrderIdForCase(caseId: string) {
   return `tivdoc-salary:${caseId}`;
