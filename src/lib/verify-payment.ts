@@ -1,5 +1,5 @@
 import "server-only";
-import { Invoice4uClient } from "./invoice4u";
+import { Invoice4uClient, invoice4uErrorCode } from "./invoice4u";
 import {
   PaymentVerificationError,
   isIdempotentVerification,
@@ -38,15 +38,31 @@ export async function verifyPendingInvoice4uPayment(
     return "already_verified";
   }
 
-  const clearingLog = await new Invoice4uClient().getClearingLogById(
-    payment.provider_clearing_log_id,
-  );
-  if (!clearingLog) return "pending";
+  let clearingLog;
+  try {
+    clearingLog = await new Invoice4uClient().getClearingLogById(
+      payment.provider_clearing_log_id,
+    );
+  } catch (error) {
+    console.error(
+      "Payment verification provider lookup failed",
+      invoice4uErrorCode(error) ?? "unknown_provider_error",
+    );
+    throw error;
+  }
+  if (!clearingLog) {
+    console.error("Payment verification provider log not found");
+    return "pending";
+  }
 
   let transaction;
   try {
     transaction = validateInvoice4uClearingLog(clearingLog, payment.provider_clearing_log_id);
   } catch (error) {
+    console.error(
+      "Payment verification rejected",
+      error instanceof PaymentVerificationError ? error.code : "unknown_validation_error",
+    );
     if (error instanceof PaymentVerificationError && error.code === "transaction_failed") {
       await Promise.all([
         supabase.from("payments").update({ status: "failed" }).eq("id", payment.id),
@@ -71,6 +87,9 @@ export async function verifyPendingInvoice4uPayment(
       observed_currency: transaction.currency,
     },
   );
-  if (verificationError) return "rejected";
+  if (verificationError) {
+    console.error("Payment verification database transition rejected", verificationError.code);
+    return "rejected";
+  }
   return newlyVerified ? "verified" : "already_verified";
 }
