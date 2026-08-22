@@ -44,6 +44,13 @@ export async function verifyPendingInvoice4uPayment(
       payment.provider_clearing_log_id,
     );
   } catch (error) {
+    if (error instanceof PaymentVerificationError && error.code === "reference_missing") {
+      const keys = Object.keys(clearingLog).sort().join(",");
+      console.error(
+        "Payment verification reference field shape",
+        `keys=${keys};paymentId=${"PaymentId" in clearingLog};id=${"Id" in clearingLog};confirmation=${"ClearingConfirmationNumber" in clearingLog}`,
+      );
+    }
     console.error(
       "Payment verification provider lookup failed",
       invoice4uErrorCode(error) ?? "unknown_provider_error",
