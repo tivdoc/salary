@@ -7,7 +7,9 @@ export function GET() {
       ok: true,
       services: {
         supabase: isSupabaseConfigured(),
-        payment: Boolean(process.env.INVOICE4U_PAYMENT_URL),
+        payment: Boolean(
+          process.env.INVOICE4U_API_KEY && process.env.INVOICE4U_CLEARING_COMPANY_TYPE,
+        ),
         analytics: Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID),
       },
     },

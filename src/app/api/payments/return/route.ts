@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
-export function GET(request: Request) {
-  const destination = new URL("/check/received", request.url);
+export function paymentReturnDestination(requestUrl: string) {
+  const destination = new URL("/check/received", requestUrl);
   destination.searchParams.set("returned", "1");
-  return NextResponse.redirect(destination);
+  return destination;
+}
+
+export function GET(request: Request) {
+  return NextResponse.redirect(paymentReturnDestination(request.url));
 }

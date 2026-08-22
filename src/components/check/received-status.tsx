@@ -10,6 +10,7 @@ type CaseStatus = {
   status: string;
   paymentStatus: string;
   paymentVerified: boolean;
+  trackPaymentCompleted: boolean;
 };
 
 export function ReceivedStatus() {
@@ -32,7 +33,7 @@ export function ReceivedStatus() {
         if (!active) return;
         setData(result);
         setError("");
-        if (result.paymentVerified && !paymentTracked.current) {
+        if (result.trackPaymentCompleted && !paymentTracked.current) {
           paymentTracked.current = true;
           trackEvent("payment_completed", { value: 9.99, currency: "ILS" });
         }

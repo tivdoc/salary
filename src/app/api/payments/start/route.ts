@@ -3,8 +3,10 @@ import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import {
   INITIAL_CHECK_CURRENCY,
   INITIAL_CHECK_PRICE,
-  Invoice4uHostedPaymentAdapter,
+  getPaymentReturnUrl,
+  invoice4uOrderIdForCase,
 } from "@/lib/payment";
+import { Invoice4uApiError, Invoice4uClient } from "@/lib/invoice4u";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -20,7 +22,7 @@ export async function POST() {
     const [caseResult, documentResult] = await Promise.all([
       supabase
         .from("cases")
-        .select("id,public_id,status,payment_status")
+        .select("id,public_id,first_name,email,phone,status,payment_status")
         .eq("id", caseId)
         .single(),
       supabase
@@ -44,19 +46,71 @@ export async function POST() {
       return NextResponse.json({ error: "צריך להעלות תלוש לפני המעבר לתשלום" }, { status: 409 });
     }
 
-    const handoff = new Invoice4uHostedPaymentAdapter().createHandoff();
-    const { error: paymentError } = await supabase.from("payments").upsert(
-      {
-        case_id: caseId,
-        provider: handoff.provider,
-        amount: INITIAL_CHECK_PRICE,
-        currency: INITIAL_CHECK_CURRENCY,
-        status: "pending",
-        idempotency_key: `${caseId}:initial-check`,
-      },
-      { onConflict: "idempotency_key", ignoreDuplicates: true },
-    );
-    if (paymentError) throw paymentError;
+    const idempotencyKey = `${caseId}:initial-check`;
+    const { data: existingPayment, error: existingPaymentError } = await supabase
+      .from("payments")
+      .select("id,status,provider_redirect_url")
+      .eq("idempotency_key", idempotencyKey)
+      .maybeSingle();
+    if (existingPaymentError) throw existingPaymentError;
+    if (existingPayment?.status === "verified") {
+      return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
+    }
+    if (existingPayment?.status === "pending" && existingPayment.provider_redirect_url) {
+      return NextResponse.json({
+        url: existingPayment.provider_redirect_url,
+        publicId: salaryCase.public_id,
+      });
+    }
+
+    const orderId = invoice4uOrderIdForCase(salaryCase.public_id);
+    const checkout = await new Invoice4uClient().createCheckout({
+      caseId: salaryCase.public_id,
+      orderId,
+      fullName: salaryCase.first_name,
+      phone: salaryCase.phone,
+      email: salaryCase.email,
+      returnUrl: getPaymentReturnUrl(),
+      amount: INITIAL_CHECK_PRICE,
+      currency: INITIAL_CHECK_CURRENCY,
+    });
+
+    const paymentValues = {
+      case_id: caseId,
+      provider: "invoice4u",
+      amount: INITIAL_CHECK_PRICE,
+      currency: INITIAL_CHECK_CURRENCY,
+      status: "pending",
+      provider_payment_id: checkout.paymentId,
+      provider_order_id: orderId,
+      provider_redirect_url: checkout.url,
+      provider_reference: null,
+      provider_clearing_log_id: null,
+      provider_confirmation_number: null,
+      verified_at: null,
+      analytics_reported_at: null,
+      idempotency_key: idempotencyKey,
+    };
+    const persistedPayment = existingPayment
+      ? await supabase
+          .from("payments")
+          .update(paymentValues)
+          .eq("id", existingPayment.id)
+          .neq("status", "verified")
+          .select("status,provider_redirect_url")
+          .maybeSingle()
+      : await supabase
+          .from("payments")
+          .insert(paymentValues)
+          .select("status,provider_redirect_url")
+          .single();
+    if (persistedPayment.error) throw persistedPayment.error;
+    if (!persistedPayment.data || persistedPayment.data.status === "verified") {
+      return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
+    }
+    if (!persistedPayment.data.provider_redirect_url) {
+      throw new Error("Invoice4u checkout URL was not persisted");
+    }
 
     const { error: updateError } = await supabase
       .from("cases")
@@ -65,12 +119,19 @@ export async function POST() {
         payment_status: "pending",
         updated_at: new Date().toISOString(),
       })
-      .eq("id", caseId);
+      .eq("id", caseId)
+      .not("payment_status", "in", "(paid,verified)");
     if (updateError) throw updateError;
 
-    return NextResponse.json({ url: handoff.url, publicId: salaryCase.public_id });
+    return NextResponse.json({
+      url: persistedPayment.data.provider_redirect_url,
+      publicId: salaryCase.public_id,
+    });
   } catch (error) {
-    console.error("Payment handoff failed", error);
+    console.error(
+      "Payment handoff failed",
+      error instanceof Invoice4uApiError ? error.code : "internal_error",
+    );
     return NextResponse.json(
       { error: "לא הצלחנו לפתוח את עמוד התשלום כרגע. אפשר לנסות שוב." },
       { status: 503 },

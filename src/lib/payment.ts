@@ -1,28 +1,18 @@
 export const INITIAL_CHECK_PRICE = 9.99;
 export const INITIAL_CHECK_CURRENCY = "ILS";
 
-export interface PaymentHandoff {
-  provider: "invoice4u";
-  url: string;
+export function invoice4uOrderIdForCase(caseId: string) {
+  return `tivdoc-salary:${caseId}`;
 }
 
-export interface PaymentAdapter {
-  createHandoff(): PaymentHandoff;
-}
-
-export class Invoice4uHostedPaymentAdapter implements PaymentAdapter {
-  constructor(private readonly hostedPaymentUrl = process.env.INVOICE4U_PAYMENT_URL) {}
-
-  createHandoff(): PaymentHandoff {
-    if (!this.hostedPaymentUrl) {
-      throw new Error("INVOICE4U_PAYMENT_URL is not configured");
-    }
-
-    const url = new URL(this.hostedPaymentUrl);
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      throw new Error("INVOICE4U_PAYMENT_URL must be an HTTP(S) URL");
-    }
-
-    return { provider: "invoice4u", url: url.toString() };
+export function getPaymentReturnUrl() {
+  const deploymentHost = process.env.VERCEL_URL;
+  const siteUrl = deploymentHost
+    ? `https://${deploymentHost}`
+    : process.env.NEXT_PUBLIC_SITE_URL;
+  if (!siteUrl) {
+    throw new Error("A site URL is required to create an Invoice4u checkout");
   }
+
+  return new URL("/api/payments/return", siteUrl).toString();
 }
