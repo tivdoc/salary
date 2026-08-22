@@ -59,6 +59,13 @@ describe("Invoice4u clearing verification", () => {
     );
   });
 
+  it("treats Invoice4u PaymentId 0 as a transaction that is still pending", () => {
+    expectCode(
+      () => validateInvoice4uClearingLog({ ...validLog, PaymentId: 0 }, "68871"),
+      "transaction_pending",
+    );
+  });
+
   it("rejects a missing provider reference", () => {
     expectCode(
       () => validateInvoice4uClearingLog({ ...validLog, Id: null }, "68871"),

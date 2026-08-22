@@ -59,6 +59,9 @@ export async function verifyPendingInvoice4uPayment(
   try {
     transaction = validateInvoice4uClearingLog(clearingLog, payment.provider_clearing_log_id);
   } catch (error) {
+    if (error instanceof PaymentVerificationError && error.code === "transaction_pending") {
+      return "pending";
+    }
     if (error instanceof PaymentVerificationError && error.code === "reference_missing") {
       const keys = Object.keys(clearingLog).sort().join(",");
       console.error(

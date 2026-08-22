@@ -1,6 +1,7 @@
 import { INITIAL_CHECK_CURRENCY, INITIAL_CHECK_PRICE } from "./payment";
 
 export type PaymentVerificationErrorCode =
+  | "transaction_pending"
   | "reference_missing"
   | "transaction_failed"
   | "amount_mismatch"
@@ -51,6 +52,9 @@ export function validateInvoice4uClearingLog(
     textValue(log.TransactionId);
   if (!paymentId || !clearingLogId || !confirmationNumber) {
     throw new PaymentVerificationError("reference_missing");
+  }
+  if (paymentId === "0") {
+    throw new PaymentVerificationError("transaction_pending");
   }
   if (clearingLogId !== expectedClearingLogId) {
     throw new PaymentVerificationError("clearing_log_mismatch");
