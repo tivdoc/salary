@@ -3,7 +3,10 @@ import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import {
   INITIAL_CHECK_CURRENCY,
   INITIAL_CHECK_PRICE,
+  PAYMENT_RETURN_TOKEN_TTL_MS,
+  createPaymentReturnToken,
   getPaymentReturnUrl,
+  hashPaymentReturnToken,
   invoice4uOrderIdForCase,
   isInvoice4uCheckoutReusable,
 } from "@/lib/payment";
@@ -80,6 +83,11 @@ export async function POST() {
       });
     }
 
+    const paymentReturnToken = createPaymentReturnToken();
+    const paymentReturnTokenExpiresAt = new Date(
+      Date.now() + PAYMENT_RETURN_TOKEN_TTL_MS,
+    ).toISOString();
+
     const pendingPaymentValues = {
       case_id: caseId,
       provider: "invoice4u",
@@ -90,6 +98,9 @@ export async function POST() {
       provider_order_id: orderId,
       provider_redirect_url: null,
       provider_checkout_created_at: null,
+      payment_return_token_hash: hashPaymentReturnToken(paymentReturnToken),
+      payment_return_token_expires_at: paymentReturnTokenExpiresAt,
+      payment_return_token_consumed_at: null,
       provider_reference: null,
       provider_clearing_log_id: null,
       provider_confirmation_number: null,
@@ -135,7 +146,7 @@ export async function POST() {
       fullName: salaryCase.first_name,
       phone: salaryCase.phone,
       email: salaryCase.email,
-      returnUrl: getPaymentReturnUrl(),
+      returnUrl: getPaymentReturnUrl(paymentReturnToken),
       amount: INITIAL_CHECK_PRICE,
       currency: INITIAL_CHECK_CURRENCY,
     });
