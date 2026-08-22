@@ -6,7 +6,7 @@ import {
   getPaymentReturnUrl,
   invoice4uOrderIdForCase,
 } from "@/lib/payment";
-import { Invoice4uApiError, Invoice4uClient } from "@/lib/invoice4u";
+import { Invoice4uClient, invoice4uErrorCode } from "@/lib/invoice4u";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -144,7 +144,7 @@ export async function POST() {
   } catch (error) {
     console.error(
       "Payment handoff failed",
-      error instanceof Invoice4uApiError ? error.code : "internal_error",
+      invoice4uErrorCode(error) ?? "internal_error",
     );
     return NextResponse.json(
       { error: "לא הצלחנו לפתוח את עמוד התשלום כרגע. אפשר לנסות שוב." },

@@ -63,8 +63,27 @@ function openInfoValue(payload: Record<string, unknown>, key: string) {
   return typeof value === "string" || typeof value === "number" ? String(value).trim() : null;
 }
 
-function providerRejected(payload: Record<string, unknown>) {
-  return Array.isArray(payload.Errors) && payload.Errors.length > 0;
+function providerRejectionCode(payload: Record<string, unknown>) {
+  if (!Array.isArray(payload.Errors) || payload.Errors.length === 0) return null;
+  const firstError = payload.Errors[0];
+  const id =
+    firstError && typeof firstError === "object"
+      ? (firstError as Record<string, unknown>).ID
+      : null;
+  return typeof id === "number" ? `provider_rejected_${id}` : "provider_rejected";
+}
+
+export function invoice4uErrorCode(error: unknown) {
+  if (error instanceof Invoice4uApiError) return error.code;
+  if (
+    error &&
+    typeof error === "object" &&
+    (error as Record<string, unknown>).name === "Invoice4uApiError" &&
+    typeof (error as Record<string, unknown>).code === "string"
+  ) {
+    return (error as Record<string, unknown>).code as string;
+  }
+  return null;
 }
 
 export class Invoice4uClient {
@@ -141,7 +160,8 @@ export class Invoice4uClient {
       throw new Invoice4uApiError("invalid_provider_response");
     }
     const payload = response as Record<string, unknown>;
-    if (providerRejected(payload)) throw new Invoice4uApiError("provider_rejected");
+    const rejectionCode = providerRejectionCode(payload);
+    if (rejectionCode) throw new Invoice4uApiError(rejectionCode);
 
     const paymentId = openInfoValue(payload, "PaymentId");
     const url = typeof payload.ClearingRedirectUrl === "string" ? payload.ClearingRedirectUrl : "";
