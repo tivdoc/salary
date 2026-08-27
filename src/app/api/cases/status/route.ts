@@ -3,6 +3,7 @@ import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentVerified } from "@/lib/case-status";
 import { deliverVerifiedMetaPurchase } from "@/lib/meta-purchase";
+import { deliverVerifiedGa4Purchase } from "@/lib/ga4-server";
 import { verifyPendingInvoice4uPayment } from "@/lib/verify-payment";
 
 export const runtime = "nodejs";
@@ -21,7 +22,10 @@ export async function GET(request: Request) {
     } catch {
       // Provider outages must not make the saved case unavailable to the user.
     }
-    await deliverVerifiedMetaPurchase(caseId, request);
+    const [metaDelivery, ga4Delivery] = await Promise.all([
+      deliverVerifiedMetaPurchase(caseId, request),
+      deliverVerifiedGa4Purchase(caseId),
+    ]);
     const [caseResult, paymentResult] = await Promise.all([
       supabase
         .from("cases")
@@ -30,7 +34,7 @@ export async function GET(request: Request) {
         .single(),
       supabase
         .from("payments")
-        .select("status,provider_reference,analytics_reported_at,meta_purchase_event_id,created_at")
+        .select("status,provider_reference,meta_purchase_event_id,created_at")
         .eq("case_id", caseId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -45,7 +49,7 @@ export async function GET(request: Request) {
     const paymentStatus = payment?.status ?? salaryCase.payment_status;
     const paymentVerified = isPaymentVerified(paymentStatus);
     let trackPaymentCompleted = false;
-    if (paymentVerified && !payment?.analytics_reported_at) {
+    if (paymentVerified && ga4Delivery === "disabled") {
       const claim = await supabase.rpc("claim_salary_payment_completed", {
         target_case_id: caseId,
       });
@@ -66,6 +70,10 @@ export async function GET(request: Request) {
         paymentStatus,
         paymentVerified,
         trackPaymentCompleted,
+        analyticsDelivery: {
+          meta: metaDelivery,
+          ga4: ga4Delivery,
+        },
         metaEvent,
         createdAt: salaryCase.created_at,
       },

@@ -14,6 +14,7 @@ import { Invoice4uClient, invoice4uErrorCode } from "@/lib/invoice4u";
 import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
 import { metaEventId, type MetaEventDescriptor } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { recordCaseFunnelEvent } from "@/lib/funnel-server";
 
 export const runtime = "nodejs";
 
@@ -144,6 +145,7 @@ export async function POST(request: Request) {
         },
         salaryCase,
       );
+      await recordCaseFunnelEvent(caseId, "checkout_started");
       return NextResponse.json({
         url: existingPayment.provider_redirect_url,
         publicId: salaryCase.public_id,
@@ -250,6 +252,7 @@ export async function POST(request: Request) {
       },
       salaryCase,
     );
+    await recordCaseFunnelEvent(caseId, "checkout_started");
 
     return NextResponse.json({
       url: persistedPayment.data.provider_redirect_url,

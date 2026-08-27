@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans_Hebrew } from "next/font/google";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { AttributionProvider } from "@/components/attribution-provider";
 import { MetaPixelProvider } from "@/components/meta-pixel-provider";
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <a className="skip-link" href="#main-content">דלג לתוכן הראשי</a>
         {children}
+        <AttributionProvider />
         <AnalyticsProvider />
         <MetaPixelProvider pixelId={process.env.NEXT_PUBLIC_META_PIXEL_ID} />
       </body>

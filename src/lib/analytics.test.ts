@@ -13,7 +13,7 @@ describe("trackEvent", () => {
     trackEvent("payment_returned", { source: "invoice4u" });
 
     expect(browserWindow.tivdocAnalyticsQueue).toEqual([
-      { eventName: "payment_returned", params: { source: "invoice4u" } },
+      { eventName: "payment_returned", params: {} },
     ]);
   });
 
@@ -23,6 +23,6 @@ describe("trackEvent", () => {
 
     trackEvent("start_check");
 
-    expect(gtag).toHaveBeenCalledWith("event", "start_check", undefined);
+    expect(gtag).toHaveBeenCalledWith("event", "start_check", {});
   });
 });

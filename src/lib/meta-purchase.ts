@@ -21,21 +21,30 @@ function firstClaim(data: unknown): ClaimRow | null {
   return row as ClaimRow;
 }
 
-export async function deliverVerifiedMetaPurchase(caseId: string, request: Request) {
+export async function deliverVerifiedMetaPurchase(caseId: string, request?: Request) {
   if (!resolveMetaCapiConfig(process.env)) return "disabled";
   const supabase = getSupabaseAdmin();
-  const context = metaRequestContext(request, "/check/received");
+  const requestContext = request ? metaRequestContext(request, "/check/received") : null;
+  const eventSourceUrl =
+    requestContext?.eventSourceUrl
+    ?? new URL(
+      "/check/received",
+      process.env.NEXT_PUBLIC_SITE_URL || "https://tivdoc.com",
+    ).toString();
+  const requestCustomerData = requestContext
+    ? {
+        clientIpAddress: requestContext.clientIpAddress,
+        clientUserAgent: requestContext.clientUserAgent,
+        fbp: requestContext.fbp,
+        fbc: requestContext.fbc,
+      }
+    : {};
 
   try {
     return await processVerifiedMetaPurchase(
       caseId,
-      context.eventSourceUrl,
-      {
-        clientIpAddress: context.clientIpAddress,
-        clientUserAgent: context.clientUserAgent,
-        fbp: context.fbp,
-        fbc: context.fbc,
-      },
+      eventSourceUrl,
+      requestCustomerData,
       {
         async claim(targetCaseId) {
           const result = await supabase.rpc("claim_salary_meta_purchase", {
@@ -56,7 +65,7 @@ export async function deliverVerifiedMetaPurchase(caseId: string, request: Reque
         async loadCustomer(targetCaseId) {
           const result = await supabase
             .from("cases")
-            .select("first_name,email,phone")
+            .select("first_name,email,phone,fbp,fbc")
             .eq("id", targetCaseId)
             .single();
           if (result.error || !result.data) throw result.error ?? new Error("Case not found");
@@ -64,6 +73,8 @@ export async function deliverVerifiedMetaPurchase(caseId: string, request: Reque
             firstName: result.data.first_name,
             email: result.data.email,
             phone: result.data.phone,
+            fbp: result.data.fbp,
+            fbc: result.data.fbc,
           };
         },
         async send(event) {

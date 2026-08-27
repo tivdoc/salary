@@ -1380,6 +1380,22 @@ mark {
   margin-bottom: 42px;
 }
 
+.questionnaire__meter {
+  height: 5px;
+  margin-bottom: 28px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #dedbd2;
+}
+
+.questionnaire__meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+  transition: width 220ms ease;
+}
+
 .questionnaire__heading > span,
 .check-page-heading > span {
   display: block;
@@ -1507,6 +1523,26 @@ mark {
   color: #494843;
 }
 
+.questionnaire__trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.questionnaire__trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.questionnaire__trust svg {
+  width: 20px;
+  height: 20px;
+  color: var(--blue);
+}
+
 .form-error {
   margin-top: 26px;
   padding: 14px 16px;
@@ -1525,6 +1561,13 @@ mark {
   margin-top: 42px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
+}
+
+.questionnaire__saved {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
 }
 
 .check-footer {

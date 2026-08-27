@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { recordCaseFunnelEvent } from "@/lib/funnel-server";
 import {
   extensionForMimeType,
   storageBaseName,
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
       .eq("id", caseId)
       .in("status", ["started", "questionnaire_completed", "documents_uploaded"]);
     if (updateError) throw updateError;
+    await recordCaseFunnelEvent(caseId, "document_uploaded");
 
     const currentPaths = new Set(records.map((record) => record.storage_path));
     const obsoletePaths = (previousDocuments ?? [])
