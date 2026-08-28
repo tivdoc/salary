@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "benchmark:payslip": "vitest run src/engine/extraction/benchmark.test.ts --reporter=verbose",
     "cases:report": "node scripts/cases-report.mjs",
     "funnel:report": "node scripts/funnel-report.mjs"
   },

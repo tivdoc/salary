@@ -22,10 +22,21 @@ export const factStatusSchema = z.enum([
   "needs_confirmation",
 ]);
 
-const documentLocatorSchema = z
+export const documentBoundingBoxSchema = z
+  .object({
+    x: z.number().nonnegative(),
+    y: z.number().nonnegative(),
+    width: z.number().positive(),
+    height: z.number().positive(),
+    coordinate_space: z.enum(["normalized", "pixels"]),
+  })
+  .strict();
+
+export const documentLocatorSchema = z
   .object({
     page: z.number().int().positive().optional(),
     text_span: z.string().trim().min(1).max(500).optional(),
+    bounding_box: documentBoundingBoxSchema.optional(),
   })
   .strict();
 
@@ -115,6 +126,13 @@ const workdaysValueSchema = z
   })
   .strict();
 
+const leaveBalanceValueSchema = z
+  .object({
+    amount: nonNegativeDecimalStringSchema,
+    unit: z.enum(["days", "hours"]),
+  })
+  .strict();
+
 const pensionContributionSchema = z
   .object({
     amount: nonNegativeMoneySchema.nullable(),
@@ -173,8 +191,12 @@ const canonicalFactUnionSchema = z.discriminatedUnion("path", [
   factVariant("compensation.salary_type", z.enum(["monthly", "hourly", "mixed"])),
   factVariant("compensation.base_monthly_salary", nonNegativeMoneySchema),
   factVariant("compensation.hourly_rate", nonNegativeMoneySchema),
+  factVariant("compensation.gross_salary", nonNegativeMoneySchema),
+  factVariant("compensation.net_salary", nonNegativeMoneySchema),
   factVariant("work.regular_hours", hoursValueSchema),
   factVariant("work.overtime_hours", hoursValueSchema),
+  factVariant("work.overtime_125_hours", hoursValueSchema),
+  factVariant("work.overtime_150_hours", hoursValueSchema),
   factVariant("work.workdays", workdaysValueSchema),
   factVariant(
     "work.breaks",
@@ -182,6 +204,9 @@ const canonicalFactUnionSchema = z.discriminatedUnion("path", [
   ),
   factVariant("pension.base_salary", nonNegativeMoneySchema),
   factVariant("pension.contributions", pensionContributionsValueSchema),
+  factVariant("pension.severance_contribution", pensionContributionSchema),
+  factVariant("leave.vacation_balance", leaveBalanceValueSchema),
+  factVariant("leave.sick_balance", leaveBalanceValueSchema),
   factVariant("travel.reimbursement", nonNegativeMoneySchema),
   factVariant("convalescence.payment", nonNegativeMoneySchema),
   factVariant("documents.period", documentPeriodValueSchema),

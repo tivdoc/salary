@@ -139,3 +139,5 @@ Not yet implemented or verified:
 - no current app route imports these repositories.
 
 Before Preview deployment, review the DDL against a current schema dump, apply it to an isolated database, exercise legacy upload/upsert and resume flows, test every trigger/state transition and case deletion, verify grants with anon/authenticated/service-role sessions, and confirm private-object cleanup ownership. Production application remains a separate explicit approval.
+
+Database integration verification remains pending because no isolated Tivdoc Supabase environment is currently available.

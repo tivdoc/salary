@@ -2,6 +2,7 @@ export * from "./agents/contracts";
 export * from "./calculations/contracts";
 export * from "./domain/documents";
 export * from "./domain/primitives";
+export * from "./extraction";
 export * from "./facts/contracts";
 export * from "./facts/fact-paths";
 export * from "./facts/snapshot";

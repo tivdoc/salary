@@ -4,6 +4,8 @@
 
 The investigation engine is a non-routable TypeScript domain module under `src/engine`. Nothing in the current questionnaire, upload, payment, analytics, Meta, GA4, or customer-status flow imports it. It adds no API route, user interface, LLM provider, legal rule, or calculation formula. The separate, unapplied persistence foundation is described in `docs/engine-persistence.md`.
 
+The internal, provider-independent synthetic payslip pipeline is described in `docs/payslip-extraction-v0.md`. It ends at validated canonical facts in memory and does not introduce legal conclusions or customer-visible behavior.
+
 The existing `cases.status` field remains the customer-funnel state. Engine execution uses an independent `AnalysisRun` lifecycle so investigation progress cannot accidentally unlock, block, or reinterpret a paid customer flow.
 
 ## Trust boundary
