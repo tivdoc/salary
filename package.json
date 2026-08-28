@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cases:report": "node scripts/cases-report.mjs"
+    "cases:report": "node scripts/cases-report.mjs",
+    "funnel:report": "node scripts/funnel-report.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

@@ -1,5 +1,5 @@
 import "server-only";
-import { processVerifiedGa4Purchase } from "./ga4-server-core";
+import { buildGa4PurchasePayload, processVerifiedGa4Purchase } from "./ga4-server-core";
 import { getSupabaseAdmin } from "./supabase-admin";
 
 type ClaimRow = {
@@ -17,7 +17,7 @@ function firstClaim(data: unknown): ClaimRow | null {
   return row as ClaimRow;
 }
 
-export async function sendGa4PaymentCompleted(input: {
+export async function sendGa4PurchaseEvents(input: {
   clientId: string;
   eventId: string;
   transactionId: string;
@@ -35,21 +35,7 @@ export async function sendGa4PaymentCompleted(input: {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_id: input.clientId,
-        events: [
-          {
-            name: "payment_completed",
-            params: {
-              transaction_id: input.transactionId,
-              event_id: input.eventId,
-              value: input.value,
-              currency: input.currency,
-              engagement_time_msec: 1,
-            },
-          },
-        ],
-      }),
+      body: JSON.stringify(buildGa4PurchasePayload(input)),
       cache: "no-store",
       signal: AbortSignal.timeout(8_000),
     });
@@ -92,7 +78,7 @@ export async function deliverVerifiedGa4Purchase(caseId: string) {
         if (result.error) throw result.error;
         return result.data?.ga_client_id ?? null;
       },
-      send: sendGa4PaymentCompleted,
+      send: sendGa4PurchaseEvents,
       async complete(claim) {
         const result = await supabase.rpc("complete_salary_ga4_purchase", {
           target_payment_id: claim.paymentId,
@@ -113,7 +99,7 @@ export async function deliverVerifiedGa4Purchase(caseId: string) {
       error && typeof error === "object" && typeof (error as { code?: unknown }).code === "string"
         ? (error as { code: string }).code
         : "delivery_error";
-    console.warn("GA4 payment_completed delivery deferred", code);
+    console.warn("GA4 purchase delivery deferred", code);
     return "failed" as const;
   }
 }

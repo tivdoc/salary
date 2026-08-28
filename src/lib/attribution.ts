@@ -68,18 +68,29 @@ function readStored(): FirstTouchAttribution | null {
   }
 }
 
+export function enrichFirstTouch(
+  stored: FirstTouchAttribution,
+  identifiers: Pick<FirstTouchAttribution, "fbp" | "fbc" | "gaClientId">,
+): FirstTouchAttribution {
+  return {
+    ...stored,
+    fbp: stored.fbp || identifiers.fbp,
+    fbc: stored.fbc || identifiers.fbc,
+    gaClientId: stored.gaClientId || identifiers.gaClientId,
+  };
+}
+
 export function ensureFirstTouch(): FirstTouchAttribution {
   const stored = readStored();
   const currentFbp = shortValue(cookieValue("_fbp"), 512);
   const currentFbc = shortValue(cookieValue("_fbc"), 512);
   const currentGaClientId = gaClientIdFromCookie(cookieValue("_ga"));
   if (stored) {
-    const enriched = {
-      ...stored,
-      fbp: stored.fbp || currentFbp,
-      fbc: stored.fbc || currentFbc,
-      gaClientId: stored.gaClientId || currentGaClientId,
-    };
+    const enriched = enrichFirstTouch(stored, {
+      fbp: currentFbp,
+      fbc: currentFbc,
+      gaClientId: currentGaClientId,
+    });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(enriched));
     return enriched;
   }

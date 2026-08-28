@@ -27,6 +27,32 @@ export type Ga4PurchaseResult =
   | "disabled"
   | "failed";
 
+export type Ga4PurchaseEventInput = {
+  clientId: string;
+  eventId: string;
+  transactionId: string;
+  value: number;
+  currency: string;
+};
+
+export function buildGa4PurchasePayload(input: Ga4PurchaseEventInput) {
+  const params = {
+    transaction_id: input.transactionId,
+    event_id: input.eventId,
+    value: input.value,
+    currency: input.currency,
+    engagement_time_msec: 1,
+  };
+
+  return {
+    client_id: input.clientId,
+    events: [
+      { name: "payment_completed", params: { ...params } },
+      { name: "purchase", params: { ...params } },
+    ],
+  };
+}
+
 export function isVerifiedGa4Purchase(claim: Ga4PurchaseClaim) {
   return claim.status === "verified" && claim.amount === 9.99 && claim.currency === "ILS";
 }
