@@ -38,9 +38,12 @@ export function invoice4uOrderIdForCase(caseId: string) {
 
 export function getPaymentReturnUrl(paymentReturnToken: string) {
   const deploymentHost = process.env.VERCEL_URL;
-  const siteUrl = deploymentHost
-    ? `https://${deploymentHost}`
-    : process.env.NEXT_PUBLIC_SITE_URL;
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const siteUrl = process.env.VERCEL_ENV === "production"
+    ? configuredSiteUrl ?? (deploymentHost ? `https://${deploymentHost}` : undefined)
+    : deploymentHost
+      ? `https://${deploymentHost}`
+      : configuredSiteUrl;
   if (!siteUrl) {
     throw new Error("A site URL is required to create an Invoice4u checkout");
   }

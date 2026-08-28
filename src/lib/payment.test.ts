@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   INVOICE4U_CHECKOUT_TTL_MS,
   createPaymentReturnToken,
+  getPaymentReturnUrl,
   hashPaymentReturnToken,
   invoice4uOrderIdForCase,
   isInvoice4uCheckoutReusable,
@@ -26,6 +27,43 @@ describe("payment return identity", () => {
     expect(isPaymentReturnToken(null)).toBe(false);
     expect(isPaymentReturnToken("success")).toBe(false);
     expect(isPaymentReturnToken("a".repeat(42))).toBe(false);
+  });
+});
+
+describe("payment return destination", () => {
+  const originalVercelEnv = process.env.VERCEL_ENV;
+  const originalVercelUrl = process.env.VERCEL_URL;
+  const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  afterEach(() => {
+    if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = originalVercelEnv;
+    if (originalVercelUrl === undefined) delete process.env.VERCEL_URL;
+    else process.env.VERCEL_URL = originalVercelUrl;
+    if (originalSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+  });
+
+  it("uses the canonical public site in production", () => {
+    process.env.VERCEL_ENV = "production";
+    process.env.VERCEL_URL = "protected-deployment.vercel.app";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://tivdoc.com";
+
+    const returnUrl = new URL(getPaymentReturnUrl("a".repeat(43)));
+
+    expect(returnUrl.origin).toBe("https://tivdoc.com");
+    expect(returnUrl.pathname).toBe("/api/payments/return");
+    expect(returnUrl.searchParams.get("payment_return")).toBe("a".repeat(43));
+  });
+
+  it("uses the current deployment host for previews", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.VERCEL_URL = "current-preview.vercel.app";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://stale-preview.vercel.app";
+
+    expect(new URL(getPaymentReturnUrl("b".repeat(43))).origin).toBe(
+      "https://current-preview.vercel.app",
+    );
   });
 });
 
