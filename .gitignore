@@ -10,6 +10,7 @@
 /output/payslip-openai/
 /tmp/pdfs/
 /eval/real-payslips/
+/eval/customer-payslips/
 
 # next.js
 /.next/
