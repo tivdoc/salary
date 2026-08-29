@@ -1,0 +1,124 @@
+{
+  "schema_version": "legal-browser-observations-v0.2",
+  "observations": [
+    {
+      "catalog_observation_id": "CATOBS:KNESSET:CONVALESCENCE-LAW-2024:2026-08-29",
+      "catalog_id": "IL_KNESSET_LEGISLATION_SEARCH",
+      "canonical_url": "https://main.knesset.gov.il/apps/legislation/main/home",
+      "observed_at": "2026-08-29T19:31:00Z",
+      "acquisition_method": "public_browser_visible_navigation",
+      "status": "unavailable",
+      "query": { "title_terms": "convalescence reduction freeze 2024" },
+      "result_count_reported": null,
+      "entries_observed": [],
+      "pagination": { "pages_observed": 0, "pages_reported": null },
+      "safe_error_code": "official_knesset_search_results_remained_loading",
+      "discovery_only": true
+    },
+    {
+      "catalog_observation_id": "CATOBS:KNESSET:CONVALESCENCE-LAW-2025:2026-08-29",
+      "catalog_id": "IL_KNESSET_LEGISLATION_SEARCH",
+      "canonical_url": "https://main.knesset.gov.il/apps/legislation/main/home",
+      "observed_at": "2026-08-29T19:33:00Z",
+      "acquisition_method": "public_browser_visible_navigation",
+      "status": "unavailable",
+      "query": { "title_terms": "economic efficiency budget 2025 convalescence" },
+      "result_count_reported": null,
+      "entries_observed": [],
+      "pagination": { "pages_observed": 0, "pages_reported": null },
+      "safe_error_code": "official_knesset_search_control_returned_no_result_page",
+      "discovery_only": true
+    },
+    {
+      "catalog_observation_id": "CATOBS:HOURS-WORK-REST:PUBLICATIONS:2026-08-29",
+      "catalog_id": "IL_HOURS_WORK_REST_LAW_PUBLICATIONS",
+      "canonical_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "observed_at": "2026-08-29T19:25:00Z",
+      "acquisition_method": "public_browser_visible_navigation",
+      "status": "partial",
+      "query": { "law_id": "2000019", "visible_control": "load_more_once" },
+      "result_count_reported": 20,
+      "entries_observed": [
+        { "entry_id": "LAW:HOURS-WORK-REST:ORIGINAL:1951", "title": "Hours of Work and Rest Law 1951 - original official promulgation", "artifact_url": "https://fs.knesset.gov.il/1/law/1_lsr_209133.PDF" },
+        { "entry_id": "LAW:HOURS-WORK-REST:AMENDMENT:18:2018", "title": "Hours of Work and Rest Law amendment 18 - official promulgation", "artifact_url": "https://fs.knesset.gov.il/20/law/20_lsr_501345.pdf" }
+      ],
+      "pagination": { "pages_observed": 2, "pages_reported": 2 },
+      "safe_error_code": "publication_rows_visible_but_only_boundary_entries_recorded",
+      "discovery_only": true
+    },
+    {
+      "catalog_observation_id": "CATOBS:WORK-PERMITS:2026-08-29:PAGE-1",
+      "catalog_id": "IL_WORK_PERMITS_CATALOG",
+      "canonical_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits",
+      "observed_at": "2026-08-29T18:30:00Z",
+      "acquisition_method": "public_browser_visible_navigation",
+      "status": "partial",
+      "query": { "skip": "0", "filter": "none" },
+      "result_count_reported": 58,
+      "entries_observed": [
+        { "entry_id": "PERMIT:STATE-COMPTROLLER", "title": "General overtime permit for State Comptroller employees", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/state-comptroller-premit/he/workers-rights_state-comptroller-premit.pdf" },
+        { "entry_id": "PERMIT:EPIC-FURY:2026-04-14", "title": "Extension of overtime permits - 2026-04-14", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14409/he/workers-rights_epic-fury_publish-14409.pdf" },
+        { "entry_id": "PERMIT:EPIC-FURY:2026-03-26", "title": "Extension of overtime permits - 2026-03-26", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14355/he/workers-rights_epic-fury_publish-14382.pdf" },
+        { "entry_id": "PERMIT:EPIC-FURY:2026-03-19", "title": "Extension of overtime permits - 2026-03-19", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14355b/he/workers-rights_epic-fury_publish-14355.pdf" },
+        { "entry_id": "PERMIT:TRANSPORT:2026-UPDATE", "title": "Overtime transport-sector permit update", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14320b/he/workers-rights_epic-fury_publish-14320.pdf" },
+        { "entry_id": "PERMIT:GENERAL:EPIC-FURY", "title": "General overtime temporary permit", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extra-hours-14381b/he/workers-rights_extra-hours-14381.pdf" },
+        { "entry_id": "PERMIT:TRANSPORT:EPIC-FURY", "title": "Transport-sector overtime temporary permit", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14301b/he/workers-rights_epic-fury_publish-14301.pdf" },
+        { "entry_id": "PERMIT:SECURITY:EPIC-FURY", "title": "Security-sector overtime temporary permit", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish14300/he/workers-rights_epic-fury_publish14300.pdf" },
+        { "entry_id": "PERMIT:BREAKS:IRON-SWORDS", "title": "General breaks permit notice", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publications-12109/he/workers-rights_working-conditions_publications-12109.pdf" },
+        { "entry_id": "PERMIT:TRANSPORT:AMENDMENT", "title": "Transport general permit amendment record", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11720/he/workers-rights_transportaion-permit-am-kelavi.pdf" }
+      ],
+      "pagination": { "pages_observed": 1, "pages_reported": 6 },
+      "safe_error_code": "partial_browser_snapshot_10_of_58",
+      "discovery_only": true
+    },
+    {
+      "catalog_observation_id": "CATOBS:EXTENSION-ORDERS:PENSION:2026-08-29",
+      "catalog_id": "IL_EXTENSION_ORDERS_CATALOG",
+      "canonical_url": "https://www.gov.il/he/Departments/DynamicCollectors/extension-orders",
+      "observed_at": "2026-08-29T18:32:00Z",
+      "acquisition_method": "public_browser_visible_navigation",
+      "status": "complete",
+      "query": { "sector": "pension", "skip": "0" },
+      "result_count_reported": 5,
+      "entries_observed": [
+        { "entry_id": "ORDER:PENSION:1988", "title": "Pension contribution increase extension order 1988", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-payment-1988/he/extention-order-pension-payment-1988.pdf" },
+        { "entry_id": "ORDER:PENSION:INDUSTRY:2006", "title": "Industry comprehensive pension extension order 2006", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-2006/he/extention-order-pension-2006.pdf" },
+        { "entry_id": "ORDER:PENSION:2007", "title": "Comprehensive pension extension order 2007", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-2007/he/extention-order-pension-2007.pdf" },
+        { "entry_id": "ORDER:PENSION:2011", "title": "Mandatory pension consolidated extension order 2011", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-obligation-2011/he/extention-order-pension-obligation-2011.pdf" },
+        { "entry_id": "ORDER:PENSION:2016", "title": "Pension contribution increase extension order 2016", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf" }
+      ],
+      "pagination": { "pages_observed": 1, "pages_reported": 1 },
+      "safe_error_code": null,
+      "discovery_only": true
+    },
+    {
+      "catalog_observation_id": "CATOBS:EXTENSION-ORDERS:CONVALESCENCE:2026-08-29",
+      "catalog_id": "IL_EXTENSION_ORDERS_CATALOG",
+      "canonical_url": "https://www.gov.il/he/Departments/DynamicCollectors/extension-orders",
+      "observed_at": "2026-08-29T18:34:00Z",
+      "acquisition_method": "public_browser_visible_navigation",
+      "status": "complete",
+      "query": { "sector": "convalescence", "skip": "0,10" },
+      "result_count_reported": 14,
+      "entries_observed": [
+        { "entry_id": "ORDER:CONVALESCENCE:2026", "title": "Employer participation in convalescence and recreation expenses extension order 2026", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/order14863/he/workers-rights_order14863.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2023", "title": "Official publication containing convalescence extension order 2023", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11651/he/workers-rights_work-relations_11651.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:1998", "title": "Convalescence and recreation extension order 1998", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-recreation-1998/he/extention-order-recovery-recreation-1998.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2003", "title": "Convalescence pay extension order 2003", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2003/he/extention-order-recovery-2003.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2005", "title": "Convalescence pay extension order 2005", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extension-order-recovery-2005/he/extension-order-recovery-2005.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2006", "title": "Convalescence pay extension order 2006", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extension-order-recovery-2006/he/extension-order-recovery-2006.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2008", "title": "Convalescence pay extension order 2008", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2008/he/extention-order-recovery-2008.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2009", "title": "Convalescence pay extension order 2009", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2009/he/extention-order-recovery-2009.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2010", "title": "Convalescence pay extension order 2010", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2010/he/extention-order-recovery-2010.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2011", "title": "Convalescence pay extension order 2011", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2011/he/extention-order-recovery-2011.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2012", "title": "Convalescence pay extension order 2012", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2012/he/extention-order-recovery-2012.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2013", "title": "Convalescence pay extension order 2013", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2013/he/extention-order-recovery-2013.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2014", "title": "Convalescence pay extension order 2014", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-2014/he/extention-order-recovery-2014.pdf" },
+        { "entry_id": "ORDER:CONVALESCENCE:2016", "title": "Convalescence and recreation extension order 2016", "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-recreation-2016/he/extention-order-recovery-recreation-2016.pdf" }
+      ],
+      "pagination": { "pages_observed": 2, "pages_reported": 2 },
+      "safe_error_code": null,
+      "discovery_only": true
+    }
+  ]
+}

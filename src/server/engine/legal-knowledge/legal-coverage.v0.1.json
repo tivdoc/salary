@@ -31,8 +31,8 @@
       "binding_level": "primary_binding",
       "issuing_authority": "Knesset National Legislation Database",
       "review_status": "needs_review",
-      "coverage_status": "blocked",
-      "reason_codes": ["official_law_endpoint_returns_challenge_shell", "base_statute_not_parseable", "permit_catalog_snapshot_blocked"]
+      "coverage_status": "gap",
+      "reason_codes": ["original_1951_promulgation_acquired_but_not_current_consolidation", "amendment_chain_not_reviewed", "permit_catalog_snapshot_partial"]
     },
     {
       "topic": "working_time",
@@ -129,6 +129,54 @@
       "review_status": "needs_review",
       "coverage_status": "gap",
       "reason_codes": ["effective_interval_evidence_unresolved", "historical_amendments_unresolved"]
+    },
+    {
+      "topic": "pension",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016@discovery-v0.2",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Minister of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["separate_candidate_acquired", "effective_interval_unresolved", "scope_and_relation_unverified"]
+    },
+    {
+      "topic": "convalescence",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2023@discovery-v0.2",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Minister of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["later_candidate_acquired", "effective_interval_unresolved", "relation_unverified"]
+    },
+    {
+      "topic": "convalescence",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Minister of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["current_catalog_candidate_acquired", "effective_interval_unresolved", "2025_law_missing"]
+    },
+    {
+      "topic": "convalescence",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2024@discovery-v0.2",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Israeli legislature",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["official_artifact_candidate_discovered", "identity_effectivity_scope_and_relation_unverified", "2025_law_missing"]
     }
   ]
 }

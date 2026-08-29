@@ -67,7 +67,7 @@
         "operative": false,
         "explanatory": true,
         "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
+        "can_independently_support_monetary_rule": false
       },
       "jurisdiction": "IL",
       "title": "Minimum wage - official general data and rate history",
@@ -132,10 +132,10 @@
       "topics": ["working_time", "overtime", "weekly_rest"],
       "sectors": ["general"],
       "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "html",
+      "content_sha256": "ca770f73436663094f546e53bed93aeca867bbed7124991fecfa1a8d750fdcd9",
+      "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Current consolidated scope and amendments require content review before activation."],
+      "notes": ["The pinned artifact is the original 1951 promulgation only; current consolidated scope and amendments remain incomplete and require owner/legal review before activation."],
       "verification": {
         "status": "domain_verified",
         "method": "official legislation database record inspection",
@@ -465,11 +465,11 @@
     {
       "source_id": "IL_CONVALESCENCE_KNESSET_RESEARCH_2025",
       "source_version": "discovery-v0",
-      "source_type": "official_guidance",
+      "source_type": "secondary_reference",
       "authority": {
         "kind": "other_government_authority",
         "issuing_body": "Knesset Research and Information Center",
-        "binding_level": "official_guidance",
+        "binding_level": "secondary_explanatory",
         "court_level": null,
         "scope": "general",
         "operative": false,
@@ -613,6 +613,210 @@
         "method": "official_domain_search",
         "found_at": "2026-08-29",
         "included_reason": "Primary statutory basis for general sick leave."
+      }
+    },
+    {
+      "source_id": "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016",
+      "source_version": "discovery-v0.2",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Minister of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Extension order increasing pension insurance contributions, 2016",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf",
+      "publication_reference": "Yalkut HaPirsumim 7287",
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["pension", "severance"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["Separate candidate instrument; relations, interval, scope and the general population tag remain unverified."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "visible Ministry extension-order catalog record",
+        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_at": "2026-08-29T18:32:00Z",
+        "notes": ["No review, activation, relation or numeric parameter is inferred from catalog discovery."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "Required pension source-set candidate identified in the visible official catalog."
+      }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2023",
+      "source_version": "discovery-v0.2",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Minister of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Official publication containing the 2023 convalescence extension order",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11651/he/workers-rights_work-relations_11651.pdf",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["convalescence"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["The catalog entry combines publications; legal relations, scope and effectivity remain unverified."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "visible Ministry extension-order catalog record",
+        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_at": "2026-08-29T18:34:00Z",
+        "notes": ["Discovery does not establish amendment, replacement or current applicability."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "Required later convalescence publication identified in the visible official catalog."
+      }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2026",
+      "source_version": "discovery-v0.2",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Minister of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Extension order regarding employer participation in convalescence and recreation expenses, 2026",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/order14863/he/workers-rights_order14863.pdf",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["convalescence"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["Catalog and artifact candidate only; effectivity, relations, scope and population remain unverified."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "visible Ministry extension-order catalog record",
+        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_at": "2026-08-29T18:34:00Z",
+        "notes": ["No review, activation or current applicability is inferred."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "Required 2026 convalescence order identified in the visible official catalog."
+      }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2024",
+      "source_version": "discovery-v0.2",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Israeli legislature",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Official 2024 convalescence reduction and freeze law publication",
+      "canonical_url": "https://fs.knesset.gov.il/25/law/25_lsr_4232982.pdf",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["convalescence"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["Official artifact candidate discovered through a link annotation in official Knesset secondary research; identity, provisions, relations, effectivity, scope and applicability remain unverified."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Knesset research link annotation",
+        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_at": "2026-08-29T19:35:00Z",
+        "notes": ["The secondary research was used only for discovery of the official Knesset file URL."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_cross_reference",
+        "found_at": "2026-08-29",
+        "included_reason": "Required 2024 official law artifact target identified without using the secondary document as operative authority."
       }
     }
   ]

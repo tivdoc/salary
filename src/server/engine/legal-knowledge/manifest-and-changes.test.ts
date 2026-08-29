@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { detectLegalSourceChange, selectLegalSourceObservation } from "./change-detection.ts";
+import { loadProvenanceRegistry } from "./acquisition.ts";
 import { loadLegalSourceManifest } from "./manifest.ts";
 
-describe("official source manifest V0.1", () => {
-  it("loads twelve unique official source records", async () => {
+describe("official source manifest V0.2", () => {
+  it("loads sixteen unique official source records", async () => {
     const manifest = await loadLegalSourceManifest();
-    expect(manifest.sources).toHaveLength(12);
-    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(12);
+    expect(manifest.sources).toHaveLength(16);
+    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(16);
   });
 
   it("covers every initial discovery topic", async () => {
@@ -26,6 +27,22 @@ describe("official source manifest V0.1", () => {
   it("does not allow any secondary source to support a monetary rule independently", async () => {
     const manifest = await loadLegalSourceManifest();
     expect(manifest.sources.filter((source) => source.authority.binding_level === "secondary_explanatory").every((source) => !source.authority.can_independently_support_monetary_rule)).toBe(true);
+  });
+
+  it("separates instrument issuer, publisher, host and artifact role", async () => {
+    const registry = await loadProvenanceRegistry();
+    const minimumWage = registry.provenance.find((entry) => entry.source_id === "IL_MIN_WAGE_LAW");
+    expect(minimumWage).toMatchObject({
+      instrument_issuer: "Israeli legislature",
+      artifact_host: "National Insurance Institute",
+      artifact_role: "official_consolidated_copy",
+      consolidation_as_of: "unknown",
+      authority_not_inferred_from_host: true,
+    });
+    const research = registry.provenance.find((entry) => entry.source_id === "IL_CONVALESCENCE_KNESSET_RESEARCH_2025");
+    expect(research).toMatchObject({ legal_force: "non_binding", artifact_role: "officially_published_secondary_research" });
+    const hours = registry.provenance.find((entry) => entry.source_id === "IL_HOURS_WORK_REST_LAW");
+    expect(hours).toMatchObject({ artifact_host: "Knesset file service", artifact_role: "primary_promulgation", consolidation_as_of: "unknown" });
   });
 });
 

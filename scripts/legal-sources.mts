@@ -5,13 +5,14 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { legalReviewEventSchema, legalSourceSchema, legalSourceVersionId, type LegalChunk, type LegalReviewEvent, type LegalSource } from "../src/engine/legal-knowledge/contracts.ts";
-import { retrieveLegalKnowledge } from "../src/engine/legal-knowledge/retrieval.ts";
+import { retrieveActiveLegalKnowledge } from "../src/engine/legal-knowledge/retrieval.ts";
 import { legalSectors, legalTopics, type LegalSector, type LegalTopic } from "../src/engine/legal-knowledge/taxonomy.ts";
 import {
   detectLegalSourceChange,
   selectLegalSourceObservation,
   type LegalSourceObservation,
 } from "../src/server/engine/legal-knowledge/change-detection.ts";
+import { retrieveLegalKnowledgeForReview } from "../src/server/engine/legal-knowledge/review-retrieval.ts";
 import { legalSourceManifestSchema } from "../src/server/engine/legal-knowledge/manifest.ts";
 import {
   chunkLegalPages,
@@ -188,6 +189,19 @@ function selectedObservation(state: FetchState, source: LegalSource) {
   return selectLegalSourceObservation(state.observations, source);
 }
 
+function selectedValidLegalObservation(state: FetchState, source: LegalSource) {
+  const observation = selectedObservation(state, source);
+  return observation?.parse_status === "parsed" && !observation.safe_error_code ? observation : null;
+}
+
+function selectedRawLegalArtifactObservation(state: FetchState, source: LegalSource) {
+  const observation = selectedObservation(state, source);
+  if (!observation) return null;
+  if (observation.content_type.toLowerCase().includes("text/html") && observation.byte_count <= 4096 && observation.parse_status !== "parsed") return null;
+  if (["html_challenge_or_error_page", "unexpected_content_type", "redirect_domain_rejected"].includes(observation.safe_error_code ?? "")) return null;
+  return observation;
+}
+
 function effectiveMetadataHash(source: LegalSource) {
   return sha256(stableJson({
     source_id: source.source_id,
@@ -232,10 +246,18 @@ async function validateManifestCommand() {
   };
 }
 
-async function fetchCommand() {
+async function fetchCommand(args: string[] = []) {
   assertNetworkEnabledForNetworkCommand();
   await ensureLocalDirectories();
   const manifest = await loadManifest();
+  const options = parseOptions(args);
+  const requestedSourceIds = typeof options["source-id"] === "string"
+    ? new Set(options["source-id"].split(",").map((entry) => entry.trim()).filter(Boolean))
+    : null;
+  const requestedArtifactUrl = typeof options["artifact-url"] === "string" ? options["artifact-url"] : null;
+  const fetchSources = requestedSourceIds ? manifest.sources.filter((source) => requestedSourceIds.has(source.source_id)) : manifest.sources;
+  if (requestedSourceIds && fetchSources.length !== requestedSourceIds.size) throw new Error("unknown_fetch_source_id");
+  if (requestedArtifactUrl && fetchSources.length !== 1) throw new Error("artifact_url_override_requires_exactly_one_source");
   const state = await readJson<FetchState>(fetchStatePath, { schema_version: "legal-source-fetch-state-v0", observations: [], failures: [] });
   state.observations = state.observations.map((entry) => ({
     ...entry,
@@ -250,13 +272,14 @@ async function fetchCommand() {
     redirect_chain: entry.redirect_chain ?? [entry.final_url],
   }));
   const results: Array<Record<string, unknown>> = [];
-  for (const source of manifest.sources) {
+  for (const source of fetchSources) {
     const started = Date.now();
+    const fetchSource = requestedArtifactUrl ? { ...source, canonical_url: requestedArtifactUrl, artifact_format: "pdf" as const } : source;
     try {
-      const fetched = await fetchLegalSourceBytes(source);
+      const fetched = await fetchLegalSourceBytes(fetchSource);
       const artifactSha256 = sha256(fetched.bytes);
       const metadataHash = effectiveMetadataHash(source);
-      const extension = source.artifact_format === "pdf" ? "pdf" : source.artifact_format === "html" ? "html" : "txt";
+      const extension = fetchSource.artifact_format === "pdf" ? "pdf" : fetchSource.artifact_format === "html" ? "html" : "txt";
       const artifactPath = path.join(artifactRoot, source.source_id, source.source_version, `${artifactSha256}.${extension}`);
       await writeImmutable(artifactPath, fetched.bytes);
       let previous = selectedObservation(state, source);
@@ -304,7 +327,6 @@ async function fetchCommand() {
         observation = { ...observation, status: "fetched" };
         state.observations[observationIndex] = observation;
       }
-      state.failures = state.failures.filter((entry) => !(entry.source_id === source.source_id && entry.source_version === source.source_version));
       results.push(safeLegalLogEvent({
         source_id: source.source_id,
         source_version: source.source_version,
@@ -317,12 +339,11 @@ async function fetchCommand() {
       }));
     } catch (error) {
       const safeErrorCode = error instanceof SafeLegalFetchError ? error.code : "fetch_failed";
-      state.failures = state.failures.filter((entry) => !(entry.source_id === source.source_id && entry.source_version === source.source_version));
       state.failures.push({ source_id: source.source_id, source_version: source.source_version, failed_at: new Date().toISOString(), safe_error_code: safeErrorCode });
       results.push(safeLegalLogEvent({
         source_id: source.source_id,
         source_version: source.source_version,
-        domain: new URL(source.canonical_url).hostname,
+        domain: new URL(fetchSource.canonical_url).hostname,
         stage: "fetch",
         status: "failed",
         duration_ms: Date.now() - started,
@@ -332,7 +353,7 @@ async function fetchCommand() {
   }
   await writeReplaceJson(fetchStatePath, state);
   return {
-    sources_total: manifest.sources.length,
+    sources_total: fetchSources.length,
     fetched: results.filter((entry) => entry.status !== "failed").length,
     failed: results.filter((entry) => entry.status === "failed").length,
     content_changes: results.filter((entry) => entry.status === "content_change_review_required").length,
@@ -598,9 +619,8 @@ async function loadRuntimeCorpus() {
   const sources: LegalSource[] = [];
   const chunks: LegalChunk[] = [];
   for (const source of manifest.sources) {
-    const observation = selectedObservation(fetchState, source);
+    const observation = selectedValidLegalObservation(fetchState, source);
     if (observation) sources.push(legalSourceSchema.parse({ ...source, content_sha256: observation.artifact_sha256, retrieved_at: observation.retrieved_at }));
-    else sources.push(source);
     if (observation?.chunks_path && observation.parse_status === "parsed") {
       const chunkDocument = JSON.parse(await readFile(path.resolve(repoRoot, observation.chunks_path), "utf8")) as { chunks: LegalChunk[] };
       chunks.push(...chunkDocument.chunks);
@@ -613,22 +633,31 @@ async function statusCommand() {
   const { manifest, fetchState, buildState } = await loadRuntimeCorpus();
   const topics = initialTopics.map((topic) => {
     const topicSources = manifest.sources.filter((source) => source.topics.includes(topic));
-    const parsed = topicSources.filter((source) => selectedObservation(fetchState, source)?.parse_status === "parsed");
+    const parsed = topicSources.filter((source) => selectedValidLegalObservation(fetchState, source));
     return {
       topic,
-      discovered_sources: topicSources.length,
-      fetched_sources: topicSources.filter((source) => selectedObservation(fetchState, source)).length,
-      parsed_sources: parsed.length,
+      registry_records: topicSources.length,
+      ingestion_baseline_observations: topicSources.filter((source) => selectedObservation(fetchState, source)).length,
+      acquired_raw_ingestion_baselines: topicSources.filter((source) => selectedRawLegalArtifactObservation(fetchState, source)).length,
+      parsed_review_candidate_versions: parsed.length,
       status: parsed.length === 0 ? "incomplete_unbuilt" : "content_review_required",
     };
   });
+  const quarantinedObservations = fetchState.observations.filter((observation) =>
+    (observation.content_type.toLowerCase().includes("text/html") && observation.byte_count <= 4096 && observation.parse_status !== "parsed")
+      || observation.safe_error_code === "html_challenge_or_error_page",
+  ).length + fetchState.failures.length;
   return {
     manifest_sources: manifest.sources.length,
-    fetched_source_versions: manifest.sources.filter((source) => selectedObservation(fetchState, source)).length,
-    parsed_source_versions: manifest.sources.filter((source) => selectedObservation(fetchState, source)?.parse_status === "parsed").length,
-    chunks: manifest.sources.reduce((sum, source) => sum + (selectedObservation(fetchState, source)?.chunk_count ?? 0), 0),
+    ingestion_baseline_observations: manifest.sources.filter((source) => selectedObservation(fetchState, source)).length,
+    acquired_raw_ingestion_baselines: manifest.sources.filter((source) => selectedRawLegalArtifactObservation(fetchState, source)).length,
+    selected_review_candidate_versions: manifest.sources.filter((source) => selectedValidLegalObservation(fetchState, source)).length,
+    parsed_source_versions: manifest.sources.filter((source) => selectedValidLegalObservation(fetchState, source)).length,
+    registry_records_without_parsed_review_candidate: manifest.sources.filter((source) => !selectedValidLegalObservation(fetchState, source)).length,
+    quarantined_or_unavailable_observations: quarantinedObservations,
+    chunks: manifest.sources.reduce((sum, source) => sum + (selectedValidLegalObservation(fetchState, source)?.chunk_count ?? 0), 0),
     source_records: manifest.sources.length,
-    source_versions: manifest.sources.length,
+    registry_ingestion_revisions: manifest.sources.length,
     active_sources: manifest.sources.filter((source) => source.status === "active").length,
     numeric_candidates: 0,
     active_parameters: 0,
@@ -680,7 +709,7 @@ async function searchCommand(args: string[]) {
     throw new Error("invalid_or_missing_date");
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("invalid_limit");
-  const { sources, chunks, buildState } = await loadRuntimeCorpus();
+  const { sources, chunks, buildState, fetchState } = await loadRuntimeCorpus();
   const relations = await loadLegalSourceRelations();
   const evidence = runtimeEvidenceMap(sources, chunks, buildState);
   const temporalResolution = resolveTemporalSourceSet({
@@ -691,16 +720,20 @@ async function searchCommand(args: string[]) {
     targetDate,
     sector,
     activeOnly: options["active-only"] === true,
+    reviewContext: temporalReviewContext(topic, fetchState),
   });
-  const result = retrieveLegalKnowledge(sources, chunks, {
+  const activeOnly = options["active-only"] === true;
+  const retrievalQuery = {
     topic,
     targetDate,
     sector,
     role: typeof options.role === "string" ? options.role : null,
-    activeOnly: options["active-only"] === true,
     keywords: typeof options.keywords === "string" ? options.keywords.split(",").map((entry) => entry.trim()).filter(Boolean) : [],
     limit,
-  });
+  };
+  const result = activeOnly
+    ? retrieveActiveLegalKnowledge(sources, chunks, retrievalQuery)
+    : retrieveLegalKnowledgeForReview(sources, chunks, retrievalQuery);
   return {
     query: { topic, target_date: targetDate, sector, active_only: options["active-only"] === true },
     temporal_resolution: temporalResolution,
@@ -1031,19 +1064,52 @@ function runtimeEvidenceMap(sources: readonly LegalSource[], chunks: readonly Le
   return result;
 }
 
+function temporalReviewContext(topic: LegalTopic, fetchState: FetchState) {
+  const roles: Readonly<Record<LegalTopic, readonly string[]>> = {
+    minimum_wage: ["reviewed_historical_statute_and_rate_versions"],
+    working_time: ["official_current_statute_representation", "complete_work_permits_catalog"],
+    overtime: ["official_current_statute_representation", "complete_work_permits_catalog"],
+    weekly_rest: ["official_current_statute_representation", "complete_work_permits_catalog"],
+    maximum_permitted_overtime: ["complete_work_permits_catalog", "scope_authorization_evidence"],
+    overtime_pay_premium: ["official_current_statute_representation", "reviewed_effective_interval"],
+    pension: ["parseable_2016_increase_order", "complete_pension_instrument_set"],
+    travel: ["complete_later_travel_order_catalog"],
+    convalescence: ["official_2025_law", "verified_relation_and_effective_interval_chain"],
+    vacation: ["reviewed_historical_statute_versions"],
+    sick_leave: ["reviewed_historical_statute_versions"],
+    base_wage_floor: ["reviewed_historical_statute_and_rate_versions"],
+    age_based_minimum_wage: ["reviewed_age_specific_instrument_set"],
+    sector_minimum_wage: ["reviewed_sector_specific_instrument_set"],
+  };
+  const rejectedObservationIds = topic === "working_time"
+    ? fetchState.observations
+      .filter((entry) => entry.source_id === "IL_HOURS_WORK_REST_LAW" && entry.content_type.toLowerCase().includes("text/html") && entry.byte_count <= 4096)
+      .map((entry) => `fetch:${entry.source_id}@${entry.source_version}#${entry.artifact_sha256}`)
+      .sort()
+    : [];
+  return {
+    catalogComplete: false,
+    catalogCutoff: "2026-08-29",
+    requiredSourceRoles: roles[topic],
+    missingSourceRoles: roles[topic],
+    rejectedObservationIds,
+    missingApplicabilityFacts: ["effective_interval", "sector_applicability", "population", "exceptions"],
+  };
+}
+
 async function coverageCommand() {
   await ensureLocalDirectories();
   const matrix = await loadLegalCoverageMatrix();
   const relationManifest = await loadLegalSourceRelations();
-  const { sources, chunks, buildState } = await loadRuntimeCorpus();
+  const { sources, chunks, buildState, fetchState } = await loadRuntimeCorpus();
   const evidence = runtimeEvidenceMap(sources, chunks, buildState);
   const reports = initialTopics.flatMap((topic) => [
     { label: "historical", targetDate: matrix.coverage_window.from },
     { label: "current", targetDate: matrix.coverage_window.to },
   ].map(({ label, targetDate }) => ({
     label,
-    review: resolveTemporalSourceSet({ sources, relations: relationManifest.relations, evidence, topic, targetDate, sector: "general", activeOnly: false }),
-    active_only: resolveTemporalSourceSet({ sources, relations: relationManifest.relations, evidence, topic, targetDate, sector: "general", activeOnly: true }),
+    review: resolveTemporalSourceSet({ sources, relations: relationManifest.relations, evidence, topic, targetDate, sector: "general", activeOnly: false, reviewContext: temporalReviewContext(topic, fetchState) }),
+    active_only: resolveTemporalSourceSet({ sources, relations: relationManifest.relations, evidence, topic, targetDate, sector: "general", activeOnly: true, reviewContext: temporalReviewContext(topic, fetchState) }),
   })));
   const report = {
     schema_version: "legal-temporal-coverage-report-v0.1",
@@ -1467,7 +1533,7 @@ async function main() {
   const [command, ...args] = process.argv.slice(2);
   let result: unknown;
   if (command === "validate") result = await validateManifestCommand();
-  else if (command === "fetch") result = await fetchCommand();
+  else if (command === "fetch") result = await fetchCommand(args);
   else if (command === "build") result = await buildCommand();
   else if (command === "status") result = await statusCommand();
   else if (command === "search") result = await searchCommand(args);

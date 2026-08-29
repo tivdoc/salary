@@ -35,7 +35,14 @@
     "legal:sources:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts coverage",
     "legal:sources:citations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts citations",
     "legal:sources:reproducibility": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts reproducibility",
-    "legal:sources:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts review-package"
+    "legal:sources:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts review-package",
+    "legal:sources:acquisition:request": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts request",
+    "legal:sources:acquisition:import": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts import",
+    "legal:sources:acquisition:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts verify",
+    "legal:sources:acquisition:status": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts status",
+    "legal:sources:acquisition:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts readiness",
+    "legal:sources:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts corpus-readiness",
+    "legal:sources:review-package:v0.2": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts review-package"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
