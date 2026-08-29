@@ -6,7 +6,7 @@ import path from "node:path";
 const repoRoot = path.resolve(process.cwd());
 const outputRoot = path.join(repoRoot, "output", "parallel-wave-2", "final-verification");
 const requiredBase = "bb9a61eae55d49529d7cd633a2c9c2615a8d842e";
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const npmCli = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
 
 if (process.env.TIVDOC_LEGAL_NETWORK_DISABLED !== "1") {
   throw new Error("parallel_wave2_final_verification_requires_offline_canary");
@@ -31,8 +31,8 @@ const vitest = (id: string, paths: readonly string[]): CommandDefinition => ({
 
 const npmRun = (id: string, script: string, expectedExit = 0): CommandDefinition => ({
   id,
-  command: npm,
-  args: ["run", script],
+  command: process.execPath,
+  args: [npmCli, "run", script],
   expectedExit,
 });
 
@@ -51,7 +51,7 @@ const commands: readonly CommandDefinition[] = [
   vitest("focused-b2-rule-input", ["src/engine/rule-input", "src/engine/analysis-orchestration"]),
   vitest("focused-b3-ground-truth", ["src/engine/extraction-ground-truth"]),
   npmRun("lint", "lint"),
-  { id: "typescript-no-emit", command: npm, args: ["exec", "tsc", "--", "--noEmit"], expectedExit: 0 },
+  { id: "typescript-no-emit", command: process.execPath, args: [npmCli, "exec", "tsc", "--", "--noEmit"], expectedExit: 0 },
   npmRun("full-test-suite", "test"),
   npmRun("production-build", "build"),
   npmRun("legal-validate", "legal:sources:validate"),

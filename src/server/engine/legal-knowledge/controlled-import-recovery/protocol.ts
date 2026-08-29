@@ -256,8 +256,10 @@ export async function withControlledImportLock<T>(input: Readonly<{
       try {
         const owner = JSON.parse(await readFile(path.join(lockPath, "owner.json"), "utf8")) as { pid?: unknown };
         stale = typeof owner.pid !== "number" || !processAlive(owner.pid);
-      } catch (ownerError) {
-        if ((ownerError as NodeJS.ErrnoException).code !== "ENOENT") throw ownerError;
+      } catch {
+        // mkdir publishes the lock directory before owner.json is completely
+        // written. Treat a missing or temporarily unreadable owner as a fresh
+        // contended lock; only an old directory is eligible for takeover.
         try {
           const lockInfo = await stat(lockPath);
           stale = Date.now() - lockInfo.mtimeMs > 1_000;

@@ -57,6 +57,29 @@ describe("controlled import recovery protocol", () => {
     expect(maximum).toBe(1);
   });
 
+  it("waits through a freshly published lock whose owner file is incomplete", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "tivdoc-wave2-incomplete-lock-"));
+    const acquisitionRequestId = "ACQ-WAVE2-INCOMPLETE";
+    const sourceId = "IL_SYNTHETIC_SOURCE";
+    const lockKey = controlledImportSha256(controlledImportStableJson({
+      acquisition_request_id: acquisitionRequestId,
+      source_id: sourceId,
+    }));
+    const lockPath = path.join(root, ".locks", `${lockKey}.lock`);
+    await mkdir(lockPath, { recursive: true });
+    await writeFile(path.join(lockPath, "owner.json"), "{");
+    setTimeout(() => void rm(lockPath, { recursive: true, force: true }), 25);
+
+    const result = await withControlledImportLock({
+      ledgerRoot: root,
+      acquisitionRequestId,
+      sourceId,
+      timeoutMs: 1_000,
+    }, async () => "acquired-after-owner-publication");
+
+    expect(result).toBe("acquired-after-owner-publication");
+  });
+
   it("takes over a lock whose owning process is no longer alive", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "tivdoc-wave2-stale-lock-"));
     roots.push(root);
