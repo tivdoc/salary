@@ -15,7 +15,15 @@
     "benchmark:payslip:openai:real:v2": "vitest run --config vitest.openai.real.config.mts src/server/engine/extraction/benchmarks/openai/real-public/openai-real-v2-benchmark.external.test.ts --reporter=verbose",
     "benchmark:payslip:openai:real:v2.1": "vitest run --config vitest.openai.real.config.mts src/server/engine/extraction/benchmarks/openai/real-public/openai-real-v21-benchmark.external.test.ts --reporter=verbose",
     "cases:report": "node scripts/cases-report.mjs",
-    "funnel:report": "node scripts/funnel-report.mjs"
+    "funnel:report": "node scripts/funnel-report.mjs",
+    "eval:customer:redaction-v3": "node scripts/customer-eval-tools.mjs redaction-v3",
+    "eval:customer:verify-v3": "node scripts/customer-eval-tools.mjs verify-v3",
+    "eval:customer:status": "node scripts/customer-eval-tools.mjs status",
+    "eval:customer:review-package": "node scripts/customer-eval-tools.mjs review-package",
+    "eval:customer:ground-truth:init": "node scripts/customer-eval-tools.mjs ground-truth-init",
+    "eval:customer:ground-truth:validate": "node scripts/customer-eval-tools.mjs ground-truth-validate",
+    "eval:customer:cleanup-plan": "node scripts/customer-eval-tools.mjs cleanup-plan",
+    "eval:corpus:prepare": "node scripts/customer-eval-tools.mjs corpus-prepare"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
