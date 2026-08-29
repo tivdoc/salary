@@ -1,0 +1,140 @@
+{
+  "schema_version": "tivdoc-minimum-wage-source-evidence-v0.4",
+  "as_of": "2026-08-29T18:10:03.016Z",
+  "topic": "minimum_wage",
+  "sources": [
+    {
+      "source_id": "IL_MIN_WAGE_LAW",
+      "source_version_id": "IL_MIN_WAGE_LAW@discovery-v0",
+      "source_role": "binding_operative_instrument_candidate",
+      "artifact_role": "official_consolidated_copy",
+      "legal_force": "binding",
+      "can_independently_support_monetary_rule_after_review": true,
+      "currently_usable_for_monetary_rule": false,
+      "artifact_id": "artifact:IL_MIN_WAGE_LAW:4674f07928a2397b626db362c6c9b98b7c4e77e693e397463fdabd83c7f4f161",
+      "artifact_sha256": "4674f07928a2397b626db362c6c9b98b7c4e77e693e397463fdabd83c7f4f161",
+      "observed_at": "2026-08-29T14:33:21.879Z",
+      "review_state": "needs_review",
+      "activation_state": "inactive",
+      "parsed_version_id": "IL_MIN_WAGE_LAW@discovery-v0#parsed-d96d6447f8752701a7acbe8d",
+      "parsed_sha256": "73bc54903838255950f3236af7a7b55c903a86591f445763839ad8eee9e27446",
+      "parser_identity": {
+        "parser_version": "pypdf-layout-v1",
+        "normalizer_version": "legal-normalizer-v0",
+        "chunker_version": "legal-structure-chunker-v0"
+      },
+      "citations": [
+        {
+          "citation_id": "citation:IL_MIN_WAGE_LAW:chunk-0001",
+          "chunk_id": "IL_MIN_WAGE_LAW@discovery-v0#0001-899646b34a0f",
+          "page_from": 1,
+          "page_to": 1,
+          "section_identifier": "page-1;characters=0-3541"
+        },
+        {
+          "citation_id": "citation:IL_MIN_WAGE_LAW:chunk-0002",
+          "chunk_id": "IL_MIN_WAGE_LAW@discovery-v0#0002-bcf9eab6819e",
+          "page_from": 1,
+          "page_to": 1,
+          "section_identifier": "page-1;characters=3542-3868"
+        }
+      ],
+      "candidate_intervals": [
+        {
+          "claim_id": "interval:IL_MIN_WAGE_LAW:unknown-consolidation",
+          "from": null,
+          "to": null,
+          "verification_state": "unverified"
+        }
+      ]
+    },
+    {
+      "source_id": "IL_MIN_WAGE_OFFICIAL_RATES",
+      "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0",
+      "source_role": "official_implementation_corroboration",
+      "artifact_role": "official_implementation_corroboration",
+      "legal_force": "non_binding",
+      "can_independently_support_monetary_rule_after_review": false,
+      "currently_usable_for_monetary_rule": false,
+      "artifact_id": "artifact:IL_MIN_WAGE_OFFICIAL_RATES:1d8c2d67faabc435f66b76ccf45dda94d5c16a96c534f6bc7732d4f70366946b",
+      "artifact_sha256": "1d8c2d67faabc435f66b76ccf45dda94d5c16a96c534f6bc7732d4f70366946b",
+      "observed_at": "2026-08-29T14:33:22.205Z",
+      "review_state": "needs_review",
+      "activation_state": "inactive",
+      "parsed_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#parsed-a55f4082c8fbab8808c72337",
+      "parsed_sha256": "d4c01a484bb0b8ca6efeca33f839204346c26da118a3a1577eb68dfab34cdd1d",
+      "parser_identity": {
+        "parser_version": "legal-normalizer-v0",
+        "normalizer_version": "legal-normalizer-v0",
+        "chunker_version": "legal-structure-chunker-v0"
+      },
+      "citations": [
+        {
+          "citation_id": "citation:IL_MIN_WAGE_OFFICIAL_RATES:chunk-0001",
+          "chunk_id": "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0001-83e09c9405aa",
+          "page_from": 1,
+          "page_to": 1,
+          "section_identifier": "logical-page-1;characters=0-3514"
+        },
+        {
+          "citation_id": "citation:IL_MIN_WAGE_OFFICIAL_RATES:chunk-0002",
+          "chunk_id": "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0002-ec7402f2ab89",
+          "page_from": 1,
+          "page_to": 1,
+          "section_identifier": "logical-page-1;characters=3516-4356"
+        }
+      ],
+      "candidate_intervals": [
+        {
+          "claim_id": "interval:IL_MIN_WAGE_OFFICIAL_RATES:unknown-as-of",
+          "from": null,
+          "to": null,
+          "verification_state": "unverified"
+        }
+      ]
+    }
+  ],
+  "byte_change_baseline": {
+    "artifact_sha256": "1d8c2d67faabc435f66b76ccf45dda94d5c16a96c534f6bc7732d4f70366946b",
+    "normalized_text_sha256": "faa95c6aec651c7d69555277b436fd5b1b2f209820c7521d0a90cba746f72d3e",
+    "structure_sha256": "390aedf34dcedede677fbc9b95b88ca3b91c4c276e746bab0678739cb961e4e1"
+  },
+  "byte_change_candidates": [
+    {
+      "artifact_sha256": "c19dbf55fdd9160e0c15d45634f96b03788e1d234d73551d0cd0e9f38bf8c928",
+      "observed_at": "2026-08-29T14:38:19.078Z",
+      "parse_available": true,
+      "normalized_text_sha256": "faa95c6aec651c7d69555277b436fd5b1b2f209820c7521d0a90cba746f72d3e",
+      "structure_sha256": null
+    },
+    {
+      "artifact_sha256": "5b5e2ff9c3507bfbc55f489afabf2ec7b1cbf7a8ae63a5335c431a7a3220fb6f",
+      "observed_at": "2026-08-29T14:43:14.530Z",
+      "parse_available": true,
+      "normalized_text_sha256": "faa95c6aec651c7d69555277b436fd5b1b2f209820c7521d0a90cba746f72d3e",
+      "structure_sha256": null
+    },
+    {
+      "artifact_sha256": "93d59562ff104dcc0f031f52d3b191f3193ea466aa1e219448d16530b9effd5e",
+      "observed_at": "2026-08-29T18:10:03.016Z",
+      "parse_available": true,
+      "normalized_text_sha256": "faa95c6aec651c7d69555277b436fd5b1b2f209820c7521d0a90cba746f72d3e",
+      "structure_sha256": null
+    }
+  ],
+  "unresolved_contradictions": [
+    "The binding instrument is represented by an official consolidated copy whose consolidation date and amendment lineage are unknown.",
+    "The implementation rate table contains monetary material but is non-binding corroboration and cannot establish or override a monetary rule.",
+    "Three raw byte variants normalize identically to the selected baseline, but technical equivalence is not legal or human approval.",
+    "Candidate effective intervals, sector coverage and population scope remain unverified."
+  ],
+  "missing_gates": [
+    "binding_source_identity_and_consolidation_history_review",
+    "exact_effective_interval_review",
+    "exact_citation_human_review",
+    "sector_and_population_scope_review",
+    "three_byte_change_candidates_human_review",
+    "two_distinct_human_parameter_verifications",
+    "explicit_owner_activation_decision"
+  ]
+}
