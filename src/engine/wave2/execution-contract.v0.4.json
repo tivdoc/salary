@@ -1,0 +1,123 @@
+{
+  "schema_version": "tivdoc-wave2-execution-contract-v0.4",
+  "required_base_sha": "bb9a61eae55d49529d7cd633a2c9c2615a8d842e",
+  "integration_branch": "codex/tivdoc-engine-foundation",
+  "original_foundation_ancestor": "e978ae5cee4a92f20dcc7db448b275170b8bf724",
+  "shared_interfaces": {
+    "batch_a": [
+      "src/engine/wave1/contracts.ts",
+      "src/engine/legal-knowledge/contracts.ts",
+      "src/engine/legal-knowledge/acquisition-contracts.ts"
+    ],
+    "rule": "Workers must extend canonical contracts when necessary and must not create parallel source-of-truth types. Batch A does not authorize a shared-interface mutation."
+  },
+  "workers": [
+    {
+      "id": "A1",
+      "branch": "codex/wave2-a1-evidence-audit",
+      "worktree": "C:/dev/tivdoc-wave2-a1-evidence-audit",
+      "allowlist": [
+        "src/engine/wave2/evidence-audit/**",
+        "scripts/wave2-evidence-audit/**",
+        "docs/wave2-evidence-audit-v0.4.md"
+      ],
+      "evidence_output": "output/parallel-wave-2/batch-a/evidence-audit"
+    },
+    {
+      "id": "A2",
+      "branch": "codex/wave2-a2-corpus-ocr",
+      "worktree": "C:/dev/tivdoc-wave2-a2-corpus-ocr",
+      "allowlist": [
+        "src/engine/legal-knowledge/corpus-hardening/**",
+        "src/server/engine/legal-knowledge/wave2-corpus-hardening/**",
+        "scripts/wave2-corpus-hardening/**",
+        "docs/wave2-corpus-hardening-v0.4.md"
+      ],
+      "evidence_output": "output/parallel-wave-2/batch-a/corpus-hardening"
+    },
+    {
+      "id": "A3",
+      "branch": "codex/wave2-a3-import-recovery",
+      "worktree": "C:/dev/tivdoc-wave2-a3-import-recovery",
+      "allowlist": [
+        "src/server/engine/legal-knowledge/controlled-import-security.ts",
+        "src/server/engine/legal-knowledge/controlled-import-security.test.ts",
+        "src/server/engine/legal-knowledge/controlled-import-recovery/**",
+        "src/server/engine/legal-knowledge/parser-isolation/**",
+        "scripts/wave2-controlled-import/**",
+        "docs/wave2-controlled-import-v0.4.md"
+      ],
+      "evidence_output": "output/parallel-wave-2/batch-a/controlled-import"
+    },
+    {
+      "id": "B1",
+      "branch": "codex/wave2-b1-review-dossier",
+      "worktree": "C:/dev/tivdoc-wave2-b1-review-dossier",
+      "allowlist": [
+        "src/engine/legal-knowledge/review-dossier/**",
+        "src/engine/legal-parameters/**",
+        "docs/wave2-minimum-wage-dossier-v0.4.md"
+      ],
+      "evidence_output": "output/parallel-wave-2/batch-b/minimum-wage-dossier"
+    },
+    {
+      "id": "B2",
+      "branch": "codex/wave2-b2-rule-input",
+      "worktree": "C:/dev/tivdoc-wave2-b2-rule-input",
+      "allowlist": [
+        "src/engine/rule-input/**",
+        "src/engine/analysis-orchestration/**",
+        "docs/wave2-rule-input-v0.4.md"
+      ],
+      "evidence_output": "output/parallel-wave-2/batch-b/rule-input"
+    },
+    {
+      "id": "B3",
+      "branch": "codex/wave2-b3-ground-truth",
+      "worktree": "C:/dev/tivdoc-wave2-b3-ground-truth",
+      "allowlist": [
+        "src/engine/extraction-ground-truth/**",
+        "scripts/extraction-ground-truth/**",
+        "docs/wave2-ground-truth-v0.4.md"
+      ],
+      "evidence_output": "output/parallel-wave-2/batch-b/ground-truth"
+    }
+  ],
+  "forbidden_imports_and_side_effects": [
+    "OpenAI or any generative-model client",
+    "external Supabase client or connection",
+    "customer-payslip-data-only-v3 or any customer path",
+    "migration or deployment execution",
+    "Production or shared Preview access",
+    "payment or outbound-message action",
+    "Finding or customer-facing conclusion emission"
+  ],
+  "expected_status_vocabulary": [
+    "PARALLEL_WAVE_2_ENGINE_SCAFFOLD_COMPLETE",
+    "PARALLEL_WAVE_2_PARTIAL",
+    "OWNER_OFFICIAL_SOURCE_HANDOFF_REQUIRED",
+    "LEGAL_SOURCE_CORPUS_INCOMPLETE",
+    "PERSISTENCE_ISOLATED_ENVIRONMENT_BLOCKED",
+    "HUMAN_LEGAL_REVIEW_REQUIRED",
+    "HUMAN_GROUND_TRUTH_REQUIRED",
+    "PENSION_OCR_TOOLCHAIN_BLOCKED"
+  ],
+  "integration_order": {
+    "batch_a": ["A1", "A2", "A3"],
+    "batch_b": ["B1", "B2", "B3"]
+  },
+  "required_tests": [
+    "worker-focused tests",
+    "git diff --check",
+    "ESLint",
+    "TypeScript no-emit",
+    "full Vitest suite",
+    "local production build",
+    "legal validation/build/status/diffs/coverage/citations/reproducibility",
+    "diagnostic and strict topic readiness",
+    "controlled-import adversarial and recovery suites",
+    "base-to-HEAD scope scan and runtime denial canaries",
+    "two deterministic review-package builds with safe extraction"
+  ],
+  "batch_a_integration_gate": "All three worker commits must be one commit over this contract SHA, clean, allowlist-compliant and focused-test-passing before ordered cherry-pick."
+}
