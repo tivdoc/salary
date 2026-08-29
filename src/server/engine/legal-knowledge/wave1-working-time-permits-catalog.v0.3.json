@@ -1,0 +1,1532 @@
+{
+  "schema_version": "wave1-working-time-permits-catalog-v0.3",
+  "snapshot": {
+    "catalog_id": "IL_WORK_PERMITS_CATALOG",
+    "canonical_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits",
+    "observed_at": "2026-08-29T20:08:23.937Z",
+    "acquisition_method": "public_browser_visible_navigation",
+    "filters": {
+      "topic": "none",
+      "title": "",
+      "from_date": null,
+      "to_date": null
+    },
+    "reported_result_count": 58,
+    "observed_entry_count": 58,
+    "status": "complete",
+    "cutoff": "2026-08-29T20:08:23.937Z",
+    "pages": [
+      {
+        "page": 1,
+        "skip": 0,
+        "url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+        "entries_observed": 10
+      },
+      {
+        "page": 2,
+        "skip": 10,
+        "url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+        "entries_observed": 10
+      },
+      {
+        "page": 3,
+        "skip": 20,
+        "url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+        "entries_observed": 10
+      },
+      {
+        "page": 4,
+        "skip": 30,
+        "url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+        "entries_observed": 10
+      },
+      {
+        "page": 5,
+        "skip": 40,
+        "url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+        "entries_observed": 10
+      },
+      {
+        "page": 6,
+        "skip": 50,
+        "url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+        "entries_observed": 8
+      }
+    ],
+    "stable_id_method": "first official BlobFolder dynamiccollectorresultitem slug; page/item fallback prohibited for complete snapshot",
+    "artifact_link_count": 68,
+    "unique_artifact_url_count": 68,
+    "duplicate_stable_ids": [],
+    "duplicate_artifact_urls": [],
+    "duplicate_catalog_titles": [
+      {
+        "title": "העסקה בבתי אירוח במנוחה השבועית ובשעות נוספות",
+        "count": 2
+      },
+      {
+        "title": "העסקה בעבודות עונתיות בחקלאות בשעות נוספות",
+        "count": 2
+      },
+      {
+        "title": "היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה- \"עם כלביא\")",
+        "count": 2
+      }
+    ],
+    "catalog_entries_are_discovery_evidence_only": true,
+    "artifact_acquisition_results_location": "output/legal-knowledge/wave1-working-time-permits/artifact-acquisition-report.json"
+  },
+  "entries": [
+    {
+      "catalog_ordinal": 1,
+      "page": 1,
+      "page_item": 1,
+      "stable_id": "GOVIL-WORK-PERMIT:state-comptroller-premit",
+      "catalog_title": "מתן היתר כללי להעסקת עובדי משרד מבקר המדינה ונציב תלונות הציבור בשעות נוספות",
+      "topic_label": "אין מידע",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:state-comptroller-premit:ARTIFACT:1",
+          "title": "מתן היתר כללי להעסקת עובדי משרד מבקר המדינה ונציב תלונות הציבור בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/state-comptroller-premit/he/workers-rights_state-comptroller-premit.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_1",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 2,
+      "page": 1,
+      "page_item": 2,
+      "stable_id": "GOVIL-WORK-PERMIT:publish-14409",
+      "catalog_title": "הארכת היתרים לעבודה בשעות נוספות - שאגת הארי 14.04.2026",
+      "topic_label": "אין מידע",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publish-14409:ARTIFACT:1",
+          "title": "הארכת היתרים לעבודה בשעות נוספות - שאגת הארי 14.04.2026",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14409/he/workers-rights_epic-fury_publish-14409.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_2",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 3,
+      "page": 1,
+      "page_item": 3,
+      "stable_id": "GOVIL-WORK-PERMIT:publish-14355",
+      "catalog_title": "הארכת היתרים להעסקת עובדים בשעות נוספות (שאגת הארי) - 26.3.2026",
+      "topic_label": "אין מידע",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publish-14355:ARTIFACT:1",
+          "title": "הארכת היתרים להעסקת עובדים בשעות נוספות (שאגת הארי) - 26.3.2026",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14355/he/workers-rights_epic-fury_publish-14382.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_3",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 4,
+      "page": 1,
+      "page_item": 4,
+      "stable_id": "GOVIL-WORK-PERMIT:publish-14355b",
+      "catalog_title": "הארכת היתרים להעסקת עובדים בשעות נוספות (שאגת הארי) - 19.3.2026",
+      "topic_label": "אין מידע",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publish-14355b:ARTIFACT:1",
+          "title": "הארכת היתרים להעסקת עובדים בשעות נוספות (שאגת הארי) - 19.3.2026",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14355b/he/workers-rights_epic-fury_publish-14355.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_4",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 5,
+      "page": 1,
+      "page_item": 5,
+      "stable_id": "GOVIL-WORK-PERMIT:publish-14320b",
+      "catalog_title": "עדכון - היתר כללי להעסקה בשעות נוספות בענף התחבורה - תחולה רק על נהגי רכב כבד",
+      "topic_label": "הפסקות בעבודות תחבורה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publish-14320b:ARTIFACT:1",
+          "title": "עדכון - היתר כללי להעסקה בשעות נוספות בענף התחבורה - תחולה רק על נהגי רכב כבד",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14320b/he/workers-rights_epic-fury_publish-14320.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_5",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 6,
+      "page": 1,
+      "page_item": 6,
+      "stable_id": "GOVIL-WORK-PERMIT:extra-hours-14381b",
+      "catalog_title": "היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה - שאגת הארי)",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:extra-hours-14381b:ARTIFACT:1",
+          "title": "היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה - שאגת הארי)",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extra-hours-14381b/he/workers-rights_extra-hours-14381.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_6",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 7,
+      "page": 1,
+      "page_item": 7,
+      "stable_id": "GOVIL-WORK-PERMIT:publish-14301b",
+      "catalog_title": "היתר כללי להעסקה בשעות נוספות בענף התחבורה (הוראת שעה - שאגת הארי)",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publish-14301b:ARTIFACT:1",
+          "title": "היתר כללי להעסקה בשעות נוספות בענף התחבורה (הוראת שעה - שאגת הארי)",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish-14301b/he/workers-rights_epic-fury_publish-14301.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_7",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 8,
+      "page": 1,
+      "page_item": 8,
+      "stable_id": "GOVIL-WORK-PERMIT:publish14300",
+      "catalog_title": "היתר כללי להעסקת עובדים בשמירה בשעות נוספות (הוראת שעה - שאגת הארי)",
+      "topic_label": "שמירה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publish14300:ARTIFACT:1",
+          "title": "היתר כללי להעסקת עובדים בשמירה בשעות נוספות (הוראת שעה - שאגת הארי)",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publish14300/he/workers-rights_epic-fury_publish14300.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_8",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 9,
+      "page": 1,
+      "page_item": 9,
+      "stable_id": "GOVIL-WORK-PERMIT:publications-12109",
+      "catalog_title": "הודעה על מתן היתר כללי בדבר הפסקות (חרבות ברזל, הוראת שעה) לפי חוק שעות עבודה ומנוחה",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publications-12109:ARTIFACT:1",
+          "title": "הודעה על מתן היתר כללי בדבר הפסקות (חרבות ברזל, הוראת שעה) לפי חוק שעות עבודה ומנוחה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publications-12109/he/workers-rights_working-conditions_publications-12109.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_9",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 10,
+      "page": 1,
+      "page_item": 10,
+      "stable_id": "GOVIL-WORK-PERMIT:11720",
+      "catalog_title": "תיקון ההיתר הכללי בתחבורה",
+      "topic_label": "הפסקות בעבודות תחבורה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=0",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11720:ARTIFACT:1",
+          "title": "הארכת היתר כללי בדבר שעות נוספות והפסקות בתחבורה (הוראת שעה), התשפ\"ה-2025",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11720/he/workers-rights_transportaion-permit-am-kelavi.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11720:ARTIFACT:2",
+          "title": "מתן היתר כללי בדבר שעות נוספות והפסקות בתחבורה (הוראת שעה), התשפ\"ה-2025",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11720/he/workers-rights_publish-13535.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11720:ARTIFACT:3",
+          "title": "ביטול היתר כללי בדבר שעות נוספות והפסקות בתחבורה (הוראת שעה)",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11720/he/workers-rights_11720-cancle.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11720:ARTIFACT:4",
+          "title": "היתר כללי בדבר שעות נוספות והפסקות בתחבורה (הוראת שעה) – הוראת השעה בוטלה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11720/he/workers-rights_11720.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_1_item_10",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 11,
+      "page": 2,
+      "page_item": 1,
+      "stable_id": "GOVIL-WORK-PERMIT:11684",
+      "catalog_title": "הודעה על מתן היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה חרבות ברזל) - פג תוקף ההיתר",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11684:ARTIFACT:1",
+          "title": "הודעה על מתן היתר כללי להעסקת עובדים בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11684/he/workers-rights_extra-hours-11684.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11684:ARTIFACT:2",
+          "title": "הארכת תוקף ההיתר עד 21.03.2024",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11684/he/workers-rights_extension-21032024.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11684:ARTIFACT:3",
+          "title": "הארכת תוקף ההיתר עד 07.03.2024",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11684/he/workers-rights_extension-07032024.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11684:ARTIFACT:4",
+          "title": "הארכת תוקף ההיתר עד 7.2.2024",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11684/he/workers-rights_7224.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11684:ARTIFACT:5",
+          "title": "הארכת תוקף ההיתר עד 7.1.2024",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11684/he/workers-rights_7124.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11684:ARTIFACT:6",
+          "title": "הארכת תוקף ההיתר עד 7.12.2023",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11684/he/workers-rights_11775.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11684:ARTIFACT:7",
+          "title": "הארכת תוקף ההיתר עד 7.11.2023",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11684/he/workers-rights_11729.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_1",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 12,
+      "page": 2,
+      "page_item": 2,
+      "stable_id": "GOVIL-WORK-PERMIT:permit11670",
+      "catalog_title": "הודעה על מתן היתר כללי להעסקת עובדים בשמירה בשעות נוספות (הוראת שעה) - תוקף ההיתר פג ביום 29.10.2025",
+      "topic_label": "שמירה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:permit11670:ARTIFACT:1",
+          "title": "הודעה על מתן היתר כללי להעסקת עובדים בשמירה בשעות נוספות (הוראת שעה) - תוקף ההיתר פג ביום 29.10.2025",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/permit11670/he/emergency_extra-hours-11670.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_2",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 13,
+      "page": 2,
+      "page_item": 3,
+      "stable_id": "GOVIL-WORK-PERMIT:permit-medical-establishments",
+      "catalog_title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים  רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) – נוסח משולב, נכון ליום 25/07/2023",
+      "topic_label": "מפעלים רפואיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:permit-medical-establishments:ARTIFACT:1",
+          "title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) – נוסח משולב",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/permit-medical-establishments/he/workers-rights_working-conditions_weekends-and-holidays_permit-medical-establishments.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_3",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 14,
+      "page": 2,
+      "page_item": 4,
+      "stable_id": "GOVIL-WORK-PERMIT:publications-bag-11514",
+      "catalog_title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) – 25/07/2023",
+      "topic_label": "מפעלים רפואיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publications-bag-11514:ARTIFACT:1",
+          "title": "תיקון להיתר (הוראת שעה) בנוגע להעסקת רופאים בתורנות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publications-bag-11514/he/workers-rights_working-conditions_weekends-and-holidays_publications-bag-11514.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_4",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 15,
+      "page": 2,
+      "page_item": 5,
+      "stable_id": "GOVIL-WORK-PERMIT:permit-security-employment-11265",
+      "catalog_title": "הודעה על מתן היתר כללי להעסקת עובדים בשמירה בשעות נוספות (הוראת שעה)",
+      "topic_label": "שמירה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:permit-security-employment-11265:ARTIFACT:1",
+          "title": "הודעה על מתן היתר כללי להעסקת עובדים בשמירה בשעות נוספות (הוראת שעה)",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/permit-security-employment-11265/he/workers-rights_11265.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_5",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 16,
+      "page": 2,
+      "page_item": 6,
+      "stable_id": "GOVIL-WORK-PERMIT:permits-for-overtime-employment-1601",
+      "catalog_title": "תיקון ההיתר הכללי להעסקה בשעות נוספות, לצורך שמירה על רציפות התפקודית של המשק וצמצום הפגיעה בתהליכי הייצור ושרשרות האספקה מטעמים הקשורים בצורכי הכלכלה.",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:permits-for-overtime-employment-1601:ARTIFACT:1",
+          "title": "תיקון ההיתר הכללי להעסקה בשעות נוספות, לצורך שמירה על רציפות התפקודית של המשק וצמצום הפגיעה בתהליכי הייצור ושרשרות האספקה מטעמים",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/permits-for-overtime-employment-1601/he/regulations_transaction-permit.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_6",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 17,
+      "page": 2,
+      "page_item": 7,
+      "stable_id": "GOVIL-WORK-PERMIT:extratime-permit-children-and-seniors-correction",
+      "catalog_title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) – 06/10/2021",
+      "topic_label": "מפעלים רפואיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:extratime-permit-children-and-seniors-correction:ARTIFACT:1",
+          "title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) - 6.10.21",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extratime-permit-children-and-seniors-correction/he/workers-rights_working-conditions_weekends-and-holidays_extratime-permit-children-and-seniors-correction.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_7",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 18,
+      "page": 2,
+      "page_item": 8,
+      "stable_id": "GOVIL-WORK-PERMIT:extratime-permit-children-and-seniors-correction-b",
+      "catalog_title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) – 03/08/2022",
+      "topic_label": "מפעלים רפואיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:extratime-permit-children-and-seniors-correction-b:ARTIFACT:1",
+          "title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) - 3.8.22",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extratime-permit-children-and-seniors-correction-b/he/workers-rights_working-conditions_weekends-and-holidays_extratime-permit-children-and-seniors-correction-2022.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_8",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 19,
+      "page": 2,
+      "page_item": 9,
+      "stable_id": "GOVIL-WORK-PERMIT:premit-8753",
+      "catalog_title": "היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה- התמודדות עם נגיף הקורונה החדש)",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:premit-8753:ARTIFACT:1",
+          "title": "היתר כללי להעסקת עובדים בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/premit-8753/he/workers-rights_working-conditions_permits-for-overtime-employment_8753.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_9",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 20,
+      "page": 2,
+      "page_item": 10,
+      "stable_id": "GOVIL-WORK-PERMIT:eurovision-yp8230",
+      "catalog_title": "העסקת עובדים לצורך קיום אירועי האירוויזיון 2019",
+      "topic_label": "אירוע הארוויזיון",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=10",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:eurovision-yp8230:ARTIFACT:1",
+          "title": "העסקת עובדים לצורך קיום אירועי האירוויזיון 2019",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/eurovision-yp8230/he/workers-rights_working-conditions_weekends-and-holidays_yalkut-8230.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_2_item_10",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 21,
+      "page": 3,
+      "page_item": 1,
+      "stable_id": "GOVIL-WORK-PERMIT:yp7890-2018",
+      "catalog_title": "העסקה בשעות נוספות של עובדי כנסת ישראל",
+      "topic_label": "עובדי כנסת ישראל",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp7890-2018:ARTIFACT:1",
+          "title": "העסקה בשעות נוספות של עובדי כנסת ישראל",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp7890-2018/he/workers-rights_working-conditions_permits-for-overtime-employment_Y7980.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_1",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 22,
+      "page": 3,
+      "page_item": 2,
+      "stable_id": "GOVIL-WORK-PERMIT:football-games-yp7747",
+      "catalog_title": "העסקת עובדים במנוחה השבועית לצורך קיום משחקי כדורגל",
+      "topic_label": "קיום משחקי כדורגל",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:football-games-yp7747:ARTIFACT:1",
+          "title": "העסקת עובדים במנוחה השבועית לצורך קיום משחקי כדורגל",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/football-games-yp7747/he/workers-rights_working-conditions_weekends-and-holidays_Y7747.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_2",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 23,
+      "page": 3,
+      "page_item": 3,
+      "stable_id": "GOVIL-WORK-PERMIT:yp7732",
+      "catalog_title": "היתר כללי להעסקת עובדים בשעות נוספות החל מיום 19.3.2018",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp7732:ARTIFACT:1",
+          "title": "היתר כללי להעסקת עובדים בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp7732/he/workers-rights_working-conditions_permits-for-overtime-employment_%D7%99%D7%9C%D7%A7%D7%95%D7%98%20%D7%94%D7%A4%D7%A8%D7%A1%D7%95%D7%9E%D7%99%D7%9D-7732.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_3",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 24,
+      "page": 3,
+      "page_item": 4,
+      "stable_id": "GOVIL-WORK-PERMIT:yp7184-2016",
+      "catalog_title": "העסקה בבתי אירוח במנוחה השבועית ובשעות נוספות",
+      "topic_label": "בתי אירוח",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp7184-2016:ARTIFACT:1",
+          "title": "העסקה בבתי אירוח במנוחה השבועית ובשעות נוספות -2016",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp7184-2016/he/workers-rights_working-conditions_permits-for-overtime-employment_Y7184.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_4",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": true
+    },
+    {
+      "catalog_ordinal": 25,
+      "page": 3,
+      "page_item": 5,
+      "stable_id": "GOVIL-WORK-PERMIT:tikun-rofiim-21-1-2015",
+      "catalog_title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) – 21/01/2015",
+      "topic_label": "מפעלים רפואיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:tikun-rofiim-21-1-2015:ARTIFACT:1",
+          "title": "תיקון להיתר בנוגע להעסקת רופאים בתורנות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/tikun-rofiim-21-1-2015/he/workers-rights_working-conditions_permits-for-overtime-employment_tikun-21-1-2015.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_5",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 26,
+      "page": 3,
+      "page_item": 6,
+      "stable_id": "GOVIL-WORK-PERMIT:tikun-refua-2012",
+      "catalog_title": "תיקון ההיתר הכללי להעסקה במנוחה השבועית ובשעות הנוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים (הוראת שעה) – 27/12/2012",
+      "topic_label": "מפעלים רפואיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:tikun-refua-2012:ARTIFACT:1",
+          "title": "הודעת תיקון (הוראת שעה) בנוגע להעסקת רופאים בתורנות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/tikun-refua-2012/he/workers-rights_working-conditions_permits-for-overtime-employment_TikunRefua2012.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_6",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 27,
+      "page": 3,
+      "page_item": 7,
+      "stable_id": "GOVIL-WORK-PERMIT:yp6821-2011",
+      "catalog_title": "העסקה של רואה חשבון בשעות נוספות לצורך הכנת דוחות כספיים על פי דין",
+      "topic_label": "רואה חשבון",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp6821-2011:ARTIFACT:1",
+          "title": "העסקה של רואה חשבון בשעות נוספות לצורך הכנת דוחות כספיים על פי דין",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp6821-2011/he/workers-rights_working-conditions_permits-for-overtime-employment_Y6281.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_7",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 28,
+      "page": 3,
+      "page_item": 8,
+      "stable_id": "GOVIL-WORK-PERMIT:yp3669",
+      "catalog_title": "העסקה בשעות נוספות במפעלים שבהם עובדים שבוע עבודה בן חמישה ימים (בוטל ביום ה - 19.3.2018)",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp3669:ARTIFACT:1",
+          "title": "העסקה בשעות נוספות במפעלים שבהם עובדים שבוע עבודה בן חמישה ימים",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp3669/he/workers-rights_working-conditions_permits-for-overtime-employment_Y3669.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_8",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 29,
+      "page": 3,
+      "page_item": 9,
+      "stable_id": "GOVIL-WORK-PERMIT:yp1977",
+      "catalog_title": "היתר כללי להעסקה בשעות נוספות לכלל העובדים (בוטל ביום ה - 19.3.2018)",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp1977:ARTIFACT:1",
+          "title": "היתר כללי להעסקה בשעות נוספות לכלל העובדים",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp1977/he/workers-rights_working-conditions_permits-for-overtime-employment_Y1977.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_9",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 30,
+      "page": 3,
+      "page_item": 10,
+      "stable_id": "GOVIL-WORK-PERMIT:y1077-beton",
+      "catalog_title": "העסקה ביציקת בטון בשעות נוספות",
+      "topic_label": "יציקת בטון",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=20",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:y1077-beton:ARTIFACT:1",
+          "title": "העסקה ביציקת בטון בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/y1077-beton/he/workers-rights_working-conditions_permits-for-overtime-employment_YALKUT-1077.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_3_item_10",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 31,
+      "page": 4,
+      "page_item": 1,
+      "stable_id": "GOVIL-WORK-PERMIT:yp781-1960",
+      "catalog_title": "העסקת מצילים בבריכות שחייה במנוחה השבועית",
+      "topic_label": "מצילים בבריכות שחייה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp781-1960:ARTIFACT:1",
+          "title": "העסקת מצילים בבריכות שחייה במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp781-1960/he/workers-rights_working-conditions_weekends-and-holidays_Y781.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_1",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 32,
+      "page": 4,
+      "page_item": 2,
+      "stable_id": "GOVIL-WORK-PERMIT:yp451-transportaion",
+      "catalog_title": "שעות נוספות והפסקות בתחבורה",
+      "topic_label": "הפסקות בעבודות תחבורה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp451-transportaion:ARTIFACT:1",
+          "title": "שעות נוספות והפסקות בתחבורה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp451-transportaion/he/workers-rights_working-conditions_permits-for-overtime-employment_Y451.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_2",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 33,
+      "page": 4,
+      "page_item": 3,
+      "stable_id": "GOVIL-WORK-PERMIT:drilling-yp359",
+      "catalog_title": "העסקה בעבודות קידוח במנוחה השבועית",
+      "topic_label": "עבודות קידוח",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:drilling-yp359:ARTIFACT:1",
+          "title": "העסקה בעבודות קידוח במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/drilling-yp359/he/workers-rights_working-conditions_weekends-and-holidays_Y359.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_3",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 34,
+      "page": 4,
+      "page_item": 4,
+      "stable_id": "GOVIL-WORK-PERMIT:seasonal-work-y353",
+      "catalog_title": "העסקה בעבודות עונתיות בחקלאות בשעות נוספות",
+      "topic_label": "עבודות עונתיות",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:seasonal-work-y353:ARTIFACT:1",
+          "title": "העסקה בעבודות עונתיות בחקלאות בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/seasonal-work-y353/he/workers-rights_working-conditions_permits-for-overtime-employment_Y353.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_4",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": true
+    },
+    {
+      "catalog_ordinal": 35,
+      "page": 4,
+      "page_item": 5,
+      "stable_id": "GOVIL-WORK-PERMIT:dayoff-old-medical-yp",
+      "catalog_title": "היתר כללי להעסקה במנוחה השבועית בשעות נוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים – 1951",
+      "topic_label": "מפעלים רפואיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:dayoff-old-medical-yp:ARTIFACT:1",
+          "title": "העסקה במנוחה השבועית ובשעות נוספות במפעלים רפואיים ובמוסדות לטיפול בזקנים או בילדים",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/dayoff-old-medical-yp/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_5",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 36,
+      "page": 4,
+      "page_item": 6,
+      "stable_id": "GOVIL-WORK-PERMIT:fireman-y191",
+      "catalog_title": "העסקה בכבאות במנוחה השבועית",
+      "topic_label": "כבאות",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:fireman-y191:ARTIFACT:1",
+          "title": "העסקה בכבאות במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/fireman-y191/he/workers-rights_working-conditions_weekends-and-holidays_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_6",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 37,
+      "page": 4,
+      "page_item": 7,
+      "stable_id": "GOVIL-WORK-PERMIT:yp191-offday-hours",
+      "catalog_title": "העסקה בשמירה במנוחה השבועית ובשעות נוספות",
+      "topic_label": "שמירה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp191-offday-hours:ARTIFACT:1",
+          "title": "העסקה בשמירה במנוחה השבועית ובשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp191-offday-hours/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_7",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 38,
+      "page": 4,
+      "page_item": 8,
+      "stable_id": "GOVIL-WORK-PERMIT:ice-yp191-1951",
+      "catalog_title": "העסקת עובדים בייצור והספקת קרח במנוחה השבועית",
+      "topic_label": "ייצור והספקת קרח",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:ice-yp191-1951:ARTIFACT:1",
+          "title": "העסקת עובדים בייצור והספקת קרח במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/ice-yp191-1951/he/workers-rights_working-conditions_weekends-and-holidays_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_8",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 39,
+      "page": 4,
+      "page_item": 9,
+      "stable_id": "GOVIL-WORK-PERMIT:yp191-biuv",
+      "catalog_title": "העסקה בעבודות ביוב במנוחה השבועית",
+      "topic_label": "עבודות ביוב",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp191-biuv:ARTIFACT:1",
+          "title": "העסקה בעבודות ביוב במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp191-biuv/he/workers-rights_working-conditions_weekends-and-holidays_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_9",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 40,
+      "page": 4,
+      "page_item": 10,
+      "stable_id": "GOVIL-WORK-PERMIT:seasonal-y191",
+      "catalog_title": "העסקה בעבודות עונתיות בחקלאות בשעות נוספות",
+      "topic_label": "עבודות עונתיות",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=30",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:seasonal-y191:ARTIFACT:1",
+          "title": "העסקה בעבודות עונתיות בחקלאות בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/seasonal-y191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_4_item_10",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": true
+    },
+    {
+      "catalog_ordinal": 41,
+      "page": 5,
+      "page_item": 1,
+      "stable_id": "GOVIL-WORK-PERMIT:sinagug-y191",
+      "catalog_title": "העסקת שמשים בבתי הכנסת במנוחה השבועית",
+      "topic_label": "שמשים בבתי הכנסת",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:sinagug-y191:ARTIFACT:1",
+          "title": "העסקת שמשים בבתי הכנסת במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/sinagug-y191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_1",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 42,
+      "page": 5,
+      "page_item": 2,
+      "stable_id": "GOVIL-WORK-PERMIT:hotel-yp191",
+      "catalog_title": "העסקה בבתי אירוח במנוחה השבועית ובשעות נוספות",
+      "topic_label": "בתי אירוח",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:hotel-yp191:ARTIFACT:1",
+          "title": "העסקה בבתי אירוח במנוחה השבועית ובשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/hotel-yp191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_2",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": true
+    },
+    {
+      "catalog_ordinal": 43,
+      "page": 5,
+      "page_item": 3,
+      "stable_id": "GOVIL-WORK-PERMIT:water-yp191",
+      "catalog_title": "העסקה בהספקת מים במנוחה השבועית ובשעות נוספות",
+      "topic_label": "הספקת מים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:water-yp191:ARTIFACT:1",
+          "title": "העסקה בהספקת מים במנוחה השבועית ובשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/water-yp191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_3",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 44,
+      "page": 5,
+      "page_item": 4,
+      "stable_id": "GOVIL-WORK-PERMIT:sea-lifesaver-y191",
+      "catalog_title": "העסקת מצילים וסדרנים על שפת הים במנוחה השבועית",
+      "topic_label": "מצילים וסדרנים על שפת הים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:sea-lifesaver-y191:ARTIFACT:1",
+          "title": "העסקת מצילים וסדרנים על שפת הים במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/sea-lifesaver-y191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_4",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 45,
+      "page": 5,
+      "page_item": 5,
+      "stable_id": "GOVIL-WORK-PERMIT:yp191-1",
+      "catalog_title": "העסקה בעבודות נמל בשעות נוספות",
+      "topic_label": "עבודות נמל",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:yp191-1:ARTIFACT:1",
+          "title": "העסקה בעבודות נמל בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/yp191-1/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_5",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 46,
+      "page": 5,
+      "page_item": 6,
+      "stable_id": "GOVIL-WORK-PERMIT:animals-treat-yp191",
+      "catalog_title": "העסקה בטיפול בבעלי חיים במנוחה השבועית ובשעות נוספות",
+      "topic_label": "טיפול בבעלי חיים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:animals-treat-yp191:ARTIFACT:1",
+          "title": "העסקה בטיפול בבעלי חיים במנוחה השבועית ובשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/animals-treat-yp191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_6",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 47,
+      "page": 5,
+      "page_item": 7,
+      "stable_id": "GOVIL-WORK-PERMIT:shamashim-yp191",
+      "catalog_title": "העסקת שמשים וסדרנים במקומות ציבוריים במנוחה השבועית",
+      "topic_label": "שמשים וסדרנים",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:shamashim-yp191:ARTIFACT:1",
+          "title": "העסקת שמשים וסדרנים במקומות ציבוריים במנוחה השבועית",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/shamashim-yp191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_7",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 48,
+      "page": 5,
+      "page_item": 8,
+      "stable_id": "GOVIL-WORK-PERMIT:ice-y191",
+      "catalog_title": "העסקה בייצור ובהספקת קרח בשעות נוספות",
+      "topic_label": "ייצור והספקת קרח",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:ice-y191:ARTIFACT:1",
+          "title": "העסקה בייצור ובהספקת קרח בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/ice-y191/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_8",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 49,
+      "page": 5,
+      "page_item": 9,
+      "stable_id": "GOVIL-WORK-PERMIT:lulanut-191yp",
+      "catalog_title": "העסקה בלולנות במנוחה השבועית ובשעות נוספות",
+      "topic_label": "לולנות",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:lulanut-191yp:ARTIFACT:1",
+          "title": "העסקה בלולנות במנוחה השבועית ובשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/lulanut-191yp/he/workers-rights_working-conditions_permits-for-overtime-employment_Y191.PDF",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_9",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 50,
+      "page": 5,
+      "page_item": 10,
+      "stable_id": "GOVIL-WORK-PERMIT:am-hiter",
+      "catalog_title": "היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה- \"עם כלביא\")",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=40",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:am-hiter:ARTIFACT:1",
+          "title": "היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה- \"עם כלביא\")",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/am-hiter/he/workers-rights_working-conditions_publications-am-kelavie.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_5_item_10",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": true
+    },
+    {
+      "catalog_ordinal": 51,
+      "page": 6,
+      "page_item": 1,
+      "stable_id": "GOVIL-WORK-PERMIT:publications-am-kelavie",
+      "catalog_title": "היתר כללי להעסקת עובדים בשעות נוספות (הוראת שעה- \"עם כלביא\")",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:publications-am-kelavie:ARTIFACT:1",
+          "title": "הודעה על מתן היתר כללי בדבר הפסקות (עם כלביא, הוראת שעה) לפי חוק שעות עבודה ומנוחה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/publications-am-kelavie/he/workers-rights_working-conditions_publications-am-kelavie.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_1",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": true
+    },
+    {
+      "catalog_ordinal": 52,
+      "page": 6,
+      "page_item": 2,
+      "stable_id": "GOVIL-WORK-PERMIT:adjust-190125",
+      "catalog_title": "תיקון היתר כללי (הוראת שעה) מיום 19.1.2025",
+      "topic_label": "עובדי כנסת ישראל",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:adjust-190125:ARTIFACT:1",
+          "title": "תיקון היתר כללי (הוראת שעה) מיום 19.1.2025",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/adjust-190125/he/workers-rights_working-conditions_adjust-190125.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_2",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 53,
+      "page": 6,
+      "page_item": 3,
+      "stable_id": "GOVIL-WORK-PERMIT:y7982",
+      "catalog_title": "תיקון הודעה על מתן היתר כללי להעסקת עובדי הכנסת בשעות נוספות (הוראת שעה)",
+      "topic_label": "עובדי כנסת ישראל",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:y7982:ARTIFACT:1",
+          "title": "תיקון הודעה על מתן היתר כללי להעסקת עובדי הכנסת בשעות נוספות (הוראת שעה)",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/y7982/he/workers-rights_working-conditions_permits-for-overtime-employment_Y7982.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_3",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 54,
+      "page": 6,
+      "page_item": 4,
+      "stable_id": "GOVIL-WORK-PERMIT:y7981",
+      "catalog_title": "תיקון הודעה על מתן היתר כללי להעסקת עובדי הכנסת בשעות נוספות",
+      "topic_label": "עובדי כנסת ישראל",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:y7981:ARTIFACT:1",
+          "title": "תיקון הודעה על מתן היתר כללי להעסקת עובדי הכנסת בשעות נוספות",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/y7981/he/workers-rights_working-conditions_permits-for-overtime-employment_Y7981.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_4",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 55,
+      "page": 6,
+      "page_item": 5,
+      "stable_id": "GOVIL-WORK-PERMIT:night-youth",
+      "catalog_title": "היתר העסקת נוער בעבודות לילה - כולל הארכה",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:night-youth:ARTIFACT:1",
+          "title": "היתר העסקת נוער בעבודות לילה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/night-youth/he/workers-rights_working-conditions_night-youth.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        },
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:night-youth:ARTIFACT:2",
+          "title": "הארכת תוקף ההיתר עד 10.1.2024",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/night-youth/he/workers-rights_working-conditions_night-youth-100124.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_5",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 56,
+      "page": 6,
+      "page_item": 6,
+      "stable_id": "GOVIL-WORK-PERMIT:11782",
+      "catalog_title": "הודעה על תיקון היתר כללי להעסקת צעיר בעבודת לילה",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:11782:ARTIFACT:1",
+          "title": "הודעה על תיקון היתר כללי להעסקת צעיר בעבודת לילה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11782/he/workers-rights_11782.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_6",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 57,
+      "page": 6,
+      "page_item": 7,
+      "stable_id": "GOVIL-WORK-PERMIT:16plus-works-11739",
+      "catalog_title": "הודעה על היתר כללי להעסקת צעיר בעבודת לילה",
+      "topic_label": "כללי",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:16plus-works-11739:ARTIFACT:1",
+          "title": "הודעה על היתר כללי להעסקת צעיר בעבודת לילה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/16plus-works-11739/he/workers-rights_16plus-works-11739.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_7",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    },
+    {
+      "catalog_ordinal": 58,
+      "page": 6,
+      "page_item": 8,
+      "stable_id": "GOVIL-WORK-PERMIT:extra-transportation",
+      "catalog_title": "הודעה על מתן היתר כללי בדבר שעות נוספות והפסקות בתחבורה",
+      "topic_label": "הפסקות בעבודות תחבורה",
+      "catalog_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits?skip=50",
+      "artifact_links": [
+        {
+          "artifact_id": "GOVIL-WORK-PERMIT:extra-transportation:ARTIFACT:1",
+          "title": "הודעה על מתן היתר כללי בדבר שעות נוספות והפסקות בתחבורה",
+          "official_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extra-transportation/he/workers-rights_extra-transportation.pdf",
+          "artifact_status": "official_link_observed_not_acquired"
+        }
+      ],
+      "relevance": "unknown_pending_legal_review",
+      "discovery_evidence": "public_visible_catalog_page_6_item_8",
+      "applicability_claimed": false,
+      "expiry_claimed": false,
+      "revocation_claimed": false,
+      "sector_coverage_claimed": false,
+      "duplicate_title": false
+    }
+  ]
+}
