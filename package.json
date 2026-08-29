@@ -53,7 +53,16 @@
     "engine:persistence:wave1:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-persistence-static.mts",
     "engine:rule-runtime:wave1:test": "vitest run src/engine/rule-runtime/runtime.test.ts",
     "parallel:wave1:scope-scan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave1-scope-scan.mts",
-    "parallel:wave1:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave1-review-package.mts"
+    "parallel:wave1:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave1-review-package.mts",
+    "wave2:evidence:audit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-evidence-audit/run-all.mts",
+    "wave2:evidence:scan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-evidence-audit/full-diff-scan.mts",
+    "wave2:topic:status": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-evidence-audit/topic-readiness.mts status",
+    "wave2:topic:gate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-evidence-audit/topic-readiness.mts gate",
+    "wave2:corpus:all": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-corpus-hardening/run.mts all",
+    "wave2:corpus:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-corpus-hardening/run.mts verify",
+    "wave2:corpus:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-corpus-hardening/run.mts readiness",
+    "wave2:corpus:readiness-strict": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-corpus-hardening/run.mts readiness-strict",
+    "wave2:controlled-import:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-controlled-import/verify.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
