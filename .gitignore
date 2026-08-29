@@ -11,6 +11,8 @@
 /tmp/pdfs/
 /eval/real-payslips/
 /eval/customer-payslips/
+/eval/legal-knowledge/
+/output/legal-knowledge/
 
 # next.js
 /.next/

@@ -23,7 +23,13 @@
     "eval:customer:ground-truth:init": "node scripts/customer-eval-tools.mjs ground-truth-init",
     "eval:customer:ground-truth:validate": "node scripts/customer-eval-tools.mjs ground-truth-validate",
     "eval:customer:cleanup-plan": "node scripts/customer-eval-tools.mjs cleanup-plan",
-    "eval:corpus:prepare": "node scripts/customer-eval-tools.mjs corpus-prepare"
+    "eval:corpus:prepare": "node scripts/customer-eval-tools.mjs corpus-prepare",
+    "legal:sources:validate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts validate",
+    "legal:sources:fetch": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts fetch",
+    "legal:sources:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts build",
+    "legal:sources:status": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts status",
+    "legal:sources:search": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts search",
+    "legal:sources:changes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts changes"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

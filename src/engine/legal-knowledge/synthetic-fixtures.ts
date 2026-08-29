@@ -1,0 +1,68 @@
+import { legalChunkSchema, legalSourceSchema, type LegalChunk, type LegalSource } from "./contracts.ts";
+
+export function syntheticSource(overrides: Partial<LegalSource> = {}): LegalSource {
+  return legalSourceSchema.parse({
+    source_id: "IL_SYNTHETIC_LAW",
+    source_version: "v1",
+    source_type: "statute",
+    authority: {
+      kind: "israeli_legislature",
+      issuing_body: "Synthetic Legislature",
+      binding_level: "primary_binding",
+      court_level: null,
+      scope: "general",
+      operative: true,
+      explanatory: false,
+      contains_numeric_rate: true,
+      can_independently_support_monetary_rule: true,
+    },
+    jurisdiction: "IL",
+    title: "Synthetic law",
+    canonical_url: "https://main.knesset.gov.il/synthetic",
+    publication_reference: "Synthetic 1",
+    published_at: "2020-01-01",
+    effective_from: "2020-01-01",
+    effective_to: null,
+    retrieved_at: null,
+    language: "he",
+    topics: ["minimum_wage"],
+    sectors: ["general"],
+    status: "draft",
+    content_sha256: null,
+    artifact_format: "html",
+    supersedes_source_version: null,
+    notes: [],
+    verification: { status: "unverified", method: "synthetic", verified_by: [], verified_at: null, notes: [] },
+    effective_period: {
+      effective_from: "2020-01-01",
+      effective_to: null,
+      retroactive: false,
+      retroactive_basis: null,
+      applicability_basis: "work_date",
+    },
+    discovery: { method: "official_registry", found_at: "2026-08-29", included_reason: "Synthetic test fixture" },
+    ...overrides,
+  });
+}
+
+export function syntheticChunk(source = syntheticSource(), overrides: Partial<LegalChunk> = {}): LegalChunk {
+  return legalChunkSchema.parse({
+    chunk_id: `${source.source_id}@${source.source_version}#synthetic`,
+    source_id: source.source_id,
+    source_version: source.source_version,
+    artifact_sha256: "a".repeat(64),
+    section_identifier: "1",
+    heading_path: ["Synthetic section"],
+    page_from: 1,
+    page_to: 1,
+    character_from: 0,
+    character_to: 20,
+    text: "Synthetic minimum wage section",
+    chunk_text_sha256: "b".repeat(64),
+    topics: source.topics,
+    sectors: source.sectors,
+    effective_period: source.effective_period,
+    authority: source.authority,
+    ...overrides,
+  });
+}
