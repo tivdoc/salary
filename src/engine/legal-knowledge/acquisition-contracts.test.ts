@@ -93,7 +93,11 @@ describe("V0.2 acquisition entity contracts", () => {
       landing_url: "https://www.gov.il/test",
       artifact_url: "https://www.gov.il/test.pdf",
       final_url: "https://www.gov.il/test.pdf",
+      artifact_sha256: "a".repeat(64),
+      expected_media_type: "application/pdf",
+      expected_document_title: "Test official PDF",
       acquired_at: "2026-08-29T00:00:00Z",
+      attestation_type: "owner_attestation",
       actor_type: "owner",
       acquisition_method: "owner_attested_official_download",
       unchanged_original: true,
@@ -102,6 +106,13 @@ describe("V0.2 acquisition entity contracts", () => {
     expect(acquisitionReceiptSchema.parse(receipt).unchanged_original).toBe(true);
     expect(() => acquisitionReceiptSchema.parse({ ...receipt, used_print_to_pdf: true })).toThrow();
     expect(() => acquisitionReceiptSchema.parse({ ...receipt, claimed_hash: "a".repeat(64) })).toThrow();
+    expect(acquisitionReceiptSchema.parse({
+      ...receipt,
+      attestation_type: "synthetic_test_attestation",
+      actor_type: "system_test",
+      acquisition_method: "synthetic_test_copy_existing_public_official_artifact",
+      test_only_notice: "TEST COPY OF EXISTING PUBLIC OFFICIAL ARTIFACT; NOT AN OWNER IMPORT",
+    }).attestation_type).toBe("synthetic_test_attestation");
   });
 
   it("does not let a partial catalog masquerade as complete", () => {

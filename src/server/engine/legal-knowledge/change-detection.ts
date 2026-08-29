@@ -14,6 +14,40 @@ export type StoredLegalFetchObservation = Readonly<{
   status: "fetched" | "content_change_review_required";
 }>;
 
+export type LegalChangeDetectionObservation = Readonly<{
+  observation_id: string;
+  source_id: string;
+  artifact_sha256: string;
+  disposition: "legal_artifact_candidate" | "not_a_legal_source_version";
+  safe_error_code: string | null;
+  bytes_changed: boolean;
+}>;
+
+export function classifyLegalChangeDetections(observations: readonly LegalChangeDetectionObservation[]) {
+  return observations.map((observation) => {
+    if (observation.disposition === "not_a_legal_source_version") {
+      return {
+        observation_id: observation.observation_id,
+        source_id: observation.source_id,
+        artifact_sha256: observation.artifact_sha256,
+        classification: "rejected_challenge_observation" as const,
+        review_required: false,
+        promoted: false,
+        safe_error_code: observation.safe_error_code,
+      };
+    }
+    return {
+      observation_id: observation.observation_id,
+      source_id: observation.source_id,
+      artifact_sha256: observation.artifact_sha256,
+      classification: "unreviewed_byte_change" as const,
+      review_required: true,
+      promoted: false,
+      safe_error_code: observation.safe_error_code,
+    };
+  });
+}
+
 export function selectLegalSourceObservation<T extends StoredLegalFetchObservation>(
   observations: readonly T[],
   source: Readonly<{ source_id: string; source_version: string; content_sha256: string | null }>,
@@ -45,5 +79,6 @@ export function detectLegalSourceChange(
   if (previous.content_type !== current.content_type) changes.push("content_type_changed");
   if (previous.effective_metadata_hash !== current.effective_metadata_hash) changes.push("metadata_or_effective_date_changed");
   if (changes.length === 0) return { status: "source_unchanged" as const, reviewRequired: false, changes };
+  if (changes.includes("bytes_changed")) return { status: "unreviewed_byte_change" as const, reviewRequired: true, changes };
   return { status: "new_source_version_pending_review" as const, reviewRequired: true, changes };
 }

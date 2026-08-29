@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectLegalSourceChange, selectLegalSourceObservation } from "./change-detection.ts";
+import { classifyLegalChangeDetections, detectLegalSourceChange, selectLegalSourceObservation } from "./change-detection.ts";
 import { loadProvenanceRegistry } from "./acquisition.ts";
 import { loadLegalSourceManifest } from "./manifest.ts";
 
@@ -94,6 +94,33 @@ describe("source change detection", () => {
       normalized_text_sha256: null,
     });
     expect(result.changes).toEqual(["bytes_changed"]);
+    expect(result.status).toBe("unreviewed_byte_change");
+  });
+
+  it("reconciles exactly three unreviewed byte changes and two rejected challenges", () => {
+    const detections = classifyLegalChangeDetections([
+      ...["rates-1", "rates-2", "rates-3"].map((observation_id, index) => ({
+        observation_id,
+        source_id: "IL_MIN_WAGE_OFFICIAL_RATES",
+        artifact_sha256: String(index + 1).repeat(64),
+        disposition: "legal_artifact_candidate" as const,
+        safe_error_code: null,
+        bytes_changed: true,
+      })),
+      ...["challenge-1", "challenge-2"].map((observation_id, index) => ({
+        observation_id,
+        source_id: "IL_HOURS_WORK_REST_LAW",
+        artifact_sha256: String(index + 4).repeat(64),
+        disposition: "not_a_legal_source_version" as const,
+        safe_error_code: "html_challenge_or_error_page",
+        bytes_changed: true,
+      })),
+    ]);
+    expect(detections).toHaveLength(5);
+    expect(detections.filter((entry) => entry.classification === "unreviewed_byte_change")).toHaveLength(3);
+    expect(detections.filter((entry) => entry.classification === "rejected_challenge_observation")).toHaveLength(2);
+    expect(detections.every((entry) => !entry.promoted)).toBe(true);
+    expect(detections.filter((entry) => entry.source_id === "IL_MIN_WAGE_OFFICIAL_RATES").every((entry) => entry.classification === "unreviewed_byte_change")).toBe(true);
   });
 
   it("keeps a content-change observation out of the selected ingestion baseline", () => {

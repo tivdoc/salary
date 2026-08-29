@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { artifactVersionSchema } from "../src/engine/legal-knowledge/acquisition-contracts.ts";
@@ -18,7 +19,14 @@ import {
   verifyOwnerAcquisitionLedger,
 } from "../src/server/engine/legal-knowledge/acquisition.ts";
 import { loadLegalCoverageMatrix } from "../src/server/engine/legal-knowledge/coverage.ts";
+import {
+  controlledImportInstanceReadiness,
+  hashFileStreaming,
+  importControlledOfficialArtifact,
+  scanControlledImportMetadata,
+} from "../src/server/engine/legal-knowledge/controlled-import-security.ts";
 import { legalSourceManifestSchema } from "../src/server/engine/legal-knowledge/manifest.ts";
+import { validateLegalSourceUrl } from "../src/server/engine/legal-knowledge/security.ts";
 
 const repoRoot = process.cwd();
 const legalRoot = path.resolve(repoRoot, "src", "server", "engine", "legal-knowledge");
@@ -202,7 +210,7 @@ function requestReadme(request: ReturnType<typeof acquisitionRequestForTarget>, 
   if (targetKind === "catalog") {
     return `# Controlled owner catalog observation\n\nRequest: \`${request.acquisition_request_id}\`\n\nExpected catalog: ${request.expected_document_title}\n\n1. Open ${request.canonical_landing_url} in the normal local browser.\n2. Confirm HTTPS and one of these exact hosts: ${request.allowlisted_hosts.join(", ")}.\n3. Record the exact filters/query and the reported result count.\n4. Traverse every visible pagination page or the complete infinite-scroll result set once; record every visible entry and its official artifact URL in \`${request.recommended_filename}\`.\n5. The entry list must contain exactly the reported result count. A partial list remains unresolved and must not be marked complete.\n6. Complete \`receipt.json\` with the final official catalog URL and observation time.\n7. A screenshot of the catalog and address bar may be retained as discovery evidence only; remove personal and session data.\n8. Do not log in, solve a CAPTCHA, replay an internal API, reuse cookies/session tokens, print to PDF, or infer which entries apply.\n9. Keep the files unchanged in \`eval/legal-knowledge/acquisition/incoming/${request.acquisition_request_id}/\` for owner/legal review. Catalog entries are discovery evidence only; each required permit must be acquired separately as an official artifact.\n`;
   }
-  return `# Controlled owner acquisition\n\nRequest: \`${request.acquisition_request_id}\`\n\nExpected record/document: ${request.expected_document_title}\n\n1. Open ${request.canonical_landing_url} in the normal local browser.\n2. Confirm HTTPS and one of these exact hosts: ${request.allowlisted_hosts.join(", ")}.\n3. Download the original file through the official download link.\n4. Do not use Print to PDF, copy/paste, conversion software, email, WhatsApp, mirrors, caches or Internet Archive.\n5. Save the unchanged original as \`${request.recommended_filename}\` inside \`eval/legal-knowledge/acquisition/incoming/${request.acquisition_request_id}/\`.\n6. Complete \`receipt.json\` with the final official URL and acquisition time.\n7. A screenshot of the record and address bar may be retained as discovery evidence only; remove personal and session data.\n8. Run the import, verify and readiness commands. The import performs no network request and does not review or activate the artifact.\n`;
+  return `# Controlled owner acquisition\n\nRequest: \`${request.acquisition_request_id}\`\n\nExpected record/document: ${request.expected_document_title}\n\n1. Open ${request.canonical_landing_url} in the normal local browser.\n2. Confirm HTTPS and one of these exact hosts: ${request.allowlisted_hosts.join(", ")}.\n3. Download the original file through the exact allowlisted artifact URL recorded in the request. If the URL is still unbound, stop and update the request through review; do not use an ad-hoc \`--artifact-url\` override.\n4. Do not use Print to PDF, copy/paste, conversion software, email, WhatsApp, mirrors, caches or Internet Archive.\n5. Save the unchanged original as \`${request.recommended_filename}\` inside \`eval/legal-knowledge/acquisition/incoming/${request.acquisition_request_id}/\`.\n6. Compute SHA-256 locally and complete \`receipt.json\` with the exact artifact/final URLs, hash, media type, document title and acquisition time.\n7. A screenshot of the record and address bar may be retained as discovery evidence only; remove personal, EXIF and session data. Screenshots are never import inputs.\n8. Run import, strict verification for this request, instance readiness and corpus acquisition readiness. Import performs no network request and does not parse, review or activate the artifact.\n`;
 }
 
 async function generateRequests() {
@@ -259,9 +267,169 @@ async function importCommand(args: string[]) {
   return importOwnerOfficialArtifact({ request, incomingRoot, artifactRoot: ownerArtifactRoot, ledgerRoot: acquisitionLedgerRoot, originalFilename, receiptFilename });
 }
 
-async function verifyCommand() {
+async function verifyCommand(args: string[]) {
   if (process.env.TIVDOC_LEGAL_NETWORK_DISABLED !== "1") throw new Error("owner_verify_requires_network_disabled_canary");
-  return verifyOwnerAcquisitionLedger({ ledgerRoot: acquisitionLedgerRoot, artifactRoot: ownerArtifactRoot });
+  const options = parseOptions(args);
+  const requiredRequestId = String(options["require-request-id"] ?? "");
+  const strict = options["strict-required-instance"] === true;
+  if (strict && !requiredRequestId) throw new Error("strict_verify_requires_request_id");
+  return verifyOwnerAcquisitionLedger({
+    ledgerRoot: acquisitionLedgerRoot,
+    artifactRoot: ownerArtifactRoot,
+    requiredRequestIds: requiredRequestId ? [requiredRequestId] : [],
+    strictRequiredInstances: strict,
+  });
+}
+
+async function toolingSelfTestCommand() {
+  if (process.env.TIVDOC_LEGAL_NETWORK_DISABLED !== "1") throw new Error("self_test_requires_network_disabled_canary");
+  const root = await mkdtemp(path.join(os.tmpdir(), "tivdoc-controlled-import-self-test-"));
+  try {
+    const empty = await verifyOwnerAcquisitionLedger({ ledgerRoot: path.join(root, "ledger"), artifactRoot: path.join(root, "artifacts") });
+    const strict = await verifyOwnerAcquisitionLedger({
+      ledgerRoot: path.join(root, "ledger"),
+      artifactRoot: path.join(root, "artifacts"),
+      requiredRequestIds: ["ACQ-V031-SELF-TEST"],
+      strictRequiredInstances: true,
+    });
+    const metadataScan = scanControlledImportMetadata({ safe_error_code: "synthetic_self_test", contains_no_user_data: true });
+    if (empty.status !== "NO_IMPORTS_TO_VERIFY" || strict.exit_code === 0 || !metadataScan.safe) throw new Error("controlled_import_self_test_failed");
+    return {
+      status: "CONTROLLED_IMPORT_TOOLING_SELF_TEST_PASSED",
+      exit_code: 0,
+      tooling_self_test_only: true,
+      acquisition_instance_claimed: false,
+      empty_ledger_status: empty.status,
+      strict_required_instance_status: strict.status,
+      strict_required_instance_exit_code: strict.exit_code,
+      metadata_scan_safe: metadataScan.safe,
+      network_used: false,
+    };
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+async function testAcquisitionInstanceCommand(args: string[]) {
+  if (process.env.TIVDOC_LEGAL_NETWORK_DISABLED !== "1") throw new Error("test_instance_requires_network_disabled_canary");
+  const options = parseOptions(args);
+  const publicTestCopy = String(options["public-test-copy"] ?? "");
+  const artifactUrl = String(options["artifact-url"] ?? "");
+  const landingUrl = String(options["landing-url"] ?? artifactUrl);
+  const expectedSha256 = String(options["expected-sha256"] ?? "");
+  if (!publicTestCopy || !path.isAbsolute(publicTestCopy) || !artifactUrl || !expectedSha256.match(/^[a-f0-9]{64}$/u)) {
+    throw new Error("test_instance_arguments_invalid");
+  }
+  for (const url of [landingUrl, artifactUrl]) {
+    const validated = validateLegalSourceUrl(url);
+    if (!validated.passed) throw new Error(`test_instance_${validated.code}`);
+  }
+  const publicCopyInfo = await lstat(publicTestCopy);
+  if (!publicCopyInfo.isFile() || publicCopyInfo.isSymbolicLink()) throw new Error("test_instance_copy_must_be_regular_file");
+  if (await hashFileStreaming(publicTestCopy) !== expectedSha256) throw new Error("test_instance_public_copy_hash_mismatch");
+  const requestId = "ACQ-V031-SYNTHETIC-PUBLIC-OFFICIAL-COPY";
+  const sourceId = "IL_SYNTHETIC_TEST_PUBLIC_ARTIFACT";
+  const filename = "existing-public-official-artifact-test-copy.pdf";
+  const title = "Existing public official artifact test copy";
+  type OfficialHost = "www.gov.il" | "gov.il" | "main.knesset.gov.il" | "fs.knesset.gov.il" | "www.btl.gov.il" | "btl.gov.il";
+  const allowlistedHosts = [...new Set([new URL(landingUrl).hostname, new URL(artifactUrl).hostname])] as OfficialHost[];
+  const root = await mkdtemp(path.join(os.tmpdir(), "tivdoc-controlled-import-e2e-"));
+  try {
+    const inbox = path.join(root, "incoming", requestId);
+    await mkdir(inbox, { recursive: true });
+    await copyFile(publicTestCopy, path.join(inbox, filename));
+    const request = {
+      acquisition_request_id: requestId,
+      source_id: sourceId,
+      instrument_id: "INSTRUMENT:IL:SYNTHETIC_TEST_PUBLIC_ARTIFACT",
+      canonical_landing_url: landingUrl,
+      artifact_url: artifactUrl,
+      allowlisted_hosts: allowlistedHosts,
+      allowed_artifact_urls: [artifactUrl],
+      allowed_final_urls: [artifactUrl],
+      expected_media_type: "application/pdf",
+      expected_document_identity: { title, artifact_sha256: expectedSha256, identity_basis: "known_existing_public_official_artifact_test_copy" },
+      allowed_attestation_types: ["synthetic_test_attestation"],
+      expected_document_title: title,
+      recommended_filename: filename,
+      failure_evidence: [],
+      receipt_template: {
+        acquisition_request_id: requestId,
+        source_id: sourceId,
+        landing_url: landingUrl,
+        artifact_url: artifactUrl,
+        final_url: artifactUrl,
+        artifact_sha256: expectedSha256,
+        expected_media_type: "application/pdf",
+        expected_document_title: title,
+        attestation_type: "synthetic_test_attestation",
+        actor_type: "system_test",
+        acquisition_method: "synthetic_test_copy_existing_public_official_artifact",
+        unchanged_original: true,
+        used_print_to_pdf: false,
+        test_only_notice: "TEST COPY OF EXISTING PUBLIC OFFICIAL ARTIFACT; NOT AN OWNER IMPORT",
+      },
+    } as const;
+    const receipt = {
+      ...request.receipt_template,
+      original_filename: filename,
+      acquired_at: "2026-08-29T00:00:00Z",
+    };
+    await writeFile(path.join(inbox, "receipt.json"), stableJson(receipt), { flag: "wx" });
+    const importInput = {
+      request,
+      incomingRoot: path.join(root, "incoming"),
+      artifactRoot: path.join(root, "artifacts"),
+      ledgerRoot: path.join(root, "ledger"),
+      originalFilename: filename,
+      receiptFilename: "receipt.json",
+    };
+    const imported = await importControlledOfficialArtifact(importInput);
+    const replay = await importControlledOfficialArtifact(importInput);
+    const verification = await verifyOwnerAcquisitionLedger({
+      ledgerRoot: path.join(root, "ledger"),
+      artifactRoot: path.join(root, "artifacts"),
+      requiredRequestIds: [requestId],
+      strictRequiredInstances: true,
+    });
+    const readiness = controlledImportInstanceReadiness(verification, requestId);
+    if (!readiness.ready || !replay.idempotent) throw new Error("test_acquisition_instance_verification_failed");
+    return {
+      status: readiness.status,
+      exit_code: 0,
+      test_only_notice: "TEST COPY OF EXISTING PUBLIC OFFICIAL ARTIFACT; NOT AN OWNER IMPORT",
+      source_id: sourceId,
+      request_id: requestId,
+      original_public_artifact_sha256: expectedSha256,
+      private_copy_sha256: imported.private_copy_sha256,
+      published_sha256: imported.published_sha256,
+      ledger_entries: verification.ledger_entries,
+      duplicate_replay_idempotent: replay.idempotent,
+      request_receipt_media_identity_binding: true,
+      immutable_atomic_publish: true,
+      append_only_ledger_commit_marker: true,
+      usable_for_legal_rules: false,
+      activates_source: false,
+      network_used: false,
+    };
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+async function acquisitionInstanceReadinessCommand(args: string[]) {
+  if (process.env.TIVDOC_LEGAL_NETWORK_DISABLED !== "1") throw new Error("instance_readiness_requires_network_disabled_canary");
+  const options = parseOptions(args);
+  const requestId = String(options["require-request-id"] ?? "");
+  if (!requestId) throw new Error("instance_readiness_requires_request_id");
+  const verification = await verifyOwnerAcquisitionLedger({
+    ledgerRoot: acquisitionLedgerRoot,
+    artifactRoot: ownerArtifactRoot,
+    requiredRequestIds: [requestId],
+    strictRequiredInstances: true,
+  });
+  const readiness = controlledImportInstanceReadiness(verification, requestId);
+  return { ...readiness, exit_code: readiness.ready ? 0 : 4, verification };
 }
 
 async function inventories() {
@@ -599,7 +767,15 @@ async function main() {
   let exitCode = 0;
   if (command === "request") result = await generateRequests();
   else if (command === "import") result = await importCommand(args);
-  else if (command === "verify") result = await verifyCommand();
+  else if (command === "verify") {
+    result = await verifyCommand(args);
+    exitCode = (result as { exit_code: number }).exit_code;
+  } else if (command === "self-test") result = await toolingSelfTestCommand();
+  else if (command === "test-acquisition-instance") result = await testAcquisitionInstanceCommand(args);
+  else if (command === "instance-readiness") {
+    result = await acquisitionInstanceReadinessCommand(args);
+    exitCode = (result as { exit_code: number }).exit_code;
+  }
   else if (command === "status") result = await statusCommand();
   else if (command === "readiness") {
     result = await acquisitionReadiness();

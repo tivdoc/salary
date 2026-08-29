@@ -8,6 +8,11 @@ import {
 
 const officialHttpsUrlSchema = z.string().url().refine((value) => value.startsWith("https://"), "official_url_must_use_https");
 const stableIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{2,159}$/);
+const officialHostSchema = z.enum(["www.gov.il", "gov.il", "main.knesset.gov.il", "fs.knesset.gov.il", "www.btl.gov.il", "btl.gov.il"]);
+const portableFilenameSchema = z.string()
+  .regex(/^[^\\/:*?"<>|]{1,180}$/)
+  .refine((value) => value === value.trim() && !value.endsWith(".") && value.normalize("NFC") === value, "portable_filename_invalid")
+  .refine((value) => !/^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/iu.test(value), "windows_device_filename_forbidden");
 
 export const acquisitionStateSchema = z.enum(["discovered", "acquired", "quarantined", "unavailable"]);
 export const artifactParseStateSchema = z.enum(["not_attempted", "parsed", "failed"]);
@@ -27,6 +32,7 @@ export const acquisitionMethodSchema = z.enum([
   "direct_official_fetch",
   "public_browser_official_download",
   "owner_attested_official_download",
+  "synthetic_test_copy_existing_public_official_artifact",
   "existing_immutable_artifact",
 ]);
 
@@ -176,19 +182,54 @@ export const humanReviewEventV02Schema = z.object({
   effective_to: legalDateSchema.nullable(),
 }).strict();
 
-export const acquisitionReceiptSchema = z.object({
+const acquisitionReceiptBaseSchema = z.object({
   acquisition_request_id: stableIdSchema,
   source_id: stableIdSchema,
-  original_filename: z.string().regex(/^[^\\/:*?"<>|]{1,180}$/),
+  original_filename: portableFilenameSchema,
   landing_url: officialHttpsUrlSchema,
   artifact_url: officialHttpsUrlSchema,
   final_url: officialHttpsUrlSchema,
+  artifact_sha256: sha256Schema,
+  expected_media_type: z.literal("application/pdf"),
+  expected_document_title: z.string().min(1),
   acquired_at: legalTimestampSchema,
-  actor_type: z.literal("owner"),
-  acquisition_method: z.literal("owner_attested_official_download"),
   unchanged_original: z.literal(true),
   used_print_to_pdf: z.literal(false),
+});
+
+export const ownerAcquisitionReceiptSchema = acquisitionReceiptBaseSchema.extend({
+  attestation_type: z.literal("owner_attestation"),
+  actor_type: z.literal("owner"),
+  acquisition_method: z.literal("owner_attested_official_download"),
 }).strict();
+
+export const syntheticTestAcquisitionReceiptSchema = acquisitionReceiptBaseSchema.extend({
+  attestation_type: z.literal("synthetic_test_attestation"),
+  actor_type: z.literal("system_test"),
+  acquisition_method: z.literal("synthetic_test_copy_existing_public_official_artifact"),
+  test_only_notice: z.literal("TEST COPY OF EXISTING PUBLIC OFFICIAL ARTIFACT; NOT AN OWNER IMPORT"),
+}).strict();
+
+export const acquisitionReceiptSchema = z.discriminatedUnion("attestation_type", [
+  ownerAcquisitionReceiptSchema,
+  syntheticTestAcquisitionReceiptSchema,
+]);
+
+const acquisitionReceiptTemplateSchema = z.union([
+  ownerAcquisitionReceiptSchema.partial({
+    original_filename: true,
+    artifact_url: true,
+    final_url: true,
+    artifact_sha256: true,
+    acquired_at: true,
+  }),
+  syntheticTestAcquisitionReceiptSchema.partial({
+    original_filename: true,
+    artifact_url: true,
+    final_url: true,
+    acquired_at: true,
+  }),
+]);
 
 export const acquisitionRequestSchema = z.object({
   acquisition_request_id: stableIdSchema,
@@ -196,17 +237,45 @@ export const acquisitionRequestSchema = z.object({
   instrument_id: stableIdSchema,
   canonical_landing_url: officialHttpsUrlSchema,
   artifact_url: officialHttpsUrlSchema.nullable(),
-  allowlisted_hosts: z.array(z.string().min(1)).min(1),
+  allowlisted_hosts: z.array(officialHostSchema).min(1),
+  allowed_artifact_urls: z.array(officialHttpsUrlSchema),
+  allowed_final_urls: z.array(officialHttpsUrlSchema),
+  expected_media_type: z.literal("application/pdf"),
+  expected_document_identity: z.object({
+    title: z.string().min(1),
+    artifact_sha256: sha256Schema.nullable(),
+    identity_basis: z.enum(["owner_must_confirm_official_record", "known_existing_public_official_artifact_test_copy"]),
+  }).strict(),
+  allowed_attestation_types: z.array(z.enum(["owner_attestation", "synthetic_test_attestation"])).min(1),
   expected_document_title: z.string().min(1),
-  recommended_filename: z.string().regex(/^[^\\/:*?"<>|]{1,180}$/),
+  recommended_filename: portableFilenameSchema,
   failure_evidence: z.array(z.object({ stage: z.enum(["fetch", "browser"]), safe_error_code: z.string().min(1) }).strict()),
-  receipt_template: acquisitionReceiptSchema.partial({
-    original_filename: true,
-    artifact_url: true,
-    final_url: true,
-    acquired_at: true,
-  }),
-}).strict();
+  receipt_template: acquisitionReceiptTemplateSchema,
+}).strict().superRefine((request, context) => {
+  for (const urlValue of [request.canonical_landing_url, ...request.allowed_artifact_urls, ...request.allowed_final_urls]) {
+    const url = new URL(urlValue);
+    if (!request.allowlisted_hosts.some((host) => host === url.hostname)) context.addIssue({ code: "custom", message: "request_url_host_not_allowlisted" });
+  }
+  if (request.artifact_url && !request.allowed_artifact_urls.includes(request.artifact_url)) {
+    context.addIssue({ code: "custom", message: "request_artifact_url_not_bound" });
+  }
+  if (request.receipt_template.expected_media_type && request.receipt_template.expected_media_type !== request.expected_media_type) {
+    context.addIssue({ code: "custom", message: "request_media_type_mismatch" });
+  }
+  if (request.receipt_template.expected_document_title && request.receipt_template.expected_document_title !== request.expected_document_title) {
+    context.addIssue({ code: "custom", message: "request_document_title_mismatch" });
+  }
+  if (request.expected_document_identity.title !== request.expected_document_title) {
+    context.addIssue({ code: "custom", message: "request_document_identity_title_mismatch" });
+  }
+  if (!request.allowed_attestation_types.includes(request.receipt_template.attestation_type)) {
+    context.addIssue({ code: "custom", message: "request_receipt_attestation_not_allowed" });
+  }
+  if (request.receipt_template.attestation_type === "synthetic_test_attestation"
+    && (request.expected_document_identity.identity_basis !== "known_existing_public_official_artifact_test_copy" || !request.expected_document_identity.artifact_sha256)) {
+    context.addIssue({ code: "custom", message: "synthetic_test_request_requires_known_artifact_identity" });
+  }
+});
 
 export type AcquisitionReceipt = z.infer<typeof acquisitionReceiptSchema>;
 export type AcquisitionRequest = z.infer<typeof acquisitionRequestSchema>;
