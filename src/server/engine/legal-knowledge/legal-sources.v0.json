@@ -208,6 +208,108 @@
       }
     },
     {
+      "source_id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018",
+      "source_version": "discovery-v0.1",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General extension order shortening the work week, 2018",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-short-week-2018/he/extention-order-short-week-2018.pdf",
+      "publication_reference": "Yalkut HaPirsumim 7732",
+      "published_at": "2018-03-19",
+      "effective_from": "2018-04-01",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["working_time", "overtime"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["Candidate effective interval is stated in the official order and remains pending owner/legal review; no numeric parameter is extracted."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Ministry PDF discovery",
+        "verified_by": ["tivdoc-legal-remediation-v0.1"],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": ["Content parsing is technical evidence only and does not activate the order."]
+      },
+      "effective_period": {
+        "effective_from": "2018-04-01",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "The working-time topic requires the general work-week shortening instrument in addition to the base statute."
+      }
+    },
+    {
+      "source_id": "IL_GENERAL_OVERTIME_PERMIT_2018",
+      "source_version": "discovery-v0.1",
+      "source_type": "official_permit",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General permit for overtime employment, 2018 - official gazette publication",
+      "canonical_url": "https://www.gov.il/BlobFolder/guide/overtime-and-extra-hours/he/workers-rights_working-conditions_permits-for-overtime-employment_%D7%99%D7%9C%D7%A7%D7%95%D7%98%20%D7%94%D7%A4%D7%A8%D7%A1%D7%95%D7%9E%D7%99%D7%9D-7732.pdf",
+      "publication_reference": "Yalkut HaPirsumim 7732",
+      "published_at": "2018-03-19",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["working_time", "overtime"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["Official gazette candidate retained with an unresolved effective interval until exact official evidence is reviewed."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Ministry permit catalog cross-reference",
+        "verified_by": ["tivdoc-legal-remediation-v0.1"],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": ["No permit limits or numeric values are activated."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "The official permits catalog identifies general and sector permits required for overtime applicability review."
+      }
+    },
+    {
       "source_id": "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016",
       "source_version": "discovery-v0",
       "source_type": "extension_order",
@@ -307,6 +409,57 @@
         "method": "official_domain_search",
         "found_at": "2026-08-29",
         "included_reason": "Official historical operative source retained while the current official general order is unresolved."
+      }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2016",
+      "source_version": "discovery-v0.1",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General convalescence and recreation expense extension order, 2016",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-recreation-2016/he/extention-order-recovery-recreation-2016.pdf",
+      "publication_reference": null,
+      "published_at": "2017-01-08",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["convalescence"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["Later official operative candidate than the 1988 record; the exact effective interval and relationship remain unresolved pending official-text review."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Ministry extension-order catalog discovery",
+        "verified_by": ["tivdoc-legal-remediation-v0.1"],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": ["No convalescence amount or entitlement parameter is extracted or activated."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "Official later general convalescence instrument required to prevent current retrieval from returning the 1988 record alone."
       }
     },
     {

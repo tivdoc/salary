@@ -5,7 +5,9 @@ import {
   extractHtmlLegalText,
   normalizedDocumentHash,
   normalizeLegalText,
+  parsedLegalVersionId,
   removeRepeatedPdfMargins,
+  validateParsedLegalDocument,
 } from "./normalization.ts";
 
 describe("deterministic legal normalization", () => {
@@ -39,6 +41,30 @@ describe("deterministic legal normalization", () => {
 
   it("produces a stable normalized hash", () => {
     expect(normalizedDocumentHash([{ text: "A  B" }])).toBe(normalizedDocumentHash([{ text: "Ａ B" }]));
+  });
+
+  it("creates a new parsed version when the parser changes without rewriting the raw version", () => {
+    const source = syntheticSource();
+    const first = parsedLegalVersionId(source, "a".repeat(64), "b".repeat(64), "parser-v1");
+    const second = parsedLegalVersionId(source, "a".repeat(64), "b".repeat(64), "parser-v2");
+    expect(first).not.toBe(second);
+    expect(first).toContain(`${source.source_id}@${source.source_version}#parsed-`);
+  });
+
+  it("rejects challenge content and missing source-specific structure", () => {
+    expect(validateParsedLegalDocument({ source_id: "IL_HOURS_WORK_REST_LAW" }, [{ text: "Cloudflare captcha ".repeat(10) }]))
+      .toMatchObject({ passed: false, code: "challenge_page_rejected" });
+    expect(validateParsedLegalDocument({ source_id: "IL_HOURS_WORK_REST_LAW" }, [{ text: "unrelated official content ".repeat(10) }]))
+      .toMatchObject({ passed: false, code: "document_sanity_required_marker_missing" });
+  });
+
+  it("accepts deterministic reversed-Hebrew PDF extraction markers", () => {
+    expect(validateParsedLegalDocument({ source_id: "IL_SICK_PAY_LAW" }, [{ text: `הלחמ ימד ${"ףיעס ".repeat(20)}` }]).passed).toBe(true);
+  });
+
+  it("enforces parser page and normalized-text resource limits before indexing", () => {
+    expect(validateParsedLegalDocument({ source_id: "IL_SYNTHETIC" }, Array.from({ length: 1001 }, () => ({ text: "legal content" }))))
+      .toMatchObject({ passed: false, code: "parser_page_limit_exceeded" });
   });
 });
 

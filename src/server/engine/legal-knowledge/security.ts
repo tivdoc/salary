@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+import { lookup } from "node:dns/promises";
 import type { LegalSource } from "../../../engine/legal-knowledge/contracts.ts";
 
 export const LEGAL_SOURCE_ALLOWED_HOSTS = new Set([
@@ -22,8 +24,33 @@ export function validateLegalSourceUrl(value: string) {
   }
   if (url.protocol !== "https:") return { passed: false as const, code: "https_required" };
   if (url.username || url.password) return { passed: false as const, code: "url_credentials_forbidden" };
-  if (!LEGAL_SOURCE_ALLOWED_HOSTS.has(url.hostname.toLowerCase())) return { passed: false as const, code: "domain_not_allowlisted" };
+  if (url.hash) return { passed: false as const, code: "url_fragment_forbidden" };
+  const hostname = url.hostname.toLowerCase().replace(/^\[(.*)\]$/u, "$1");
+  if (hostname === "localhost" || hostname.endsWith(".localhost")) return { passed: false as const, code: "localhost_forbidden" };
+  if (isIP(hostname) !== 0) return { passed: false as const, code: "ip_literal_forbidden" };
+  if (!LEGAL_SOURCE_ALLOWED_HOSTS.has(hostname)) return { passed: false as const, code: "domain_not_allowlisted" };
   return { passed: true as const, url };
+}
+
+export function sanitizeLegalUrlForLog(value: string) {
+  try {
+    const url = new URL(value);
+    url.search = "";
+    url.hash = "";
+    return `${url.protocol}//${url.host}${url.pathname}`;
+  } catch {
+    return "invalid-url";
+  }
+}
+
+export function isPrivateOrLocalAddress(address: string) {
+  const normalized = address.toLowerCase();
+  if (normalized === "::1" || normalized === "::" || normalized.startsWith("fe80:") || normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+  const mapped = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/u)?.[1];
+  const ipv4 = mapped ?? (isIP(normalized) === 4 ? normalized : null);
+  if (!ipv4) return false;
+  const [a, b] = ipv4.split(".").map(Number);
+  return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224;
 }
 
 export type SafeLegalFetchResult = Readonly<{
@@ -32,6 +59,7 @@ export type SafeLegalFetchResult = Readonly<{
   contentType: string;
   safeHeaders: Readonly<Record<string, string>>;
   redirectCount: number;
+  redirectChain: readonly string[];
 }>;
 
 export class SafeLegalFetchError extends Error {
@@ -44,13 +72,46 @@ export class SafeLegalFetchError extends Error {
   }
 }
 
+type FetchableLegalDocument = Pick<LegalSource, "canonical_url" | "artifact_format">;
+
+function contentTypeMatches(format: FetchableLegalDocument["artifact_format"], contentType: string) {
+  if (format === "pdf") return contentType === "application/pdf" || contentType === "application/octet-stream";
+  if (format === "html") return contentType === "text/html" || contentType === "application/xhtml+xml";
+  return contentType.startsWith("text/") || contentType === "application/json" || contentType === "text/html";
+}
+
+export function validateLegalContentEnvelope(
+  source: FetchableLegalDocument,
+  bytes: Uint8Array,
+  contentType: string,
+) {
+  if (!contentTypeMatches(source.artifact_format, contentType)) return { passed: false as const, code: "declared_mime_mismatch" };
+  if (source.artifact_format === "pdf") {
+    const signature = new TextDecoder("ascii").decode(bytes.slice(0, 5));
+    if (signature !== "%PDF-") return { passed: false as const, code: "pdf_magic_mismatch" };
+    if (bytes.byteLength < 512) return { passed: false as const, code: "document_truncated" };
+    return { passed: true as const };
+  }
+  const prefix = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, Math.min(bytes.byteLength, 32_768)));
+  if (source.artifact_format === "html") {
+    if (!/<(?:!doctype\s+html|html|body)\b/iu.test(prefix)) return { passed: false as const, code: "html_signature_mismatch" };
+    if (/(?:kramericaindustries|cf-chl-|cloudflare|captcha|access\s+denied|enable\s+javascript\s+and\s+cookies)/iu.test(prefix)) {
+      return { passed: false as const, code: "html_challenge_or_error_page" };
+    }
+    const visible = prefix.replace(/<script\b[^>]*>[\s\S]*?<\/script>/giu, "").replace(/<style\b[^>]*>[\s\S]*?<\/style>/giu, "").replace(/<[^>]+>/gu, " ").replace(/\s+/gu, " ").trim();
+    if (visible.length < 20) return { passed: false as const, code: "html_wrapper_empty" };
+  } else if (bytes.byteLength === 0) return { passed: false as const, code: "document_empty" };
+  return { passed: true as const };
+}
+
 export async function fetchLegalSourceBytes(
-  source: LegalSource,
+  source: FetchableLegalDocument,
   options: Readonly<{
     fetchImpl?: typeof fetch;
     maxBytes?: number;
     timeoutMs?: number;
     maxRedirects?: number;
+    resolveHostname?: (hostname: string) => Promise<readonly string[]>;
   }> = {},
 ): Promise<SafeLegalFetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -60,10 +121,23 @@ export async function fetchLegalSourceBytes(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? LEGAL_FETCH_TIMEOUT_MS);
   let current = source.canonical_url;
   let redirectCount = 0;
+  const redirectChain: string[] = [];
   try {
     while (true) {
       const validation = validateLegalSourceUrl(current);
       if (!validation.passed) throw new SafeLegalFetchError(validation.code);
+      redirectChain.push(sanitizeLegalUrlForLog(validation.url.toString()));
+      const resolveHostname = options.resolveHostname ?? (options.fetchImpl ? null : async (hostname: string) => (await lookup(hostname, { all: true, verbatim: true })).map((entry) => entry.address));
+      if (resolveHostname) {
+        let addresses: readonly string[];
+        try {
+          addresses = await resolveHostname(validation.url.hostname);
+        } catch {
+          throw new SafeLegalFetchError("dns_lookup_failed");
+        }
+        if (addresses.length === 0) throw new SafeLegalFetchError("dns_lookup_empty");
+        if (addresses.some(isPrivateOrLocalAddress)) throw new SafeLegalFetchError("resolved_private_address_forbidden");
+      }
       let response: Response;
       try {
         response = await fetchImpl(validation.url, {
@@ -113,12 +187,14 @@ export async function fetchLegalSourceBytes(
         offset += chunk.length;
       }
       const contentType = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "application/octet-stream";
+      const envelope = validateLegalContentEnvelope(source, bytes, contentType);
+      if (!envelope.passed) throw new SafeLegalFetchError(envelope.code);
       const safeHeaders = Object.fromEntries(
         ["content-type", "content-length", "etag", "last-modified"]
           .map((name) => [name, response.headers.get(name)] as const)
           .filter((entry): entry is readonly [string, string] => entry[1] !== null),
       );
-      return { bytes, finalUrl: validation.url.toString(), contentType, safeHeaders, redirectCount };
+      return { bytes, finalUrl: validation.url.toString(), contentType, safeHeaders, redirectCount, redirectChain };
     }
   } finally {
     clearTimeout(timeout);

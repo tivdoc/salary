@@ -2,12 +2,17 @@ import type { LegalSource } from "./contracts.ts";
 import { legalSourceSchema } from "./contracts.ts";
 
 const transitions: Readonly<Record<LegalSource["status"], readonly LegalSource["status"][]>> = {
-  draft: ["verified", "needs_review", "rejected"],
-  verified: ["active", "needs_review", "rejected"],
+  draft: ["fetched", "verified", "needs_review", "unavailable", "rejected"],
+  fetched: ["parsed", "candidate", "needs_review", "unavailable", "rejected"],
+  parsed: ["candidate", "needs_review", "rejected"],
+  candidate: ["needs_review", "reviewed", "rejected"],
+  verified: ["reviewed", "active", "needs_review", "rejected"],
+  reviewed: ["active", "needs_review", "rejected"],
   active: ["superseded", "needs_review"],
   superseded: ["needs_review"],
-  needs_review: ["verified", "rejected"],
+  needs_review: ["reviewed", "verified", "rejected"],
   rejected: [],
+  unavailable: ["fetched", "needs_review", "rejected"],
 };
 
 export function canTransitionLegalSourceStatus(from: LegalSource["status"], to: LegalSource["status"]) {

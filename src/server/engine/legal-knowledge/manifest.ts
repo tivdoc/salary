@@ -9,7 +9,7 @@ export const legalSourceManifestSchema = z.object({
   taxonomy_version: z.literal(LEGAL_TAXONOMY_VERSION),
   classification: z.literal("source_discovery_manifest_pending_content_review"),
   sources: z.array(legalSourceSchema).min(1),
-}).superRefine((manifest, context) => {
+}).strict().superRefine((manifest, context) => {
   const keys = new Set<string>();
   for (const source of manifest.sources) {
     const key = `${source.source_id}@${source.source_version}`;

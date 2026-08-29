@@ -4,7 +4,7 @@ export type LegalSourceObservation = Readonly<{
   final_url: string;
   content_type: string;
   effective_metadata_hash: string;
-  source_status?: "draft" | "verified" | "active" | "superseded" | "needs_review" | "rejected";
+  source_status?: "draft" | "fetched" | "parsed" | "candidate" | "verified" | "reviewed" | "active" | "superseded" | "needs_review" | "rejected" | "unavailable";
 }>;
 
 export type StoredLegalFetchObservation = Readonly<{

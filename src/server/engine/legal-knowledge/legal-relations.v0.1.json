@@ -1,0 +1,36 @@
+{
+  "schema_version": "legal-source-relations-v0.1",
+  "automatic_legal_inference": false,
+  "relations": [
+    {
+      "relation_id": "working-time:short-week-2018:supplements:base-law",
+      "relation_type": "supplements",
+      "from_source_version_id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018@discovery-v0.1",
+      "to_source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "effective_period": {
+        "effective_from": "2018-04-01",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "evidence_locator": "Official 2018 extension order, operative clauses and commencement clause; pending owner/legal confirmation",
+      "review_status": "candidate"
+    },
+    {
+      "relation_id": "working-time:general-overtime-permit-2018:supplements:base-law",
+      "relation_type": "supplements",
+      "from_source_version_id": "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1",
+      "to_source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "evidence_locator": "Official gazette permit heading cites the Hours of Work and Rest Law; effective interval unresolved",
+      "review_status": "candidate"
+    }
+  ]
+}

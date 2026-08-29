@@ -29,7 +29,13 @@
     "legal:sources:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts build",
     "legal:sources:status": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts status",
     "legal:sources:search": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts search",
-    "legal:sources:changes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts changes"
+    "legal:sources:changes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts changes",
+    "legal:sources:catalogs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts catalogs",
+    "legal:sources:diffs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts diffs",
+    "legal:sources:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts coverage",
+    "legal:sources:citations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts citations",
+    "legal:sources:reproducibility": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts reproducibility",
+    "legal:sources:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-sources.mts review-package"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

@@ -1,0 +1,33 @@
+{
+  "schema_version": "legal-official-catalog-registry-v0.1",
+  "catalogs": [
+    {
+      "catalog_id": "IL_EXTENSION_ORDERS_CATALOG",
+      "title": "Ministry of Labor extension orders catalog",
+      "canonical_url": "https://www.gov.il/he/Departments/DynamicCollectors/extension-orders",
+      "publisher": "Ministry of Labor",
+      "topics": ["pension", "travel", "convalescence", "working_time"],
+      "required_detection": [
+        {
+          "candidate_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2026",
+          "title_tokens": ["הבראה", "2026"],
+          "evidence_role": "catalog_discovery_only_not_source_authority"
+        }
+      ]
+    },
+    {
+      "catalog_id": "IL_WORK_PERMITS_CATALOG",
+      "title": "Ministry of Labor work permits catalog",
+      "canonical_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits",
+      "publisher": "Ministry of Labor",
+      "topics": ["working_time", "overtime", "weekly_rest"],
+      "required_detection": [
+        {
+          "candidate_id": "IL_WORK_PERMITS_CATALOG_CURRENT_SET",
+          "title_tokens": ["היתר"],
+          "evidence_role": "catalog_discovery_only_not_source_authority"
+        }
+      ]
+    }
+  ]
+}

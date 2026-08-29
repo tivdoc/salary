@@ -1,4 +1,4 @@
-import type { LegalChunk, LegalSource } from "./contracts.ts";
+import { legalSourceVersionId, type LegalChunk, type LegalSource } from "./contracts.ts";
 import { compareSourceAuthority } from "./authority.ts";
 import { isEffectiveOn } from "./effective-period.ts";
 import type { LegalSector, LegalTopic } from "./taxonomy.ts";
@@ -20,7 +20,7 @@ export type LegalKnowledgeResult = Readonly<{
   chunk: LegalChunk;
   source: LegalSource;
   effectiveDateMatch: boolean;
-  citationReference: Readonly<{ source_id: string; source_version: string; chunk_id: string }>;
+  citationReference: Readonly<{ source_id: string; source_version: string; source_version_id: string; chunk_id: string }>;
   score: number;
   scoreComponents: Readonly<Record<string, number>>;
   reasons: readonly string[];
@@ -51,6 +51,9 @@ export function retrieveLegalKnowledge(
   chunks: readonly LegalChunk[],
   query: LegalKnowledgeQuery,
 ) {
+  if (query.sector === "unknown") {
+    return { results: [] as LegalKnowledgeResult[], conflicts: ["sector_required"], incomplete: true };
+  }
   const minimumRank = query.minimumBindingLevel ? bindingRank[query.minimumBindingLevel] : 1;
   const eligibleSources = sources.filter((source) => {
     if (source.status === "rejected") return false;
@@ -59,7 +62,7 @@ export function retrieveLegalKnowledge(
     if (query.language && source.language !== query.language) return false;
     if (!source.topics.includes(query.topic)) return false;
     if (bindingRank[source.authority.binding_level] < minimumRank) return false;
-    return isEffectiveOn(source, query.targetDate) || source.effective_period.applicability_basis === "explanatory_as_of" || !query.activeOnly;
+    return isEffectiveOn(source, query.targetDate);
   });
   const sourceByVersion = new Map(eligibleSources.map((source) => [`${source.source_id}@${source.source_version}`, source]));
   const queryTerms = [...new Set([...(query.keywords ?? []), query.topic.replaceAll("_", " "), query.role ?? ""].flatMap(normalizedTerms))];
@@ -85,7 +88,7 @@ export function retrieveLegalKnowledge(
       chunk,
       source,
       effectiveDateMatch,
-      citationReference: { source_id: source.source_id, source_version: source.source_version, chunk_id: chunk.chunk_id },
+      citationReference: { source_id: source.source_id, source_version: source.source_version, source_version_id: legalSourceVersionId(source), chunk_id: chunk.chunk_id },
       score,
       scoreComponents,
       reasons: [sectorSpecific ? "sector_specific" : "general_baseline", source.authority.binding_level, effectiveDateMatch ? "date_match" : "date_unresolved_or_mismatch"],

@@ -1,0 +1,134 @@
+{
+  "schema_version": "legal-coverage-matrix-v0.1",
+  "coverage_window": {
+    "from": "2019-01-01",
+    "to": "2026-08-29",
+    "timezone": "Asia/Jerusalem",
+    "basis": "engineering_corpus_boundary_only",
+    "approved_legal_scope_document": null,
+    "legal_limitation_or_entitlement_statement": false
+  },
+  "corpus_status": "LEGAL_SOURCE_CORPUS_INCOMPLETE",
+  "rows": [
+    {
+      "topic": "minimum_wage",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_MIN_WAGE_LAW@discovery-v0",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Israeli legislature",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["historical_effective_intervals_unresolved", "bytes_change_pending_for_official_rate_table"]
+    },
+    {
+      "topic": "working_time",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Knesset National Legislation Database",
+      "review_status": "needs_review",
+      "coverage_status": "blocked",
+      "reason_codes": ["official_law_endpoint_returns_challenge_shell", "base_statute_not_parseable", "permit_catalog_snapshot_blocked"]
+    },
+    {
+      "topic": "working_time",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018@discovery-v0.1",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Ministry of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "candidate_needs_review",
+      "reason_codes": ["official_supplemental_instrument_candidate", "source_set_still_incomplete"]
+    },
+    {
+      "topic": "working_time",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Ministry of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["effective_interval_unresolved", "later_and_sector_permits_require_catalog_review"]
+    },
+    {
+      "topic": "pension",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Ministry of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "candidate_needs_review",
+      "reason_codes": ["parsed_candidate_not_legally_reviewed", "historical_updates_unresolved"]
+    },
+    {
+      "topic": "travel",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016@discovery-v0",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Ministry of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "candidate_needs_review",
+      "reason_codes": ["parsed_candidate_not_legally_reviewed", "later_instruments_not_catalog_verified"]
+    },
+    {
+      "topic": "convalescence",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_1988@discovery-v0",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Ministry of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["historical_only", "effective_interval_unresolved", "cannot_answer_current_alone"]
+    },
+    {
+      "topic": "convalescence",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2016@discovery-v0.1",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Ministry of Labor",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["later_official_candidate", "effective_interval_unresolved", "2026_catalog_record_url_unresolved"]
+    },
+    {
+      "topic": "vacation",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_ANNUAL_VACATION_LAW@discovery-v0",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Israeli legislature",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["effective_interval_evidence_unresolved", "historical_amendments_unresolved"]
+    },
+    {
+      "topic": "sick_leave",
+      "effective_from": "2019-01-01",
+      "effective_to": "2026-08-29",
+      "sector": "general",
+      "source_version_id": "IL_SICK_PAY_LAW@discovery-v0",
+      "binding_level": "primary_binding",
+      "issuing_authority": "Israeli legislature",
+      "review_status": "needs_review",
+      "coverage_status": "gap",
+      "reason_codes": ["effective_interval_evidence_unresolved", "historical_amendments_unresolved"]
+    }
+  ]
+}

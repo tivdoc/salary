@@ -4,6 +4,7 @@ import {
   legalChunkSchema,
   legalCitationSchema,
   legalParameterSchema,
+  legalSourceSchema,
 } from "./contracts.ts";
 import { canTransitionLegalSourceStatus, validateLegalSourceActivation } from "./lifecycle.ts";
 import { syntheticSource } from "./synthetic-fixtures.ts";
@@ -11,6 +12,14 @@ import { syntheticSource } from "./synthetic-fixtures.ts";
 describe("legal source contracts", () => {
   it("accepts a strict synthetic draft source", () => {
     expect(syntheticSource().source_id).toBe("IL_SYNTHETIC_LAW");
+  });
+
+  it("rejects unknown properties at top-level and nested runtime boundaries", () => {
+    expect(() => legalSourceSchema.parse({ ...syntheticSource(), unknown: true })).toThrow();
+    expect(() => legalSourceSchema.parse({
+      ...syntheticSource(),
+      authority: { ...syntheticSource().authority, unknown: true },
+    })).toThrow();
   });
 
   it("rejects non-HTTPS canonical URLs", () => {
@@ -56,7 +65,11 @@ describe("legal source contracts", () => {
       chunk_id: "synthetic",
       source_id: "IL_SYNTHETIC_LAW",
       source_version: "v1",
+      source_version_id: "IL_SYNTHETIC_LAW@v1",
+      parsed_version_id: "IL_SYNTHETIC_LAW@v1#parsed-synthetic",
       artifact_sha256: "a".repeat(64),
+      normalized_text_sha256: "d".repeat(64),
+      parser_version: "synthetic-parser-v1",
       section_identifier: "1",
       heading_path: [],
       page_from: 1,
@@ -166,13 +179,22 @@ describe("parameter and case-law schemas", () => {
   const citation = legalCitationSchema.parse({
     source_id: "IL_SYNTHETIC_LAW",
     source_version: "v1",
+    source_version_id: "IL_SYNTHETIC_LAW@v1",
+    parsed_version_id: "IL_SYNTHETIC_LAW@v1#parsed-synthetic",
+    raw_artifact_sha256: "a".repeat(64),
+    normalized_text_sha256: "d".repeat(64),
+    parser_version: "synthetic-parser-v1",
+    chunk_id: "chunk-1",
     title: "Synthetic law",
     authority: syntheticSource().authority,
     canonical_url: "https://main.knesset.gov.il/synthetic",
     section_or_clause: "1",
     page: null,
     effective_period: syntheticSource().effective_period,
+    effective_date_evidence_locator: "synthetic section 1",
+    review_status: "draft",
     retrieved_at: "2026-08-29T00:00:00Z",
+    locator: { format: "pdf", page: 1, section: "1", paragraph: null, character_from: 0, character_to: 10 },
     supporting_chunk_ids: ["chunk-1"],
     excerpt: null,
   });

@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { detectLegalSourceChange, selectLegalSourceObservation } from "./change-detection.ts";
 import { loadLegalSourceManifest } from "./manifest.ts";
 
-describe("official source manifest V0", () => {
-  it("loads nine unique official source records", async () => {
+describe("official source manifest V0.1", () => {
+  it("loads twelve unique official source records", async () => {
     const manifest = await loadLegalSourceManifest();
-    expect(manifest.sources).toHaveLength(9);
-    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(9);
+    expect(manifest.sources).toHaveLength(12);
+    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(12);
   });
 
   it("covers every initial discovery topic", async () => {
