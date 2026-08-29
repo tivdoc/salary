@@ -73,13 +73,8 @@ const a1Files = [
 ] as const;
 
 const legalEvidenceNames = [
-  "acquisition-readiness-report.json",
-  "artifact-inventory.json",
   "citation-round-trip-report.json",
   "clean-room-reproducibility-report.json",
-  "corpus-readiness-report.json",
-  "coverage-report.json",
-  "legal-source-status.json",
   "source-byte-diff-report.json",
   "temporal-coverage-report.json",
 ] as const;
