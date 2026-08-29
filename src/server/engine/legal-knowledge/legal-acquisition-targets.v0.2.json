@@ -43,8 +43,8 @@
       "recommended_filename": "work-permits-catalog-snapshot.json",
       "required": true,
       "existing_source_version": null,
-      "browser_outcome": "partial",
-      "browser_safe_error_code": "browser_snapshot_10_of_58_entries"
+      "browser_outcome": "acquired",
+      "browser_safe_error_code": null
     },
     {
       "target_id": "ACQ-V02-PENSION-2016",
@@ -112,14 +112,14 @@
       "instrument_id": "INSTRUMENT:IL:CONVALESCENCE-LAW-2025",
       "target_kind": "artifact",
       "canonical_landing_url": "https://main.knesset.gov.il/Activity/Legislation/Laws/Pages/default.aspx",
-      "artifact_url": null,
+      "artifact_url": "https://fs.knesset.gov.il/25/law/25_lsr_6133485.pdf",
       "allowlisted_hosts": ["main.knesset.gov.il", "fs.knesset.gov.il"],
       "expected_document_title": "Official 2025 law publication continuing or changing convalescence-pay provisions",
       "recommended_filename": "convalescence-law-2025.pdf",
       "required": true,
-      "existing_source_version": null,
-      "browser_outcome": "unavailable",
-      "browser_safe_error_code": "official_knesset_search_control_returned_no_result_page"
+      "existing_source_version": "discovery-v0.3.1",
+      "browser_outcome": "acquired",
+      "browser_safe_error_code": null
     },
     {
       "target_id": "ACQ-V02-CONVALESCENCE-2026",

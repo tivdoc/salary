@@ -818,6 +818,57 @@
         "found_at": "2026-08-29",
         "included_reason": "Required 2024 official law artifact target identified without using the secondary document as operative authority."
       }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2025",
+      "source_version": "discovery-v0.3.1",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Israeli legislature",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": false,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Official 2025 law publication containing convalescence-pay provisions",
+      "canonical_url": "https://fs.knesset.gov.il/25/law/25_lsr_6133485.pdf",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["convalescence"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": ["Separate official raw artifact candidate. Identity, provisions, relations, effectivity, scope, population and applicability remain unverified."],
+      "verification": {
+        "status": "domain_verified",
+        "method": "single safe fetch from the exact official Knesset file URL",
+        "verified_by": ["tivdoc-wave1-source-acquisition-system"],
+        "verified_at": "2026-08-29T20:13:44.404Z",
+        "notes": ["Technical artifact validation only; no legal review or activation was performed."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "Required Wave 1 official 2025 law artifact acquired from the exact Knesset file URL without asserting legal relations or effectivity."
+      }
     }
   ]
 }

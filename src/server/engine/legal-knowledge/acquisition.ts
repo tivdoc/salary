@@ -15,6 +15,7 @@ import {
   validateControlledPdfBytes,
   verifyControlledAcquisitionLedger,
 } from "./controlled-import-security.ts";
+import { validateWorkingTimePermitInventories } from "./wave1-working-time-permits.ts";
 
 const acquisitionTargetSchema = z.object({
   target_id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{2,159}$/),
@@ -89,6 +90,8 @@ export const provenanceRegistrySchema = z.object({
 export const defaultAcquisitionTargetPath = path.resolve("src", "server", "engine", "legal-knowledge", "legal-acquisition-targets.v0.2.json");
 export const defaultProvenancePath = path.resolve("src", "server", "engine", "legal-knowledge", "legal-provenance.v0.2.json");
 export const defaultBrowserObservationPath = path.resolve("src", "server", "engine", "legal-knowledge", "legal-browser-observations.v0.2.json");
+export const wave1PermitCatalogPath = path.resolve("src", "server", "engine", "legal-knowledge", "wave1-working-time-permits-catalog.v0.3.json");
+export const wave1HoursPublicationsPath = path.resolve("src", "server", "engine", "legal-knowledge", "wave1-working-time-permits-publications.v0.3.json");
 
 export async function loadAcquisitionTargets(filePath = defaultAcquisitionTargetPath) {
   return acquisitionTargetRegistrySchema.parse(JSON.parse(await readFile(filePath, "utf8")));
@@ -100,7 +103,58 @@ export async function loadProvenanceRegistry(filePath = defaultProvenancePath) {
 
 export async function loadBrowserObservations(filePath = defaultBrowserObservationPath) {
   const schema = z.object({ schema_version: z.literal("legal-browser-observations-v0.2"), observations: z.array(catalogObservationSchema) }).strict();
-  return schema.parse(JSON.parse(await readFile(filePath, "utf8")));
+  const base = schema.parse(JSON.parse(await readFile(filePath, "utf8")));
+  if (path.resolve(filePath) !== path.resolve(defaultBrowserObservationPath)) return base;
+
+  const permits = JSON.parse(await readFile(wave1PermitCatalogPath, "utf8"));
+  const publications = JSON.parse(await readFile(wave1HoursPublicationsPath, "utf8"));
+  const validated = validateWorkingTimePermitInventories({ permits, publications });
+  const wave1Observations = [
+    catalogObservationSchema.parse({
+      catalog_observation_id: "CATOBS:WORK-PERMITS:2026-08-29:WAVE1-COMPLETE",
+      catalog_id: "IL_WORK_PERMITS_CATALOG",
+      canonical_url: validated.permits.snapshot.canonical_url,
+      observed_at: validated.permits.snapshot.observed_at,
+      acquisition_method: validated.permits.snapshot.acquisition_method,
+      status: "complete",
+      query: { filters: "none", pagination: "skip=0,10,20,30,40,50" },
+      result_count_reported: validated.permits.snapshot.reported_result_count,
+      entries_observed: validated.permits.entries.map((entry) => ({
+        entry_id: entry.stable_id,
+        title: entry.catalog_title,
+        artifact_url: entry.artifact_links[0]?.official_url ?? null,
+      })),
+      pagination: { pages_observed: 6, pages_reported: 6 },
+      safe_error_code: null,
+      discovery_only: true,
+    }),
+    catalogObservationSchema.parse({
+      catalog_observation_id: "CATOBS:HOURS-WORK-REST:PUBLICATIONS:2026-08-29:WAVE1-COMPLETE",
+      catalog_id: "IL_HOURS_WORK_REST_LAW_PUBLICATIONS",
+      canonical_url: validated.publications.snapshot.canonical_url,
+      observed_at: validated.publications.snapshot.observed_at,
+      acquisition_method: validated.publications.snapshot.acquisition_method,
+      status: "complete",
+      query: { law_id: "2000019", visible_control: "load_more_once" },
+      result_count_reported: validated.publications.snapshot.reported_result_count,
+      entries_observed: validated.publications.entries.map((entry) => ({
+        entry_id: entry.publication_identity,
+        title: entry.title,
+        artifact_url: entry.official_artifact_url,
+      })),
+      pagination: { pages_observed: 2, pages_reported: 2 },
+      safe_error_code: null,
+      discovery_only: true,
+    }),
+  ];
+  const supersededCatalogIds = new Set(wave1Observations.map((observation) => observation.catalog_id));
+  return schema.parse({
+    schema_version: "legal-browser-observations-v0.2",
+    observations: [
+      ...base.observations.filter((observation) => !supersededCatalogIds.has(observation.catalog_id)),
+      ...wave1Observations,
+    ],
+  });
 }
 
 export function validateOwnerPdfBytes(bytes: Uint8Array, maxBytes = 20 * 1024 * 1024) {

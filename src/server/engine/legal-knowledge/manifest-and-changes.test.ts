@@ -4,10 +4,10 @@ import { loadProvenanceRegistry } from "./acquisition.ts";
 import { loadLegalSourceManifest } from "./manifest.ts";
 
 describe("official source manifest V0.2", () => {
-  it("loads sixteen unique official source records", async () => {
+  it("loads seventeen unique official source records", async () => {
     const manifest = await loadLegalSourceManifest();
-    expect(manifest.sources).toHaveLength(16);
-    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(16);
+    expect(manifest.sources).toHaveLength(17);
+    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(17);
   });
 
   it("covers every initial discovery topic", async () => {

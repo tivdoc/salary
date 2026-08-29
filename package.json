@@ -39,10 +39,16 @@
     "legal:sources:acquisition:request": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts request",
     "legal:sources:acquisition:import": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts import",
     "legal:sources:acquisition:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts verify",
+    "legal:sources:acquisition:self-test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts self-test",
+    "legal:sources:acquisition:test-instance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts test-acquisition-instance",
+    "legal:sources:acquisition:instance-readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts instance-readiness",
     "legal:sources:acquisition:status": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts status",
     "legal:sources:acquisition:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts readiness",
     "legal:sources:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts corpus-readiness",
-    "legal:sources:review-package:v0.2": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts review-package"
+    "legal:sources:review-package:v0.2": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts review-package",
+    "legal:sources:wave1:pension-convalescence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-pension-convalescence.mts",
+    "legal:sources:wave1:working-time-permits": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-working-time-permits.mts",
+    "legal:sources:wave1:integrate-evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-integrate-evidence.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

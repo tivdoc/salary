@@ -8,6 +8,7 @@ import {
   corpusReadinessOutcome,
   determineAcquisitionReadinessOutcome,
   importOwnerOfficialArtifact,
+  loadBrowserObservations,
   validateOwnerPdfBytes,
   verifyOwnerAcquisitionLedger,
 } from "./acquisition.ts";
@@ -171,6 +172,16 @@ describe("controlled owner acquisition", () => {
 });
 
 describe("readiness outcomes", () => {
+  it("uses the complete Wave 1 browser inventories without changing their discovery-only role", async () => {
+    const browser = await loadBrowserObservations();
+    const permits = browser.observations.find((observation) => observation.catalog_id === "IL_WORK_PERMITS_CATALOG");
+    const publications = browser.observations.find((observation) => observation.catalog_id === "IL_HOURS_WORK_REST_LAW_PUBLICATIONS");
+    expect(permits).toMatchObject({ status: "complete", result_count_reported: 58, discovery_only: true });
+    expect(permits?.entries_observed).toHaveLength(58);
+    expect(publications).toMatchObject({ status: "complete", result_count_reported: 20, discovery_only: true });
+    expect(publications?.entries_observed).toHaveLength(20);
+  });
+
   it("returns each acquisition readiness exit code deterministically", () => {
     expect(determineAcquisitionReadinessOutcome({ missingTargetIds: [], implementationComplete: true, ownerHandoffComplete: true, environmentBlocked: false }).exit_code).toBe(0);
     expect(determineAcquisitionReadinessOutcome({ missingTargetIds: ["A"], implementationComplete: false, ownerHandoffComplete: false, environmentBlocked: false }).exit_code).toBe(1);

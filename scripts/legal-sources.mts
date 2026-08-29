@@ -8,6 +8,7 @@ import { legalReviewEventSchema, legalSourceSchema, legalSourceVersionId, type L
 import { retrieveActiveLegalKnowledge } from "../src/engine/legal-knowledge/retrieval.ts";
 import { legalSectors, legalTopics, type LegalSector, type LegalTopic } from "../src/engine/legal-knowledge/taxonomy.ts";
 import {
+  classifyLegalChangeDetections,
   detectLegalSourceChange,
   selectLegalSourceObservation,
   type LegalSourceObservation,
@@ -966,11 +967,15 @@ async function sourceDiffsCommand() {
           safeErrorCode = sanity.code;
         } else normalizedHash = normalizedDocumentHash([{ text: normalizedText }]);
       }
-      const classification = contentStatus === "invalid_content_observation"
-        ? "indeterminate"
-        : normalizedHash && normalizedHash === baseline.normalized_text_sha256
-          ? "presentation_or_transport_only"
-          : "indeterminate";
+      const [detection] = classifyLegalChangeDetections([{
+        observation_id: `fetch:${source.source_id}@${source.source_version}#${candidate.artifact_sha256}`,
+        source_id: source.source_id,
+        artifact_sha256: candidate.artifact_sha256,
+        disposition: contentStatus === "invalid_content_observation" ? "not_a_legal_source_version" : "legal_artifact_candidate",
+        safe_error_code: safeErrorCode,
+        bytes_changed: true,
+      }]);
+      const classification = detection.classification;
       const candidateVersionId = `${source.source_id}@${source.source_version}#${candidate.artifact_sha256.slice(0, 16)}`;
       reviewEvents.push(legalReviewEventSchema.parse({
         event_id: `candidate:${sha256(`${candidateVersionId}\n${candidate.artifact_sha256}`).slice(0, 32)}`,
