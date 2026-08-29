@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { acquisitionRequestSchema, type AcquisitionRequest } from "../../../engine/legal-knowledge/acquisition-contracts.ts";
 import {
   controlledImportInstanceReadiness,
+  controlledImportPersistentReadiness,
   importControlledOfficialArtifact,
   inspectControlledImportRecovery,
   scanControlledImportMetadata,
@@ -13,6 +14,7 @@ import {
   validateControlledPdfBytes,
   verifyControlledAcquisitionLedger,
 } from "./controlled-import-security.ts";
+import { createControlledImportJournalBinding, readControlledImportJournal } from "./controlled-import-recovery/protocol.ts";
 
 const roots: string[] = [];
 const testNotice = "TEST COPY OF EXISTING PUBLIC OFFICIAL ARTIFACT; NOT AN OWNER IMPORT" as const;
@@ -147,7 +149,7 @@ describe("controlled import E2E and atomic selection", () => {
       published_sha256: hash(item.bytes),
       attestation_type: "synthetic_test_attestation",
       test_only_notice: testNotice,
-      parser_state: "not_attempted_by_import",
+      parser_state: "screened_in_isolated_process",
       no_partial_selection_before_ledger_commit: true,
       artifact_version: { review_state: "needs_review", activation_state: "inactive", parse_state: "not_attempted" },
     });
@@ -158,6 +160,12 @@ describe("controlled import E2E and atomic selection", () => {
       ready: true,
       usable_for_legal_rules: false,
       activates_source: false,
+    });
+    expect(controlledImportPersistentReadiness(verified)).toMatchObject({
+      status: "PERSISTENT_OWNER_IMPORTS_NOT_VERIFIED",
+      ready: false,
+      persistent_owner_import_entries: 0,
+      synthetic_test_import_entries_excluded: 1,
     });
   });
 
@@ -209,6 +217,78 @@ describe("controlled import E2E and atomic selection", () => {
     expect(recovery.orphan_artifact_hashes).toEqual([hash(afterEvent.bytes)]);
     expect(recovery.selectable_hashes).toEqual([]);
     expect((await importControlledOfficialArtifact(afterEvent.input)).created).toBe(true);
+  });
+
+  it.each([
+    ["after_received", "received"],
+    ["after_private_copy", "quarantined"],
+    ["after_validation", "validated"],
+    ["after_artifact_publish", "published"],
+    ["after_event_publish", "published"],
+    ["after_ledger_append", "ledger_appended"],
+  ] as const)("recovers deterministically after crash injection %s", async (faultInjection, lastStage) => {
+    const item = await fixture(validPdf(faultInjection));
+    await expect(importControlledOfficialArtifact({ ...item.input, faultInjection })).rejects.toThrow(`injected_interruption_${faultInjection}`);
+    const binding = createControlledImportJournalBinding({
+      request: item.input.request,
+      acquisitionRequestId: item.input.request.acquisition_request_id,
+      sourceId: item.input.request.source_id,
+      expectedFilename: item.input.request.recommended_filename,
+      expectedMediaType: item.input.request.expected_media_type,
+      expectedArtifactSha256: item.input.request.expected_document_identity.artifact_sha256 ?? null,
+      receiptInputSha256: hash(Buffer.from(JSON.stringify(receipt(item.bytes)))),
+    });
+    expect((await readControlledImportJournal(item.input.ledgerRoot, binding.operation_id)).at(-1)?.stage).toBe(lastStage);
+    const recovered = await importControlledOfficialArtifact(item.input);
+    const journal = await readControlledImportJournal(item.input.ledgerRoot, binding.operation_id);
+    expect(journal.map((entry) => entry.stage)).toEqual(["received", "quarantined", "validated", "published", "ledger_appended"]);
+    expect(recovered.ledger_committed).toBe(true);
+    expect((await inspectControlledImportRecovery({ ledgerRoot: item.input.ledgerRoot, artifactRoot: item.input.artifactRoot })).selectable_hashes).toEqual([hash(item.bytes)]);
+  });
+
+  it("recovers the exact quarantined private inputs when the inbox is no longer present", async () => {
+    const item = await fixture(validPdf("inbox-removed-after-quarantine"));
+    await expect(importControlledOfficialArtifact({ ...item.input, faultInjection: "after_private_copy" })).rejects.toThrow("injected_interruption_after_private_copy");
+    await rm(item.inbox, { recursive: true, force: true });
+    const recovered = await importControlledOfficialArtifact(item.input);
+    expect(recovered).toMatchObject({ ledger_committed: true, private_copy_sha256: hash(item.bytes), published_sha256: hash(item.bytes) });
+  });
+
+  it("rejects the same bytes under a conflicting bound identity without a second ledger record", async () => {
+    const item = await fixture();
+    await importControlledOfficialArtifact(item.input);
+    const conflictingTitle = "Conflicting synthetic document identity";
+    const baseRequest = request(item.bytes);
+    const conflictingRequest = acquisitionRequestSchema.parse({
+      ...baseRequest,
+      expected_document_title: conflictingTitle,
+      expected_document_identity: { title: conflictingTitle, artifact_sha256: hash(item.bytes), identity_basis: "known_existing_public_official_artifact_test_copy" },
+      receipt_template: { ...baseRequest.receipt_template, expected_document_title: conflictingTitle },
+    });
+    await writeFile(path.join(item.inbox, "receipt.json"), JSON.stringify(receipt(item.bytes, { expected_document_title: conflictingTitle })));
+    await expect(importControlledOfficialArtifact({ ...item.input, request: conflictingRequest })).rejects.toThrow("immutable_target_mismatch");
+    const verified = await verifyControlledAcquisitionLedger({ ledgerRoot: item.input.ledgerRoot, artifactRoot: item.input.artifactRoot });
+    expect(verified).toMatchObject({ ledger_entries: 1, persistent_owner_import_entries: 0, synthetic_test_import_entries: 1 });
+  });
+
+  it("quarantines different bytes supplied under the same expected identity", async () => {
+    const expected = validPdf("expected-identity");
+    const item = await fixture(expected);
+    const different = validPdf("different-bytes");
+    await writeFile(path.join(item.inbox, "official-test-copy.pdf"), different);
+    await writeFile(path.join(item.inbox, "receipt.json"), JSON.stringify(receipt(different)));
+    await expect(importControlledOfficialArtifact(item.input)).rejects.toThrow("request_document_hash_mismatch");
+    const binding = createControlledImportJournalBinding({
+      request: item.input.request,
+      acquisitionRequestId: item.input.request.acquisition_request_id,
+      sourceId: item.input.request.source_id,
+      expectedFilename: item.input.request.recommended_filename,
+      expectedMediaType: item.input.request.expected_media_type,
+      expectedArtifactSha256: item.input.request.expected_document_identity.artifact_sha256 ?? null,
+      receiptInputSha256: hash(Buffer.from(JSON.stringify(receipt(different)))),
+    });
+    expect((await readControlledImportJournal(item.input.ledgerRoot, binding.operation_id)).at(-1)?.stage).toBe("rejected");
+    expect((await inspectControlledImportRecovery({ ledgerRoot: item.input.ledgerRoot, artifactRoot: item.input.artifactRoot })).selectable_hashes).toEqual([]);
   });
 
   it("distinguishes empty verification and strict missing-instance verification", async () => {

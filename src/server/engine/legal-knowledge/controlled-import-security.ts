@@ -8,7 +8,6 @@ import {
   readFile,
   readdir,
   realpath,
-  rm,
   stat,
   unlink,
 } from "node:fs/promises";
@@ -24,6 +23,16 @@ import {
   type ArtifactVersion,
 } from "../../../engine/legal-knowledge/acquisition-contracts.ts";
 import { legalTimestampSchema, sha256Schema } from "../../../engine/legal-knowledge/contracts.ts";
+import {
+  advanceControlledImportJournal,
+  controlledImportSha256,
+  controlledImportStableJson,
+  createControlledImportJournalBinding,
+  findRecoverableControlledImportBinding,
+  readControlledImportJournal,
+  withControlledImportLock,
+} from "./controlled-import-recovery/protocol.ts";
+import { screenUntrustedPdfIsolated } from "./parser-isolation/index.ts";
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
 const MAX_PDF_PAGES = 500;
@@ -43,6 +52,14 @@ const controlledLedgerEventSchema = z.object({
   occurred_at: legalTimestampSchema,
   actor_type: z.literal("system"),
   reason: z.string().min(1),
+  operation_id: sha256Schema,
+  request_sha256: sha256Schema,
+  expected_filename: z.string().min(1),
+  expected_media_type: z.literal("application/pdf"),
+  expected_artifact_sha256: sha256Schema.nullable(),
+  actual_byte_count: z.number().int().positive(),
+  artifact_record_sha256: sha256Schema,
+  receipt_input_sha256: sha256Schema,
 }).strict();
 
 type ControlledLedgerEvent = z.infer<typeof controlledLedgerEventSchema>;
@@ -254,7 +271,13 @@ async function publishArtifactAtomically(input: Readonly<{ root: string; sourceI
   return result;
 }
 
-export type ControlledImportFault = "after_private_copy" | "after_artifact_publish" | "after_event_publish";
+export type ControlledImportFault =
+  | "after_received"
+  | "after_private_copy"
+  | "after_validation"
+  | "after_artifact_publish"
+  | "after_event_publish"
+  | "after_ledger_append";
 
 export async function importControlledOfficialArtifact(input: Readonly<{
   request: AcquisitionRequest;
@@ -276,117 +299,266 @@ export async function importControlledOfficialArtifact(input: Readonly<{
     await mkdir(resolvedRoot, { recursive: true });
     await assertNoReparseComponents(path.dirname(resolvedRoot), resolvedRoot);
   }
-  const inbox = path.resolve(input.incomingRoot, request.acquisition_request_id);
-  const [originalPath, receiptPath] = await Promise.all([
-    resolveIncomingRegularFile(inbox, input.originalFilename),
-    resolveIncomingRegularFile(inbox, input.receiptFilename),
-  ]);
-  const rawReceipt = await readFile(receiptPath, "utf8");
-  const rawScan = scanControlledImportMetadata({ receipt: rawReceipt });
-  if (!rawScan.safe) throw new Error("acquisition_metadata_secret_or_pii_detected");
-  const receipt = acquisitionReceiptSchema.parse(JSON.parse(rawReceipt));
-  if (input.requiredAttestationType && receipt.attestation_type !== input.requiredAttestationType) throw new Error("receipt_attestation_type_mismatch");
-  if (!request.allowed_attestation_types.includes(receipt.attestation_type)) throw new Error("receipt_attestation_type_not_allowed");
-  if (receipt.acquisition_request_id !== request.acquisition_request_id || receipt.source_id !== request.source_id) throw new Error("owner_receipt_request_mismatch");
-  if (receipt.original_filename !== input.originalFilename) throw new Error("owner_receipt_filename_mismatch");
-  if (receipt.expected_media_type !== request.expected_media_type) throw new Error("owner_receipt_media_type_mismatch");
-  if (receipt.expected_document_title !== request.expected_document_title) throw new Error("owner_receipt_document_identity_mismatch");
-  validateExactHttpsUrl(receipt.landing_url, request.allowlisted_hosts, "owner_receipt_landing_url");
-  validateArtifactUrlOverride(request, receipt.artifact_url);
-  validateExactHttpsUrl(receipt.final_url, request.allowlisted_hosts, "owner_receipt_final_url");
-  if (receipt.landing_url !== request.canonical_landing_url) throw new Error("owner_receipt_landing_url_mismatch");
-  if (!request.allowed_final_urls.includes(receipt.final_url)) throw new Error("owner_receipt_final_url_not_exactly_allowlisted");
-  if (request.artifact_url && receipt.artifact_url !== request.artifact_url) throw new Error("owner_receipt_artifact_url_mismatch");
-  if (receipt.attestation_type === "synthetic_test_attestation" && receipt.test_only_notice !== TEST_NOTICE) throw new Error("synthetic_test_notice_missing");
-  const transactionRoot = path.resolve(input.ledgerRoot, ".transactions", `${request.acquisition_request_id}-${randomUUID()}`);
-  ensureContained(input.ledgerRoot, transactionRoot, "transaction_path_escape");
-  await mkdir(transactionRoot, { recursive: true });
+  const requestSha256 = controlledImportSha256(controlledImportStableJson(request));
+  let initialRawReceipt: string | null = null;
+  let binding;
   try {
-    const snapshot = await snapshotToPrivateCopy(originalPath, transactionRoot);
-    if (input.afterPrivateCopyForTest) await input.afterPrivateCopyForTest();
-    if (input.faultInjection === "after_private_copy") throw new Error("injected_interruption_after_private_copy");
-    if (snapshot.artifactSha256 !== receipt.artifact_sha256) throw new Error("owner_receipt_artifact_hash_mismatch");
-    if (request.expected_document_identity.artifact_sha256 && snapshot.artifactSha256 !== request.expected_document_identity.artifact_sha256) {
-      throw new Error("request_document_hash_mismatch");
-    }
-    const content = validateControlledPdfBytes(snapshot.bytes);
-    const sourceVersion = receipt.attestation_type === "synthetic_test_attestation" ? "synthetic-test-v0.3.1" : "owner-v0.3.1";
-    const stored = await publishArtifactAtomically({
-      root: input.artifactRoot,
+    const inbox = path.resolve(input.incomingRoot, request.acquisition_request_id);
+    const receiptPath = await resolveIncomingRegularFile(inbox, input.receiptFilename);
+    initialRawReceipt = await readFile(receiptPath, "utf8");
+    const rawScan = scanControlledImportMetadata({ receipt: initialRawReceipt });
+    if (!rawScan.safe) throw new Error("acquisition_metadata_secret_or_pii_detected");
+    binding = createControlledImportJournalBinding({
+      request,
+      acquisitionRequestId: request.acquisition_request_id,
       sourceId: request.source_id,
-      sourceVersion,
-      sha256: snapshot.artifactSha256,
-      bytes: snapshot.bytes,
+      expectedFilename: request.recommended_filename,
+      expectedMediaType: request.expected_media_type,
+      expectedArtifactSha256: request.expected_document_identity.artifact_sha256 ?? null,
+      receiptInputSha256: sha256(initialRawReceipt),
     });
-    if (input.faultInjection === "after_artifact_publish") throw new Error("injected_interruption_after_artifact_publish");
-    const artifactVersion = artifactVersionSchema.parse({
-      artifact_version_id: `artifact:${request.source_id}:${snapshot.artifactSha256}`,
-      source_id: request.source_id,
-      legal_text_version_id: null,
-      acquisition_request_id: request.acquisition_request_id,
-      artifact_sha256: snapshot.artifactSha256,
-      byte_count: snapshot.bytes.byteLength,
-      media_type: content.media_type,
-      original_filename: input.originalFilename,
-      landing_url: receipt.landing_url,
-      artifact_url: receipt.artifact_url,
-      final_url: receipt.final_url,
-      acquired_at: receipt.acquired_at,
-      acquisition_state: "acquired",
-      parse_state: "not_attempted",
-      evidence_state: "incomplete",
-      review_state: "needs_review",
-      activation_state: "inactive",
-      provenance: {
-        promulgation_publisher: "unknown_pending_provenance_review",
-        artifact_host: new URL(receipt.final_url).hostname,
-        artifact_role: "official_institutional_copy",
-        canonicality_status: "official_copy_not_primary_promulgation",
-        acquisition_method: receipt.acquisition_method,
-      },
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    binding = await findRecoverableControlledImportBinding({
+      ledgerRoot: input.ledgerRoot,
+      requestSha256,
+      acquisitionRequestId: request.acquisition_request_id,
+      sourceId: request.source_id,
     });
-    const receiptSha256 = sha256(stableJson(receipt));
-    const event = controlledLedgerEventSchema.parse({
-      event_id: `${receipt.attestation_type === "synthetic_test_attestation" ? "synthetic-test-import" : "owner-import"}:${snapshot.artifactSha256}`,
-      event_type: receipt.attestation_type === "synthetic_test_attestation" ? "synthetic_test_copy_imported" : "owner_imported",
-      acquisition_request_id: request.acquisition_request_id,
-      source_id: request.source_id,
-      artifact_version_id: artifactVersion.artifact_version_id,
-      artifact_sha256: snapshot.artifactSha256,
-      receipt_sha256: receiptSha256,
-      attestation_type: receipt.attestation_type,
-      occurred_at: receipt.acquired_at,
-      actor_type: "system",
-      reason: receipt.attestation_type === "synthetic_test_attestation"
-        ? "test_copy_of_existing_public_official_artifact_imported_for_tooling_validation_only"
-        : "owner_attested_official_download_imported_without_review_or_activation",
-    });
-    // Event and artifact may be orphaned after a crash, but the root ledger record is
-    // the only commit marker consumed by verification/selection and is written last.
-    const eventStored = await writeAtomicImmutable(path.resolve(input.ledgerRoot, "events", `${snapshot.artifactSha256}.json`), stableJson(event));
-    if (input.faultInjection === "after_event_publish") throw new Error("injected_interruption_after_event_publish");
-    const ledgerStored = await writeAtomicImmutable(path.resolve(input.ledgerRoot, `${snapshot.artifactSha256}.json`), stableJson(artifactVersion));
-    return {
-      created: ledgerStored.created,
-      idempotent: !ledgerStored.created,
-      artifact_created: stored.created,
-      event_created: eventStored.created,
-      ledger_committed: true,
-      artifact_version: artifactVersion,
-      page_count: content.page_count,
-      private_copy_sha256: snapshot.artifactSha256,
-      published_sha256: snapshot.artifactSha256,
-      receipt_sha256: receiptSha256,
-      attestation_type: receipt.attestation_type,
-      test_only_notice: receipt.attestation_type === "synthetic_test_attestation" ? TEST_NOTICE : null,
-      parser_state: content.parser_state,
-      parser_isolation: content.parser_isolation,
-      parser_residual_gap: "post_import_parser_must_run_in_an_isolated_process_with_timeout_and_memory_limits",
-      no_partial_selection_before_ledger_commit: true,
-    };
-  } finally {
-    await rm(transactionRoot, { recursive: true, force: true });
+    if (!binding) throw error;
   }
+  return await withControlledImportLock({
+    ledgerRoot: input.ledgerRoot,
+    acquisitionRequestId: request.acquisition_request_id,
+    sourceId: request.source_id,
+  }, async () => {
+    const existingJournal = await readControlledImportJournal(input.ledgerRoot, binding.operation_id);
+    if (existingJournal.at(-1)?.stage === "rejected") throw new Error("controlled_import_operation_rejected");
+    if (existingJournal.at(-1)?.stage === "ledger_appended") {
+      const final = existingJournal.at(-1);
+      const artifactSha256 = final?.published_artifact_sha256;
+      if (!artifactSha256 || !final.receipt_sha256) throw new Error("controlled_import_committed_journal_incomplete");
+      await verifyControlledAcquisitionLedger({ ledgerRoot: input.ledgerRoot, artifactRoot: input.artifactRoot });
+      const artifactVersion = await readImmutableLedgerFile(path.resolve(input.ledgerRoot, `${artifactSha256}.json`), artifactVersionSchema);
+      const event = await readImmutableLedgerFile(path.resolve(input.ledgerRoot, "events", `${artifactSha256}.json`), controlledLedgerEventSchema);
+      const artifactPath = await locateStoredArtifact(input.artifactRoot, artifactVersion);
+      const content = validateControlledPdfBytes(await readFile(artifactPath));
+      return {
+        created: false,
+        idempotent: true,
+        artifact_created: false,
+        event_created: false,
+        ledger_committed: true,
+        artifact_version: artifactVersion,
+        page_count: content.page_count,
+        private_copy_sha256: artifactSha256,
+        published_sha256: artifactSha256,
+        receipt_sha256: final.receipt_sha256,
+        attestation_type: event.attestation_type,
+        test_only_notice: event.attestation_type === "synthetic_test_attestation" ? TEST_NOTICE : null,
+        parser_state: "screened_in_isolated_process" as const,
+        parser_isolation: "separate_permission_restricted_process" as const,
+        parser_residual_gap: "os_level_network_namespace_and_power_loss_durability_not_proven",
+        journal_operation_id: binding.operation_id,
+        state_sequence: ["received", "quarantined", "validated", "published", "ledger_appended"] as const,
+        no_partial_selection_before_ledger_commit: true,
+      };
+    }
+    const transactionRoot = path.resolve(input.ledgerRoot, ".transactions", binding.operation_id);
+    ensureContained(input.ledgerRoot, transactionRoot, "transaction_path_escape");
+    await mkdir(transactionRoot, { recursive: true });
+    try {
+      await advanceControlledImportJournal({ ledgerRoot: input.ledgerRoot, binding, stage: "received" });
+      if (input.faultInjection === "after_received") throw new Error("injected_interruption_after_received");
+
+      const privateReceiptPath = path.join(transactionRoot, "private-receipt.json");
+      const privateArtifactPath = path.join(transactionRoot, "private-artifact.pdf");
+      let rawReceipt: string;
+      try {
+        rawReceipt = await readFile(privateReceiptPath, "utf8");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        if (initialRawReceipt !== null) rawReceipt = initialRawReceipt;
+        else {
+          const inbox = path.resolve(input.incomingRoot, request.acquisition_request_id);
+          const receiptPath = await resolveIncomingRegularFile(inbox, input.receiptFilename);
+          rawReceipt = await readFile(receiptPath, "utf8");
+        }
+        const rawScan = scanControlledImportMetadata({ receipt: rawReceipt });
+        if (!rawScan.safe) throw new Error("acquisition_metadata_secret_or_pii_detected");
+        await writeAtomicImmutable(privateReceiptPath, rawReceipt);
+      }
+      let snapshot: { privatePath: string; bytes: Buffer; artifactSha256: string };
+      try {
+        const bytes = await readFile(privateArtifactPath);
+        snapshot = { privatePath: privateArtifactPath, bytes, artifactSha256: sha256(bytes) };
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        const inbox = path.resolve(input.incomingRoot, request.acquisition_request_id);
+        const originalPath = await resolveIncomingRegularFile(inbox, input.originalFilename);
+        snapshot = await snapshotToPrivateCopy(originalPath, transactionRoot);
+      }
+      if (input.afterPrivateCopyForTest) await input.afterPrivateCopyForTest();
+      const privateReceiptSha256 = sha256(rawReceipt);
+      await advanceControlledImportJournal({
+        ledgerRoot: input.ledgerRoot,
+        binding,
+        stage: "quarantined",
+        privateArtifactSha256: snapshot.artifactSha256,
+        receiptSha256: privateReceiptSha256,
+      });
+      if (input.faultInjection === "after_private_copy") throw new Error("injected_interruption_after_private_copy");
+
+      const rawScan = scanControlledImportMetadata({ receipt: rawReceipt });
+      if (!rawScan.safe) throw new Error("acquisition_metadata_secret_or_pii_detected");
+      const receipt = acquisitionReceiptSchema.parse(JSON.parse(rawReceipt));
+      if (input.requiredAttestationType && receipt.attestation_type !== input.requiredAttestationType) throw new Error("receipt_attestation_type_mismatch");
+      if (!request.allowed_attestation_types.includes(receipt.attestation_type)) throw new Error("receipt_attestation_type_not_allowed");
+      if (receipt.acquisition_request_id !== request.acquisition_request_id || receipt.source_id !== request.source_id) throw new Error("owner_receipt_request_mismatch");
+      if (receipt.original_filename !== input.originalFilename) throw new Error("owner_receipt_filename_mismatch");
+      if (receipt.expected_media_type !== request.expected_media_type) throw new Error("owner_receipt_media_type_mismatch");
+      if (receipt.expected_document_title !== request.expected_document_title) throw new Error("owner_receipt_document_identity_mismatch");
+      validateExactHttpsUrl(receipt.landing_url, request.allowlisted_hosts, "owner_receipt_landing_url");
+      validateArtifactUrlOverride(request, receipt.artifact_url);
+      validateExactHttpsUrl(receipt.final_url, request.allowlisted_hosts, "owner_receipt_final_url");
+      if (receipt.landing_url !== request.canonical_landing_url) throw new Error("owner_receipt_landing_url_mismatch");
+      if (!request.allowed_final_urls.includes(receipt.final_url)) throw new Error("owner_receipt_final_url_not_exactly_allowlisted");
+      if (request.artifact_url && receipt.artifact_url !== request.artifact_url) throw new Error("owner_receipt_artifact_url_mismatch");
+      if (receipt.attestation_type === "synthetic_test_attestation" && receipt.test_only_notice !== TEST_NOTICE) throw new Error("synthetic_test_notice_missing");
+      if (snapshot.artifactSha256 !== receipt.artifact_sha256) throw new Error("owner_receipt_artifact_hash_mismatch");
+      if (request.expected_document_identity.artifact_sha256 && snapshot.artifactSha256 !== request.expected_document_identity.artifact_sha256) throw new Error("request_document_hash_mismatch");
+
+      const content = validateControlledPdfBytes(snapshot.bytes);
+      const isolated = await screenUntrustedPdfIsolated({ bytes: snapshot.bytes });
+      if (isolated.status !== "screened" || isolated.input_bytes !== snapshot.bytes.byteLength || isolated.page_count !== content.page_count) {
+        throw new Error("isolated_parser_binding_mismatch");
+      }
+      const receiptSha256 = sha256(stableJson(receipt));
+      await advanceControlledImportJournal({
+        ledgerRoot: input.ledgerRoot,
+        binding,
+        stage: "validated",
+        privateArtifactSha256: snapshot.artifactSha256,
+        receiptSha256,
+      });
+      if (input.faultInjection === "after_validation") throw new Error("injected_interruption_after_validation");
+
+      const sourceVersion = receipt.attestation_type === "synthetic_test_attestation" ? "synthetic-test-v0.3.1" : "owner-v0.3.1";
+      const artifactVersion = artifactVersionSchema.parse({
+        artifact_version_id: `artifact:${request.source_id}:${snapshot.artifactSha256}`,
+        source_id: request.source_id,
+        legal_text_version_id: null,
+        acquisition_request_id: request.acquisition_request_id,
+        artifact_sha256: snapshot.artifactSha256,
+        byte_count: snapshot.bytes.byteLength,
+        media_type: content.media_type,
+        original_filename: input.originalFilename,
+        landing_url: receipt.landing_url,
+        artifact_url: receipt.artifact_url,
+        final_url: receipt.final_url,
+        acquired_at: receipt.acquired_at,
+        acquisition_state: "acquired",
+        parse_state: "not_attempted",
+        evidence_state: "incomplete",
+        review_state: "needs_review",
+        activation_state: "inactive",
+        provenance: {
+          promulgation_publisher: "unknown_pending_provenance_review",
+          artifact_host: new URL(receipt.final_url).hostname,
+          artifact_role: "official_institutional_copy",
+          canonicality_status: "official_copy_not_primary_promulgation",
+          acquisition_method: receipt.acquisition_method,
+        },
+      });
+      const ledgerRecordSha256 = controlledImportSha256(controlledImportStableJson(artifactVersion));
+      const existingLedgerPath = path.resolve(input.ledgerRoot, `${snapshot.artifactSha256}.json`);
+      try {
+        const existing = artifactVersionSchema.parse(JSON.parse(await readFile(existingLedgerPath, "utf8")));
+        if (controlledImportStableJson(existing) !== controlledImportStableJson(artifactVersion)) throw new Error("existing_artifact_identity_conflict");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+      const stored = await publishArtifactAtomically({ root: input.artifactRoot, sourceId: request.source_id, sourceVersion, sha256: snapshot.artifactSha256, bytes: snapshot.bytes });
+      await advanceControlledImportJournal({
+        ledgerRoot: input.ledgerRoot,
+        binding,
+        stage: "published",
+        privateArtifactSha256: snapshot.artifactSha256,
+        receiptSha256,
+        publishedArtifactSha256: snapshot.artifactSha256,
+      });
+      if (input.faultInjection === "after_artifact_publish") throw new Error("injected_interruption_after_artifact_publish");
+      const event = controlledLedgerEventSchema.parse({
+        event_id: `${receipt.attestation_type === "synthetic_test_attestation" ? "synthetic-test-import" : "owner-import"}:${snapshot.artifactSha256}`,
+        event_type: receipt.attestation_type === "synthetic_test_attestation" ? "synthetic_test_copy_imported" : "owner_imported",
+        acquisition_request_id: request.acquisition_request_id,
+        source_id: request.source_id,
+        artifact_version_id: artifactVersion.artifact_version_id,
+        artifact_sha256: snapshot.artifactSha256,
+        receipt_sha256: receiptSha256,
+        attestation_type: receipt.attestation_type,
+        occurred_at: receipt.acquired_at,
+        actor_type: "system",
+        reason: receipt.attestation_type === "synthetic_test_attestation"
+          ? "test_copy_of_existing_public_official_artifact_imported_for_tooling_validation_only"
+          : "owner_attested_official_download_imported_without_review_or_activation",
+        operation_id: binding.operation_id,
+        request_sha256: binding.request_sha256,
+        expected_filename: binding.expected_filename,
+        expected_media_type: binding.expected_media_type,
+        expected_artifact_sha256: binding.expected_artifact_sha256,
+        actual_byte_count: snapshot.bytes.byteLength,
+        artifact_record_sha256: ledgerRecordSha256,
+        receipt_input_sha256: binding.receipt_input_sha256,
+      });
+      // Artifacts and events remain unreachable until the root ledger record is the
+      // final commit marker. Journal files are recovery evidence, never selectors.
+      const eventStored = await writeAtomicImmutable(path.resolve(input.ledgerRoot, "events", `${snapshot.artifactSha256}.json`), stableJson(event));
+      if (input.faultInjection === "after_event_publish") throw new Error("injected_interruption_after_event_publish");
+      const ledgerStored = await writeAtomicImmutable(existingLedgerPath, controlledImportStableJson(artifactVersion));
+      await advanceControlledImportJournal({
+        ledgerRoot: input.ledgerRoot,
+        binding,
+        stage: "ledger_appended",
+        privateArtifactSha256: snapshot.artifactSha256,
+        receiptSha256,
+        publishedArtifactSha256: snapshot.artifactSha256,
+        ledgerRecordSha256,
+      });
+      if (input.faultInjection === "after_ledger_append") throw new Error("injected_interruption_after_ledger_append");
+      return {
+        created: ledgerStored.created,
+        idempotent: !ledgerStored.created,
+        artifact_created: stored.created,
+        event_created: eventStored.created,
+        ledger_committed: true,
+        artifact_version: artifactVersion,
+        page_count: isolated.page_count,
+        private_copy_sha256: snapshot.artifactSha256,
+        published_sha256: snapshot.artifactSha256,
+        receipt_sha256: receiptSha256,
+        attestation_type: receipt.attestation_type,
+        test_only_notice: receipt.attestation_type === "synthetic_test_attestation" ? TEST_NOTICE : null,
+        parser_state: "screened_in_isolated_process" as const,
+        parser_isolation: "separate_permission_restricted_process" as const,
+        parser_residual_gap: "os_level_network_namespace_and_power_loss_durability_not_proven",
+        journal_operation_id: binding.operation_id,
+        state_sequence: ["received", "quarantined", "validated", "published", "ledger_appended"] as const,
+        no_partial_selection_before_ledger_commit: true,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "controlled_import_unknown_failure";
+      if (!message.startsWith("injected_interruption_")) {
+        const journal = await readControlledImportJournal(input.ledgerRoot, binding.operation_id).catch(() => []);
+        const terminal = journal.at(-1)?.stage;
+        if (terminal !== "ledger_appended" && terminal !== "rejected") {
+          const code = /^[a-z0-9_]+$/u.test(message) ? message : "controlled_import_validation_failed";
+          await advanceControlledImportJournal({ ledgerRoot: input.ledgerRoot, binding, stage: "rejected", safeErrorCode: code }).catch(() => undefined);
+        }
+      }
+      throw error;
+    }
+  });
 }
 
 async function readImmutableLedgerFile<T>(filePath: string, schema: z.ZodType<T>) {
@@ -436,11 +608,21 @@ export async function verifyControlledAcquisitionLedger(input: Readonly<{
   }
   const verified: string[] = [];
   const importedRequestIds = new Set<string>();
+  let persistentOwnerImportEntries = 0;
+  let syntheticTestImportEntries = 0;
   for (const name of names) {
     const record = await readImmutableLedgerFile(path.resolve(input.ledgerRoot, name), artifactVersionSchema);
     const event = await readImmutableLedgerFile(path.resolve(input.ledgerRoot, "events", name), controlledLedgerEventSchema);
     if (event.artifact_version_id !== record.artifact_version_id || event.artifact_sha256 !== record.artifact_sha256 || event.source_id !== record.source_id || event.acquisition_request_id !== record.acquisition_request_id) {
       throw new Error("owner_ledger_event_binding_mismatch");
+    }
+    if (event.expected_filename !== record.original_filename || event.expected_media_type !== record.media_type || event.actual_byte_count !== record.byte_count) throw new Error("owner_ledger_expected_identity_mismatch");
+    const recordSha256 = controlledImportSha256(controlledImportStableJson(record));
+    if (event.artifact_record_sha256 !== recordSha256) throw new Error("owner_ledger_record_hash_binding_mismatch");
+    const journal = await readControlledImportJournal(input.ledgerRoot, event.operation_id);
+    const journalFinal = journal.at(-1);
+    if (journalFinal?.stage !== "ledger_appended" || journalFinal.binding.request_sha256 !== event.request_sha256 || journalFinal.binding.receipt_input_sha256 !== event.receipt_input_sha256 || journalFinal.ledger_record_sha256 !== recordSha256) {
+      throw new Error("owner_ledger_journal_binding_mismatch");
     }
     const artifactPath = await locateStoredArtifact(input.artifactRoot, record);
     const artifactInfo = await lstat(artifactPath);
@@ -449,17 +631,19 @@ export async function verifyControlledAcquisitionLedger(input: Readonly<{
     if (sha256(bytes) !== record.artifact_sha256) throw new Error("owner_ledger_artifact_hash_mismatch");
     validateControlledPdfBytes(bytes);
     verified.push(record.artifact_version_id);
+    if (event.event_type === "owner_imported") persistentOwnerImportEntries += 1;
+    else syntheticTestImportEntries += 1;
     if (record.acquisition_request_id) importedRequestIds.add(record.acquisition_request_id);
   }
   const required = [...new Set(input.requiredRequestIds ?? [])].sort();
   const missing = required.filter((requestId) => !importedRequestIds.has(requestId));
   if (input.strictRequiredInstances && missing.length > 0) {
-    return { status: "REQUIRED_IMPORTS_MISSING" as const, exit_code: 4 as const, ledger_entries: names.length, verified_artifact_version_ids: verified, missing_required_request_ids: missing };
+    return { status: "REQUIRED_IMPORTS_MISSING" as const, exit_code: 4 as const, ledger_entries: names.length, persistent_owner_import_entries: persistentOwnerImportEntries, synthetic_test_import_entries: syntheticTestImportEntries, verified_artifact_version_ids: verified, missing_required_request_ids: missing };
   }
   if (names.length === 0) {
-    return { status: "NO_IMPORTS_TO_VERIFY" as const, exit_code: 0 as const, ledger_entries: 0, verified_artifact_version_ids: [], missing_required_request_ids: missing };
+    return { status: "NO_IMPORTS_TO_VERIFY" as const, exit_code: 0 as const, ledger_entries: 0, persistent_owner_import_entries: 0, synthetic_test_import_entries: 0, verified_artifact_version_ids: [], missing_required_request_ids: missing };
   }
-  return { status: "ACQUISITION_IMPORTS_VERIFIED" as const, exit_code: 0 as const, ledger_entries: names.length, verified_artifact_version_ids: verified, missing_required_request_ids: missing };
+  return { status: "ACQUISITION_IMPORTS_VERIFIED" as const, exit_code: 0 as const, ledger_entries: names.length, persistent_owner_import_entries: persistentOwnerImportEntries, synthetic_test_import_entries: syntheticTestImportEntries, verified_artifact_version_ids: verified, missing_required_request_ids: missing };
 }
 
 async function listPdfHashes(root: string) {
@@ -514,6 +698,20 @@ export function controlledImportInstanceReadiness(verification: Awaited<ReturnTy
     status: ready ? "TEST_ACQUISITION_INSTANCE_VERIFIED" as const : "TEST_ACQUISITION_INSTANCE_NOT_VERIFIED" as const,
     ready,
     required_request_id: requiredRequestId,
+    usable_for_legal_rules: false,
+    activates_source: false,
+  };
+}
+
+export function controlledImportPersistentReadiness(verification: Awaited<ReturnType<typeof verifyControlledAcquisitionLedger>>) {
+  const ready = verification.exit_code === 0
+    && verification.status === "ACQUISITION_IMPORTS_VERIFIED"
+    && verification.persistent_owner_import_entries > 0;
+  return {
+    status: ready ? "PERSISTENT_OWNER_IMPORTS_VERIFIED" as const : "PERSISTENT_OWNER_IMPORTS_NOT_VERIFIED" as const,
+    ready,
+    persistent_owner_import_entries: verification.persistent_owner_import_entries,
+    synthetic_test_import_entries_excluded: verification.synthetic_test_import_entries,
     usable_for_legal_rules: false,
     activates_source: false,
   };
