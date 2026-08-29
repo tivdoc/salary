@@ -1,5 +1,6 @@
 import type { EmploymentSnapshot } from "../facts/snapshot";
 import { extractionRequestSchema, extractionResultSchema, type ExtractionRequest, type ExtractionResult } from "./contracts";
+import { assessExtractionConfidence } from "./confidence-policy";
 import { minimizePayslipForSemanticProcessing } from "./minimize";
 import { normalizePayslipExtraction } from "./normalization";
 import type { DocumentExtractor, PrivateDocumentSource } from "./provider";
@@ -10,6 +11,7 @@ export type PayslipPipelineResult = Readonly<{
   raw_extraction: ExtractionResult;
   normalized_extraction: ReturnType<typeof normalizePayslipExtraction>;
   validation: ReturnType<typeof validatePayslipGate0>;
+  confidence_assessment: ReturnType<typeof assessExtractionConfidence>;
   minimized_representation: ReturnType<typeof minimizePayslipForSemanticProcessing>;
   snapshot: EmploymentSnapshot | null;
 }>;
@@ -34,6 +36,7 @@ export async function runPayslipExtractionPipeline(input: {
   }
   const normalizedExtraction = normalizePayslipExtraction(rawExtraction);
   const validation = validatePayslipGate0(normalizedExtraction, { reference_year: input.reference_year });
+  const confidenceAssessment = assessExtractionConfidence(normalizedExtraction, validation);
   const minimizedRepresentation = minimizePayslipForSemanticProcessing(normalizedExtraction);
   const snapshot = rawExtraction.status === "failed"
     ? null
@@ -47,6 +50,7 @@ export async function runPayslipExtractionPipeline(input: {
     raw_extraction: rawExtraction,
     normalized_extraction: normalizedExtraction,
     validation,
+    confidence_assessment: confidenceAssessment,
     minimized_representation: minimizedRepresentation,
     snapshot,
   };

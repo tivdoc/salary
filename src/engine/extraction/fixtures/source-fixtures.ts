@@ -20,7 +20,7 @@ function field(
   candidateNumber: number,
   fieldName: PayslipFieldKey,
   rawValue: string,
-  options: { confidence?: number; warnings?: string[]; method?: "text_native" | "ocr" | "template" | "fixture" } = {},
+  options: { confidence?: number; warnings?: string[]; method?: "text_native" | "ocr" | "template" | "fixture" | "ai_vision" } = {},
 ) {
   return {
     candidate_id: uuid(candidateNumber),
@@ -102,6 +102,7 @@ function fixture(input: {
       earnings_components_complete: input.complete ?? false,
       warnings: input.warnings ?? [],
       provider: { provider_id: "synthetic_fixture", extractor_version: "1.0", model_version: null },
+      operation: { duration_ms: 0, provider_response_id: null, token_usage: null },
       extracted_at: timestamp,
       error_code: null,
     },

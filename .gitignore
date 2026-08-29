@@ -7,6 +7,9 @@
 /coverage
 /.playwright-cli/
 /output/playwright/
+/output/payslip-openai/
+/tmp/pdfs/
+/eval/real-payslips/
 
 # next.js
 /.next/

@@ -13,6 +13,7 @@ import {
   detectedDocumentTypeSchema,
   documentQualityMetricsSchema,
   extractionMethodSchema,
+  extractionOperationSchema,
   extractionProviderSchema,
   extractionStatusSchema,
   sensitiveMetadataCandidateSchema,
@@ -125,6 +126,7 @@ export const normalizedPayslipExtractionSchema = z
     earnings_components_complete: z.boolean(),
     warnings: z.array(domainCodeSchema),
     provider: extractionProviderSchema,
+    operation: extractionOperationSchema,
     extracted_at: z.iso.datetime({ offset: true }),
     error_code: domainCodeSchema.nullable(),
   })

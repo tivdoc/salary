@@ -1,4 +1,5 @@
 export * from "./benchmark";
+export * from "./confidence-policy";
 export * from "./contracts";
 export * from "./fixture-extractor";
 export * from "./minimize";

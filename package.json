@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "benchmark:payslip": "vitest run src/engine/extraction/benchmark.test.ts --reporter=verbose",
+    "benchmark:payslip:openai": "vitest run --config vitest.openai.config.mts --reporter=verbose",
+    "benchmark:payslip:openai:real": "vitest run --config vitest.openai.real.config.mts --reporter=verbose",
     "cases:report": "node scripts/cases-report.mjs",
     "funnel:report": "node scripts/funnel-report.mjs"
   },
@@ -17,8 +19,11 @@
     "@phosphor-icons/react": "2.1.10",
     "@supabase/supabase-js": "2.112.3",
     "next": "16.3.2",
+    "openai": "7.8.0",
+    "pdf-lib": "1.17.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sharp": "0.35.3",
     "zod": "4.4.3"
   },
   "devDependencies": {

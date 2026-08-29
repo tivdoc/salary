@@ -15,7 +15,12 @@ export const safeEngineLogSchema = z
     status: domainCodeSchema.optional(),
     provider_id: domainCodeSchema.optional(),
     extractor_version: z.string().trim().min(1).max(120).optional(),
+    model_version: z.string().trim().min(1).max(200).regex(/^[A-Za-z0-9._:-]+$/).optional(),
+    provider_response_id: z.string().trim().min(1).max(240).regex(/^[A-Za-z0-9_-]+$/).optional(),
     duration_ms: z.number().int().nonnegative().safe().optional(),
+    input_tokens: z.number().int().nonnegative().safe().optional(),
+    output_tokens: z.number().int().nonnegative().safe().optional(),
+    total_tokens: z.number().int().nonnegative().safe().optional(),
     error_code: domainCodeSchema.optional(),
     retry_count: z.number().int().nonnegative().safe().optional(),
   })

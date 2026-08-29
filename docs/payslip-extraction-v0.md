@@ -134,3 +134,5 @@ Run `npm run benchmark:payslip`. The fixture adapter currently reports:
 The one intentional field/money miss is the synthetic `8,500 -> 85,000` OCR case. The benchmark retains the incorrect normalized value and confirms that Gate 0 raises both ambiguity and scale warnings. This is the desired behavior: detection without unsupported correction.
 
 The same harness accepts any future `DocumentExtractor`, allowing provider comparisons over identical fixtures and ground truth.
+
+The first isolated server adapter now implements this interface with the OpenAI Responses API. See [OpenAI Payslip Extraction V1](./openai-payslip-extraction-v1.md). V0's deterministic normalization, Gate 0, minimization, and canonical resolution remain the downstream path.

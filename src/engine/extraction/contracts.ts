@@ -8,7 +8,7 @@ import {
   versionSchema,
 } from "../domain/primitives";
 
-export const extractionMethodSchema = z.enum(["text_native", "ocr", "template", "fixture"]);
+export const extractionMethodSchema = z.enum(["text_native", "ocr", "template", "fixture", "ai_vision"]);
 export const extractionStatusSchema = z.enum(["completed", "partial", "failed"]);
 export const detectedDocumentTypeSchema = z.enum(["payslip", "unknown"]);
 
@@ -130,6 +130,26 @@ export const extractionProviderSchema = z
   })
   .strict();
 
+export const extractionTokenUsageSchema = z
+  .object({
+    input_tokens: z.number().int().nonnegative().safe(),
+    output_tokens: z.number().int().nonnegative().safe(),
+    total_tokens: z.number().int().nonnegative().safe(),
+  })
+  .strict()
+  .refine((usage) => usage.total_tokens >= usage.input_tokens + usage.output_tokens, {
+    message: "Total token usage cannot be lower than input plus output tokens",
+    path: ["total_tokens"],
+  });
+
+export const extractionOperationSchema = z
+  .object({
+    duration_ms: z.number().int().nonnegative().safe(),
+    provider_response_id: z.string().trim().min(1).max(240).regex(/^[A-Za-z0-9_-]+$/).nullable(),
+    token_usage: extractionTokenUsageSchema.nullable(),
+  })
+  .strict();
+
 export const documentQualityMetricsSchema = z
   .object({
     page_count: z.number().int().positive(),
@@ -153,6 +173,7 @@ export const extractionResultSchema = z
     earnings_components_complete: z.boolean(),
     warnings: z.array(candidateWarningSchema),
     provider: extractionProviderSchema,
+    operation: extractionOperationSchema,
     extracted_at: isoTimestampSchema,
     error_code: domainCodeSchema.nullable(),
   })

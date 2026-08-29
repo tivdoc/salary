@@ -1,5 +1,5 @@
-import { configDefaults, defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -9,10 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "scripts/**/*.test.mjs"],
-    exclude: [
-      ...configDefaults.exclude,
-      "src/server/engine/extraction/benchmarks/openai/openai-benchmark.external.test.ts",
+    include: [
       "src/server/engine/extraction/benchmarks/openai/real-public/openai-real-benchmark.external.test.ts",
     ],
   },

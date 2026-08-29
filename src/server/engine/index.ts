@@ -4,6 +4,7 @@ export * from "./analysis-run-repository";
 export * from "./conversation-repository";
 export * from "./document-repository";
 export * from "./extraction-repository";
+export * from "./extraction";
 export * from "./idempotency";
 export * from "./investigation-repository";
 export * from "./mappers";
