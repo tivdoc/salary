@@ -48,7 +48,12 @@
     "legal:sources:review-package:v0.2": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/legal-acquisition.mts review-package",
     "legal:sources:wave1:pension-convalescence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-pension-convalescence.mts",
     "legal:sources:wave1:working-time-permits": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-working-time-permits.mts",
-    "legal:sources:wave1:integrate-evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-integrate-evidence.mts"
+    "legal:sources:wave1:integrate-evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-integrate-evidence.mts",
+    "legal:sources:wave1:topic-readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-topic-readiness.mts",
+    "engine:persistence:wave1:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave1-persistence-static.mts",
+    "engine:rule-runtime:wave1:test": "vitest run src/engine/rule-runtime/runtime.test.ts",
+    "parallel:wave1:scope-scan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave1-scope-scan.mts",
+    "parallel:wave1:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave1-review-package.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

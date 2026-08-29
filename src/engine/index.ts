@@ -13,3 +13,4 @@ export * from "./investigation/state-machine";
 export * from "./interview/contracts";
 export * from "./interview/conversation";
 export * from "./rules/contracts";
+export * from "./rule-runtime";

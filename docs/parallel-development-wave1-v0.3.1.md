@@ -18,3 +18,10 @@ The strict schemas in `src/engine/wave1/contracts.ts` freeze `RuleExecutionReque
 ## Safety boundary
 
 There are no reviewed or active legal sources, numerical candidates, active parameters, operative Israeli legal rules, customer documents, Production access, deploys, or Shadow Mode. The active-only retrieval path remains fail-closed without candidate fallback.
+
+## Batch B integration
+
+- Temporal resolution keeps civil-date `valid_time` separate from UTC-instant `knowledge_time`; signing, publication, commencement, operative, payroll-reference, ingestion, review, invalidation, and activation times remain distinct. Relationship claims are unverified and topic readiness fails closed when any required evidence or review gate is absent.
+- Persistence verification is restricted to a fail-closed local/disposable target. When Docker, the Supabase CLI, or a verified isolated identity is unavailable, only static migration and synthetic store evidence is produced and the result is `PERSISTENCE_ISOLATED_ENVIRONMENT_BLOCKED`.
+- The rule runtime is isolated and synthetic. It uses exact decimal arithmetic, explicit rounding traces, canonical hashing, immutable requests/results, resource and cancellation limits, and rejects incomplete facts or legal dependencies that are not reviewed and active. It creates no Finding and contains no operative legal rule.
+- The ignored V0.3 review package is built offline by `npm run parallel:wave1:review-package`; its deterministic archive is consumer-extracted into a temporary directory and verified against the package manifest before success is reported.
