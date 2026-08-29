@@ -62,7 +62,18 @@
     "wave2:corpus:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-corpus-hardening/run.mts verify",
     "wave2:corpus:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-corpus-hardening/run.mts readiness",
     "wave2:corpus:readiness-strict": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-corpus-hardening/run.mts readiness-strict",
-    "wave2:controlled-import:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-controlled-import/verify.mts"
+    "wave2:controlled-import:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave2-controlled-import/verify.mts",
+    "wave2:evidence:test": "vitest run src/engine/wave2/evidence-audit --reporter=verbose",
+    "wave2:corpus:test": "vitest run src/engine/legal-knowledge/corpus-hardening src/server/engine/legal-knowledge/wave2-corpus-hardening --reporter=verbose",
+    "wave2:controlled-import:test": "vitest run src/server/engine/legal-knowledge/controlled-import-security.test.ts src/server/engine/legal-knowledge/controlled-import-recovery/protocol.test.ts src/server/engine/legal-knowledge/parser-isolation/parser-isolation.test.ts --reporter=verbose",
+    "wave2:minimum-wage:test": "vitest run src/engine/legal-knowledge/review-dossier/dossier.test.ts src/engine/legal-knowledge/review-dossier/evidence.test.ts src/engine/legal-parameters/state-machine.test.ts --reporter=verbose",
+    "wave2:rule-input:verify": "vitest run src/engine/rule-input/rule-input.test.ts src/engine/analysis-orchestration/synthetic-vertical-slice.test.ts --reporter=verbose",
+    "wave2:ground-truth:test": "vitest run src/engine/extraction-ground-truth --reporter=verbose",
+    "wave2:ground-truth:validate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/extraction-ground-truth/run.mts validate",
+    "wave2:ground-truth:evaluate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/extraction-ground-truth/run.mts evaluate",
+    "wave2:ground-truth:all": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/extraction-ground-truth/run.mts all",
+    "parallel:wave2:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave2-final-verification.mts",
+    "parallel:wave2:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave2-review-package.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
