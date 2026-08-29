@@ -9,3 +9,4 @@ export * from "./pipeline";
 export * from "./provider";
 export * from "./resolver";
 export * from "./validation";
+export * from "./v2";

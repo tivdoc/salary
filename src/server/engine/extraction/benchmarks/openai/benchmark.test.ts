@@ -7,7 +7,11 @@ import { FixtureDocumentExtractor, SyntheticDocumentSource } from "@/engine/extr
 import { syntheticPayslipGroundTruth } from "@/engine/extraction/fixtures/ground-truth";
 import { syntheticPayslipFixtures } from "@/engine/extraction/fixtures/source-fixtures";
 import { runPayslipExtractionPipeline } from "@/engine/extraction/pipeline";
+import { assessExtractionConfidence } from "@/engine/extraction/confidence-policy";
+import { minimizePayslipForSemanticProcessing } from "@/engine/extraction/minimize";
+import { normalizePayslipExtraction } from "@/engine/extraction/normalization";
 import { resolvedPayslipFactPaths } from "@/engine/extraction/resolver";
+import { validatePayslipGate0 } from "@/engine/extraction/validation";
 import { scoreOpenAiBenchmarkRuns, sensitiveValuesPresent } from "./benchmark";
 
 function uuid(number: number) {
@@ -158,5 +162,78 @@ describe("OpenAI rendered benchmark aggregation", () => {
     });
     expect(report.fixtures_total).toBe(10);
     expect(report.exact_matches).toBe(68);
+  });
+
+  it("stores full hallucinated-field evidence and Gate 0 status", async () => {
+    const fixture = syntheticPayslipFixtures[0];
+    const base = await runPayslipExtractionPipeline({
+      request: fixture.request,
+      source: new SyntheticDocumentSource(),
+      extractor: new FixtureDocumentExtractor([fixture]),
+      snapshot_context: {
+        snapshot_id: uuid(74_000),
+        case_id: fixture.request.case_id,
+        analysis_run_id: fixture.request.analysis_run_id,
+        schema_version: "1.0",
+        created_at: fixture.request.requested_at,
+        fact_ids: Object.fromEntries(resolvedPayslipFactPaths.map((field, index) => [field, uuid(75_000 + index)])),
+      },
+      reference_year: 2026,
+    });
+    const gross = base.raw_extraction.fields.find((field) => field.field === "gross_salary");
+    if (!gross) throw new TypeError("Synthetic gross candidate is missing");
+    const raw = {
+      ...base.raw_extraction,
+      fields: [
+        ...base.raw_extraction.fields,
+        {
+          ...gross,
+          candidate_id: uuid(76_000),
+          field: "hourly_rate" as const,
+          raw_value: "85.00",
+          confidence: 0.94,
+          warning_flags: ["unexpected_field"],
+        },
+      ],
+    };
+    const normalized = normalizePayslipExtraction(raw);
+    const validation = validatePayslipGate0(normalized, { reference_year: 2026 });
+    const report = scoreOpenAiBenchmarkRuns({
+      runs: [{
+        artifact: {
+          fixture_id: fixture.fixture_id,
+          quality: "clean",
+          format: "pdf",
+          file_path: "synthetic-only.pdf",
+          sha256: "0".repeat(64),
+          request: fixture.request,
+        },
+        result: {
+          raw_extraction: raw,
+          normalized_extraction: normalized,
+          validation,
+          confidence_assessment: assessExtractionConfidence(normalized, validation),
+          minimized_representation: minimizePayslipForSemanticProcessing(normalized),
+          snapshot: base.snapshot,
+        },
+      }],
+      groundTruth: [{
+        ...syntheticPayslipGroundTruth[0],
+        expected_absent_fields: ["hourly_rate"],
+        critical_fields: ["gross_salary"],
+        classification_complete: true,
+      }],
+      model: "gpt-5.6-sol",
+      extractorVersion: "2.0",
+    });
+
+    expect(report.per_fixture[0].hallucinated_field_details).toEqual([{
+      field: "hourly_rate",
+      raw_extracted_value: "85.00",
+      normalized_value: { currency: "ILS", minor_units: 8_500 },
+      confidence: 0.94,
+      warning_flags: ["unexpected_field"],
+      gate0_result: { status: "valid", issue_codes: [] },
+    }]);
   });
 });

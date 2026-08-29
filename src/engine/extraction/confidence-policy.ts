@@ -8,6 +8,8 @@ export const criticalFieldThresholds = {
   salary_period: 0.9,
   salary_type: 0.85,
   gross_salary: 0.9,
+  total_deductions: 0.9,
+  net_salary: 0.9,
   hourly_rate: 0.9,
   regular_hours: 0.85,
   pension_base: 0.92,
@@ -41,7 +43,9 @@ function normalizedKey(value: unknown) {
 }
 
 function applicableCriticalFields(extraction: NormalizedPayslipExtraction) {
-  const result = new Set<PayslipFieldKey>(["salary_period", "salary_type", "gross_salary"]);
+  const result = new Set<PayslipFieldKey>(["salary_period", "gross_salary", "net_salary"]);
+  const presentFields = new Set(extraction.fields.map((candidate) => candidate.field));
+  if (presentFields.has("salary_type")) result.add("salary_type");
   const salaryTypes = extraction.fields
     .filter((candidate) => candidate.field === "salary_type")
     .map((candidate) => candidate.normalized_value);
@@ -50,7 +54,7 @@ function applicableCriticalFields(extraction: NormalizedPayslipExtraction) {
     result.add("regular_hours");
   }
 
-  const presentFields = new Set(extraction.fields.map((candidate) => candidate.field));
+  if (presentFields.has("total_deductions")) result.add("total_deductions");
   const pensionSignals: PayslipFieldKey[] = [
     "pension_base",
     "pension_employee_contribution",

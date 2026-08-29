@@ -12,6 +12,7 @@
     "benchmark:payslip": "vitest run src/engine/extraction/benchmark.test.ts --reporter=verbose",
     "benchmark:payslip:openai": "vitest run --config vitest.openai.config.mts --reporter=verbose",
     "benchmark:payslip:openai:real": "vitest run --config vitest.openai.real.config.mts --reporter=verbose",
+    "benchmark:payslip:openai:real:v2": "vitest run --config vitest.openai.real.config.mts src/server/engine/extraction/benchmarks/openai/real-public/openai-real-v2-benchmark.external.test.ts --reporter=verbose",
     "cases:report": "node scripts/cases-report.mjs",
     "funnel:report": "node scripts/funnel-report.mjs"
   },

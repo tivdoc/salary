@@ -30,6 +30,15 @@ const mismatchSchema = z.object({
   gate0_result: gate0ResultSchema,
 }).strict();
 
+const hallucinatedFieldDetailSchema = z.object({
+  field: payslipFieldKeySchema,
+  raw_extracted_value: z.string(),
+  normalized_value: z.unknown(),
+  confidence: z.number().min(0).max(1),
+  warning_flags: z.array(z.string()),
+  gate0_result: gate0ResultSchema,
+}).strict();
+
 const additionalComponentSchema = z.object({
   normalized_label: z.string().nullable(),
   quantity: z.string().nullable(),
@@ -63,6 +72,7 @@ const fixtureMetricSchema = z.object({
   hallucinated_fields: z.number().int().nonnegative(),
   mismatches: z.array(mismatchSchema),
   hallucinated_field_ids: z.array(payslipFieldKeySchema),
+  hallucinated_field_details: z.array(hallucinatedFieldDetailSchema).optional(),
   gate0_status: gate0StatusSchema.nullable(),
   gate0_issue_codes: z.array(z.string()),
   expected_gate0_issue_codes: z.array(z.string()),
@@ -176,7 +186,7 @@ export type OpenAiBenchmarkRun = Readonly<{
   result: PayslipPipelineResult | null;
 }>;
 
-const pricingCatalog: Readonly<Record<string, {
+export const openAiExtractionPricingCatalog: Readonly<Record<string, {
   input: number;
   output: number;
   effective_on: string;
@@ -191,7 +201,7 @@ const pricingCatalog: Readonly<Record<string, {
 };
 
 const moneyFields = new Set<PayslipFieldKey>([
-  "base_monthly_salary", "hourly_rate", "gross_salary", "net_salary", "travel_amount",
+  "base_monthly_salary", "hourly_rate", "gross_salary", "total_deductions", "net_salary", "travel_amount",
   "convalescence_amount", "pension_employee_contribution", "pension_employer_contribution",
   "severance_contribution", "pension_base",
 ]);
@@ -210,10 +220,12 @@ function metric(expected: number, correct: number) {
 }
 
 function estimatedCost(model: string, usage: { input_tokens: number; output_tokens: number } | null | undefined) {
-  const pricing = pricingCatalog[model];
+  const pricing = openAiExtractionPricingCatalog[model];
   if (!pricing || !usage) return null;
   return (usage.input_tokens * pricing.input + usage.output_tokens * pricing.output) / 1_000_000;
 }
+
+export const estimateOpenAiExtractionCostUsd = estimatedCost;
 
 function sortedUnique(values: readonly string[]) {
   return [...new Set(values)].sort();
@@ -231,6 +243,7 @@ export function scoreOpenAiBenchmarkRuns(input: {
   model: string;
   extractorVersion: string;
   groundTruthSha256?: string | null;
+  promptVersion?: string;
 }): OpenAiRenderedBenchmarkReport {
   const truthByFixture = new Map(input.groundTruth.map((truth) => [truth.fixture_id, truth]));
   let extractionFailures = 0;
@@ -376,6 +389,24 @@ export function scoreOpenAiBenchmarkRuns(input: {
       fieldByName.set(field, fieldMetric);
     }
     hallucinated += hallucinatedFieldIds.length;
+    const hallucinatedFieldDetails = hallucinatedFieldIds.flatMap((field) => {
+      const candidate = actual.get(field);
+      if (!candidate) return [];
+      const assessment = run.result?.validation.field_assessments.find(
+        (item) => item.candidate_id === candidate.candidate_id,
+      );
+      return [{
+        field,
+        raw_extracted_value: candidate.raw_value,
+        normalized_value: candidate.normalized_value,
+        confidence: candidate.confidence,
+        warning_flags: candidate.warning_flags,
+        gate0_result: {
+          status: assessment?.status ?? null,
+          issue_codes: assessment?.issue_codes ?? [],
+        },
+      }];
+    });
 
     const issueCodes = sortedUnique(run.result?.validation.issues.map((issue) => issue.code) ?? []);
     const expectedIssueCodes = sortedUnique(truth.expected_validation_issue_codes);
@@ -426,7 +457,7 @@ export function scoreOpenAiBenchmarkRuns(input: {
         provider_id: provider?.provider_id ?? "openai",
         model_version: provider?.model_version ?? input.model,
         extractor_version: provider?.extractor_version ?? input.extractorVersion,
-        prompt_version: OPENAI_PAYSLIP_EXTRACTION_PROMPT_VERSION,
+        prompt_version: input.promptVersion ?? OPENAI_PAYSLIP_EXTRACTION_PROMPT_VERSION,
       },
       expected_fields: expectedEntries.length,
       exact_matches: fixtureExact,
@@ -440,6 +471,7 @@ export function scoreOpenAiBenchmarkRuns(input: {
       hallucinated_fields: hallucinatedFieldIds.length,
       mismatches,
       hallucinated_field_ids: hallucinatedFieldIds,
+      hallucinated_field_details: hallucinatedFieldDetails,
       gate0_status: run.result?.validation.status ?? null,
       gate0_issue_codes: issueCodes,
       expected_gate0_issue_codes: expectedIssueCodes,
@@ -463,7 +495,7 @@ export function scoreOpenAiBenchmarkRuns(input: {
     });
   }
 
-  const pricingEntry = pricingCatalog[input.model] ?? null;
+  const pricingEntry = openAiExtractionPricingCatalog[input.model] ?? null;
   const tokenUsageComplete = tokenSamples === input.runs.length;
   const totalEstimatedCost = pricingEntry && tokenUsageComplete
     ? (inputTokens * pricingEntry.input + outputTokens * pricingEntry.output) / 1_000_000
@@ -473,7 +505,7 @@ export function scoreOpenAiBenchmarkRuns(input: {
     provider_id: "openai",
     model: input.model,
     extractor_version: input.extractorVersion,
-    prompt_version: OPENAI_PAYSLIP_EXTRACTION_PROMPT_VERSION,
+    prompt_version: input.promptVersion ?? OPENAI_PAYSLIP_EXTRACTION_PROMPT_VERSION,
     ground_truth_sha256: input.groundTruthSha256 ?? null,
     fixtures_total: input.runs.length,
     provider_calls: input.runs.length,

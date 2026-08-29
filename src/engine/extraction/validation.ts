@@ -11,6 +11,7 @@ export const gate0IssueSchema = z
     code: domainCodeSchema,
     severity: validationSeveritySchema,
     field_candidate_ids: z.array(uuidSchema),
+    field_keys: z.array(payslipFieldKeySchema).default([]),
     message: z.string().trim().min(1).max(500),
   })
   .strict();
@@ -33,6 +34,12 @@ export const gate0ValidationSchema = z
   .strict();
 
 export type Gate0Validation = Readonly<z.infer<typeof gate0ValidationSchema>>;
+export type Gate0CriticalContext = Readonly<{
+  required_fields?: readonly z.infer<typeof payslipFieldKeySchema>[];
+  hourly_analysis_implied?: boolean;
+  pension_section_visible?: boolean;
+  totals_section_visible?: boolean;
+}>;
 
 type MutableAssessment = {
   candidate_id: string;
@@ -46,6 +53,7 @@ const moneyFields = new Set([
   "base_monthly_salary",
   "hourly_rate",
   "gross_salary",
+  "total_deductions",
   "net_salary",
   "travel_amount",
   "convalescence_amount",
@@ -115,7 +123,10 @@ function nearPowerOfTenScale(actualScaled: bigint, expectedScaled: bigint) {
 
 export function validatePayslipGate0(
   input: NormalizedPayslipExtraction,
-  options: { reference_year?: number } = {},
+  options: {
+    reference_year?: number;
+    critical_context?: Gate0CriticalContext;
+  } = {},
 ): Gate0Validation {
   const extraction = normalizedPayslipExtractionSchema.parse(input);
   const referenceYear = options.reference_year ?? new Date().getUTCFullYear();
@@ -136,11 +147,22 @@ export function validatePayslipGate0(
     message: string,
   ) => {
     const ids = fields.map((field) => field.candidate_id);
-    issues.push({ code, severity, field_candidate_ids: ids, message });
+    issues.push({ code, severity, field_candidate_ids: ids, field_keys: [...new Set(fields.map((field) => field.field))], message });
     for (const id of ids) {
       const assessment = assessments.get(id);
       if (assessment) worsen(assessment, status, code);
     }
+  };
+
+  const addContextIssue = (
+    code: string,
+    status: MutableAssessment["status"],
+    severity: z.infer<typeof validationSeveritySchema>,
+    fieldKeys: readonly z.infer<typeof payslipFieldKeySchema>[],
+    message: string,
+  ) => {
+    issues.push({ code, severity, field_candidate_ids: [], field_keys: [...new Set(fieldKeys)], message });
+    if (statusRank[status] > statusRank[globalStatus]) globalStatus = status;
   };
 
   if (extraction.status === "failed") {
@@ -149,6 +171,7 @@ export function validatePayslipGate0(
       code: "extraction_failed",
       severity: "error",
       field_candidate_ids: [],
+      field_keys: [],
       message: "The extraction provider did not produce candidate fields.",
     });
   } else if (extraction.document_quality_confidence < 0.65) {
@@ -157,6 +180,7 @@ export function validatePayslipGate0(
       code: "low_document_quality",
       severity: "confirmation",
       field_candidate_ids: [],
+      field_keys: [],
       message: "Document quality is too low for automatic confirmation.",
     });
   } else if (extraction.document_quality_confidence < 0.9) {
@@ -165,6 +189,7 @@ export function validatePayslipGate0(
       code: "moderate_document_quality",
       severity: "warning",
       field_candidate_ids: [],
+      field_keys: [],
       message: "Document quality is below the automatic-confirmation threshold.",
     });
   }
@@ -239,6 +264,7 @@ export function validatePayslipGate0(
       code: "duplicate_mapped_component",
       severity: "warning",
       field_candidate_ids: components.map((component) => component.component_id),
+      field_keys: [],
       message: "The same normalized additional component was mapped more than once.",
     });
   }
@@ -278,8 +304,52 @@ export function validatePayslipGate0(
     }
   }
 
+  const severanceBaseField = firstField(extraction, "pension_base");
+  const severanceRateField = firstField(extraction, "severance_rate");
+  const severanceAmountField = firstField(extraction, "severance_contribution");
+  const severanceBase = moneyMinorUnits(severanceBaseField);
+  const severanceRate = percentageBasisPoints(severanceRateField);
+  const severanceAmount = moneyMinorUnits(severanceAmountField);
+  if (
+    severanceBase !== null && severanceRate !== null && severanceAmount !== null &&
+    severanceBaseField && severanceRateField && severanceAmountField
+  ) {
+    const expectedScaled = BigInt(severanceBase) * BigInt(severanceRate);
+    const actualScaled = BigInt(severanceAmount) * BigInt(10_000);
+    if (scaledDifferenceIsLarge(actualScaled, expectedScaled, BigInt(10_000), 3)) {
+      addIssue(
+        "severance_contribution_mismatch",
+        "suspicious",
+        "warning",
+        [severanceBaseField, severanceRateField, severanceAmountField],
+        "The severance contribution does not reconcile with its parsed base and percentage.",
+      );
+    }
+  }
+
+  const grossField = firstField(extraction, "gross_salary");
+  const deductionsField = firstField(extraction, "total_deductions");
+  const netField = firstField(extraction, "net_salary");
+  const grossTotal = moneyMinorUnits(grossField);
+  const deductionsTotal = moneyMinorUnits(deductionsField);
+  const netTotal = moneyMinorUnits(netField);
+  if (
+    grossTotal !== null && deductionsTotal !== null && netTotal !== null &&
+    grossField && deductionsField && netField
+  ) {
+    const expectedNet = grossTotal - deductionsTotal;
+    if (scaledDifferenceIsLarge(BigInt(netTotal), BigInt(expectedNet), BigInt(1), 2)) {
+      addIssue(
+        "payslip_totals_mismatch",
+        "requires_confirmation",
+        "confirmation",
+        [grossField, deductionsField, netField],
+        "Gross, deductions, and net totals do not reconcile technically.",
+      );
+    }
+  }
+
   if (extraction.earnings_components_complete) {
-    const grossField = firstField(extraction, "gross_salary");
     const gross = moneyMinorUnits(grossField);
     const knownComponentFields = ["base_monthly_salary", "travel_amount", "convalescence_amount"]
       .map((field) => firstField(extraction, field))
@@ -293,6 +363,48 @@ export function validatePayslipGate0(
       } else if (scaledDifferenceIsLarge(BigInt(gross), BigInt(componentSum), BigInt(1), 3)) {
         addIssue("gross_component_mismatch", "suspicious", "warning", [grossField, ...knownComponentFields], "Gross salary does not reconcile with the complete parsed component set.");
       }
+    }
+  }
+
+  const requiredFields = new Set(options.critical_context?.required_fields ?? []);
+  if (options.critical_context?.hourly_analysis_implied) {
+    requiredFields.add("hourly_rate");
+    requiredFields.add("regular_hours");
+  }
+  if (options.critical_context?.pension_section_visible) requiredFields.add("pension_base");
+  if (options.critical_context?.totals_section_visible) {
+    requiredFields.add("gross_salary");
+    requiredFields.add("total_deductions");
+    requiredFields.add("net_salary");
+  }
+  for (const field of requiredFields) {
+    if (firstField(extraction, field)) continue;
+    addContextIssue(
+      "critical_field_missing",
+      "requires_confirmation",
+      "confirmation",
+      [field],
+      `A contextually critical field is missing: ${field}.`,
+    );
+  }
+
+  if (options.critical_context?.pension_section_visible) {
+    const pensionRelationships = [
+      ["pension_employee_rate", "pension_employee_contribution"],
+      ["pension_employer_rate", "pension_employer_contribution"],
+      ["severance_rate", "severance_contribution"],
+    ] as const;
+    for (const [rateField, amountField] of pensionRelationships) {
+      const ratePresent = firstField(extraction, rateField) !== undefined;
+      const amountPresent = firstField(extraction, amountField) !== undefined;
+      if (ratePresent === amountPresent) continue;
+      addContextIssue(
+        "pension_relationship_incomplete",
+        "requires_confirmation",
+        "confirmation",
+        [rateField, amountField, "pension_base"],
+        "A visible pension row is missing its base, rate, or amount relationship.",
+      );
     }
   }
 

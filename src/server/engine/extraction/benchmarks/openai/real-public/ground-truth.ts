@@ -74,7 +74,7 @@ export const realPublicPayslipGroundTruth: readonly RealPublicGroundTruth[] = [
       { field: "severance_rate", reason_code: "rate_not_clearly_labeled" },
     ],
     expected_absent_fields: [
-      "employment_start_date", "base_monthly_salary", "convalescence_amount", "vacation_balance", "sick_balance",
+      "employment_start_date", "base_monthly_salary", "total_deductions", "convalescence_amount", "vacation_balance", "sick_balance",
     ],
     critical_fields: [
       "salary_period", "salary_type", "hourly_rate", "regular_hours", "overtime_125_hours",
@@ -120,7 +120,7 @@ export const realPublicPayslipGroundTruth: readonly RealPublicGroundTruth[] = [
       { field: "severance_rate", reason_code: "multiple_fund_rows" },
     ],
     expected_absent_fields: [
-      "employment_start_date", "hourly_rate", "regular_hours", "overtime_125_hours", "overtime_150_hours",
+      "employment_start_date", "hourly_rate", "regular_hours", "overtime_125_hours", "overtime_150_hours", "total_deductions",
       "convalescence_amount", "vacation_balance", "sick_balance",
     ],
     critical_fields: [
@@ -165,7 +165,7 @@ export const realPublicPayslipGroundTruth: readonly RealPublicGroundTruth[] = [
       { field: "convalescence_amount", reason_code: "legacy_component_label_not_visually_unambiguous" },
     ],
     expected_absent_fields: [
-      "employment_start_date", "base_monthly_salary", "pension_base", "pension_employer_contribution",
+      "employment_start_date", "base_monthly_salary", "total_deductions", "pension_base", "pension_employer_contribution",
       "severance_contribution", "pension_employee_rate", "pension_employer_rate", "severance_rate",
       "vacation_balance", "sick_balance",
     ],
@@ -213,7 +213,7 @@ export const realPublicPayslipGroundTruth: readonly RealPublicGroundTruth[] = [
       { field: "travel_amount", reason_code: "reimbursement_row_not_unambiguously_travel" },
     ],
     expected_absent_fields: [
-      "employment_start_date", "base_monthly_salary", "convalescence_amount", "pension_employee_rate",
+      "employment_start_date", "base_monthly_salary", "total_deductions", "convalescence_amount", "pension_employee_rate",
       "pension_employer_rate", "severance_rate", "vacation_balance", "sick_balance",
     ],
     critical_fields: [
@@ -261,7 +261,7 @@ export const realPublicPayslipGroundTruth: readonly RealPublicGroundTruth[] = [
       { field: "pension_base", reason_code: "pension_base_not_explicitly_labeled" },
     ],
     expected_absent_fields: [
-      "employment_start_date", "base_monthly_salary", "overtime_125_hours", "overtime_150_hours",
+      "employment_start_date", "base_monthly_salary", "overtime_125_hours", "overtime_150_hours", "total_deductions",
       "convalescence_amount", "pension_employee_rate", "pension_employer_rate", "severance_rate",
     ],
     critical_fields: [

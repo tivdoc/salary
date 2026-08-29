@@ -152,9 +152,9 @@ export function normalizeExplicitDate(raw: string) {
 
 function normalizeSalaryType(raw: string) {
   const value = raw.normalize("NFKC").trim().toLowerCase();
-  if (["monthly", "חודשי", "משכורת חודשית"].includes(value)) return "monthly" as const;
-  if (["hourly", "שעתי", "שכר שעתי"].includes(value)) return "hourly" as const;
-  if (["mixed", "משולב"].includes(value)) return "mixed" as const;
+  if (/\bmixed\b|משולב/.test(value)) return "mixed" as const;
+  if (/\bhourly\b|שעתי|שכר\s*שעה/.test(value)) return "hourly" as const;
+  if (/\bmonthly\b|חודשי|משכורת\s*חודשית/.test(value)) return "monthly" as const;
   return null;
 }
 
@@ -185,6 +185,7 @@ function normalizedValue(candidate: RawCandidateField) {
     case "base_monthly_salary":
     case "hourly_rate":
     case "gross_salary":
+    case "total_deductions":
     case "net_salary":
     case "travel_amount":
     case "convalescence_amount":
@@ -223,16 +224,19 @@ export function normalizePayslipExtraction(input: ExtractionResult): NormalizedP
   const additionalComponents = extraction.additional_components.map((component) => {
     const quantity = component.quantity_raw === null ? null : normalizeDecimal(component.quantity_raw);
     const rate = component.rate_raw === null ? null : normalizeMoney(component.rate_raw);
+    const percentage = component.percentage_raw === null ? null : normalizePercentage(component.percentage_raw);
     const amount = component.amount_raw === null ? null : normalizeMoney(component.amount_raw);
     const normalizationWarnings = [
       component.quantity_raw !== null && quantity === null ? "quantity_normalization_failed" : null,
       component.rate_raw !== null && rate === null ? "rate_normalization_failed" : null,
+      component.percentage_raw !== null && percentage === null ? "percentage_normalization_failed" : null,
       component.amount_raw !== null && amount === null ? "amount_normalization_failed" : null,
     ].filter((warning): warning is string => warning !== null);
     return {
       ...component,
       quantity,
       rate,
+      percentage,
       amount,
       normalization_warnings: normalizationWarnings,
     };

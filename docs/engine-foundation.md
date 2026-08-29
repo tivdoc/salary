@@ -120,4 +120,4 @@ The `ImmutableDocument` contract models the target record and enforces its UUID-
 
 When persistence is approved, use append-oriented tables for analysis runs, run transitions, conversations, messages, fact assertions/resolutions, hypotheses, findings, and calculation traces. Foreign keys should preserve case and run ownership. Store exact contract, prompt, model, engine, rule, and formula versions used for every material output. Persistence adapters should live outside agent implementations and parse records at the domain boundary on both read and write.
 
-The first server-only provider implementation is documented in [OpenAI Payslip Extraction V1](./openai-payslip-extraction-v1.md). OpenAI-specific code stays outside the pure engine, and the evaluation remains synthetic-only with no Production wiring.
+The first server-only provider implementation is documented in [OpenAI Payslip Extraction V1](./openai-payslip-extraction-v1.md). The low-resolution, targeted-recovery design is documented in [Payslip Extraction V2](./payslip-extraction-v2.md). OpenAI-specific code stays outside the pure engine, and neither extractor is wired to Production.

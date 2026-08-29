@@ -11,6 +11,7 @@ export default defineConfig({
     environment: "node",
     include: [
       "src/server/engine/extraction/benchmarks/openai/real-public/openai-real-benchmark.external.test.ts",
+      "src/server/engine/extraction/benchmarks/openai/real-public/openai-real-v2-benchmark.external.test.ts",
     ],
   },
 });

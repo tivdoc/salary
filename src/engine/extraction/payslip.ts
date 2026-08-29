@@ -16,6 +16,7 @@ import {
   extractionOperationSchema,
   extractionProviderSchema,
   extractionStatusSchema,
+  payrollRowSemanticSchema,
   sensitiveMetadataCandidateSchema,
 } from "./contracts";
 
@@ -69,6 +70,7 @@ const moneyFields = [
   "base_monthly_salary",
   "hourly_rate",
   "gross_salary",
+  "total_deductions",
   "net_salary",
   "travel_amount",
   "convalescence_amount",
@@ -98,8 +100,10 @@ export const normalizedAdditionalComponentSchema = z
     component_id: uuidSchema,
     source_label: z.string().trim().min(1).max(160),
     normalized_label: domainCodeSchema.nullable(),
+    semantic_kind: payrollRowSemanticSchema,
     quantity_raw: z.string().nullable(),
     rate_raw: z.string().nullable(),
+    percentage_raw: z.string().nullable(),
     amount_raw: z.string().nullable(),
     confidence: confidenceSchema,
     source: candidateSourceSchema,
@@ -107,6 +111,7 @@ export const normalizedAdditionalComponentSchema = z
     warning_flags: z.array(candidateWarningSchema),
     quantity: decimalStringSchema.nullable(),
     rate: moneySchema.nullable(),
+    percentage: normalizedPercentageSchema.nullable(),
     amount: moneySchema.nullable(),
     normalization_warnings: z.array(domainCodeSchema),
   })

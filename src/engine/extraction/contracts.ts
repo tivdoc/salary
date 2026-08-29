@@ -42,6 +42,7 @@ export const payslipFieldKeySchema = z.enum([
   "overtime_125_hours",
   "overtime_150_hours",
   "gross_salary",
+  "total_deductions",
   "net_salary",
   "travel_amount",
   "convalescence_amount",
@@ -54,6 +55,19 @@ export const payslipFieldKeySchema = z.enum([
   "severance_rate",
   "vacation_balance",
   "sick_balance",
+]);
+
+export const payrollRowSemanticSchema = z.enum([
+  "base_salary",
+  "hourly_base",
+  "overtime_125",
+  "overtime_150",
+  "travel",
+  "convalescence",
+  "bonus",
+  "deduction",
+  "other",
+  "unknown",
 ]);
 
 export const candidateWarningSchema = domainCodeSchema;
@@ -79,8 +93,10 @@ export const rawAdditionalComponentSchema = z
     component_id: uuidSchema,
     source_label: z.string().trim().min(1).max(160),
     normalized_label: domainCodeSchema.nullable(),
+    semantic_kind: payrollRowSemanticSchema.default("unknown"),
     quantity_raw: z.string().trim().min(1).max(120).nullable(),
     rate_raw: z.string().trim().min(1).max(120).nullable(),
+    percentage_raw: z.string().trim().min(1).max(120).nullable().default(null),
     amount_raw: z.string().trim().min(1).max(120).nullable(),
     confidence: confidenceSchema,
     source: candidateSourceSchema,
@@ -90,8 +106,11 @@ export const rawAdditionalComponentSchema = z
   .strict()
   .refine(
     (component) =>
-      component.quantity_raw !== null || component.rate_raw !== null || component.amount_raw !== null,
-    { message: "An additional component requires quantity, rate, or amount" },
+      component.quantity_raw !== null ||
+      component.rate_raw !== null ||
+      component.percentage_raw !== null ||
+      component.amount_raw !== null,
+    { message: "An additional component requires quantity, rate, percentage, or amount" },
   );
 
 export const sensitiveMetadataKindSchema = z.enum(["employee_name", "employer_name", "national_id"]);

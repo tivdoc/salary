@@ -60,6 +60,7 @@ function isMoneyField(field: PayslipFieldKey) {
     "base_monthly_salary",
     "hourly_rate",
     "gross_salary",
+    "total_deductions",
     "net_salary",
     "travel_amount",
     "convalescence_amount",

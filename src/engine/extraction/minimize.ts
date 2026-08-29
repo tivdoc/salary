@@ -39,8 +39,10 @@ export const minimizedPayslipSchema = z
       z
         .object({
           normalized_label: domainCodeSchema.nullable(),
+          semantic_kind: z.string(),
           quantity: z.string().nullable(),
           rate: moneySchema.nullable(),
+          percentage: normalizedPercentageSchema.nullable(),
           amount: moneySchema.nullable(),
           confidence: confidenceSchema,
           source: minimizedSourceSchema,
@@ -73,8 +75,10 @@ export function minimizePayslipForSemanticProcessing(input: unknown) {
       })),
     additional_components: extraction.additional_components.map((component) => ({
       normalized_label: component.normalized_label,
+      semantic_kind: component.semantic_kind,
       quantity: component.quantity,
       rate: component.rate,
+      percentage: component.percentage,
       amount: component.amount,
       confidence: component.confidence,
       source: {

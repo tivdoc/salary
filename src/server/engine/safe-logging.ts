@@ -23,6 +23,12 @@ export const safeEngineLogSchema = z
     total_tokens: z.number().int().nonnegative().safe().optional(),
     error_code: domainCodeSchema.optional(),
     retry_count: z.number().int().nonnegative().safe().optional(),
+    pass_kind: z.enum(["first_pass", "targeted_recovery"]).optional(),
+    prompt_version: domainCodeSchema.optional(),
+    requested_field_count: z.number().int().nonnegative().safe().optional(),
+    region_count: z.number().int().nonnegative().safe().optional(),
+    provider_call_count: z.number().int().nonnegative().safe().optional(),
+    preprocessing_version: domainCodeSchema.optional(),
   })
   .strict();
 

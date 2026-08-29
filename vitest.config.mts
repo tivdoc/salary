@@ -14,6 +14,7 @@ export default defineConfig({
       ...configDefaults.exclude,
       "src/server/engine/extraction/benchmarks/openai/openai-benchmark.external.test.ts",
       "src/server/engine/extraction/benchmarks/openai/real-public/openai-real-benchmark.external.test.ts",
+      "src/server/engine/extraction/benchmarks/openai/real-public/openai-real-v2-benchmark.external.test.ts",
     ],
   },
 });
