@@ -6,6 +6,7 @@ import { normalizePayslipExtraction } from "@/engine/extraction/normalization";
 import { syntheticPayslipFixtures } from "@/engine/extraction/fixtures/source-fixtures";
 import type { PreparedPayslipDocument } from "../../preprocessing";
 import { OpenAiPayslipV2PassExtractor } from "./v2-adapter";
+import { createOpenAiPayslipV21ExtractorFromEnv } from "./v21-adapter";
 import { mapOpenAiV2Output } from "./v2-mapper";
 import { buildOpenAiV2ResponsesRequest } from "./v2-request";
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
@@ -188,6 +189,11 @@ describe("OpenAI payslip V2 schema and mapping", () => {
   });
 });
 describe("OpenAI payslip V2 requests and safe logging", () => {
+  it("creates the V2.1 pass extractor with an independently versioned provider record", () => {
+    const extractor = createOpenAiPayslipV21ExtractorFromEnv({});
+    expect(extractor.extractorVersion).toBe("2.1");
+  });
+
   it("sends original context plus bounded crops and asks recovery only for selected fields", () => {
     const request = buildOpenAiV2ResponsesRequest({
       model: "gpt-5.6-sol",

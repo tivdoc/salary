@@ -74,7 +74,7 @@ type SafeLogSink = (entry: SafeEngineLog) => void;
 
 export class OpenAiPayslipV2PassExtractor {
   readonly providerId = "openai";
-  readonly extractorVersion = PAYSLIP_EXTRACTION_V2_VERSION;
+  readonly extractorVersion: string;
   private readonly transport: OpenAiV2ResponsesTransport | null;
 
   constructor(
@@ -84,8 +84,10 @@ export class OpenAiPayslipV2PassExtractor {
       clock?: () => Date;
       durationClock?: () => number;
       log?: SafeLogSink;
+      extractorVersion?: string;
     } = {},
   ) {
+    this.extractorVersion = options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION;
     this.transport = options.transport ?? (config.apiKey
       ? createOpenAiV2SdkTransport({ apiKey: config.apiKey, timeoutMs: config.timeoutMs })
       : null);

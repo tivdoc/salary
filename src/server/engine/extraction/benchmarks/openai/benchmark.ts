@@ -381,7 +381,7 @@ export function scoreOpenAiBenchmarkRuns(input: {
     const explicitlyAbsent = new Set(truth.expected_absent_fields);
     const hallucinatedFieldIds = [...actual.keys()].filter((field) => {
       if (expectedNames.has(field) || ambiguousNames.has(field)) return false;
-      return truth.classification_complete ? explicitlyAbsent.has(field) : true;
+      return explicitlyAbsent.has(field);
     });
     for (const field of hallucinatedFieldIds) {
       const fieldMetric = fieldByName.get(field) ?? { expected: 0, correct: 0, missing: 0, wrong: 0, hallucinated: 0 };

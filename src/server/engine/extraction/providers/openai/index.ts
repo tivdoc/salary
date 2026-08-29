@@ -13,3 +13,4 @@ export * from "./v2-mapper";
 export * from "./v2-prompt";
 export * from "./v2-request";
 export * from "./v2-schema";
+export * from "./v21-adapter";
