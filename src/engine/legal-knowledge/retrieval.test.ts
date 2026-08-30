@@ -123,7 +123,7 @@ describe("deterministic legal retrieval", () => {
       },
     });
     const result = retrieveLegalKnowledgeForReview([secondary], [syntheticChunk(secondary)], query());
-    expect(result.results[0].requiresReview).toBe(true);
+    expect(result.results).toEqual([]);
     expect(result.incomplete).toBe(true);
   });
 

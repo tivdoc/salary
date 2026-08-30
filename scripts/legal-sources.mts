@@ -42,6 +42,8 @@ import {
 import { loadLegalCoverageMatrix } from "../src/server/engine/legal-knowledge/coverage.ts";
 import { loadLegalSourceRelations } from "../src/server/engine/legal-knowledge/relations.ts";
 import { resolveTemporalSourceSet, type SourceVersionEvidence } from "../src/engine/legal-knowledge/temporal-resolver.ts";
+import { selectCanonicalInstrumentPages, selectCanonicalRetrievalChunks } from "../src/engine/legal-knowledge/corpus-hardening/canonical-corpus.ts";
+import { classifyRegisteredSourceRole } from "../src/engine/legal-knowledge/corpus-hardening/source-roles.ts";
 
 const repoRoot = process.cwd();
 const manifestPath = path.resolve(repoRoot, "src", "server", "engine", "legal-knowledge", "legal-sources.v0.json");
@@ -509,6 +511,9 @@ async function buildCommand() {
       }
       const sanity = validateParsedLegalDocument(source, pages);
       if (!sanity.passed) throw new Error(sanity.code);
+      const selection = selectCanonicalInstrumentPages(source, pages);
+      if (selection.pages.length === 0) throw new Error(selection.reason);
+      pages = [...selection.pages];
       const normalizedHash = normalizedDocumentHash(pages);
       const runtimeSource = legalSourceSchema.parse({
         ...source,
@@ -519,6 +524,7 @@ async function buildCommand() {
         normalizedTextSha256: normalizedHash,
         parserVersion,
       });
+      const sourceRole = classifyRegisteredSourceRole(runtimeSource);
       if (chunks.length === 0) throw new Error("chunks_empty");
       const normalizedDocument = stableJson({
         schema_version: "normalized-legal-source-v0",
@@ -537,6 +543,7 @@ async function buildCommand() {
         source_version: source.source_version,
         artifact_sha256: observation.artifact_sha256,
         chunker_version: LEGAL_CHUNKER_VERSION,
+        source_role: sourceRole,
         chunks,
       });
       const normalizedPath = path.join(normalizedRoot, source.source_id, source.source_version, `${observation.artifact_sha256}.${sha256(normalizedDocument)}.normalized.json`);
@@ -627,7 +634,7 @@ async function loadRuntimeCorpus() {
       chunks.push(...chunkDocument.chunks);
     }
   }
-  return { manifest, fetchState, buildState, sources, chunks };
+  return { manifest, fetchState, buildState, sources, chunks: selectCanonicalRetrievalChunks(sources, chunks) };
 }
 
 async function statusCommand() {
@@ -1163,12 +1170,14 @@ async function citationAuditCommand() {
       parser_version: string;
     };
     const chunkDocument = JSON.parse(await readFile(path.resolve(repoRoot, build.chunks_path), "utf8")) as { chunks: LegalChunk[] };
+    const auditableChunks = selectCanonicalRetrievalChunks([source], chunkDocument.chunks);
     const fullText = normalized.pages.map((page) => page.text).join("\n");
     const failures: Array<Record<string, unknown>> = [];
+    if (auditableChunks.length === 0) failures.push({ code: "canonical_instrument_chunks_missing" });
     if (sha256(rawBytes) !== build.artifact_sha256) failures.push({ code: "raw_hash_mismatch" });
     if (normalizedDocumentHash(normalized.pages) !== build.normalized_text_sha256) failures.push({ code: "normalized_hash_mismatch" });
     const locatorKeys = new Set<string>();
-    for (const chunk of chunkDocument.chunks) {
+    for (const chunk of auditableChunks) {
       const locatorKey = `${chunk.source_version_id}:${chunk.page_from ?? "html"}:${chunk.character_from}:${chunk.character_to}`;
       if (locatorKeys.has(locatorKey)) failures.push({ chunk_id: chunk.chunk_id, code: "locator_not_unique" });
       locatorKeys.add(locatorKey);
@@ -1194,9 +1203,9 @@ async function citationAuditCommand() {
       canonical_url: source.canonical_url,
       review_status: source.status,
       status: failures.length === 0 ? "round_trip_passed" : "round_trip_failed",
-      chunks_checked: chunkDocument.chunks.length,
+      chunks_checked: auditableChunks.length,
       failures,
-      samples: chunkDocument.chunks.slice(0, 2).map((chunk) => ({
+      samples: auditableChunks.slice(0, 2).map((chunk) => ({
         chunk_id: chunk.chunk_id,
         locator: { format: source.artifact_format, page: chunk.page_from, section: chunk.section_identifier, character_from: chunk.character_from, character_to: chunk.character_to },
         effective_date_evidence_locator: "UNRESOLVED: owner/legal review required",
@@ -1252,9 +1261,13 @@ async function createCleanRoomSnapshot(reverseOrder = false) {
       }
       const sanity = validateParsedLegalDocument(source, pages);
       if (!sanity.passed) throw new Error(sanity.code);
+      const selection = selectCanonicalInstrumentPages(source, pages);
+      if (selection.pages.length === 0) throw new Error(selection.reason);
+      pages = [...selection.pages];
       const normalizedHash = normalizedDocumentHash(pages);
       const runtimeSource = legalSourceSchema.parse({ ...source, content_sha256: observation.artifact_sha256, retrieved_at: observation.retrieved_at });
       const chunks = chunkLegalPages(runtimeSource, observation.artifact_sha256, pages, { normalizedTextSha256: normalizedHash, parserVersion });
+      const sourceRole = classifyRegisteredSourceRole(runtimeSource);
       const normalizedBytes = stableJson({
         schema_version: "normalized-legal-source-v0",
         source_id: source.source_id,
@@ -1272,6 +1285,7 @@ async function createCleanRoomSnapshot(reverseOrder = false) {
         source_version: source.source_version,
         artifact_sha256: observation.artifact_sha256,
         chunker_version: LEGAL_CHUNKER_VERSION,
+        source_role: sourceRole,
         chunks,
       });
       records.push({

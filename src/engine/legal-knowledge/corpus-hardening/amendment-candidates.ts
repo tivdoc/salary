@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { canonicalEntryHash } from "./canonical-corpus.ts";
 
 export const publicationInventoryEntrySchema = z.object({
   publication_ordinal: z.number().int().positive(),
@@ -33,10 +34,15 @@ export function buildUnverifiedAmendmentCandidateGraph(input: readonly Publicati
   const nodes = [...entries]
     .sort((left, right) => left.publication_ordinal - right.publication_ordinal)
     .map((entry) => Object.freeze({
+      node_id: `working-time-publication:${entry.publication_ordinal}:${canonicalEntryHash(entry).slice(0, 16)}`,
+      node_sha256: canonicalEntryHash(entry),
       publication_identity: entry.publication_identity,
       publication_kind: entry.publication_kind,
       publication_date: entry.publication_date,
       official_artifact_url: entry.official_artifact_url,
+      official_artifact_sha256: null,
+      commencement_date: null,
+      commencement_date_verified: false as const,
       review_state: "needs_review" as const,
       activation_state: "inactive" as const,
       corpus_version_created: false as const,
@@ -46,12 +52,13 @@ export function buildUnverifiedAmendmentCandidateGraph(input: readonly Publicati
     .map((node) => {
       const entry = entries.find((candidate) => candidate.publication_identity === node.publication_identity)!;
       return Object.freeze({
-        edge_id: `candidate:${node.publication_identity}->${root.publication_identity}`,
+        edge_id: `candidate:${node.node_id}->${root.node_id}`,
         from_publication_identity: node.publication_identity,
         to_publication_identity: root.publication_identity,
         candidate_relation: node.publication_kind === "error_correction_publication" ? "corrects" as const : "amends" as const,
         catalog_directness: entry.catalog_directness,
         evidence_locator: entry.discovery_evidence,
+        edge_evidence_sha256: canonicalEntryHash({ from: node.node_sha256, to: root.node_sha256, locator: entry.discovery_evidence, relation: entry.publication_kind }),
         verification_state: "unverified" as const,
         commencement_date: null,
         effectivity_verified: false as const,

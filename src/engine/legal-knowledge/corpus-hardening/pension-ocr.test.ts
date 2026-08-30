@@ -6,6 +6,7 @@ import {
   sha256,
   stableJson,
   verifyOcrCitationRoundTrip,
+  createReviewedTranscriptRevision,
 } from "./pension-ocr.ts";
 
 const syntheticHebrewPages = [
@@ -48,5 +49,22 @@ describe("deterministic Pension OCR contracts", () => {
       byte_count: 5_413_459,
       license: { spdx: "Apache-2.0", sha256: "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30" },
     });
+  });
+
+  it("creates append-only reviewed transcript revisions without overwriting OCR", () => {
+    const hashes = ["1".repeat(64), "2".repeat(64), "3".repeat(64)];
+    const first = createReviewedTranscriptRevision({
+      revision: 1,
+      parent_revision_sha256: null,
+      raw_pdf_sha256: PENSION_2016_OCR_TOOLCHAIN.source_pdf_sha256,
+      rendered_page_sha256: PENSION_2016_OCR_TOOLCHAIN.renderer.expected_page_sha256,
+      raw_ocr_page_sha256: hashes,
+      normalized_page_sha256: [...hashes].reverse(),
+      reviewer_id: "synthetic-reviewer",
+      decision: "synthetic_reject",
+    });
+    const second = createReviewedTranscriptRevision({ ...first, revision: 2, parent_revision_sha256: first.revision_sha256, decision: "synthetic_accept" });
+    expect(second).toMatchObject({ raw_ocr_overwritten: false, corpus_registration_performed: false, activation_state: "inactive", parent_revision_sha256: first.revision_sha256 });
+    expect(second.revision_sha256).not.toBe(first.revision_sha256);
   });
 });

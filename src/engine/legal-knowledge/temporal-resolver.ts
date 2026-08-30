@@ -1,6 +1,7 @@
 import { legalSourceVersionId, type LegalSource, type LegalSourceRelation } from "./contracts.ts";
 import { isEffectiveOn } from "./effective-period.ts";
 import type { LegalSector, LegalTopic } from "./taxonomy.ts";
+import { classifyRegisteredSourceRole } from "./corpus-hardening/source-roles.ts";
 
 export const LEGAL_CORPUS_V01_COVERAGE = Object.freeze({
   from: "2019-01-01",
@@ -82,16 +83,18 @@ export function resolveTemporalSourceSet(input: Readonly<{
     missing_applicability_facts: reviewContext.missingApplicabilityFacts,
   };
   if (input.targetDate < LEGAL_CORPUS_V01_COVERAGE.from || input.targetDate > LEGAL_CORPUS_V01_COVERAGE.to) {
-    return { query, status: "NOT_APPLICABLE" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: [] as string[], reasons: ["outside_declared_engineering_coverage"], conflicts: [] as string[], ...resultContext };
+    return { query, status: "NOT_APPLICABLE" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: [] as string[], excluded_source_roles: [] as Array<{ source_version_id: string; role: string }>, reasons: ["outside_declared_engineering_coverage"], conflicts: [] as string[], ...resultContext };
   }
   if (!input.sector || input.sector === "unknown") {
-    return { query, status: "UNRESOLVED_SCOPE" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: [] as string[], reasons: ["sector_required", "general_tag_is_not_applicability_evidence"], conflicts: [] as string[], ...resultContext };
+    return { query, status: "UNRESOLVED_SCOPE" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: [] as string[], excluded_source_roles: [] as Array<{ source_version_id: string; role: string }>, reasons: ["sector_required", "general_tag_is_not_applicability_evidence"], conflicts: [] as string[], ...resultContext };
   }
 
-  const topicSources = input.sources.filter((source) => source.topics.includes(input.topic) && source.status !== "rejected");
+  const registeredTopicSources = input.sources.filter((source) => source.topics.includes(input.topic) && source.status !== "rejected");
+  const excludedSourceRoles = registeredTopicSources.filter((source) => !classifyRegisteredSourceRole(source).eligible_for_operative_resolution).map((source) => ({ source_version_id: legalSourceVersionId(source), role: classifyRegisteredSourceRole(source).role })).sort((a, b) => a.source_version_id.localeCompare(b.source_version_id));
+  const topicSources = registeredTopicSources.filter((source) => classifyRegisteredSourceRole(source).eligible_for_operative_resolution);
   const unverifiedCandidates = topicSources.map(legalSourceVersionId).sort();
   if (input.topic === "working_time" && !topicSources.some((source) => source.source_id === "IL_HOURS_WORK_REST_LAW")) {
-    return { query, status: "UNRESOLVED_MISSING_BASE_INSTRUMENT" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: unverifiedCandidates, reasons: ["valid_base_statute_artifact_missing"], conflicts: [] as string[], ...resultContext };
+    return { query, status: "UNRESOLVED_MISSING_BASE_INSTRUMENT" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: unverifiedCandidates, excluded_source_roles: excludedSourceRoles, reasons: ["valid_base_statute_artifact_missing"], conflicts: [] as string[], ...resultContext };
   }
   const dateCandidates = topicSources.filter((source) => isEffectiveOn(source, input.targetDate));
   const sectorCandidates = dateCandidates.filter((source) => source.sectors.includes("general") || source.sectors.includes(input.sector!));
@@ -101,13 +104,14 @@ export function resolveTemporalSourceSet(input: Readonly<{
       : dateCandidates.length === 0
         ? "effective_interval_gap_or_unresolved"
         : "sector_not_covered";
-    return { query, status: (reason === "sector_not_covered" ? "UNRESOLVED_SCOPE" : "UNRESOLVED_EFFECTIVITY") as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: unverifiedCandidates, reasons: [reason, ...(reviewContext.catalogComplete ? [] : ["catalog_coverage_incomplete"])], conflicts: [] as string[], ...resultContext };
+    const roleReasons = topicSources.length === 0 && registeredTopicSources.length > 0 ? ["operative_source_role_missing", "guidance_or_secondary_cannot_close_gap"] : [];
+    return { query, status: (roleReasons.length ? "UNRESOLVED_MISSING_BASE_INSTRUMENT" : reason === "sector_not_covered" ? "UNRESOLVED_SCOPE" : "UNRESOLVED_EFFECTIVITY") as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: unverifiedCandidates, excluded_source_roles: excludedSourceRoles, reasons: [...roleReasons, reason, ...(reviewContext.catalogComplete ? [] : ["catalog_coverage_incomplete"])], conflicts: [] as string[], ...resultContext };
   }
 
   const activeCandidates = sectorCandidates.filter((source) => source.status === "active");
   const selected = input.activeOnly ? activeCandidates : sectorCandidates;
   if (selected.length === 0) {
-    return { query, status: "UNRESOLVED_EFFECTIVITY" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: unverifiedCandidates, reasons: ["active_source_not_available", "no_needs_review_fallback"], conflicts: [] as string[], ...resultContext };
+    return { query, status: "UNRESOLVED_EFFECTIVITY" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: unverifiedCandidates, excluded_source_roles: excludedSourceRoles, reasons: ["active_source_not_available", "no_needs_review_fallback"], conflicts: [] as string[], ...resultContext };
   }
 
   const conflicts: string[] = [];
@@ -162,21 +166,22 @@ export function resolveTemporalSourceSet(input: Readonly<{
       return leftScope - rightScope || left.source_version_id.localeCompare(right.source_version_id);
     });
 
-  if (conflicts.length > 0) return { query, status: "CONFLICT" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, reasons: ["manual_relation_review_required"], conflicts, ...resultContext };
+  if (conflicts.length > 0) return { query, status: "CONFLICT" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, excluded_source_roles: excludedSourceRoles, reasons: ["manual_relation_review_required"], conflicts, ...resultContext };
   if (!sourceSet.some((member) => member.authority.operative)) {
-    return { query, status: "UNRESOLVED_MISSING_BASE_INSTRUMENT" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, reasons: ["operative_authority_required", "guidance_or_secondary_cannot_close_gap"], conflicts, ...resultContext };
+    return { query, status: "UNRESOLVED_MISSING_BASE_INSTRUMENT" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, excluded_source_roles: excludedSourceRoles, reasons: ["operative_authority_required", "guidance_or_secondary_cannot_close_gap"], conflicts, ...resultContext };
   }
   if (input.evidence && sourceSet.some((member) => member.authority.operative && (!member.raw_hash || !member.parsed_version_id || !member.normalized_hash || !member.parser_version))) {
-    return { query, status: "UNRESOLVED_EFFECTIVITY" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, reasons: ["source_version_lineage_incomplete"], conflicts, ...resultContext };
+    return { query, status: "UNRESOLVED_EFFECTIVITY" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, excluded_source_roles: excludedSourceRoles, reasons: ["source_version_lineage_incomplete"], conflicts, ...resultContext };
   }
   if (!sourceSet.every((member) => member.review_status === "active") && !reviewContext.catalogComplete) {
-    return { query, status: "UNRESOLVED_INCOMPLETE_CATALOG" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, reasons: ["catalog_coverage_incomplete", "open_end_is_end_unknown", "candidate_set_not_usable_for_rules"], conflicts, ...resultContext };
+    return { query, status: "UNRESOLVED_INCOMPLETE_CATALOG" as TemporalResolutionStatus, source_set: sourceSet, unverified_candidates: unverifiedCandidates, excluded_source_roles: excludedSourceRoles, reasons: ["catalog_coverage_incomplete", "open_end_is_end_unknown", "candidate_set_not_usable_for_rules"], conflicts, ...resultContext };
   }
   return {
     query,
     status: (sourceSet.every((member) => member.review_status === "active") ? "RESOLVED_ACTIVE" : "UNVERIFIED_CANDIDATE_SET") as TemporalResolutionStatus,
     source_set: sourceSet,
     unverified_candidates: unverifiedCandidates,
+    excluded_source_roles: excludedSourceRoles,
     usable_for_rules: sourceSet.every((member) => member.review_status === "active"),
     reasons: sourceSet.every((member) => member.review_status === "active") ? ["all_source_set_members_active"] : ["source_set_requires_owner_legal_review", "candidate_set_not_usable_for_rules"],
     conflicts,

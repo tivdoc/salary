@@ -9,7 +9,8 @@ export const corpusArtifactRoleSchema = z.enum([
   "binding_operative_instrument_version",
   "official_implementation_or_corroboration",
   "official_guidance",
-  "secondary_explanatory_material",
+  "secondary_explanatory",
+  "role_pending_human_legal_review",
   "acquisition_only_staged_artifact",
 ]);
 
@@ -41,13 +42,15 @@ function sourceVersionId(source: Pick<LegalSource, "source_id" | "source_version
 }
 
 export function classifyRegisteredSourceRole(source: LegalSource): CorpusRoleAssignment {
-  const role = source.authority.binding_level === "primary_binding" && source.authority.operative
+  const role = source.source_type === "official_permit"
+    ? "role_pending_human_legal_review" as const
+    : source.authority.binding_level === "primary_binding" && source.authority.operative
     ? "binding_operative_instrument_version" as const
     : source.authority.binding_level === "official_implementation"
       ? "official_implementation_or_corroboration" as const
       : source.authority.binding_level === "official_guidance"
         ? "official_guidance" as const
-        : "secondary_explanatory_material" as const;
+        : "secondary_explanatory" as const;
   const binding = role === "binding_operative_instrument_version";
   return corpusRoleAssignmentSchema.parse({
     source_version_id: sourceVersionId(source),
@@ -62,7 +65,9 @@ export function classifyRegisteredSourceRole(source: LegalSource): CorpusRoleAss
         ? ["official_implementation_is_corroborative_only"]
         : role === "official_guidance"
           ? ["official_guidance_is_non_operative"]
-          : ["secondary_material_is_explanatory_only"],
+          : role === "role_pending_human_legal_review"
+            ? ["permit_role_requires_human_legal_review"]
+            : ["secondary_material_is_explanatory_only"],
   });
 }
 
@@ -96,7 +101,7 @@ export function proveKnownNonOperativeRoles(sources: readonly LegalSource[]) {
   if (!rates) throw new Error("btl_rates_source_missing");
   const researchAssignment = classifyRegisteredSourceRole(research);
   const ratesAssignment = classifyRegisteredSourceRole(rates);
-  if (researchAssignment.role !== "secondary_explanatory_material") throw new Error("knesset_research_role_not_secondary");
+  if (researchAssignment.role !== "secondary_explanatory") throw new Error("knesset_research_role_not_secondary");
   if (ratesAssignment.role !== "official_implementation_or_corroboration") throw new Error("btl_rates_role_not_corroborative");
   const operativeIds = selectOperativeResolutionCandidates([researchAssignment, ratesAssignment]).map((entry) => entry.source_version_id);
   return Object.freeze({

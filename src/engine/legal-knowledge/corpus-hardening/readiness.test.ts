@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { legalSourceSchema } from "../contracts.ts";
-import { WAVE2_REAL_CORPUS_TOPICS, evaluateStrictRealCorpusReadiness } from "./readiness.ts";
+import { WAVE21_REQUIRED_READINESS_QUERIES, WAVE2_REAL_CORPUS_TOPICS, evaluateStrictRealCorpusReadiness } from "./readiness.ts";
+import { classifyStagedArtifact } from "./source-roles.ts";
 
 function source(topic: typeof WAVE2_REAL_CORPUS_TOPICS[number]) {
   return legalSourceSchema.parse({
@@ -33,8 +34,10 @@ function source(topic: typeof WAVE2_REAL_CORPUS_TOPICS[number]) {
 describe("strict real-corpus topic readiness", () => {
   it("reports all seven topics non-ready with explicit eight-gate diagnostics", () => {
     const sources = WAVE2_REAL_CORPUS_TOPICS.map(source);
-    const readiness = evaluateStrictRealCorpusReadiness({ sources, buildRecords: [], citationRecords: [] });
+    const readiness = evaluateStrictRealCorpusReadiness({ sources, buildRecords: [], citationRecords: [], stagedArtifacts: [classifyStagedArtifact({ sourceVersionId: "SYN_STAGED@v1", artifactId: `artifact:${"a".repeat(64)}` })] });
     expect(readiness).toMatchObject({ status: "LEGAL_SOURCE_CORPUS_INCOMPLETE", strict_gate_passed: false, strict_exit_code: 2, topic_count: 7, ready_topic_count: 0 });
+    expect(readiness.reports.map((report) => report.required_query)).toEqual(WAVE21_REQUIRED_READINESS_QUERIES);
+    expect(readiness.excluded_staged_artifacts[0]).toMatchObject({ citation_gate_satisfied: false, effective_interval_gate_satisfied: false, parameter_gate_satisfied: false, activation_gate_satisfied: false });
     for (const report of readiness.reports) {
       expect(report.status).toBe("not_ready");
       expect(Object.keys(report.gates).sort()).toEqual(["activation", "citation", "effective_interval", "parse", "population", "review", "sector", "source_role"]);

@@ -83,8 +83,8 @@ describe("version-level fail-closed temporal resolver", () => {
     });
     const result = query([guidance, general], { sector: "security" });
     expect(result.status).toBe("UNVERIFIED_CANDIDATE_SET");
-    expect(result.source_set.map((member) => member.source_id)).toEqual([general.source_id, guidance.source_id]);
-    expect(result.source_set[1].selection_rationale).toContain("explanatory_source_only");
+    expect(result.source_set.map((member) => member.source_id)).toEqual([general.source_id]);
+    expect(result.excluded_source_roles).toEqual([{ source_version_id: `${guidance.source_id}@${guidance.source_version}`, role: "official_guidance" }]);
   });
 
   it("returns conflict for undocumented overlap between two sector sources", () => {
