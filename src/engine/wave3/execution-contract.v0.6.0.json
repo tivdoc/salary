@@ -1,0 +1,49 @@
+{
+  "schema_version": "tivdoc-parallel-wave3-execution-contract-v0.6.0",
+  "required_base_head": "cf922d8f3ee634b7707554e4b9260a2e1a101b14",
+  "required_base_tree": "8e379d82d6b474959438285949cff6cb6d23c42f",
+  "integration_order": ["W1", "W2", "W3"],
+  "shared_contract": "src/engine/wave3/contracts.ts",
+  "canonical_reuse": {
+    "money": "src/engine/domain/primitives.ts#Money",
+    "facts": "src/engine/facts/contracts.ts#CanonicalFact",
+    "rule_input": "src/engine/wave2/contracts.ts#RuleInputSnapshot",
+    "readiness": "src/engine/legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts#evaluateLegalReadiness",
+    "trace": "src/engine/calculations/contracts.ts#CalculationTrace"
+  },
+  "worker_allowlists": {
+    "W1": [
+      "src/engine/case-operations/**",
+      "src/server/engine/case-operations/**",
+      "src/server/reports/**",
+      "scripts/case-operations/**",
+      "docs/wave3-case-operations-v0.6.0.md"
+    ],
+    "W2": [
+      "src/engine/legal-operations/**",
+      "src/server/engine/legal-operations/**",
+      "scripts/legal-operations/**",
+      "docs/wave3-legal-operations-v0.6.0.md"
+    ],
+    "W3": [
+      "src/engine/case-analysis/**",
+      "src/server/engine/case-analysis/**",
+      "scripts/full-system/**",
+      "docs/wave3-full-system-v0.6.0.md"
+    ]
+  },
+  "orchestrator_owned": [
+    "package.json",
+    "src/engine/index.ts",
+    "src/server/engine/index.ts",
+    "scripts/parallel-wave3-final-verification.mts",
+    "output/parallel-wave-3/**"
+  ],
+  "synthetic_catalog_boundary": {
+    "catalog_mode": "synthetic_test",
+    "allowed_environments": ["synthetic_test"],
+    "forbidden_environments": ["real", "development", "preview", "production", "shadow"],
+    "tracked_inputs": "neutral synthetic fixtures only",
+    "generated_outputs": "Git-ignored"
+  }
+}
