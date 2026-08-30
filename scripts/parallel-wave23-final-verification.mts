@@ -16,6 +16,7 @@ const v04Erratum = path.join(repoRoot, "output", "parallel-wave-2.2", "workers",
 const w1Output = path.join(repoRoot, "output", "parallel-wave-2.3", "workers", "w1-evidence-incident");
 const w2Output = path.join(repoRoot, "output", "parallel-wave-2.3", "workers", "w2-corpus-trust");
 const w3Output = path.join(repoRoot, "output", "parallel-wave-2.3", "workers", "w3-evidence-epoch");
+const historicalDiagnosticOutput = path.join(outputRoot, "historical-wave22-diagnostic");
 const historicalStrictOutput = path.join(outputRoot, "historical-wave22-strict");
 const npmCli = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
 const nodeTypes = ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--experimental-strip-types"] as const;
@@ -118,6 +119,12 @@ const commands: readonly CommandDefinition[] = [
     command: python, args: [path.join(repoRoot, "scripts", "wave23-evidence-epoch", "adversarial_self_test.py"), "--source-repo", repoRoot, "--output-root", w3Output], expectedExit: 0,
   },
   {
+    id: "historical-wave22-diagnostic", purpose: "Re-derive controlled-import, TOCTOU, Ground Truth, Rule Input, and historical diagnostic matrices",
+    command: process.execPath,
+    args: [...nodeTypes, path.join(repoRoot, "scripts", "wave22-closure-verification", "run.mts"), "diagnostic", "--python", python, "--repo", repoRoot, "--v041", v041, "--output", historicalDiagnosticOutput],
+    expectedExit: 0, subjectClass: "historical_root", expectedSubjectStatus: "HISTORICAL_EVIDENCE_ROOTS_QUARANTINED_FAILED",
+  },
+  {
     id: "historical-v041-independent-strict", purpose: "Independently retain frozen V0.4/V0.4.1 evidence-chain failure",
     command: process.execPath,
     args: [...nodeTypes, path.join(repoRoot, "scripts", "wave22-closure-verification", "run.mts"), "strict", "--python", python, "--repo", repoRoot, "--v04", v04, "--v04-erratum", v04Erratum, "--v041", v041, "--v042", v042, "--expected-v042-sha256", "c3c7135821097e68e00717b93300939cc84d565932a0dacd6cc239a684db6636", "--expected-v042-manifest-sha256", "6b8082a2aa4149cba35ead01500114323658d58ac8e2899694a2873b0d50a9c1", "--expected-head", baseSha, "--output", historicalStrictOutput],
@@ -130,7 +137,13 @@ const commands: readonly CommandDefinition[] = [
 
 function display(definition: CommandDefinition) {
   const executable = definition.command === process.execPath ? "node" : definition.command;
-  return [executable, ...definition.args].map((entry) => /\s/u.test(entry) ? JSON.stringify(entry) : entry).join(" ");
+  return [executable, ...definition.args].map(sanitizeEvidence).map((entry) => /\s/u.test(entry) ? JSON.stringify(entry) : entry).join(" ");
+}
+
+function sanitizeEvidence(value: string) {
+  return value
+    .replace(/C:\\Users\\[^\\\s"']+/giu, "C:\\Users\\<REDACTED>")
+    .replace(/C:\/Users\/[^/\s"']+/giu, "C:/Users/<REDACTED>");
 }
 
 function subject(definition: CommandDefinition, observedExit: number) {
@@ -175,7 +188,7 @@ for (let index = 0; index < commands.length; index += 1) {
     const actualExit = result.status ?? (result.signal ? 128 : 1);
     attempts.push({
       attempt, actual_exit: actualExit, signal: result.signal, error: result.error?.message ?? null,
-      stdout: result.stdout ?? "", stderr: result.stderr ?? "",
+      stdout: sanitizeEvidence(result.stdout ?? ""), stderr: sanitizeEvidence(result.stderr ?? ""),
     });
     if (actualExit === definition.expectedExit) break;
   }

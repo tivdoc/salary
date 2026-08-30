@@ -201,8 +201,9 @@ describe("real multi-process local controlled-import matrices", () => {
     for (let index = 0; index < 100; index += 1) {
       try { await stat(ready); break; } catch { await new Promise((resolve) => setTimeout(resolve, 20)); }
     }
+    const closed = new Promise((resolve) => child.once("close", resolve));
     child.kill();
-    await new Promise((resolve) => child.once("close", resolve));
+    await closed;
     const outcome = await run({ mode: "import", import_input: item.input });
     expect(outcome.result).toMatchObject({ ok: true, created: true });
   }, 20_000);
