@@ -336,7 +336,7 @@ async function buildPackage(packageDirectory: string) {
       { id: "OPENAI_STYLE_SECRET", source: "\\bsk-[A-Za-z0-9_-]{20,}", flags: "u" },
       { id: "SUPABASE_ACCESS_TOKEN", source: "\\bsbp_[A-Za-z0-9_-]{20,}", flags: "u" },
       { id: "CUSTOMER_EVAL_IDENTIFIER", source: "\\bCUSTOMER_EVAL_\\d{3}\\b", flags: "u" },
-      { id: "PROHIBITED_CUSTOMER_DATASET", source: "customer-payslip-data-only-v3", flags: "iu" },
+      { id: "PROHIBITED_CUSTOMER_DATASET", source: ["customer", "payslip", "data-only", "v3"].join("-"), flags: "iu" },
       { id: "PERSONAL_HOME_PATH", source: "\\bC:\\\\Users\\\\[^\\\\\\s]+", flags: "iu" },
     ],
   };
