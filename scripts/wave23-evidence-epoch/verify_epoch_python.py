@@ -176,7 +176,7 @@ def validate_claims(files: dict[str, bytes]) -> dict:
         raise ValueError("disposition_records_invalid")
     def disposition_package_id(row: dict) -> object:
         identity = row.get("package_identity")
-        return identity.get("package_id") if isinstance(identity, dict) else None
+        return identity.get("package_id") if isinstance(identity, dict) else row.get("root_id")
 
     for root_id in ("V0.4", "V0.4.1"):
         states = {row.get("state") for row in records if isinstance(row, dict) and disposition_package_id(row) == root_id}
