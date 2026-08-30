@@ -49,7 +49,7 @@ const commands: readonly CommandDefinition[] = [
   npmRun("ground-truth-negatives", "wave2:ground-truth:all"),
   npmRun("lint", "lint"),
   { id: "typescript-no-emit", command: process.execPath, args: [npmCli, "exec", "tsc", "--", "--noEmit"], expectedExit: 0 },
-  npmRun("full-test-suite", "test"),
+  npmRun("full-test-suite", "test", 0, ["--maxWorkers=1"]),
   npmRun("production-build", "build"),
   npmRun("legal-validate", "legal:sources:validate"),
   npmRun("legal-build", "legal:sources:build"),

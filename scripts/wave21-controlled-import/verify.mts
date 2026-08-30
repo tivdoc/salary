@@ -84,7 +84,7 @@ async function localVerification() {
     "src/server/engine/legal-knowledge/controlled-import-recovery/multiprocess.test.ts",
     "src/server/engine/legal-knowledge/parser-isolation/parser-isolation.test.ts",
   ];
-  const tests = run(process.execPath, [path.join(repoRoot, "node_modules/vitest/vitest.mjs"), "run", ...testFiles, "--reporter=verbose"]);
+  const tests = run(process.execPath, [path.join(repoRoot, "node_modules/vitest/vitest.mjs"), "run", ...testFiles, "--reporter=verbose", "--maxWorkers=1"]);
   const strict = run(process.execPath, [...nodeArgs, path.join(repoRoot, "scripts/legal-acquisition.mts"), "operational-readiness"], { ...process.env, TIVDOC_LEGAL_NETWORK_DISABLED: "1" });
   const reachability = await reachabilityEvidence();
   const platform = {
@@ -101,7 +101,7 @@ async function localVerification() {
     schema_version: "tivdoc-wave21-w3-local-verification-v0.4.1",
     status: tests.exit_code === 0 && strict.exit_code !== 0 ? "WAVE21_W3_LOCAL_ADVERSARIAL_VERIFIED" : "WAVE21_W3_LOCAL_ADVERSARIAL_FAILED",
     local_only: true,
-    tests: { command: `node node_modules/vitest/vitest.mjs run ${testFiles.join(" ")} --reporter=verbose`, exit_code: tests.exit_code, expected_test_files: 5, expected_tests: 86 },
+    tests: { command: `node node_modules/vitest/vitest.mjs run ${testFiles.join(" ")} --reporter=verbose --maxWorkers=1`, exit_code: tests.exit_code, expected_test_files: 5, expected_tests: 86 },
     matrices: {
       crash_points: ["after_received", "after_private_copy", "after_validation", "after_artifact_publish", "after_event_publish", "after_ledger_append", "after_commit_marker"],
       corrupt_records: ["journal", "event", "ledger", "commit_marker"],
