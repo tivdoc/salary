@@ -158,8 +158,8 @@ export class FixtureLegalRuleCatalog implements LegalRuleCatalogPort {
       topic: input.topic,
       source_version_ids: sourceVersionIds,
       parameter_version_ids: synthetic
-        ? (this.defect === "non_dual_parameter" ? [`synthetic-parameter:${input.topic}:attestation-a`] : [
-          `synthetic-parameter:${input.topic}:attestation-a`, `synthetic-parameter:${input.topic}:attestation-b`,
+        ? (this.defect === "non_dual_parameter" ? [] : [
+          `synthetic-parameter:${input.topic}:dual-attested`,
         ])
         : [],
       rule_spec_id: synthetic && this.defect !== "unreviewed_rule" ? `synthetic.${input.topic}.identity` : null,

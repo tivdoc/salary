@@ -31,6 +31,28 @@ export const REAL_CATALOG_BOUNDARY = frozen({
   active_rules: 0 as const,
 });
 
+export const SYNTHETIC_CATALOG_SHA256 = legalOperationsSha256({
+  boundary: SYNTHETIC_CATALOG_BOUNDARY,
+  entries: SYNTHETIC_SEVEN_TOPIC_FIXTURES.map((fixture) => ({
+    topic: fixture.topic,
+    source_version_id: fixture.source_version_id,
+    parameter_sha256: fixture.parameter.candidate_sha256,
+    rule_sha256: fixture.rule.content_sha256,
+    golden_cases_sha256: fixture.golden_cases.content_sha256,
+  })),
+});
+
+export const REAL_CATALOG_SHA256 = legalOperationsSha256({
+  boundary: REAL_CATALOG_BOUNDARY,
+  sources: CORPUS_LIFECYCLE.map((entry) => ({
+    source_version_id: entry.source_version_id,
+    topic: entry.topic,
+    technical_parse_status: entry.technical_parse_status,
+    instrument_boundary_status: entry.instrument_boundary_status,
+    activation_status: entry.activation_status,
+  })),
+});
+
 function realCandidate(entry: CorpusLifecycleEntry): LegalReadinessCandidate {
   return frozen({
     source_id: entry.source_version_id.split("@")[0],
@@ -121,11 +143,10 @@ export class LegalOperationsCatalog implements LegalRuleCatalogPort {
     if (!fixture) throw new Error("SYNTHETIC_CATALOG_TOPIC_MISSING");
     const readiness = evaluateLegalReadiness({ readinessCase: readinessCase(input), candidates: [syntheticReadyCandidate(fixture)] });
     const selected = readiness.status === "READY";
-    const catalogContent = frozen({ boundary: SYNTHETIC_CATALOG_BOUNDARY, topic: input.topic, rule_sha256: fixture.rule.content_sha256, parameter_sha256: fixture.parameter.candidate_sha256, readiness_sha256: readiness.decision_sha256 });
     return frozen({
       catalog_id: SYNTHETIC_CATALOG_BOUNDARY.catalog_id,
       catalog_version: SYNTHETIC_CATALOG_BOUNDARY.catalog_version,
-      catalog_sha256: legalOperationsSha256(catalogContent),
+      catalog_sha256: SYNTHETIC_CATALOG_SHA256,
       mode: "synthetic_test",
       topic: input.topic,
       source_version_ids: selected ? [fixture.source_version_id] : [],
@@ -137,16 +158,17 @@ export class LegalOperationsCatalog implements LegalRuleCatalogPort {
   }
 
   #real(input: Readonly<{ topic: Wave3Topic; target_date: string; as_of: string; sector: string; population: string; mode: "real" }>): LegalCatalogSelection {
-    const candidates = CORPUS_LIFECYCLE.filter((entry) => entry.topic === input.topic).map(realCandidate);
+    const topicSources = CORPUS_LIFECYCLE.filter((entry) => entry.topic === input.topic);
+    const candidates = topicSources.map(realCandidate);
     const readiness = evaluateLegalReadiness({ readinessCase: readinessCase(input), candidates });
     if (readiness.status === "READY") throw new Error("REAL_CATALOG_UNEXPECTED_READY");
     return frozen({
       catalog_id: REAL_CATALOG_BOUNDARY.catalog_id,
       catalog_version: REAL_CATALOG_BOUNDARY.catalog_version,
-      catalog_sha256: legalOperationsSha256({ boundary: REAL_CATALOG_BOUNDARY, topic: input.topic, readiness_sha256: readiness.decision_sha256 }),
+      catalog_sha256: REAL_CATALOG_SHA256,
       mode: "real",
       topic: input.topic,
-      source_version_ids: [],
+      source_version_ids: topicSources.map((entry) => entry.source_version_id),
       parameter_version_ids: [],
       rule_spec_id: null,
       rule_spec_version: null,
@@ -194,6 +216,8 @@ export async function realCatalogStatusMatrix() {
     active_parameter_count: selections.reduce((count, entry) => count + entry.parameter_version_ids.length, 0),
     active_rule_count: selections.filter((entry) => entry.rule_spec_id !== null).length,
     selections,
-    passed: selections.length === 7 && selections.every((entry) => entry.readiness.status === "BLOCKED_NOT_READY" && entry.source_version_ids.length === 0 && entry.parameter_version_ids.length === 0 && entry.rule_spec_id === null),
+    passed: selections.length === 7
+      && new Set(selections.flatMap((entry) => entry.source_version_ids)).size === 17
+      && selections.every((entry) => entry.readiness.status === "BLOCKED_NOT_READY" && entry.parameter_version_ids.length === 0 && entry.rule_spec_id === null),
   });
 }

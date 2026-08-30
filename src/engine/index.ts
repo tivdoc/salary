@@ -20,3 +20,4 @@ export * from "./rule-input";
 export * from "./rules/contracts";
 export * from "./rule-runtime";
 export * from "./wave2/contracts";
+export * from "./wave3/contracts";

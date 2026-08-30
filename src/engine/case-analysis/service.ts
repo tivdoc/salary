@@ -249,7 +249,7 @@ function topicResult(input: Readonly<{
   });
   const legalBlockers = [
     ...input.readiness.reason_codes,
-    ...(input.selection.parameter_version_ids.length === 2 ? [] : ["PARAMETER_DUAL_ATTESTATION_REQUIRED"]),
+    ...(input.selection.parameter_version_ids.length > 0 ? [] : ["PARAMETER_DUAL_ATTESTATION_REQUIRED"]),
     ...(input.selection.rule_spec_id && input.selection.rule_spec_version ? [] : ["REVIEWED_RULE_VERSION_REQUIRED"]),
   ];
   if (input.readiness.status !== "READY" || legalBlockers.length > 0) return deepFreeze({
@@ -404,7 +404,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       const selection = selectionByTopic.get(topic)!;
       const decision = readiness.get(topic)!;
       const readyToExecute = fact.status === "confirmed" && decision.status === "READY"
-        && selection.parameter_version_ids.length === 2 && selection.rule_spec_id !== null && selection.rule_spec_version !== null;
+        && selection.parameter_version_ids.length > 0 && selection.rule_spec_id !== null && selection.rule_spec_version !== null;
       let execution: Awaited<ReturnType<RuleSpecExecutorPort["execute"]>> | null = null;
       if (readyToExecute) {
         this.metrics.executor_calls += 1;
