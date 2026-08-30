@@ -1,0 +1,170 @@
+{
+  "schema_version": "tivdoc-wave23-execution-contract-v0.5.0",
+  "required_base_sha": "984b640fe360cbeb74f8f3eb0c6ae6c6e79c939d",
+  "required_base_tree": "e71c7ff7b8a1e2ee37cc070c43e5ec2f903e5aa3",
+  "integration_branch": "codex/tivdoc-engine-foundation",
+  "workers": [
+    {
+      "id": "W1",
+      "branch": "codex/wave23-w1-evidence-incident",
+      "worktree": "C:/dev/tivdoc-wave23-w1-evidence-incident",
+      "allowlist": [
+        "src/engine/wave23/evidence-incident/**",
+        "scripts/wave23-evidence-incident/**",
+        "docs/wave23-evidence-incident-v0.5.0.md"
+      ],
+      "evidence_output": "output/parallel-wave-2.3/workers/w1-evidence-incident"
+    },
+    {
+      "id": "W2",
+      "branch": "codex/wave23-w2-corpus-trust",
+      "worktree": "C:/dev/tivdoc-wave23-w2-corpus-trust",
+      "allowlist": [
+        "src/engine/wave23/corpus-trust/**",
+        "src/engine/legal-knowledge/canonical-readiness/**",
+        "scripts/wave23-corpus-trust/**",
+        "docs/wave23-corpus-trust-v0.5.0.md"
+      ],
+      "evidence_output": "output/parallel-wave-2.3/workers/w2-corpus-trust"
+    },
+    {
+      "id": "W3",
+      "branch": "codex/wave23-w3-evidence-epoch",
+      "worktree": "C:/dev/tivdoc-wave23-w3-evidence-epoch",
+      "allowlist": [
+        "src/engine/wave23/evidence-epoch/**",
+        "scripts/wave23-evidence-epoch/**",
+        "docs/wave23-evidence-epoch-v0.5.0.md"
+      ],
+      "evidence_output": "output/parallel-wave-2.3/workers/w3-evidence-epoch"
+    }
+  ],
+  "integration_order": ["W1", "W2", "W3"],
+  "evidence_root_disposition": {
+    "schema_version": "tivdoc-evidence-root-disposition-v1",
+    "states": [
+      "trusted_current",
+      "quarantined_failed",
+      "forensic_only",
+      "superseded_for_use",
+      "not_available_for_revalidation"
+    ],
+    "append_only": true,
+    "hash_bound": true,
+    "historical_roots_can_satisfy_current_admission": false
+  },
+  "corpus_lifecycle": {
+    "schema_version": "tivdoc-corpus-lifecycle-v0.5.0",
+    "orthogonal_fields": [
+      "acquisition_status",
+      "technical_parse_status",
+      "instrument_boundary_status",
+      "publication_status",
+      "retrieval_visibility",
+      "retrieval_surface",
+      "source_role",
+      "monetary_support_eligibility",
+      "human_review_status",
+      "effective_interval_status",
+      "sector_status",
+      "population_status",
+      "activation_status"
+    ],
+    "inactive_or_unreviewed_operative": false
+  },
+  "canonical_readiness": {
+    "api": "evaluateLegalReadiness",
+    "module": "src/engine/legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts",
+    "decision_hash_schema": "tivdoc-legal-readiness-decision-v0.5.0",
+    "delegates": [
+      "diagnostic_cli",
+      "strict_cli",
+      "corpus_topic_gate",
+      "server_resolver_admission",
+      "future_activation_adapter",
+      "future_shadow_admission_adapter"
+    ],
+    "reason_codes": [
+      "PARSE_MISSING_OR_FAILED",
+      "SOURCE_QUARANTINED_OR_NOT_RETRIEVABLE",
+      "SOURCE_ROLE_INELIGIBLE",
+      "CITATION_MISSING_OR_UNVERIFIED",
+      "HUMAN_LEGAL_REVIEW_MISSING",
+      "EFFECTIVE_INTERVAL_MISSING_INVALID_OR_UNVERIFIED",
+      "SECTOR_MISSING_UNKNOWN_MISMATCH_OR_UNVERIFIED",
+      "POPULATION_MISSING_MISMATCH_OR_UNVERIFIED",
+      "ACTIVATION_MISSING",
+      "MONETARY_SUPPORT_INELIGIBLE",
+      "STALE_SOURCE_VERSION_BINDING"
+    ]
+  },
+  "evidence_epoch_2": {
+    "schema_version": "tivdoc-evidence-epoch-v2",
+    "parent_trust_root": null,
+    "authoritative_bytes_source": "git_object_database",
+    "required_namespaced_hashes": [
+      "git_blob_oid_sha1",
+      "content_sha256",
+      "package_sha256",
+      "decision_sha256"
+    ],
+    "historical_packages_are_incident_references_only": true
+  },
+  "gate_semantics": {
+    "diagnostic": "reports observed state and exits zero when the harness ran",
+    "historical_forensic": "must preserve actual quarantined historical failure",
+    "current_authoritative": "must pass with zero unreachable current Git-object references",
+    "product_readiness": "must remain blocked for all seven real topics"
+  },
+  "package": {
+    "zip": "output/parallel-wave-2.3/review-package-v0.5.0.zip",
+    "receipt": "output/parallel-wave-2.3/verification-receipt-v0.5.0.json",
+    "deterministic": true,
+    "source_bytes": "git_object_database",
+    "post_commit_only": true,
+    "detached_receipt": true,
+    "independent_verifier_count": 2
+  },
+  "zero_invariants": [
+    "customer_files_read",
+    "openai_calls",
+    "external_supabase_connections",
+    "migrations",
+    "production_preview_deploy_actions",
+    "persistent_owner_imports",
+    "reviewed_sources",
+    "active_sources",
+    "real_numeric_candidates",
+    "real_numeric_attestations",
+    "active_parameters",
+    "israeli_rules",
+    "findings",
+    "shadow_runs"
+  ],
+  "forbidden_side_effects": [
+    "customer or customer-derived data access",
+    "OpenAI or generative-model call",
+    "external Supabase connection or migration",
+    "Production, Preview, deploy, payment or outbound message",
+    "legal-source acquisition, review or activation",
+    "real numeric candidate, attestation or active parameter",
+    "Israeli rule, entitlement calculation or Finding",
+    "owner artifact import",
+    "Shadow execution or admission",
+    "historical package mutation or gate weakening"
+  ],
+  "worker_handoff": {
+    "commit_count": 1,
+    "start_sha": "WAVE23_CONTRACT_SHA",
+    "clean_worktree": true,
+    "allowlist_required": true,
+    "report": [
+      "commit",
+      "parent",
+      "tree",
+      "patch_id",
+      "allowlist_hash",
+      "changed_paths"
+    ]
+  }
+}
