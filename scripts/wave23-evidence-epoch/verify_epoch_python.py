@@ -174,14 +174,18 @@ def validate_claims(files: dict[str, bytes]) -> dict:
     records = disposition.get("records")
     if not isinstance(records, list):
         raise ValueError("disposition_records_invalid")
+    def disposition_package_id(row: dict) -> object:
+        identity = row.get("package_identity")
+        return identity.get("package_id") if isinstance(identity, dict) else None
+
     for root_id in ("V0.4", "V0.4.1"):
-        states = {row.get("state") for row in records if isinstance(row, dict) and row.get("root_id") == root_id}
+        states = {row.get("state") for row in records if isinstance(row, dict) and disposition_package_id(row) == root_id}
         if not {"quarantined_failed", "forensic_only"}.issubset(states) or "trusted_current" in states:
             raise ValueError(f"historical_disposition_invalid:{root_id}")
     for row in records:
         if not isinstance(row, dict):
             raise ValueError("disposition_record_not_object")
-        if row.get("root_id") in ("V0.4", "V0.4.1", "V0.4.2"):
+        if disposition_package_id(row) in ("V0.4", "V0.4.1", "V0.4.2"):
             for key, value in row.items():
                 if ("admission" in key or "authoritative" in key) and isinstance(value, bool) and value:
                     raise ValueError("historical_root_admission_true")

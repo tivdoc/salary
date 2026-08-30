@@ -200,11 +200,12 @@ function validateClaims(members: Map<string, ZipMember>) {
   const disposition = claimByBasename(members, "evidence-root-disposition-registry.json");
   if (disposition.append_only !== true || disposition.hash_bound !== true || disposition.historical_roots_can_satisfy_current_admission !== false) throw new Error("disposition_registry_policy_invalid");
   const dispositionRecords = array(disposition.records, "disposition_records_invalid").map((value) => object(value, "disposition_record_invalid"));
+  const dispositionPackageId = (row: Record<string, unknown>) => object(row.package_identity, "disposition_package_identity_invalid").package_id;
   for (const rootId of ["V0.4", "V0.4.1"]) {
-    const states = new Set(dispositionRecords.filter((row) => row.root_id === rootId).map((row) => row.state));
+    const states = new Set(dispositionRecords.filter((row) => dispositionPackageId(row) === rootId).map((row) => row.state));
     if (!states.has("quarantined_failed") || !states.has("forensic_only") || states.has("trusted_current")) throw new Error(`historical_disposition_invalid:${rootId}`);
   }
-  for (const row of dispositionRecords.filter((item) => ["V0.4", "V0.4.1", "V0.4.2"].includes(String(item.root_id)))) {
+  for (const row of dispositionRecords.filter((item) => ["V0.4", "V0.4.1", "V0.4.2"].includes(String(dispositionPackageId(item))))) {
     if (Object.entries(row).some(([key, value]) => (key.includes("admission") || key.includes("authoritative")) && value === true)) throw new Error("historical_root_admission_true");
   }
 
