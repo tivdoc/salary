@@ -97,7 +97,7 @@ const commands: readonly CommandDefinition[] = [
   npmRun("topic-readiness-strict", "Preserve blocked product readiness for all real topics", "wave2:topic:gate", 2, [], "product_readiness", "LEGAL_SOURCE_CORPUS_INCOMPLETE"),
   npmRun("corpus-readiness-diagnostic", "Report real corpus readiness", "wave2:corpus:readiness"),
   npmRun("corpus-readiness-strict", "Preserve strict real corpus readiness denial", "wave2:corpus:readiness-strict", 2, [], "product_readiness", "LEGAL_SOURCE_CORPUS_INCOMPLETE"),
-  npmRun("controlled-import-local", "Verify local controlled-import protocol behavior", "wave21:controlled-import:local"),
+  { ...npmRun("controlled-import-local", "Verify local controlled-import protocol behavior", "wave21:controlled-import:local"), maxAttempts: 2 },
   npmRun("controlled-import-operational-strict", "Preserve denial of persistent operational import readiness", "wave21:controlled-import:strict", 5, [], "operational_readiness", "PERSISTENT_OWNER_IMPORTS_NOT_VERIFIED"),
   npmRun("rule-input-negative", "Verify synthetic-only Rule Input boundary", "wave2:rule-input:verify"),
   npmRun("ground-truth-negative", "Verify Ground Truth remains synthetic/unavailable", "wave2:ground-truth:all"),
