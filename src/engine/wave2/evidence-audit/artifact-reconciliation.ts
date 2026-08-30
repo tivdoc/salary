@@ -388,9 +388,9 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
     valid_raw_artifact_versions: 20,
     quarantined_or_unavailable: 4,
     legal_text_versions: 17,
-    parsed_versions: 16,
-    parse_failed_versions: 1,
-    chunks: 274,
+    parsed_versions: 14,
+    parse_failed_versions: 3,
+    chunks: 202,
     persistent_owner_import_ledger_entries: 0,
   };
   for (const [key, expected] of Object.entries(expectedCurrent)) {
@@ -401,18 +401,24 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
 
   const beforeAfter = {
     before_v0_2_package: v02Inventory.counts,
-    after_wave1: currentCounts,
+    after_wave1_reported_baseline: {
+      parsed_versions: 16,
+      parse_failed_versions: 1,
+      chunks: 274,
+    },
+    after_wave21_canonical_enforcement: currentCounts,
     explained_deltas: {
       registry_records: { before: v02Inventory.counts.registry_records, after: 17, reason: "one separately registered 2025 convalescence-law discovery record" },
       valid_raw_artifact_versions: { before: v02Inventory.counts.valid_raw_artifact_versions, after: 20, reason: "one exact 2025 official PDF artifact added" },
       legal_text_versions: { before: v02Inventory.counts.legal_text_versions, after: 17, reason: "one separately modeled 2025 legal-text version" },
-      parsed_versions: { before: v02Inventory.counts.parsed_versions, after: 16, reason: "the 2025 container parsed; Pension 2016 remained failed closed" },
-      chunks: { before: v02Inventory.counts.chunks, after: 274, reason: "65 chunks were added by the unreviewed 40-page 2025 container" },
+      parsed_versions: { before: 16, after: 14, reason: "two multi-instrument container sources now fail closed until instrument selectors receive human review; Pension 2016 remains failed closed" },
+      parse_failed_versions: { before: 1, after: 3, reason: "the two selector-pending sources moved from parsed to fail-closed without changing the 17 registered legal versions" },
+      chunks: { before: 274, after: 202, reason: "the convalescence container changed from 65 to 11 instrument-bound chunks and 18 chunks from two selector-pending sources became ineligible; stable-ID mapping is retained in Wave 2.1 evidence" },
     },
   };
 
   const reportWithoutHash = {
-    schema_version: "tivdoc-wave1-artifact-reconciliation-v0.4",
+    schema_version: "tivdoc-wave1-artifact-reconciliation-v0.4.1",
     evidence_inputs: {
       tracked_publication_inventory_sha256: sha256(await readFile(publicationsPath)),
       tracked_permit_inventory_sha256: sha256(await readFile(permitsPath)),

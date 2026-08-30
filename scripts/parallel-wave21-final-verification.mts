@@ -73,7 +73,7 @@ const commands: readonly CommandDefinition[] = [
   npmRun("wave2-corpus-diagnostic", "wave2:corpus:readiness"),
   npmRun("wave2-corpus-strict", "wave2:corpus:readiness-strict", 2),
   npmRun("wave2-controlled-import", "wave2:controlled-import:verify"),
-  npmRun("wave2-evidence-audit-stale-counts-denied", "wave2:evidence:audit", 1),
+  npmRun("wave2-evidence-audit", "wave2:evidence:audit"),
   npmRun("wave21-canonical-evidence", "wave21:corpus:evidence"),
   npmRun("wave21-seven-topic-strict", "wave21:corpus:readiness-strict", 2),
   { ...npmRun("wave21-real-reader-crash-matrix", "wave21:controlled-import:local"), maxAttempts: 2 },

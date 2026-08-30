@@ -176,6 +176,7 @@ const orchestratorAllowlist = [
   "scripts/parallel-wave21-final-verification.mts",
   "scripts/parallel-wave21-review-package.mts",
   "scripts/parallel-wave21-review-package-zip.py",
+  "src/engine/wave2/evidence-audit/artifact-reconciliation.ts",
 ];
 const finalizationAllowlistPassed = finalizationCommits.flatMap((commit) => commit.changed_files.flatMap((change) => change.paths)).every((relative) => orchestratorAllowlist.includes(relative));
 if (!finalizationAllowlistPassed) throw new Error("orchestrator_finalization_allowlist_failed");
