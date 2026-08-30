@@ -1,0 +1,134 @@
+{
+  "schema_version": "tivdoc-wave22-execution-contract-v0.4.2",
+  "required_base_sha": "48be587d5a394e37656e20a1276b4cebb85c60bb",
+  "integration_branch": "codex/tivdoc-engine-foundation",
+  "foundation_ancestors": [
+    "5ce3eba6ab816cd6a20e101c913f7f1177c7598a",
+    "bb9a61eae55d49529d7cd633a2c9c2615a8d842e",
+    "e978ae5cee4a92f20dcc7db448b275170b8bf724"
+  ],
+  "workers": [
+    {
+      "id": "W1",
+      "branch": "codex/wave22-w1-evidence-forensics",
+      "worktree": "C:/dev/tivdoc-wave22-w1-evidence-forensics",
+      "allowlist": [
+        "src/engine/wave22/evidence-forensics/**",
+        "scripts/wave22-evidence-forensics/**",
+        "docs/wave22-evidence-forensics-v0.4.2.md"
+      ],
+      "evidence_output": "output/parallel-wave-2.2/workers/w1-evidence-forensics"
+    },
+    {
+      "id": "W2",
+      "branch": "codex/wave22-w2-corpus-readiness",
+      "worktree": "C:/dev/tivdoc-wave22-w2-corpus-readiness",
+      "allowlist": [
+        "scripts/legal-acquisition.mts",
+        "scripts/legal-sources.mts",
+        "scripts/wave1-topic-readiness.mts",
+        "scripts/wave2-corpus-hardening/run.mts",
+        "scripts/wave2-evidence-audit/topic-readiness.mts",
+        "scripts/wave22-corpus-readiness/**",
+        "src/engine/legal-knowledge/canonical-readiness/**",
+        "src/engine/legal-knowledge/corpus-hardening/**",
+        "src/engine/legal-knowledge/retrieval-core.ts",
+        "src/engine/legal-knowledge/retrieval.test.ts",
+        "src/engine/legal-knowledge/temporal-resolver.test.ts",
+        "src/engine/legal-knowledge/temporal-resolver.ts",
+        "src/engine/legal-knowledge/wave1-topic-readiness.ts",
+        "src/engine/wave2/evidence-audit/artifact-reconciliation.test.ts",
+        "src/engine/wave2/evidence-audit/artifact-reconciliation.ts",
+        "src/engine/wave2/evidence-audit/topic-readiness-command.test.ts",
+        "src/engine/wave2/evidence-audit/topic-readiness-command.ts",
+        "src/server/engine/legal-knowledge/review-retrieval.ts",
+        "src/server/engine/legal-knowledge/wave22-corpus-readiness/**",
+        "docs/wave22-corpus-readiness-v0.4.2.md"
+      ],
+      "evidence_output": "output/parallel-wave-2.2/workers/w2-corpus-readiness"
+    },
+    {
+      "id": "W3",
+      "branch": "codex/wave22-w3-closure-verification",
+      "worktree": "C:/dev/tivdoc-wave22-w3-closure-verification",
+      "allowlist": [
+        "src/engine/wave22/closure-verification/**",
+        "scripts/wave22-closure-verification/**",
+        "src/server/engine/legal-knowledge/wave22-operational-proof/**",
+        "docs/wave22-closure-verification-v0.4.2.md"
+      ],
+      "evidence_output": "output/parallel-wave-2.2/workers/w3-closure-verification"
+    }
+  ],
+  "integration_order": ["W1", "W2", "W3"],
+  "canonical_readiness_contract": {
+    "domain_function": "evaluateLegalReadiness",
+    "module": "src/engine/legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts",
+    "case_registry": "src/engine/legal-knowledge/canonical-readiness/readiness-case-registry.v0.4.2.json",
+    "blocked_status": "BLOCKED_NOT_READY",
+    "reason_codes": [
+      "PARSE_MISSING_OR_FAILED",
+      "CITATION_MISSING_OR_UNVERIFIED",
+      "SOURCE_ROLE_INELIGIBLE",
+      "HUMAN_LEGAL_REVIEW_MISSING",
+      "EFFECTIVE_INTERVAL_MISSING_OR_UNVERIFIED",
+      "SECTOR_MISSING_OR_UNVERIFIED",
+      "POPULATION_MISSING_OR_UNVERIFIED",
+      "ACTIVATION_MISSING"
+    ],
+    "required_delegates": [
+      "diagnostic_cli",
+      "strict_cli",
+      "corpus_topic_gate",
+      "server_resolver_admission",
+      "future_activation_adapter",
+      "future_shadow_admission_adapter"
+    ]
+  },
+  "evidence_command_contract": {
+    "diagnostic_command": "wave22:evidence:diagnostic",
+    "diagnostic_exit_code": 0,
+    "strict_command": "wave22:evidence:strict",
+    "strict_complete_exit_code": 0,
+    "strict_incomplete_exit_code": 6,
+    "complete_status": "EVIDENCE_REFERENCE_CLOSURE_COMPLETE",
+    "incomplete_status": "EVIDENCE_REFERENCE_CLOSURE_INCOMPLETE"
+  },
+  "count_schema": {
+    "source_transition_count": 17,
+    "before_parsed": 16,
+    "before_failed": 1,
+    "after_parsed": 14,
+    "after_failed": 3,
+    "before_chunks": 274,
+    "after_chunks": 202,
+    "chunk_delta_records": 72,
+    "convalescence_before_chunks": 65,
+    "convalescence_after_chunks": 11
+  },
+  "stable_id_schemas": {
+    "forensic_case": "FORENSIC_REF_[0-9]{3}",
+    "source_transition": "SOURCE_TRANSITION_[0-9]{3}",
+    "chunk_transition": "CHUNK_TRANSITION_[0-9]{3}",
+    "readiness_case": "READINESS_[A-Z0-9_]+",
+    "security_case": "SECURITY_[A-Z0-9_]+"
+  },
+  "forbidden_side_effects": [
+    "OpenAI or generative-model construction or call",
+    "customer document, raster, Ground Truth value or derived customer-data access",
+    "external Supabase connection or migration",
+    "Production, shared Preview, deploy, payment or outbound message",
+    "source review, activation or promotion",
+    "real legal numeric parameter or attestation",
+    "Israeli legal rule, Finding or customer conclusion",
+    "owner artifact import",
+    "access-control bypass",
+    "historical evidence package rewrite or replacement"
+  ],
+  "worker_handoff": {
+    "commit_count": 1,
+    "clean_worktree": true,
+    "allowlist_required": true,
+    "focused_tests_required": true
+  }
+}
