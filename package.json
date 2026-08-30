@@ -81,7 +81,13 @@
     "wave21:controlled-import:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave21-controlled-import/verify.mts local",
     "wave21:controlled-import:strict": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave21-controlled-import/verify.mts strict",
     "parallel:wave21:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave21-final-verification.mts",
-    "parallel:wave21:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave21-review-package.mts"
+    "parallel:wave21:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave21-review-package.mts",
+    "wave22:evidence:diagnostic": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave22-evidence-forensics/diagnostic.mts",
+    "wave22:evidence:strict": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave22-evidence-forensics/strict.mts",
+    "wave22:corpus:evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave22-corpus-readiness/run.mts",
+    "wave22:closure:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave22-closure-verification/run.mts",
+    "parallel:wave22:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave22-final-verification.mts",
+    "parallel:wave22:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave22-review-package.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
