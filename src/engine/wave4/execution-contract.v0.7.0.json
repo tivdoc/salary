@@ -1,0 +1,76 @@
+{
+  "schema_version": "tivdoc-overnight-execution-contract-v0.7.0",
+  "required_base_head": "6b49158017457af5a7c8b13efe361353bbdf2c6c",
+  "required_base_tree": "cebbfb451bb6d0e3e3ef60b637c29c42bc3a2c3f",
+  "branch": "codex/tivdoc-engine-foundation",
+  "worker_capacity": 3,
+  "shared_contract": "src/engine/wave4/contracts.ts",
+  "canonical_call_graph": {
+    "case_analysis": "src/engine/case-analysis/service.ts#CaseAnalysisService.runCaseAnalysis",
+    "readiness": "src/engine/legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts#evaluateLegalReadiness",
+    "rulespec_execution": "src/server/engine/legal-operations/rulespec-executor.ts#CanonicalRuleSpecExecutor.execute",
+    "report_builder": "src/server/reports/deterministic-report-builder.ts#DeterministicReportBuilder.build"
+  },
+  "canonical_model_policy": {
+    "case_analysis_contracts": "adapter ports over canonical Facts, RuleInput, readiness, AnalysisRun, trace, report and review models",
+    "legal_operations_contracts": "review/import schemas over canonical source, parameter, RuleSpec and activation lifecycle",
+    "parallel_truth_systems_permitted": false
+  },
+  "feature_flags": {
+    "enforcement": "server_only",
+    "default": false,
+    "production_test_fixture_loading": "forbidden"
+  },
+  "integration_order": ["P1", "P2", "P7", "P3", "P4", "P5", "P6", "P8", "orchestrator_acceptance"],
+  "lane_dependencies": {
+    "P1": [],
+    "P2": ["shared_contract"],
+    "P3": ["canonical_legal_corpus"],
+    "P4": ["canonical_legal_models", "canonical_ground_truth_models"],
+    "P5": ["shared_contract", "P1_ports", "P2_ports"],
+    "P6": ["shared_contract", "P1_ports", "P2_ports"],
+    "P7": ["shared_contract"],
+    "P8": ["P1", "P2", "P3", "P4", "P5", "P6", "P7"]
+  },
+  "worker_allowlists": {
+    "P1": ["src/server/platform/persistence/**", "src/server/platform/jobs/**", "supabase/migrations/*_engine_platform_*.sql", "scripts/platform/persistence/**", "docs/overnight-v0.7-p1.md"],
+    "P2": ["src/server/platform/auth/**", "src/server/platform/storage/**", "src/server/platform/security/**", "src/server/platform/audit/**", "scripts/platform/security/**", "docs/overnight-v0.7-p2.md"],
+    "P3": ["src/engine/legal-knowledge/overnight-v07/**", "src/server/engine/legal-knowledge/overnight-v07/**", "scripts/legal-v07/**", "docs/overnight-v0.7-p3.md"],
+    "P4": ["src/engine/legal-quality/**", "src/engine/extraction-ground-truth/overnight-v07/**", "src/server/engine/shadow/**", "scripts/legal-quality/**", "scripts/extraction-ground-truth-v07/**", "scripts/shadow/**", "docs/overnight-v0.7-p4.md"],
+    "P5": ["src/server/product/internal-ops/**", "src/app/internal-ops-v07/**", "src/app/api/internal-ops-v07/**", "src/components/internal-ops-v07/**", "scripts/tivdoc-ops/**", "docs/overnight-v0.7-p5.md"],
+    "P6": ["src/server/product/customer-portal/**", "src/app/portal-v07/**", "src/app/api/portal-v07/**", "src/components/portal-v07/**", "scripts/tivdoc-portal/**", "docs/overnight-v0.7-p6.md"],
+    "P7": ["src/server/platform/observability/**", "src/server/platform/operations/**", "src/server/platform/backup/**", "scripts/platform/reliability/**", "docs/overnight-v0.7-p7.md"],
+    "P8": ["src/server/product/integration/**", "scripts/overnight-v07/integration/**", "docs/overnight-v0.7-p8.md"]
+  },
+  "orchestrator_owned": [".gitignore", "package.json", "src/engine/index.ts", "src/server/engine/index.ts", "src/engine/wave4/**", "scripts/overnight-v07/acceptance.mts", "scripts/overnight-v07/visual/**", "output/overnight-v0.7/**"],
+  "acceptance_ids": {
+    "P1": ["V07-P1-TRANSACTION", "V07-P1-IDEMPOTENCY", "V07-P1-JOBS", "V07-P1-OUTBOX", "V07-P1-MIGRATION"],
+    "P2": ["V07-P2-AUTHZ", "V07-P2-RLS", "V07-P2-STORAGE", "V07-P2-AUDIT", "V07-P2-PRIVACY", "V07-P2-PARSER"],
+    "P3": ["V07-P3-CORPUS", "V07-P3-ACQUISITION", "V07-P3-REVIEW-WORKSPACE"],
+    "P4": ["V07-P4-RULESPEC", "V07-P4-GOLDEN", "V07-P4-GT", "V07-P4-SHADOW"],
+    "P5": ["V07-P5-OPS-API", "V07-P5-OPS-UI", "V07-P5-OPS-E2E"],
+    "P6": ["V07-P6-PORTAL", "V07-P6-CLARIFICATION", "V07-P6-ENTITLEMENT", "V07-P6-PRIVACY"],
+    "P7": ["V07-P7-OBSERVABILITY", "V07-P7-OPERATIONS", "V07-P7-BACKUP"],
+    "P8": ["V07-P8-SYNTHETIC", "V07-P8-REAL-BLOCKED", "V07-P8-PORTAL", "V07-P8-ADVERSARIAL", "V07-P8-VISUAL"]
+  },
+  "capability_preflight": {
+    "docker": "unavailable",
+    "supabase_cli": "unavailable",
+    "postgresql_cli": "unavailable",
+    "disposable_local_database_proven": false,
+    "playwright_cli": "available_1.62.1",
+    "poppler": "available_26.05.0"
+  },
+  "global_boundaries": {
+    "customer_data_reads": 0,
+    "production_or_preview_connections": 0,
+    "deployments": 0,
+    "remote_migrations": 0,
+    "external_supabase_connections": 0,
+    "live_payment_calls": 0,
+    "openai_calls": 0,
+    "customer_shadow_runs": 0,
+    "deliveries": 0,
+    "legal_values_or_rules_invented": 0
+  }
+}
