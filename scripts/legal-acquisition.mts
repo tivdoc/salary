@@ -9,7 +9,6 @@ import { legalSourceSchema, type LegalSource } from "../src/engine/legal-knowled
 import { legalTopics } from "../src/engine/legal-knowledge/taxonomy.ts";
 import {
   acquisitionRequestForTarget,
-  corpusReadinessOutcome,
   determineAcquisitionReadinessOutcome,
   importOwnerOfficialArtifact,
   loadCommittedOwnerArtifacts,
@@ -28,6 +27,9 @@ import {
 } from "../src/server/engine/legal-knowledge/controlled-import-security.ts";
 import { legalSourceManifestSchema } from "../src/server/engine/legal-knowledge/manifest.ts";
 import { validateLegalSourceUrl } from "../src/server/engine/legal-knowledge/security.ts";
+import { LEGAL_READINESS_CASES } from "../src/engine/legal-knowledge/canonical-readiness/case-registry.ts";
+import { legalReadinessDiagnostic } from "../src/engine/legal-knowledge/canonical-readiness/delegates.ts";
+import { classifyRegisteredSourceRole } from "../src/engine/legal-knowledge/corpus-hardening/source-roles.ts";
 
 const repoRoot = process.cwd();
 const legalRoot = path.resolve(repoRoot, "src", "server", "engine", "legal-knowledge");
@@ -613,10 +615,33 @@ async function corpusReadiness(args: string[]) {
   const expected = { from: "2019-01-01", "as-of": "2026-08-29", sector: "general" };
   for (const [name, value] of Object.entries(expected)) if (options[name] !== value) throw new Error(`corpus_readiness_argument_invalid:${name}`);
   const inventory = await inventories();
-  const outcome = corpusReadinessOutcome();
+  const buildByVersion = new Map(inventory.state.buildState.records.map((record) => [`${record.source_id}@${record.source_version}`, record]));
+  const canonicalCandidates = inventory.state.manifest.sources.map((rawSource) => {
+    const source = legalSourceSchema.parse(rawSource);
+    const sourceVersionId = `${source.source_id}@${source.source_version}`;
+    return {
+      source_version_id: sourceVersionId,
+      topics: source.topics,
+      parse_succeeded: buildByVersion.get(sourceVersionId)?.parse_status === "parsed",
+      citation_verified: false,
+      operative_role_eligible: classifyRegisteredSourceRole(source).eligible_for_operative_resolution,
+      human_reviewed: false,
+      effective_interval_verified: false,
+      verified_sectors: [] as string[],
+      verified_populations: [] as string[],
+      active: false,
+    };
+  });
+  const canonicalDecisions = LEGAL_READINESS_CASES
+    .filter((readinessCase) => readinessCase.kind === "current" && readinessCase.sector === "general")
+    .map((readinessCase) => legalReadinessDiagnostic(readinessCase, canonicalCandidates).decision);
   return {
-    ...outcome,
-    ready: false,
+    exit_code: canonicalDecisions.every((decision) => decision.status === "READY") ? 0 : 1,
+    status: canonicalDecisions.every((decision) => decision.status === "READY") ? "READY" : "LEGAL_SOURCE_CORPUS_INCOMPLETE",
+    reason_codes: [...new Set(canonicalDecisions.flatMap((decision) => decision.reason_codes))],
+    decision_source: "evaluateLegalReadiness",
+    canonical_decisions: canonicalDecisions,
+    ready: canonicalDecisions.every((decision) => decision.status === "READY"),
     query: { from: expected.from, as_of: expected["as-of"], sector: expected.sector },
     missing_gates: inventory.coverage.rows.filter((row) => row.coverage_status !== "covered").map((row) => `${row.topic}:${row.source_version_id}:${row.coverage_status}`),
     active_sources: 0,

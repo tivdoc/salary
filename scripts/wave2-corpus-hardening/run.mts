@@ -120,6 +120,7 @@ async function readinessCommand(strict: boolean) {
   const outputRoot = path.resolve(flag("--output") ?? frozenEvidenceRoot);
   assertWithinFrozenEvidenceRoot(outputRoot);
   const report = JSON.parse(await readFile(path.join(outputRoot, "corpus-evidence", "real-corpus-readiness.json"), "utf8")) as Readonly<{
+    decision_source: string;
     status: string;
     strict_gate_passed: boolean;
     strict_exit_code: number;
@@ -127,6 +128,7 @@ async function readinessCommand(strict: boolean) {
     ready_topic_count: number;
     reports: readonly unknown[];
   }>;
+  if (report.decision_source !== "evaluateLegalReadiness") throw new Error("parallel_readiness_decision_source_rejected");
   process.stdout.write(stableJson({ mode: strict ? "strict_gate" : "diagnostic", ...report }));
   if (strict && !report.strict_gate_passed) process.exitCode = report.strict_exit_code;
 }

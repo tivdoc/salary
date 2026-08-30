@@ -123,8 +123,32 @@ describe("deterministic legal retrieval", () => {
       },
     });
     const result = retrieveLegalKnowledgeForReview([secondary], [syntheticChunk(secondary)], query());
-    expect(result.results).toEqual([]);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0]).toMatchObject({ requiresReview: true });
+    expect(result.results[0].reasons).toContain("corpus_role:secondary_explanatory");
     expect(result.incomplete).toBe(true);
+    expect(retrieveActiveLegalKnowledge([secondary], [syntheticChunk(secondary)], query()).results).toEqual([]);
+  });
+
+  it("preserves role-labelled official corroboration for review but never active runtime", () => {
+    const corroborative = syntheticSource({
+      source_id: "IL_MIN_WAGE_OFFICIAL_RATES",
+      source_type: "official_rate_table",
+      status: "verified",
+      authority: {
+        ...syntheticSource().authority,
+        kind: "national_insurance_institute",
+        binding_level: "official_implementation",
+        operative: false,
+        explanatory: true,
+        can_independently_support_monetary_rule: false,
+      },
+    });
+    const reviewed = retrieveLegalKnowledgeForReview([corroborative], [syntheticChunk(corroborative)], query());
+    expect(reviewed.results).toHaveLength(1);
+    expect(reviewed.results[0].reasons).toContain("corpus_role:official_implementation_or_corroboration");
+    expect(reviewed.results[0].requiresReview).toBe(true);
+    expect(retrieveActiveLegalKnowledge([corroborative], [syntheticChunk(corroborative)], query()).results).toEqual([]);
   });
 
   it("filters by source type, language, and minimum authority", () => {

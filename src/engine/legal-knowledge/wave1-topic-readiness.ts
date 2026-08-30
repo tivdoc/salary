@@ -15,6 +15,7 @@ import {
   wave1TemporalQuerySchema,
   wave1UtcTimestampSchema,
 } from "./wave1-temporal-governance.ts";
+import { evaluateLegalReadiness, type LegalReadinessCandidate } from "./canonical-readiness/evaluate-legal-readiness.ts";
 
 const stableIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{2,159}$/);
 
@@ -77,7 +78,7 @@ function missingCandidateGates(candidate: Wave1TopicEvidence, knownAt: string) {
   return missing;
 }
 
-/** Topic-specific readiness is intentionally independent from global corpus readiness. */
+/** @deprecated Legacy evidence diagnostics are formatted here; evaluateLegalReadiness is the sole decision source. */
 export function evaluateWave1TopicReadiness(input: Readonly<{
   query: Wave1TopicReadinessQuery;
   evidence: readonly Wave1TopicEvidence[];
@@ -129,7 +130,24 @@ export function evaluateWave1TopicReadiness(input: Readonly<{
     .map((candidate) => candidate.evidence_ref)
     .sort((left, right) => left.source_version_id.localeCompare(right.source_version_id));
   const missingGates = [...missing].sort();
-  const usableForRules = missingGates.length === 0;
+  const requiredRolesSatisfied = [...rolesToCheck].every((role) => applicable.some((candidate) => candidate.source_role === role));
+  const canonicalCandidates: LegalReadinessCandidate[] = applicable.map((candidate) => {
+    const gates = missingCandidateGates(candidate, query.as_of);
+    return {
+      source_version_id: candidate.evidence_ref.source_version_id,
+      topics: [candidate.topic],
+      parse_succeeded: candidate.catalog_entry_id !== null && candidate.evidence_ref.parsed_version_id !== null,
+      citation_verified: candidate.evidence_ref.citation_id !== null,
+      operative_role_eligible: candidate.source_role === "operative_instrument" && requiredRolesSatisfied,
+      human_reviewed: !gates.some((gate) => gate.startsWith("review_missing:")),
+      effective_interval_verified: candidate.effective_claim_id !== null,
+      verified_sectors: candidate.scope_claim_id === null ? [] : candidate.sectors,
+      verified_populations: candidate.scope_claim_id === null ? [] : candidate.populations,
+      active: candidate.evidence_ref.activation_state === "active",
+    };
+  });
+  const canonical = evaluateLegalReadiness({ readinessCase: { case_id: "READINESS_LEGACY_WAVE1_ADAPTER", topic: query.topic, kind: "adapter", target_date: query.from, as_of: query.as_of.slice(0, 10), sector: query.sector, population: query.population }, candidates: canonicalCandidates });
+  const usableForRules = canonical.usable_for_rules;
   return topicReadinessResultSchema.parse({
     topic: query.topic,
     valid_on: query.from,

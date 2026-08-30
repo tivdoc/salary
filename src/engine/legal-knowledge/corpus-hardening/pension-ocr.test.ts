@@ -60,11 +60,24 @@ describe("deterministic Pension OCR contracts", () => {
       rendered_page_sha256: PENSION_2016_OCR_TOOLCHAIN.renderer.expected_page_sha256,
       raw_ocr_page_sha256: hashes,
       normalized_page_sha256: [...hashes].reverse(),
+      reviewed_transcript_page_sha256: ["4".repeat(64), "5".repeat(64), "6".repeat(64)],
       reviewer_id: "synthetic-reviewer",
+      reviewed_at: "2026-08-29T10:00:00Z",
       decision: "synthetic_reject",
     });
-    const second = createReviewedTranscriptRevision({ ...first, revision: 2, parent_revision_sha256: first.revision_sha256, decision: "synthetic_accept" });
+    const second = createReviewedTranscriptRevision({
+      ...first,
+      revision: 2,
+      parent_revision_sha256: first.revision_sha256,
+      reviewed_transcript_page_sha256: ["7".repeat(64), "8".repeat(64), "9".repeat(64)],
+      reviewed_at: "2026-08-29T11:00:00Z",
+      decision: "synthetic_accept",
+    });
     expect(second).toMatchObject({ raw_ocr_overwritten: false, corpus_registration_performed: false, activation_state: "inactive", parent_revision_sha256: first.revision_sha256 });
+    expect(second.raw_pdf_sha256).toBe(first.raw_pdf_sha256);
+    expect(second.rendered_page_sha256).toEqual(first.rendered_page_sha256);
+    expect(second.raw_ocr_page_sha256).toEqual(first.raw_ocr_page_sha256);
+    expect(second.reviewed_transcript_page_sha256).not.toEqual(first.reviewed_transcript_page_sha256);
     expect(second.revision_sha256).not.toBe(first.revision_sha256);
   });
 });

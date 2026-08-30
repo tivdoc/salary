@@ -34,7 +34,9 @@ export function retrieveLegalKnowledgeCore(
     if (query.language && source.language !== query.language) return false;
     if (!source.topics.includes(query.topic)) return false;
     if (bindingRank[source.authority.binding_level] < minimumRank) return false;
-    if (!classifyRegisteredSourceRole(source).eligible_for_operative_resolution) return false;
+    const role = classifyRegisteredSourceRole(source);
+    if (mode === "active_runtime" && !role.eligible_for_operative_resolution) return false;
+    if (mode === "review_tooling" && role.role === "role_pending_human_legal_review") return false;
     return isEffectiveOn(source, query.targetDate);
   });
   const sourceByVersion = new Map(eligibleSources.map((source) => [`${source.source_id}@${source.source_version}`, source]));
@@ -57,6 +59,7 @@ export function retrieveLegalKnowledgeCore(
       keywords: Math.min(termMatches, 5) * 3,
       operative: source.authority.operative ? 5 : 0,
     };
+    const role = classifyRegisteredSourceRole(source);
     const score = Object.values(scoreComponents).reduce((sum, value) => sum + value, 0);
     return [{
       chunk,
@@ -65,8 +68,8 @@ export function retrieveLegalKnowledgeCore(
       citationReference: { source_id: source.source_id, source_version: source.source_version, source_version_id: legalSourceVersionId(source), chunk_id: chunk.chunk_id },
       score,
       scoreComponents,
-      reasons: [sectorSpecific ? "sector_specific" : "general_baseline", source.authority.binding_level, effectiveDateMatch ? "date_match" : "date_unresolved_or_mismatch"],
-      requiresReview: source.status !== "active" || source.authority.binding_level === "secondary_explanatory" || !effectiveDateMatch,
+      reasons: [sectorSpecific ? "sector_specific" : "general_baseline", source.authority.binding_level, `corpus_role:${role.role}`, effectiveDateMatch ? "date_match" : "date_unresolved_or_mismatch"],
+      requiresReview: source.status !== "active" || !role.eligible_for_operative_resolution || !effectiveDateMatch,
     }];
   });
   results.sort((left, right) => right.score - left.score || compareSourceAuthority(left.source, right.source, query.sector) || left.chunk.chunk_id.localeCompare(right.chunk.chunk_id));

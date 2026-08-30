@@ -182,23 +182,30 @@ export function createReviewedTranscriptRevision(input: Readonly<{
   rendered_page_sha256: readonly string[];
   raw_ocr_page_sha256: readonly string[];
   normalized_page_sha256: readonly string[];
+  reviewed_transcript_page_sha256: readonly string[];
   reviewer_id: string;
+  reviewed_at: string;
   decision: "synthetic_accept" | "synthetic_reject";
 }>) {
   if (input.revision < 1 || !Number.isInteger(input.revision)) throw new Error("invalid_transcript_revision");
   if (input.raw_pdf_sha256 !== PENSION_2016_OCR_TOOLCHAIN.source_pdf_sha256) throw new Error("raw_pdf_hash_mismatch");
-  if (input.rendered_page_sha256.length !== 3 || input.raw_ocr_page_sha256.length !== 3 || input.normalized_page_sha256.length !== 3) throw new Error("transcript_revision_page_hashes_incomplete");
-  if (![input.raw_pdf_sha256, ...input.rendered_page_sha256, ...input.raw_ocr_page_sha256, ...input.normalized_page_sha256].every((hash) => sha256Schema.safeParse(hash).success)) throw new Error("transcript_revision_hash_invalid");
+  if (input.rendered_page_sha256.length !== 3 || input.raw_ocr_page_sha256.length !== 3 || input.normalized_page_sha256.length !== 3 || input.reviewed_transcript_page_sha256.length !== 3) throw new Error("transcript_revision_page_hashes_incomplete");
+  if (![input.raw_pdf_sha256, ...input.rendered_page_sha256, ...input.raw_ocr_page_sha256, ...input.normalized_page_sha256, ...input.reviewed_transcript_page_sha256].every((hash) => sha256Schema.safeParse(hash).success)) throw new Error("transcript_revision_hash_invalid");
   if (input.revision > 1 && !input.parent_revision_sha256) throw new Error("parent_revision_required");
+  if (input.revision === 1 && input.parent_revision_sha256) throw new Error("first_revision_cannot_have_parent");
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u.test(input.reviewed_at)) throw new Error("review_timestamp_must_be_utc");
+  if (!input.reviewer_id.trim()) throw new Error("reviewer_id_required");
   const body = {
-    schema_version: "pension-reviewed-transcript-revision-v0.4.1" as const,
+    schema_version: "pension-reviewed-transcript-revision-v0.4.2" as const,
     revision: input.revision,
     parent_revision_sha256: input.parent_revision_sha256,
     raw_pdf_sha256: input.raw_pdf_sha256,
     rendered_page_sha256: Object.freeze([...input.rendered_page_sha256]),
     raw_ocr_page_sha256: Object.freeze([...input.raw_ocr_page_sha256]),
     normalized_page_sha256: Object.freeze([...input.normalized_page_sha256]),
+    reviewed_transcript_page_sha256: Object.freeze([...input.reviewed_transcript_page_sha256]),
     reviewer_id: input.reviewer_id,
+    reviewed_at: input.reviewed_at,
     decision: input.decision,
     raw_ocr_overwritten: false as const,
     corpus_registration_performed: false as const,

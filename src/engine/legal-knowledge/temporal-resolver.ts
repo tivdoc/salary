@@ -2,6 +2,7 @@ import { legalSourceVersionId, type LegalSource, type LegalSourceRelation } from
 import { isEffectiveOn } from "./effective-period.ts";
 import type { LegalSector, LegalTopic } from "./taxonomy.ts";
 import { classifyRegisteredSourceRole } from "./corpus-hardening/source-roles.ts";
+import { legalServerResolverAdmission } from "./canonical-readiness/delegates.ts";
 
 export const LEGAL_CORPUS_V01_COVERAGE = Object.freeze({
   from: "2019-01-01",
@@ -74,6 +75,32 @@ export function resolveTemporalSourceSet(input: Readonly<{
     rejectedObservationIds: [],
     missingApplicabilityFacts: ["effective_interval", "scope", "population"],
   };
+  const canonicalAdmission = legalServerResolverAdmission({
+    case_id: `READINESS_SERVER_RESOLVER_${input.topic.toUpperCase()}`,
+    topic: input.topic,
+    kind: "adapter",
+    target_date: input.targetDate,
+    as_of: reviewContext.catalogCutoff ?? LEGAL_CORPUS_V01_COVERAGE.to,
+    sector: input.sector,
+    population: null,
+  }, input.sources.map((source) => {
+    const versionId = legalSourceVersionId(source);
+    const evidence = input.evidence?.[versionId];
+    const role = classifyRegisteredSourceRole(source);
+    const reviewed = source.status === "reviewed" || source.status === "active";
+    return {
+      source_version_id: versionId,
+      topics: source.topics,
+      parse_succeeded: Boolean(evidence?.parsed_version_id),
+      citation_verified: Boolean(evidence?.citation),
+      operative_role_eligible: role.eligible_for_operative_resolution,
+      human_reviewed: reviewed,
+      effective_interval_verified: reviewed && isEffectiveOn(source, input.targetDate),
+      verified_sectors: reviewed ? source.sectors : [],
+      verified_populations: [],
+      active: source.status === "active",
+    };
+  }));
   const resultContext = {
     usable_for_rules: false,
     catalog_cutoff: reviewContext.catalogCutoff,
@@ -81,6 +108,7 @@ export function resolveTemporalSourceSet(input: Readonly<{
     missing_source_roles: reviewContext.missingSourceRoles,
     rejected_observation_ids: reviewContext.rejectedObservationIds,
     missing_applicability_facts: reviewContext.missingApplicabilityFacts,
+    canonical_readiness: canonicalAdmission.decision,
   };
   if (input.targetDate < LEGAL_CORPUS_V01_COVERAGE.from || input.targetDate > LEGAL_CORPUS_V01_COVERAGE.to) {
     return { query, status: "NOT_APPLICABLE" as TemporalResolutionStatus, source_set: [] as TemporalSourceSetMember[], unverified_candidates: [] as string[], excluded_source_roles: [] as Array<{ source_version_id: string; role: string }>, reasons: ["outside_declared_engineering_coverage"], conflicts: [] as string[], ...resultContext };
@@ -178,17 +206,18 @@ export function resolveTemporalSourceSet(input: Readonly<{
   }
   return {
     query,
-    status: (sourceSet.every((member) => member.review_status === "active") ? "RESOLVED_ACTIVE" : "UNVERIFIED_CANDIDATE_SET") as TemporalResolutionStatus,
+    status: (canonicalAdmission.decision.status === "READY" ? "RESOLVED_ACTIVE" : "UNVERIFIED_CANDIDATE_SET") as TemporalResolutionStatus,
     source_set: sourceSet,
     unverified_candidates: unverifiedCandidates,
     excluded_source_roles: excludedSourceRoles,
-    usable_for_rules: sourceSet.every((member) => member.review_status === "active"),
-    reasons: sourceSet.every((member) => member.review_status === "active") ? ["all_source_set_members_active"] : ["source_set_requires_owner_legal_review", "candidate_set_not_usable_for_rules"],
+    usable_for_rules: canonicalAdmission.decision.usable_for_rules,
+    reasons: canonicalAdmission.decision.status === "READY" ? ["canonical_legal_readiness_ready"] : ["canonical_legal_readiness_blocked", ...canonicalAdmission.decision.reason_codes],
     conflicts,
     catalog_cutoff: reviewContext.catalogCutoff,
     required_source_roles: reviewContext.requiredSourceRoles,
     missing_source_roles: reviewContext.missingSourceRoles,
     rejected_observation_ids: reviewContext.rejectedObservationIds,
     missing_applicability_facts: reviewContext.missingApplicabilityFacts,
+    canonical_readiness: canonicalAdmission.decision,
   };
 }
