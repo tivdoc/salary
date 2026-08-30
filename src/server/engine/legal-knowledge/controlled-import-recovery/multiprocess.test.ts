@@ -198,13 +198,21 @@ describe("real multi-process local controlled-import matrices", () => {
       ready_path: ready,
     }));
     const child = spawn(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--experimental-strip-types", worker, config], { windowsHide: true });
-    for (let index = 0; index < 100; index += 1) {
-      try { await stat(ready); break; } catch { await new Promise((resolve) => setTimeout(resolve, 20)); }
-    }
     const closed = new Promise((resolve) => child.once("close", resolve));
+    let lockReady = false;
+    for (let index = 0; index < 500; index += 1) {
+      try {
+        await stat(ready);
+        lockReady = true;
+        break;
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    }
+    expect(lockReady).toBe(true);
     child.kill();
     await closed;
     const outcome = await run({ mode: "import", import_input: item.input });
     expect(outcome.result).toMatchObject({ ok: true, created: true });
-  }, 20_000);
+  }, 30_000);
 });
