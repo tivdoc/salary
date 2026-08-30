@@ -25,7 +25,8 @@ const sources = {
 };
 
 const testResult = runFocusedTests();
-const changedPaths = gitPaths();
+const laneCommit = git(["log", "--diff-filter=A", "--format=%H", "-1", "--", "scripts/tivdoc-portal/verify.mts"])[0] ?? null;
+const changedPaths = gitPaths(laneCommit);
 const outsideAllowlist = changedPaths.filter((path) => !ALLOWLIST.some((pattern) => pattern.test(path)));
 const defaultOff = sources.route.includes("status: 404") && sources.page.includes("notFound()") && sources.route.includes("return disabled()") && !/^import /m.test(sources.route);
 const ownerScoped = ["actor.role !== \"customer_owner\"", "actor.actor_id !== caseRecord.owner_actor_id", "actor.tenant_id !== caseRecord.tenant_id"].every((needle) => sources.service.includes(needle));
@@ -43,6 +44,7 @@ const acceptance = [
 const unsigned = {
   schema_version: "tivdoc-portal-verification-v0.7.0",
   contract_base: CONTRACT_BASE,
+  lane_commit: laneCommit,
   overall: acceptance.every((item) => item.pass) && outsideAllowlist.length === 0 ? "LOCALLY_VERIFIED_DEFAULT_OFF" : "FAILED",
   acceptance,
   focused_tests: testResult,
@@ -102,8 +104,8 @@ function runFocusedTests(): Readonly<{ files: number; tests: number; failed: num
 
 function source(path: string): string { return readFileSync(resolve(root, path), "utf8"); }
 
-function gitPaths(): readonly string[] {
-  const committed = git(["diff", "--name-only", `${CONTRACT_BASE}..HEAD`]);
+function gitPaths(laneCommit: string | null): readonly string[] {
+  const committed = laneCommit === null ? [] : git(["diff", "--name-only", `${laneCommit}^`, laneCommit]);
   const modified = git(["diff", "--name-only"]);
   const staged = git(["diff", "--cached", "--name-only"]);
   const untracked = git(["ls-files", "--others", "--exclude-standard"]);
