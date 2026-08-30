@@ -128,4 +128,11 @@ Open blockers:
 - `BROWSER_E2E_AND_VISUAL_VERIFICATION_DEFERRED_TO_P8`
 - `PRODUCTION_DELIVERY_DISABLED`
 
-These blockers are expected dependency gaps. They keep the customer page and API non-disclosing and disabled. They do not weaken the locally verified synthetic contracts.
+These blockers are expected dependency gaps. They keep the customer API
+non-disclosing and disabled. They do not weaken the locally verified synthetic
+contracts.
+
+For local visual inspection only, `TIVDOC_CUSTOMER_PORTAL_ENABLED=1` renders a
+data-free Hebrew RTL no-case shell outside Production. It never loads the
+synthetic repository, an identity, a case, or any customer projection. The API
+remains non-disclosing 404 until a verified P2 identity adapter is installed.
