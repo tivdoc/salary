@@ -12,9 +12,10 @@ import {
 } from "../../../engine/legal-knowledge/acquisition-contracts.ts";
 import {
   importControlledOfficialArtifact,
-  validateControlledPdfBytes,
+  listCommittedControlledArtifactVersions,
   verifyControlledAcquisitionLedger,
 } from "./controlled-import-security.ts";
+import { parserIsolationAssurance, screenUntrustedPdfIsolated } from "./parser-isolation/index.ts";
 import { validateWorkingTimePermitInventories } from "./wave1-working-time-permits.ts";
 
 const acquisitionTargetSchema = z.object({
@@ -157,9 +158,42 @@ export async function loadBrowserObservations(filePath = defaultBrowserObservati
   });
 }
 
-export function validateOwnerPdfBytes(bytes: Uint8Array, maxBytes = 20 * 1024 * 1024) {
-  return validateControlledPdfBytes(bytes, maxBytes);
+export async function validateOwnerPdfBytes(bytes: Uint8Array, maxBytes = 20 * 1024 * 1024) {
+  const result = await screenUntrustedPdfIsolated({ bytes, limits: { max_input_bytes: maxBytes } });
+  if (result.status !== "screened") throw new Error("owner_artifact_isolated_screening_incomplete");
+  return Object.freeze({
+    ...result,
+    parser_application_isolation: parserIsolationAssurance.application_isolation,
+    parser_os_sandbox: parserIsolationAssurance.os_sandbox,
+  });
 }
+
+export async function loadCommittedOwnerArtifacts(input: Readonly<{
+  ledgerRoot: string;
+  artifactRoot: string;
+}>) {
+  return listCommittedControlledArtifactVersions(input);
+}
+
+export const canonicalOwnerPdfReachability = Object.freeze({
+  import_entrypoint: "scripts/legal-acquisition.mts import",
+  import_path: [
+    "importOwnerOfficialArtifact",
+    "importControlledOfficialArtifact",
+    "screenUntrustedPdfIsolated",
+    "ledger-bound atomic commit marker",
+  ] as const,
+  read_entrypoint: "loadCommittedOwnerArtifacts",
+  read_path: [
+    "listCommittedControlledArtifactVersions",
+    "readCommittedControlledArtifact",
+    "screenUntrustedPdfIsolated",
+  ] as const,
+  direct_in_process_owner_pdf_parser_reachable: false as const,
+  real_owner_import_status: "disabled_until_parser_os_sandbox_verified" as const,
+  application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED" as const,
+  os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED" as const,
+});
 
 export function acquisitionRequestForTarget(
   target: z.infer<typeof acquisitionTargetSchema>,
@@ -209,8 +243,13 @@ export async function importOwnerOfficialArtifact(input: Readonly<{
   now?: () => string;
 }>) {
   const parsedRequest = acquisitionRequestSchema.parse(input.request);
-  if (!parsedRequest.allowed_attestation_types.includes("owner_attestation")) throw new Error("owner_attestation_not_allowed");
-  return importControlledOfficialArtifact({ ...input, requiredAttestationType: "owner_attestation" });
+  const requiredAttestationType = parsedRequest.allowed_attestation_types.includes("owner_attestation")
+    ? "owner_attestation" as const
+    : parsedRequest.allowed_attestation_types.includes("synthetic_test_attestation")
+      ? "synthetic_test_attestation" as const
+      : null;
+  if (!requiredAttestationType) throw new Error("controlled_attestation_not_allowed");
+  return importControlledOfficialArtifact({ ...input, requiredAttestationType });
 }
 
 export async function verifyOwnerAcquisitionLedger(input: Readonly<{

@@ -1,6 +1,6 @@
 import { constants } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
-import { link, lstat, mkdir, open, readFile, readdir, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
+import { link, lstat, mkdir, open, readFile, readdir, rename, rm, stat, unlink, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
@@ -230,11 +230,21 @@ function processAlive(pid: number) {
   }
 }
 
+const currentProcessStartedAtMs = Math.round(Date.now() - process.uptime() * 1_000);
+const controlledLockOwnerSchema = z.object({
+  schema_version: z.literal("tivdoc-controlled-import-lock-v0.4.1"),
+  pid: z.number().int().positive(),
+  token: z.string().uuid(),
+  process_started_at_ms: z.number().int().nonnegative(),
+  heartbeat_at_ms: z.number().int().nonnegative(),
+}).strict();
+
 export async function withControlledImportLock<T>(input: Readonly<{
   ledgerRoot: string;
   acquisitionRequestId: string;
   sourceId: string;
   timeoutMs?: number;
+  staleLeaseMs?: number;
 }>, action: () => Promise<T>) {
   const lockKey = controlledImportSha256(controlledImportStableJson({
     acquisition_request_id: input.acquisitionRequestId,
@@ -245,17 +255,31 @@ export async function withControlledImportLock<T>(input: Readonly<{
   await mkdir(lockRoot, { recursive: true });
   const token = randomUUID();
   const started = Date.now();
+  const staleLeaseMs = input.staleLeaseMs ?? 5_000;
+  const ownerPath = path.join(lockPath, "owner.json");
+  const ownerValue = (heartbeatAtMs: number) => controlledImportStableJson({
+    schema_version: "tivdoc-controlled-import-lock-v0.4.1",
+    pid: process.pid,
+    token,
+    process_started_at_ms: currentProcessStartedAtMs,
+    heartbeat_at_ms: heartbeatAtMs,
+  });
   while (true) {
     try {
       await mkdir(lockPath);
-      await writeFile(path.join(lockPath, "owner.json"), controlledImportStableJson({ pid: process.pid, token }), { flag: "wx", mode: 0o600 });
+      await writeFile(ownerPath, ownerValue(Date.now()), { flag: "wx", mode: 0o600 });
       break;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
       let stale = false;
       try {
-        const owner = JSON.parse(await readFile(path.join(lockPath, "owner.json"), "utf8")) as { pid?: unknown };
-        stale = typeof owner.pid !== "number" || !processAlive(owner.pid);
+        const owner = controlledLockOwnerSchema.parse(JSON.parse(await readFile(ownerPath, "utf8")));
+        const pidIdentityMismatch = owner.pid === process.pid
+          && Math.abs(owner.process_started_at_ms - currentProcessStartedAtMs) > 2_000;
+        const lockInfo = await stat(lockPath);
+        stale = !processAlive(owner.pid)
+          || pidIdentityMismatch
+          || Date.now() - lockInfo.mtimeMs > staleLeaseMs;
       } catch {
         // mkdir publishes the lock directory before owner.json is completely
         // written. Treat a missing or temporarily unreadable owner as a fresh
@@ -282,11 +306,17 @@ export async function withControlledImportLock<T>(input: Readonly<{
       await delay(10);
     }
   }
+  const heartbeat = setInterval(() => {
+    const now = new Date();
+    void utimes(lockPath, now, now).catch(() => undefined);
+  }, Math.max(100, Math.floor(staleLeaseMs / 3)));
+  heartbeat.unref();
   try {
     return await action();
   } finally {
+    clearInterval(heartbeat);
     try {
-      const owner = JSON.parse(await readFile(path.join(lockPath, "owner.json"), "utf8")) as { token?: unknown };
+      const owner = controlledLockOwnerSchema.parse(JSON.parse(await readFile(ownerPath, "utf8")));
       if (owner.token === token) await rm(lockPath, { recursive: true, force: true });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;

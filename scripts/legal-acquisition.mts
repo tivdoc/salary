@@ -5,7 +5,6 @@ import { copyFile, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, w
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { artifactVersionSchema } from "../src/engine/legal-knowledge/acquisition-contracts.ts";
 import { legalSourceSchema, type LegalSource } from "../src/engine/legal-knowledge/contracts.ts";
 import { legalTopics } from "../src/engine/legal-knowledge/taxonomy.ts";
 import {
@@ -13,6 +12,7 @@ import {
   corpusReadinessOutcome,
   determineAcquisitionReadinessOutcome,
   importOwnerOfficialArtifact,
+  loadCommittedOwnerArtifacts,
   loadAcquisitionTargets,
   loadBrowserObservations,
   loadProvenanceRegistry,
@@ -21,6 +21,7 @@ import {
 import { loadLegalCoverageMatrix } from "../src/server/engine/legal-knowledge/coverage.ts";
 import {
   controlledImportInstanceReadiness,
+  controlledImportStrictOperationalReadiness,
   hashFileStreaming,
   importControlledOfficialArtifact,
   scanControlledImportMetadata,
@@ -144,12 +145,10 @@ async function loadState() {
   const targets = await loadAcquisitionTargets();
   const provenance = await loadProvenanceRegistry();
   const browser = await loadBrowserObservations();
-  const ownerArtifacts = [];
-  if (existsSync(acquisitionLedgerRoot)) {
-    for (const name of (await readdir(acquisitionLedgerRoot)).filter((entry) => /^[a-f0-9]{64}\.json$/u.test(entry)).sort()) {
-      ownerArtifacts.push(artifactVersionSchema.parse(JSON.parse(await readFile(path.join(acquisitionLedgerRoot, name), "utf8"))));
-    }
-  }
+  const ownerArtifacts = await loadCommittedOwnerArtifacts({
+    ledgerRoot: acquisitionLedgerRoot,
+    artifactRoot: ownerArtifactRoot,
+  });
   return { manifest, fetchState, buildState, targets, provenance, browser, ownerArtifacts };
 }
 
@@ -278,6 +277,21 @@ async function verifyCommand(args: string[]) {
     artifactRoot: ownerArtifactRoot,
     requiredRequestIds: requiredRequestId ? [requiredRequestId] : [],
     strictRequiredInstances: strict,
+  });
+}
+
+async function strictOperationalReadinessCommand() {
+  if (process.env.TIVDOC_LEGAL_NETWORK_DISABLED !== "1") throw new Error("operational_readiness_must_run_offline");
+  const verification = await verifyOwnerAcquisitionLedger({
+    ledgerRoot: acquisitionLedgerRoot,
+    artifactRoot: ownerArtifactRoot,
+  });
+  return controlledImportStrictOperationalReadiness({
+    verification,
+    durableStorageVerified: false,
+    persistentLedgerVerified: false,
+    osSandboxVerified: false,
+    persistenceEvidenceVerified: false,
   });
 }
 
@@ -771,6 +785,10 @@ async function main() {
     result = await verifyCommand(args);
     exitCode = (result as { exit_code: number }).exit_code;
   } else if (command === "self-test") result = await toolingSelfTestCommand();
+  else if (command === "operational-readiness") {
+    result = await strictOperationalReadinessCommand();
+    exitCode = (result as { exit_code: number }).exit_code;
+  }
   else if (command === "test-acquisition-instance") result = await testAcquisitionInstanceCommand(args);
   else if (command === "instance-readiness") {
     result = await acquisitionInstanceReadinessCommand(args);

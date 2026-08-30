@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { acquisitionRequestSchema } from "../../../engine/legal-knowledge/acquisition-contracts.ts";
 import {
+  canonicalOwnerPdfReachability,
   corpusReadinessOutcome,
   determineAcquisitionReadinessOutcome,
   importOwnerOfficialArtifact,
@@ -14,6 +15,7 @@ import {
 } from "./acquisition.ts";
 
 const temporaryRoots: string[] = [];
+const testNotice = "TEST COPY OF EXISTING PUBLIC OFFICIAL ARTIFACT; NOT AN OWNER IMPORT" as const;
 
 afterEach(async () => {
   for (const root of temporaryRoots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -34,7 +36,7 @@ function hash(bytes: Uint8Array) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function request() {
+function request(bytes = syntheticPdf()) {
   return acquisitionRequestSchema.parse({
     acquisition_request_id: "ACQ-V02-TEST",
     source_id: "IL_TEST_SOURCE",
@@ -45,8 +47,8 @@ function request() {
     allowed_artifact_urls: ["https://www.gov.il/test.pdf"],
     allowed_final_urls: ["https://www.gov.il/test.pdf"],
     expected_media_type: "application/pdf",
-    expected_document_identity: { title: "Test official PDF", artifact_sha256: null, identity_basis: "owner_must_confirm_official_record" },
-    allowed_attestation_types: ["owner_attestation"],
+    expected_document_identity: { title: "Test official PDF", artifact_sha256: hash(bytes), identity_basis: "known_existing_public_official_artifact_test_copy" },
+    allowed_attestation_types: ["synthetic_test_attestation"],
     expected_document_title: "Test official PDF",
     recommended_filename: "official.pdf",
     failure_evidence: [{ stage: "fetch", safe_error_code: "http_status_403" }],
@@ -54,13 +56,17 @@ function request() {
       acquisition_request_id: "ACQ-V02-TEST",
       source_id: "IL_TEST_SOURCE",
       landing_url: "https://www.gov.il/test",
+      artifact_url: "https://www.gov.il/test.pdf",
+      final_url: "https://www.gov.il/test.pdf",
+      artifact_sha256: hash(bytes),
       expected_media_type: "application/pdf",
       expected_document_title: "Test official PDF",
-      attestation_type: "owner_attestation",
-      actor_type: "owner",
-      acquisition_method: "owner_attested_official_download",
+      attestation_type: "synthetic_test_attestation",
+      actor_type: "system_test",
+      acquisition_method: "synthetic_test_copy_existing_public_official_artifact",
       unchanged_original: true,
       used_print_to_pdf: false,
+      test_only_notice: testNotice,
     },
   });
 }
@@ -77,23 +83,80 @@ function receipt(bytes = syntheticPdf(), overrides: Record<string, unknown> = {}
     expected_media_type: "application/pdf",
     expected_document_title: "Test official PDF",
     acquired_at: "2026-08-29T00:00:00Z",
-    attestation_type: "owner_attestation",
-    actor_type: "owner",
-    acquisition_method: "owner_attested_official_download",
+    attestation_type: "synthetic_test_attestation",
+    actor_type: "system_test",
+    acquisition_method: "synthetic_test_copy_existing_public_official_artifact",
     unchanged_original: true,
     used_print_to_pdf: false,
+    test_only_notice: testNotice,
     ...overrides,
   };
 }
 
 describe("controlled owner acquisition", () => {
-  it("rejects HTML, encrypted, active, executable/polyglot and oversized inputs", () => {
-    expect(() => validateOwnerPdfBytes(Buffer.from(`<html>${"x".repeat(600)}</html>`))).toThrow("owner_artifact_pdf_magic_mismatch");
-    expect(() => validateOwnerPdfBytes(syntheticPdf("/Encrypt"))).toThrow("owner_artifact_encrypted");
-    expect(() => validateOwnerPdfBytes(syntheticPdf("/JavaScript"))).toThrow("owner_artifact_active_content");
-    expect(() => validateOwnerPdfBytes(Buffer.concat([Buffer.from("MZ"), syntheticPdf()]))).toThrow();
-    expect(() => validateOwnerPdfBytes(Buffer.concat([syntheticPdf().subarray(0, -6), Buffer.from("PK\x03\x04\n%%EOF\n")]))).toThrow("owner_artifact_executable_or_polyglot");
-    expect(() => validateOwnerPdfBytes(syntheticPdf(), 100)).toThrow("owner_artifact_too_large");
+  it("routes every owner PDF validation through the isolated screener", async () => {
+    await expect(validateOwnerPdfBytes(Buffer.from(`<html>${"x".repeat(600)}</html>`))).rejects.toThrow("isolated_parser_pdf_magic_mismatch");
+    await expect(validateOwnerPdfBytes(syntheticPdf("/Encrypt"))).rejects.toThrow("isolated_parser_encrypted");
+    await expect(validateOwnerPdfBytes(syntheticPdf("/JavaScript"))).rejects.toThrow("isolated_parser_active_content");
+    await expect(validateOwnerPdfBytes(Buffer.concat([Buffer.from("MZ"), syntheticPdf()]))).rejects.toThrow();
+    await expect(validateOwnerPdfBytes(Buffer.concat([syntheticPdf().subarray(0, -6), Buffer.from("PK\x03\x04\n%%EOF\n")]))).rejects.toThrow("isolated_parser_executable_or_polyglot");
+    await expect(validateOwnerPdfBytes(syntheticPdf(), 512)).rejects.toThrow("isolated_parser_input_limit_exceeded");
+    await expect(validateOwnerPdfBytes(syntheticPdf())).resolves.toMatchObject({
+      parser_application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED",
+      parser_os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
+    });
+    expect(canonicalOwnerPdfReachability).toMatchObject({
+      direct_in_process_owner_pdf_parser_reachable: false,
+      application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED",
+      os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
+    });
+  });
+
+  it("keeps real owner-attested imports disabled while OS sandboxing is unverified", async () => {
+    const root = await temporaryRoot();
+    const inbox = path.join(root, "incoming", "ACQ-V02-TEST");
+    await mkdir(inbox, { recursive: true });
+    const bytes = syntheticPdf("owner-import-disabled");
+    await writeFile(path.join(inbox, "official.pdf"), bytes);
+    await writeFile(path.join(inbox, "receipt.json"), JSON.stringify(receipt(bytes, {
+      attestation_type: "owner_attestation",
+      actor_type: "owner",
+      acquisition_method: "owner_attested_official_download",
+      test_only_notice: undefined,
+    })));
+    const syntheticRequest = request();
+    const ownerRequest = acquisitionRequestSchema.parse({
+      ...syntheticRequest,
+      expected_document_identity: { title: "Test official PDF", artifact_sha256: null, identity_basis: "owner_must_confirm_official_record" },
+      allowed_attestation_types: ["owner_attestation"],
+      receipt_template: {
+        acquisition_request_id: syntheticRequest.acquisition_request_id,
+        source_id: syntheticRequest.source_id,
+        landing_url: syntheticRequest.canonical_landing_url,
+        artifact_url: syntheticRequest.artifact_url,
+        final_url: syntheticRequest.artifact_url,
+        expected_media_type: "application/pdf",
+        expected_document_title: "Test official PDF",
+        attestation_type: "owner_attestation",
+        actor_type: "owner",
+        acquisition_method: "owner_attested_official_download",
+        unchanged_original: true,
+        used_print_to_pdf: false,
+      },
+    });
+    const input = {
+      request: ownerRequest,
+      incomingRoot: path.join(root, "incoming"),
+      artifactRoot: path.join(root, "artifacts"),
+      ledgerRoot: path.join(root, "ledger"),
+      originalFilename: "official.pdf",
+      receiptFilename: "receipt.json",
+    };
+    await expect(importOwnerOfficialArtifact(input)).rejects.toThrow("owner_import_disabled_parser_os_sandbox_not_verified");
+    await expect(verifyOwnerAcquisitionLedger({ ledgerRoot: input.ledgerRoot, artifactRoot: input.artifactRoot })).resolves.toMatchObject({
+      ledger_entries: 0,
+      persistent_owner_import_entries: 0,
+    });
   });
 
   it("imports atomically, verifies hashes and is idempotent for identical bytes", async () => {
@@ -108,23 +171,25 @@ describe("controlled owner acquisition", () => {
     const second = await importOwnerOfficialArtifact(input);
     expect(first.created).toBe(true);
     expect(second.idempotent).toBe(true);
-    expect(first.artifact_version).toMatchObject({ review_state: "needs_review", activation_state: "inactive", provenance: { acquisition_method: "owner_attested_official_download" } });
+    expect(first.artifact_version).toMatchObject({ review_state: "needs_review", activation_state: "inactive", provenance: { acquisition_method: "synthetic_test_copy_existing_public_official_artifact" } });
     expect(await verifyOwnerAcquisitionLedger({ ledgerRoot: path.join(root, "ledger"), artifactRoot: path.join(root, "artifacts") })).toMatchObject({ ledger_entries: 1 });
   });
 
-  it("creates a separate immutable candidate for changed bytes", async () => {
+  it("rejects changed bytes under the already committed request/source identity", async () => {
     const root = await temporaryRoot();
     const inbox = path.join(root, "incoming", "ACQ-V02-TEST");
     await mkdir(inbox, { recursive: true });
-    await writeFile(path.join(inbox, "receipt.json"), JSON.stringify(receipt(syntheticPdf("first"))));
-    const input = { request: request(), incomingRoot: path.join(root, "incoming"), artifactRoot: path.join(root, "artifacts"), ledgerRoot: path.join(root, "ledger"), originalFilename: "official.pdf", receiptFilename: "receipt.json" };
-    await writeFile(path.join(inbox, "official.pdf"), syntheticPdf("first"));
+    const firstBytes = syntheticPdf("first");
+    const secondBytes = syntheticPdf("second");
+    await writeFile(path.join(inbox, "receipt.json"), JSON.stringify(receipt(firstBytes)));
+    const input = { request: request(firstBytes), incomingRoot: path.join(root, "incoming"), artifactRoot: path.join(root, "artifacts"), ledgerRoot: path.join(root, "ledger"), originalFilename: "official.pdf", receiptFilename: "receipt.json" };
+    await writeFile(path.join(inbox, "official.pdf"), firstBytes);
     const first = await importOwnerOfficialArtifact(input);
-    await writeFile(path.join(inbox, "official.pdf"), syntheticPdf("second"));
-    await writeFile(path.join(inbox, "receipt.json"), JSON.stringify(receipt(syntheticPdf("second"))));
-    const second = await importOwnerOfficialArtifact(input);
-    expect(second.artifact_version.artifact_sha256).not.toBe(first.artifact_version.artifact_sha256);
-    expect((await verifyOwnerAcquisitionLedger({ ledgerRoot: path.join(root, "ledger"), artifactRoot: path.join(root, "artifacts") })).ledger_entries).toBe(2);
+    await writeFile(path.join(inbox, "official.pdf"), secondBytes);
+    await writeFile(path.join(inbox, "receipt.json"), JSON.stringify(receipt(secondBytes)));
+    await expect(importOwnerOfficialArtifact({ ...input, request: request(secondBytes) })).rejects.toThrow("immutable_target_mismatch");
+    expect(first.artifact_version.artifact_sha256).not.toBe(hash(secondBytes));
+    expect((await verifyOwnerAcquisitionLedger({ ledgerRoot: path.join(root, "ledger"), artifactRoot: path.join(root, "artifacts") })).ledger_entries).toBe(1);
   });
 
   it("rejects traversal, symlink escape, fake domains and tampered receipts", async () => {
@@ -164,10 +229,10 @@ describe("controlled owner acquisition", () => {
     await writeFile(path.join(inbox, "official.pdf"), bytes);
     await writeFile(path.join(inbox, "receipt.json"), JSON.stringify(receipt(bytes)));
     const result = await importOwnerOfficialArtifact({ request: request(), incomingRoot: path.join(root, "incoming"), artifactRoot: path.join(root, "artifacts"), ledgerRoot: path.join(root, "ledger"), originalFilename: "official.pdf", receiptFilename: "receipt.json" });
-    const artifactPath = path.join(root, "artifacts", "IL_TEST_SOURCE", "owner-v0.3.1", `${result.artifact_version.artifact_sha256}.pdf`);
+    const artifactPath = path.join(root, "artifacts", "IL_TEST_SOURCE", "synthetic-test-v0.3.1", `${result.artifact_version.artifact_sha256}.pdf`);
     const original = await readFile(artifactPath);
     await writeFile(artifactPath, Buffer.concat([original, Buffer.from("tamper")]));
-    await expect(verifyOwnerAcquisitionLedger({ ledgerRoot: path.join(root, "ledger"), artifactRoot: path.join(root, "artifacts") })).rejects.toThrow("owner_ledger_artifact_hash_mismatch");
+    await expect(verifyOwnerAcquisitionLedger({ ledgerRoot: path.join(root, "ledger"), artifactRoot: path.join(root, "artifacts") })).rejects.toThrow("controlled_commit_artifact_bytes_mismatch");
   });
 });
 

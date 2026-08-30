@@ -38,7 +38,25 @@ const networkCanarySchema = z.object({
   network_disabled: z.literal(true),
 }).strict();
 
-export type IsolatedParserResult = z.infer<typeof screenedResultSchema>;
+export const parserIsolationAssurance = Object.freeze({
+  application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED" as const,
+  os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED" as const,
+  application_controls: [
+    "separate_node_child_process",
+    "node_permission_model_fs_read_only_worker",
+    "no_node_network_permission",
+    "bounded_input_output_pages_objects_memory_and_time",
+    "whole_child_process_forced_termination",
+  ] as const,
+  unsupported_os_guarantees: [
+    "no_kernel_network_namespace",
+    "no_container_or_vm_boundary",
+    "no_native_rss_or_pid_cgroup_limit",
+    "no_read_only_os_rootfs",
+  ] as const,
+});
+
+export type IsolatedParserResult = z.infer<typeof screenedResultSchema> & typeof parserIsolationAssurance;
 
 export async function screenUntrustedPdfIsolated(input: Readonly<{
   bytes: Uint8Array;
@@ -51,7 +69,7 @@ export async function screenUntrustedPdfIsolated(input: Readonly<{
   if (bytes.byteLength > limits.max_input_bytes) throw new Error("isolated_parser_input_limit_exceeded");
   if (input.signal?.aborted) throw new Error("isolated_parser_cancelled");
   const workerPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "screener-worker.mts");
-  return await new Promise<IsolatedParserResult | { status: "network_canary"; network_disabled: true }>((resolve, reject) => {
+  return await new Promise<IsolatedParserResult | ({ status: "network_canary"; network_disabled: true } & typeof parserIsolationAssurance)>((resolve, reject) => {
     const child = spawn(process.execPath, [
       "--permission",
       `--allow-fs-read=${workerPath}`,
@@ -124,7 +142,7 @@ export async function screenUntrustedPdfIsolated(input: Readonly<{
       try {
         const result = input.testOnlyBehavior === "network_canary" ? networkCanarySchema.parse(parsed) : screenedResultSchema.parse(parsed);
         settled = true;
-        resolve(result);
+        resolve(Object.freeze({ ...result, ...parserIsolationAssurance }));
       } catch {
         settled = true;
         reject(new Error("isolated_parser_output_schema_invalid"));

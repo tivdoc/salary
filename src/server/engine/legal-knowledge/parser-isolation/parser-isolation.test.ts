@@ -1,6 +1,6 @@
 import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { screenUntrustedPdfIsolated } from "./index.ts";
+import { parserIsolationAssurance, screenUntrustedPdfIsolated } from "./index.ts";
 
 function validPdf(marker = "isolated-screen") {
   return Buffer.from(`%PDF-1.7
@@ -64,6 +64,8 @@ describe("separate-process untrusted PDF screening", () => {
       object_count: 3,
       network_disabled: true,
       published: false,
+      application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED",
+      os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
     });
   });
 
@@ -102,9 +104,12 @@ describe("separate-process untrusted PDF screening", () => {
   });
 
   it("denies the child network canary before any connection can be created", async () => {
-    await expect(screenUntrustedPdfIsolated({ bytes: validPdf(), testOnlyBehavior: "network_canary" })).resolves.toEqual({
+    await expect(screenUntrustedPdfIsolated({ bytes: validPdf(), testOnlyBehavior: "network_canary" })).resolves.toMatchObject({
       status: "network_canary",
       network_disabled: true,
+      application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED",
+      os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
     });
+    expect(parserIsolationAssurance.os_sandbox).toBe("PARSER_OS_SANDBOX_NOT_VERIFIED");
   });
 });

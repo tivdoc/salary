@@ -7,6 +7,7 @@ import { acquisitionRequestSchema, type AcquisitionRequest } from "../../../engi
 import {
   controlledImportInstanceReadiness,
   controlledImportPersistentReadiness,
+  probeControlledArtifactVisibility,
   importControlledOfficialArtifact,
   inspectControlledImportRecovery,
   scanControlledImportMetadata,
@@ -150,7 +151,9 @@ describe("controlled import E2E and atomic selection", () => {
       attestation_type: "synthetic_test_attestation",
       test_only_notice: testNotice,
       parser_state: "screened_in_isolated_process",
-      no_partial_selection_before_ledger_commit: true,
+      no_partial_selection_before_commit_marker: true,
+      parser_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED",
+      parser_os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
       artifact_version: { review_state: "needs_review", activation_state: "inactive", parse_state: "not_attempted" },
     });
     expect(replay.idempotent).toBe(true);
@@ -169,18 +172,22 @@ describe("controlled import E2E and atomic selection", () => {
     });
   });
 
-  it("keeps changed bytes as a second immutable unreviewed record", async () => {
+  it("rejects changed bytes under the same immutable request/source identity", async () => {
     const item = await fixture(validPdf("first"));
     const first = await importControlledOfficialArtifact(item.input);
     const changed = validPdf("changed" );
     const changedRequest = request(changed);
     await writeFile(path.join(item.inbox, "official-test-copy.pdf"), changed);
     await writeFile(path.join(item.inbox, "receipt.json"), JSON.stringify(receipt(changed)));
-    const second = await importControlledOfficialArtifact({ ...item.input, request: changedRequest });
+    await expect(importControlledOfficialArtifact({ ...item.input, request: changedRequest })).rejects.toThrow("immutable_target_mismatch");
     const verified = await verifyControlledAcquisitionLedger({ ledgerRoot: item.input.ledgerRoot, artifactRoot: item.input.artifactRoot });
-    expect(first.artifact_version.artifact_sha256).not.toBe(second.artifact_version.artifact_sha256);
-    expect(verified.ledger_entries).toBe(2);
-    expect(second.artifact_version).toMatchObject({ review_state: "needs_review", activation_state: "inactive" });
+    expect(first.artifact_version.artifact_sha256).not.toBe(hash(changed));
+    expect(verified.ledger_entries).toBe(1);
+    expect((await probeControlledArtifactVisibility({
+      ledgerRoot: item.input.ledgerRoot,
+      artifactRoot: item.input.artifactRoot,
+      artifactSha256: hash(changed),
+    })).visible).toBe(false);
   });
 
   it("uses the private snapshot when the incoming file changes after copy", async () => {
@@ -199,9 +206,9 @@ describe("controlled import E2E and atomic selection", () => {
     expect(outcomes.filter((result) => result.created)).toHaveLength(1);
     expect(outcomes.filter((result) => result.idempotent)).toHaveLength(7);
     expect((await verifyControlledAcquisitionLedger({ ledgerRoot: item.input.ledgerRoot, artifactRoot: item.input.artifactRoot })).ledger_entries).toBe(1);
-  });
+  }, 20_000);
 
-  it("leaves interrupted artifacts/events unreachable until a root ledger commit", async () => {
+  it("leaves interrupted artifacts/events unreachable until the atomic commit marker", async () => {
     const afterArtifact = await fixture(validPdf("after-artifact"));
     await expect(importControlledOfficialArtifact({ ...afterArtifact.input, faultInjection: "after_artifact_publish" })).rejects.toThrow("injected_interruption_after_artifact_publish");
     expect(await inspectControlledImportRecovery({ ledgerRoot: afterArtifact.input.ledgerRoot, artifactRoot: afterArtifact.input.artifactRoot })).toMatchObject({
@@ -228,7 +235,27 @@ describe("controlled import E2E and atomic selection", () => {
     ["after_ledger_append", "ledger_appended"],
   ] as const)("recovers deterministically after crash injection %s", async (faultInjection, lastStage) => {
     const item = await fixture(validPdf(faultInjection));
-    await expect(importControlledOfficialArtifact({ ...item.input, faultInjection })).rejects.toThrow(`injected_interruption_${faultInjection}`);
+    let signalCheckpoint!: () => void;
+    let releaseCheckpoint!: () => void;
+    const checkpoint = new Promise<void>((resolve) => { signalCheckpoint = resolve; });
+    const released = new Promise<void>((resolve) => { releaseCheckpoint = resolve; });
+    const attempt = importControlledOfficialArtifact({
+      ...item.input,
+      faultInjection,
+      afterCheckpointForTest: async (current) => {
+        if (current !== faultInjection) return;
+        signalCheckpoint();
+        await released;
+      },
+    });
+    await checkpoint;
+    expect(await probeControlledArtifactVisibility({
+      ledgerRoot: item.input.ledgerRoot,
+      artifactRoot: item.input.artifactRoot,
+      artifactSha256: hash(item.bytes),
+    })).toMatchObject({ visible: false, parse_result: null, citations: [], chunks: [], retrieval_results: [] });
+    releaseCheckpoint();
+    await expect(attempt).rejects.toThrow(`injected_interruption_${faultInjection}`);
     const binding = createControlledImportJournalBinding({
       request: item.input.request,
       acquisitionRequestId: item.input.request.acquisition_request_id,
@@ -239,11 +266,95 @@ describe("controlled import E2E and atomic selection", () => {
       receiptInputSha256: hash(Buffer.from(JSON.stringify(receipt(item.bytes)))),
     });
     expect((await readControlledImportJournal(item.input.ledgerRoot, binding.operation_id)).at(-1)?.stage).toBe(lastStage);
+    expect(await probeControlledArtifactVisibility({
+      ledgerRoot: item.input.ledgerRoot,
+      artifactRoot: item.input.artifactRoot,
+      artifactSha256: hash(item.bytes),
+    })).toMatchObject({
+      visible: false,
+      parse_result: null,
+      citations: [],
+      chunks: [],
+      retrieval_results: [],
+    });
     const recovered = await importControlledOfficialArtifact(item.input);
     const journal = await readControlledImportJournal(item.input.ledgerRoot, binding.operation_id);
     expect(journal.map((entry) => entry.stage)).toEqual(["received", "quarantined", "validated", "published", "ledger_appended"]);
     expect(recovered.ledger_committed).toBe(true);
     expect((await inspectControlledImportRecovery({ ledgerRoot: item.input.ledgerRoot, artifactRoot: item.input.artifactRoot })).selectable_hashes).toEqual([hash(item.bytes)]);
+  }, 20_000);
+
+  it("keeps the canonical reader fail-closed while it races published bytes", async () => {
+    const item = await fixture(validPdf("reader-race"));
+    let signalPublished!: () => void;
+    let releaseCommit!: () => void;
+    const published = new Promise<void>((resolve) => { signalPublished = resolve; });
+    const mayCommit = new Promise<void>((resolve) => { releaseCommit = resolve; });
+    const importing = importControlledOfficialArtifact({
+      ...item.input,
+      afterArtifactPublishForTest: async () => {
+        signalPublished();
+        await mayCommit;
+      },
+    });
+    await published;
+    expect(await probeControlledArtifactVisibility({
+      ledgerRoot: item.input.ledgerRoot,
+      artifactRoot: item.input.artifactRoot,
+      artifactSha256: hash(item.bytes),
+    })).toMatchObject({ visible: false, parse_result: null, citations: [], chunks: [], retrieval_results: [] });
+    releaseCommit();
+    await importing;
+    expect(await probeControlledArtifactVisibility({
+      ledgerRoot: item.input.ledgerRoot,
+      artifactRoot: item.input.artifactRoot,
+      artifactSha256: hash(item.bytes),
+    })).toMatchObject({ visible: true, commit_state: "committed" });
+  });
+
+  it("makes the atomically committed marker visible even if the caller crashes immediately after it", async () => {
+    const item = await fixture(validPdf("after-commit-marker"));
+    let signalCheckpoint!: () => void;
+    let releaseCheckpoint!: () => void;
+    const checkpoint = new Promise<void>((resolve) => { signalCheckpoint = resolve; });
+    const released = new Promise<void>((resolve) => { releaseCheckpoint = resolve; });
+    const attempt = importControlledOfficialArtifact({
+      ...item.input,
+      faultInjection: "after_commit_marker",
+      afterCheckpointForTest: async (current) => {
+        if (current !== "after_commit_marker") return;
+        signalCheckpoint();
+        await released;
+      },
+    });
+    await checkpoint;
+    expect(await probeControlledArtifactVisibility({
+      ledgerRoot: item.input.ledgerRoot,
+      artifactRoot: item.input.artifactRoot,
+      artifactSha256: hash(item.bytes),
+    })).toMatchObject({ visible: true, commit_state: "committed" });
+    releaseCheckpoint();
+    await expect(attempt).rejects.toThrow("injected_interruption_after_commit_marker");
+    expect((await importControlledOfficialArtifact(item.input)).idempotent).toBe(true);
+  });
+
+  it.each(["journal", "event", "ledger", "commit-marker"] as const)("hides a committed artifact when its %s is truncated", async (recordKind) => {
+    const item = await fixture(validPdf(`truncate-${recordKind}`));
+    const imported = await importControlledOfficialArtifact(item.input);
+    const artifactSha256 = hash(item.bytes);
+    const target = recordKind === "journal"
+      ? path.join(item.input.ledgerRoot, ".journals", imported.journal_operation_id, "0005-ledger_appended.json")
+      : recordKind === "event"
+        ? path.join(item.input.ledgerRoot, "events", `${artifactSha256}.json`)
+        : recordKind === "ledger"
+          ? path.join(item.input.ledgerRoot, `${artifactSha256}.json`)
+          : path.join(item.input.ledgerRoot, ".commits", `${artifactSha256}.json`);
+    await writeFile(target, "{");
+    expect(await probeControlledArtifactVisibility({
+      ledgerRoot: item.input.ledgerRoot,
+      artifactRoot: item.input.artifactRoot,
+      artifactSha256,
+    })).toMatchObject({ visible: false, parse_result: null, citations: [], chunks: [], retrieval_results: [] });
   });
 
   it("recovers the exact quarantined private inputs when the inbox is no longer present", async () => {
