@@ -1,0 +1,80 @@
+{
+  "schema_version": "tivdoc-wave23-cross-package-incident-declaration-v0.5.0",
+  "v0_4_reference_declaration": "src/engine/wave22/evidence-forensics/v0.4-erratum.v0.4.2.json",
+  "historical_packages": [
+    {
+      "package_id": "V0.4",
+      "zip_path": "output/parallel-wave-2/review-package-v0.4.zip",
+      "zip_sha256": "77bd9874cddeae848ad1b7cf376ab3e247bca22b455567f75248cfa3eaea096c",
+      "manifest_sha256": "9fa62f6848c5bef1e4bfae1654b5e0673bf61589c6ca985d1578a44d95c7c5bf",
+      "erratum_sha256": "98e709e5a22fe269f5e11f2934930c1220f6d00ce1c078c5ebb961e0927198a4",
+      "historical_head": "5ce3eba6ab816cd6a20e101c913f7f1177c7598a"
+    },
+    {
+      "package_id": "V0.4.1",
+      "zip_path": "output/parallel-wave-2.1/review-package-v0.4.1.zip",
+      "zip_sha256": "3926163f825c02fdd7e0fec49ae396ef8fa8ebcc0334961ee1f84e71384570d2",
+      "manifest_sha256": "f4a4ea363abdaf15a2a3cdbba925937360a08d14d704bc3fe6060b2264fcf16b",
+      "historical_head": "48be587d5a394e37656e20a1276b4cebb85c60bb"
+    },
+    {
+      "package_id": "V0.4.2",
+      "zip_path": "output/parallel-wave-2.2/review-package-v0.4.2.zip",
+      "zip_sha256": "c3c7135821097e68e00717b93300939cc84d565932a0dacd6cc239a684db6636",
+      "manifest_sha256": "6b8082a2aa4149cba35ead01500114323658d58ac8e2899694a2873b0d50a9c1",
+      "package_role": "component_evidence_only_not_successful_historical_chain_root"
+    }
+  ],
+  "v0_4_1_references": [
+    {
+      "reference_id": "V041_MISMATCH_001",
+      "evidence_member": "git/wave21-git-proof.json",
+      "json_pointers": {
+        "path": "/base_to_head_inventory/entries/0/paths/0",
+        "sha256": "/base_to_head_inventory/entries/0/target_sha256",
+        "byte_count": "/base_to_head_inventory/entries/0/target_byte_count"
+      },
+      "repository_path": ".gitignore",
+      "claimed_sha256": "3ade38444328226246d00684116b3be9682260090f012a829229b1e931979078",
+      "claimed_byte_count": 530
+    },
+    {
+      "reference_id": "V041_MISMATCH_002",
+      "evidence_member": "git/wave21-git-proof.json",
+      "json_pointers": {
+        "path": "/base_to_head_inventory/entries/5/paths/0",
+        "sha256": "/base_to_head_inventory/entries/5/target_sha256",
+        "byte_count": "/base_to_head_inventory/entries/5/target_byte_count"
+      },
+      "repository_path": "package.json",
+      "claimed_sha256": "52cd5ba71a95dd3ee408bd492df162196ca91585de705fd7c7aefb1ea1609f5f",
+      "claimed_byte_count": 11563
+    },
+    {
+      "reference_id": "V041_MISMATCH_003",
+      "evidence_member": "git/wave21-git-proof.json",
+      "json_pointers": {
+        "path": "/base_to_head_inventory/entries/12/paths/0",
+        "sha256": "/base_to_head_inventory/entries/12/target_sha256",
+        "byte_count": "/base_to_head_inventory/entries/12/target_byte_count"
+      },
+      "repository_path": "scripts/wave21-controlled-import/verify.mts",
+      "claimed_sha256": "db417e5611b4e4d3155717e9d46392553e29c3e3a029f3a89a0489891ed48367",
+      "claimed_byte_count": 8622
+    },
+    {
+      "reference_id": "V041_MISMATCH_004",
+      "evidence_member": "git/wave21-git-proof.json",
+      "json_pointers": {
+        "path": "/base_to_head_inventory/entries/27/paths/0",
+        "sha256": "/base_to_head_inventory/entries/27/target_sha256",
+        "byte_count": "/base_to_head_inventory/entries/27/target_byte_count"
+      },
+      "repository_path": "src/engine/wave2/evidence-audit/artifact-reconciliation.ts",
+      "claimed_sha256": "6273a1d72ba66625f0b78327d5f84856055836129e43faabe91237771e567e36",
+      "claimed_byte_count": 23694
+    }
+  ],
+  "required_reference_count": 15,
+  "historical_roots_repaired": false
+}
