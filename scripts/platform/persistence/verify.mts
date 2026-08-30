@@ -53,7 +53,7 @@ const assertions = {
   repository_entities_unique: new Set(CANONICAL_REPOSITORY_MAPPING.map((item) => item.entity)).size === REPOSITORY_ENTITIES.length,
   repository_fields_complete: CANONICAL_REPOSITORY_MAPPING.every((item) => item.primary_key.length > 0 && item.hash_column.length > 0 && item.authorized_actors.length > 0),
   forward_migration_tokens_present: requiredSql.every((token) => migration.toLowerCase().includes(token.toLowerCase())),
-  historical_migration_unchanged: sha256(baselineBytes) === "60d152027c7fe09e7cff84da835dd0f759b9e3214a1c563bd396d602dbebabbd",
+  historical_migration_unchanged: sha256(normalizeLineEndings(baselineBytes)) === "cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1",
   p1_allowlist_frozen: contract.worker_allowlists.P1?.includes("supabase/migrations/*_engine_platform_*.sql") === true,
   disposable_database_unproven: contract.capability_preflight.disposable_local_database_proven === false,
   prohibited_boundary_count_zero: Object.values(contract.global_boundaries).every((count) => count === 0),
@@ -68,7 +68,7 @@ const result = {
   repository_mapping_count: CANONICAL_REPOSITORY_MAPPING.length,
   migration: {
     path: path.relative(repoRoot, migrationPath).replaceAll("\\", "/"),
-    sha256: sha256(Buffer.from(migration, "utf8")),
+    sha256: sha256(normalizeLineEndings(Buffer.from(migration, "utf8"))),
     required_token_count: requiredSql.length,
   },
   acceptance: {
@@ -100,4 +100,8 @@ process.exitCode = passed ? 0 : 1;
 
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
+}
+
+function normalizeLineEndings(bytes: Uint8Array): Uint8Array {
+  return Buffer.from(Buffer.from(bytes).toString("utf8").replaceAll("\r\n", "\n"), "utf8");
 }
