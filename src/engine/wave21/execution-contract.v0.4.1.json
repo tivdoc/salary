@@ -1,0 +1,125 @@
+{
+  "schema_version": "tivdoc-wave21-execution-contract-v0.4.1",
+  "required_base_sha": "5ce3eba6ab816cd6a20e101c913f7f1177c7598a",
+  "integration_branch": "codex/tivdoc-engine-foundation",
+  "foundation_ancestors": [
+    "bb9a61eae55d49529d7cd633a2c9c2615a8d842e",
+    "e978ae5cee4a92f20dcc7db448b275170b8bf724"
+  ],
+  "workers": [
+    {
+      "id": "W1",
+      "branch": "codex/wave21-w1-evidence-reachability",
+      "worktree": "C:/dev/tivdoc-wave21-w1-evidence-reachability",
+      "allowlist": [
+        "src/engine/wave21/evidence-audit/**",
+        "scripts/wave21-evidence-audit/**",
+        "docs/wave21-evidence-reachability-v0.4.1.md"
+      ],
+      "canonical_entrypoints_under_test": [
+        "scripts/legal-sources.mts",
+        "scripts/legal-acquisition.mts",
+        "src/engine/legal-knowledge/retrieval-core.ts",
+        "src/server/engine/legal-knowledge/controlled-import-security.ts"
+      ],
+      "evidence_output": "output/parallel-wave-2.1/workers/w1-evidence-reachability"
+    },
+    {
+      "id": "W2",
+      "branch": "codex/wave21-w2-canonical-corpus",
+      "worktree": "C:/dev/tivdoc-wave21-w2-canonical-corpus",
+      "allowlist": [
+        "scripts/legal-sources.mts",
+        "scripts/wave21-canonical-corpus/**",
+        "src/engine/legal-knowledge/corpus-hardening/**",
+        "src/engine/legal-knowledge/retrieval-core.ts",
+        "src/engine/legal-knowledge/retrieval.test.ts",
+        "src/engine/legal-knowledge/retrieval.ts",
+        "src/engine/legal-knowledge/temporal-resolver.test.ts",
+        "src/engine/legal-knowledge/temporal-resolver.ts",
+        "src/server/engine/legal-knowledge/review-retrieval.ts",
+        "src/server/engine/legal-knowledge/wave21-canonical-corpus/**",
+        "docs/wave21-canonical-corpus-v0.4.1.md"
+      ],
+      "canonical_entrypoints_under_test": [
+        "scripts/legal-sources.mts build",
+        "scripts/legal-sources.mts search",
+        "retrieveLegalKnowledgeForReview",
+        "retrieveActiveLegalKnowledge",
+        "resolveTemporalSourceSet"
+      ],
+      "evidence_output": "output/parallel-wave-2.1/workers/w2-canonical-corpus"
+    },
+    {
+      "id": "W3",
+      "branch": "codex/wave21-w3-ledger-parser",
+      "worktree": "C:/dev/tivdoc-wave21-w3-ledger-parser",
+      "allowlist": [
+        "scripts/legal-acquisition.mts",
+        "scripts/wave21-controlled-import/**",
+        "src/server/engine/legal-knowledge/acquisition.test.ts",
+        "src/server/engine/legal-knowledge/acquisition.ts",
+        "src/server/engine/legal-knowledge/artifacts.ts",
+        "src/server/engine/legal-knowledge/controlled-import-recovery/**",
+        "src/server/engine/legal-knowledge/controlled-import-security.test.ts",
+        "src/server/engine/legal-knowledge/controlled-import-security.ts",
+        "src/server/engine/legal-knowledge/parser-isolation/**",
+        "docs/wave21-ledger-parser-v0.4.1.md"
+      ],
+      "canonical_entrypoints_under_test": [
+        "scripts/legal-acquisition.mts import",
+        "importControlledOfficialArtifact",
+        "verifyControlledAcquisitionLedger",
+        "screenUntrustedPdfIsolated"
+      ],
+      "evidence_output": "output/parallel-wave-2.1/workers/w3-ledger-parser"
+    }
+  ],
+  "integration_order": ["W1", "W2", "W3"],
+  "forbidden_imports_and_effects": [
+    "OpenAI or generative-model client construction or calls",
+    "customer document or customer-derived data access",
+    "external Supabase client or connection",
+    "migration execution",
+    "Production or shared Preview access",
+    "deploy, payment or outbound-message action",
+    "real Israeli rule or legal numeric parameter",
+    "source review, activation, promotion or automatic consolidation",
+    "Finding or customer-facing conclusion"
+  ],
+  "required_evidence": [
+    "independent V0.4 package verification",
+    "complete Git, branch, parent, patch, tree and allowlist proof",
+    "corrected count and URL-to-unique-SHA ledgers",
+    "canonical reachability and duplicate-contract report",
+    "canonical convalescence chunk and negative retrieval evidence",
+    "all-17 source-role inventory and canonical resolver negatives",
+    "20-node Working Time candidate graph",
+    "seven-topic strict readiness matrix",
+    "ledger-bound reader/crash matrix",
+    "parser reachability and assurance labels",
+    "Rule Input and Ground Truth negative matrices",
+    "two clean deterministic V0.4.1 package builds"
+  ],
+  "status_vocabulary": [
+    "PARALLEL_WAVE_2_1_CANONICAL_CLOSURE_COMPLETE",
+    "PARALLEL_WAVE_2_1_PARTIAL",
+    "OWNER_OFFICIAL_SOURCE_HANDOFF_REQUIRED",
+    "LEGAL_SOURCE_CORPUS_INCOMPLETE",
+    "PERSISTENCE_ISOLATED_ENVIRONMENT_BLOCKED",
+    "HUMAN_LEGAL_REVIEW_REQUIRED",
+    "HUMAN_GROUND_TRUTH_REQUIRED",
+    "PENSION_OCR_DERIVED_NEEDS_HUMAN_REVIEW",
+    "PERSISTENT_OWNER_IMPORTS_NOT_VERIFIED",
+    "PARSER_APPLICATION_ISOLATION_VERIFIED",
+    "PARSER_OS_SANDBOX_NOT_VERIFIED",
+    "DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED",
+    "SHADOW_MODE_NOT_READY"
+  ],
+  "worker_handoff": {
+    "commit_count": 1,
+    "clean_worktree": true,
+    "allowlist_required": true,
+    "focused_tests_required": true
+  }
+}
