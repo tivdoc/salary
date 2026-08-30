@@ -61,13 +61,16 @@ export function scanAddedLine(relative: string, line: string) {
       );
     const documentationOnly = category === "documentation";
     const scannerDeclaration = normalizeRelative(relative).endsWith("full-diff-scan.ts");
+    const independentBoundaryScannerDeclaration = normalizeRelative(relative) === "scripts/wave22-closure-verification/independent_closure_verifier.py"
+      && pattern.id === "prohibited_customer_path"
+      && /PROHIBITED_CUSTOMER_DATASET/u.test(line);
     const canaryDeclaration = normalizeRelative(relative).endsWith("runtime-denial.ts")
       && (
         /denyRuntimeAction|PROHIBITED_RUNTIME_ACTIONS/u.test(line)
         || pattern.id === "prohibited_customer_path"
       );
     const contractDeclaration = /(?:^|\/)execution-contract\.[^/]+\.json$/u.test(normalizeRelative(relative));
-    const violation = !(documentationOnly || testReferenceAllowed || scannerDeclaration || canaryDeclaration || contractDeclaration);
+    const violation = !(documentationOnly || testReferenceAllowed || scannerDeclaration || independentBoundaryScannerDeclaration || canaryDeclaration || contractDeclaration);
     return [{
       pattern: pattern.id,
       category,
@@ -77,6 +80,8 @@ export function scanAddedLine(relative: string, line: string) {
           ? "denial_test_reference"
           : scannerDeclaration
               ? "scanner_pattern_declaration"
+              : independentBoundaryScannerDeclaration
+                ? "independent_boundary_scanner_pattern_declaration"
               : canaryDeclaration
                 ? "runtime_canary_declaration"
                 : contractDeclaration

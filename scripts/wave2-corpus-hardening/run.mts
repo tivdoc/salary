@@ -3,6 +3,8 @@ import { constants } from "node:fs";
 import { access, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { legalSourceManifestSchema } from "../../src/server/engine/legal-knowledge/manifest.ts";
+import { evaluateStrictRealCorpusReadiness } from "../../src/engine/legal-knowledge/corpus-hardening/readiness.ts";
 import { stableJson } from "../../src/engine/legal-knowledge/corpus-hardening/pension-ocr.ts";
 import { generateCorpusHardeningEvidence } from "../../src/server/engine/legal-knowledge/wave2-corpus-hardening/corpus-hardening-evidence.ts";
 import {
@@ -117,18 +119,20 @@ async function verifyCommand() {
 }
 
 async function readinessCommand(strict: boolean) {
-  const outputRoot = path.resolve(flag("--output") ?? frozenEvidenceRoot);
-  assertWithinFrozenEvidenceRoot(outputRoot);
-  const report = JSON.parse(await readFile(path.join(outputRoot, "corpus-evidence", "real-corpus-readiness.json"), "utf8")) as Readonly<{
-    decision_source: string;
-    status: string;
-    strict_gate_passed: boolean;
-    strict_exit_code: number;
-    topic_count: number;
-    ready_topic_count: number;
-    reports: readonly unknown[];
-  }>;
-  if (report.decision_source !== "evaluateLegalReadiness") throw new Error("parallel_readiness_decision_source_rejected");
+  const corpusStateRoot = path.resolve(flag("--corpus-state-root") ?? repositoryRoot);
+  const [manifestRaw, buildState, citationState] = await Promise.all([
+    readFile(path.join(repositoryRoot, "src", "server", "engine", "legal-knowledge", "legal-sources.v0.json"), "utf8"),
+    readFile(path.join(corpusStateRoot, "eval", "legal-knowledge", "manifests", "build-state.json"), "utf8"),
+    readFile(path.join(corpusStateRoot, "output", "legal-knowledge", "citation-round-trip-report.json"), "utf8"),
+  ]);
+  const manifest = legalSourceManifestSchema.parse(JSON.parse(manifestRaw));
+  const builds = JSON.parse(buildState) as { records: Array<{ source_id: string; source_version: string; parse_status: string }> };
+  const citations = JSON.parse(citationState) as { records: Array<{ source_version_id: string; status: string }> };
+  const report = evaluateStrictRealCorpusReadiness({
+    sources: manifest.sources,
+    buildRecords: builds.records.map((record) => ({ source_version_id: `${record.source_id}@${record.source_version}`, parse_status: record.parse_status })),
+    citationRecords: citations.records,
+  });
   process.stdout.write(stableJson({ mode: strict ? "strict_gate" : "diagnostic", ...report }));
   if (strict && !report.strict_gate_passed) process.exitCode = report.strict_exit_code;
 }
