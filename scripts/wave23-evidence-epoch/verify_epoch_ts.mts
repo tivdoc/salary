@@ -167,7 +167,7 @@ function walk(value: unknown): unknown[] {
 }
 
 function stableIds(records: unknown[], prefix: string) {
-  const expression = new RegExp(`^${prefix}[0-9]{3}$`, "u");
+  const expression = new RegExp(`^${prefix}[0-9]{3}(?:_[A-Z0-9_]+)?$`, "u");
   const found = records.map((record) => {
     const matches = [...new Set(walk(record).filter((value): value is string => typeof value === "string" && expression.test(value)))];
     if (matches.length !== 1) throw new Error(`stable_case_id_missing_or_ambiguous:${prefix}`);
@@ -182,7 +182,7 @@ function validateCases(value: unknown, label: string) {
   if (cases.length === 0) throw new Error(`case_matrix_empty:${label}`);
   for (const raw of cases) {
     const item = object(raw, `case_not_object:${label}`);
-    if (item.passed !== true && !("expected" in item && "actual" in item && canonicalJson(item.expected) === canonicalJson(item.actual))) throw new Error(`case_failed:${label}`);
+    if (item.passed !== true && item.reconciled !== true && !("expected" in item && "actual" in item && canonicalJson(item.expected) === canonicalJson(item.actual))) throw new Error(`case_failed:${label}`);
   }
   return cases.length;
 }

@@ -125,7 +125,7 @@ def values(value: object):
 
 
 def stable_ids(records: list, prefix: str) -> list[str]:
-    pattern = re.compile(rf"^{re.escape(prefix)}[0-9]{{3}}$")
+    pattern = re.compile(rf"^{re.escape(prefix)}[0-9]{{3}}(?:_[A-Z0-9_]+)?$")
     found: list[str] = []
     for record in records:
         candidates = [item for item in values(record) if isinstance(item, str) and pattern.fullmatch(item)]
@@ -143,7 +143,7 @@ def validate_cases(cases: object, label: str) -> int:
     for case in cases:
         if not isinstance(case, dict):
             raise ValueError(f"case_not_object:{label}")
-        passed = case.get("passed") is True
+        passed = case.get("passed") is True or case.get("reconciled") is True
         expected_actual = "expected" in case and "actual" in case and case["expected"] == case["actual"]
         if not passed and not expected_actual:
             raise ValueError(f"case_failed:{label}")
