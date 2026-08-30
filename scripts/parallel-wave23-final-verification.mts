@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const repoRoot = path.resolve(process.cwd());
@@ -142,8 +142,8 @@ function display(definition: CommandDefinition) {
 
 function sanitizeEvidence(value: string) {
   return value
-    .replace(/C:\\Users\\[^\\\s"']+/giu, "C:\\Users\\<REDACTED>")
-    .replace(/C:\/Users\/[^/\s"']+/giu, "C:/Users/<REDACTED>");
+    .replace(/C:\\Users\\[^\\\s"']+/giu, "<USERPROFILE>")
+    .replace(/C:\/Users\/[^/\s"']+/giu, "<USERPROFILE>");
 }
 
 function subject(definition: CommandDefinition, observedExit: number) {
@@ -229,6 +229,14 @@ const ledger = {
   commands: records,
 };
 await writeFile(path.join(outputRoot, "command-ledger.json"), stableJson(ledger), "utf8");
+for (const [sourceName, targetName] of [
+  ["adversarial-matrix.json", "w3-adversarial-package-matrix.json"],
+  ["synthetic-python-verifier.json", "w3-synthetic-python-verifier.json"],
+  ["synthetic-typescript-verifier.json", "w3-synthetic-typescript-verifier.json"],
+  ["synthetic-receipt.json", "w3-synthetic-receipt.json"],
+] as const) {
+  await copyFile(path.join(w3Output, sourceName), path.join(outputRoot, targetName));
+}
 const packageIdentities = [];
 for (const [id, target] of [["V0.4", v04], ["V0.4.1", v041], ["V0.4.2", v042]] as const) {
   const bytes = await readFile(target);
