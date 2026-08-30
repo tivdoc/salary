@@ -73,7 +73,15 @@
     "wave2:ground-truth:evaluate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/extraction-ground-truth/run.mts evaluate",
     "wave2:ground-truth:all": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/extraction-ground-truth/run.mts all",
     "parallel:wave2:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave2-final-verification.mts",
-    "parallel:wave2:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave2-review-package.mts"
+    "parallel:wave2:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave2-review-package.mts",
+    "wave21:evidence:test": "vitest run src/engine/wave21/evidence-audit --reporter=verbose",
+    "wave21:corpus:test": "vitest run src/engine/legal-knowledge/corpus-hardening src/engine/legal-knowledge/retrieval.test.ts src/engine/legal-knowledge/temporal-resolver.test.ts --reporter=verbose",
+    "wave21:corpus:evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave21-canonical-corpus/generate-evidence.mts",
+    "wave21:corpus:readiness-strict": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave21-canonical-corpus/generate-evidence.mts --strict",
+    "wave21:controlled-import:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave21-controlled-import/verify.mts local",
+    "wave21:controlled-import:strict": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/wave21-controlled-import/verify.mts strict",
+    "parallel:wave21:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave21-final-verification.mts",
+    "parallel:wave21:review-package": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/parallel-wave21-review-package.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
