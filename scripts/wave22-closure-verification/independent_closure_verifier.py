@@ -304,6 +304,7 @@ def find_package_head(documents: dict[str, object], fallback: str | None) -> str
 
 def git_reference_report(documents: dict[str, object], all_members: list[str], checkout: Path, package_head: str) -> dict:
     git_objects: dict[str, dict] = {}
+    contextual_historical_git_objects: list[dict] = []
     checkout_refs: list[dict] = []
     source_scan_exclusions: list[str] = []
     for member, document in documents.items():
@@ -316,6 +317,15 @@ def git_reference_report(documents: dict[str, object], all_members: list[str], c
                 if "patch" in key or "rules" in key or "allowlist" in key:
                     continue
                 if any(token in key for token in ("sha", "head", "parent", "base", "commit", "tree", "blob", "object")):
+                    embedded_historical_verifier_report = package_head not in (V04_HEAD, V041_HEAD) and Path(member).name in (
+                        "strict-result.json", "v0.4.1-independent-verification.json"
+                    )
+                    if embedded_historical_verifier_report:
+                        contextual_historical_git_objects.append({
+                            "sha": value, "member": member, "pointer": pointer,
+                            "context": "embedded_historical_verifier_report_enforced_by_separate_chain_check",
+                        })
+                        continue
                     if value not in git_objects:
                         probe = subprocess.run(["git", "-C", str(checkout), "cat-file", "-t", value], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         git_objects[value] = {"reachable": probe.returncode == 0, "object_type": probe.stdout.decode().strip() if probe.returncode == 0 else None}
@@ -330,21 +340,38 @@ def git_reference_report(documents: dict[str, object], all_members: list[str], c
                 if relative.startswith("../") or PurePosixPath(relative).is_absolute():
                     checkout_refs.append({"member": member, "pointer": pointer, "path": relative, "passed": False, "reason": "path_escape"})
                     continue
+                reference_head = package_head
+                reference_context = "current_package_head"
+                enforced_for_package_head = True
+                if Path(member).name == "complete-git-evidence.json" and pointer.startswith("/historical_v0_4_1_git_proof/"):
+                    reference_head = V041_HEAD
+                    reference_context = "embedded_historical_v0_4_1_proof_verified_separately"
+                    enforced_for_package_head = False
+                elif Path(member).name == "complete-git-evidence.json" and pointer.startswith("/historical_v0_4_git_audit/"):
+                    reference_head = V04_HEAD
+                    reference_context = "embedded_historical_v0_4_proof_verified_with_erratum"
+                    enforced_for_package_head = False
                 target = checkout / PurePosixPath(relative)
-                checkout_hash = sha256_bytes(target.read_bytes()) if target.is_file() else None
-                blob = subprocess.run(["git", "-C", str(checkout), "show", f"{package_head}:{relative}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                checkout_hash = sha256_bytes(target.read_bytes()) if reference_head == package_head and target.is_file() else None
+                blob = subprocess.run(["git", "-C", str(checkout), "show", f"{reference_head}:{relative}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 blob_hash = sha256_bytes(blob.stdout) if blob.returncode == 0 else None
                 claimed = claimed_value
                 checkout_refs.append({
                     "member": member, "pointer": pointer, "path": relative, "claimed_sha256": claimed,
+                    "reference_head": reference_head, "reference_context": reference_context,
+                    "enforced_for_package_head": enforced_for_package_head,
                     "checkout_sha256": checkout_hash, "git_blob_bytes_sha256": blob_hash,
                     "passed": claimed in (checkout_hash, blob_hash),
                 })
+    mismatches = [item for item in checkout_refs if not item["passed"]]
     return {
         "git_objects": [{"sha": sha, **result} for sha, result in sorted(git_objects.items())],
+        "contextual_historical_git_objects": contextual_historical_git_objects,
         "unreachable_git_objects": sorted(sha for sha, value in git_objects.items() if not value["reachable"]),
         "checkout_references": checkout_refs,
-        "mismatched_checkout_references": [item for item in checkout_refs if not item["passed"]],
+        "mismatched_checkout_references": mismatches,
+        "enforced_mismatched_checkout_references": [item for item in mismatches if item.get("enforced_for_package_head") is not False],
+        "contextual_historical_mismatched_references": [item for item in mismatches if item.get("enforced_for_package_head") is False],
         "source_reference_scan_excluded_files": sorted(source_scan_exclusions),
         "source_reference_scan_scope": sorted(
             member for member in documents if member not in source_scan_exclusions
@@ -438,7 +465,7 @@ def verify_package(package: Path, repo: Path, expected_zip: str, expected_manife
         "count_reconciliation": package_count_reconciliation,
         "reported_scanner_reconciliation": reported_scanner_reconciliation,
         "passed_without_checkout_reference_requirement": passed,
-        "passed": passed and not refs["mismatched_checkout_references"],
+        "passed": passed and not refs["enforced_mismatched_checkout_references"],
     }
 
 

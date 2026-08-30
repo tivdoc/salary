@@ -20,6 +20,8 @@ node scripts/wave22-closure-verification/run.mts strict --python <python> --repo
 
 Strict mode exits 0 only when V0.4 plus its append-only erratum, V0.4.1, and V0.4.2 all pass independently. Any unresolved erratum reference, unsafe archive, missing/mismatched manifest member, unreachable Git object, evidence-to-Git byte mismatch, failed raw case, missing assurance label, or missing explicit zero-invariant object returns exit 7.
 
+Embedded historical Git inventories are checked against their declared historical HEAD rather than the final package HEAD. Their mismatches remain reported as contextual historical failures and are enforced by the separate V0.4/V0.4.1 chain checks; they are never silently reinterpreted as current-package byte claims.
+
 ## Independent checks
 
 The verifier extracts only to a new temporary directory. It denies traversal, absolute/device paths, backslashes, Unicode/case collisions, duplicate members, links/devices, encrypted entries, expansion abuse, undeclared members, and changed bytes. It records HEAD, tree, parents, clean status, complete manifest membership, member hashes, every structured Git object/path reference, scanner scope, and count exclusions.
