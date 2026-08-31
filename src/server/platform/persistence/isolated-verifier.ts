@@ -3,7 +3,7 @@ import type { PersistenceEnvironmentReceipt } from "./isolated-environment.ts";
 export type IsolatedPostgresVerificationReceipt = Readonly<{
   schema_version: "tivdoc-isolated-postgres-verification-v1";
   status: "SKIPPED_BLOCKED";
-  blocker_code: "SKIPPED_ENVIRONMENT_DEPENDENCY" | "CASE_ANALYSIS_POSTGRES_ADAPTER_NOT_IMPLEMENTED";
+  blocker_code: "SKIPPED_ENVIRONMENT_DEPENDENCY" | "DYNAMIC_POSTGRESQL_VERIFICATION_HARNESS_REQUIRED";
   attempted_action: string;
   detector_capability: PersistenceEnvironmentReceipt["capability"];
   database_connection_attempts: 0;
@@ -18,9 +18,9 @@ export type IsolatedPostgresVerificationReceipt = Readonly<{
 }>;
 
 /**
- * Dynamic evidence must exercise the real application PostgreSQL adapter. The
- * repository has no such adapter yet, so this verifier never substitutes psql,
- * a mock driver or the memory adapter for application wiring proof.
+ * Dynamic evidence must exercise the real application PostgreSQL adapters.
+ * This environment gate never substitutes psql, a recording driver or the
+ * memory adapter for application PostgreSQL execution proof.
  */
 export function verifyIsolatedPostgresAvailability(
   environment: PersistenceEnvironmentReceipt,
@@ -31,10 +31,10 @@ export function verifyIsolatedPostgresAvailability(
     status: "SKIPPED_BLOCKED",
     blocker_code: environmentBlocked
       ? "SKIPPED_ENVIRONMENT_DEPENDENCY"
-      : "CASE_ANALYSIS_POSTGRES_ADAPTER_NOT_IMPLEMENTED",
+      : "DYNAMIC_POSTGRESQL_VERIFICATION_HARNESS_REQUIRED",
     attempted_action: environmentBlocked
       ? "Inspected only local binaries, cached local images and the three explicit Tivdoc isolated-target variables; no approved loopback target plus psql was available, so no connection was attempted."
-      : "Validated an explicitly supplied loopback disposable target, but did not connect because the canonical CaseAnalysisRepositoryPort PostgreSQL adapter is not implemented; a CLI-only SQL check would not prove application wiring.",
+      : "Validated an explicitly supplied loopback disposable target, but did not connect because this environment gate cannot substitute for the complete V0.9 clean/upgrade/RLS/concurrency/restart/rollback/backup harness.",
     detector_capability: environment.capability,
     database_connection_attempts: 0,
     database_semantics_verified: false,
@@ -49,8 +49,8 @@ export function verifyIsolatedPostgresAvailability(
       "backup_restore",
     ]),
     next_environment_action: environmentBlocked
-      ? "Provision an explicitly disposable loopback-only PostgreSQL target named tivdoc_isolated_<random>, its matching target ID and ownership token; then implement and bind the canonical PostgreSQL adapter before rerunning."
-      : "Implement the canonical PostgreSQL adapter, bind it in the one composition root, and rerun against this disposable target.",
+      ? "Provision an explicitly disposable loopback-only PostgreSQL target named tivdoc_isolated_<random>, its matching target ID and ownership token; then run the V0.9 dynamic PostgreSQL acceptance harness."
+      : "Run the complete V0.9 dynamic PostgreSQL acceptance harness against this validated disposable target.",
     external_connections: 0,
     remote_migrations: 0,
     customer_data_reads: 0,

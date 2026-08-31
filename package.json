@@ -148,7 +148,13 @@
     "product:pdf:hebrew:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/report/verify.mts",
     "product:e2e:synthetic": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/e2e/synthetic.mts",
     "product:e2e:negative": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/e2e/negative.mts",
-    "product:v080:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/run.mts"
+    "product:v080:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/run.mts",
+    "canonical:persistence:v09:reachability": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/acceptance/reachability.mts",
+    "canonical:persistence:v09:static": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/acceptance/static-receipts.mts",
+    "canonical:persistence:v09:migration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/driver/verify.mts",
+    "canonical:persistence:v09:recording": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/driver/recording-receipt.mts",
+    "canonical:persistence:v09:verify-evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/evidence/verify.mts",
+    "canonical:persistence:v09:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/acceptance/run.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

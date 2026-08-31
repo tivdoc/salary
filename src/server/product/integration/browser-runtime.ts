@@ -398,7 +398,10 @@ async function writeStartupReceipt(
     missing_evidence: ["source_reference", "acquisition_date", "explicit_reuse_license", "immutable_fixture_sha256"],
   }));
   const lane = process.env.TIVDOC_PRODUCT_E2E_LANE === "negative" ? "negative" : "synthetic";
-  const outputRoot = path.resolve(process.cwd(), "output", "product-integration-v0.8.0", "e2e", lane);
+  const evidenceRoot = process.env.TIVDOC_PRODUCT_EVIDENCE_ROOT
+    ? path.resolve(process.cwd(), process.env.TIVDOC_PRODUCT_EVIDENCE_ROOT)
+    : path.resolve(process.cwd(), "output", "product-integration-v0.8.0");
+  const outputRoot = path.join(evidenceRoot, "e2e", lane);
   await mkdir(outputRoot, { recursive: true });
   const receipt = Object.freeze({
     schema_version: "tivdoc-product-browser-startup-v0.8.0",

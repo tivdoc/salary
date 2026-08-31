@@ -55,7 +55,10 @@ export type ServerHandle = Readonly<{
 }>;
 
 export function outputRoot(lane: "synthetic" | "negative"): string {
-  const root = path.join(REPOSITORY_ROOT, "output", "product-integration-v0.8.0", "e2e", lane);
+  const evidenceRoot = process.env.TIVDOC_PRODUCT_EVIDENCE_ROOT
+    ? path.resolve(REPOSITORY_ROOT, process.env.TIVDOC_PRODUCT_EVIDENCE_ROOT)
+    : path.join(REPOSITORY_ROOT, "output", "product-integration-v0.8.0");
+  const root = path.join(evidenceRoot, "e2e", lane);
   mkdirSync(root, { recursive: true });
   return root;
 }
