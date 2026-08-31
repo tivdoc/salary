@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 import type {
   AnalysisResultBundle,
   CanonicalHashPort,
@@ -10,9 +10,16 @@ import type {
 } from "../../engine/wave3/contracts";
 import { WAVE3_TOPICS } from "../../engine/wave3/contracts.ts";
 import { canonicalJson, immutable } from "../../engine/case-operations/canonical.ts";
+import {
+  HEBREW_REPORT_FONT,
+  hebrewTopicLabel,
+  renderCanonicalHebrewPdf,
+  SYNTHETIC_REPORT_WATERMARK,
+} from "./deterministic-hebrew-pdf.ts";
 
 export const REPORT_SCHEMA = "tivdoc-case-report-v0.6.0" as const;
-export const REPORT_TEMPLATE_VERSION = "tivdoc-rtl-hebrew-report-template-v0.6.0" as const;
+export const REPORT_TEMPLATE_VERSION = "tivdoc-rtl-hebrew-report-template-v0.8.0" as const;
+export const REPORT_RENDERER_VERSION = "tivdoc-canonical-hebrew-pdf-renderer-v0.8.0" as const;
 
 type ReportTopic = Readonly<{
   topic: Wave3Topic;
@@ -92,12 +99,48 @@ export class DeterministicCaseReportBuilder implements ReportBuilderPort {
     const pdf = await renderDeterministicPdf(report, jsonSha, htmlSha);
     const pdfSha = this.#hash.hashBytes(pdf);
     const manifestPayload = {
-      schema_version: "tivdoc-case-report-manifest-v0.6.0",
+      schema_version: "tivdoc-case-report-manifest-v0.8.0",
       report_id: reportId,
       report_revision: report.report_revision,
       case_id: report.case_id,
       analysis_result_sha256: bundle.result_sha256,
       template_version: REPORT_TEMPLATE_VERSION,
+      bindings: {
+        case: {
+          case_id: report.case_id,
+          case_revision: report.report_revision,
+          analysis_run_id: report.analysis_run_id,
+        },
+        facts: { facts_snapshot_sha256: report.facts_snapshot_sha256 },
+        catalog: { catalog_sha256: report.catalog_sha256 },
+        rules_and_parameters: report.topics.map((topic) => ({
+          topic: topic.topic,
+          rule_input_sha256: topic.rule_input_sha256,
+          readiness_decision_sha256: topic.legal_basis.readiness_decision_sha256,
+          source_version_ids: topic.legal_basis.source_version_ids,
+          parameter_version_ids: topic.legal_basis.parameter_version_ids,
+          rule_id: topic.legal_basis.rule_id,
+          rule_version: topic.legal_basis.rule_version,
+        })),
+        approval: {
+          decision_schema_version: report.review.decision_schema_version,
+          binding_field: report.review.approval_binding_field,
+          decision_metadata_location: report.review.decision_metadata_location,
+          monetary_override_permitted: report.review.monetary_override_permitted,
+        },
+        renderer: {
+          renderer_version: REPORT_RENDERER_VERSION,
+          template_version: REPORT_TEMPLATE_VERSION,
+          font_family: HEBREW_REPORT_FONT.family,
+          font_version: HEBREW_REPORT_FONT.version,
+          font_sha256: HEBREW_REPORT_FONT.sha256,
+          implementation_binding_sha256: this.#hash.hashCanonical({
+            renderer_version: REPORT_RENDERER_VERSION,
+            template_version: REPORT_TEMPLATE_VERSION,
+            font_sha256: HEBREW_REPORT_FONT.sha256,
+          }),
+        },
+      },
       components: [
         { path: "report.json", media_type: "application/json", sha256: jsonSha, byte_count: json.byteLength },
         { path: "report.html", media_type: "text/html; charset=utf-8", sha256: htmlSha, byte_count: html.byteLength },
@@ -230,42 +273,24 @@ export function renderHebrewHtml(report: CanonicalCaseReport, jsonSha256: string
     : `${escapeHtml(report.known_subtotal.currency)} ${report.known_subtotal.minor_units} יחידות משנה`;
   const subtotalWarning = report.coverage_complete
     ? "כיסוי כל הנושאים הושלם עבור הקלט המקובע."
-    : "סכום ביניים ידוע בלבד — אינו הסכום הכולל המגיע. נושאים חסומים או לא ידועים אינם אפס.";
-  const topics = report.topics.map((topic) => `<tr><td>${escapeHtml(topic.topic)}</td><td>${escapeHtml(topic.status)}</td><td>${escapeHtml(topic.blockers.join(", ") || "ללא")}</td><td>${topic.amount ? `${escapeHtml(topic.amount.currency)} ${topic.amount.minor_units}` : "לא חושב"}</td></tr>`).join("");
-  return `<!doctype html>\n<html lang="he" dir="rtl"><head><meta charset="utf-8"><title>דוח Tivdoc ${escapeHtml(report.report_id)}</title><style>body{font-family:Arial,sans-serif;direction:rtl;margin:32px;color:#172033}table{border-collapse:collapse;width:100%}th,td{border:1px solid #9aa4b2;padding:8px;text-align:right}.warning{border:2px solid #9b2c2c;padding:12px;background:#fff5f5}code{direction:ltr;unicode-bidi:bidi-override}</style></head><body><h1>דוח בדיקה דטרמיניסטי</h1><p>מזהה תיק: <code>${escapeHtml(report.case_id)}</code></p><p>מזהה דוח: <code>${escapeHtml(report.report_id)}</code></p><p>תקופה: ${escapeHtml(report.period.start_date)}–${escapeHtml(report.period.end_date)}</p><p>נכון ליום: ${escapeHtml(report.as_of)}</p><p>SHA-256 של JSON: <code>${jsonSha256}</code></p><h2>כיסוי שבעה נושאים</h2><table><thead><tr><th>נושא</th><th>מצב</th><th>חסמים</th><th>סכום</th></tr></thead><tbody>${topics}</tbody></table><h2>סכום ביניים</h2><p>${subtotal}</p><p class="warning">${subtotalWarning}</p><h2>מגבלות</h2><ul>${report.limitations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul><p>נדרשת החלטת בודק אנושי הקשורה ל-hash המדויק. אין אפשרות לעקוף סכום מנוע באופן ידני.</p></body></html>\n`;
+    : "סכום ביניים ידוע בלבד. אינו הסכום הכולל המגיע. נושאים חסומים או לא ידועים אינם אפס.";
+  const topics = report.topics.map((topic) => `<section class="topic" data-topic="${escapeHtml(topic.topic)}"><h3>${escapeHtml(hebrewTopicLabel(topic.topic))}</h3><dl><dt>מצב</dt><dd><bdi dir="ltr">${escapeHtml(topic.status)}</bdi></dd><dt>חסמים</dt><dd><bdi dir="ltr">${escapeHtml(topic.blockers.join(", ") || "NONE")}</bdi></dd><dt>סכום</dt><dd><bdi dir="ltr">${topic.amount ? `${escapeHtml(topic.amount.currency)} ${topic.amount.minor_units}` : "NOT_CALCULATED"}</bdi></dd><dt>אסמכתאות</dt><dd><bdi dir="ltr">${escapeHtml(topic.legal_basis.source_version_ids.join(", ") || "NO_ACTIVE_SOURCE")}</bdi></dd></dl></section>`).join("");
+  return `<!doctype html>\n<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><title>דוח Tivdoc ${escapeHtml(report.report_id)}</title><style>html{background:#f3f5f4}body{font-family:"DejaVu Sans",Arial,sans-serif;direction:rtl;max-width:920px;margin:24px auto;padding:32px;background:#fff;color:#142a30}table{border-collapse:collapse;width:100%}th,td{border:1px solid #9aa4b2;padding:8px;text-align:right}.warning{border:2px solid #9b2c2c;padding:12px;background:#fff5f5}.watermark{border:2px dashed #a64f3d;color:#a64f3d;text-align:center;font-weight:700;padding:12px}bdi,code{direction:ltr;unicode-bidi:isolate;font-family:"DejaVu Sans",monospace}.topics{display:grid;gap:12px}.topic{border:1px solid #afbbb8;padding:12px;break-inside:avoid}.topic h3{margin:0 0 8px}.topic dl{display:grid;grid-template-columns:8rem 1fr;margin:0}.topic dt,.topic dd{padding:4px;margin:0;border-bottom:1px solid #e4e8e7}</style></head><body><p class="watermark">${SYNTHETIC_REPORT_WATERMARK}</p><h1>דוח בדיקה דטרמיניסטי</h1><p>מזהה תיק: <code>${escapeHtml(report.case_id)}</code></p><p>מזהה דוח: <code>${escapeHtml(report.report_id)}</code></p><p>תקופה: <bdi dir="ltr">${escapeHtml(report.period.start_date)} - ${escapeHtml(report.period.end_date)}</bdi></p><p>נכון ליום: <bdi dir="ltr">${escapeHtml(report.as_of)}</bdi></p><p>SHA-256 של JSON: <code>${jsonSha256}</code></p><h2>כיסוי שבעה נושאים</h2><div class="topics">${topics}</div><h2>סכום ביניים</h2><p><bdi dir="ltr">${subtotal}</bdi></p><p class="warning">${subtotalWarning}</p><h2>מגבלות</h2><ul>${report.limitations.map((item) => `<li><bdi dir="ltr">${escapeHtml(item)}</bdi></li>`).join("")}</ul><p>נדרשת החלטת בודק אנושי הקשורה ל-hash המדויק. אין אפשרות לעקוף סכום מנוע באופן ידני.</p></body></html>\n`;
 }
 
 async function renderDeterministicPdf(report: CanonicalCaseReport, jsonSha256: string, htmlSha256: string): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create();
-  const fixedDate = new Date(`${report.as_of}T00:00:00.000Z`);
-  const identity = `case=${report.case_id};report=${report.report_id};analysis=${report.analysis_result_sha256};json=${jsonSha256};html=${htmlSha256}`;
-  pdf.setTitle(`Tivdoc deterministic report ${report.report_id}`);
-  pdf.setSubject(identity);
-  pdf.setAuthor("Tivdoc deterministic report renderer");
-  pdf.setCreator(REPORT_TEMPLATE_VERSION);
-  pdf.setProducer(REPORT_TEMPLATE_VERSION);
-  pdf.setCreationDate(fixedDate);
-  pdf.setModificationDate(fixedDate);
-  const page = pdf.addPage([595.28, 841.89]);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  page.drawText("Tivdoc deterministic case report", { x: 48, y: 790, size: 16, font: bold, color: rgb(0.08, 0.13, 0.2) });
-  const lines = [
-    `Case: ${report.case_id}`,
-    `Report: ${report.report_id}`,
-    `Revision: ${report.report_revision}`,
-    `Period: ${report.period.start_date} - ${report.period.end_date}`,
-    `As of: ${report.as_of}`,
-    `Analysis SHA256: ${report.analysis_result_sha256}`,
-    `JSON SHA256: ${jsonSha256}`,
-    `HTML SHA256: ${htmlSha256}`,
-    `Coverage complete: ${report.coverage_complete ? "yes" : "no"}`,
-    `Topic slots: ${report.topics.length}`,
-    report.coverage_complete ? "Subtotal label: complete coverage" : "Subtotal label: KNOWN SUBTOTAL ONLY; NOT TOTAL ENTITLEMENT",
-    "Manual exact-hash approval required. No automated delivery.",
-  ];
-  lines.forEach((line, index) => page.drawText(line, { x: 48, y: 750 - index * 28, size: 9, font, color: rgb(0.08, 0.13, 0.2) }));
-  return pdf.save({ useObjectStreams: false, addDefaultPage: false, updateFieldAppearances: false });
+  return renderCanonicalHebrewPdf(report, jsonSha256, htmlSha256);
+}
+
+export function canonicalReportPdfFilename(reportId: string): string {
+  const safeId = reportId.normalize("NFKC").replace(/[^a-zA-Z0-9_-]+/gu, "-").replace(/^-+|-+$/gu, "").slice(0, 96);
+  if (safeId.length === 0) throw new TypeError("canonical_report_filename_identifier_invalid");
+  return `tivdoc-synthetic-report-${safeId}.pdf`;
+}
+
+export function canonicalReportPdfContentDisposition(reportId: string): string {
+  const filename = canonicalReportPdfFilename(reportId);
+  return `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }
 
 function escapeHtml(value: string): string {
