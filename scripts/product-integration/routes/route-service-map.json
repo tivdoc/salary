@@ -1,0 +1,137 @@
+{
+  "schema_version": "tivdoc-stable-route-service-map-v1",
+  "routes": [
+    {
+      "legacy_route": "/portal-v07",
+      "stable_route": "/portal",
+      "feature_flag": "TIVDOC_PORTAL_UI_ENABLED",
+      "auth_policy": "signed_local_hermetic_session; customer_owner; exactly_one_assigned_case",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.getCaseProjection",
+      "repository_ports": ["canonical customer case projection repository"],
+      "storage_ports": [],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "/api/portal-v07/case/:caseId",
+      "stable_route": "/api/portal/cases/:caseId",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "signed local session; owner, tenant and case scope checked by canonical service",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.getCaseProjection",
+      "repository_ports": ["canonical customer case projection repository"],
+      "storage_ports": [],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "NOT_APPLICABLE",
+      "stable_route": "/api/portal/cases",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "signed local session; assigned cases originate only from signed claims and are rechecked by canonical service",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.getCaseProjection",
+      "repository_ports": ["canonical customer case projection repository"],
+      "storage_ports": [],
+      "legacy_disposition": "NOT_APPLICABLE"
+    },
+    {
+      "legacy_route": "/api/portal-v07/case/:caseId/clarifications/:taskId/answer",
+      "stable_route": "/api/portal/cases/:caseId/clarifications/:taskId/answers",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "signed owner session; same-origin CSRF; current revision; idempotency key",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.answerClarification",
+      "repository_ports": ["canonical clarification and declared fact candidate repositories", "canonical idempotency repository"],
+      "storage_ports": [],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "/api/portal-v07/case/:caseId/privacy",
+      "stable_route": "/api/portal/cases/:caseId/privacy",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "signed owner session; same-origin CSRF; current revision; idempotency key",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.createPrivacyRequest",
+      "repository_ports": ["canonical privacy request repository", "canonical audit repository", "canonical idempotency repository"],
+      "storage_ports": [],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "/api/portal-v07/case/:caseId/reports",
+      "stable_route": "/api/portal/cases/:caseId/reports",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "signed owner session; verified product evidence and released edition",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.listReports",
+      "repository_ports": ["canonical report and release repositories", "verified product evidence repository"],
+      "storage_ports": [],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "/api/portal-v07/case/:caseId/reports/:reportId/grant",
+      "stable_route": "/api/portal/cases/:caseId/reports/:reportId/grants",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "signed owner session; same-origin CSRF; current revision; exact released report hash",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.createReportAccessGrant",
+      "repository_ports": ["canonical report, approval and release repositories"],
+      "storage_ports": ["canonical private report object storage"],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "/api/portal-v07/reports/download",
+      "stable_route": "/api/portal/reports/download",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "signed owner session; same-origin CSRF; unexpired exact artifact grant",
+      "required_role": "customer_owner",
+      "canonical_use_case": "CustomerPortalService.downloadReport",
+      "repository_ports": ["canonical report, approval and release repositories"],
+      "storage_ports": ["canonical private report object storage exact-byte read"],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "/internal-ops-v07",
+      "stable_route": "/operations",
+      "feature_flag": "TIVDOC_OPERATIONS_UI_ENABLED",
+      "auth_policy": "signed local hermetic staff session",
+      "required_role": "authorized operations role",
+      "canonical_use_case": "InternalOpsService read and mutate methods",
+      "repository_ports": ["canonical operations projection and command repositories"],
+      "storage_ports": ["canonical private report object storage"],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "/api/internal-ops-v07/:resource*",
+      "stable_route": "/api/operations/:resource*",
+      "feature_flag": "TIVDOC_OPERATIONS_API_ENABLED",
+      "auth_policy": "signed local staff session; canonical role and case scope; same-origin CSRF for mutation",
+      "required_role": "capability-specific operations role",
+      "canonical_use_case": "InternalOpsService.read or InternalOpsService.mutate",
+      "repository_ports": ["canonical case, payment, document, extraction, fact, readiness, analysis, report and audit repositories", "canonical idempotency repository"],
+      "storage_ports": ["canonical private document and report object storage"],
+      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+    },
+    {
+      "legacy_route": "NOT_APPLICABLE",
+      "stable_route": "/api/portal/session",
+      "feature_flag": "TIVDOC_PORTAL_API_ENABLED",
+      "auth_policy": "loopback-only local hermetic fixed-ticket exchange; signed HttpOnly SameSite session",
+      "required_role": "customer_owner",
+      "canonical_use_case": "HermeticSessionManager.issue and revoke",
+      "repository_ports": [],
+      "storage_ports": [],
+      "legacy_disposition": "NOT_APPLICABLE"
+    },
+    {
+      "legacy_route": "NOT_APPLICABLE",
+      "stable_route": "/api/operations/session",
+      "feature_flag": "TIVDOC_OPERATIONS_API_ENABLED",
+      "auth_policy": "loopback-only local hermetic fixed-ticket exchange; signed HttpOnly SameSite session",
+      "required_role": "authorized operations role",
+      "canonical_use_case": "HermeticSessionManager.issue and revoke",
+      "repository_ports": [],
+      "storage_ports": [],
+      "legacy_disposition": "NOT_APPLICABLE"
+    }
+  ]
+}
