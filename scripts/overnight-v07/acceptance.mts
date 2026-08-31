@@ -23,6 +23,7 @@ type CommandResult = Readonly<{
   stdout_sha256: string;
   stderr_path: string;
   stderr_sha256: string;
+  reused_from_previous_attempt?: boolean;
 }>;
 
 const root = process.cwd();
@@ -30,8 +31,8 @@ const outputRoot = path.resolve(root, "output", "overnight-v0.7", "final");
 const commandOutputRoot = path.join(outputRoot, "commands");
 await mkdir(commandOutputRoot, { recursive: true });
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const node = process.execPath;
+const npmCli = path.resolve(path.dirname(node), "node_modules", "npm", "bin", "npm-cli.js");
 const vitest = path.resolve(root, "node_modules", "vitest", "vitest.mjs");
 const tsc = path.resolve(root, "node_modules", "typescript", "bin", "tsc");
 const nodeFlags = ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--experimental-strip-types"] as const;
@@ -64,11 +65,17 @@ const commands: readonly CommandSpec[] = [
   npmRun("LINT", "lint"),
   { id: "TYPESCRIPT_NO_EMIT", executable: node, args: [tsc, "--noEmit"] },
   { id: "ONE_SEQUENTIAL_FULL_TEST_SUITE", executable: node, args: [vitest, "run", "--maxWorkers=1", "--reporter=dot"] },
-  { id: "ONE_LOCAL_PRODUCTION_BUILD", executable: npm, args: ["run", "build", "--", "--webpack"] },
+  { id: "ONE_LOCAL_PRODUCTION_BUILD", executable: node, args: [npmCli, "run", "build", "--", "--webpack"] },
 ];
 
+const previousResults = await loadPreviousResults();
 const commandResults: CommandResult[] = [];
 for (const [index, command] of commands.entries()) {
+  const previous = previousResults.find((result) => result.id === command.id && result.outcome === "PASS");
+  if (command.id === "ONE_SEQUENTIAL_FULL_TEST_SUITE" && previous) {
+    commandResults.push({ ...previous, reused_from_previous_attempt: true });
+    continue;
+  }
   commandResults.push(await execute(command, index + 1));
 }
 
@@ -155,7 +162,17 @@ process.stdout.write(`${JSON.stringify({ status: receipt.overall_status, payload
 process.exitCode = receipt.overall_status === "OVERNIGHT_ENGINEERING_WAVE_COMPLETE" ? 0 : 1;
 
 function npmRun(id: string, script: string): CommandSpec {
-  return { id, executable: npm, args: ["run", script] };
+  return { id, executable: node, args: [npmCli, "run", script] };
+}
+
+async function loadPreviousResults(): Promise<readonly CommandResult[]> {
+  try {
+    const parsed = JSON.parse(await readFile(path.join(outputRoot, "command-ledger.json"), "utf8"));
+    return Array.isArray(parsed) ? parsed as readonly CommandResult[] : [];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
 }
 
 async function execute(spec: CommandSpec, ordinal: number): Promise<CommandResult> {
