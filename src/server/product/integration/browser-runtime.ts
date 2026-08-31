@@ -8,8 +8,14 @@ import { SYNTHETIC_CATALOG_DATE, SYNTHETIC_POPULATION, SYNTHETIC_SECTOR } from "
 import { canonicalSha256 } from "../../../engine/rule-runtime/canonical.ts";
 import { WAVE3_TOPICS, type CaseLifecycleState, type PaymentEvidenceSnapshot } from "../../../engine/wave3/contracts.ts";
 import { createIntegratedFullSystemHarness } from "../../engine/case-analysis/integrated-harness.ts";
+import {
+  CANONICAL_POSTGRES_CAPABILITY_BINDINGS,
+  startCanonicalApplicationPostgres,
+} from "../../platform/composition/canonical-postgres-application.ts";
+import { CANONICAL_POSTGRES_SCHEMA_VERSION } from "../../platform/composition/canonical-postgres.ts";
+import { StrictRecordingPostgresDriver } from "../../platform/persistence/postgres/runtime/recording-driver.ts";
 import type { StoredReportEdition } from "../customer-portal/contracts.ts";
-import { installCanonicalProductRouteServices } from "../routes/runtime.ts";
+import { installCanonicalProductApplicationComposition } from "../routes/runtime.ts";
 import {
   P8_NOW,
   createP8Harness,
@@ -181,8 +187,60 @@ async function buildHermeticBrowserRuntime(): Promise<void> {
     },
   });
 
-  installCanonicalProductRouteServices({ portal: harness.portal, operations: harness.service });
-  await writeStartupReceipt(harness, caseId);
+  const postgresRecording = await createCanonicalPostgresRecordingComposition();
+  installCanonicalProductApplicationComposition({
+    services: { portal: harness.portal, operations: harness.service },
+    persistence: postgresRecording.composition,
+    proof_class: "STATIC_OR_RECORDING_DRIVER_PROOF",
+  });
+  await writeStartupReceipt(harness, caseId, postgresRecording.receipt);
+}
+
+async function createCanonicalPostgresRecordingComposition() {
+  const driver = new StrictRecordingPostgresDriver([
+    { statement_name: "transaction_begin" },
+    { statement_name: "runtime_context_set" },
+    { statement_name: "schema_compatibility_read", result: { rows: [{ schema_version: CANONICAL_POSTGRES_SCHEMA_VERSION }], row_count: 1 } },
+    { statement_name: "transaction_commit" },
+    { statement_name: "transaction_begin" },
+    { statement_name: "runtime_context_set" },
+    { statement_name: "transaction_commit" },
+  ]);
+  const composition = await startCanonicalApplicationPostgres({
+    mode: "isolated_postgres",
+    execution_boundary: "hermetic_synthetic",
+    target: {
+      target_id: "v09-browser-recording-proof",
+      host: "127.0.0.1",
+      database: "tivdoc_v09_browser_recording_001",
+      disposable: true,
+      validation: "LOOPBACK_DISPOSABLE_VALIDATED",
+    },
+    build_identity_sha: "0".repeat(40),
+  }, { connection_factory: driver });
+  if (composition.mode !== "isolated_postgres") throw new Error("BROWSER_RUNTIME_POSTGRES_COMPOSITION_MODE_INVALID");
+  await composition.transaction(TENANT_ID, "browser-recording-selection", async (bundle) => {
+    if (bundle.intake.context !== bundle.context || !bundle.analysis.caseAnalysis || !bundle.runtime.idempotency || !bundle.runtime.jobs_outbox_audit) {
+      throw new Error("BROWSER_RUNTIME_POSTGRES_BINDING_INCOMPLETE");
+    }
+  });
+  const inventory = driver.inventory();
+  if (inventory.remaining_steps !== 0 || inventory.acquisitions !== 2 || inventory.releases !== 2) {
+    throw new Error("BROWSER_RUNTIME_POSTGRES_RECORDING_PROOF_INCOMPLETE");
+  }
+  return Object.freeze({
+    composition,
+    receipt: Object.freeze({
+      proof_class: inventory.proof_class,
+      capability_bindings: CANONICAL_POSTGRES_CAPABILITY_BINDINGS.length,
+      acquisitions: inventory.acquisitions,
+      releases: inventory.releases,
+      remaining_steps: inventory.remaining_steps,
+      statements: inventory.statements.map((entry) => ({ name: entry.name, parameter_count: entry.parameter_count, transaction_control: entry.transaction_control })),
+      sensitive_parameter_values_recorded: false,
+      dynamic_postgresql_execution_claimed: false,
+    }),
+  });
 }
 
 async function seedIntegratedReportReview(canonical: ReturnType<typeof createIntegratedFullSystemHarness>, caseId: string): Promise<number> {
@@ -303,7 +361,20 @@ async function seedCanonicalPrerequisites(
   }]);
 }
 
-async function writeStartupReceipt(harness: P8Harness, caseId: string): Promise<void> {
+async function writeStartupReceipt(
+  harness: P8Harness,
+  caseId: string,
+  postgresRecording: Readonly<{
+    proof_class: "STATIC_OR_RECORDING_DRIVER_PROOF";
+    capability_bindings: number;
+    acquisitions: number;
+    releases: number;
+    remaining_steps: number;
+    statements: readonly Readonly<{ name: string; parameter_count: number; transaction_control: boolean }>[];
+    sensitive_parameter_values_recorded: false;
+    dynamic_postgresql_execution_claimed: false;
+  }>,
+): Promise<void> {
   const realFixture = buildSyntheticCaseFixture({ fixture_id: "v08-real-inactive", mode: "real" });
   const real = createIntegratedFullSystemHarness([realFixture.stored]);
   const realBundle = await real.application.runCaseAnalysis(realFixture.command);
@@ -341,7 +412,9 @@ async function writeStartupReceipt(harness: P8Harness, caseId: string): Promise<
       "DeterministicCaseReportBuilder",
       "LocalPrivateObjectStorage",
       "SyntheticPortalRepository",
+      "startCanonicalApplicationPostgres",
     ],
+    canonical_postgres_recording: postgresRecording,
     prerequisites: {
       payment_evidence: "verified_settled_synthetic",
       document: "stored_hash_bound_synthetic",

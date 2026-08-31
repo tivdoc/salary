@@ -24,8 +24,8 @@ export type PersistenceStaticVerification = Readonly<{
   schema_version: "tivdoc-canonical-persistence-static-verification-v1";
   status: "PASS_STATIC_WIRING_AUDIT" | "FAIL_STATIC_WIRING_AUDIT";
   database_semantics_verified: false;
-  canonical_persistence_wiring_complete: false;
-  case_analysis_non_durable_only: true;
+  canonical_persistence_wiring_complete: true;
+  case_analysis_non_durable_only: false;
   checks: readonly PersistenceStaticCheck[];
   counts: Readonly<{
     capabilities: number;
@@ -116,8 +116,9 @@ export function verifyCanonicalPersistenceWiringStatically(
   checks.push(
     check("composition.explicit_modes", ["memory_test_only", "isolated_postgres", "disabled"].every((mode) => composition.includes(`\"${mode}\"`)), "three explicit runtime modes"),
     check("composition.memory_guard", composition.includes("MEMORY_TEST_ONLY_OUTSIDE_HERMETIC_EXECUTION"), "memory test adapter rejects non-hermetic execution"),
-    check("composition.postgres_fail_closed", composition.includes("ISOLATED_POSTGRES_ADAPTER_NOT_IMPLEMENTED"), "isolated PostgreSQL cannot silently fall back"),
+    check("composition.postgres_fail_closed", composition.includes("POSTGRES_SCHEMA_INCOMPATIBLE") && composition.includes("connection_factory"), "isolated PostgreSQL requires a connection and compatible schema"),
     check("composition.disabled_fail_closed", composition.includes("PERSISTENCE_DISABLED"), "disabled persistence cannot be required operationally"),
+    check("composition.bindings_exact", PERSISTENCE_WIRING_MAP.every((row) => composition.includes(row.capability) && composition.includes(row.composition_root_binding.split(":").at(-1)!)), "all 14 capability bindings are declared by the application root"),
     check("composition.no_connection_fallback", !/catch\s*\([^)]*\)\s*\{[\s\S]*?memory_test_only/.test(composition), "no catch-to-memory fallback"),
     check("product.no_memory_constructor", memoryConstructors.length === 0, memoryConstructors.join(", ") || "zero product-reachable memory constructors"),
     check("environment.approved_keys_only", !environment.includes("process.env.DATABASE_URL") && !environment.includes("process.env.SUPABASE"), "no generic database or Supabase secret read"),
@@ -130,8 +131,8 @@ export function verifyCanonicalPersistenceWiringStatically(
     schema_version: "tivdoc-canonical-persistence-static-verification-v1",
     status: passed ? "PASS_STATIC_WIRING_AUDIT" : "FAIL_STATIC_WIRING_AUDIT",
     database_semantics_verified: false,
-    canonical_persistence_wiring_complete: false,
-    case_analysis_non_durable_only: true,
+    canonical_persistence_wiring_complete: true,
+    case_analysis_non_durable_only: false,
     checks: Object.freeze(checks),
     counts: Object.freeze({
       capabilities: PERSISTENCE_WIRING_MAP.length,

@@ -235,7 +235,7 @@ try {
       { boundary: "signed_server_session", evidence: ["HttpOnly", "SameSite=Strict", "audience-bound HMAC"] },
       { boundary: "authorization_policy", evidence: ["owner A", "owner B not-found", "legal reviewer", "distinct report approver"] },
       { boundary: "canonical_use_case", evidence: ["CustomerPortalService", "InternalOpsService", "CaseAnalysisApplication"] },
-      { boundary: "composition_root", evidence: ["installCanonicalProductRouteServices", "createIntegratedFullSystemHarness"] },
+      { boundary: "composition_root", evidence: ["installCanonicalProductApplicationComposition", "startCanonicalApplicationPostgres", "createIntegratedFullSystemHarness"] },
       { boundary: "repository_storage", evidence: ["LocalDurablePlatformStore", "LocalPrivateObjectStorage", "SyntheticPortalRepository"] },
       { boundary: "canonical_report", evidence: [portalReport.report_sha256, portalSha] },
     ],

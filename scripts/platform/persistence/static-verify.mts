@@ -4,15 +4,17 @@ import path from "node:path";
 import { verifyCanonicalPersistenceWiringStatically } from "../../../src/server/platform/persistence/wiring-verifier.ts";
 
 const repoRoot = path.resolve(".");
-const [platformMigration, compositionRoot, isolatedEnvironment, productReachableSources] = await Promise.all([
+const [platformMigration, canonicalMigration, postgresRoot, applicationRoot, isolatedEnvironment, productReachableSources] = await Promise.all([
   read("supabase/migrations/202608310001_engine_platform_persistence.sql"),
-  read("src/server/platform/composition/canonical-persistence.ts"),
+  read("supabase/migrations/202608310002_canonical_postgresql_composition.sql"),
+  read("src/server/platform/composition/canonical-postgres.ts"),
+  read("src/server/platform/composition/canonical-postgres-application.ts"),
   read("src/server/platform/persistence/isolated-environment.ts"),
   collectProductReachableSources(),
 ]);
 const receipt = verifyCanonicalPersistenceWiringStatically({
-  platform_migration: platformMigration,
-  composition_root: compositionRoot,
+  platform_migration: `${platformMigration}\n${canonicalMigration}`,
+  composition_root: `${postgresRoot}\n${applicationRoot}`,
   isolated_environment: isolatedEnvironment,
   product_reachable_sources: productReachableSources,
 });

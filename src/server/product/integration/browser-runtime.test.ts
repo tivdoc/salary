@@ -4,7 +4,12 @@ import { buildSyntheticCaseFixture } from "../../../engine/case-analysis/synthet
 import { WAVE3_TOPICS } from "../../../engine/wave3/contracts.ts";
 import { resetRuntimeHermeticSessionManagerForTests } from "../auth/hermetic-session.ts";
 import { INTERNAL_OPS_SCHEMA_VERSION } from "../internal-ops/contracts.ts";
-import { resetCanonicalProductRouteServicesForTests, resolveCanonicalOperationsService } from "../routes/runtime.ts";
+import {
+  resetCanonicalProductRouteServicesForTests,
+  resolveCanonicalApplicationPersistence,
+  resolveCanonicalApplicationProofClass,
+  resolveCanonicalOperationsService,
+} from "../routes/runtime.ts";
 import { initializeHermeticBrowserRuntime } from "./browser-runtime.ts";
 import { verifiedSyntheticActor } from "./ready-harness.ts";
 
@@ -28,6 +33,8 @@ describe("V0.8 hermetic browser startup composition", () => {
     vi.stubEnv("TIVDOC_OPERATIONS_UI_ENABLED", "true");
     vi.stubEnv("TIVDOC_OPERATIONS_API_ENABLED", "true");
     await expect(initializeHermeticBrowserRuntime()).resolves.toBeUndefined();
+    expect(resolveCanonicalApplicationPersistence()).toMatchObject({ mode: "isolated_postgres", durable: true });
+    expect(resolveCanonicalApplicationProofClass()).toBe("STATIC_OR_RECORDING_DRIVER_PROOF");
     const legal = verifiedSyntheticActor({ actor_id: "legal-reviewer-01", role: "legal_reviewer", tenant_id: "tenant01", assigned_case_ids: [caseId] });
     const operations = resolveCanonicalOperationsService()!;
     const facts = await operations.read(legal, "facts", caseId);

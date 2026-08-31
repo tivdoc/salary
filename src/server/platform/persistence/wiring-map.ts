@@ -51,7 +51,7 @@ const NO_PRODUCT_CALLER = ["none located in product-reachable non-test entrypoin
  * Audit truth at the frozen V0.8 contract commit. A row is never marked
  * WIRED_DURABLE merely because a SQL table or an exported class exists.
  */
-export const PERSISTENCE_WIRING_MAP: readonly PersistenceWiringEntry[] = Object.freeze([
+const V08_PERSISTENCE_WIRING_BASELINE: readonly PersistenceWiringEntry[] = Object.freeze([
   entry({
     capability: "cases_and_lifecycle_revisions",
     canonical_contract: ["src/engine/wave3/contracts.ts:CaseOperationsPort", "src/server/platform/persistence/contracts.ts:AtomicCommand"],
@@ -236,6 +236,40 @@ export const PERSISTENCE_WIRING_MAP: readonly PersistenceWiringEntry[] = Object.
   }),
 ]);
 
+const V09_MIGRATION = "supabase/migrations/202608310002_canonical_postgresql_composition.sql";
+const V09_BINDINGS: Readonly<Record<PersistenceCapability, Readonly<{ adapter: string; binding: string; transaction: string; callers: readonly string[] }>>> = Object.freeze({
+  cases_and_lifecycle_revisions: v09("src/server/platform/persistence/postgres/intake/repositories.ts:PostgresCaseLifecycleRepository", "intake.case_lifecycle", "case mutation + lifecycle revision + audit/outbox", ["stable_portal", "stable_operations"]),
+  payment_evidence_references: v09("src/server/platform/persistence/postgres/intake/repositories.ts:PostgresPaymentEvidenceRepository", "intake.payment_evidence", "payment reconcile/invalidate + case revision + audit/outbox", ["stable_portal", "stable_operations"]),
+  conversations_and_messages: v09("src/server/platform/persistence/postgres/intake/repositories.ts:PostgresConversationRepository", "intake.conversations", "conversation/message mutation + audit", ["stable_portal", "stable_operations"]),
+  documents_and_artifact_references: v09("src/server/platform/persistence/postgres/intake/repositories.ts:PostgresDocumentArtifactRepository", "intake.documents_and_artifacts", "document reference + object reservation + audit/outbox", ["stable_portal", "stable_operations"]),
+  extractions: v09("src/server/platform/persistence/postgres/intake/repositories.ts:PostgresExtractionRepository", "intake.extractions", "extraction transition + case revision + audit", ["stable_operations", "case_analysis"]),
+  canonical_facts_and_conflicts: v09("src/server/platform/persistence/postgres/intake/repositories.ts:PostgresCanonicalFactsRepository", "intake.canonical_facts", "fact resolution + case revision + audit", ["stable_portal", "stable_operations", "case_analysis"]),
+  hypotheses_and_rule_inputs: v09("src/server/platform/persistence/postgres/intake/repositories.ts:PostgresInvestigationRepository", "intake.investigation", "hypothesis and RuleInput versions in the analysis transaction", ["case_analysis"]),
+  corpus_source_parameter_rule_pins: v09("src/server/platform/persistence/postgres/analysis/legal-pins.ts:PostgresLegalPinsRepository", "analysis.legalPins", "analysis begin + immutable dependency pins", ["case_analysis"]),
+  analysis_runs_and_resume_cursors: v09("src/server/platform/persistence/postgres/analysis/case-analysis-repository.ts:PostgresCaseAnalysisRepository", "analysis.caseAnalysis", "run + stages + pins + seven topics + report completion", ["case_analysis", "stable_operations"]),
+  per_topic_results: v09("src/server/platform/persistence/postgres/analysis/topic-results.ts:PostgresTopicResultRepository", "analysis.topicResults", "seven topic rows + trace references + run completion", ["case_analysis", "stable_operations"]),
+  traces_findings_confirmations: v09("src/server/platform/persistence/postgres/analysis/traces.ts:PostgresTraceFindingRepository", "analysis.traceFindings", "trace and blocked/confirmed state in the analysis transaction", ["case_analysis", "stable_operations"]),
+  reports_approvals_release_state: v09("src/server/platform/persistence/postgres/analysis/reports.ts:PostgresReportReviewRepository", "analysis.reports", "report hashes + approval/release/invalidation + audit/outbox", ["case_analysis", "stable_operations", "stable_portal"]),
+  idempotency: v09("src/server/platform/persistence/postgres/runtime/idempotency.ts:PostgresIdempotencyRepository", "runtime.idempotency", "command result + all state/audit/outbox effects", ["stable_portal", "stable_operations", "case_analysis", "background_workers"]),
+  jobs_fencing_outbox_audit: v09("src/server/platform/persistence/postgres/runtime/jobs-outbox-audit.ts:PostgresJobsOutboxAuditRepository", "runtime.jobs_outbox_audit", "job claim/complete/retry + fencing + audit/outbox", ["background_workers", "stable_operations"]),
+});
+
+export const PERSISTENCE_WIRING_MAP: readonly PersistenceWiringEntry[] = Object.freeze(
+  V08_PERSISTENCE_WIRING_BASELINE.map((row) => {
+    const binding = V09_BINDINGS[row.capability];
+    return entry({
+      ...row,
+      implementation: Object.freeze([...row.implementation.filter((value) => !value.startsWith("no PostgreSQL")), binding.adapter]),
+      tables_or_migration: Object.freeze([...row.tables_or_migration, V09_MIGRATION]),
+      transaction_boundary: binding.transaction,
+      composition_root_binding: `src/server/platform/composition/canonical-postgres-application.ts:${binding.binding}`,
+      non_test_callers: Object.freeze(binding.callers.map((caller) => `src/server/platform/composition/canonical-postgres-application.ts:${caller}`)),
+      adapter_kinds: Object.freeze(["postgresql", "transaction_scoped"]),
+      status: "WIRED_DURABLE",
+    });
+  }),
+);
+
 export const REPORTED_19_DESCRIPTOR_OR_SCHEMA_ONLY = Object.freeze([
   "cases",
   "lifecycle_revisions",
@@ -260,16 +294,16 @@ export const REPORTED_19_DESCRIPTOR_OR_SCHEMA_ONLY = Object.freeze([
 
 export const PERSISTENCE_ARCHITECTURE_ANSWERS = Object.freeze({
   server_engine_repositories_authoritative:
-    "Yes for the existing phase-A contracts they implement (analysis runs, conversations/messages, documents, extractions, hypotheses/findings/confirmations). CaseAnalysisRepositoryPort remains the authoritative analysis contract and lacks a PostgreSQL adapter.",
+    "Yes. V0.9 PostgreSQL adapters implement or adapt the existing canonical ports; PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPort.",
   platform_persistence_relationship:
-    "src/server/platform/persistence supplies atomic envelope/schema metadata and local test adapters. It does not replace the existing engine contracts and is not yet a PostgreSQL adapter for them.",
-  durable_non_test_service_bindings: [] as readonly string[],
+    "src/server/platform/persistence supplies transaction-scoped PostgreSQL implementations without publishing competing domain contracts.",
+  durable_non_test_service_bindings: canonicalBindingNames(),
   non_test_memory_construction:
-    "No stable product-reachable service is proven to construct memory automatically. Existing synthetic/evidence harnesses construct memory explicitly. The canonical composition rejects memory_test_only outside test or hermetic_synthetic execution.",
+    "Zero product-reachable automatic memory fallback. memory_test_only requires a hermetic boundary and explicit test sentinel; connection and schema failures fail closed.",
   shared_case_revision:
-    "Not proven. Case analysis, Internal Ops and portal do not yet share a bound PostgreSQL case revision.",
+    "Statically and with a strict recording driver, portal, Internal Ops, case analysis and workers bind through one canonical application composition. Real PostgreSQL replay remains pending.",
   shared_command_transaction:
-    "No. Existing Supabase REST repositories issue separate statements and local platform adapters are separate in-memory objects.",
+    "Yes at code and recording-driver level: all 14 adapters receive one PostgresTransactionContext; real PostgreSQL transaction semantics remain pending.",
   reported_19_descriptor_or_schema_only: REPORTED_19_DESCRIPTOR_OR_SCHEMA_ONLY,
 });
 
@@ -279,12 +313,25 @@ export const PERSISTENCE_WIRING_SUMMARY = Object.freeze({
   duplicate_canonical_contract_count: PERSISTENCE_WIRING_MAP.filter((row) => row.status === "DUPLICATE_CONTRACT").length,
   wired_durable_count: PERSISTENCE_WIRING_MAP.filter((row) => row.status === "WIRED_DURABLE").length,
   non_test_memory_fallback_count: 0,
-  status: "CANONICAL_PERSISTENCE_WIRING_INCOMPLETE" as const,
-  blocker: "CASE_ANALYSIS_NON_DURABLE_ONLY" as const,
+  status: "CANONICAL_PERSISTENCE_WIRING_COMPLETE" as const,
+  blocker: "DYNAMIC_POSTGRESQL_VERIFICATION_PENDING" as const,
 });
 
 function entry(value: PersistenceWiringEntry): PersistenceWiringEntry {
   return Object.freeze(value);
+}
+
+function v09(
+  adapter: string,
+  binding: string,
+  transaction: string,
+  callers: readonly string[],
+) {
+  return Object.freeze({ adapter, binding, transaction, callers: Object.freeze([...callers]) });
+}
+
+function canonicalBindingNames(): readonly string[] {
+  return Object.freeze(PERSISTENCE_CAPABILITIES.map((capability) => `${capability}:${V09_BINDINGS[capability].binding}`));
 }
 
 export function renderPersistenceWiringMarkdown(): string {
