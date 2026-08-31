@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { PlatformPersistenceError } from "../../contracts.ts";
 import { statement } from "../contracts.ts";
 import { StrictRecordingPostgresDriver } from "./recording-driver.ts";
 import { CanonicalPostgresTransactionManager } from "./transaction-manager.ts";
@@ -49,5 +50,21 @@ describe("canonical PostgreSQL transaction manager", () => {
     await expect(manager.transaction(() => manager.transaction(async () => undefined)))
       .rejects.toMatchObject({ code: "POSTGRES_TRANSACTION_NESTING_FORBIDDEN" });
     expect(driver.inventory()).toMatchObject({ acquisitions: 1, releases: 1, remaining_steps: 0 });
+  });
+
+  it("preserves only a trusted safe domain code across rollback", async () => {
+    const driver = new StrictRecordingPostgresDriver([
+      { statement_name: "transaction_begin" },
+      { statement_name: "transaction_rollback" },
+    ]);
+    const manager = new CanonicalPostgresTransactionManager(driver);
+
+    await expect(manager.transaction(async () => {
+      throw new PlatformPersistenceError("STALE_FENCING_TOKEN", "must-not-escape");
+    })).rejects.toMatchObject({
+      code: "POSTGRES_TRANSACTION_FAILED",
+      sqlstate: null,
+      domain_code: "STALE_FENCING_TOKEN",
+    });
   });
 });

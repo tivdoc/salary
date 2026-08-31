@@ -279,7 +279,7 @@ create table public.document_extractions (
   constraint document_extractions_completed_check check (
     (status in ('partial', 'completed', 'failed')) = (completed_at is not null)
   ),
-  constraint document_extractions_payload_check check (
+  constraint document_extractions_completed_payload_check check (
     status <> 'completed' or payload is not null
   ),
   constraint document_extractions_error_check check (

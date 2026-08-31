@@ -1,24 +1,21 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 
 import { describe, expect, it } from "vitest";
 
 const migrationPath = path.resolve(process.cwd(), "supabase/migrations/202608310002_canonical_postgresql_composition.sql");
 const sql = readFileSync(migrationPath, "utf8");
 const platformSql = readFileSync(path.resolve(process.cwd(), "supabase/migrations/202608310001_engine_platform_persistence.sql"), "utf8");
+const foundationSql = readFileSync(path.resolve(process.cwd(), "supabase/migrations/202608290001_engine_persistence_foundation.sql"), "utf8");
 
 describe("V0.9 forward-only canonical PostgreSQL migration", () => {
-  it("does not alter historical migration bytes", () => {
+  it("pins the portable foundation amendment and unchanged platform migration", () => {
     expect(digest("supabase/migrations/202608290001_engine_persistence_foundation.sql", true))
-      .toBe("cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1");
+      .toBe("e4e036fd3c01134a7e449cf50d586d4bf6790c0e00a4f62ad0a898acfec31373");
     expect(digest("supabase/migrations/202608310001_engine_platform_persistence.sql"))
       .toBe("74e0615c6375b8cb87da5a09c6a8a29d4e27fe503793b14d767a2199d92c4460");
-    expect(() => execFileSync("git", ["diff", "--quiet", "HEAD", "--",
-      "supabase/migrations/202608290001_engine_persistence_foundation.sql",
-      "supabase/migrations/202608310001_engine_platform_persistence.sql",
-    ], { cwd: process.cwd(), stdio: "ignore" })).not.toThrow();
+    expect(foundationSql).toContain("constraint document_extractions_completed_payload_check check");
   });
 
   it("adds lossless canonical identifiers, exact report hashes and atomic receipts", () => {

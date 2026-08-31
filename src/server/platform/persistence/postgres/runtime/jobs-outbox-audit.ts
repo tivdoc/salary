@@ -67,7 +67,7 @@ const SELECT_JOB_BY_KEY = `
 select job_id, tenant_id, canonical_case_id as case_id, job_kind, idempotency_key,
        payload, payload_sha256, pinned_version_sha256s, state, revision,
        attempt_count, max_attempts, (extract(epoch from available_at) * 1000)::bigint as available_at,
-       lease_owner, case when lease_expires_at is null then null else lease_expires_at::text end as lease_expires_at,
+       lease_owner, lease_expires_at,
        fencing_token, cancellation_requested, terminal_effect_sha256, replayed_from_job_id
 from public.engine_durable_jobs
 where tenant_id = $1 and job_kind = $2 and idempotency_key = $3
@@ -77,7 +77,7 @@ const CLAIM_JOBS = `
 select job_id, tenant_id, canonical_case_id as case_id, job_kind, idempotency_key,
        payload, payload_sha256, pinned_version_sha256s, state, revision,
        attempt_count, max_attempts, (extract(epoch from available_at) * 1000)::bigint as available_at,
-       lease_owner, case when lease_expires_at is null then null else lease_expires_at::text end as lease_expires_at,
+       lease_owner, lease_expires_at,
        fencing_token, cancellation_requested, terminal_effect_sha256, replayed_from_job_id
 from private.claim_engine_platform_jobs($1, to_timestamp($2 / 1000.0), $3 * interval '1 millisecond', $4)`;
 
@@ -89,7 +89,7 @@ where job_id = $1 and tenant_id = $2 and lease_owner = $3 and fencing_token = $4
 returning job_id, tenant_id, canonical_case_id as case_id, job_kind, idempotency_key,
           payload, payload_sha256, pinned_version_sha256s, state, revision,
           attempt_count, max_attempts, (extract(epoch from available_at) * 1000)::bigint as available_at,
-          lease_owner, lease_expires_at::text, fencing_token, cancellation_requested,
+          lease_owner, lease_expires_at, fencing_token, cancellation_requested,
           terminal_effect_sha256, replayed_from_job_id`;
 
 const HEARTBEAT_JOB = `
@@ -102,7 +102,7 @@ where job_id = $1 and tenant_id = $2 and lease_owner = $3 and fencing_token = $4
 returning job_id, tenant_id, canonical_case_id as case_id, job_kind, idempotency_key,
           payload, payload_sha256, pinned_version_sha256s, state, revision,
           attempt_count, max_attempts, (extract(epoch from available_at) * 1000)::bigint as available_at,
-          lease_owner, lease_expires_at::text, fencing_token, cancellation_requested,
+          lease_owner, lease_expires_at, fencing_token, cancellation_requested,
           terminal_effect_sha256, replayed_from_job_id`;
 
 const FINISH_JOB = `
@@ -114,7 +114,7 @@ where job_id = $1 and tenant_id = $2 and lease_owner = $3 and fencing_token = $4
 returning job_id, tenant_id, canonical_case_id as case_id, job_kind, idempotency_key,
           payload, payload_sha256, pinned_version_sha256s, state, revision,
           attempt_count, max_attempts, (extract(epoch from available_at) * 1000)::bigint as available_at,
-          lease_owner, null::text as lease_expires_at, fencing_token, cancellation_requested,
+          lease_owner, null::timestamptz as lease_expires_at, fencing_token, cancellation_requested,
           terminal_effect_sha256, replayed_from_job_id`;
 
 const RETRY_JOB = `
@@ -127,7 +127,7 @@ where job_id = $1 and tenant_id = $2 and lease_owner = $3 and fencing_token = $4
 returning job_id, tenant_id, canonical_case_id as case_id, job_kind, idempotency_key,
           payload, payload_sha256, pinned_version_sha256s, state, revision,
           attempt_count, max_attempts, (extract(epoch from available_at) * 1000)::bigint as available_at,
-          lease_owner, null::text as lease_expires_at, fencing_token, cancellation_requested,
+          lease_owner, null::timestamptz as lease_expires_at, fencing_token, cancellation_requested,
           terminal_effect_sha256, replayed_from_job_id`;
 
 const ENQUEUE_OUTBOX = `
@@ -141,7 +141,7 @@ returning outbox_id`;
 const CLAIM_OUTBOX = `
 select outbox_id, tenant_id, canonical_case_id as case_id, logical_effect_id,
        effect_kind, payload, payload_sha256, state, fencing_token, lease_owner,
-       case when lease_expires_at is null then null else lease_expires_at::text end as lease_expires_at
+       lease_expires_at
 from private.claim_engine_platform_outbox($1, to_timestamp($2 / 1000.0), $3 * interval '1 millisecond')`;
 
 const PUBLISH_OUTBOX = `
@@ -165,7 +165,7 @@ where tenant_id = $1 and logical_effect_id = $2`;
 
 const AUDIT_LOCK = "select pg_advisory_xact_lock(hashtextextended($1 || ':' || $2, 0))";
 const AUDIT_TAIL = `
-select case_sequence, event_sha256, occurred_at::text as occurred_at
+select case_sequence, event_sha256, occurred_at
 from public.engine_platform_audit_events
 where tenant_id = $1 and canonical_case_id = $2
 order by case_sequence desc limit 1 for update`;
@@ -179,7 +179,7 @@ returning sequence`;
 const AUDIT_VERIFY = `
 select case_sequence, actor_id, action, resource_id, resource_revision,
        resource_sha256, reason_code, previous_sha256, event_sha256,
-       occurred_at::text as occurred_at
+       occurred_at
 from public.engine_platform_audit_events
 where tenant_id = $1 and canonical_case_id = $2
 order by case_sequence`;

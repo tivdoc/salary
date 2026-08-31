@@ -29,12 +29,23 @@ export class PostgresAnalysisError extends CaseAnalysisError {
   }
 }
 
-type DriverError = Readonly<{ code?: unknown }>;
+type DriverError = Readonly<{ code?: unknown; sqlstate?: unknown }>;
 
 export function mapPostgresAnalysisError(error: unknown, uniqueCode: PostgresAnalysisErrorCode): never {
   if (error instanceof CaseAnalysisError) throw error;
-  if (typeof error === "object" && error !== null && (error as DriverError).code === "23505") {
+  if (postgresSqlstate(error) === "23505") {
     throw new PostgresAnalysisError(uniqueCode);
   }
   throw new PostgresAnalysisError("POSTGRES_PERSISTENCE_UNAVAILABLE");
+}
+
+function postgresSqlstate(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) return null;
+  const candidate = error as DriverError;
+  if (typeof candidate.sqlstate === "string" && /^[0-9A-Z]{5}$/u.test(candidate.sqlstate)) {
+    return candidate.sqlstate;
+  }
+  return typeof candidate.code === "string" && /^[0-9A-Z]{5}$/u.test(candidate.code)
+    ? candidate.code
+    : null;
 }

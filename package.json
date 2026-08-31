@@ -154,7 +154,8 @@
     "canonical:persistence:v09:migration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/driver/verify.mts",
     "canonical:persistence:v09:recording": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/driver/recording-receipt.mts",
     "canonical:persistence:v09:verify-evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/evidence/verify.mts",
-    "canonical:persistence:v09:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/acceptance/run.mts"
+    "canonical:persistence:v09:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/acceptance/run.mts",
+    "verify:postgres:dynamic": "node scripts/canonical-persistence-v091/bootstrap.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
@@ -162,13 +163,16 @@
     "next": "16.3.2",
     "openai": "7.8.0",
     "pdf-lib": "1.17.1",
+    "pg": "8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "0.35.3",
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@playwright/cli": "0.1.18",
     "@types/node": "26.2.0",
+    "@types/pg": "8.23.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "eslint": "9.39.5",

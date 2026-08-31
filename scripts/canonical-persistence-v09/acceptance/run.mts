@@ -20,8 +20,13 @@ type PayloadEntry = Readonly<{ path: string; sha256: string; byte_count: number 
 
 const root = process.cwd();
 const evidenceRoot = path.resolve(root, "output", "canonical-postgresql-persistence-v0.9.0");
-const finalRoot = path.join(evidenceRoot, "final");
-assert(finalRoot.startsWith(`${path.resolve(root, "output")}${path.sep}`), "FINAL_OUTPUT_ROOT_UNSAFE");
+const requestedFinalRoot = process.env.TIVDOC_V09_ACCEPTANCE_FINAL_ROOT;
+const finalRoot = requestedFinalRoot ? path.resolve(root, requestedFinalRoot) : path.join(evidenceRoot, "final");
+const allowedFinalRoots = new Set([
+  path.join(evidenceRoot, "final"),
+  path.resolve(root, "output", "canonical-postgresql-dynamic-v0.9.1", "v09-regression", "final"),
+]);
+assert(allowedFinalRoots.has(finalRoot), "FINAL_OUTPUT_ROOT_UNSAFE");
 await rm(finalRoot, { recursive: true, force: true });
 await mkdir(path.join(finalRoot, "commands"), { recursive: true });
 

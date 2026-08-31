@@ -97,7 +97,7 @@ export class PostgresTraceFindingRepository {
         [
           this.tenantId, confirmation.source_analysis_run_id, confirmation.case_id, confirmation.confirmation_id,
           confirmation.target_fact_path, confirmation.question_id, confirmation.question_version,
-          JSON.stringify(confirmation.proposed_value), JSON.stringify(confirmation.answer), confirmation.status,
+          nullableJson(confirmation.proposed_value), nullableJson(confirmation.answer), confirmation.status,
           confirmation.source_message_id, confirmation.idempotency_key, confirmation.created_at, confirmation.answered_at,
         ],
       ));
@@ -120,6 +120,10 @@ export class PostgresTraceFindingRepository {
       mapPostgresAnalysisError(error, "IDEMPOTENCY_KEY_COMMAND_MISMATCH");
     }
   }
+}
+
+function nullableJson(value: unknown): string | null {
+  return value === null ? null : JSON.stringify(value);
 }
 
 function validateCanonicalConfirmation(value: CaseConfirmation): CaseConfirmation {

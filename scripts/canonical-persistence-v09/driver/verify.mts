@@ -8,7 +8,7 @@ const genericDatabaseVariable = ["DATABASE", "URL"].join("_");
 const migrationPath = "supabase/migrations/202608310002_canonical_postgresql_composition.sql";
 const migration = readFileSync(path.join(root, migrationPath), "utf8");
 const historical = [
-  ["supabase/migrations/202608290001_engine_persistence_foundation.sql", "cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1"],
+  ["supabase/migrations/202608290001_engine_persistence_foundation.sql", "e4e036fd3c01134a7e449cf50d586d4bf6790c0e00a4f62ad0a898acfec31373"],
   ["supabase/migrations/202608310001_engine_platform_persistence.sql", "74e0615c6375b8cb87da5a09c6a8a29d4e27fe503793b14d767a2199d92c4460"],
 ] as const;
 
@@ -33,7 +33,20 @@ const historicalReceipts = historical.map(([file, expected_sha256]) => {
   } catch {
     git_worktree_unchanged = false;
   }
-  return Object.freeze({ file, expected_sha256, actual_sha256, git_worktree_unchanged, unchanged: actual_sha256 === expected_sha256 && git_worktree_unchanged });
+  const portability_amendment = file.includes("202608290001") ? Object.freeze({
+    baseline_sha256: "cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1",
+    amendment_receipt: "scripts/canonical-persistence-v091/foundation/migration-portability-amendment.json",
+    amendment_status: "PINNED_ONE_TIME_AMENDMENT",
+  }) : null;
+  return Object.freeze({
+    file,
+    expected_sha256,
+    actual_sha256,
+    git_worktree_unchanged,
+    unchanged_since_pinned_amendment: actual_sha256 === expected_sha256 && git_worktree_unchanged,
+    unchanged: actual_sha256 === expected_sha256 && git_worktree_unchanged,
+    portability_amendment,
+  });
 });
 const unsafe = [
   /\$\{[^}]+\}/u,

@@ -27,8 +27,7 @@ export const SYNTHETIC_TICKETS = Object.freeze({
   auditor: "operations-auditor-ticket-0001",
 });
 
-const BASH = "C:\\Program Files\\Git\\bin\\bash.exe";
-const PWCLI = "C:\\Users\\smart\\.codex\\skills\\playwright\\scripts\\playwright_cli.sh";
+const PLAYWRIGHT_CLI = path.join(REPOSITORY_ROOT, "node_modules", "@playwright", "cli", "playwright-cli.js");
 const NEXT_BIN = path.join(REPOSITORY_ROOT, "node_modules", "next", "dist", "bin", "next");
 const SESSION_SECRET = "v08-hermetic-session-secret-000000000000000000000001";
 
@@ -215,7 +214,7 @@ export function operationsCommand(input: Readonly<{
 }
 
 export function runPlaywright(session: string, cwd: string, command: string, args: readonly string[] = []): unknown {
-  const result = spawnSync(BASH, [PWCLI, `-s=${session}`, command, ...args, "--json"], {
+  const result = spawnSync(process.execPath, [PLAYWRIGHT_CLI, `-s=${session}`, command, ...args, "--json"], {
     cwd,
     encoding: "utf8",
     windowsHide: true,

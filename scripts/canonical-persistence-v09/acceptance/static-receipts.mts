@@ -85,7 +85,11 @@ const transactionBoundaries = Object.freeze([
 const migrationPath = "supabase/migrations/202608310002_canonical_postgresql_composition.sql";
 const migrationBytes = Buffer.from(await read(migrationPath), "utf8");
 const historical = await Promise.all([
-  historicalReceipt("supabase/migrations/202608290001_engine_persistence_foundation.sql", "cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1", true),
+  historicalReceipt("supabase/migrations/202608290001_engine_persistence_foundation.sql", "e4e036fd3c01134a7e449cf50d586d4bf6790c0e00a4f62ad0a898acfec31373", true, {
+    baseline_sha256: "cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1",
+    amendment_receipt: "scripts/canonical-persistence-v091/foundation/migration-portability-amendment.json",
+    amendment_status: "PINNED_ONE_TIME_AMENDMENT",
+  }),
   historicalReceipt("supabase/migrations/202608310001_engine_platform_persistence.sql", "74e0615c6375b8cb87da5a09c6a8a29d4e27fe503793b14d767a2199d92c4460", false),
 ]);
 const migrationText = migrationBytes.toString("utf8");
@@ -224,11 +228,23 @@ function statementInventory(name: string, sql: string, source: string) {
   });
 }
 
-async function historicalReceipt(file: string, expected: string, normalizeNewlines: boolean) {
+async function historicalReceipt(
+  file: string,
+  expected: string,
+  normalizeNewlines: boolean,
+  amendment?: Readonly<{ baseline_sha256: string; amendment_receipt: string; amendment_status: string }>,
+) {
   const raw = await readFile(path.resolve(root, file));
   const bytes = normalizeNewlines ? Buffer.from(raw.toString("utf8").replaceAll("\r\n", "\n"), "utf8") : raw;
   const actual = sha256(bytes);
-  return Object.freeze({ file, expected_sha256: expected, actual_sha256: actual, unchanged: actual === expected });
+  return Object.freeze({
+    file,
+    expected_sha256: expected,
+    actual_sha256: actual,
+    unchanged_since_pinned_amendment: actual === expected,
+    unchanged: actual === expected,
+    ...(amendment ?? {}),
+  });
 }
 
 function matches(source: string, pattern: RegExp): readonly string[] {

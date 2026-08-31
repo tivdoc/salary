@@ -1,0 +1,12 @@
+{
+  "schema_version": "tivdoc-postgresql-migration-portability-amendment-v0.9.1",
+  "migration": "supabase/migrations/202608290001_engine_persistence_foundation.sql",
+  "baseline_sha256_normalized_lf": "cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1",
+  "amended_sha256_normalized_lf": "e4e036fd3c01134a7e449cf50d586d4bf6790c0e00a4f62ad0a898acfec31373",
+  "postgresql_error_code": "42710",
+  "defect": "EXPLICIT_CHECK_CONSTRAINT_COLLIDES_WITH_POSTGRESQL_GENERATED_INLINE_CHECK_NAME",
+  "amendment": "RENAME_EXPLICIT_COMPLETION_PAYLOAD_CHECK_CONSTRAINT_ONLY",
+  "sql_semantics_changed": false,
+  "authorized_scope": "V0.9.1_REAL_POSTGRESQL_PORTABILITY_DEFECT_REMEDIATION",
+  "status": "PINNED_ONE_TIME_AMENDMENT"
+}

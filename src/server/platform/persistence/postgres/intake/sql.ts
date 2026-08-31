@@ -4,17 +4,17 @@ type SqlDefinition = Readonly<{ name: string; text: string }>;
 const sql = (name: string, text: string): SqlDefinition => Object.freeze({ name, text });
 
 export const INTAKE_SQL = Object.freeze({
-  caseSelect: sql("intake_case_select", `select canonical_case_id as case_id, tenant_id, revision::text, lifecycle_state, state_sha256, updated_at::text
+  caseSelect: sql("intake_case_select", `select canonical_case_id as case_id, tenant_id, revision::text, lifecycle_state, state_sha256, updated_at
 from public.engine_case_state where tenant_id = $1 and canonical_case_id = $2`),
   caseInsert: sql("intake_case_insert", `insert into public.engine_case_state
 (case_id, tenant_id, canonical_case_id, revision, lifecycle_state, state_sha256, updated_at)
 select private.resolve_engine_case_id($2, $1), $2, $1, 1, $3, $4, $5::timestamptz
 where $6::bigint = 0 and not exists (select 1 from public.engine_case_state where tenant_id = $2 and canonical_case_id = $1)
-returning canonical_case_id as case_id, tenant_id, revision::text, lifecycle_state, state_sha256, updated_at::text`),
+returning canonical_case_id as case_id, tenant_id, revision::text, lifecycle_state, state_sha256, updated_at`),
   caseUpdate: sql("intake_case_update", `update public.engine_case_state set revision = revision + 1, lifecycle_state = $3,
 state_sha256 = $4, updated_at = $5::timestamptz
 where tenant_id = $1 and canonical_case_id = $2 and revision = $6::bigint
-returning canonical_case_id as case_id, tenant_id, revision::text, lifecycle_state, state_sha256, updated_at::text`),
+returning canonical_case_id as case_id, tenant_id, revision::text, lifecycle_state, state_sha256, updated_at`),
   lifecycleInsert: sql("intake_lifecycle_insert", `insert into public.engine_case_lifecycle_revisions
 (case_id, tenant_id, revision, state_before, state_after, event_kind, command_sha256, event_sha256, previous_sha256, occurred_at)
 values (private.resolve_engine_case_id($2, $1), $2, $3::bigint, $4, $5, $6, $7, $8, $9, $10::timestamptz)
@@ -29,15 +29,15 @@ where public.engine_payment_evidence_refs.tenant_id = excluded.tenant_id
 and public.engine_payment_evidence_refs.evidence_sha256 = excluded.evidence_sha256
 and public.engine_payment_evidence_refs.status = excluded.status
 and public.engine_payment_evidence_refs.bound_at = excluded.bound_at
-returning $2 as case_id, tenant_id, evidence_id, evidence_revision, evidence_sha256, status, bound_at::text`),
-  paymentSelect: sql("intake_payment_select", `select $2 as case_id, p.tenant_id, p.evidence_id, p.evidence_revision, p.evidence_sha256, p.status, p.bound_at::text
+returning $2 as case_id, tenant_id, evidence_id, evidence_revision, evidence_sha256, status, bound_at`),
+  paymentSelect: sql("intake_payment_select", `select $2 as case_id, p.tenant_id, p.evidence_id, p.evidence_revision, p.evidence_sha256, p.status, p.bound_at
 from public.engine_payment_evidence_refs p join public.engine_case_state c on c.case_id = p.case_id and c.tenant_id = p.tenant_id
 where p.tenant_id = $1 and c.canonical_case_id = $2 order by p.bound_at, p.evidence_id, p.evidence_revision`),
   conversationInsert: sql("intake_conversation_insert", `insert into public.case_conversations
 (id, case_id, analysis_run_id, status, idempotency_key, created_at, closed_at, tenant_id, canonical_case_id,
  canonical_conversation_id, canonical_analysis_run_id)
 select private.canonical_text_uuid('conversation', $3), private.resolve_engine_case_id($1, $2),
-case when $4 is null then null else private.canonical_text_uuid('analysis_run', $4) end,
+case when $4::text is null then null else private.canonical_text_uuid('analysis_run', $4::text) end,
 $5, $6, $7::timestamptz, $8::timestamptz, $1, $2, $3, $4
 where exists (select 1 from public.engine_case_state where tenant_id = $1 and canonical_case_id = $2)
 on conflict (case_id, idempotency_key) do update set id = public.case_conversations.id
@@ -46,14 +46,14 @@ and public.case_conversations.analysis_run_id is not distinct from excluded.anal
 and public.case_conversations.status = excluded.status
 and public.case_conversations.closed_at is not distinct from excluded.closed_at
 returning canonical_conversation_id as conversation_id, canonical_case_id as case_id, canonical_analysis_run_id as analysis_run_id,
-status, idempotency_key, created_at::text, closed_at::text`),
+status, idempotency_key, created_at, closed_at`),
   messageInsert: sql("intake_message_insert", `insert into public.case_messages
 (id, case_id, conversation_id, analysis_run_id, role, agent, question_id, question_version, selected_option_ids,
  free_text_answer, content, model_provider, model_identifier, prompt_version, idempotency_key, created_at,
  tenant_id, canonical_case_id, canonical_message_id, canonical_conversation_id, canonical_analysis_run_id)
 select private.canonical_text_uuid('message', $3), private.resolve_engine_case_id($1, $2),
 private.canonical_text_uuid('conversation', $4),
-case when $5 is null then null else private.canonical_text_uuid('analysis_run', $5) end, $6, $7, $8, $9::integer,
+case when $5::text is null then null else private.canonical_text_uuid('analysis_run', $5::text) end, $6, $7, $8, $9::integer,
 array(select jsonb_array_elements_text($10::jsonb)), $11, $12, $13, $14, $15, $16, $17::timestamptz
 , $1, $2, $3, $4, $5
 where exists (select 1 from public.engine_case_state where tenant_id = $1 and canonical_case_id = $2)
@@ -78,7 +78,7 @@ canonical_conversation_id as conversation_id, idempotency_key`),
  processing_status, storage_layout, tenant_id, canonical_case_id, canonical_document_id)
 select private.canonical_text_uuid('document', $3), private.resolve_engine_case_id($1, $2), $4, $5, $6, $7,
 $8::bigint, $9::timestamptz, $4, $10, $11::numeric, $12, $13::date, $14::date,
-case when $15 is null then null else private.canonical_text_uuid('document', $15) end, $16, 'immutable_v1', $1, $2, $3
+case when $15::text is null then null else private.canonical_text_uuid('document', $15::text) end, $16, 'immutable_v1', $1, $2, $3
 where exists (select 1 from public.engine_case_state where tenant_id = $1 and canonical_case_id = $2)
 on conflict (id) do nothing returning canonical_document_id as document_id, canonical_case_id as case_id, content_sha256`),
   artifactInsert: sql("intake_artifact_insert", `insert into public.engine_object_write_sagas
@@ -93,7 +93,7 @@ on conflict (reservation_id) do nothing returning reservation_id, revision::text
  payload, quality_metrics, raw_artifact_path, idempotency_key, created_at, completed_at, error_code,
  tenant_id, canonical_case_id, canonical_extraction_id, canonical_document_id, canonical_analysis_run_id)
 select private.canonical_text_uuid('extraction', $3), private.canonical_text_uuid('document', $4),
-case when $5 is null then null else private.canonical_text_uuid('analysis_run', $5) end,
+case when $5::text is null then null else private.canonical_text_uuid('analysis_run', $5::text) end,
 $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb, $13, $14, $15::timestamptz, $16::timestamptz, $17,
 $1, $2, $3, $4, $5
 from public.documents d
@@ -119,7 +119,7 @@ where tenant_id = $1 and canonical_case_id = $2 and fact_id = $3 order by revisi
 (fact_id, revision, tenant_id, case_id, analysis_run_id, payload, payload_sha256, created_at,
  canonical_case_id, canonical_analysis_run_id)
 select $3, $4::bigint, $1, private.resolve_engine_case_id($1, $2),
-case when $5 is null then null else private.canonical_text_uuid('analysis_run', $5) end,
+case when $5::text is null then null else private.canonical_text_uuid('analysis_run', $5::text) end,
 $6::jsonb, $7, $8::timestamptz, $2, $5
 where exists (select 1 from public.engine_case_state where tenant_id = $1 and canonical_case_id = $2)
 on conflict (fact_id, revision) do nothing returning fact_id, revision::text, payload, payload_sha256`),

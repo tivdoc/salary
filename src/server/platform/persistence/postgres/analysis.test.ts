@@ -358,6 +358,8 @@ describe("V0.9 W2 canonical PostgreSQL analysis adapters", () => {
     expect(insert.text).toContain("private.canonical_text_uuid('confirmation', $4)");
     expect(insert.text).toContain("canonical_source_message_id");
     expect(insert.text).not.toContain("$4::uuid");
+    expect(insert.values[7]).toBeNull();
+    expect(insert.values[8]).toBeNull();
 
     const corrupt = new RecordingClient((query) => query.name === "analysis_findings_disabled"
       ? result([{ finding_count: "1" }])

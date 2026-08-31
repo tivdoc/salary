@@ -50,7 +50,8 @@ describe("hermetic product sessions", () => {
     expect(manager.verify(request("/api/portal/cases?role=customer_owner", { headers: { cookie: `${PRODUCT_SESSION_COOKIE}=${token}` } }), "portal", false)).toBeNull();
     expect(manager.verify(request("/api/portal/cases", { headers: { "x-tivdoc-role": "customer_owner", cookie: `${PRODUCT_SESSION_COOKIE}=${token}` } }), "portal", false)).toBeNull();
     expect(manager.verify(request("/api/portal/cases", { headers: { cookie: "actor=owner-a; role=customer_owner" } }), "portal", false)).toBeNull();
-    expect(manager.verify(request("/api/portal/cases", { headers: { cookie: `${PRODUCT_SESSION_COOKIE}=${token.slice(0, -1)}x` } }), "portal", false)).toBeNull();
+    const replacement = token.endsWith("x") ? "y" : "x";
+    expect(manager.verify(request("/api/portal/cases", { headers: { cookie: `${PRODUCT_SESSION_COOKIE}=${token.slice(0, -1)}${replacement}` } }), "portal", false)).toBeNull();
   });
 
   it("requires same-origin CSRF for mutations and makes logout revoke the session", () => {
