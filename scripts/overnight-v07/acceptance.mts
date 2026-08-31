@@ -80,6 +80,7 @@ const artifacts = await hashArtifacts([
   "output/overnight-v0.7/p4/ground-truth/manifest.json",
   "output/overnight-v0.7/p4/shadow/manifest.json",
   "output/overnight-v0.7/p8/ready-receipt.json",
+  "output/overnight-v0.7/visual/visual-verification.json",
 ]);
 
 const fullTestOutput = await readFile(path.join(commandOutputRoot, `${String(commands.findIndex((command) => command.id === "ONE_SEQUENTIAL_FULL_TEST_SUITE") + 1).padStart(3, "0")}-ONE_SEQUENTIAL_FULL_TEST_SUITE.stdout.txt`), "utf8");
