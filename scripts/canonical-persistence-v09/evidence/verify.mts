@@ -78,7 +78,7 @@ assert((await stat(zipPath)).isFile(), "EVIDENCE_ZIP_NOT_FILE");
 const listing = spawnSync("tar", ["-tf", zipPath], { encoding: "utf8", windowsHide: true });
 assert(listing.status === 0, `EVIDENCE_ZIP_LIST_FAILED:${listing.stderr ?? ""}`);
 const archivePaths = (listing.stdout ?? "").split(/\r?\n/u).filter(Boolean).map(normalizeRelative);
-archivePaths.forEach(assertSafeRelative);
+archivePaths.forEach((value) => assertSafeRelative(value, true));
 assert(new Set(archivePaths).size === archivePaths.length, "EVIDENCE_ZIP_PATH_DUPLICATE");
 const expectedArchivePaths = [...payloadPaths, "evidence-manifest.json"].map(normalizeRelative);
 assert(JSON.stringify(archivePaths) === JSON.stringify(expectedArchivePaths), "EVIDENCE_ZIP_CONTENT_SET_OR_ORDER_MISMATCH");
@@ -101,12 +101,13 @@ function normalizeRelative(value: string): string {
   return path.posix.normalize(value.replaceAll("\\", "/"));
 }
 
-function assertSafeRelative(value: string): void {
+function assertSafeRelative(value: string, allowManifest = false): void {
   assert(value.length > 0 && value.length <= 240, "EVIDENCE_PAYLOAD_PATH_LENGTH_INVALID");
   const normalized = normalizeRelative(value);
   assert(normalized === value, "EVIDENCE_PAYLOAD_PATH_NOT_NORMALIZED");
   assert(!path.isAbsolute(value) && !value.includes("\\") && !value.split("/").includes(".."), "EVIDENCE_PAYLOAD_PATH_UNSAFE");
-  assert(!["evidence-manifest.json", "evidence-wrapper-receipt.json", "tivdoc-canonical-postgresql-persistence-v0.9.0.zip", "independent-verifier-stdout.jsonl", "independent-verifier-stderr.txt"].includes(value), "EVIDENCE_SELF_REFERENCE_FORBIDDEN");
+  const forbidden = ["evidence-wrapper-receipt.json", "tivdoc-canonical-postgresql-persistence-v0.9.0.zip", "independent-verifier-stdout.jsonl", "independent-verifier-stderr.txt"];
+  assert((allowManifest && value === "evidence-manifest.json") || !["evidence-manifest.json", ...forbidden].includes(value), "EVIDENCE_SELF_REFERENCE_FORBIDDEN");
 }
 
 function parseJson<T>(bytes: Uint8Array, code: string): T {

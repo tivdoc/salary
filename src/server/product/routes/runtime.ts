@@ -1,7 +1,6 @@
 import "./server-boundary.ts";
 
 import type { CustomerPortalService } from "../customer-portal/service.ts";
-import type { CanonicalApplicationPostgresComposition } from "../../platform/composition/canonical-postgres-application.ts";
 import { resolveInternalOpsRuntime } from "../internal-ops/runtime.ts";
 import type { InternalOpsService } from "../internal-ops/service.ts";
 
@@ -10,9 +9,15 @@ export type CanonicalProductRouteServices = Readonly<{
   operations?: InternalOpsService;
 }>;
 
+/** Structural view keeps route imports version-neutral while the root owns concrete adapters. */
+export type CanonicalApplicationPersistence = Readonly<{
+  mode: "memory_test_only" | "isolated_postgres" | "disabled";
+  durable: boolean;
+}>;
+
 export type CanonicalProductApplicationComposition = Readonly<{
   services: CanonicalProductRouteServices;
-  persistence: CanonicalApplicationPostgresComposition<unknown> | null;
+  persistence: CanonicalApplicationPersistence | null;
   proof_class: "POSTGRESQL_EXECUTION_PROOF" | "STATIC_OR_RECORDING_DRIVER_PROOF" | "HERMETIC_MEMORY_TEST_ONLY";
 }>;
 
@@ -48,7 +53,7 @@ export function resolveCanonicalOperationsService(): InternalOpsService | null {
   return runtimeGlobal().__tivdocCanonicalProductRouteServices?.operations ?? resolveInternalOpsRuntime().service;
 }
 
-export function resolveCanonicalApplicationPersistence(): CanonicalApplicationPostgresComposition<unknown> | null {
+export function resolveCanonicalApplicationPersistence(): CanonicalApplicationPersistence | null {
   return runtimeGlobal().__tivdocCanonicalProductApplicationComposition?.persistence ?? null;
 }
 
