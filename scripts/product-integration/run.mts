@@ -120,12 +120,18 @@ await writeHistoricalArtifactIndex();
 
 const commandPass = new Map(commandResults.map((result) => [result.id, result.outcome === "PASS"]));
 const all = (...ids: string[]) => ids.every((id) => commandPass.get(id) === true);
+const persistenceMap = JSON.parse(await readFile(path.join(evidenceRoot, "persistence", "persistence-wiring-map.json"), "utf8")) as Readonly<{
+  summary: Readonly<{ status: string; blocker: string; wired_durable_count: number }>;
+}>;
+const persistenceWiringComplete = persistenceMap.summary.status === "CANONICAL_PERSISTENCE_WIRING_COMPLETE" && persistenceMap.summary.wired_durable_count > 0;
+const isolatedOutput = await readFile(path.join(finalRoot, "commands", "PERSISTENCE_ISOLATED.stdout.log"), "utf8");
+const isolatedPostgresVerified = /ISOLATED_POSTGRESQL_VERIFIED/.test(isolatedOutput);
 const ci = [
   ciResult("CI-01", all("CANONICAL_REACHABILITY"), ["CANONICAL_REACHABILITY"]),
   ciResult("CI-02", all("CANONICAL_REACHABILITY", "PERSISTENCE_WIRING"), ["CANONICAL_REACHABILITY", "PERSISTENCE_WIRING"]),
   ciResult("CI-03", all("PRODUCT_ROUTES"), ["PRODUCT_ROUTES"]),
   ciResult("CI-04", all("PRODUCT_ROUTES"), ["PRODUCT_ROUTES"]),
-  ciResult("CI-05", all("PERSISTENCE_WIRING", "PERSISTENCE_STATIC"), ["PERSISTENCE_WIRING", "PERSISTENCE_STATIC"]),
+  ciResult("CI-05", persistenceWiringComplete && all("PERSISTENCE_WIRING", "PERSISTENCE_STATIC"), ["PERSISTENCE_WIRING", "PERSISTENCE_STATIC"]),
   ciResult("CI-06", all("PERSISTENCE_WIRING"), ["PERSISTENCE_WIRING"]),
   ciResult("CI-07", all("PERSISTENCE_STATIC"), ["PERSISTENCE_STATIC"]),
   ciResult("CI-08", all("PRODUCT_ROUTES", "PRODUCT_E2E_NEGATIVE"), ["PRODUCT_ROUTES", "PRODUCT_E2E_NEGATIVE"]),
@@ -147,13 +153,12 @@ const ci = [
 ];
 if (JSON.stringify(ci.map((item) => item.id)) !== JSON.stringify(contract.acceptance_ids)) throw new Error("ACCEPTANCE_ID_ORDER_MISMATCH");
 const complete = ci.every((item) => item.status === "PASS");
-const persistenceWiringComplete = all("PERSISTENCE_WIRING", "PERSISTENCE_STATIC");
 const acceptanceReceipt = Object.freeze({
   schema_version: "tivdoc-product-integration-acceptance-v0.8.0",
   overall_status: complete ? "CANONICAL_PRODUCT_INTEGRATION_CLOSURE_LOCALLY_COMPLETE" : "CANONICAL_PRODUCT_INTEGRATION_CLOSURE_PARTIAL",
   persistence_status: persistenceWiringComplete
-    ? ["CANONICAL_PERSISTENCE_WIRING_COMPLETE", isolatedDatabaseVerified() ? "ISOLATED_POSTGRESQL_VERIFIED" : "DYNAMIC_DATABASE_VERIFICATION_PENDING"]
-    : ["CANONICAL_PERSISTENCE_WIRING_INCOMPLETE", "CASE_ANALYSIS_NON_DURABLE_ONLY"],
+    ? ["CANONICAL_PERSISTENCE_WIRING_COMPLETE", isolatedPostgresVerified ? "ISOLATED_POSTGRESQL_VERIFIED" : "DYNAMIC_DATABASE_VERIFICATION_PENDING"]
+    : [persistenceMap.summary.status, persistenceMap.summary.blocker],
   ci,
   counts: {
     acceptance_passed: ci.filter((item) => item.status === "PASS").length,
@@ -324,16 +329,6 @@ async function walk(directory: string): Promise<string[]> {
 
 function ciResult(id: string, pass: boolean, evidence: readonly string[]) {
   return Object.freeze({ id, status: pass ? "PASS" as const : "FAILED_LOCAL" as const, evidence });
-}
-
-function isolatedDatabaseVerified(): boolean {
-  const result = commandResults.find((item) => item.id === "PERSISTENCE_ISOLATED");
-  if (result?.outcome !== "PASS") return false;
-  try {
-    return /ISOLATED_POSTGRESQL_VERIFIED/.test(execFileSync(node, ["-e", "process.stdout.write('')"], { encoding: "utf8" }));
-  } catch {
-    return false;
-  }
 }
 
 async function writeJson(file: string, value: unknown): Promise<void> {

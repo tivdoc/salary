@@ -10,7 +10,7 @@
       "canonical_use_case": "CustomerPortalService.getCaseProjection",
       "repository_ports": ["canonical customer case projection repository"],
       "storage_ports": [],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "/api/portal-v07/case/:caseId",
@@ -21,7 +21,7 @@
       "canonical_use_case": "CustomerPortalService.getCaseProjection",
       "repository_ports": ["canonical customer case projection repository"],
       "storage_ports": [],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "NOT_APPLICABLE",
@@ -43,7 +43,7 @@
       "canonical_use_case": "CustomerPortalService.answerClarification",
       "repository_ports": ["canonical clarification and declared fact candidate repositories", "canonical idempotency repository"],
       "storage_ports": [],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "/api/portal-v07/case/:caseId/privacy",
@@ -54,7 +54,7 @@
       "canonical_use_case": "CustomerPortalService.createPrivacyRequest",
       "repository_ports": ["canonical privacy request repository", "canonical audit repository", "canonical idempotency repository"],
       "storage_ports": [],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "/api/portal-v07/case/:caseId/reports",
@@ -65,7 +65,7 @@
       "canonical_use_case": "CustomerPortalService.listReports",
       "repository_ports": ["canonical report and release repositories", "verified product evidence repository"],
       "storage_ports": [],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "/api/portal-v07/case/:caseId/reports/:reportId/grant",
@@ -76,7 +76,7 @@
       "canonical_use_case": "CustomerPortalService.createReportAccessGrant",
       "repository_ports": ["canonical report, approval and release repositories"],
       "storage_ports": ["canonical private report object storage"],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "/api/portal-v07/reports/download",
@@ -87,7 +87,7 @@
       "canonical_use_case": "CustomerPortalService.downloadReport",
       "repository_ports": ["canonical report, approval and release repositories"],
       "storage_ports": ["canonical private report object storage exact-byte read"],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "/internal-ops-v07",
@@ -98,7 +98,7 @@
       "canonical_use_case": "InternalOpsService read and mutate methods",
       "repository_ports": ["canonical operations projection and command repositories"],
       "storage_ports": ["canonical private report object storage"],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "/api/internal-ops-v07/:resource*",
@@ -109,7 +109,7 @@
       "canonical_use_case": "InternalOpsService.read or InternalOpsService.mutate",
       "repository_ports": ["canonical case, payment, document, extraction, fact, readiness, analysis, report and audit repositories", "canonical idempotency repository"],
       "storage_ports": ["canonical private document and report object storage"],
-      "legacy_disposition": "LEGACY_DELEGATE_DEFAULT_OFF"
+      "legacy_disposition": "REMOVED_AFTER_PROOF"
     },
     {
       "legacy_route": "NOT_APPLICABLE",

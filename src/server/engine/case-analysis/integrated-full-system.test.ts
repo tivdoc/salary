@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CaseLifecycleState, CaseReviewDecision, PaymentEvidenceSnapshot } from "../../../engine/wave3/contracts.ts";
 import { COMPLETE_THREE_PERIOD_FIXTURE, PARTIAL_THREE_PERIOD_FIXTURE, buildSyntheticCaseFixture } from "../../../engine/case-analysis/synthetic-fixtures.ts";
 import { SYNTHETIC_CATALOG_DATE, SYNTHETIC_POPULATION, SYNTHETIC_SECTOR } from "../../../engine/legal-operations/synthetic-fixtures.ts";
+import { HEBREW_REPORT_PAGE_COUNT } from "../../reports/deterministic-hebrew-pdf.ts";
 import { createIntegratedFullSystemHarness } from "./integrated-harness.ts";
 
 function integratedCommand(fixture: ReturnType<typeof buildSyntheticCaseFixture>, revision = 1) {
@@ -64,7 +65,7 @@ describe("merged Wave 3 full-system path", () => {
     expect(bundle.known_subtotal).toEqual({ currency: "ZZZ", minor_units: 2800 });
     expect(run?.report?.json_sha256).toMatch(/^[a-f0-9]{64}$/);
     const parsedPdf = await PDFDocument.load(run!.report!.pdf);
-    expect(parsedPdf.getPageCount()).toBe(1);
+    expect(parsedPdf.getPageCount()).toBe(HEBREW_REPORT_PAGE_COUNT);
     expect(parsedPdf.getSubject()).toContain(`case=${bundle.case_id}`);
     const replay = await harness.application.replay(bundle.analysis_run_id);
     const repeated = await harness.application.runCaseAnalysis(command);

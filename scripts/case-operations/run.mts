@@ -10,6 +10,7 @@ import {
 import { InMemoryCaseReviewService, ManualExportEligibilityService } from "../../src/engine/case-operations/review.ts";
 import { InMemoryVerifiedPaymentEvidenceStore } from "../../src/server/engine/case-operations/verified-payment-evidence.ts";
 import { DeterministicCaseReportBuilder, reopenReportPdf } from "../../src/server/reports/deterministic-report-builder.ts";
+import { HEBREW_REPORT_PAGE_COUNT } from "../../src/server/reports/deterministic-hebrew-pdf.ts";
 import { syntheticReportBundle } from "../../src/server/reports/synthetic-report-fixture.ts";
 import type { CaseLifecycleState, PaymentEvidenceSnapshot } from "../../src/engine/wave3/contracts.ts";
 
@@ -223,7 +224,7 @@ async function resultFor(command: string) {
     { case_id: "CASE_REVIEW_003_NO_MONETARY_OVERRIDE", expected_result: true, actual_result: manualOverrideRejected, passed: manualOverrideRejected },
     { case_id: "CASE_REPORT_001", expected_result: true, actual_result: demo.reportStable, passed: demo.reportStable },
     { case_id: "CASE_REPORT_002", expected_result: 7, actual_result: demo.bundle.topic_results.length, passed: demo.bundle.topic_results.length === 7 },
-    { case_id: "CASE_PDF_001", expected_result: 1, actual_result: demo.reopened.page_count, passed: demo.reopened.page_count === 1 && demo.reopened.subject.includes(demo.report.report_id) },
+    { case_id: "CASE_PDF_001", expected_result: HEBREW_REPORT_PAGE_COUNT, actual_result: demo.reopened.page_count, passed: demo.reopened.page_count === HEBREW_REPORT_PAGE_COUNT && demo.reopened.subject.includes(`case=${caseId}`) },
     { case_id: "CASE_PRIVACY_001", expected_result: true, actual_result: privacyPassed, passed: privacyPassed },
     { case_id: "CASE_PAYMENT_HOLD_001_REFUND", expected_result: "release_hold", actual_result: refundHold.state, passed: refundHold.state === "release_hold" },
     { case_id: "CASE_PAYMENT_HOLD_002_CHARGEBACK", expected_result: "release_hold", actual_result: chargebackHold.state, passed: chargebackHold.state === "release_hold" },
