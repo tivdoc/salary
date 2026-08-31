@@ -1,0 +1,69 @@
+{
+  "schema_version": "tivdoc-canonical-postgresql-execution-contract-v0.9.0",
+  "frozen": true,
+  "base": {
+    "branch": "codex/tivdoc-engine-foundation",
+    "head": "8291f77cbf50d058429ef69eb74efece63b0e543",
+    "tree": "460f2be629e483f659184d422c675cf0799d69d3",
+    "ancestry_required": true,
+    "clean_required": true
+  },
+  "baseline": {
+    "capabilities": 14,
+    "statuses": {"IN_MEMORY_ONLY": 5, "IMPLEMENTED_NOT_WIRED": 6, "SCHEMA_ONLY": 3, "WIRED_DURABLE": 0},
+    "unknown": 0,
+    "duplicate_contracts": 0,
+    "product_reachable_memory_fallbacks": 0,
+    "reachability": {"files": 583, "nodes": 583, "edges": 2314, "product_entrypoints": 27, "unknown": 0}
+  },
+  "shared_postgres_contract": "src/server/platform/persistence/postgres/contracts.ts",
+  "worker_allowlists": {
+    "W1": [
+      "src/server/platform/persistence/postgres/intake/**",
+      "src/server/platform/persistence/postgres/intake.test.ts"
+    ],
+    "W2": [
+      "src/server/platform/persistence/postgres/analysis/**",
+      "src/server/platform/persistence/postgres/analysis.test.ts"
+    ],
+    "W3": [
+      "src/server/platform/persistence/postgres/runtime/**",
+      "src/server/platform/composition/canonical-postgres.ts",
+      "src/server/platform/composition/canonical-postgres.test.ts",
+      "supabase/migrations/202608310002_canonical_postgresql_composition.sql",
+      "scripts/canonical-persistence-v09/driver/**"
+    ]
+  },
+  "shared_file_owner": "orchestrator",
+  "shared_files": [
+    "package.json", "package-lock.json", ".gitignore",
+    "src/server/platform/persistence/wiring-map.ts",
+    "src/server/platform/composition/canonical-persistence.ts",
+    "src/server/product/routes/runtime.ts",
+    "src/server/product/integration/**",
+    "scripts/canonical-persistence-v09/acceptance/**",
+    "scripts/canonical-persistence-v09/evidence/**"
+  ],
+  "migration_plan": {
+    "historical_migrations_immutable": true,
+    "foundation_sha256": "cc1b809a012563ca1bc0214ccbd478af988300439e54f0b70968623e2dc4abc1",
+    "platform_sha256": "74e0615c6375b8cb87da5a09c6a8a29d4e27fe503793b14d767a2199d92c4460",
+    "forward_migration": "supabase/migrations/202608310002_canonical_postgresql_composition.sql"
+  },
+  "proof_classes": ["STATIC_PROOF", "STATIC_OR_RECORDING_DRIVER_PROOF", "POSTGRESQL_EXECUTION_PROOF"],
+  "acceptance_ids": [
+    "PC-01", "PC-02", "PC-03", "PC-04", "PC-05", "PC-06", "PC-07", "PC-08",
+    "PC-09", "PC-10", "PC-11", "PC-12", "PC-13", "PC-14", "PC-15", "PC-16",
+    "PC-17", "PC-18", "PC-19", "PC-20", "PC-21", "PC-22", "PC-23", "PC-24"
+  ],
+  "prohibited": [
+    "customer_data", "production", "preview", "deployment", "remote_database", "remote_migration",
+    "generic_DATABASE_URL", "supabase_credentials", "outbound_network", "openai_call", "legal_activation",
+    "historical_migration_edit", "automatic_memory_fallback", "interpolated_sql"
+  ],
+  "regression_commands": [
+    "product:routes:verify", "product:auth-boundary:verify", "product:pdf:hebrew:verify",
+    "product:e2e:synthetic", "product:e2e:negative", "lint", "typescript_no_emit", "full_suite", "build"
+  ],
+  "worker_receipt_fields": ["worker", "commit_sha", "tree_sha", "parent_sha", "stable_patch_id", "diffstat", "allowlist", "tests"]
+}
