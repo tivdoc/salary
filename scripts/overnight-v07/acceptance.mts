@@ -23,6 +23,7 @@ type CommandResult = Readonly<{
   stdout_sha256: string;
   stderr_path: string;
   stderr_sha256: string;
+  verified_head?: string;
   reused_from_previous_attempt?: boolean;
 }>;
 
@@ -68,11 +69,12 @@ const commands: readonly CommandSpec[] = [
   { id: "ONE_LOCAL_PRODUCTION_BUILD", executable: node, args: [npmCli, "run", "build", "--", "--webpack"] },
 ];
 
+const acceptanceHead = runGit(["rev-parse", "HEAD"]).trim();
 const previousResults = await loadPreviousResults();
 const commandResults: CommandResult[] = [];
 for (const [index, command] of commands.entries()) {
   const previous = previousResults.find((result) => result.id === command.id && result.outcome === "PASS");
-  if (command.id === "ONE_SEQUENTIAL_FULL_TEST_SUITE" && previous) {
+  if (command.id === "ONE_SEQUENTIAL_FULL_TEST_SUITE" && previous?.verified_head === acceptanceHead) {
     commandResults.push({ ...previous, reused_from_previous_attempt: true });
     continue;
   }
@@ -221,6 +223,7 @@ async function execute(spec: CommandSpec, ordinal: number): Promise<CommandResul
     stdout_sha256: sha256(stdout),
     stderr_path: stderrRelative,
     stderr_sha256: sha256(stderr),
+    verified_head: acceptanceHead,
   };
 }
 
