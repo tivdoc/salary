@@ -123,10 +123,32 @@ class PortalHttpError extends Error {
 function portalProblem(error: unknown): Response {
   if (error instanceof PortalHttpError && error.code === "STALE_REVISION") return productJson({ error: "revision_conflict" }, 409);
   if (error instanceof PortalHttpError) return productJson({ error: "invalid_request" }, 400);
-  if (error instanceof PortalError && error.code === "PORTAL_NOT_FOUND") return productNotFound();
-  if (error instanceof PortalError && error.code === "IDEMPOTENCY_KEY_COMMAND_MISMATCH") return productJson({ error: "idempotency_conflict" }, 409);
-  if (error instanceof PortalError) return productJson({ error: "invalid_request" }, 400);
+  const code = portalErrorCode(error);
+  if (code === "PORTAL_NOT_FOUND") return productNotFound();
+  if (code === "IDEMPOTENCY_KEY_COMMAND_MISMATCH") return productJson({ error: "idempotency_conflict" }, 409);
+  if (code) return productJson({ error: "invalid_request" }, 400);
   return productJson({ error: "request_failed" }, 500);
+}
+
+const PORTAL_ERROR_CODES = new Set([
+  "ARTIFACT_HASH_MISMATCH",
+  "CONSENT_VERSION_MISMATCH",
+  "EXPLICIT_CONFIRMATION_REQUIRED",
+  "IDEMPOTENCY_KEY_COMMAND_MISMATCH",
+  "INVALID_REQUEST",
+  "PORTAL_NOT_FOUND",
+  "REPORT_GRANT_EXPIRY_INVALID",
+  "SYNTHETIC_CASE_COLLISION",
+  "SYNTHETIC_INVITE_COLLISION",
+  "TEST_ADAPTER_FORBIDDEN_IN_PRODUCTION",
+  "UPLOAD_CONTRACT_INVALID",
+]);
+
+function portalErrorCode(error: unknown): string | null {
+  if (error instanceof PortalError) return error.code;
+  if (!error || typeof error !== "object" || !("code" in error)) return null;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" && PORTAL_ERROR_CODES.has(code) ? code : null;
 }
 
 function requiredRevision(value: Record<string, unknown>): number {

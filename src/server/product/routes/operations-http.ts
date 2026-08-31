@@ -110,6 +110,7 @@ function problemCode(error: unknown): OpsProblemCode {
   if (error instanceof InternalOpsError) return error.code;
   if (error && typeof error === "object" && "code" in error) {
     const code = (error as { code: unknown }).code;
+    if (typeof code === "string" && OPS_PROBLEM_CODES.has(code as OpsProblemCode)) return code as OpsProblemCode;
     const mapped: Readonly<Record<string, OpsProblemCode>> = Object.freeze({
       case_revision_conflict: "OPS_REVISION_CONFLICT",
       revision_conflict: "OPS_REVISION_CONFLICT",
@@ -123,6 +124,24 @@ function problemCode(error: unknown): OpsProblemCode {
   }
   return "OPS_COMMAND_REJECTED";
 }
+
+const OPS_PROBLEM_CODES = new Set<OpsProblemCode>([
+  "OPS_DISABLED",
+  "OPS_BACKEND_UNAVAILABLE",
+  "OPS_AUTH_REQUIRED",
+  "OPS_FORBIDDEN",
+  "OPS_INVALID_REQUEST",
+  "OPS_NOT_FOUND",
+  "OPS_REVISION_CONFLICT",
+  "OPS_IDEMPOTENCY_CONFLICT",
+  "OPS_LEGAL_READINESS_BLOCKED",
+  "OPS_EXACT_REPORT_APPROVAL_REQUIRED",
+  "OPS_MANUAL_EXPORT_DISABLED",
+  "OPS_SYNTHETIC_DISABLED",
+  "OPS_PRODUCTION_FIXTURE_FORBIDDEN",
+  "OPS_UPSTREAM_INVALIDATED",
+  "OPS_COMMAND_REJECTED",
+]);
 
 function statusFor(code: OpsProblemCode): number {
   if (code === "OPS_AUTH_REQUIRED") return 401;

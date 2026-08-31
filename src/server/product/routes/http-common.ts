@@ -38,7 +38,16 @@ export function exactObjectKeys(value: Record<string, unknown>, expected: readon
 
 export function safeSegments(raw: readonly string[]): readonly string[] | null {
   if (raw.length < 1 || raw.length > 7) return null;
-  return raw.every((segment) => /^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$/.test(segment) && segment !== "." && segment !== "..")
-    ? Object.freeze([...raw])
-    : null;
+  const decoded: string[] = [];
+  for (const segment of raw) {
+    let value: string;
+    try {
+      value = decodeURIComponent(segment);
+    } catch {
+      return null;
+    }
+    if (!/^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$/.test(value) || value === "." || value === "..") return null;
+    decoded.push(value);
+  }
+  return Object.freeze(decoded);
 }

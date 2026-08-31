@@ -59,7 +59,14 @@ describe("hermetic product sessions", () => {
     const cookie = `${PRODUCT_SESSION_COOKIE}=${cookieValue(issued.cookie)}`;
     const headers = { cookie, origin: "http://127.0.0.1:43123", [PRODUCT_CSRF_HEADER]: issued.csrf_token };
     expect(manager.verify(request("/api/portal/cases/case-a/privacy", { method: "POST", headers }), "portal", true)).not.toBeNull();
+    const nextNormalizedRequest = new Request("http://localhost:43123/api/portal/cases/case-a/privacy", {
+      method: "POST",
+      headers: { ...headers, host: "127.0.0.1:43123" },
+    });
+    expect(manager.verify(nextNormalizedRequest, "portal", true)).not.toBeNull();
     expect(manager.verify(request("/api/portal/cases/case-a/privacy", { method: "POST", headers: { ...headers, origin: "http://attacker.invalid" } }), "portal", true)).toBeNull();
+    expect(manager.verify(new Request("http://localhost:43123/api/portal/cases/case-a/privacy", { method: "POST", headers: { ...headers, host: "attacker.invalid" } }), "portal", true)).toBeNull();
+    expect(manager.verify(new Request("http://localhost:43123/api/portal/cases/case-a/privacy", { method: "POST", headers: { ...headers, host: "127.0.0.1:43123/path" } }), "portal", true)).toBeNull();
     expect(manager.verify(request("/api/portal/cases/case-a/privacy", { method: "POST", headers: { ...headers, [PRODUCT_CSRF_HEADER]: "invalid" } }), "portal", true)).toBeNull();
     expect(manager.revoke(request("/api/portal/session", { method: "DELETE", headers }), "portal")).toContain("Max-Age=0");
     expect(manager.verify(request("/api/portal/cases", { headers: { cookie } }), "portal", false)).toBeNull();

@@ -95,6 +95,27 @@ export class SyntheticPortalRepository {
     this.artifacts.set(record.object_version_id, Uint8Array.from(bytes));
   }
 
+  recordSyntheticLifecycleTransition(
+    caseId: string,
+    actorId: string,
+    lifecycleState: PortalCaseRecord["lifecycle_state"],
+    blockerCodes: readonly string[],
+    mutationSha256: string,
+  ): void {
+    const current = this.cases.get(caseId);
+    if (!current) throw new PortalError("PORTAL_NOT_FOUND");
+    const revision = current.revision + 1;
+    this.cases.set(caseId, Object.freeze({
+      ...current,
+      revision,
+      lifecycle_state: lifecycleState,
+      lifecycle_history: Object.freeze([...current.lifecycle_history, Object.freeze({ revision, lifecycle_state: lifecycleState, occurred_at: this.clock.now() })]),
+      blocker_codes: Object.freeze([...new Set(blockerCodes)].sort()),
+    }));
+    if (lifecycleState === "release_hold") this.invalidateReleasedReports(caseId, mutationSha256);
+    this.appendAudit(caseId, actorId, `synthetic_lifecycle_${lifecycleState}`, mutationSha256);
+  }
+
   case(caseId: string): PortalCaseRecord | null { return clone(this.cases.get(caseId) ?? null); }
   tasksForCase(caseId: string): readonly CustomerClarificationTask[] { return clone(this.tasks.get(caseId) ?? []); }
   reportsForCase(caseId: string): readonly StoredReportEdition[] { return clone(this.reports.get(caseId) ?? []); }

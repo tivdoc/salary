@@ -76,7 +76,7 @@ export class HermeticSessionManager {
     const record = configuration.tickets.get(ticket);
     if (!record || record.audience !== audience || !roleAllowedForAudience(record.actor.role, audience)) return null;
     const issuedAt = this.#now();
-    const expiresAt = issuedAt + MAX_SESSION_SECONDS;
+    const expiresAt = issuedAt + configuration.maxSessionSeconds;
     const claims: SessionClaims = Object.freeze({
       version: 1,
       mode: "local_hermetic",
@@ -105,7 +105,7 @@ export class HermeticSessionManager {
     if (!claims || claims.audience !== audience || claims.mode !== "local_hermetic") return null;
     if (!this.#activeSessionIds.has(claims.session_id)) return null;
     const now = this.#now();
-    if (claims.issued_at_epoch > now + 5 || claims.expires_at_epoch <= now || claims.expires_at_epoch - claims.issued_at_epoch > MAX_SESSION_SECONDS) return null;
+    if (claims.issued_at_epoch > now + 5 || claims.expires_at_epoch <= now || claims.expires_at_epoch - claims.issued_at_epoch > configuration.maxSessionSeconds) return null;
     if (!roleAllowedForAudience(claims.actor.role, audience)) return null;
     if (requireCsrf && !validCsrf(request, claims.csrf_token)) return null;
     return Object.freeze({
@@ -127,14 +127,15 @@ export class HermeticSessionManager {
     return expireCookie(new URL(request.url).protocol === "https:");
   }
 
-  #configurationFor(request: Request): Readonly<{ secret: string; tickets: ReadonlyMap<string, TicketRecord> }> | null {
+  #configurationFor(request: Request): Readonly<{ secret: string; tickets: ReadonlyMap<string, TicketRecord>; maxSessionSeconds: number }> | null {
     if (!isLoopbackUrl(request.url)) return null;
     if (this.#nodeEnv === "production" || this.#vercelEnv === "production" || this.#vercelEnv === "preview") return null;
     if (!enabled(this.#environment.TIVDOC_HERMETIC_MODE)) return null;
     const secret = this.#environment.TIVDOC_PRODUCT_SESSION_SECRET;
     if (!secret || Buffer.byteLength(secret, "utf8") < 32) return null;
     const tickets = parseTickets(this.#environment.TIVDOC_PRODUCT_HERMETIC_TICKETS_JSON);
-    return tickets ? Object.freeze({ secret, tickets }) : null;
+    const maxSessionSeconds = parseSessionSeconds(this.#environment.TIVDOC_PRODUCT_SESSION_MAX_AGE_SECONDS);
+    return tickets && maxSessionSeconds !== null ? Object.freeze({ secret, tickets, maxSessionSeconds }) : null;
   }
 }
 
@@ -238,7 +239,7 @@ function validCsrf(request: Request, expected: string): boolean {
   const right = Buffer.from(expected, "utf8");
   if (left.byteLength !== right.byteLength || !timingSafeEqual(left, right)) return false;
   const origin = request.headers.get("origin");
-  if (!origin || origin !== new URL(request.url).origin) return false;
+  if (!origin || !sameHermeticOrigin(origin, request.url, request.headers.get("host"))) return false;
   const fetchSite = request.headers.get("sec-fetch-site");
   return fetchSite === null || fetchSite === "same-origin";
 }
@@ -267,6 +268,38 @@ function isLoopbackUrl(value: string): boolean {
 
 function enabled(value: string | undefined): boolean {
   return value === "1" || value === "true";
+}
+
+function sameHermeticOrigin(supplied: string, requestUrl: string, host: string | null): boolean {
+  let suppliedUrl: URL;
+  let request: URL;
+  try {
+    suppliedUrl = new URL(supplied);
+    request = new URL(requestUrl);
+  } catch {
+    return false;
+  }
+  if (!loopbackHostname(suppliedUrl.hostname) || !loopbackHostname(request.hostname)) return false;
+  if (host === null) return suppliedUrl.origin === request.origin;
+  if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(host)) return false;
+  let hostOrigin: URL;
+  try {
+    hostOrigin = new URL(`${request.protocol}//${host}`);
+  } catch {
+    return false;
+  }
+  return loopbackHostname(hostOrigin.hostname) && suppliedUrl.origin === hostOrigin.origin;
+}
+
+function loopbackHostname(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1";
+}
+
+function parseSessionSeconds(value: string | undefined): number | null {
+  if (value === undefined) return MAX_SESSION_SECONDS;
+  if (!/^\d{1,3}$/.test(value)) return null;
+  const seconds = Number(value);
+  return Number.isSafeInteger(seconds) && seconds >= 1 && seconds <= MAX_SESSION_SECONDS ? seconds : null;
 }
 
 function serializeCookie(token: string, maxAge: number, secure: boolean): string {

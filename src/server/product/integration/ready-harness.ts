@@ -90,6 +90,13 @@ type IntegratedCaseState = Readonly<{
   blocker_codes: readonly string[];
 }>;
 
+export type P8BrowserRuntimeHooks = Readonly<{
+  afterAnalysisRequest(command: TrustedInternalOpsCommand): Promise<void>;
+  afterReportApproval(command: TrustedInternalOpsCommand): Promise<void> | void;
+  afterPaymentReconcile(command: TrustedInternalOpsCommand): Promise<void> | void;
+  declaredCandidates(caseId: string): readonly Readonly<{ candidate_id: string; fact_path: string; candidate_sha256: string; conflicting_documented_fact_ids: readonly string[] }>[];
+}>;
+
 function sha(value: Uint8Array | string): string {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -185,6 +192,7 @@ class P1BackedOpsAdapter implements InternalOpsProjectionPort, InternalOpsComman
   readonly store: LocalDurablePlatformStore;
   readonly payments: InMemoryVerifiedPaymentEvidenceStore;
   readonly #artifacts = new Map<string, Uint8Array>();
+  #browserRuntimeHooks: P8BrowserRuntimeHooks | null = null;
 
   constructor(store: LocalDurablePlatformStore, payments: InMemoryVerifiedPaymentEvidenceStore) {
     this.store = store;
@@ -193,6 +201,12 @@ class P1BackedOpsAdapter implements InternalOpsProjectionPort, InternalOpsComman
 
   state(caseId: string): IntegratedCaseState | null {
     return (this.store.current("cases", caseId)?.payload as IntegratedCaseState | undefined) ?? null;
+  }
+
+  installBrowserRuntimeHooks(hooks: P8BrowserRuntimeHooks): void {
+    if (process.env.NODE_ENV === "production") throw new Error("P8_BROWSER_RUNTIME_HOOKS_PRODUCTION_FORBIDDEN");
+    if (this.#browserRuntimeHooks) throw new Error("P8_BROWSER_RUNTIME_HOOKS_ALREADY_INSTALLED");
+    this.#browserRuntimeHooks = Object.freeze(hooks);
   }
 
   attachCanonicalAnalysis(caseId: string, input: Readonly<{
@@ -205,12 +219,13 @@ class P1BackedOpsAdapter implements InternalOpsProjectionPort, InternalOpsComman
     coverage_complete: boolean;
     bytes: Uint8Array;
     actor_id: string;
+    submit_for_approval?: boolean;
   }>): Promise<MutationResultProjection> {
     const current = this.required(caseId);
     const next: IntegratedCaseState = Object.freeze({
       ...current,
       revision: current.revision + 1,
-      state: "awaiting_legal_review",
+      state: input.submit_for_approval ? "awaiting_report_approval" : "awaiting_legal_review",
       updated_at: P8_NOW,
       analysis_run_id: input.analysis_run_id,
       analysis_result_sha256: input.analysis_result_sha256,
@@ -221,7 +236,7 @@ class P1BackedOpsAdapter implements InternalOpsProjectionPort, InternalOpsComman
         analysis_result_sha256: input.analysis_result_sha256,
         artifact_sha256: input.artifact_sha256,
         object_version_id: input.object_version_id,
-        status: "internal_draft",
+        status: input.submit_for_approval ? "awaiting_approval" : "internal_draft",
         coverage_complete: input.coverage_complete,
         approval_receipt_sha256: null,
         last_content_actor_id: input.actor_id,
@@ -265,7 +280,17 @@ class P1BackedOpsAdapter implements InternalOpsProjectionPort, InternalOpsComman
         if (!bytes) throw Object.freeze({ code: "exact_report_approval_required" });
         return Object.freeze({ mutation, format: command.payload.format, media_type: "application/pdf" as const, artifact_sha256: report.artifact_sha256, bytes: Uint8Array.from(bytes) });
       }
-      return mutation;
+      if (!receipt.idempotent_replay && command.payload.action === "analysis_request" && this.#browserRuntimeHooks) {
+        await this.#browserRuntimeHooks.afterAnalysisRequest(command);
+      }
+      if (!receipt.idempotent_replay && command.payload.action === "report_approve" && this.#browserRuntimeHooks) {
+        await this.#browserRuntimeHooks.afterReportApproval(command);
+      }
+      if (!receipt.idempotent_replay && command.payload.action === "payment_reconcile" && this.#browserRuntimeHooks) {
+        await this.#browserRuntimeHooks.afterPaymentReconcile(command);
+      }
+      const postHook = this.required(caseId);
+      return this.mutation(postHook, receipt.command_sha256, receipt.audit_event_sha256, receipt.idempotent_replay);
     } catch (error) {
       if (error instanceof PlatformPersistenceError) {
         if (error.code === "CASE_REVISION_CONFLICT" || error.code === "ENTITY_REVISION_CONFLICT") throw Object.freeze({ code: "case_revision_conflict" });
@@ -302,7 +327,13 @@ class P1BackedOpsAdapter implements InternalOpsProjectionPort, InternalOpsComman
   }
   async facts(_actor: VerifiedActor, caseId: string): Promise<FactsProjection | null> {
     const state = this.state(caseId); if (!state) return null;
-    return Object.freeze({ schema_version: INTERNAL_OPS_SCHEMA_VERSION, case_id: caseId, snapshot_sha256: state.facts_sha256, facts: state.facts_sha256 ? [{ fact_id: "fact0001", canonical_path: "documents.period", status: "confirmed" as const, provenance_count: 1, conflict_count: 0 }] : [] });
+    const declared = this.#browserRuntimeHooks?.declaredCandidates(caseId) ?? [];
+    const facts = [
+      ...(state.facts_sha256 ? [{ fact_id: "fact0001", canonical_path: "documents.period", status: "confirmed" as const, provenance_count: 1, conflict_count: 0 }] : []),
+      ...declared.map((candidate) => ({ fact_id: candidate.candidate_id, canonical_path: candidate.fact_path, status: "needs_confirmation" as const, provenance_count: 1, conflict_count: candidate.conflicting_documented_fact_ids.length })),
+    ];
+    const snapshotSha = state.facts_sha256 === null ? null : declared.length === 0 ? state.facts_sha256 : canonicalSha256({ confirmed_snapshot_sha256: state.facts_sha256, declared_candidates: declared.map((item) => item.candidate_sha256) });
+    return Object.freeze({ schema_version: INTERNAL_OPS_SCHEMA_VERSION, case_id: caseId, snapshot_sha256: snapshotSha, facts });
   }
   async readiness(_actor: VerifiedActor, caseId: string): Promise<ReadinessProjection | null> {
     const state = this.state(caseId); if (!state) return null;
