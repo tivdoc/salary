@@ -1,0 +1,215 @@
+{
+  "schema_version": "tivdoc-product-integration-execution-contract-v0.8.0",
+  "frozen": true,
+  "base": {
+    "branch": "codex/tivdoc-engine-foundation",
+    "head": "1eb3312d716b5f528302bfca9cb5164af64ad9d4",
+    "tree": "80b7623fd320bb3e0b454f2adf175bdc188605ab",
+    "ancestry_required": true,
+    "clean_required": true
+  },
+  "objective_path": [
+    "rendered_ui",
+    "loopback_http",
+    "signed_server_session",
+    "authorization_policy",
+    "canonical_application_service",
+    "canonical_composition_root",
+    "repository_and_private_storage",
+    "synthetic_seven_topic_analysis",
+    "canonical_hebrew_report",
+    "exact_hash_approval",
+    "owner_scoped_download"
+  ],
+  "non_test_entrypoints": [
+    "src/app/**/page.tsx",
+    "src/app/**/route.ts",
+    "src/app/layout.tsx",
+    "src/server/product/internal-ops/runtime.ts",
+    "src/server/product/customer-portal/api.ts",
+    "scripts/**/*.mts"
+  ],
+  "route_service_map_schema": {
+    "required_fields": [
+      "legacy_route",
+      "stable_route",
+      "feature_flag",
+      "auth_policy",
+      "required_role",
+      "canonical_use_case",
+      "repository_ports",
+      "storage_ports",
+      "legacy_disposition"
+    ],
+    "legacy_dispositions": ["LEGACY_DELEGATE_DEFAULT_OFF", "REMOVED_AFTER_PROOF", "NOT_APPLICABLE"]
+  },
+  "persistence_map_schema": {
+    "required_capabilities": [
+      "cases_and_lifecycle_revisions",
+      "payment_evidence_references",
+      "conversations_and_messages",
+      "documents_and_artifact_references",
+      "extractions",
+      "canonical_facts_and_conflicts",
+      "hypotheses_and_rule_inputs",
+      "corpus_source_parameter_rule_pins",
+      "analysis_runs_and_resume_cursors",
+      "per_topic_results",
+      "traces_findings_confirmations",
+      "reports_approvals_release_state",
+      "idempotency",
+      "jobs_fencing_outbox_audit"
+    ],
+    "required_fields": [
+      "capability",
+      "canonical_contract",
+      "implementation",
+      "tables_or_migration",
+      "ownership_key",
+      "revision_or_idempotency",
+      "transaction_boundary",
+      "composition_root_binding",
+      "non_test_callers",
+      "adapter_kinds",
+      "status"
+    ],
+    "statuses": [
+      "WIRED_DURABLE",
+      "IMPLEMENTED_NOT_WIRED",
+      "CONTRACT_ONLY",
+      "IN_MEMORY_ONLY",
+      "DUPLICATE_CONTRACT",
+      "SCHEMA_ONLY",
+      "MISSING"
+    ],
+    "runtime_modes": ["memory_test_only", "isolated_postgres", "disabled"]
+  },
+  "reachability_classification": {
+    "match_terms": ["v07", "v08", "wave", "overnight", "fixture", "synthetic", "in-memory", "InMemory"],
+    "classes": [
+      "PRODUCT_REACHABLE",
+      "TEST_ONLY",
+      "EVIDENCE_ONLY",
+      "LEGACY_DELEGATE",
+      "UNREACHABLE",
+      "DUPLICATE_CANONICAL_CONTRACT"
+    ],
+    "complete_import_graph_required": true,
+    "unknown_count_required": 0
+  },
+  "preflight_inventory": {
+    "legacy_product_ui": [
+      "src/app/internal-ops-v07/**",
+      "src/app/portal-v07/**",
+      "src/components/internal-ops-v07/**",
+      "src/components/portal-v07/**"
+    ],
+    "legacy_product_http": [
+      "src/app/api/internal-ops-v07/**",
+      "src/app/api/portal-v07/**"
+    ],
+    "canonical_product_services": [
+      "src/server/product/internal-ops/**",
+      "src/server/product/customer-portal/**"
+    ],
+    "integration_harness": ["src/server/product/integration/**"],
+    "canonical_analysis": [
+      "src/engine/case-analysis/**",
+      "src/server/engine/case-analysis/**"
+    ],
+    "canonical_case_operations": [
+      "src/engine/case-operations/**",
+      "src/server/engine/case-operations/**"
+    ],
+    "platform_adapters": [
+      "src/server/platform/persistence/**",
+      "src/server/platform/storage/**",
+      "src/server/platform/jobs/**",
+      "src/server/platform/audit/**"
+    ],
+    "v07_verifiers": [
+      "scripts/overnight-v07/acceptance.mts",
+      "scripts/overnight-v07/integration/run.mts"
+    ]
+  },
+  "v07_skipped_tests": [
+    {
+      "file": "src/server/engine/legal-knowledge/overnight-v07/p3.test.ts",
+      "suite": "P3 current-byte reconciliation and review workspace",
+      "test": "reconciles current corpus bytes and all seven topics without activation",
+      "reason": "describe.runIf requires TIVDOC_P3_CORPUS_STATE_ROOT; the ordinary full-suite environment does not supply an external corpus-state root",
+      "acceptance_impact": "current-byte corpus reconciliation is not exercised by the ordinary hermetic suite; it must remain an explicit environment receipt"
+    },
+    {
+      "file": "src/server/engine/legal-knowledge/overnight-v07/p3.test.ts",
+      "suite": "P3 current-byte reconciliation and review workspace",
+      "test": "builds and verifies 7 JSON/Markdown/static workspaces and rejects unsigned or stale decisions",
+      "reason": "describe.runIf requires TIVDOC_P3_CORPUS_STATE_ROOT; the ordinary full-suite environment does not supply an external corpus-state root",
+      "acceptance_impact": "external corpus workspace verification is not an unconditional local test and cannot be counted as product-path closure"
+    },
+    {
+      "file": "src/server/engine/legal-knowledge/overnight-v07/p3.test.ts",
+      "suite": "P3 current-byte reconciliation and review workspace",
+      "test": "loads all known bounded official acquisition targets from actual evidence",
+      "reason": "describe.runIf requires TIVDOC_P3_CORPUS_STATE_ROOT; the ordinary full-suite environment does not supply an external corpus-state root",
+      "acceptance_impact": "actual-evidence target loading remains environment-bound and does not alter the mandatory 0/7 inactive legal state"
+    }
+  ],
+  "worker_allowlists": {
+    "W1": [
+      "src/server/platform/composition/**",
+      "src/server/platform/persistence/**",
+      "src/server/platform/jobs/**",
+      "src/server/platform/audit/**",
+      "src/server/platform/storage/**",
+      "src/server/engine/persistence-contracts.ts",
+      "src/server/engine/case-analysis/**",
+      "scripts/platform/persistence/**",
+      "scripts/product-integration/persistence/**"
+    ],
+    "W2": [
+      "src/app/portal/**",
+      "src/app/operations/**",
+      "src/app/api/portal/**",
+      "src/app/api/operations/**",
+      "src/components/portal/**",
+      "src/components/operations/**",
+      "src/server/product/auth/**",
+      "src/server/product/routes/**",
+      "scripts/product-integration/routes/**"
+    ],
+    "W3": [
+      "src/server/reports/**",
+      "src/engine/reporting/**",
+      "assets/fonts/**",
+      "scripts/product-integration/report/**"
+    ]
+  },
+  "shared_file_ownership": {
+    "owner": "orchestrator",
+    "paths": [
+      "package.json",
+      "package-lock.json",
+      ".gitignore",
+      "src/app/layout.tsx",
+      "src/app/globals.css",
+      "src/server/product/integration/**",
+      "scripts/product-integration/run.mts",
+      "scripts/product-integration/evidence/**",
+      "output/product-integration-v0.8.0/**"
+    ]
+  },
+  "acceptance_ids": [
+    "CI-01", "CI-02", "CI-03", "CI-04", "CI-05", "CI-06", "CI-07", "CI-08",
+    "CI-09", "CI-10", "CI-11", "CI-12", "CI-13", "CI-14", "CI-15", "CI-16",
+    "CI-17", "CI-18", "CI-19", "CI-20", "CI-21", "CI-22", "CI-23"
+  ],
+  "worker_receipt_required_fields": [
+    "worker",
+    "commit_sha",
+    "tree_sha",
+    "stable_patch_id",
+    "diffstat",
+    "tests"
+  ]
+}
