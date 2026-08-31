@@ -15,7 +15,7 @@ import { InMemoryAdmissionLimiter, assertBoundedJsonInput, parameterizedSql, ren
 import type { StoredReportEdition } from "../customer-portal/contracts";
 import { SyntheticPortalRepository } from "../customer-portal/synthetic-repository";
 import { p8Check, P8_SCHEMA_VERSION, type P8Check, type P8ReadyReceipt } from "./contracts";
-import { NO_ELIGIBLE_PUBLIC_FIXTURE, pendingDependencies } from "./dependency-seams";
+import { NO_ELIGIBLE_PUBLIC_FIXTURE, pendingDependencies, verifyIntegratedP3P4 } from "./dependency-seams";
 import { P8_NOW, P8_NOW_MS, addSession, createP8Harness, opsEnvelope, opsRequest, storePdf, verifiedSyntheticActor } from "./ready-harness";
 
 const CASE_ID_EXPECTATION = /^[a-z][a-z0-9-]{7,63}$/;
@@ -232,11 +232,14 @@ export async function runP8ReadyIntegration(): Promise<P8ReadyReceipt> {
   const dryRun = operator.execute({ schema_version: "tivdoc-operator-command-v0.7.0", action: "backup_drill", actor_id: "operator01", reason_code: "BACKUP_DRILL_SCHEDULED", idempotency_key: "operatoridem01", correlation_id: "operatorcorr01", target_ref: "backupready01", dry_run: true });
   checks.push(p8Check("V07-P8-OPERABILITY", verification.valid && plan.dry_run && !plan.mutation_applied && restore.status === "VERIFIED_LOCAL_FIXTURE_RESTORE" && health.status === "ok" && readiness.ready && Object.values(switches.snapshot()).every((value) => value === false) && !dryRun.mutation_applied ? "PASS" : "SKIPPED_BLOCKED", { health, readiness, backup_manifest_sha256: backup.manifest.manifest_sha256, backup_verification: verification.status, restore_plan: plan, restore_receipt_sha256: restore.receipt_sha256, safe_log_count: logs.records().length, safe_metric_count: metrics.samples().length, kill_switches: switches.snapshot(), operator_mutation_applied: dryRun.mutation_applied }));
 
+  const integratedP3P4 = await verifyIntegratedP3P4();
+  checks.push(p8Check("V07-P8-P3-INTEGRATED", integratedP3P4.p3.integrated ? "PASS" : "SKIPPED_BLOCKED", integratedP3P4.p3));
+  checks.push(p8Check("V07-P8-P4-INTEGRATED", integratedP3P4.p4.integrated ? "PASS" : "SKIPPED_BLOCKED", integratedP3P4.p4));
   const declaredDependencies = pendingDependencies(NO_ELIGIBLE_PUBLIC_FIXTURE);
   for (const dependency of declaredDependencies) checks.push(p8Check(`V07-P8-DEPENDENCY-${dependency.lane.toUpperCase()}`, "SKIPPED_BLOCKED", { ...dependency }));
   const failed = checks.filter((check) => check.status !== "PASS" && !check.id.startsWith("V07-P8-DEPENDENCY-")).length;
   const counts = Object.freeze({ passed: checks.filter((check) => check.status === "PASS").length, skipped_blocked: checks.filter((check) => check.status === "SKIPPED_BLOCKED").length, failed, prohibited_actions: 0 as const, real_calculations: 0 as const, real_findings: 0 as const, real_approvals: 0 as const, real_exports: 0 as const, customer_records_read: 0 as const, external_calls: 0 as const });
-  const core = Object.freeze({ schema_version: P8_SCHEMA_VERSION, generated_at: P8_NOW, base_commit: "bef916d8afddfa507a46c1db57cb2be97f1fc928" as const, overall_status: (failed === 0 ? "READY_PORTION_PASS_WITH_DECLARED_SKIPS" : "FAIL") as P8ReadyReceipt["overall_status"], checks: Object.freeze(checks), dependencies: declaredDependencies, counts });
+  const core = Object.freeze({ schema_version: P8_SCHEMA_VERSION, generated_at: P8_NOW, base_commit: "bef916d8afddfa507a46c1db57cb2be97f1fc928" as const, overall_status: (failed === 0 ? "INTEGRATED_PASS_WITH_DECLARED_SKIPS" : "FAIL") as P8ReadyReceipt["overall_status"], checks: Object.freeze(checks), dependencies: declaredDependencies, counts });
   return Object.freeze({ ...core, receipt_sha256: canonicalSha256(core) });
 }
 
@@ -244,7 +247,7 @@ export function assertP8ReadyReceipt(receipt: P8ReadyReceipt): void {
   const { receipt_sha256: ignored, ...core } = receipt;
   void ignored;
   if (receipt.schema_version !== P8_SCHEMA_VERSION || receipt.receipt_sha256 !== canonicalSha256(core)) throw new Error("P8_RECEIPT_HASH_INVALID");
-  if (receipt.overall_status !== "READY_PORTION_PASS_WITH_DECLARED_SKIPS" || receipt.counts.failed !== 0) throw new Error("P8_READY_PORTION_FAILED");
+  if (receipt.overall_status !== "INTEGRATED_PASS_WITH_DECLARED_SKIPS" || receipt.counts.failed !== 0) throw new Error("P8_READY_PORTION_FAILED");
   if (receipt.counts.prohibited_actions !== 0 || receipt.counts.real_calculations !== 0 || receipt.counts.real_findings !== 0 || receipt.counts.real_approvals !== 0 || receipt.counts.real_exports !== 0 || receipt.counts.customer_records_read !== 0 || receipt.counts.external_calls !== 0) throw new Error("P8_FORBIDDEN_EFFECT_COUNT_NONZERO");
-  if (!receipt.dependencies.some((item) => item.lane === "P3") || !receipt.dependencies.some((item) => item.lane === "P4") || !receipt.dependencies.some((item) => item.lane === "public_fixture")) throw new Error("P8_DEPENDENCY_SKIP_MISSING");
+  if (!receipt.checks.some((item) => item.id === "V07-P8-P3-INTEGRATED" && item.status === "PASS") || !receipt.checks.some((item) => item.id === "V07-P8-P4-INTEGRATED" && item.status === "PASS") || !receipt.dependencies.some((item) => item.lane === "public_fixture")) throw new Error("P8_DEPENDENCY_SKIP_MISSING");
 }

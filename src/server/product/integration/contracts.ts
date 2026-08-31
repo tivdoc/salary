@@ -1,6 +1,6 @@
 import { canonicalSha256 } from "../../../engine/rule-runtime/canonical";
 
-export const P8_SCHEMA_VERSION = "tivdoc-overnight-v0.7-p8-ready-v1" as const;
+export const P8_SCHEMA_VERSION = "tivdoc-overnight-v0.7-p8-integrated-v2" as const;
 
 export type P8CheckStatus = "PASS" | "SKIPPED_BLOCKED";
 
@@ -12,8 +12,8 @@ export type P8Check = Readonly<{
 }>;
 
 export type P8Dependency = Readonly<{
-  lane: "P3" | "P4" | "public_fixture" | "native_visual";
-  status: "PENDING_NOT_IN_INTEGRATION_BASE" | "SKIPPED_NO_ELIGIBLE_PROVENANCE";
+  lane: "public_fixture" | "native_visual";
+  status: "SKIPPED_BLOCKED" | "SKIPPED_NO_ELIGIBLE_PROVENANCE";
   blocker_code: string;
   required_adapter: string;
   affected_acceptance_ids: readonly string[];
@@ -23,7 +23,7 @@ export type P8ReadyReceipt = Readonly<{
   schema_version: typeof P8_SCHEMA_VERSION;
   generated_at: "2040-01-01T00:00:00.000Z";
   base_commit: "bef916d8afddfa507a46c1db57cb2be97f1fc928";
-  overall_status: "READY_PORTION_PASS_WITH_DECLARED_SKIPS" | "FAIL";
+  overall_status: "INTEGRATED_PASS_WITH_DECLARED_SKIPS" | "FAIL";
   checks: readonly P8Check[];
   dependencies: readonly P8Dependency[];
   counts: Readonly<{

@@ -21,7 +21,7 @@ const receipt = JSON.parse(await readFile(output, "utf8")) as Readonly<{
   receipt_sha256: string;
   counts: Readonly<Record<string, number>>;
 }>;
-if (receipt.schema_version !== "tivdoc-overnight-v0.7-p8-ready-v1" || receipt.overall_status !== "READY_PORTION_PASS_WITH_DECLARED_SKIPS" || !/^[a-f0-9]{64}$/.test(receipt.receipt_sha256) || receipt.counts.failed !== 0 || receipt.counts.prohibited_actions !== 0) {
+  if (receipt.schema_version !== "tivdoc-overnight-v0.7-p8-integrated-v2" || receipt.overall_status !== "INTEGRATED_PASS_WITH_DECLARED_SKIPS" || !/^[a-f0-9]{64}$/.test(receipt.receipt_sha256) || receipt.counts.failed !== 0 || receipt.counts.prohibited_actions !== 0) {
   throw new Error("P8_GENERATED_RECEIPT_INVALID");
 }
 process.stdout.write(`${JSON.stringify({ status: receipt.overall_status, receipt_sha256: receipt.receipt_sha256, passed: receipt.counts.passed, skipped_blocked: receipt.counts.skipped_blocked, failed: receipt.counts.failed, output })}\n`);

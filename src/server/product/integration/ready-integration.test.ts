@@ -7,10 +7,10 @@ import { assertP8ReadyReceipt, runP8ReadyIntegration } from "./ready-integration
 import { createP8Harness, opsEnvelope, opsRequest, verifiedSyntheticActor } from "./ready-harness";
 
 describe("V0.7 P8 ready integration", () => {
-  it("runs actual P1/P2/P5/P6/P7 and canonical CaseAnalysis services with declared P3/P4 skips", async () => {
+  it("runs actual P1-P7 and canonical CaseAnalysis services with declared external skips", async () => {
     const receipt = await runP8ReadyIntegration();
     assertP8ReadyReceipt(receipt);
-    expect(receipt.overall_status).toBe("READY_PORTION_PASS_WITH_DECLARED_SKIPS");
+    expect(receipt.overall_status).toBe("INTEGRATED_PASS_WITH_DECLARED_SKIPS");
     expect(receipt.counts.failed).toBe(0);
     expect(receipt.counts.prohibited_actions).toBe(0);
     expect(receipt.checks.filter((item) => item.status === "PASS").map((item) => item.id)).toEqual([
@@ -22,6 +22,8 @@ describe("V0.7 P8 ready integration", () => {
       "V07-P8-ADVERSARIAL-READY",
       "V07-P8-REAL-CORPUS-FAIL-CLOSED",
       "V07-P8-OPERABILITY",
+      "V07-P8-P3-INTEGRATED",
+      "V07-P8-P4-INTEGRATED",
     ]);
     if (process.env.P8_RECEIPT_OUTPUT) {
       await mkdir(dirname(process.env.P8_RECEIPT_OUTPUT), { recursive: true });
@@ -31,9 +33,8 @@ describe("V0.7 P8 ready integration", () => {
 
   it("keeps unavailable dependencies explicit and provenance gated", () => {
     expect(pendingDependencies(NO_ELIGIBLE_PUBLIC_FIXTURE)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ lane: "P3", status: "PENDING_NOT_IN_INTEGRATION_BASE" }),
-      expect.objectContaining({ lane: "P4", status: "PENDING_NOT_IN_INTEGRATION_BASE" }),
       expect.objectContaining({ lane: "public_fixture", status: "SKIPPED_NO_ELIGIBLE_PROVENANCE" }),
+      expect.objectContaining({ lane: "native_visual", status: "SKIPPED_BLOCKED" }),
     ]));
   });
 

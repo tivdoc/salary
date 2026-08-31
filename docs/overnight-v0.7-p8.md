@@ -20,13 +20,20 @@ The script writes the deterministic, Git-ignored receipt to `output/overnight-v0
 
 The ready matrix covers the integrated synthetic lifecycle, exact-hash manual export, stale revision and idempotency, transaction/job/outbox fencing, payment chargeback invalidation, owner-only portal invitation/clarification/provenance/release/privacy flow, P2/P6 exact artifact identity, security guards, production denial, canonical real-corpus fail-closed behavior, and P7 local backup/restore and coarse readiness.
 
-## Exact pending dependencies in the first P8 commit
+## Integrated dependencies and exact remaining skips
 
-The base commit does not contain the P3 or P4 lanes. P8 therefore exposes, but does not fake, `P3ReviewWorkspaceIntegrationPort` and `P4QualityShadowIntegrationPort`. Their receipt entries are `PENDING_NOT_IN_INTEGRATION_BASE` with blocker codes `P3_REVIEW_WORKSPACE_AND_CORPUS_ADAPTER_NOT_IN_BASE` and `P4_RULESPEC_GOLDEN_GT_SHADOW_ADAPTER_NOT_IN_BASE`.
+The follow-up seam consumes the canonical P3 corpus/workspace verifier and the
+canonical P4 RuleSpec skeleton, golden template, Ground Truth and Offline
+Shadow modules. Their exact current hashes and zero-real-output invariants are
+bound into the P8 receipt; no duplicate legal or extraction truth was added.
 
-The public fixture journey is precisely `SKIPPED_NO_ELIGIBLE_PROVENANCE` because no independent eligible provenance record is present. Native visual verification remains pending until the P3/P4 integration supplies the final local routes and artifacts; structural PDF/hash verification is already exercised here.
+The public fixture journey is precisely `SKIPPED_NO_ELIGIBLE_PROVENANCE`
+because no independent eligible provenance record is present. Native browser
+and PDF visual verification is performed separately from the unit harness and
+receives its own artifact receipt.
 
-These skips are not success claims. A follow-up P8 seam commit must consume the canonical P3/P4 services after their merge and remove only the dependencies actually proven by that integration.
+These skips are not success claims. Only the P3/P4 dependency blockers were
+removed by direct canonical verification.
 
 ## Safety invariants
 

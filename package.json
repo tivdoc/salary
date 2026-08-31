@@ -134,7 +134,8 @@
     "tivdoc:ops:e2e:public": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/tivdoc-ops/run.mts public",
     "tivdoc:portal:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/tivdoc-portal/verify.mts",
     "tivdoc:portal:e2e:synthetic": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/tivdoc-portal/verify.mts",
-    "overnight:v0.7:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/overnight-v07/acceptance.mts"
+    "overnight:v0.7:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/overnight-v07/acceptance.mts",
+    "overnight:v0.7:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/overnight-v07/integration/run.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
