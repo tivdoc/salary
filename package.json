@@ -135,7 +135,20 @@
     "tivdoc:portal:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/tivdoc-portal/verify.mts",
     "tivdoc:portal:e2e:synthetic": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/tivdoc-portal/verify.mts",
     "overnight:v0.7:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/overnight-v07/acceptance.mts",
-    "overnight:v0.7:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/overnight-v07/integration/run.mts"
+    "overnight:v0.7:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/overnight-v07/integration/run.mts",
+    "canonical:reachability:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/reachability/verify.mts",
+    "platform:persistence:wiring:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/persistence/wiring-map.mts",
+    "platform:persistence:env:detect": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/platform/persistence/env-detect.mts",
+    "platform:persistence:static:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/platform/persistence/static-verify.mts",
+    "platform:persistence:isolated:bootstrap": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/platform/persistence/isolated-bootstrap.mts",
+    "platform:persistence:isolated:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/platform/persistence/isolated-verify.mts",
+    "platform:persistence:isolated:teardown": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/platform/persistence/isolated-teardown.mts",
+    "product:routes:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/routes/verify.mts",
+    "product:auth-boundary:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/routes/verify-auth.mts",
+    "product:pdf:hebrew:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/report/verify.mts",
+    "product:e2e:synthetic": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/e2e/synthetic.mts",
+    "product:e2e:negative": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/e2e/negative.mts",
+    "product:v080:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/product-integration/run.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
