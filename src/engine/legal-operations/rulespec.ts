@@ -218,6 +218,29 @@ function roundDivision(numerator: bigint, denominator: bigint, policy: "exact" |
 
 export type RuleSpecExecution = Readonly<{ status: "succeeded"; output: RuleSpecInputValue["value"]; trace: readonly Readonly<{ step_id: string; operation: string; input_refs: readonly string[]; result: RuleSpecInputValue["value"] }>[]; trace_sha256: string; result_sha256: string }>;
 
+export type RuleSpecExecutionControl = Readonly<{
+  signal?: AbortSignal;
+  max_steps?: number;
+  locale?: string;
+  time_zone?: string;
+}>;
+
+export type RuleSpecAtomicOutcome =
+  | Readonly<{
+    status: "succeeded";
+    execution: RuleSpecExecution;
+    error_code: null;
+    output_visible: true;
+    partial_output_visible: false;
+  }>
+  | Readonly<{
+    status: "failed";
+    execution: null;
+    error_code: string;
+    output_visible: false;
+    partial_output_visible: false;
+  }>;
+
 function assertRuntimeBounds(value: RuntimeValue, maxDigits: number) {
   const integers = value.kind === "rational" ? [value.numerator, value.denominator] : value.kind === "integer" ? [value.value] : value.kind === "money" ? [value.minor_units] : [];
   if (integers.some((integer) => (integer < BigInt(0) ? -integer : integer).toString().length > maxDigits)) throw new Error("RULESPEC_INTEGER_DIGIT_LIMIT_EXCEEDED");
@@ -225,12 +248,37 @@ function assertRuntimeBounds(value: RuntimeValue, maxDigits: number) {
   if (value.kind === "integer" && (value.value < BigInt(Number.MIN_SAFE_INTEGER) || value.value > BigInt(Number.MAX_SAFE_INTEGER))) throw new Error("RULESPEC_INTEGER_OVERFLOW");
 }
 
-export function executeRuleSpec(candidate: Readonly<{ rule: RuleSpecPackage; facts: readonly RuleSpecInputValue[]; parameters: readonly RuleSpecInputValue[] }>): RuleSpecExecution {
+function executionLimit(rule: RuleSpecPackage, control: RuleSpecExecutionControl | undefined): number {
+  const requested = control?.max_steps ?? rule.resource_policy.max_steps;
+  if (!Number.isSafeInteger(requested) || requested < 0) throw new Error("RULESPEC_EXECUTION_STEP_LIMIT_INVALID");
+  if (control?.locale !== undefined && !/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/u.test(control.locale)) {
+    throw new Error("RULESPEC_EXECUTION_LOCALE_INVALID");
+  }
+  if (control?.time_zone !== undefined
+      && !/^(?:UTC|[A-Za-z_+-]+(?:\/[A-Za-z0-9_+.-]+)+)$/u.test(control.time_zone)) {
+    throw new Error("RULESPEC_EXECUTION_TIME_ZONE_INVALID");
+  }
+  return Math.min(requested, rule.resource_policy.max_steps);
+}
+
+function assertNotCancelled(control: RuleSpecExecutionControl | undefined): void {
+  if (control?.signal?.aborted === true) throw new Error("RULESPEC_EXECUTION_CANCELLED");
+}
+
+export function executeRuleSpec(candidate: Readonly<{
+  rule: RuleSpecPackage;
+  facts: readonly RuleSpecInputValue[];
+  parameters: readonly RuleSpecInputValue[];
+  control?: RuleSpecExecutionControl;
+}>): RuleSpecExecution {
   const rule = validateRuleSpecPackage(candidate.rule);
+  const maximumExecutionSteps = executionLimit(rule, candidate.control);
+  assertNotCancelled(candidate.control);
   const values = new Map<string, RuntimeValue>();
   const declared = new Map([...rule.facts, ...rule.parameters].map((entry) => [entry.ref_id, entry]));
   const supplied = [...candidate.facts, ...candidate.parameters].map((entry) => ruleSpecInputValueSchema.parse(entry));
   for (const entry of supplied) {
+    assertNotCancelled(candidate.control);
     if (values.has(entry.ref_id)) throw new Error("RULESPEC_INPUT_DUPLICATE");
     const declaration = declared.get(entry.ref_id);
     if (!declaration) throw new Error("RULESPEC_INPUT_UNDECLARED");
@@ -242,7 +290,9 @@ export function executeRuleSpec(candidate: Readonly<{ rule: RuleSpecPackage; fac
   }
   if (values.size !== declared.size) throw new Error("RULESPEC_INPUT_MISSING");
   const trace: Array<{ step_id: string; operation: string; input_refs: readonly string[]; result: RuleSpecInputValue["value"] }> = [];
-  for (const node of rule.nodes) {
+  for (const [nodeIndex, node] of rule.nodes.entries()) {
+    assertNotCancelled(candidate.control);
+    if (nodeIndex >= maximumExecutionSteps) throw new Error("RULESPEC_EXECUTION_RESOURCE_LIMIT_EXCEEDED");
     const get = (reference: string) => { const value = values.get(reference); if (!value) throw new Error("RULESPEC_REFERENCE_MISSING"); return value; };
     let result: RuntimeValue;
     if (node.operation === "constant.rational") result = rational(BigInt(node.value), BigInt(1), node.unit);
@@ -278,6 +328,30 @@ export function executeRuleSpec(candidate: Readonly<{ rule: RuleSpecPackage; fac
   const output = serialized(outputValue);
   const traceSha256 = legalOperationsSha256(trace);
   return frozen({ status: "succeeded", output, trace, trace_sha256: traceSha256, result_sha256: legalOperationsSha256({ rule: rule.content_sha256, output, trace_sha256: traceSha256 }) });
+}
+
+/**
+ * Converts every execution failure into a zero-output receipt.  The internal
+ * trace is never exposed on cancellation, validation or resource failure.
+ */
+export function executeRuleSpecAtomic(candidate: Parameters<typeof executeRuleSpec>[0]): RuleSpecAtomicOutcome {
+  try {
+    return frozen({
+      status: "succeeded",
+      execution: executeRuleSpec(candidate),
+      error_code: null,
+      output_visible: true,
+      partial_output_visible: false,
+    });
+  } catch (error) {
+    return frozen({
+      status: "failed",
+      execution: null,
+      error_code: error instanceof Error ? error.message : "RULESPEC_EXECUTION_UNKNOWN_FAILURE",
+      output_visible: false,
+      partial_output_visible: false,
+    });
+  }
 }
 
 export function parameterAsInput(refId: string, candidate: Readonly<{ value: ParameterValue }>): RuleSpecInputValue {
