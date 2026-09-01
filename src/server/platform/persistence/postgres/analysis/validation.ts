@@ -7,6 +7,13 @@ import {
 } from "../../../../../engine/case-analysis/contracts";
 import { calculationTraceSchema } from "../../../../../engine/calculations/contracts";
 import { canonicalFactSchema } from "../../../../../engine/facts/contracts";
+import {
+  canonicalReadinessJson,
+  evaluateLegalReadiness,
+  type LegalReadinessCandidate,
+  type LegalReadinessCase,
+  type LegalReadinessDecision,
+} from "../../../../../engine/legal-knowledge/canonical-readiness/evaluate-legal-readiness";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
 import { ruleInputSnapshotSchema } from "../../../../../engine/wave1/contracts";
 import {
@@ -63,23 +70,6 @@ export function object(value: unknown, keys: readonly string[]): Readonly<Record
   return record;
 }
 
-function objectWithOptional(
-  value: unknown,
-  required: readonly string[],
-  optional: readonly string[],
-): Readonly<Record<string, unknown>> {
-  const parsed = parseJson(value);
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
-  }
-  const record = parsed as Readonly<Record<string, unknown>>;
-  const actual = new Set(Object.keys(record));
-  if (required.some((key) => !actual.has(key)) || [...actual].some((key) => !required.includes(key) && !optional.includes(key))) {
-    throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
-  }
-  return record;
-}
-
 export function array(value: unknown): readonly unknown[] {
   const parsed = parseJson(value);
   if (!Array.isArray(parsed)) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
@@ -112,6 +102,181 @@ function stringArray(value: unknown): readonly string[] {
   const values = array(value).map(string);
   if (new Set(values).size !== values.length) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
   return Object.freeze(values);
+}
+
+function oneOf<const T extends string>(value: unknown, values: readonly T[]): T {
+  const decoded = string(value);
+  if (!values.includes(decoded as T)) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  return decoded as T;
+}
+
+function nullableOneOf<const T extends string>(value: unknown, values: readonly T[]): T | null {
+  return value === null ? null : oneOf(value, values);
+}
+
+function readinessSha256(value: unknown): string {
+  return createHash("sha256").update(canonicalReadinessJson(value)).digest("hex");
+}
+
+const CANONICAL_READINESS_SCHEMA = "tivdoc-legal-readiness-decision-v0.5.0";
+const LEGACY_SYNTHETIC_READINESS_SCHEMA = "tivdoc-legal-readiness-v0.5.0";
+
+function decodeCanonicalReadinessCase(value: unknown): LegalReadinessCase {
+  const row = object(value, [
+    "case_id", "topic", "kind", "target_date", "as_of", "sector", "population", "contract_version", "use_case",
+  ]);
+  if (row.contract_version !== "v0.5.0") throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
+  return Object.freeze({
+    case_id: string(row.case_id),
+    topic: string(row.topic),
+    kind: oneOf(row.kind, ["historical", "current", "missing_sector", "sector_placeholder", "adapter", "synthetic"]),
+    target_date: string(row.target_date),
+    as_of: string(row.as_of),
+    sector: nullableString(row.sector),
+    population: nullableString(row.population),
+    contract_version: "v0.5.0",
+    use_case: oneOf(row.use_case, ["monetary_rule", "non_monetary_review"]),
+  });
+}
+
+function nullableRecord(value: unknown, keys: readonly string[]): Readonly<Record<string, unknown>> | null {
+  return value === null ? null : object(value, keys);
+}
+
+function decodeCanonicalReadinessCandidate(value: unknown): LegalReadinessCandidate {
+  const row = object(value, [
+    "source_version_id", "source_id", "topics", "acquisition_status", "technical_parse_status",
+    "instrument_boundary_status", "publication_status", "retrieval_visibility", "retrieval_surface", "source_role",
+    "monetary_support_eligibility", "citation", "review_attestation", "valid_time", "knowledge_time", "sector_status",
+    "verified_sectors", "population_status", "verified_populations", "activation_status", "bound_source_version_id",
+  ]);
+  const citation = nullableRecord(row.citation, ["citation_id", "verified", "source_version_id"]);
+  const review = nullableRecord(row.review_attestation, ["attestation_id", "status", "source_version_id", "reviewed_at"]);
+  const validTime = nullableRecord(row.valid_time, ["from", "to", "verified"]);
+  const knowledgeTime = nullableRecord(row.knowledge_time, ["available_from", "unavailable_from"]);
+  return Object.freeze({
+    source_version_id: string(row.source_version_id),
+    source_id: nullableString(row.source_id) ?? undefined,
+    topics: stringArray(row.topics),
+    // The V0.5 evaluator deliberately ignores the retired booleans, but its
+    // public candidate type still requires them for legacy callers.
+    parse_succeeded: false,
+    citation_verified: false,
+    operative_role_eligible: false,
+    human_reviewed: false,
+    effective_interval_verified: false,
+    verified_sectors: stringArray(row.verified_sectors),
+    verified_populations: stringArray(row.verified_populations),
+    active: false,
+    acquisition_status: nullableOneOf(row.acquisition_status, ["available", "missing"]) ?? undefined,
+    technical_parse_status: nullableOneOf(row.technical_parse_status, ["parsed", "missing", "failed"]) ?? undefined,
+    instrument_boundary_status: nullableOneOf(row.instrument_boundary_status, ["resolved", "ambiguous", "unresolved"]) ?? undefined,
+    publication_status: nullableOneOf(row.publication_status, ["review_candidate", "quarantined", "unpublished"]) ?? undefined,
+    retrieval_visibility: nullableOneOf(row.retrieval_visibility, ["visible", "hidden"]) ?? undefined,
+    retrieval_surface: nullableOneOf(row.retrieval_surface, ["canonical_review", "corroborative_review", "explanatory_review", "none"]) ?? undefined,
+    source_role: nullableOneOf(row.source_role, ["binding_role_candidate", "corroborative", "secondary_explanatory", "role_pending"]) ?? undefined,
+    monetary_support_eligibility: nullableOneOf(row.monetary_support_eligibility, ["eligible", "ineligible"]) ?? undefined,
+    citation: citation ? Object.freeze({
+      citation_id: string(citation.citation_id),
+      verified: boolean(citation.verified),
+      source_version_id: string(citation.source_version_id),
+    }) : undefined,
+    review_attestation: review ? Object.freeze({
+      attestation_id: string(review.attestation_id),
+      status: oneOf(review.status, ["reviewed", "needs_review"]),
+      source_version_id: string(review.source_version_id),
+      reviewed_at: string(review.reviewed_at),
+    }) : undefined,
+    valid_time: validTime ? Object.freeze({
+      from: string(validTime.from),
+      to: nullableString(validTime.to),
+      verified: boolean(validTime.verified),
+    }) : undefined,
+    knowledge_time: knowledgeTime ? Object.freeze({
+      available_from: string(knowledgeTime.available_from),
+      unavailable_from: nullableString(knowledgeTime.unavailable_from),
+    }) : undefined,
+    sector_status: nullableOneOf(row.sector_status, ["verified", "unverified", "unknown"]) ?? undefined,
+    population_status: nullableOneOf(row.population_status, ["verified", "unverified"]) ?? undefined,
+    activation_status: nullableOneOf(row.activation_status, ["active", "inactive"]) ?? undefined,
+    bound_source_version_id: nullableString(row.bound_source_version_id) ?? undefined,
+  });
+}
+
+function decodeCanonicalReadiness(value: unknown): LegalReadinessDecision {
+  const row = object(value, [
+    "schema_version", "evaluator_version", "decision_source", "normalized_input", "normalized_input_sha256",
+    "status", "reason_codes", "selected_source_version_id", "considered_source_version_ids",
+    "operative_candidate_source_version_ids", "usable_for_rules", "test_only_synthetic", "decision_sha256",
+  ]);
+  if (row.schema_version !== CANONICAL_READINESS_SCHEMA
+      || row.evaluator_version !== "evaluateLegalReadiness@v0.5.0") {
+    throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
+  }
+  if (row.decision_source !== "evaluateLegalReadiness") throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  const normalized = object(row.normalized_input, ["readiness_case", "candidates"]);
+  const readinessCase = decodeCanonicalReadinessCase(normalized.readiness_case);
+  const candidates = Object.freeze(array(normalized.candidates).map(decodeCanonicalReadinessCandidate));
+  const normalizedInputSha256 = sha256(row.normalized_input_sha256);
+  const decisionSha256 = sha256(row.decision_sha256);
+  oneOf(row.status, ["READY", "BLOCKED_NOT_READY"]);
+  stringArray(row.reason_codes);
+  nullableString(row.selected_source_version_id);
+  stringArray(row.considered_source_version_ids);
+  stringArray(row.operative_candidate_source_version_ids);
+  boolean(row.usable_for_rules);
+  boolean(row.test_only_synthetic);
+  if (readinessSha256(row.normalized_input) !== normalizedInputSha256) {
+    throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  }
+  const decisionSeed = Object.fromEntries(Object.entries(row).filter(([key]) => key !== "decision_sha256"));
+  if (readinessSha256(decisionSeed) !== decisionSha256) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+
+  const evaluated = evaluateLegalReadiness({ readinessCase, candidates });
+  if (canonicalReadinessJson(evaluated) !== canonicalReadinessJson(row)) {
+    throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  }
+  return evaluated;
+}
+
+function decodeLegacySyntheticReadiness(value: unknown): LegalReadinessDecision {
+  const row = object(value, [
+    "schema_version", "decision_source", "status", "reason_codes", "decision_sha256", "usable_for_rules",
+    "operative_candidate_source_version_ids", "normalized_input_sha256",
+  ]);
+  if (row.schema_version !== LEGACY_SYNTHETIC_READINESS_SCHEMA) {
+    throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
+  }
+  if (row.decision_source !== "evaluateLegalReadiness") throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  const status = oneOf(row.status, ["READY", "BLOCKED_NOT_READY"]);
+  const reasonCodes = stringArray(row.reason_codes);
+  const usableForRules = boolean(row.usable_for_rules);
+  if (row.normalized_input_sha256 !== null
+      || usableForRules !== (status === "READY")
+      || (status === "READY") !== (reasonCodes.length === 0)) {
+    throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  }
+  return Object.freeze({
+    schema_version: LEGACY_SYNTHETIC_READINESS_SCHEMA,
+    decision_source: "evaluateLegalReadiness",
+    status,
+    reason_codes: reasonCodes,
+    decision_sha256: sha256(row.decision_sha256),
+    usable_for_rules: usableForRules,
+    operative_candidate_source_version_ids: stringArray(row.operative_candidate_source_version_ids),
+    normalized_input_sha256: null,
+  });
+}
+
+function decodeLegalReadiness(value: unknown): LegalReadinessDecision {
+  const parsed = parseJson(value);
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  }
+  const schemaVersion = string((parsed as Readonly<Record<string, unknown>>).schema_version);
+  if (schemaVersion === CANONICAL_READINESS_SCHEMA) return decodeCanonicalReadiness(parsed);
+  if (schemaVersion === LEGACY_SYNTHETIC_READINESS_SCHEMA) return decodeLegacySyntheticReadiness(parsed);
+  throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
 }
 
 export function decodeCommand(value: unknown): CaseAnalysisCommand {
@@ -206,17 +371,7 @@ export function validateTopicResult(value: unknown): TopicAnalysisResult {
   }
   let legalReadiness: TopicAnalysisResult["legal_readiness"] = null;
   if (row.legal_readiness !== null) {
-    const readiness = objectWithOptional(row.legal_readiness, [
-      "schema_version", "decision_source", "status", "reason_codes", "decision_sha256",
-      "usable_for_rules", "operative_candidate_source_version_ids", "normalized_input_sha256",
-    ], ["normalized_input"]);
-    if (readiness.decision_source !== "evaluateLegalReadiness"
-        || (readiness.status !== "READY" && readiness.status !== "BLOCKED_NOT_READY")
-        || typeof readiness.usable_for_rules !== "boolean") {
-      throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
-    }
-    assertSha256(readiness.decision_sha256);
-    legalReadiness = row.legal_readiness as TopicAnalysisResult["legal_readiness"];
+    legalReadiness = decodeLegalReadiness(row.legal_readiness);
   }
   return Object.freeze({
     topic,
@@ -403,16 +558,10 @@ export function decodeSelection(value: unknown): LegalCatalogSelection {
   ]);
   const mode = string(row.mode);
   if (mode !== "real" && mode !== "synthetic_test") throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
-  const readiness = objectWithOptional(row.readiness, [
-    "schema_version", "decision_source", "status", "reason_codes", "decision_sha256",
-    "usable_for_rules", "operative_candidate_source_version_ids", "normalized_input_sha256",
-  ], ["normalized_input"]);
-  if (readiness.decision_source !== "evaluateLegalReadiness"
-      || (readiness.status !== "READY" && readiness.status !== "BLOCKED_NOT_READY")
-      || typeof readiness.usable_for_rules !== "boolean") {
+  const readiness = decodeLegalReadiness(row.readiness);
+  if (mode !== "synthetic_test" && readiness.schema_version === LEGACY_SYNTHETIC_READINESS_SCHEMA) {
     throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
   }
-  assertSha256(readiness.decision_sha256);
   assertSha256(row.catalog_sha256);
   return Object.freeze({
     catalog_id: string(row.catalog_id),
@@ -424,6 +573,6 @@ export function decodeSelection(value: unknown): LegalCatalogSelection {
     parameter_version_ids: stringArray(row.parameter_version_ids),
     rule_spec_id: nullableString(row.rule_spec_id),
     rule_spec_version: nullableString(row.rule_spec_version),
-    readiness: row.readiness as LegalCatalogSelection["readiness"],
+    readiness,
   });
 }
