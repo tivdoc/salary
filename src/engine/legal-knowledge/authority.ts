@@ -27,11 +27,19 @@ export function compareSourceAuthority(left: LegalSource, right: LegalSource, se
   return left.source_id.localeCompare(right.source_id);
 }
 
+/**
+ * The authority half of the monetary rule, independent of source lifecycle.
+ * Review workflows need it before anything is active, so it is shared rather
+ * than restated: secondary explanatory material never qualifies.
+ */
+export function authorityCanIndependentlySupportMonetaryRule(authority: LegalAuthority) {
+  return authority.can_independently_support_monetary_rule &&
+    authority.binding_level !== "secondary_explanatory" &&
+    authority.operative;
+}
+
 export function canSourceIndependentlySupportMonetaryRule(source: LegalSource) {
-  return source.status === "active" &&
-    source.authority.can_independently_support_monetary_rule &&
-    source.authority.binding_level !== "secondary_explanatory" &&
-    source.authority.operative;
+  return source.status === "active" && authorityCanIndependentlySupportMonetaryRule(source.authority);
 }
 
 export function validateMonetaryAuthoritySet(sources: readonly LegalSource[]) {
