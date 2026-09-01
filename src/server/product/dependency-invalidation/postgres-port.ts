@@ -71,7 +71,7 @@ with locked as materialized (
          dependency.download_binding_sha256,
          dependency.latest_invalidation_sha256,
          state.lifecycle_state,
-         pg_catalog.greatest(dependency.updated_at, state.updated_at) as updated_at,
+         greatest(dependency.updated_at, state.updated_at) as updated_at,
        (
          select history.event_sha256
          from public.engine_case_lifecycle_revisions history
