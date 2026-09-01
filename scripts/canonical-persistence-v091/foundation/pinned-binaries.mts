@@ -77,7 +77,8 @@ export type PinnedPostgresBinaries = Readonly<{
 
 export type PinnedPostgresProvisioningReceipt = Readonly<{
   schema_version: "tivdoc-pinned-postgresql-provisioning-v0.9.1";
-  action: "REEXTRACTED_VERIFIED_DISTRIBUTION" | "DOWNLOADED_AND_REEXTRACTED_VERIFIED_DISTRIBUTION";
+  action: "REUSED_VERIFIED_DISTRIBUTION" | "REEXTRACTED_VERIFIED_DISTRIBUTION"
+    | "DOWNLOADED_AND_REEXTRACTED_VERIFIED_DISTRIBUTION";
   final_source_url: typeof PINNED_EDB_ARCHIVE_URL;
   archive_size_bytes: 340722468;
   downloaded_bytes: 0 | 340722468;
@@ -92,8 +93,8 @@ export type PinnedPostgresProvisioningReceipt = Readonly<{
   distribution_file_count: typeof PINNED_DISTRIBUTION_FILE_COUNT;
   distribution_bytes: typeof PINNED_DISTRIBUTION_BYTES;
   distribution_tree_sha256: typeof PINNED_DISTRIBUTION_TREE_SHA256;
-  fresh_extract: true;
-  distribution_reused: false;
+  fresh_extract: boolean;
+  distribution_reused: boolean;
   reparse_points_detected: 0;
   windows_token_elevated: false;
   administrator_privileges_used: false;
@@ -139,6 +140,16 @@ export async function ensurePinnedPostgresBinaries(
     contained(await realpath(dirname(archive)), await realpath(archive));
   } else {
     await downloadPinnedArchive(archive);
+  }
+
+  if (await pathExists(paths.distribution_root)) {
+    try {
+      const binaries = await inspectPinnedPostgresBinaries(paths, runner);
+      return Object.freeze({ binaries, provisioning: reusedProvisioningReceipt() });
+    } catch {
+      // A stale or unverifiable cache is never trusted. The pinned archive is
+      // re-extracted and the replacement must pass the complete static proof.
+    }
   }
 
   const stagingRoot = contained(paths.tools_root, resolve(
@@ -463,6 +474,35 @@ function provisioningReceipt(
     distribution_tree_sha256: PINNED_DISTRIBUTION_TREE_SHA256,
     fresh_extract: true,
     distribution_reused: false,
+    reparse_points_detected: 0,
+    windows_token_elevated: false,
+    administrator_privileges_used: false,
+    system_install_performed: false,
+    credentials_emitted: 0,
+    status: "PASS",
+  });
+}
+
+function reusedProvisioningReceipt(): PinnedPostgresProvisioningReceipt {
+  return Object.freeze({
+    schema_version: "tivdoc-pinned-postgresql-provisioning-v0.9.1",
+    action: "REUSED_VERIFIED_DISTRIBUTION",
+    final_source_url: PINNED_EDB_ARCHIVE_URL,
+    archive_size_bytes: PINNED_ARCHIVE_BYTES,
+    downloaded_bytes: 0,
+    archive_sha256: PINNED_EDB_ARCHIVE_SHA256,
+    source_integrity: "PINNED_SHA256_OFFICIAL_HTTPS",
+    extract_only: true,
+    extraction_launcher: "DOTNET_VALIDATED_ZIP_ARCHIVE",
+    archive_root: "pgsql",
+    archive_entries: 21_903,
+    extracted_files: PINNED_DISTRIBUTION_FILE_COUNT,
+    uncompressed_bytes: PINNED_DISTRIBUTION_BYTES,
+    distribution_file_count: PINNED_DISTRIBUTION_FILE_COUNT,
+    distribution_bytes: PINNED_DISTRIBUTION_BYTES,
+    distribution_tree_sha256: PINNED_DISTRIBUTION_TREE_SHA256,
+    fresh_extract: false,
+    distribution_reused: true,
     reparse_points_detected: 0,
     windows_token_elevated: false,
     administrator_privileges_used: false,

@@ -347,19 +347,24 @@ function verifyEnvironment(value: Obj): void {
     && value.source_integrity === "PINNED_SHA256_OFFICIAL_HTTPS", "DYNAMIC_PROVENANCE_INVALID");
   const provisioning = object(value.provisioning, "DYNAMIC_PROVISIONING_INVALID");
   assert(provisioning.schema_version === "tivdoc-pinned-postgresql-provisioning-v0.9.1"
-    && (provisioning.action === "REEXTRACTED_VERIFIED_DISTRIBUTION"
+    && (provisioning.action === "REUSED_VERIFIED_DISTRIBUTION"
+      || provisioning.action === "REEXTRACTED_VERIFIED_DISTRIBUTION"
       || provisioning.action === "DOWNLOADED_AND_REEXTRACTED_VERIFIED_DISTRIBUTION")
     && provisioning.final_source_url === POSTGRES_ARCHIVE_URL
     && provisioning.archive_size_bytes === 340_722_468
-    && ((provisioning.action === "REEXTRACTED_VERIFIED_DISTRIBUTION" && provisioning.downloaded_bytes === 0)
+    && (((provisioning.action === "REUSED_VERIFIED_DISTRIBUTION"
+        || provisioning.action === "REEXTRACTED_VERIFIED_DISTRIBUTION") && provisioning.downloaded_bytes === 0)
       || (provisioning.action === "DOWNLOADED_AND_REEXTRACTED_VERIFIED_DISTRIBUTION"
         && provisioning.downloaded_bytes === 340_722_468))
     && provisioning.archive_sha256 === POSTGRES_ARCHIVE_SHA256
     && provisioning.archive_sha256 === value.source_sha256
     && provisioning.source_integrity === "PINNED_SHA256_OFFICIAL_HTTPS"
     && provisioning.extract_only === true && provisioning.extraction_launcher === "DOTNET_VALIDATED_ZIP_ARCHIVE"
-    && provisioning.fresh_extract === true
-    && provisioning.distribution_reused === false && provisioning.reparse_points_detected === 0
+    && ((provisioning.action === "REUSED_VERIFIED_DISTRIBUTION"
+      && provisioning.fresh_extract === false && provisioning.distribution_reused === true)
+      || (provisioning.action !== "REUSED_VERIFIED_DISTRIBUTION"
+        && provisioning.fresh_extract === true && provisioning.distribution_reused === false))
+    && provisioning.reparse_points_detected === 0
     && provisioning.archive_root === "pgsql"
     && integer(provisioning.archive_entries, 1, "DYNAMIC_PROVISIONING_INVALID") <= 30_000
     && count(provisioning.extracted_files, "DYNAMIC_PROVISIONING_INVALID") > 0
