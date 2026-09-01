@@ -38,6 +38,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609010006_durable_portal_runtime_security.sql",
   "202609010007_global_dependency_invalidation.sql",
   "202609010008_runtime_product_forward_repair.sql",
+  "202609010009_governance_owner_schema_usage_repair.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -61,6 +62,7 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
   "202609010006_durable_portal_runtime_security.sql": "994bb2a3f14dd58e002f4e605bc8e03c5422a1904b9ec1f733ca1d1e21f9635d",
   "202609010007_global_dependency_invalidation.sql": "6d57e778a95d8e0988d4cf986a30577ec841847f189c225abdb29b9441eb45af",
   "202609010008_runtime_product_forward_repair.sql": "2271602fc133a4552d813278697138634b9ebb4327c941c3e373e2c99cbfacbe",
+  "202609010009_governance_owner_schema_usage_repair.sql": "806480d5d6ff7a807bd7154909aab9711a613c25e0afe35651de2a1b77016ba9",
 });
 
 export type MigrationFile = Readonly<{

@@ -987,6 +987,11 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       migration_id: "202609010007_global_dependency_invalidation",
     }),
     Object.freeze({
+      component: "governance_owner_schema_usage_repair",
+      schema_version: "tivdoc-governance-owner-schema-usage-repair-v0.10.2",
+      migration_id: "202609010009_governance_owner_schema_usage_repair",
+    }),
+    Object.freeze({
       component: "governance_runtime_security",
       schema_version: "tivdoc-governance-runtime-security-v0.10.2",
       migration_id: "202609010005_governance_runtime_security",
