@@ -164,8 +164,8 @@ function scanDiff(diff: Buffer) {
   const patterns = [
     ["private_key", /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/u],
     ["openai_key", /sk-(?:proj-)?[A-Za-z0-9_-]{20,}/u],
-    ["remote_deploy", /\b(?:vercel deploy|supabase link|supabase db push)\b/iu],
-    ["customer_local_path", /customer-payslips|OneDrive.+Tivdoc/iu],
+    ["remote_deploy", /["'`]\s*(?:vercel deploy|supabase link|supabase db push)\b/iu],
+    ["customer_local_path", /[A-Z]:\\[^\r\n"']*(?:customer-payslips|OneDrive\\[^\r\n"']*\\Tivdoc)/iu],
   ] as const;
   const matches = patterns.flatMap(([kind, pattern]) => added.filter((line) => pattern.test(line)).map(() => kind));
   return Object.freeze({

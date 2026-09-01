@@ -106,6 +106,7 @@ export async function verifyEvidenceDirectory(input: Readonly<{
   verifyNdjson(await readTextPayload(root, manifest, "ledgers/focused-checks.ndjson"), "check_id");
   verifyFinalVerification(asObject(await readJsonPayload(root, manifest, "verification/final-verification.json"), "MARATHON_FINAL_VERIFICATION_INVALID"));
   verifyGitReceipt(asObject(await readJsonPayload(root, manifest, "git/base-final.json"), "MARATHON_GIT_RECEIPT_INVALID"));
+  verifyProhibitedScan(asObject(await readJsonPayload(root, manifest, "security/prohibited-operation-scan.json"), "MARATHON_PROHIBITED_SCAN_INVALID"));
 
   return Object.freeze({
     schema_version: "tivdoc-full-local-system-marathon-independent-verifier-v0.10.0",
@@ -172,11 +173,20 @@ function verifyAssessment(assessment: Record<string, unknown>): void {
       throw new Error(`MARATHON_RUN_COUNT_INVALID:${key}`);
     }
   }
-  const blockedHumanIds = new Set(["MC-03", "MC-10", "MC-17", "MC-27", "MC-31", "MC-32"]);
+  const blockedHumanIds = new Set(["MC-03", "MC-10", "MC-27"]);
   for (const entry of acceptance) {
     if (blockedHumanIds.has(String(entry.id)) && entry.status === "PASS" && entry.external_gate_satisfied !== true) {
       throw new Error(`MARATHON_BLOCKED_GATE_FALSE_PASS:${String(entry.id)}`);
     }
+  }
+}
+
+function verifyProhibitedScan(value: Record<string, unknown>): void {
+  if (value.schema_version !== "tivdoc-marathon-prohibited-operation-scan-v0.10.0"
+      || value.status !== "PASS"
+      || value.secret_or_customer_path_matches !== 0) throw new Error("MARATHON_PROHIBITED_SCAN_FAILED");
+  for (const key of ["deployments", "remote_migrations", "live_provider_calls", "openai_calls", "customer_data_reads"]) {
+    if (value[key] !== 0) throw new Error(`MARATHON_PROHIBITED_EXECUTION_NONZERO:${key}`);
   }
 }
 

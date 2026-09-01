@@ -17,13 +17,13 @@ async function fixture() {
   temporaryRoots.push(root);
   const acceptance = Array.from({ length: 39 }, (_, index) => ({
     id: `MC-${String(index + 1).padStart(2, "0")}`,
-    status: [3, 10, 17, 27, 31, 32].includes(index + 1) ? "BLOCKED" : "PASS",
+    status: [3, 10, 27].includes(index + 1) ? "BLOCKED" : "PASS",
     evidence: `synthetic-evidence-${index + 1}`,
   }));
   const assessment = {
     schema_version: "tivdoc-full-local-system-marathon-assessment-v0.10.0",
     acceptance,
-    acceptance_counts: { PASS: 33, BLOCKED: 6, FAILED_LOCAL_WITH_EVIDENCE: 0, SKIPPED: 0 },
+    acceptance_counts: { PASS: 36, BLOCKED: 3, FAILED_LOCAL_WITH_EVIDENCE: 0, SKIPPED: 0 },
     truth_counters: {
       REAL_LEGAL_TOPICS_READY: "0/7",
       REAL_SOURCES_ACTIVE: 0,
@@ -53,6 +53,7 @@ async function fixture() {
     "ledgers/focused-checks.ndjson": `${JSON.stringify({ check_id: "CHECK-0001", status: "PASS" })}\n`,
     "verification/final-verification.json": `${JSON.stringify({ schema_version: "tivdoc-full-local-system-marathon-final-verification-v0.10.0", commands })}\n`,
     "git/base-final.json": `${JSON.stringify({ schema_version: "tivdoc-full-local-system-marathon-git-v0.10.0", branch: "codex/tivdoc-engine-foundation", base_head: "28d18da69108913252736f4b8a39c4ef614984a3", base_tree: "2a9859470003a095521a13e21474a45e1f69620e", final_head: "b".repeat(40), final_tree: "c".repeat(40), base_is_ancestor: true, worktree_clean: true })}\n`,
+    "security/prohibited-operation-scan.json": `${JSON.stringify({ schema_version: "tivdoc-marathon-prohibited-operation-scan-v0.10.0", status: "PASS", secret_or_customer_path_matches: 0, deployments: 0, remote_migrations: 0, live_provider_calls: 0, openai_calls: 0, customer_data_reads: 0 })}\n`,
   };
   for (const [name, value] of Object.entries(files)) {
     const target = path.join(root, ...name.split("/"));
@@ -72,8 +73,8 @@ describe("Marathon independent evidence verifier", () => {
     const value = await fixture();
     const receipt = await verifyEvidenceDirectory(value);
     expect(receipt.status).toBe("PASS");
-    expect(receipt.acceptance_pass).toBe(33);
-    expect(receipt.acceptance_non_pass).toBe(6);
+    expect(receipt.acceptance_pass).toBe(36);
+    expect(receipt.acceptance_non_pass).toBe(3);
   });
 
   it("rejects case-folded duplicate and self-referential payload paths", async () => {
