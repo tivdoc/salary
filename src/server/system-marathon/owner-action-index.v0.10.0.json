@@ -1,0 +1,326 @@
+{
+  "schema_version": "tivdoc-owner-action-index-v0.10.0",
+  "generated_from_head": "a060e71c271bdc510bef9c8eb64699635dbdec3a",
+  "baseline_truth": {
+    "REAL_LEGAL_TOPICS_READY": "0/7",
+    "REAL_SOURCES_ACTIVE": 0,
+    "REAL_PARAMETERS_ACTIVE": 0,
+    "REAL_RULES_ACTIVE": 0,
+    "REAL_CALCULATIONS_OR_FINDINGS": 0,
+    "HUMAN_GROUND_TRUTH_LOCKED": 0,
+    "REAL_CUSTOMER_DATA_READS": 0,
+    "CUSTOMER_PROCESSING_ENABLED": "NO",
+    "CUSTOMER_SHADOW_AUTHORIZED": "NO",
+    "PRODUCTION_DELIVERY_ENABLED": "NO",
+    "DEPLOYMENTS": 0,
+    "REMOTE_MIGRATIONS": 0,
+    "LIVE_PROVIDER_CALLS": 0,
+    "OPENAI_CALLS": 0,
+    "PRODUCT_REACHABLE_MEMORY_FALLBACKS": 0
+  },
+  "groups": [
+    {
+      "group_id": "OA-01",
+      "slug": "official-source-handoff",
+      "title": "Official-source handoff",
+      "actions": [
+        {
+          "action_id": "OA-01-A01",
+          "owner_type": "official_source_custodian",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "Supply the actual unresolved official-source bytes through the controlled handoff, with source identity, provenance and permission to retain them.",
+          "external_prerequisites": [
+            "authorized access to the identified official publisher or custodian",
+            "the exact source identity and acquisition request for each supplied artifact"
+          ],
+          "evidence_required": [
+            "actual artifact bytes",
+            "byte length and SHA-256 receipt",
+            "source URL or custodian reference and acquisition timestamp",
+            "license or retention basis"
+          ],
+          "blocked_truths": ["REAL_LEGAL_TOPICS_READY", "REAL_SOURCES_ACTIVE"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits controlled import and re-verification only; it does not activate a legal source."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-02",
+      "slug": "legal-source-review",
+      "title": "Legal-source review",
+      "actions": [
+        {
+          "action_id": "OA-02-A01",
+          "owner_type": "trusted_legal_reviewer",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "An identified independent legal reviewer must inspect the exact source bytes and sign the seven-topic authority, completeness and content decisions.",
+          "external_prerequisites": [
+            "eligible controlled-import receipts from OA-01",
+            "reviewer organization, active public key and policy registration with proof of possession",
+            "separation from the importer role"
+          ],
+          "evidence_required": [
+            "signed canonical decision envelope per reviewed topic",
+            "exact packet and source hashes",
+            "reviewer organization and policy versions",
+            "decision timestamp and review notes"
+          ],
+          "blocked_truths": ["REAL_LEGAL_TOPICS_READY", "REAL_SOURCES_ACTIVE"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits source-lifecycle eligibility re-evaluation only; it does not activate any source."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-03",
+      "slug": "effective-period-sector-population-review",
+      "title": "Effective-period, sector and population review",
+      "actions": [
+        {
+          "action_id": "OA-03-A01",
+          "owner_type": "trusted_legal_reviewer",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "A trusted applicability reviewer must sign the effective period, sector, population and exception scope bound to the exact reviewed source version.",
+          "external_prerequisites": [
+            "completed source-content decision from OA-02",
+            "independent applicability reviewer identity and active signing key",
+            "the exact source version and citation anchors"
+          ],
+          "evidence_required": [
+            "signed applicability decision envelope",
+            "exact effective-period, sector and population scope",
+            "citation anchors and source SHA-256",
+            "reviewer organization and policy versions"
+          ],
+          "blocked_truths": ["REAL_LEGAL_TOPICS_READY", "REAL_SOURCES_ACTIVE"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits applicability-gate re-verification only; it does not activate a source or rule."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-04",
+      "slug": "parameter-attestations",
+      "title": "Parameter attestations",
+      "actions": [
+        {
+          "action_id": "OA-04-A01",
+          "owner_type": "trusted_parameter_attestors",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "Two distinct trusted reviewers must independently attest the exact numeric or categorical parameter payload and its source/applicability bindings.",
+          "external_prerequisites": [
+            "eligible source and applicability decisions from OA-02 and OA-03",
+            "two active reviewer identities from distinct duties",
+            "exact parameter candidate hash and derivation citations"
+          ],
+          "evidence_required": [
+            "two distinct signed canonical attestation envelopes",
+            "exact parameter candidate and content SHA-256",
+            "source, period, sector and population bindings",
+            "reviewer organization and policy versions"
+          ],
+          "blocked_truths": ["REAL_PARAMETERS_ACTIVE", "REAL_LEGAL_TOPICS_READY"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits dual-attestation and eligibility re-verification only; it does not activate a parameter."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-05",
+      "slug": "rulespec-approval-golden-cases",
+      "title": "RuleSpec approval and golden cases",
+      "actions": [
+        {
+          "action_id": "OA-05-A01",
+          "owner_type": "trusted_rulespec_reviewers",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "Human authors must complete the blank RuleSpec and golden cases, and distinct trusted reviewers must approve semantics and expected results against exact hashes.",
+          "external_prerequisites": [
+            "eligible sources and dual-attested parameters",
+            "RuleSpec author, legal reviewer and independent golden-result reviewer",
+            "completed nonblank cases covering required scenarios and boundaries"
+          ],
+          "evidence_required": [
+            "signed exact-hash RuleSpec semantic approval",
+            "signed expected result for every golden case",
+            "mutation report bound to the approved RuleSpec and golden set",
+            "separation-of-duties receipt"
+          ],
+          "blocked_truths": ["REAL_RULES_ACTIVE", "REAL_CALCULATIONS_OR_FINDINGS", "REAL_LEGAL_TOPICS_READY"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits RuleSpec lifecycle re-verification only; it does not activate a rule or create a finding."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-06",
+      "slug": "payslip-visual-review-dual-annotation-adjudication",
+      "title": "Payslip visual review, dual annotation and adjudication",
+      "actions": [
+        {
+          "action_id": "OA-06-A01",
+          "owner_type": "trusted_visual_reviewers",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "After license and PII eligibility are established, two blind annotators and a distinct adjudicator must visually inspect the exact payslip revision and sign the locked result.",
+          "external_prerequisites": [
+            "document license or authorization and approved PII-handling scope",
+            "verified visual rendering of the exact immutable document bytes",
+            "two independent annotators and a separate adjudicator with active signing keys"
+          ],
+          "evidence_required": [
+            "signed visual-eligibility decision",
+            "two blind sealed annotations",
+            "signed adjudication of every disagreement",
+            "locked revision signature bound to document and annotation hashes"
+          ],
+          "blocked_truths": ["HUMAN_GROUND_TRUTH_LOCKED", "REAL_CUSTOMER_DATA_READS"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits locked-ground-truth re-verification for the authorized document only; it does not authorize other customer-data reads."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-07",
+      "slug": "external-audit-delivery",
+      "title": "External audit delivery",
+      "actions": [
+        {
+          "action_id": "OA-07-A01",
+          "owner_type": "independent_external_auditor",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "Deliver the actual deterministic evidence-package bytes to an identified independent auditor and obtain a signed receipt plus independent byte-verification decision.",
+          "external_prerequisites": [
+            "final deterministic evidence package and detached verifier",
+            "identified auditor with active signing key and agreed delivery channel",
+            "auditor access to the actual package bytes"
+          ],
+          "evidence_required": [
+            "delivered-byte SHA-256 and size",
+            "delivery and receipt timestamps",
+            "auditor identity, organization and signature",
+            "independent verified or rejected decision bound to the received bytes"
+          ],
+          "blocked_truths": ["PRODUCTION_DELIVERY_ENABLED"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Completes external evidence handoff verification only; it does not authorize production delivery."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-08",
+      "slug": "isolated-supabase-managed-identity-storage",
+      "title": "Isolated Supabase, managed identity and storage",
+      "actions": [
+        {
+          "action_id": "OA-08-A01",
+          "owner_type": "managed_platform_owner",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "Provide a dedicated nonproduction Supabase target, managed identity issuer/key source and private storage tenancy under approved external ownership and access controls.",
+          "external_prerequisites": [
+            "authorized managed-platform account and isolated nonproduction project",
+            "approved identity issuer, key-rotation policy and session-state service",
+            "private object-store tenancy and scoped service credentials"
+          ],
+          "evidence_required": [
+            "project and environment identity without secret values",
+            "signed issuer metadata and key-rotation receipt",
+            "RLS and private-storage dynamic receipts",
+            "clean teardown or isolation attestation"
+          ],
+          "blocked_truths": ["DEPLOYMENTS", "REMOTE_MIGRATIONS", "LIVE_PROVIDER_CALLS"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits isolated managed-environment verification only; it does not authorize deployment, remote production migration or live provider use."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-09",
+      "slug": "parser-sandbox-platform-proof",
+      "title": "Parser sandbox platform proof",
+      "actions": [
+        {
+          "action_id": "OA-09-A01",
+          "owner_type": "sandbox_security_operator",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "Run the untrusted parser in an approved platform isolation primitive and sign evidence of OS-level process, filesystem, network and resource containment.",
+          "external_prerequisites": [
+            "supported sandbox platform with an approved isolation policy",
+            "security operator authorized to inspect containment and resource controls",
+            "noncustomer adversarial fixtures"
+          ],
+          "evidence_required": [
+            "platform and policy version",
+            "network-denial, filesystem-boundary and resource-limit receipts",
+            "escape and crash matrix results",
+            "security-operator signature over exact receipts"
+          ],
+          "blocked_truths": ["REAL_CUSTOMER_DATA_READS", "CUSTOMER_PROCESSING_ENABLED"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits parser-isolation re-verification on the approved platform only; it does not enable customer processing."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-10",
+      "slug": "off-host-custody",
+      "title": "Off-host custody",
+      "actions": [
+        {
+          "action_id": "OA-10-A01",
+          "owner_type": "off_host_custody_operator",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "Provision an approved off-host immutable destination, transfer actual encrypted bytes, and perform an independently witnessed restore and reconciliation drill.",
+          "external_prerequisites": [
+            "approved off-host custody provider and retention policy",
+            "managed encryption-key ownership and rotation policy",
+            "authorized source inventory and restore target"
+          ],
+          "evidence_required": [
+            "destination receipt bound to exact byte hashes",
+            "retention and deletion-policy receipt",
+            "restored-byte hash comparison and audit-continuity proof",
+            "operator and witness signatures"
+          ],
+          "blocked_truths": ["DEPLOYMENTS", "PRODUCTION_DELIVERY_ENABLED"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits off-host custody verification only; it does not prove production RPO/RTO or authorize delivery."
+        }
+      ]
+    },
+    {
+      "group_id": "OA-11",
+      "slug": "customer-shadow-authorization",
+      "title": "Customer Shadow authorization",
+      "actions": [
+        {
+          "action_id": "OA-11-A01",
+          "owner_type": "customer_data_controller",
+          "status": "BLOCKED_EXTERNAL",
+          "summary": "The data controller, privacy/security owner and authorized customer representative must approve the exact dataset, purpose, retention, access roles and stop conditions for Customer Shadow.",
+          "external_prerequisites": [
+            "documented legal basis and customer authorization for the exact dataset",
+            "privacy and security risk approval",
+            "approved retention, deletion, incident and revocation procedures",
+            "independent operational reviewer and kill-switch owner"
+          ],
+          "evidence_required": [
+            "signed authorization bound to dataset manifest and purpose",
+            "data-minimization and retention approval",
+            "access-role and kill-switch owner record",
+            "revocation and deletion completion criteria"
+          ],
+          "blocked_truths": ["CUSTOMER_SHADOW_AUTHORIZED", "REAL_CUSTOMER_DATA_READS", "CUSTOMER_PROCESSING_ENABLED"],
+          "locally_solvable_engineering": false,
+          "completion_effect": "Permits a separate authorization-gate re-verification only; it does not authorize Customer Shadow or enable customer processing by itself."
+        }
+      ]
+    }
+  ],
+  "non_claims": [
+    "Every action is a genuinely human or external prerequisite; routine local engineering is excluded.",
+    "Completing an action permits only the named gate to be re-verified and never causes automatic activation.",
+    "No path, hash, prepared package or generated test signature is treated as human review, external delivery or receipt.",
+    "All zero and NO truth values remain unchanged until genuine evidence is verified through the canonical workflow."
+  ]
+}
