@@ -1,0 +1,333 @@
+{
+  "schema_version": "tivdoc-full-local-system-marathon-assessment-v0.10.0",
+  "final_status": "LOCAL_SYSTEM_ENGINEERING_MARATHON_PARTIAL",
+  "status_constants": [
+    "SYNTHETIC_OFFLINE_SHADOW_INFRASTRUCTURE_COMPLETE",
+    "EXTERNAL_AUDIT_HANDOFF_PREPARED_NOT_DELIVERED",
+    "LEGAL_SOURCE_CORPUS_INCOMPLETE",
+    "HUMAN_LEGAL_REVIEW_REQUIRED",
+    "HUMAN_GROUND_TRUTH_REQUIRED",
+    "CUSTOMER_SHADOW_NOT_AUTHORIZED",
+    "PRODUCTION_DELIVERY_DISABLED"
+  ],
+  "acceptance": [
+    {
+      "id": "MC-01",
+      "status": "PASS",
+      "evidence": "The frozen contract binds base 28d18da69108913252736f4b8a39c4ef614984a3/tree 2a9859470003a095521a13e21474a45e1f69620e; final-verification and git/base-final.json independently bind ancestry, final HEAD/tree, branch, allowlists and a clean worktree."
+    },
+    {
+      "id": "MC-02",
+      "status": "PASS",
+      "evidence": "canonical-entrypoints.v0.10.0.json inventories 95 stable pages, APIs, workers, CLIs and services; the final canonical reachability receipt reports zero unknown nodes and zero duplicate canonical contracts."
+    },
+    {
+      "id": "MC-03",
+      "status": "BLOCKED",
+      "external_gate_satisfied": false,
+      "evidence": "The fail-closed detector and reproducible isolated runner are implemented and tested, but the exact local blockers are SUPABASE_CLI_NOT_FOUND and SUPABASE_CONTAINER_ENGINE_NOT_FOUND; no isolated Auth/PostgREST/Storage/RLS platform proof was performed."
+    },
+    {
+      "id": "MC-04",
+      "status": "FAIL",
+      "evidence": "Cryptographic JWT verification, strict claims, key rotation/revocation and fail-closed startup are locally tested, but stable non-test portal/operations composition does not wire the verifier to the durable identity-session reader."
+    },
+    {
+      "id": "MC-05",
+      "status": "PASS",
+      "evidence": "PrivateBlobProvider, immutable hash binding, tenant/owner isolation, expiring grants, revocation, chargeback/privacy invalidation and deletion receipts pass focused local tests without a live provider call."
+    },
+    {
+      "id": "MC-06",
+      "status": "FAIL",
+      "evidence": "The rendered portal and real PostgreSQL components exist, but the stable rendered portal journey still resolves the synthetic integration runtime rather than identity -> canonical root -> durable product boundary -> PostgreSQL/private storage."
+    },
+    {
+      "id": "MC-07",
+      "status": "FAIL",
+      "evidence": "The rendered operations route is browser-tested, but it is not wired to the same real PostgreSQL revision and durable identity boundary used by the V0.10 dynamic matrix."
+    },
+    {
+      "id": "MC-08",
+      "status": "FAIL",
+      "evidence": "Real PostgreSQL jobs/outbox/audit, genuine restart replay and exact report bytes are proven, but no single rendered UI -> HTTP -> worker -> private-provider -> authenticated-download timeline is wired on stable product paths."
+    },
+    {
+      "id": "MC-09",
+      "status": "PASS",
+      "evidence": "The canonical wiring map, durable product boundary contracts, capability-gate tests and prohibited-operation audit all report PRODUCT_REACHABLE_MEMORY_FALLBACKS=0."
+    },
+    {
+      "id": "MC-10",
+      "status": "BLOCKED",
+      "external_gate_satisfied": false,
+      "evidence": "Parser child-process screening and adversarial fixtures fail closed, but the detector reports PARSER_OS_SANDBOX_NOT_VERIFIED because no approved kernel/container primitive proves network namespace, read-only root, PID/CPU/file limits on this host."
+    },
+    {
+      "id": "MC-11",
+      "status": "PASS",
+      "evidence": "The current real PostgreSQL V0.10 matrix proves reserve/idempotent replay, binding rejection, lease fencing, double-reopen TOCTOU rejection, exact-byte staging, atomic publication visibility, exact reopen, genuine stop/start replay and durable row hashes."
+    },
+    {
+      "id": "MC-12",
+      "status": "PASS",
+      "evidence": "The expanded native/adversarial controlled-import matrix covers Windows path/device/ADS/UNC, Unicode, archive normalization, PDF structure and resource caps, with unsupported platform cases explicitly classified rather than passed."
+    },
+    {
+      "id": "MC-13",
+      "status": "PASS",
+      "evidence": "Reviewer trust-store tests prove organization/policy binding, proof of possession, canonical signed envelopes, verification, rotation, revocation and historical signature validation using synthetic keys only."
+    },
+    {
+      "id": "MC-14",
+      "status": "FAIL",
+      "evidence": "The seven-topic review workspace and signed decision envelope are implemented, but the workspace/trust repositories are process-local rather than durable canonical product services."
+    },
+    {
+      "id": "MC-15",
+      "status": "PASS",
+      "evidence": "Separate numeric dual-attestation and RuleSpec approval workflows enforce distinct roles, signatures, version hashes, revocation and fail-closed activation gates; real approvals remain zero."
+    },
+    {
+      "id": "MC-16",
+      "status": "PASS",
+      "evidence": "All legal activation gates and security scans preserve REAL_SOURCES_ACTIVE=0, REAL_PARAMETERS_ACTIVE=0 and REAL_RULES_ACTIVE=0; no generated fixture is admitted as evidence."
+    },
+    {
+      "id": "MC-17",
+      "status": "FAIL",
+      "evidence": "Blind dual-annotation/adjudication and evaluation tooling exist, but the Ground Truth workflow remains map-backed, lacks durable queues and genuine trusted human lock records; HUMAN_GROUND_TRUTH_LOCKED=0."
+    },
+    {
+      "id": "MC-18",
+      "status": "PASS",
+      "evidence": "The evidence-handoff state machine binds exact delivered bytes, recipient, detached signature and auditor receipt before DELIVERED/VERIFIED; current state remains PREPARED_NOT_DELIVERED."
+    },
+    {
+      "id": "MC-19",
+      "status": "FAIL",
+      "evidence": "Staged source observations remain non-operative and truthfully reconciled, but 71 observations do not yet have one durable canonical source/version/instrument candidate reconciliation queue."
+    },
+    {
+      "id": "MC-20",
+      "status": "FAIL",
+      "evidence": "RuleSpec schemas and deterministic evaluation skeletons exist, but no complete forward version lifecycle, durable approval repository and Shadow-eligible activation state is wired."
+    },
+    {
+      "id": "MC-21",
+      "status": "FAIL",
+      "evidence": "Golden-case authoring and selected mutation gates are present, but the required complete fact/temporal/applicability mutation-property matrix and human-reviewed cases are incomplete."
+    },
+    {
+      "id": "MC-22",
+      "status": "FAIL",
+      "evidence": "Trace/citation/report hashes are canonical, but dependency mutation does not yet propagate complete invalidation through every run, report, approval and grant."
+    },
+    {
+      "id": "MC-23",
+      "status": "PASS",
+      "evidence": "The durable offline synthetic Shadow repository proves scheduling, leases, pause/resume, restart recovery, retry bounds, kill switch and no automatic promotion with customer reads zero."
+    },
+    {
+      "id": "MC-24",
+      "status": "PASS",
+      "evidence": "Versioned comparison thresholds, per-field deltas, durable disagreement workflow and signed-resolution admission are locally tested; automatic promotion is impossible."
+    },
+    {
+      "id": "MC-25",
+      "status": "PASS",
+      "evidence": "Safe observability, audit diagnostics and log projection tests reject raw documents, salary/report text, credentials and signed URLs while retaining bounded operational identifiers."
+    },
+    {
+      "id": "MC-26",
+      "status": "PASS",
+      "evidence": "Immutable-object, retention, legal-hold, deletion, tamper detection and deterministic local custody receipts pass focused tests with no claim of off-host durability."
+    },
+    {
+      "id": "MC-27",
+      "status": "BLOCKED",
+      "external_gate_satisfied": false,
+      "evidence": "A local custody adapter, authenticated receipt protocol and reproducible two-store proof exist, but OFF_HOST_AUDIT_CUSTODY_PENDING and DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED remain exact managed-environment blockers."
+    },
+    {
+      "id": "MC-28",
+      "status": "PASS",
+      "evidence": "Privacy/database/storage/report/backup reconciliation detects stale grants, orphan/missing objects, deletion conflicts and audit discontinuity in deterministic local tests."
+    },
+    {
+      "id": "MC-29",
+      "status": "FAIL",
+      "evidence": "The closure inventory explains every stable entrypoint and memory fallback is zero, but several stable routes/workers/CLIs remain partial or IMPLEMENTED_NOT_WIRED rather than using one canonical service composition."
+    },
+    {
+      "id": "MC-30",
+      "status": "PASS",
+      "evidence": "The final prohibited-operation audit and full diff scan report zero secrets, PII/customer paths, customer reads, deployments, remote migrations, live provider calls and OpenAI calls."
+    },
+    {
+      "id": "MC-31",
+      "status": "PASS",
+      "evidence": "The legal readiness catalog, owner queue, assessment verifier and truth counters all preserve REAL_LEGAL_TOPICS_READY=0/7."
+    },
+    {
+      "id": "MC-32",
+      "status": "PASS",
+      "evidence": "Customer processing, Customer Shadow and Production delivery are all fail-closed and remain NO; no override/force path was added."
+    },
+    {
+      "id": "MC-33",
+      "status": "PASS",
+      "evidence": "Worker lanes used only affected tests/typecheck/security negatives; integration used focused matrices; the final immutable attempt ledger records the single release-grade verification run."
+    },
+    {
+      "id": "MC-34",
+      "status": "PASS",
+      "evidence": "The final verification ledger binds PASS receipts and exact logs for focused Marathon acceptance, full Vitest, ESLint, TypeScript --noEmit, Next production build, browser E2E and current PostgreSQL matrix-smoke."
+    },
+    {
+      "id": "MC-35",
+      "status": "PASS",
+      "evidence": "The deterministic evidence builder and independent verifier recompute byte hashes/counts, reject traversal/duplicates/out-of-root references/malformed or contradictory claims, reproduce the ZIP byte-for-byte and keep manifest/ZIP/verifier outputs outside the payload set."
+    },
+    {
+      "id": "MC-36",
+      "status": "PASS",
+      "evidence": "owner-action-index.v0.10.0.json contains exactly 11 ordered external/human groups, required evidence and limited completion effects; every item is explicitly not locally solvable engineering."
+    },
+    {
+      "id": "MC-37",
+      "status": "FAIL",
+      "evidence": "Deterministic multi-document facts and snapshots are implemented, but versioned adaptive clarification lifecycle, answer/fact invalidation, required conflict coverage and locale-complete product integration remain incomplete."
+    },
+    {
+      "id": "MC-38",
+      "status": "FAIL",
+      "evidence": "The required 11-tab reviewer operations workspace and canonical durable Legal/Parameters/Rules/Golden/GT queues are not fully implemented or wired; no force/override bypass was added."
+    },
+    {
+      "id": "MC-39",
+      "status": "FAIL",
+      "evidence": "Capability-gate, request-limit, cancellation and focused load/state-machine tests pass locally, but the capability projection is not enforced across all stable product routes/workers and no full-system partial-state proof exists."
+    }
+  ],
+  "acceptance_counts": {
+    "PASS": 22,
+    "FAIL": 14,
+    "BLOCKED": 3,
+    "SKIPPED_DEPENDENCY": 0,
+    "NOT_APPLICABLE": 0
+  },
+  "truth_counters": {
+    "REAL_LEGAL_TOPICS_READY": "0/7",
+    "REAL_SOURCES_ACTIVE": 0,
+    "REAL_PARAMETERS_ACTIVE": 0,
+    "REAL_RULES_ACTIVE": 0,
+    "REAL_CALCULATIONS_OR_FINDINGS": 0,
+    "HUMAN_GROUND_TRUTH_LOCKED": 0,
+    "REAL_CUSTOMER_DATA_READS": 0,
+    "CUSTOMER_PROCESSING_ENABLED": "NO",
+    "CUSTOMER_SHADOW_AUTHORIZED": "NO",
+    "PRODUCTION_DELIVERY_ENABLED": "NO",
+    "DEPLOYMENTS": 0,
+    "REMOTE_MIGRATIONS": 0,
+    "LIVE_PROVIDER_CALLS": 0,
+    "OPENAI_CALLS": 0,
+    "PRODUCT_REACHABLE_MEMORY_FALLBACKS": 0,
+    "FULL_SUITE_RUN_COUNT": 1,
+    "PRODUCTION_BUILD_RUN_COUNT": 1,
+    "BROWSER_E2E_FULL_RUN_COUNT": 1
+  },
+  "wave_receipts": [
+    {
+      "wave": "W1",
+      "local_status": "PASS",
+      "completed": ["isolated Supabase detector/runner", "cryptographic identity boundary", "private immutable storage lifecycle"],
+      "remaining": ["isolated platform runtime unavailable", "stable managed identity/storage composition not wired"],
+      "truth": { "customer_reads": 0, "live_provider_calls": 0 }
+    },
+    {
+      "wave": "W2",
+      "local_status": "PARTIAL",
+      "completed": ["durable PostgreSQL report pipeline", "installed product-boundary schema/adapters", "real V0.10 restart matrix"],
+      "remaining": ["stable rendered portal/operations/private-provider composition not wired"],
+      "truth": { "memory_fallbacks": 0, "customer_reads": 0 }
+    },
+    {
+      "wave": "W3",
+      "local_status": "PARTIAL",
+      "completed": ["database controlled-import ledger", "exact-byte TOCTOU and fencing", "native/adversarial parser matrix"],
+      "remaining": ["OS-level parser sandbox platform proof"],
+      "truth": { "real_sources_activated": 0 }
+    },
+    {
+      "wave": "W4",
+      "local_status": "PARTIAL",
+      "completed": ["cryptographic reviewer trust", "signed governance envelopes", "separate parameter and RuleSpec approvals"],
+      "remaining": ["durable seven-topic product workspace", "genuine human legal signatures"],
+      "truth": { "real_topics_ready": "0/7", "real_parameters": 0, "real_rules": 0 }
+    },
+    {
+      "wave": "W5",
+      "local_status": "PARTIAL",
+      "completed": ["dual-annotation/adjudication tooling", "evidence handoff state machine", "staged-source non-activation reconciliation"],
+      "remaining": ["durable GT queues", "human locked GT", "external delivery/auditor receipt"],
+      "truth": { "human_ground_truth_locked": 0 }
+    },
+    {
+      "wave": "W6",
+      "local_status": "PARTIAL",
+      "completed": ["non-operative RuleSpec schemas", "deterministic golden/trace/citation/report tooling"],
+      "remaining": ["complete version lifecycle", "complete mutation/invalidation graph", "11-tab durable reviewer operations"],
+      "truth": { "real_calculations_or_findings": 0 }
+    },
+    {
+      "wave": "W7",
+      "local_status": "PASS_LOCAL_SYNTHETIC",
+      "completed": ["durable offline scheduler/restart", "comparison/disagreement workflow", "safe observability"],
+      "remaining": ["Customer Shadow authorization"],
+      "truth": { "customer_shadow_authorized": "NO", "customer_reads": 0 }
+    },
+    {
+      "wave": "W8",
+      "local_status": "PARTIAL_EXTERNAL",
+      "completed": ["immutable retention/deletion/tamper contracts", "local custody receipts", "privacy/storage/backup reconciliation"],
+      "remaining": ["off-host replicated custody and managed restore exercise"],
+      "truth": { "deployments": 0, "remote_migrations": 0 }
+    },
+    {
+      "wave": "W9",
+      "local_status": "PASS_LOCAL_CLOSURE",
+      "completed": ["95-entry canonical inventory", "zero-finding prohibited audit", "11-group owner queue", "deterministic evidence verifier", "limits/load gates"],
+      "remaining": ["stable-path wiring gaps itemized by MC-29/37/38/39"],
+      "truth": { "production_delivery_enabled": "NO" }
+    }
+  ],
+  "focused_checks": [
+    { "check_id": "FC-001", "lane": "W1", "scope": "Supabase detector, identity and private storage", "test_count": 35, "status": "PASS" },
+    { "check_id": "FC-002", "lane": "W2", "scope": "Durable PostgreSQL pipeline and boundary adapters", "test_count": 22, "status": "PASS" },
+    { "check_id": "FC-003", "lane": "W3", "scope": "Controlled import and adversarial parser", "test_count": 120, "status": "PASS" },
+    { "check_id": "FC-004", "lane": "W4-W6", "scope": "Human trust, legal workflows, GT, handoff and deterministic evaluation", "test_count": 44, "status": "PASS" },
+    { "check_id": "FC-005", "lane": "W7-W8", "scope": "Offline Shadow, custody, privacy and observability", "test_count": 25, "status": "PASS" },
+    { "check_id": "FC-006", "lane": "W9", "scope": "Closure inventory and evidence-core negative verification", "test_count": 14, "status": "PASS" },
+    { "check_id": "FC-007", "lane": "PostgreSQL", "scope": "Signed runtime foundation smoke with current migration chain", "test_count": 1, "status": "PASS" },
+    { "check_id": "FC-008", "lane": "PostgreSQL", "scope": "V0.10 matrix deterministic contract", "test_count": 3, "status": "PASS" },
+    { "check_id": "FC-009", "lane": "Integration", "scope": "TypeScript noEmit and scoped ESLint after every trust-boundary integration", "test_count": 2, "status": "PASS" },
+    { "check_id": "FC-010", "lane": "PostgreSQL hardening", "scope": "Cross-platform migration-byte verification and durable identity/report/privacy integrity", "test_count": 50, "status": "PASS" }
+  ],
+  "commit_checks": [
+    { "commit_subject": "feat(platform): add fail-closed Supabase harness", "checks": ["FC-001"], "status": "PASS" },
+    { "commit_subject": "feat(auth): add canonical cryptographic identity boundary", "checks": ["FC-001"], "status": "PASS" },
+    { "commit_subject": "feat(storage): harden canonical private object lifecycle", "checks": ["FC-001"], "status": "PASS" },
+    { "commit_subject": "feat(product): add durable postgres boundary adapters", "checks": ["FC-002"], "status": "PASS" },
+    { "commit_subject": "feat(marathon): harden controlled import sandbox", "checks": ["FC-003"], "status": "PASS" },
+    { "commit_subject": "feat: add cryptographic human trust governance", "checks": ["FC-004"], "status": "PASS" },
+    { "commit_subject": "feat(shadow): add durable offline synthetic lifecycle", "checks": ["FC-005"], "status": "PASS" },
+    { "commit_subject": "feat(marathon): harden final evidence closure", "checks": ["FC-006"], "status": "PASS" },
+    { "commit_subject": "fix(postgres): verify signed runtime and installed boundaries", "checks": ["FC-007"], "status": "PASS" },
+    { "commit_subject": "test(postgres): add V0.10 durable restart matrix", "checks": ["FC-008"], "status": "PASS" },
+    { "commit_subject": "feat(postgres): integrate V0.10 restart matrix", "checks": ["FC-008", "FC-009"], "status": "PASS" },
+    { "commit_subject": "fix(marathon): bind current PostgreSQL matrix evidence", "checks": ["FC-006", "FC-008"], "status": "PASS" },
+    { "commit_subject": "fix(postgres): harden durable product integrity", "checks": ["FC-002", "FC-010"], "status": "PASS" },
+    { "commit_subject": "fix(postgres): verify cross-platform migration bytes", "checks": ["FC-007", "FC-010"], "status": "PASS" }
+  ]
+}
