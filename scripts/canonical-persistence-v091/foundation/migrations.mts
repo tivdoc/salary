@@ -32,6 +32,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202608310003_canonical_postgresql_dynamic_hardening.sql",
   "202609010001_controlled_import_ledger.sql",
   "202609010002_durable_product_boundaries.sql",
+  "202609010003_durable_product_integrity_hardening.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -49,6 +50,7 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
   "202608310003_canonical_postgresql_dynamic_hardening.sql": "5a270a03e234794213a4c4fd68706c53b86e9e4501688a77bf628f346e2690da",
   "202609010001_controlled_import_ledger.sql": "3e51b4c1cd06c4f654566937c486856c78c192c1923fc287da29f8c0a1463e34",
   "202609010002_durable_product_boundaries.sql": "455e8789de89bef18fb1041e009ab87d7a7e005a294209df3b83456d42ff3e6f",
+  "202609010003_durable_product_integrity_hardening.sql": "2882adc09d5faccbee2f96cf9f1c75b1b40b586f206408795bde189914501029",
 });
 
 export type MigrationFile = Readonly<{

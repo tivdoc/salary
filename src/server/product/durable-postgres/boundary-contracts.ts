@@ -1,7 +1,7 @@
 import type { IdentitySessionState } from "../../platform/auth/identity-verification.ts";
 
-export const DURABLE_PRODUCT_BOUNDARY_MIGRATION = "202609010002_durable_product_boundaries" as const;
-export const DURABLE_PRODUCT_BOUNDARY_SCHEMA_VERSION = "tivdoc-durable-product-postgresql-v0.10.0" as const;
+export const DURABLE_PRODUCT_BOUNDARY_MIGRATION = "202609010003_durable_product_integrity_hardening" as const;
+export const DURABLE_PRODUCT_BOUNDARY_SCHEMA_VERSION = "tivdoc-durable-product-postgresql-v0.10.1" as const;
 
 export const DURABLE_BOUNDARY_CAPABILITIES = Object.freeze({
   W2_DURABLE_IDENTITY_SESSION: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
@@ -10,7 +10,7 @@ export const DURABLE_BOUNDARY_CAPABILITIES = Object.freeze({
   W2_PRIVATE_REPORT_OBJECT_BINDING: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
   W2_RENDERED_NEXT_COMPOSITION: "BLOCKED_COMPOSITION",
   memory_fallback_count: 0,
-  installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
+  installed_contract_path: "supabase/migrations/202609010003_durable_product_integrity_hardening.sql",
 } as const);
 
 export type IdentitySessionRegistration = Readonly<{

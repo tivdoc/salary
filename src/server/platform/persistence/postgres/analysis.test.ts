@@ -275,6 +275,8 @@ describe("V0.9 W2 canonical PostgreSQL analysis adapters", () => {
     expect(completed.report?.pdf_sha256).toBe(report().pdf_sha256);
     expect(client.statements.filter((query) => query.name === "analysis_topic_insert")).toHaveLength(7);
     expect(client.statements.filter((query) => query.name === "analysis_findings_disabled")).toHaveLength(1);
+    expect(client.statements.find((query) => query.name === "analysis_report_insert")?.text)
+      .toContain("canonical_case_id, canonical_analysis_run_id");
     expect(new Set(client.statements.filter((query) => query.name === "analysis_topic_insert").map((query) => query.values[3]))).toEqual(new Set(WAVE3_TOPICS));
     expect(client.statements.at(-2)?.name).toBe("analysis_run_complete");
     expect(client.statements.every((query) => !query.text.includes(CASE_ID) && !query.text.includes(RUN_ID))).toBe(true);
@@ -330,6 +332,7 @@ describe("V0.9 W2 canonical PostgreSQL analysis adapters", () => {
     });
     await expect(reports.isReportExportEligible(CASE_ID, report().report_sha256)).resolves.toBe(true);
     expect(client.statements.find((query) => query.name === "analysis_review_approve")?.text).toContain("r.report_sha256 = $4");
+    expect(client.statements.find((query) => query.name === "analysis_review_approve")?.text).toContain("canonical_case_id");
   });
 
   it("persists canonical text confirmation identities and keeps Findings hard-disabled", async () => {

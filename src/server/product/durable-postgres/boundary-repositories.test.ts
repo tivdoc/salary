@@ -42,7 +42,7 @@ describe("durable PostgreSQL product boundaries", () => {
       TENANT, SID, SUBJECT, JTI, 0, VALID_AFTER, EXPIRES, null, CREATED,
     ])).toMatchObject({ name: "product_identity_register", values: expect.arrayContaining([TENANT, SID]) });
     expect(DURABLE_BOUNDARY_CAPABILITIES.memory_fallback_count).toBe(0);
-    expect(DURABLE_BOUNDARY_CAPABILITIES.installed_contract_path).toBe("supabase/migrations/202609010002_durable_product_boundaries.sql");
+    expect(DURABLE_BOUNDARY_CAPABILITIES.installed_contract_path).toBe("supabase/migrations/202609010003_durable_product_integrity_hardening.sql");
   });
 
   it("persists session rotation and revocation across fresh reader instances", async () => {
@@ -61,7 +61,7 @@ describe("durable PostgreSQL product boundaries", () => {
     });
 
     const first = new PostgresIdentitySessionStateReader(store.factory());
-    await expect(first.read(SID)).resolves.toMatchObject({ current_token_id: JTI, rotation_counter: 0, status: "active" });
+    await expect(first.read(SID)).resolves.toMatchObject({ tenant_id: TENANT, current_token_id: JTI, rotation_counter: 0, status: "active" });
 
     await repository.rotate({
       tenant_id: TENANT,
@@ -135,6 +135,16 @@ describe("durable PostgreSQL product boundaries", () => {
     });
   });
 
+  it("rejects an idempotency replay whose created-at timestamp differs", async () => {
+    const repository = new PostgresPrivacyRequestRepository(callbackClient((query) => result([privacyRow({
+      command_sha256: query.values[7],
+      created_at: "2026-09-01T06:00:01.000Z",
+    })])));
+    await expect(repository.append(privacyInput({}))).rejects.toMatchObject({
+      code: "DURABLE_BOUNDARY_EXACT_BINDING_MISMATCH",
+    });
+  });
+
   it("denies an absent or revoked report grant before accessing storage", async () => {
     let reads = 0;
     const repository = new PostgresPrivateReportObjectRepository(callbackClient(() => result([])));
@@ -203,6 +213,7 @@ function result(rows: readonly Readonly<Record<string, unknown>>[]): PostgresQue
 
 function sessionStateRow(overrides: Readonly<Record<string, unknown>> = {}): Readonly<Record<string, unknown>> {
   return Object.freeze({
+    tenant_id: TENANT,
     session_id: SID,
     subject: SUBJECT,
     status: "active",

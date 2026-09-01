@@ -42,6 +42,7 @@ export interface IdentityVerificationKeyResolver {
 }
 
 export type IdentitySessionState = Readonly<{
+  tenant_id: string;
   session_id: string;
   subject: string;
   status: "active" | "revoked";
@@ -315,10 +316,12 @@ function verifyJwtSignature(algorithm: IdentityJwtAlgorithm, signingInput: Buffe
 
 function sessionMatchesClaims(session: IdentitySessionState | null, claims: JwtClaims, now: number): session is IdentitySessionState {
   if (!session || session.status !== "active") return false;
-  if (!OPAQUE_ID.test(session.session_id) || !OPAQUE_ID.test(session.subject) || !OPAQUE_ID.test(session.current_token_id)) return false;
+  if (!OPAQUE_ID.test(session.tenant_id) || !OPAQUE_ID.test(session.session_id)
+      || !OPAQUE_ID.test(session.subject) || !OPAQUE_ID.test(session.current_token_id)) return false;
   if (!Number.isSafeInteger(session.rotation_counter) || session.rotation_counter < 0 || !Number.isSafeInteger(session.valid_after_epoch) || !Number.isSafeInteger(session.expires_at_epoch)) return false;
   if (session.reviewer_organization_id !== null && !OPAQUE_ID.test(session.reviewer_organization_id)) return false;
-  return session.session_id === claims.sid
+  return session.tenant_id === claims.tenant_id
+    && session.session_id === claims.sid
     && session.subject === claims.sub
     && session.current_token_id === claims.jti
     && session.rotation_counter === claims.rotation

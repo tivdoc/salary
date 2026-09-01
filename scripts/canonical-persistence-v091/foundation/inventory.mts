@@ -547,8 +547,8 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     }),
     Object.freeze({
       component: "durable_product_boundaries",
-      schema_version: "tivdoc-durable-product-postgresql-v0.10.0",
-      migration_id: "202609010002_durable_product_boundaries",
+      schema_version: "tivdoc-durable-product-postgresql-v0.10.1",
+      migration_id: "202609010003_durable_product_integrity_hardening",
     }),
   ]);
   if (canonicalJson(metadata) !== canonicalJson(expectedMetadata)) {

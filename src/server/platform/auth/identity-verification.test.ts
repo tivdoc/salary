@@ -51,6 +51,7 @@ function claims(overrides: Readonly<Record<string, unknown>> = {}): Readonly<Rec
 
 function session(overrides: Partial<IdentitySessionState> = {}): IdentitySessionState {
   return Object.freeze({
+    tenant_id: "tenant_0000001",
     session_id: "session_00000001",
     subject: "actor_00000001",
     status: "active",
@@ -189,6 +190,15 @@ describe("canonical cryptographic identity verification", () => {
     expect(await fixtureState.verifier.verify({ compact_jwt: rotated, expected_audience: AUDIENCE })).toBeNull();
     fixtureState.setSession(null);
     expect(await fixtureState.verifier.verify({ compact_jwt: rotated, expected_audience: AUDIENCE })).toBeNull();
+  });
+
+  it("rejects a valid SID whose durable session belongs to another tenant", async () => {
+    const fixtureState = fixture();
+    fixtureState.setSession(session({ tenant_id: "tenant_0000002" }));
+    await expect(fixtureState.verifier.verify({
+      compact_jwt: compactJwt(claims()),
+      expected_audience: AUDIENCE,
+    })).resolves.toBeNull();
   });
 
   it("binds reviewer roles to the authoritative organization and forbids organization claims on other roles", async () => {

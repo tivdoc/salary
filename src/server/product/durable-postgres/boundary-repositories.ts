@@ -255,7 +255,8 @@ export class PostgresPrivacyRequestRepository {
       || record.request_kind !== input.request_kind || record.state !== input.state
       || record.idempotency_key !== input.idempotency_key || record.command_sha256 !== commandSha256
       || record.legal_hold_conflict !== input.legal_hold_conflict
-      || record.grant_revocation_receipt_sha256 !== input.grant_revocation_receipt_sha256) mismatch();
+      || record.grant_revocation_receipt_sha256 !== input.grant_revocation_receipt_sha256
+      || record.created_at !== input.created_at) mismatch();
     return record;
   }
 }
@@ -406,8 +407,9 @@ function optionalOne<T>(result: PostgresQueryResult, decode: (row: Readonly<Reco
 }
 
 function identitySessionState(row: Readonly<Record<string, unknown>>): IdentitySessionState {
-  exactKeys(row, ["session_id", "subject", "status", "current_token_id", "rotation_counter", "valid_after_epoch", "expires_at_epoch", "reviewer_organization_id"]);
+  exactKeys(row, ["tenant_id", "session_id", "subject", "status", "current_token_id", "rotation_counter", "valid_after_epoch", "expires_at_epoch", "reviewer_organization_id"]);
   const state = Object.freeze({
+    tenant_id: opaque(row, "tenant_id"),
     session_id: opaque(row, "session_id"),
     subject: opaque(row, "subject"),
     status: enumValue(row, "status", ["active", "revoked"] as const),

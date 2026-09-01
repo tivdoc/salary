@@ -55,9 +55,10 @@ export class PostgresReportReviewRepository implements CaseReviewPort, ReportReg
         `insert into public.engine_report_versions
            (report_id, revision, tenant_id, case_id, analysis_run_id, analysis_result_sha256,
             report_sha256, manifest_sha256, json_sha256, html_sha256, pdf_sha256,
-            artifacts_payload, review_eligible, object_version_id, visible, created_at)
+            artifacts_payload, review_eligible, object_version_id, visible, created_at,
+            canonical_case_id, canonical_analysis_run_id)
          select $4, $5, $1, ecs.case_id, ar.id, $6, $7, $8, $9, $10, $11,
-                $12::jsonb, $13, null, false, transaction_timestamp()
+                $12::jsonb, $13, null, false, transaction_timestamp(), $3, $2
            from public.analysis_runs ar
            join public.engine_case_state ecs on ecs.case_id = ar.case_id
           where ar.canonical_analysis_run_id = $2
@@ -107,9 +108,10 @@ export class PostgresReportReviewRepository implements CaseReviewPort, ReportReg
         `insert into public.engine_review_task_versions
            (task_id, revision, tenant_id, case_id, task_kind, input_sha256, output_sha256,
             task_sha256, decision_payload, decision_sha256, invalidated_at, created_at,
-            report_id, report_revision, report_sha256, release_state)
+            report_id, report_revision, report_sha256, release_state, canonical_case_id)
          select $2, 1, $1, r.case_id, $3, $4, $5, $6, $7::jsonb, $6,
-                null, $8::timestamptz, r.report_id, r.revision, r.report_sha256, 'approved'
+                null, $8::timestamptz, r.report_id, r.revision, r.report_sha256, 'approved',
+                ecs.canonical_case_id
            from public.engine_report_versions r
            join public.engine_case_state ecs on ecs.case_id = r.case_id
           where r.tenant_id = $1
@@ -165,10 +167,11 @@ export class PostgresReportReviewRepository implements CaseReviewPort, ReportReg
         `insert into public.engine_review_task_versions
            (task_id, revision, tenant_id, case_id, task_kind, input_sha256, output_sha256,
             task_sha256, decision_payload, decision_sha256, invalidated_at, created_at,
-            report_id, report_revision, report_sha256, release_state)
+            report_id, report_revision, report_sha256, release_state, canonical_case_id)
          select prior.task_id, $5, prior.tenant_id, prior.case_id, prior.task_kind,
                 prior.input_sha256, $6, $7, $8::jsonb, $7, $9::timestamptz, $9::timestamptz,
-                prior.report_id, prior.report_revision, prior.report_sha256, 'invalidated'
+                prior.report_id, prior.report_revision, prior.report_sha256, 'invalidated',
+                prior.canonical_case_id
            from public.engine_review_task_versions prior
            join public.engine_case_state ecs on ecs.case_id = prior.case_id
           where prior.tenant_id = $1

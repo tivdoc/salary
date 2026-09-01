@@ -109,7 +109,7 @@ export const DURABLE_PRODUCT_BLOCKERS: readonly DurableProductBlocker[] = Object
     status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
     exact_reason: "The typed adapter and installed forward migration are present and fail-closed; the stable rendered product composition does not provide the canonical PostgreSQL connection factory.",
     requested_migration_or_wiring: "Wire the canonical PostgreSQL connection factory into the stable product composition; never substitute an in-memory session cache.",
-    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
+    installed_contract_path: "supabase/migrations/202609010003_durable_product_integrity_hardening.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
@@ -118,7 +118,7 @@ export const DURABLE_PRODUCT_BLOCKERS: readonly DurableProductBlocker[] = Object
     status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
     exact_reason: "The typed exact-owner adapter and installed server-only table/functions are present and fail-closed; stable product composition does not call them.",
     requested_migration_or_wiring: "Wire the adapter only after canonical identity verification.",
-    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
+    installed_contract_path: "supabase/migrations/202609010003_durable_product_integrity_hardening.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
@@ -127,7 +127,7 @@ export const DURABLE_PRODUCT_BLOCKERS: readonly DurableProductBlocker[] = Object
     status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
     exact_reason: "The typed revisioned privacy adapter and installed append-only ledger are present and fail-closed; privacy-request HTTP composition does not call them.",
     requested_migration_or_wiring: "Wire the installed adapter before enabling privacy-request HTTP composition.",
-    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
+    installed_contract_path: "supabase/migrations/202609010003_durable_product_integrity_hardening.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
@@ -136,7 +136,7 @@ export const DURABLE_PRODUCT_BLOCKERS: readonly DurableProductBlocker[] = Object
     status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
     exact_reason: "The typed exact-object adapter, integrity reader and installed durable metadata contract are present and fail-closed; stable report delivery does not call them.",
     requested_migration_or_wiring: "Wire the adapter to the verified private-storage provider before report delivery.",
-    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
+    installed_contract_path: "supabase/migrations/202609010003_durable_product_integrity_hardening.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
