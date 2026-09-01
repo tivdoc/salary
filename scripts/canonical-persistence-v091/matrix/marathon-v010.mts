@@ -496,6 +496,7 @@ export async function runMarathonV010BeforeRestart(
   assertBeforeInput(input);
   const capability = await runCanonicalCapabilityMatrix({
     connection_url: input.maintenance_connection_url,
+    worker_runtime_connection_url: input.runtime_role_connection_urls.worker,
     build_identity_sha: input.build_identity_sha,
     fixture_suffix: input.fixture_suffix,
   });
@@ -663,6 +664,7 @@ export async function runMarathonV010AfterRestart(
   assertCheckpointMatchesFixture(input.checkpoint, fixture);
   const replay = await replayCanonicalCapabilityMatrix({
     connection_url: input.maintenance_connection_url,
+    worker_runtime_connection_url: input.runtime_role_connection_urls.worker,
     build_identity_sha: input.checkpoint.build_identity_sha,
   }, input.checkpoint.capability_state);
   assert(replay.matrix.length === 14, "MARATHON_V010_CAPABILITY_REPLAY_COUNT_INVALID");

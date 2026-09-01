@@ -15,7 +15,13 @@ import {
   type PinnedPostgresBinaries,
 } from "../foundation/index.mts";
 import { buildPostgresChildEnvironment, runSafeCommand } from "../foundation/process.mts";
-import { roleConnectionUrls, targetConnectionUrl, type DynamicRoleSecrets } from "../orchestration/roles.mts";
+import {
+  roleConnectionUrls,
+  runtimeRoleConnectionUrls,
+  targetConnectionUrl,
+  type DynamicRoleSecrets,
+  type RuntimeRoleSecrets,
+} from "../orchestration/roles.mts";
 import { replayCanonicalCapabilityMatrix, type DurableCapabilityState } from "./capabilities.mts";
 import { runRealPostgresRlsMatrix } from "./rls.mts";
 
@@ -60,6 +66,7 @@ export async function runBackupRestoreMatrix(input: Readonly<{
   run_id: string;
   durable_state: DurableCapabilityState;
   role_secrets: DynamicRoleSecrets;
+  runtime_role_secrets: RuntimeRoleSecrets;
   tenant_a: string;
   tenant_b: string;
 }>): Promise<BackupRestoreReceipt> {
@@ -131,8 +138,14 @@ export async function runBackupRestoreMatrix(input: Readonly<{
     database: restored.descriptor.database,
     secrets: input.role_secrets,
   });
+  const restoredRuntimeRoleUrls = runtimeRoleConnectionUrls({
+    target: restored,
+    database: restored.descriptor.database,
+    secrets: input.runtime_role_secrets,
+  });
   const replay = await replayCanonicalCapabilityMatrix({
     connection_url: restoredRoleUrls.service_role,
+    worker_runtime_connection_url: restoredRuntimeRoleUrls.tivdoc_worker_runtime,
     build_identity_sha: input.build_identity_sha,
   }, input.durable_state);
   if (!replay.replayed || replay.matrix.length !== 14) throw new Error("POSTGRES_RESTORED_REPLAY_FAILED");

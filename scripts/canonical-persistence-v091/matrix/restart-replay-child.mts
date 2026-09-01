@@ -5,13 +5,17 @@ import {
   type DurableCapabilityState,
 } from "./capabilities.mts";
 
-const connectionUrl = requiredEnvironment("TIVDOC_V091_REPLAY_CONNECTION_URL");
+const legacyApplicationConnectionUrl = requiredEnvironment(
+  "TIVDOC_V091_REPLAY_LEGACY_APPLICATION_CONNECTION_URL",
+);
+const workerRuntimeConnectionUrl = requiredEnvironment("TIVDOC_V091_REPLAY_WORKER_RUNTIME_CONNECTION_URL");
 const buildIdentitySha = requiredEnvironment("TIVDOC_V091_BUILD_IDENTITY_SHA");
 const durableStatePath = requiredEnvironment("TIVDOC_V091_DURABLE_STATE_PATH");
 const durableState = JSON.parse(await readFile(durableStatePath, "utf8")) as DurableCapabilityState;
 
 const replay = await replayCanonicalCapabilityMatrix({
-  connection_url: connectionUrl,
+  connection_url: legacyApplicationConnectionUrl,
+  worker_runtime_connection_url: workerRuntimeConnectionUrl,
   build_identity_sha: buildIdentitySha,
 }, durableState);
 if (!replay.replayed || replay.matrix.length !== 14 || replay.adapter_replay.status !== "PASS") {

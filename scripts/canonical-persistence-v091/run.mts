@@ -301,18 +301,26 @@ try {
     "DYNAMIC_RUNTIME_PRODUCT_REPAIR_MATRIX_FAILED");
     const capabilities = await runCanonicalCapabilityMatrix({
       connection_url: urls.service_role,
+      worker_runtime_connection_url: runtimeUrls.tivdoc_worker_runtime,
       build_identity_sha: git.head,
       fixture_suffix: runId,
     });
-    assert(capabilities.matrix.length === 14 && capabilities.matrix.every((row) => row.status === "PASS"),
+    assert(capabilities.matrix.length === 14 && capabilities.matrix.every((row) => row.status === "PASS")
+      && capabilities.worker_runtime_principal === "tivdoc_worker_runtime"
+      && capabilities.worker_runtime_verified_session === true
+      && capabilities.worker_runtime_service_role_calls === 0,
       "DYNAMIC_CAPABILITY_MATRIX_FAILED");
 
     const tenantBMatrix = await runCanonicalCapabilityMatrix({
       connection_url: urls.service_role,
+      worker_runtime_connection_url: runtimeUrls.tivdoc_worker_runtime,
       build_identity_sha: git.head,
       fixture_suffix: `b${runId}`,
     });
-    assert(tenantBMatrix.matrix.length === 14 && tenantBMatrix.matrix.every((row) => row.status === "PASS"),
+    assert(tenantBMatrix.matrix.length === 14 && tenantBMatrix.matrix.every((row) => row.status === "PASS")
+      && tenantBMatrix.worker_runtime_principal === "tivdoc_worker_runtime"
+      && tenantBMatrix.worker_runtime_verified_session === true
+      && tenantBMatrix.worker_runtime_service_role_calls === 0,
       "DYNAMIC_TENANT_B_CAPABILITY_MATRIX_FAILED");
     const tenantB = Object.freeze({
       tenant_id: tenantBMatrix.durable_state.tenant_id,
@@ -389,10 +397,12 @@ try {
     const marathonV010ReceiptSha256 = createHash("sha256").update(marathonV010ReceiptBytes).digest("hex");
     const replayChild = await runFreshReplayProcess({
       root,
-      connection_url: urls.service_role,
+      legacy_application_connection_url: urls.service_role,
+      worker_runtime_connection_url: runtimeUrls.tivdoc_worker_runtime,
       build_identity_sha: git.head,
       durable_state_path: replayStatePath,
       service_role_secret: roleSecrets.service_role,
+      worker_runtime_secret: runtimeRoleSecrets.tivdoc_worker_runtime,
     });
     await rm(replayStatePath, { force: true });
     const restart = Object.freeze({
@@ -422,6 +432,7 @@ try {
         run_id: runId,
         durable_state: capabilities.durable_state,
         role_secrets: roleSecrets,
+        runtime_role_secrets: runtimeRoleSecrets,
         tenant_a: capabilities.durable_state.tenant_id,
         tenant_b: tenantB.tenant_id,
       });
@@ -651,10 +662,12 @@ try {
 
 async function runFreshReplayProcess(input: Readonly<{
   root: string;
-  connection_url: string;
+  legacy_application_connection_url: string;
+  worker_runtime_connection_url: string;
   build_identity_sha: string;
   durable_state_path: string;
   service_role_secret: SecretValue;
+  worker_runtime_secret: SecretValue;
 }>): Promise<Readonly<{
   schema_version: string;
   proof_class: string;
@@ -676,11 +689,12 @@ async function runFreshReplayProcess(input: Readonly<{
     cwd: input.root,
     env: Object.freeze({
       ...minimalEnvironment(),
-      TIVDOC_V091_REPLAY_CONNECTION_URL: input.connection_url,
+      TIVDOC_V091_REPLAY_LEGACY_APPLICATION_CONNECTION_URL: input.legacy_application_connection_url,
+      TIVDOC_V091_REPLAY_WORKER_RUNTIME_CONNECTION_URL: input.worker_runtime_connection_url,
       TIVDOC_V091_BUILD_IDENTITY_SHA: input.build_identity_sha,
       TIVDOC_V091_DURABLE_STATE_PATH: input.durable_state_path,
     }),
-    redactions: Object.freeze([input.service_role_secret]),
+    redactions: Object.freeze([input.service_role_secret, input.worker_runtime_secret]),
     timeout_ms: 60_000,
   });
   const value = JSON.parse(result.stdout.trim()) as Record<string, unknown>;

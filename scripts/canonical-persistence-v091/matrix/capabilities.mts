@@ -7,6 +7,7 @@ import {
   startCanonicalApplicationPostgres,
   type CanonicalApplicationPostgresComposition,
 } from "../../../src/server/platform/composition/canonical-postgres-application.ts";
+import type { CanonicalVerifiedRuntimeIdentity } from "../../../src/server/platform/composition/canonical-postgres.ts";
 import { statement } from "../../../src/server/platform/persistence/postgres/contracts.ts";
 import {
   NodePostgresConnectionFactory,
@@ -18,6 +19,7 @@ import {
 } from "./synthetic-fixtures.mts";
 
 type Application = Extract<CanonicalApplicationPostgresComposition, { mode: "isolated_postgres" }>;
+type CapabilityTransactionBundle = Parameters<Parameters<Application["transaction"]>[2]>[0];
 type Capability = (typeof CANONICAL_POSTGRES_CAPABILITY_BINDINGS)[number]["capability"];
 
 export type CapabilityMatrixRow = Readonly<{
@@ -72,15 +74,40 @@ export type CapabilityMatrixReceipt = Readonly<{
   findings_persisted: 0;
   customer_documents_used: 0;
   real_legal_activations: 0;
+  worker_runtime_principal: "tivdoc_worker_runtime";
+  worker_runtime_verified_session: true;
+  worker_runtime_service_role_calls: 0;
+  broad_application_scope: "LEGACY_CANONICAL_V091_MIGRATION_COMPATIBILITY";
   driver_metrics: NodePostgresDriverMetrics;
 }>;
 
-export type CapabilityMatrixInput = Readonly<{
+type CapabilityMatrixBaseInput = Readonly<{
   build_identity_sha: string;
   fixture_suffix?: string;
   connection_url?: string;
   connection_factory?: NodePostgresConnectionFactory;
   close_injected_factory?: boolean;
+}>;
+
+type CapabilityWorkerRuntimeInput =
+  | Readonly<{
+      worker_runtime_connection_url: string;
+      worker_runtime_connection_factory?: never;
+      worker_runtime_principal?: "tivdoc_worker_runtime";
+    }>
+  | Readonly<{
+      worker_runtime_connection_url?: never;
+      worker_runtime_connection_factory: NodePostgresConnectionFactory;
+      worker_runtime_principal: "tivdoc_worker_runtime";
+    }>;
+
+export type CapabilityMatrixInput = CapabilityMatrixBaseInput & CapabilityWorkerRuntimeInput;
+
+type CapabilityResources = Readonly<{
+  application_factory: NodePostgresConnectionFactory;
+  worker_factory: NodePostgresConnectionFactory;
+  close(): Promise<void>;
+  metrics(): NodePostgresDriverMetrics;
 }>;
 
 type Probe = Readonly<{
@@ -220,9 +247,14 @@ export async function runCanonicalCapabilityMatrix(
   const resources = createResources(input);
   let receipt: Omit<CapabilityMatrixReceipt, "driver_metrics">;
   try {
-    const application = await startApplication(resources.factory, input.build_identity_sha);
+    const application = await startApplication(
+      resources.application_factory,
+      resources.worker_factory,
+      input.build_identity_sha,
+    );
     const suffix = input.fixture_suffix ?? randomBytes(6).toString("hex");
     const fixture = createSyntheticCapabilityFixtures(suffix);
+    const workerIdentity = createCapabilityWorkerIdentity(fixture.suffix, fixture.tenant_id);
 
     await application.transaction(fixture.tenant_id, fixture.case_id, async (bundle) => {
       for (const transition of fixture.case_transitions) {
@@ -256,6 +288,7 @@ export async function runCanonicalCapabilityMatrix(
         reason: "SYNTHETIC_DYNAMIC_VERIFICATION",
         occurred_at: "2026-08-31T10:00:40.000Z",
       });
+      await seedCapabilityWorkerSession(bundle.context.client, workerIdentity);
     });
 
     await application.transaction(fixture.tenant_id, fixture.case_id, async (bundle) => {
@@ -357,55 +390,61 @@ export async function runCanonicalCapabilityMatrix(
       throw new Error("CAPABILITY_IDEMPOTENCY_REPLAY_INVALID");
     }
 
-    const auditTail = await application.transaction(fixture.tenant_id, fixture.case_id, async (bundle) => {
-      const worker = `worker:dynamic:${fixture.suffix}`;
-      const claimed = await bundle.runtime.jobs_outbox_audit.claim(worker, fixture.job_clock_ms, 60_000, 1);
-      const job = claimed.find((candidate) => candidate.job_id === fixture.job_id);
-      if (!job) throw new Error("CAPABILITY_JOB_NOT_CLAIMED");
-      await bundle.runtime.jobs_outbox_audit.start(
-        fixture.job_id,
-        worker,
-        job.fencing_token,
-        fixture.job_clock_ms + 1,
-      );
-      await bundle.runtime.jobs_outbox_audit.heartbeat(
-        fixture.job_id,
-        worker,
-        job.fencing_token,
-        fixture.job_clock_ms + 2,
-        60_000,
-      );
-      const outbox = await bundle.runtime.jobs_outbox_audit.claimOutbox(
-        worker,
-        fixture.job_clock_ms + 3,
-        60_000,
-      );
-      if (outbox?.outbox_id !== fixture.outbox_id) throw new Error("CAPABILITY_OUTBOX_NOT_CLAIMED");
-      const published = await bundle.runtime.jobs_outbox_audit.publishOutbox({
-        outbox_id: fixture.outbox_id,
-        worker_id: worker,
-        fencing_token: outbox.fencing_token,
-        now_ms: fixture.job_clock_ms + 4,
-        logical_effect_sha256: fixture.logical_effect_sha256,
-      });
-      if (published.deduplicated) throw new Error("CAPABILITY_OUTBOX_UNEXPECTED_REPLAY");
-      const succeeded = await bundle.runtime.jobs_outbox_audit.succeed(
-        fixture.job_id,
-        worker,
-        job.fencing_token,
-        fixture.job_clock_ms + 5,
-        fixture.logical_effect_sha256,
-      );
-      if (succeeded.state !== "succeeded"
-          || succeeded.terminal_effect_sha256 !== fixture.logical_effect_sha256) {
-        throw new Error("CAPABILITY_JOB_NOT_SUCCEEDED");
-      }
-      const audit = await bundle.runtime.jobs_outbox_audit.verify();
-      if (!audit.valid || audit.event_count !== 2 || audit.tail_sha256 === null) {
-        throw new Error("CAPABILITY_AUDIT_CHAIN_INVALID");
-      }
-      return audit.tail_sha256;
-    });
+    const auditTail = await workerRuntimeTransaction(
+      application,
+      workerIdentity,
+      fixture.case_id,
+      `capability:worker:${fixture.suffix}`,
+      async (bundle) => {
+        const worker = workerIdentity.actor_id;
+        const claimed = await bundle.runtime.jobs_outbox_audit.claim(worker, fixture.job_clock_ms, 60_000, 1);
+        const job = claimed.find((candidate) => candidate.job_id === fixture.job_id);
+        if (!job) throw new Error("CAPABILITY_JOB_NOT_CLAIMED");
+        await bundle.runtime.jobs_outbox_audit.start(
+          fixture.job_id,
+          worker,
+          job.fencing_token,
+          fixture.job_clock_ms + 1,
+        );
+        await bundle.runtime.jobs_outbox_audit.heartbeat(
+          fixture.job_id,
+          worker,
+          job.fencing_token,
+          fixture.job_clock_ms + 2,
+          60_000,
+        );
+        const outbox = await bundle.runtime.jobs_outbox_audit.claimOutbox(
+          worker,
+          fixture.job_clock_ms + 3,
+          60_000,
+        );
+        if (outbox?.outbox_id !== fixture.outbox_id) throw new Error("CAPABILITY_OUTBOX_NOT_CLAIMED");
+        const published = await bundle.runtime.jobs_outbox_audit.publishOutbox({
+          outbox_id: fixture.outbox_id,
+          worker_id: worker,
+          fencing_token: outbox.fencing_token,
+          now_ms: fixture.job_clock_ms + 4,
+          logical_effect_sha256: fixture.logical_effect_sha256,
+        });
+        if (published.deduplicated) throw new Error("CAPABILITY_OUTBOX_UNEXPECTED_REPLAY");
+        const succeeded = await bundle.runtime.jobs_outbox_audit.succeed(
+          fixture.job_id,
+          worker,
+          job.fencing_token,
+          fixture.job_clock_ms + 5,
+          fixture.logical_effect_sha256,
+        );
+        if (succeeded.state !== "succeeded"
+            || succeeded.terminal_effect_sha256 !== fixture.logical_effect_sha256) {
+          throw new Error("CAPABILITY_JOB_NOT_SUCCEEDED");
+        }
+        const audit = await bundle.runtime.jobs_outbox_audit.verify();
+        if (!audit.valid || audit.event_count !== 2 || audit.tail_sha256 === null) {
+          throw new Error("CAPABILITY_AUDIT_CHAIN_INVALID");
+        }
+        return audit.tail_sha256;
+      },
+    );
 
     const matrix = await probeCapabilities(application, {
       tenant_id: fixture.tenant_id,
@@ -444,11 +483,17 @@ export async function runCanonicalCapabilityMatrix(
       findings_persisted: 0 as const,
       customer_documents_used: 0 as const,
       real_legal_activations: 0 as const,
+      worker_runtime_principal: "tivdoc_worker_runtime" as const,
+      worker_runtime_verified_session: true as const,
+      worker_runtime_service_role_calls: 0 as const,
+      // Non-worker fixture setup still uses the broad V0.9.1 application root
+      // solely so clean/upgrade migration rehearsals remain compatible.
+      broad_application_scope: "LEGACY_CANONICAL_V091_MIGRATION_COMPATIBILITY" as const,
     });
   } finally {
-    if (resources.owned || input.close_injected_factory === true) await resources.factory.close();
+    await resources.close();
   }
-  return Object.freeze({ ...receipt!, driver_metrics: resources.factory.metrics() });
+  return Object.freeze({ ...receipt!, driver_metrics: resources.metrics() });
 }
 
 /** Read-only replay proof intended to run after the driver/application is restarted. */
@@ -468,7 +513,11 @@ export async function replayCanonicalCapabilityMatrix(
   let matrix: readonly CapabilityMatrixRow[];
   let adapterReplay: DurableAdapterReplayReceipt;
   try {
-    const application = await startApplication(resources.factory, input.build_identity_sha);
+    const application = await startApplication(
+      resources.application_factory,
+      resources.worker_factory,
+      input.build_identity_sha,
+    );
     const owner = Object.freeze({
       tenant_id: durableState.tenant_id,
       case_id: durableState.case_id,
@@ -478,20 +527,23 @@ export async function replayCanonicalCapabilityMatrix(
     if (canonicalSha256(before) !== durableState.capability_matrix_sha256) {
       throw new Error("DURABLE_CAPABILITY_REPLAY_MISMATCH");
     }
-    adapterReplay = await replayDurableAdapters(application, durableState);
+    adapterReplay = await replayDurableAdapters(
+      application,
+      durableState,
+    );
     matrix = await probeCapabilities(application, owner);
     if (canonicalSha256(matrix) !== durableState.capability_matrix_sha256
         || canonicalSha256(matrix) !== canonicalSha256(before)) {
       throw new Error("DURABLE_CAPABILITY_REPLAY_MUTATED_STATE");
     }
   } finally {
-    if (resources.owned || input.close_injected_factory === true) await resources.factory.close();
+    await resources.close();
   }
   return Object.freeze({
     replayed: true as const,
     matrix: matrix!,
     adapter_replay: adapterReplay!,
-    driver_metrics: resources.factory.metrics(),
+    driver_metrics: resources.metrics(),
   });
 }
 
@@ -500,6 +552,7 @@ async function replayDurableAdapters(
   durableState: DurableCapabilityState,
 ): Promise<DurableAdapterReplayReceipt> {
   const fixture = createSyntheticCapabilityFixtures(durableState.fixture_suffix);
+  const workerIdentity = createCapabilityWorkerIdentity(fixture.suffix, fixture.tenant_id);
   if (fixture.tenant_id !== durableState.tenant_id
       || fixture.case_id !== durableState.case_id
       || fixture.analysis_run_id !== durableState.analysis_run_id
@@ -512,7 +565,7 @@ async function replayDurableAdapters(
     throw new Error("DURABLE_CAPABILITY_FIXTURE_IDENTITY_MISMATCH");
   }
 
-  return application.transaction(durableState.tenant_id, durableState.case_id, async (bundle) => {
+  await application.transaction(durableState.tenant_id, durableState.case_id, async (bundle) => {
     const state = await bundle.intake.case_lifecycle.get(bundle.context, {
       tenant_id: durableState.tenant_id,
       case_id: durableState.case_id,
@@ -548,41 +601,50 @@ async function replayDurableAdapters(
     if (!audit.valid || audit.event_count !== 2 || audit.tail_sha256 !== durableState.audit_tail_sha256) {
       throw new Error("DURABLE_AUDIT_CHAIN_INVALID");
     }
+  });
 
-    const future = Date.parse("2099-01-01T00:00:00.000Z");
-    const jobs = await bundle.runtime.jobs_outbox_audit.claim(
-      `worker:restart:${durableState.fixture_suffix}`,
-      future,
-      60_000,
-      10,
-    );
-    if (jobs.length !== 0) {
-      throw new Error("DURABLE_TERMINAL_JOB_RECLAIMED");
-    }
-    const outbox = await bundle.runtime.jobs_outbox_audit.claimOutbox(
-      `worker:restart:${durableState.fixture_suffix}`,
-      future,
-      60_000,
-    );
-    if (outbox !== null) throw new Error("DURABLE_PUBLISHED_OUTBOX_RECLAIMED");
+  await workerRuntimeTransaction(
+    application,
+    workerIdentity,
+    durableState.case_id,
+    `capability:restart:${durableState.fixture_suffix}`,
+    async (bundle) => {
+      const future = Date.parse("2099-01-01T00:00:00.000Z");
+      const jobs = await bundle.runtime.jobs_outbox_audit.claim(
+        workerIdentity.actor_id,
+        future,
+        60_000,
+        10,
+      );
+      if (jobs.length !== 0) {
+        throw new Error("DURABLE_TERMINAL_JOB_RECLAIMED");
+      }
+      const outbox = await bundle.runtime.jobs_outbox_audit.claimOutbox(
+        workerIdentity.actor_id,
+        future,
+        60_000,
+      );
+      if (outbox !== null) throw new Error("DURABLE_PUBLISHED_OUTBOX_RECLAIMED");
+    },
+  );
 
-    return Object.freeze({
-      schema_version: "tivdoc-canonical-persistence-v091-adapter-replay-v1" as const,
-      case_state_reloaded: true as const,
-      completed_analysis_reloaded: true as const,
-      approval_reloaded: true as const,
-      idempotency_replayed: true as const,
-      audit_chain_verified: true as const,
-      terminal_job_not_reclaimed: true as const,
-      published_outbox_not_reclaimed: true as const,
-      durable_effects_unchanged: true as const,
-      status: "PASS" as const,
-    });
+  return Object.freeze({
+    schema_version: "tivdoc-canonical-persistence-v091-adapter-replay-v1" as const,
+    case_state_reloaded: true as const,
+    completed_analysis_reloaded: true as const,
+    approval_reloaded: true as const,
+    idempotency_replayed: true as const,
+    audit_chain_verified: true as const,
+    terminal_job_not_reclaimed: true as const,
+    published_outbox_not_reclaimed: true as const,
+    durable_effects_unchanged: true as const,
+    status: "PASS" as const,
   });
 }
 
 async function startApplication(
-  factory: NodePostgresConnectionFactory,
+  applicationFactory: NodePostgresConnectionFactory,
+  workerFactory: NodePostgresConnectionFactory,
   buildIdentitySha: string,
 ): Promise<Application> {
   if (!/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u.test(buildIdentitySha)) {
@@ -591,9 +653,12 @@ async function startApplication(
   const composition = await startCanonicalApplicationPostgres({
     mode: "isolated_postgres",
     execution_boundary: "non_test",
-    target: factory.target,
+    target: applicationFactory.target,
     build_identity_sha: buildIdentitySha,
-  }, { connection_factory: factory });
+  }, {
+    connection_factory: applicationFactory,
+    runtime_connection_factories: Object.freeze({ worker: workerFactory }),
+  });
   if (composition.mode !== "isolated_postgres") throw new Error("ISOLATED_POSTGRES_REQUIRED");
   return composition;
 }
@@ -702,20 +767,156 @@ function capabilityAtomicCommand(fixture: SyntheticCapabilityFixtures): AtomicCo
   });
 }
 
-function createResources(input: CapabilityMatrixInput): Readonly<{
-  factory: NodePostgresConnectionFactory;
-  owned: boolean;
-}> {
+function createResources(input: CapabilityMatrixInput): CapabilityResources {
   const supplied = Number(input.connection_url !== undefined) + Number(input.connection_factory !== undefined);
   if (supplied !== 1) throw new Error("EXACTLY_ONE_POSTGRES_CONNECTION_REQUIRED");
-  if (input.connection_factory) return Object.freeze({ factory: input.connection_factory, owned: false });
-  return Object.freeze({
-    factory: NodePostgresConnectionFactory.fromConnectionUrl({
+  const workerSupplied = Number(input.worker_runtime_connection_url !== undefined)
+    + Number(input.worker_runtime_connection_factory !== undefined);
+  if (workerSupplied !== 1) throw new Error("EXACTLY_ONE_WORKER_RUNTIME_CONNECTION_REQUIRED");
+  if (input.worker_runtime_connection_url !== undefined) {
+    assertWorkerRuntimeConnectionUrl(input.worker_runtime_connection_url);
+  }
+  if (input.worker_runtime_connection_factory !== undefined
+      && input.worker_runtime_principal !== "tivdoc_worker_runtime") {
+    throw new Error("WORKER_RUNTIME_PRINCIPAL_REQUIRED");
+  }
+  const applicationFactory = input.connection_factory ?? NodePostgresConnectionFactory.fromConnectionUrl({
       connection_url: input.connection_url!,
       max_connections: 16,
       application_name: "tivdoc-canonical-postgresql-v091-capability-matrix",
-    }),
-    owned: true,
+  });
+  const applicationOwned = input.connection_factory === undefined;
+  const workerFactory = input.worker_runtime_connection_factory
+    ?? NodePostgresConnectionFactory.fromConnectionUrl({
+      connection_url: input.worker_runtime_connection_url,
+      max_connections: 4,
+      application_name: "tivdoc-canonical-postgresql-v0102-capability-worker",
+    });
+  const workerOwned = input.worker_runtime_connection_url !== undefined;
+  if (workerFactory === applicationFactory) {
+    throw new Error("WORKER_RUNTIME_FACTORY_MUST_BE_DISTINCT");
+  }
+  if (workerFactory && !sameTarget(applicationFactory, workerFactory)) {
+    throw new Error("WORKER_RUNTIME_TARGET_MISMATCH");
+  }
+  const factories = Object.freeze([applicationFactory, workerFactory]);
+  return Object.freeze({
+    application_factory: applicationFactory,
+    worker_factory: workerFactory,
+    close: async (): Promise<void> => {
+      const closures = factories.filter((factory) => (
+        factory === applicationFactory ? applicationOwned : workerOwned
+      ) || input.close_injected_factory === true).map((factory) => factory.close());
+      await Promise.all(closures);
+    },
+    metrics: (): NodePostgresDriverMetrics => combinedMetrics(factories),
+  });
+}
+
+export function createCapabilityWorkerIdentity(
+  fixtureSuffix: string,
+  tenantId: string,
+): CanonicalVerifiedRuntimeIdentity {
+  if (!/^[a-z0-9]{6,32}$/u.test(fixtureSuffix)
+      || !/^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/u.test(tenantId)) {
+    throw new Error("CAPABILITY_WORKER_IDENTITY_INVALID");
+  }
+  return Object.freeze({
+    session_id: `session:capability-worker:${fixtureSuffix}`,
+    token_id: `token:capability-worker:${fixtureSuffix}`,
+    tenant_id: tenantId,
+    actor_id: `worker:dynamic:${fixtureSuffix}`,
+    reviewer_organization_id: null,
+    rotation_counter: 0,
+  });
+}
+
+async function seedCapabilityWorkerSession(
+  client: Parameters<Parameters<Application["transaction"]>[2]>[0]["context"]["client"],
+  identity: CanonicalVerifiedRuntimeIdentity,
+): Promise<void> {
+  const sessionSha256 = canonicalSha256({
+    schema_version: "tivdoc-capability-worker-session-v0.10.2",
+    ...identity,
+  });
+  await client.query(statement(
+    "capability_worker_session_seed",
+    `insert into public.product_identity_sessions(
+       tenant_id,sid,subject,current_jti,rotation_counter,valid_after,expires_at,
+       revoked_at,reviewer_org_id,session_sha256,created_at
+     ) values ($1,$2,$3,$4,$5::bigint,$6::timestamptz,$7::timestamptz,null,null,$8,$6::timestamptz)
+     on conflict (sid) do nothing`,
+    [identity.tenant_id, identity.session_id, identity.actor_id, identity.token_id,
+      identity.rotation_counter, "2020-01-01T00:00:00.000Z", "2099-01-01T00:00:00.000Z", sessionSha256],
+  ));
+  const verified = await client.query(statement(
+    "capability_worker_session_verify",
+    `select tenant_id,sid,subject,current_jti,rotation_counter::text,reviewer_org_id,session_sha256
+       from public.product_identity_sessions where sid=$1`,
+    [identity.session_id],
+  ));
+  const row = verified.rows[0];
+  if (verified.row_count !== 1 || !row || row.tenant_id !== identity.tenant_id
+      || row.sid !== identity.session_id || row.subject !== identity.actor_id
+      || row.current_jti !== identity.token_id || row.rotation_counter !== "0"
+      || row.reviewer_org_id !== null || row.session_sha256 !== sessionSha256) {
+    throw new Error("CAPABILITY_WORKER_SESSION_SEED_INVALID");
+  }
+}
+
+function workerRuntimeTransaction<T>(
+  application: Application,
+  identity: CanonicalVerifiedRuntimeIdentity,
+  caseId: string,
+  correlationId: string,
+  operation: (bundle: CapabilityTransactionBundle) => Promise<T>,
+): Promise<T> {
+  return application.verified_transaction({
+    identity,
+    runtime_role: "worker",
+    case_id: caseId,
+    correlation_id: correlationId,
+  }, operation);
+}
+
+function assertWorkerRuntimeConnectionUrl(connectionUrl: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(connectionUrl);
+  } catch {
+    throw new Error("WORKER_RUNTIME_CONNECTION_INVALID");
+  }
+  let username: string;
+  try {
+    username = decodeURIComponent(parsed.username);
+  } catch {
+    throw new Error("WORKER_RUNTIME_CONNECTION_INVALID");
+  }
+  if (username !== "tivdoc_worker_runtime") {
+    throw new Error("WORKER_RUNTIME_PRINCIPAL_INVALID");
+  }
+}
+
+function sameTarget(
+  left: NodePostgresConnectionFactory,
+  right: NodePostgresConnectionFactory,
+): boolean {
+  return left.target.host === right.target.host && left.target.port === right.target.port
+    && left.target.database === right.target.database;
+}
+
+function combinedMetrics(factories: readonly NodePostgresConnectionFactory[]): NodePostgresDriverMetrics {
+  const metrics = factories.map((factory) => factory.metrics());
+  const first = metrics[0]!;
+  return Object.freeze({
+    driver: "node-postgres" as const,
+    target: first.target,
+    connection_attempts: metrics.reduce((sum, entry) => sum + entry.connection_attempts, 0),
+    acquisitions: metrics.reduce((sum, entry) => sum + entry.acquisitions, 0),
+    queries: metrics.reduce((sum, entry) => sum + entry.queries, 0),
+    releases: metrics.reduce((sum, entry) => sum + entry.releases, 0),
+    active_clients: metrics.reduce((sum, entry) => sum + entry.active_clients, 0),
+    closed: metrics.every((entry) => entry.closed),
   });
 }
 
