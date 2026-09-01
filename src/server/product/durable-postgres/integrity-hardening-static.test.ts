@@ -14,6 +14,10 @@ const priorMigrationPath = join(
 );
 const migration = readFileSync(migrationPath, "utf8");
 const priorMigration = readFileSync(priorMigrationPath, "utf8").replaceAll("\r\n", "\n");
+const rlsMatrix = readFileSync(
+  join(process.cwd(), "scripts/canonical-persistence-v091/matrix/rls.mts"),
+  "utf8",
+);
 
 function body(name: string): string {
   const marker = `function private.${name}(`;
@@ -39,6 +43,16 @@ describe("durable product PostgreSQL integrity hardening migration", () => {
     expect(bind).toContain("report.report_sha256 = target_report_sha256");
     expect(bind).toContain("report.pdf_sha256 = target_artifact_sha256");
     expect(bind).toContain("PRODUCT_REPORT_CANONICAL_BINDING_MISMATCH");
+  });
+
+  it("seeds the RLS report object with the canonical report PDF hash", () => {
+    expect(rlsMatrix).toContain(
+      "select tenant_id, canonical_case_id, report_id, revision, report_sha256, pdf_sha256",
+    );
+    expect(rlsMatrix).toContain(
+      "$2, $3, 128, pdf_sha256, 'staged', 0, null, null, now()",
+    );
+    expect(rlsMatrix).not.toContain("rls-artifact:");
   });
 
   it("requires the exact latest approved review release on approve, replay, and read", () => {

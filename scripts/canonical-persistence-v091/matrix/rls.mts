@@ -428,7 +428,7 @@ async function seedSyntheticRlsControls(
       ]);
       const reportObject = await client.query(`
         with target_report as (
-          select tenant_id, canonical_case_id, report_id, revision, report_sha256
+          select tenant_id, canonical_case_id, report_id, revision, report_sha256, pdf_sha256
           from public.engine_report_versions
           where tenant_id = $1 order by created_at, report_id, revision limit 1
         )
@@ -438,12 +438,11 @@ async function seedSyntheticRlsControls(
           state, grant_epoch, revocation_receipt_sha256, revoked_at, created_at
         )
         select tenant_id, canonical_case_id, report_id, revision, report_sha256,
-               $2, $3, 128, $4, 'staged', 0, null, null, now()
+               $2, $3, 128, pdf_sha256, 'staged', 0, null, null, now()
         from target_report`, [
         tenantId,
         `rls-object-${uniqueSuffix}`,
         `synthetic/rls/${uniqueSuffix}`,
-        createHash("sha256").update(`rls-artifact:${tenantId}:${uniqueSuffix}`).digest("hex"),
       ]);
       const insertedProductRows = [session, owner, privacy, reportObject]
         .reduce((sum, result) => sum + (result.rowCount ?? 0), 0);
