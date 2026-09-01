@@ -37,12 +37,16 @@ try {
   server.stderr.on("data", (chunk: Buffer) => serverOutput.push(chunk.toString("utf8")));
   await waitForServer();
 
-  commands.push(runCli("open", ["open", BASE_URL, "--browser", "msedge"]));
-  commands.push(runCli("resize_desktop", ["resize", "1440", "900"]));
+  // Issue both bounded test sessions before a real browser starts additional
+  // compilation/navigation requests. This keeps the hermetic login boundary
+  // deterministic on Windows where concurrent first-compilation sockets may
+  // otherwise be reset by the development worker handoff.
   const sessions = Object.freeze({
     portal: await issueSession("portal", MARATHON_BROWSER_ROUTES[1].ticket),
     operations: await issueSession("operations", MARATHON_BROWSER_ROUTES[2].ticket),
   });
+  commands.push(runCli("open", ["open", BASE_URL, "--browser", "msedge"]));
+  commands.push(runCli("resize_desktop", ["resize", "1440", "900"]));
   for (const page of MARATHON_BROWSER_ROUTES) {
     const session = page.audience ? sessions[page.audience] : null;
     if (session) commands.push(installBrowserSession(`session_${page.id}`, session));
