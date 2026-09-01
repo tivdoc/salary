@@ -23,6 +23,7 @@
 /output/product-integration-v0.8.0/
 /output/canonical-postgresql-persistence-v0.9.0/
 /output/canonical-postgresql-dynamic-v0.9.1/
+/output/full-local-system-marathon-v0.10.0/
 /.tools/postgresql/
 /.tmp/postgresql-dynamic-v0.9.1/
 

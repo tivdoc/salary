@@ -1,0 +1,3 @@
+{"event_id":"MCL-0001","event":"BASE_VERIFIED","occurred_at":"2026-09-01T00:00:00.000Z","branch":"codex/tivdoc-engine-foundation","head":"28d18da69108913252736f4b8a39c4ef614984a3","tree":"2a9859470003a095521a13e21474a45e1f69620e","worktree":"CLEAN","status":"PASS"}
+{"event_id":"MCL-0002","event":"REACHABILITY_BASELINE_GENERATED","occurred_at":"2026-09-01T00:00:01.000Z","payload_sha256":"2584f97e6240b0a9ad486328b9faf6808662dce72d2ba6ad93590d0d3fbf847d","unknown":0,"duplicate_canonical_contracts":0,"status":"PASS"}
+{"event_id":"MCL-0003","event":"CONTRACT_INVENTORY_FROZEN","occurred_at":"2026-09-01T00:00:02.000Z","acceptance_id_count":39,"capability_lane_count":30,"classification_count":8,"status":"PASS"}

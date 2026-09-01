@@ -1,0 +1,149 @@
+{
+  "schema_version": "tivdoc-full-local-system-marathon-execution-contract-v0.10.0",
+  "frozen": true,
+  "base": {
+    "branch": "codex/tivdoc-engine-foundation",
+    "head": "28d18da69108913252736f4b8a39c4ef614984a3",
+    "tree": "2a9859470003a095521a13e21474a45e1f69620e",
+    "ancestry_required": true,
+    "clean_required": true
+  },
+  "current_acceptance_source": {
+    "historical_v09": "23/24",
+    "canonical_v091": "ACCEPTANCE_24_OF_24_PASS",
+    "pc_22": "PC-22_PASS",
+    "dynamic_postgresql": "DYNAMIC_POSTGRESQL_VERIFICATION_COMPLETE",
+    "durability": "CASE_ANALYSIS_DURABILITY_DYNAMICALLY_PROVEN"
+  },
+  "worker_capacity": 3,
+  "reachability_baseline": {
+    "command": "npm run canonical:reachability:verify",
+    "graph_path": "output/product-integration-v0.8.0/reachability/source-import-graph.json",
+    "graph_sha256": "2584f97e6240b0a9ad486328b9faf6808662dce72d2ba6ad93590d0d3fbf847d",
+    "manifest_sha256": "3b8f56194165d9cfc234c91ead536ef852e78d60f22bf16aeebceb93e6aba455",
+    "counts": {
+      "files": 662,
+      "nodes": 662,
+      "edges": 2674,
+      "product_entrypoints": 27,
+      "unknown": 0,
+      "duplicate_canonical_contracts": 0
+    }
+  },
+  "stable_persistence_capability_ids": [
+    "cases_and_lifecycle_revisions",
+    "payment_evidence_references",
+    "conversations_and_messages",
+    "documents_and_artifact_references",
+    "extractions",
+    "canonical_facts_and_conflicts",
+    "hypotheses_and_rule_inputs",
+    "corpus_source_parameter_rule_pins",
+    "analysis_runs_and_resume_cursors",
+    "per_topic_results",
+    "traces_findings_confirmations",
+    "reports_approvals_release_state",
+    "idempotency",
+    "jobs_fencing_outbox_audit"
+  ],
+  "worker_allowlists": {
+    "W1_PLATFORM_TRUST": [
+      "src/server/platform/auth/**",
+      "src/server/product/auth/**",
+      "src/server/platform/storage/**",
+      "scripts/platform/supabase/**"
+    ],
+    "W2_PRODUCT_DURABILITY": [
+      "src/server/product/customer-portal/**",
+      "src/server/product/internal-ops/**",
+      "src/server/product/integration/durable/**",
+      "src/components/portal/**",
+      "src/components/operations/**",
+      "src/app/portal/**",
+      "src/app/operations/**",
+      "src/app/api/portal/**",
+      "src/app/api/operations/**"
+    ],
+    "W3_IMPORT_SANDBOX": [
+      "src/server/engine/legal-knowledge/controlled-import-*/**",
+      "src/server/engine/legal-knowledge/parser-isolation/**",
+      "src/server/platform/security/parser-sandbox*.ts",
+      "scripts/controlled-import/**"
+    ],
+    "W4_HUMAN_LEGAL_TRUST": [
+      "src/server/platform/trust/**",
+      "src/engine/legal-operations/**",
+      "src/server/engine/legal-operations/**",
+      "src/engine/extraction-ground-truth/**",
+      "src/engine/legal-quality/**",
+      "scripts/human-trust/**"
+    ],
+    "W7_SHADOW_OBSERVABILITY": [
+      "src/server/engine/shadow/**",
+      "src/server/platform/observability/**",
+      "scripts/shadow/**"
+    ],
+    "W8_CUSTODY_PRIVACY": [
+      "src/server/platform/custody/**",
+      "src/server/platform/backup/**",
+      "src/server/platform/security/privacy*.ts",
+      "scripts/custody/**"
+    ],
+    "W9_CLOSURE_HARDENING": [
+      "src/server/system-marathon/**",
+      "scripts/full-local-marathon-v010/**",
+      "docs/full-local-system-marathon-v0.10.0.md"
+    ]
+  },
+  "orchestrator_owned": [
+    ".gitignore",
+    "package.json",
+    "package-lock.json",
+    "supabase/migrations/**",
+    "src/server/platform/composition/**",
+    "src/server/product/routes/runtime.ts",
+    "src/server/platform/persistence/wiring-map.ts",
+    "src/server/system-marathon/**",
+    "scripts/full-local-marathon-v010/**",
+    "output/full-local-system-marathon-v0.10.0/**"
+  ],
+  "dependency_graph": {
+    "W1_PLATFORM_TRUST": [],
+    "W3_IMPORT_SANDBOX": [],
+    "W4_HUMAN_LEGAL_TRUST": [],
+    "W2_PRODUCT_DURABILITY": ["W1_PLATFORM_TRUST"],
+    "W7_SHADOW_OBSERVABILITY": ["W4_HUMAN_LEGAL_TRUST"],
+    "W8_CUSTODY_PRIVACY": ["W1_PLATFORM_TRUST"],
+    "W9_CLOSURE_HARDENING": [
+      "W1_PLATFORM_TRUST",
+      "W2_PRODUCT_DURABILITY",
+      "W3_IMPORT_SANDBOX",
+      "W4_HUMAN_LEGAL_TRUST",
+      "W7_SHADOW_OBSERVABILITY",
+      "W8_CUSTODY_PRIVACY"
+    ]
+  },
+  "acceptance_ids": [
+    "MC-01", "MC-02", "MC-03", "MC-04", "MC-05", "MC-06", "MC-07", "MC-08", "MC-09", "MC-10",
+    "MC-11", "MC-12", "MC-13", "MC-14", "MC-15", "MC-16", "MC-17", "MC-18", "MC-19", "MC-20",
+    "MC-21", "MC-22", "MC-23", "MC-24", "MC-25", "MC-26", "MC-27", "MC-28", "MC-29", "MC-30",
+    "MC-31", "MC-32", "MC-33", "MC-34", "MC-35", "MC-36", "MC-37", "MC-38", "MC-39"
+  ],
+  "prohibited": [
+    "production_or_preview",
+    "deployment",
+    "push",
+    "remote_database_or_migration",
+    "customer_data",
+    "live_provider_calls",
+    "openai_calls",
+    "legal_activation_without_signed_evidence",
+    "real_findings_or_calculations",
+    "customer_shadow",
+    "automatic_memory_fallback",
+    "synthetic_fixture_non_test_reachability",
+    "historical_migration_or_evidence_mutation"
+  ],
+  "final_output_root": "output/full-local-system-marathon-v0.10.0/final",
+  "ledger": "src/server/system-marathon/marathon-ledger.v0.10.0.ndjson"
+}

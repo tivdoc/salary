@@ -1,0 +1,270 @@
+{
+  "schema_version": "tivdoc-full-local-system-marathon-inventory-v0.10.0",
+  "generated_from_head": "28d18da69108913252736f4b8a39c4ef614984a3",
+  "classification_values": [
+    "ALREADY_CANONICAL_AND_PROVEN",
+    "IMPLEMENTED_NOT_WIRED",
+    "PARTIAL",
+    "CONTRACT_ONLY",
+    "SCHEMA_ONLY",
+    "MISSING",
+    "EXTERNAL_OR_HUMAN_BLOCKED",
+    "OUT_OF_SCOPE_FOR_SAFETY"
+  ],
+  "items": [
+    {
+      "id": "MC-01",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/system-marathon/execution-contract.v0.10.0.json"],
+      "gap": "Base and contract are frozen; final Git receipts and clean final worktree remain future acceptance work."
+    },
+    {
+      "id": "MC-02",
+      "classification": "PARTIAL",
+      "evidence": ["scripts/product-integration/reachability/verify.mts", "output/product-integration-v0.8.0/reachability/source-import-graph.json"],
+      "gap": "Current graph has zero unknowns and duplicate canonical contracts, but stable workers and CLIs require explicit final inventory."
+    },
+    {
+      "id": "MC-03",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/persistence/isolated-environment.ts", "scripts/platform/persistence/isolated-verify.mts"],
+      "gap": "No local Supabase CLI, Docker, Auth, PostgREST or Storage platform is available; detector, runner and blocker receipt remain to be completed.",
+      "external_gate": "ISOLATED_SUPABASE_MIGRATION_RLS_VERIFICATION_REQUIRED"
+    },
+    {
+      "id": "MC-04",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/auth/claims.ts", "src/server/product/auth/hermetic-session.ts"],
+      "gap": "No cryptographic JWT verification port, managed provider adapter, durable revocation or canonical portal/operations identity boundary."
+    },
+    {
+      "id": "MC-05",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/storage/private-object-storage.ts"],
+      "gap": "Local storage is strong but product wiring, durable metadata/grants and Supabase Storage adapter are absent."
+    },
+    {
+      "id": "MC-06",
+      "classification": "PARTIAL",
+      "evidence": ["src/app/portal/page.tsx", "src/server/product/routes/portal-http.ts", "src/server/product/integration/browser-runtime.ts"],
+      "gap": "Rendered portal proof uses a synthetic repository and recording driver rather than real PostgreSQL restart continuity."
+    },
+    {
+      "id": "MC-07",
+      "classification": "PARTIAL",
+      "evidence": ["src/app/operations/page.tsx", "src/server/product/routes/operations-http.ts"],
+      "gap": "Rendered operations proof uses memory-backed harness state rather than the same real database revision as portal."
+    },
+    {
+      "id": "MC-08",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/persistence/postgres/runtime/jobs-outbox-audit.ts", "src/server/reports/deterministic-report-builder.ts"],
+      "gap": "Real PostgreSQL worker and report pieces exist without one UI-to-worker-to-download real-persistence timeline."
+    },
+    {
+      "id": "MC-09",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "evidence": ["src/server/platform/persistence/wiring-map.ts", "output/canonical-postgresql-dynamic-v0.9.1/final/acceptance-receipt.json"],
+      "gap": null
+    },
+    {
+      "id": "MC-10",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/engine/legal-knowledge/parser-isolation/index.ts", "src/server/platform/security/parser-sandbox.ts"],
+      "gap": "Node permission isolation is available but no local kernel/container primitive can prove network namespace, read-only rootfs or full CPU/PID/file controls.",
+      "external_gate": "PARSER_OS_SANDBOX_NOT_VERIFIED"
+    },
+    {
+      "id": "MC-11",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/engine/legal-knowledge/controlled-import-security.ts", "src/server/engine/legal-knowledge/controlled-import-recovery/protocol.ts"],
+      "gap": "Filesystem protocol is strong; canonical PostgreSQL import ledger and transactional publication are absent."
+    },
+    {
+      "id": "MC-12",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/engine/legal-knowledge/controlled-import-security.test.ts", "src/server/engine/legal-knowledge/parser-isolation/parser-isolation.test.ts"],
+      "gap": "Windows-native ADS/device/UNC, Unicode collision, forms/annotations, normalized archive path and resource-cap cases remain incomplete."
+    },
+    {
+      "id": "MC-13",
+      "classification": "CONTRACT_ONLY",
+      "evidence": ["src/engine/legal-knowledge/overnight-v07/review-workspace.ts", "src/engine/legal-operations/contracts.ts"],
+      "gap": "Reviewer key registry, proof of possession, cryptographic verification, rotation, revocation and historical persistence are absent."
+    },
+    {
+      "id": "MC-14",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "evidence": ["src/engine/legal-operations/review-packets.ts", "src/server/engine/legal-knowledge/overnight-v07/workspace.ts"],
+      "gap": "Seven-topic review exists offline but lacks durable canonical service and genuine signature admission."
+    },
+    {
+      "id": "MC-15",
+      "classification": "PARTIAL",
+      "evidence": ["src/engine/legal-operations/state-machine.ts"],
+      "gap": "Dual-attestation and RuleSpec workflow contracts exist without cryptographic trust, persistence or catalog connection."
+    },
+    {
+      "id": "MC-16",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "evidence": ["src/engine/legal-operations/catalog.ts", "src/server/engine/legal-operations/acceptance.ts"],
+      "gap": null
+    },
+    {
+      "id": "MC-17",
+      "classification": "PARTIAL",
+      "evidence": ["src/engine/extraction-ground-truth/workflow.ts", "src/engine/extraction-ground-truth/evaluator.ts"],
+      "gap": "Blind dual annotation exists without visual eligibility, trusted signatures, durable queues or real locked Ground Truth."
+    },
+    {
+      "id": "MC-18",
+      "classification": "MISSING",
+      "evidence": ["scripts/wave23-evidence-epoch/epoch_builder.py"],
+      "gap": "No aggregate package inventory, delivered-byte chain of custody, auditor receipt or handoff state machine."
+    },
+    {
+      "id": "MC-19",
+      "classification": "PARTIAL",
+      "evidence": ["src/engine/wave21/evidence-audit/count-ledger.ts"],
+      "gap": "Staged observations and byte objects are reconciled, but durable source/version/instrument candidate queues and current action requests are absent."
+    },
+    {
+      "id": "MC-20",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "evidence": ["src/engine/legal-operations/rulespec.ts", "src/engine/legal-operations/state-machine.ts"],
+      "gap": "RuleSpec schema, digest and bounded evaluator exist without version migration, durable lifecycle or verified approvals."
+    },
+    {
+      "id": "MC-21",
+      "classification": "PARTIAL",
+      "evidence": ["src/engine/legal-quality/golden-case-templates.ts", "src/engine/rule-input/preparation.ts"],
+      "gap": "Forty-two authoring templates exist without operational mutation/property runner or reviewed positive/negative cases."
+    },
+    {
+      "id": "MC-22",
+      "classification": "PARTIAL",
+      "evidence": ["src/engine/calculations/contracts.ts", "src/server/reports/deterministic-report-builder.ts"],
+      "gap": "Canonical hashes exist, but complete fact/source/parameter/rule/citation/report invalidation is not wired."
+    },
+    {
+      "id": "MC-23",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/engine/shadow/control-plane.ts"],
+      "gap": "Shadow state is Map-backed with no durable scheduler, leases, pause, restart recovery or resource limits."
+    },
+    {
+      "id": "MC-24",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/engine/shadow/contracts.ts"],
+      "gap": "No per-field deltas, threshold versions, durable disagreement queue or signed resolution."
+    },
+    {
+      "id": "MC-25",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "evidence": ["src/server/platform/observability/safe-observability.ts"],
+      "gap": "Safe sinks exist only in tests/harnesses and lack Shadow/job wiring, retention and degraded diagnostics."
+    },
+    {
+      "id": "MC-26",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/storage/private-object-storage.ts", "src/server/platform/persistence/object-write-saga.ts"],
+      "gap": "Object lifecycle is volatile and lacks durable owner fields plus orphan/missing reconciliation."
+    },
+    {
+      "id": "MC-27",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/audit/hash-chain.ts"],
+      "gap": "No replication port/outbox, destination receipt, divergence/access-log contract or local two-store proof.",
+      "external_gate": "DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "MC-28",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/backup/backup-service.ts", "src/server/product/customer-portal/service.ts"],
+      "gap": "No durable cross-system deletion plan, stale-grant/orphan-report reconciliation or restored audit-continuity receipt."
+    },
+    {
+      "id": "MC-29",
+      "classification": "PARTIAL",
+      "evidence": ["scripts/product-integration/reachability/verify.mts", "src/server/platform/persistence/wiring-map.ts"],
+      "gap": "Stable worker/CLI/service inventory and redundant scaffold retirement remain."
+    },
+    {
+      "id": "MC-30",
+      "classification": "PARTIAL",
+      "evidence": ["scripts/canonical-persistence-v091/foundation/preflight.mts", "src/server/platform/security/security.test.ts"],
+      "gap": "No unified repository prohibited-operation scan or typed denial projection over legacy provider routes."
+    },
+    {
+      "id": "MC-31",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "evidence": ["src/engine/legal-operations/catalog.ts"],
+      "gap": null
+    },
+    {
+      "id": "MC-32",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "evidence": ["src/server/product/internal-ops/flags.ts", "src/server/engine/shadow/flags.ts"],
+      "gap": null
+    },
+    {
+      "id": "MC-33",
+      "classification": "MISSING",
+      "evidence": [],
+      "gap": "Marathon worker-focused and integration risk-policy ledger has not yet been generated."
+    },
+    {
+      "id": "MC-34",
+      "classification": "MISSING",
+      "evidence": [],
+      "gap": "Final focused/full/lint/type/build/browser verification has not yet run."
+    },
+    {
+      "id": "MC-35",
+      "classification": "PARTIAL",
+      "evidence": ["scripts/canonical-persistence-v091/evidence/verify.mts"],
+      "gap": "Reusable deterministic evidence primitives exist; Marathon package and detached verifier do not."
+    },
+    {
+      "id": "MC-36",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/engine/legal-knowledge/overnight-v07/workspace.ts"],
+      "gap": "No single current owner action index covers every human and external gate."
+    },
+    {
+      "id": "MC-37",
+      "classification": "PARTIAL",
+      "evidence": ["src/engine/extraction/contracts.ts", "src/engine/facts/snapshot.ts", "src/engine/rule-input/snapshot.ts"],
+      "gap": "No integrated immutable twelve-month multi-document timeline, required conflict matrix or durable adaptive clarification flow."
+    },
+    {
+      "id": "MC-38",
+      "classification": "PARTIAL",
+      "evidence": ["src/app/operations/page.tsx", "src/components/operations/operations-workspace.tsx"],
+      "gap": "Stable operations UI lacks canonical Legal, Parameters, Rules, Golden and Ground Truth queues."
+    },
+    {
+      "id": "MC-39",
+      "classification": "PARTIAL",
+      "evidence": ["src/server/platform/security/request-guards.ts", "src/server/product/routes/http-common.ts"],
+      "gap": "No typed whole-system capability projection, startup prerequisite graph, uniform limits/cancellation or local load matrix."
+    }
+  ],
+  "baseline_truth": {
+    "REAL_LEGAL_TOPICS_READY": "0/7",
+    "REAL_SOURCES_ACTIVE": 0,
+    "REAL_PARAMETERS_ACTIVE": 0,
+    "REAL_RULES_ACTIVE": 0,
+    "REAL_CALCULATIONS_OR_FINDINGS": 0,
+    "HUMAN_GROUND_TRUTH_LOCKED": 0,
+    "REAL_CUSTOMER_DATA_READS": 0,
+    "CUSTOMER_PROCESSING_ENABLED": "NO",
+    "CUSTOMER_SHADOW_AUTHORIZED": "NO",
+    "PRODUCTION_DELIVERY_ENABLED": "NO",
+    "DEPLOYMENTS": 0,
+    "REMOTE_MIGRATIONS": 0,
+    "LIVE_PROVIDER_CALLS": 0,
+    "OPENAI_CALLS": 0,
+    "PRODUCT_REACHABLE_MEMORY_FALLBACKS": 0
+  }
+}
