@@ -27,6 +27,9 @@ const SOURCE_FILES = Object.freeze([
   "src/server/system-marathon/integration-repair-audit.v0.10.1.json",
   "src/server/system-marathon/integration-repair-ledger.v0.10.1.ndjson",
   ASSESSMENT_SOURCE,
+  "src/server/system-marathon/external-gates.v0.10.1.json",
+  "src/server/system-marathon/integration-repair-metrics.v0.10.1.json",
+  "src/server/system-marathon/owner-action-index.v0.10.1.json",
   "src/server/system-marathon/canonical-entrypoints.v0.10.0.json",
   "src/server/platform/persistence/wiring-map.ts",
 ]);

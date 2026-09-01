@@ -1,0 +1,17 @@
+{
+  "schema_version": "tivdoc-canonical-integration-durability-repair-owner-actions-v0.10.1",
+  "actions": [
+    { "id": "OA-01", "owner": "engineering", "gate": "BROWSER_INSTRUMENTATION_NODE_BUILTIN_BUNDLE", "state": "required", "authorization_granted": true },
+    { "id": "OA-02", "owner": "engineering", "gate": "CANONICAL_DURABLE_PRODUCT_COMPOSITION_AND_WORKER", "state": "required", "authorization_granted": true },
+    { "id": "OA-03", "owner": "environment", "gate": "ISOLATED_SUPABASE_CLI_AND_CONTAINER_ENGINE", "state": "blocked_external", "authorization_granted": false },
+    { "id": "OA-04", "owner": "security", "gate": "PARSER_KERNEL_OR_CONTAINER_SANDBOX", "state": "blocked_external", "authorization_granted": false },
+    { "id": "OA-05", "owner": "audit_operations", "gate": "OFF_HOST_REPLICATED_CUSTODY_DESTINATION", "state": "blocked_external", "authorization_granted": false },
+    { "id": "OA-06", "owner": "human_source_reviewers", "gate": "SEVEN_TOPIC_OFFICIAL_SOURCE_REVIEW", "state": "human_required", "authorization_granted": false },
+    { "id": "OA-07", "owner": "independent_parameter_reviewers", "gate": "DUAL_PARAMETER_ATTESTATION", "state": "human_required", "authorization_granted": false },
+    { "id": "OA-08", "owner": "legal_rule_reviewers", "gate": "RULESPEC_AND_GOLDEN_APPROVAL", "state": "human_required", "authorization_granted": false },
+    { "id": "OA-09", "owner": "ground_truth_reviewers", "gate": "VISUAL_ELIGIBILITY_DUAL_ANNOTATION_ADJUDICATION_AND_LOCK", "state": "human_required", "authorization_granted": false },
+    { "id": "OA-10", "owner": "engineering", "gate": "GLOBAL_INVALIDATION_AND_STABLE_ENTRYPOINT_CLOSURE", "state": "required", "authorization_granted": true }
+  ],
+  "manufactured_human_evidence": 0,
+  "real_activations": 0
+}

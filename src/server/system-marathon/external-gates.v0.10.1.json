@@ -1,0 +1,54 @@
+{
+  "schema_version": "tivdoc-canonical-integration-durability-repair-external-gates-v0.10.1",
+  "bounded_checks_performed_once": true,
+  "final_head_reexecution_forbidden_by_task": true,
+  "gates": [
+    {
+      "id": "MC-03",
+      "status": "BLOCKED",
+      "detector": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/platform/supabase/detect.mts",
+      "reason_codes": ["SUPABASE_CLI_NOT_FOUND", "SUPABASE_CONTAINER_ENGINE_NOT_FOUND"],
+      "observed": {
+        "supabase_cli": false,
+        "container_engine": null,
+        "cached_images_complete": false,
+        "linked_project": false,
+        "remote_credential_environment": false
+      },
+      "external_mutations": 0
+    },
+    {
+      "id": "MC-10",
+      "status": "BLOCKED",
+      "detector": "detectLocalParserSandboxPlatform",
+      "reason_codes": [
+        "PARSER_OS_SANDBOX_NOT_VERIFIED",
+        "NODE_PERMISSION_MODEL_HAS_NO_KERNEL_NETWORK_OR_RESOURCE_BOUNDARY"
+      ],
+      "observed": {
+        "platform": "win32",
+        "architecture": "x64",
+        "node_version": "22.22.2",
+        "node_permission_model": true,
+        "kernel_network_or_resource_boundary": false,
+        "locally_detected_primitives": []
+      },
+      "external_mutations": 0
+    },
+    {
+      "id": "MC-27",
+      "status": "BLOCKED",
+      "detector": "offHostCustodyCapability",
+      "reason_codes": ["OFF_HOST_AUDIT_CUSTODY_PENDING", "DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED"],
+      "observed": {
+        "local_two_store_available": true,
+        "managed_destination_available": false
+      },
+      "external_mutations": 0
+    }
+  ],
+  "deployments": 0,
+  "remote_migrations": 0,
+  "live_provider_calls": 0,
+  "openai_calls": 0
+}

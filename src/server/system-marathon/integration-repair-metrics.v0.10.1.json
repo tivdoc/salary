@@ -1,0 +1,45 @@
+{
+  "schema_version": "tivdoc-canonical-integration-durability-repair-metrics-v0.10.1",
+  "persistence_capabilities": {
+    "total": 14,
+    "wired_durable": 14,
+    "unknown": 0,
+    "duplicate_canonical_contracts": 0,
+    "product_reachable_memory_fallbacks": 0,
+    "source": "src/server/platform/persistence/wiring-map.ts"
+  },
+  "canonical_entrypoints": {
+    "total": 95,
+    "product_stable": 84,
+    "partial": 28,
+    "implemented_not_wired": 18,
+    "partial_or_unwired": 46,
+    "definition": "classification is PARTIAL or IMPLEMENTED_NOT_WIRED",
+    "source": "src/server/system-marathon/canonical-entrypoints.v0.10.0.json"
+  },
+  "process_local_product_repositories": {
+    "count": 4,
+    "items": [
+      "src/server/platform/trust/reviewer-trust-store.ts:InMemoryReviewerTrustStore",
+      "src/engine/legal-operations/state-machine.ts:AppendOnlyLegalOperationsStore",
+      "src/server/engine/legal-operations/service.ts:LegalOperationsService process-local golden and trusted-decision maps",
+      "src/engine/extraction-ground-truth/trusted-workflow.ts:TrustedGroundTruthWorkflow"
+    ],
+    "durable_governance_replacement_implemented": true,
+    "durable_governance_replacement_wired_to_stable_product": false
+  },
+  "legal_observations": {
+    "known_staged_observations_reported": 71,
+    "known_staged_observations_in_durable_queue": 0,
+    "activation_allowed": false
+  },
+  "truth": {
+    "real_legal_topics_ready": "0/7",
+    "real_sources_active": 0,
+    "real_parameters_active": 0,
+    "real_rules_active": 0,
+    "real_calculations_or_findings": 0,
+    "human_ground_truth_locked": 0,
+    "real_customer_data_reads": 0
+  }
+}
