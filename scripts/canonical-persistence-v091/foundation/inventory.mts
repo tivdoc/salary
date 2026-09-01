@@ -198,6 +198,24 @@ export const EXPECTED_RUNTIME_OWNER_POLICY_TABLES = Object.freeze([
   "public.product_private_report_objects",
 ] as const);
 
+export const EXPECTED_PORTAL_WEB_READ_POLICY_TABLES = Object.freeze([
+  "public.analysis_runs",
+  "public.case_conversations",
+  "public.documents",
+  "public.engine_case_identity",
+  "public.product_privacy_request_versions",
+  "public.product_private_report_objects",
+] as const);
+
+export const EXPECTED_PORTAL_WEB_MUTATION_POLICY_TABLES = Object.freeze([
+  "public.case_confirmations",
+  "public.case_messages",
+  "public.engine_case_lifecycle_revisions",
+  "public.engine_case_state",
+  "public.engine_idempotency_records",
+  "public.engine_platform_audit_events",
+] as const);
+
 const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.append_controlled_import_audit",
   "private.canonical_text_uuid",
@@ -271,6 +289,12 @@ const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.runtime_context_install",
   "private.runtime_verified_actor",
   "private.runtime_verified_tenant",
+  "private.runtime_web_case_state_commit_guard",
+  "private.runtime_web_case_state_guard",
+  "private.runtime_web_noop_update_guard",
+  "private.runtime_web_owns_case",
+  "private.runtime_web_owns_internal_case",
+  "private.runtime_web_verified_actor",
   "public.claim_salary_ga4_purchase",
   "public.claim_salary_meta_purchase",
   "public.claim_salary_payment_completed",
@@ -409,6 +433,9 @@ const EXPECTED_CANONICAL_TRIGGERS = Object.freeze([
   "engine_rule_inputs_append_only",
   "engine_topic_results_append_only",
   "engine_traces_append_only",
+  "portal_web_case_state_commit",
+  "portal_web_case_state_update",
+  "portal_web_message_noop_update",
   "product_case_owner_no_delete",
   "product_identity_session_no_delete",
   "product_privacy_append_only",
@@ -479,11 +506,93 @@ select jsonb_build_object(
       'table', tablename,
       'name', policyname,
       'roles', roles,
-      'command', cmd
+      'command', cmd,
+      'permissive', permissive
     ) order by schemaname, tablename, policyname)
     from pg_catalog.pg_policies
     where schemaname in ('public', 'private', 'storage')
   ), '[]'::jsonb),
+  'portal_runtime_acl', jsonb_build_object(
+    'web_surface_table_privileges', (
+      select count(*)::integer
+      from information_schema.table_privileges
+      where grantee in ('tivdoc_web_runtime', 'PUBLIC')
+        and table_schema = 'public'
+        and table_name in (
+          'engine_case_identity', 'engine_case_state', 'engine_case_lifecycle_revisions',
+          'documents', 'case_conversations', 'case_messages', 'case_confirmations',
+          'analysis_runs', 'engine_idempotency_records', 'engine_platform_audit_events',
+          'engine_report_versions', 'engine_review_task_versions', 'product_case_owners',
+          'product_privacy_request_versions', 'product_private_report_objects'
+        )
+    ),
+    'web_column_select', (
+      select count(*)::integer from information_schema.column_privileges
+      where grantee = 'tivdoc_web_runtime' and table_schema = 'public'
+        and privilege_type = 'SELECT'
+        and table_name in (
+          'engine_case_identity', 'engine_case_state', 'engine_case_lifecycle_revisions',
+          'documents', 'case_conversations', 'case_messages', 'case_confirmations',
+          'analysis_runs', 'engine_idempotency_records', 'engine_platform_audit_events',
+          'product_privacy_request_versions', 'product_private_report_objects'
+        )
+    ),
+    'web_column_insert', (
+      select count(*)::integer from information_schema.column_privileges
+      where grantee = 'tivdoc_web_runtime' and table_schema = 'public'
+        and privilege_type = 'INSERT'
+        and table_name in (
+          'case_messages', 'case_confirmations', 'engine_case_lifecycle_revisions',
+          'engine_idempotency_records', 'engine_platform_audit_events'
+        )
+    ),
+    'web_column_update', (
+      select count(*)::integer from information_schema.column_privileges
+      where grantee = 'tivdoc_web_runtime' and table_schema = 'public'
+        and privilege_type = 'UPDATE'
+        and table_name in (
+          'case_messages', 'engine_case_state', 'engine_idempotency_records',
+          'engine_platform_audit_events'
+        )
+    ),
+    'public_surface_column_privileges', (
+      select count(*)::integer from information_schema.column_privileges
+      where grantee = 'PUBLIC' and table_schema = 'public'
+        and table_name in (
+          'engine_case_identity', 'engine_case_state', 'engine_case_lifecycle_revisions',
+          'documents', 'case_conversations', 'case_messages', 'case_confirmations',
+          'analysis_runs', 'engine_idempotency_records', 'engine_platform_audit_events',
+          'engine_report_versions', 'engine_review_task_versions', 'product_case_owners',
+          'product_privacy_request_versions', 'product_private_report_objects'
+        )
+    ),
+    'web_sequence_usage', pg_catalog.has_sequence_privilege(
+      'tivdoc_web_runtime', 'public.engine_platform_audit_events_sequence_seq', 'USAGE'
+    ),
+    'web_sequence_select', pg_catalog.has_sequence_privilege(
+      'tivdoc_web_runtime', 'public.engine_platform_audit_events_sequence_seq', 'SELECT'
+    ),
+    'operations_bind_execute', pg_catalog.has_function_privilege(
+      'tivdoc_operations_runtime',
+      'private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz)',
+      'EXECUTE'
+    ),
+    'worker_bind_execute', pg_catalog.has_function_privilege(
+      'tivdoc_worker_runtime',
+      'private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz)',
+      'EXECUTE'
+    ),
+    'web_bind_execute', pg_catalog.has_function_privilege(
+      'tivdoc_web_runtime',
+      'private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz)',
+      'EXECUTE'
+    ),
+    'service_bind_execute', pg_catalog.has_function_privilege(
+      'service_role',
+      'private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz)',
+      'EXECUTE'
+    )
+  ),
   'functions', coalesce((
     select jsonb_agg(format('%I.%I(%s)', n.nspname, p.proname, pg_catalog.pg_get_function_identity_arguments(p.oid)) order by n.nspname, p.proname, p.oid)
     from pg_catalog.pg_proc p
@@ -686,7 +795,9 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   const policies = recordArray(inventory.policies, "policies");
   if (policies.length !== EXPECTED_TENANT_POLICY_TABLES.length * 2
     + EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES.length
-    + EXPECTED_RUNTIME_OWNER_POLICY_TABLES.length + 1) {
+    + EXPECTED_RUNTIME_OWNER_POLICY_TABLES.length
+    + EXPECTED_PORTAL_WEB_READ_POLICY_TABLES.length
+    + EXPECTED_PORTAL_WEB_MUTATION_POLICY_TABLES.length + 1) {
     throw new Error("POSTGRES_INVENTORY_POLICY_COUNT_INVALID");
   }
   const publicPolicyTables: string[] = [];
@@ -694,18 +805,21 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   const runtimeOwnerPolicyTables: string[] = [];
   const contextLookupPolicyTables: string[] = [];
   const privateGovernancePolicyTables: string[] = [];
+  const portalWebReadPolicyTables: string[] = [];
+  const portalWebMutationPolicyTables: string[] = [];
   for (const entry of policies) {
     const schema = stringField(entry, "schema", "policies");
     const table = stringField(entry, "table", "policies");
     const rolesValue = stringArray(entry.roles, "policy.roles");
     const qualifiedTable = `${schema}.${table}`;
-    const publicShapeValid = entry.command === "ALL"
+    const permissiveness = stringField(entry, "permissive", "policies");
+    const publicShapeValid = permissiveness === "PERMISSIVE" && entry.command === "ALL"
       && rolesValue.length === 1 && rolesValue[0] === "service_role";
-    const runtimeShapeValid = entry.command === "ALL"
+    const runtimeShapeValid = permissiveness === "PERMISSIVE" && entry.command === "ALL"
       && rolesValue.join(",") === "tivdoc_operations_runtime,tivdoc_web_runtime,tivdoc_worker_runtime";
-    const runtimeOwnerShapeValid = entry.command === "ALL"
+    const runtimeOwnerShapeValid = permissiveness === "PERMISSIVE" && entry.command === "ALL"
       && rolesValue.length === 1 && rolesValue[0] === "tivdoc_governance_owner";
-    const governanceShapeValid = entry.command === "ALL"
+    const governanceShapeValid = permissiveness === "PERMISSIVE" && entry.command === "ALL"
       && rolesValue.length === 1 && rolesValue[0] === "tivdoc_governance_owner";
     if (schema === "public" && entry.name === "tivdoc_service_tenant_scope" && publicShapeValid) {
       publicPolicyTables.push(qualifiedTable);
@@ -734,6 +848,26 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       privateGovernancePolicyTables.push(qualifiedTable);
       continue;
     }
+    if (schema === "public" && entry.name === "tivdoc_portal_web_owned_case"
+      && permissiveness === "RESTRICTIVE"
+      && rolesValue.length === 1 && rolesValue[0] === "tivdoc_web_runtime"
+      && entry.command === "SELECT"
+      && EXPECTED_PORTAL_WEB_READ_POLICY_TABLES.includes(
+        qualifiedTable as (typeof EXPECTED_PORTAL_WEB_READ_POLICY_TABLES)[number],
+      )) {
+      portalWebReadPolicyTables.push(qualifiedTable);
+      continue;
+    }
+    if (schema === "public" && entry.name === "tivdoc_portal_web_owned_case"
+      && permissiveness === "RESTRICTIVE"
+      && rolesValue.length === 1 && rolesValue[0] === "tivdoc_web_runtime"
+      && entry.command === "ALL"
+      && EXPECTED_PORTAL_WEB_MUTATION_POLICY_TABLES.includes(
+        qualifiedTable as (typeof EXPECTED_PORTAL_WEB_MUTATION_POLICY_TABLES)[number],
+      )) {
+      portalWebMutationPolicyTables.push(qualifiedTable);
+      continue;
+    }
     {
       throw new Error(`POSTGRES_INVENTORY_POLICY_INVALID:${schema}.${table}`);
     }
@@ -748,6 +882,34 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     "POSTGRES_INVENTORY_CONTEXT_LOOKUP_POLICY_TABLE_INVALID");
   assertExactStrings(privateGovernancePolicyTables, EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES,
     "POSTGRES_INVENTORY_PRIVATE_GOVERNANCE_POLICY_TABLES_INVALID");
+  assertExactStrings(portalWebReadPolicyTables, EXPECTED_PORTAL_WEB_READ_POLICY_TABLES,
+    "POSTGRES_INVENTORY_PORTAL_WEB_READ_POLICY_TABLES_INVALID");
+  assertExactStrings(portalWebMutationPolicyTables, EXPECTED_PORTAL_WEB_MUTATION_POLICY_TABLES,
+    "POSTGRES_INVENTORY_PORTAL_WEB_MUTATION_POLICY_TABLES_INVALID");
+
+  const portalAcl = record(inventory.portal_runtime_acl, "portal_runtime_acl");
+  expectValue(portalAcl.web_surface_table_privileges, 0,
+    "POSTGRES_INVENTORY_PORTAL_WEB_TABLE_ACL_INVALID");
+  expectValue(portalAcl.web_column_select, 115,
+    "POSTGRES_INVENTORY_PORTAL_WEB_SELECT_ACL_INVALID");
+  expectValue(portalAcl.web_column_insert, 68,
+    "POSTGRES_INVENTORY_PORTAL_WEB_INSERT_ACL_INVALID");
+  expectValue(portalAcl.web_column_update, 10,
+    "POSTGRES_INVENTORY_PORTAL_WEB_UPDATE_ACL_INVALID");
+  expectValue(portalAcl.public_surface_column_privileges, 0,
+    "POSTGRES_INVENTORY_PORTAL_PUBLIC_COLUMN_ACL_INVALID");
+  expectValue(portalAcl.web_sequence_usage, true,
+    "POSTGRES_INVENTORY_PORTAL_WEB_SEQUENCE_USAGE_INVALID");
+  expectValue(portalAcl.web_sequence_select, false,
+    "POSTGRES_INVENTORY_PORTAL_WEB_SEQUENCE_SELECT_INVALID");
+  expectValue(portalAcl.operations_bind_execute, true,
+    "POSTGRES_INVENTORY_PORTAL_OPERATIONS_BIND_INVALID");
+  expectValue(portalAcl.worker_bind_execute, true,
+    "POSTGRES_INVENTORY_PORTAL_WORKER_BIND_INVALID");
+  expectValue(portalAcl.web_bind_execute, false,
+    "POSTGRES_INVENTORY_PORTAL_WEB_BIND_INVALID");
+  expectValue(portalAcl.service_bind_execute, false,
+    "POSTGRES_INVENTORY_PORTAL_SERVICE_BIND_INVALID");
 
   const functions = stringArray(inventory.functions, "functions");
   const functionNames = functions.map((signature) => signature.slice(0, signature.indexOf("(")));
@@ -776,6 +938,11 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       component: "durable_human_legal_governance",
       schema_version: "tivdoc-durable-governance-v0.10.1",
       migration_id: "202609010004_durable_governance_workflows",
+    }),
+    Object.freeze({
+      component: "durable_portal_runtime_security",
+      schema_version: "tivdoc-durable-portal-runtime-security-v0.10.2",
+      migration_id: "202609010006_durable_portal_runtime_security",
     }),
     Object.freeze({
       component: "durable_product_boundaries",
