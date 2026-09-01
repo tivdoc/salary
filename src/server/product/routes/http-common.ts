@@ -2,6 +2,9 @@ import "./server-boundary.ts";
 
 export const PRODUCT_HTTP_HEADERS = Object.freeze({
   "cache-control": "private, no-store, max-age=0",
+  "content-security-policy": "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+  "cross-origin-resource-policy": "same-origin",
+  "permissions-policy": "camera=(), microphone=(), geolocation=()",
   "referrer-policy": "no-referrer",
   "x-content-type-options": "nosniff",
   "x-robots-tag": "noindex, nofollow, noarchive",
