@@ -447,7 +447,9 @@ begin
 end;
 $governance_functions$;
 
-grant select on public.product_identity_sessions to tivdoc_governance_owner;
+-- Row-locking the authoritative session during context installation requires
+-- UPDATE privilege even though no runtime context function mutates the row.
+grant select, update on public.product_identity_sessions to tivdoc_governance_owner;
 grant usage on schema public to tivdoc_governance_owner;
 
 -- Product and worker transactions use the same authoritative session context.

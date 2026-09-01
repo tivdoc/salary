@@ -46,6 +46,7 @@ import {
 } from "./matrix/marathon-v010.mts";
 import { runRealMigrationMatrix } from "./matrix/migrations.mts";
 import { runRealPostgresRlsMatrix } from "./matrix/rls.mts";
+import { runRuntimeSecurityV0102Matrix } from "./matrix/runtime-security-v0102.mts";
 import {
   assertTrustedGitRepository,
   trustedGitText,
@@ -56,6 +57,7 @@ import {
   generateDynamicRoleSecrets,
   generateRuntimeRoleSecrets,
   roleConnectionUrls,
+  runtimeRoleConnectionUrls,
   targetConnectionUrl,
 } from "./orchestration/roles.mts";
 
@@ -71,7 +73,8 @@ assert(dependencyIntegrity?.status === "PASS"
 const foundationSmoke = process.argv.includes("--foundation-smoke");
 const migrationSmoke = process.argv.includes("--migration-smoke");
 const matrixSmoke = process.argv.includes("--matrix-smoke");
-const smokeOnly = foundationSmoke || migrationSmoke || matrixSmoke;
+const runtimeSecuritySmoke = process.argv.includes("--runtime-security-smoke");
+const smokeOnly = foundationSmoke || migrationSmoke || matrixSmoke || runtimeSecuritySmoke;
 const fullMatrix = matrixSmoke || !smokeOnly;
 const finalRun = !smokeOnly;
 const runId = randomBytes(6).toString("hex");
@@ -189,6 +192,28 @@ try {
     credentials_recorded: 0,
     status: "PASS",
   });
+  const runRuntimeSecurity = () => {
+    const urls = roleConnectionUrls({ target, database: target.descriptor.database, secrets: roleSecrets });
+    const runtimeUrls = runtimeRoleConnectionUrls({
+      target,
+      database: target.descriptor.database,
+      secrets: runtimeRoleSecrets,
+    });
+    return runRuntimeSecurityV0102Matrix({
+      admin_connection_url: adminUrl,
+      role_connection_urls: {
+        anon: urls.anon,
+        authenticated: urls.authenticated,
+        service_role: urls.service_role,
+        unauthorized: urls.tivdoc_policy_probe,
+        ...runtimeUrls,
+      },
+      fixture_suffix: runId,
+    });
+  };
+  const runtimeSecurityDevelopment = runtimeSecuritySmoke ? await runRuntimeSecurity() : null;
+  assert(runtimeSecurityDevelopment === null || runtimeSecurityDevelopment.status === "PASS",
+    "DYNAMIC_RUNTIME_SECURITY_MATRIX_FAILED");
 
   const migrationMatrix = (migrationSmoke || fullMatrix) ? await runRealMigrationMatrix({
     root,
@@ -212,6 +237,7 @@ try {
       clean_migration: clean,
       roles,
       runtime_roles: runtimeRoles,
+      runtime_security: runtimeSecurityDevelopment,
       inventory_sha256: inventory.inventory_sha256,
       migration_matrix: migrationMatrix,
       explicit_target_receipt: explicit.receipt,
@@ -231,6 +257,11 @@ try {
   } else {
     assert(migrationMatrix?.status === "PASS", "DYNAMIC_MIGRATION_MATRIX_FAILED");
     const urls = roleConnectionUrls({ target, database: target.descriptor.database, secrets: roleSecrets });
+    const runtimeSecurity = await runRuntimeSecurity();
+    assert(runtimeSecurity.status === "PASS"
+      && runtimeSecurity.governance_exposed_functions === 21
+      && runtimeSecurity.unsafe_or_unexplained_functions === 0,
+    "DYNAMIC_RUNTIME_SECURITY_MATRIX_FAILED");
     const capabilities = await runCanonicalCapabilityMatrix({
       connection_url: urls.service_role,
       build_identity_sha: git.head,
@@ -360,6 +391,7 @@ try {
 
     const connectionComponents = Object.freeze({
       capability_matrix: capabilities.driver_metrics.connection_attempts,
+      runtime_security: runtimeSecurity.connection_attempts,
       tenant_b_seed: tenantB.connection_attempts,
       rls: rls.connection_attempts,
       atomicity: atomicity.connection_attempts,
@@ -420,6 +452,7 @@ try {
         concurrency: concurrency.status,
         backup_restore: backupRestore.status,
         marathon_v010: "PASS" as const,
+        runtime_security: runtimeSecurity.status,
         marathon_v010_receipt_path: MARATHON_V010_DEVELOPMENT_RECEIPT_PATH,
         marathon_v010_receipt_sha256: marathonV010ReceiptSha256,
         marathon_v010_checkpoint_sha256: marathonV010.before_restart.checkpoint.checkpoint_sha256,
@@ -517,6 +550,7 @@ try {
           "regressions.json": regressions,
           "restart-replay.json": restart,
           "rls-matrix.json": rls,
+          "runtime-security-matrix-v0.10.2.json": runtimeSecurity,
           "role-sessions.json": roles,
           "runtime-role-sessions.json": runtimeRoles,
           "shutdown.json": shutdown,
