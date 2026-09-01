@@ -94,48 +94,49 @@ export type DurableProductActor = VerifiedActor;
 export type DurableProductBlocker = Readonly<{
   blocker_id: string;
   acceptance_ids: readonly ("MC-06" | "MC-07" | "MC-08")[];
-  status: "BLOCKED_SCHEMA" | "BLOCKED_COMPOSITION";
+  status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION" | "BLOCKED_COMPOSITION";
   exact_reason: string;
   requested_migration_or_wiring: string;
+  installed_contract_path: string | null;
   safe_behavior: "FAIL_CLOSED";
 }>;
 
-/**
- * Exact non-claims for schema/wiring that does not exist in the frozen V0.9
- * migration chain. Keeping these machine-readable prevents a PostgreSQL-only
- * subset from being mislabeled as a complete rendered product journey.
- */
+/** Machine-readable installation/composition receipts; none may be treated as a rendered journey claim. */
 export const DURABLE_PRODUCT_BLOCKERS: readonly DurableProductBlocker[] = Object.freeze([
   Object.freeze({
     blocker_id: "W2_DURABLE_IDENTITY_SESSION_SCHEMA_ABSENT",
     acceptance_ids: Object.freeze(["MC-06", "MC-07"] as const),
-    status: "BLOCKED_SCHEMA",
-    exact_reason: "No canonical PostgreSQL table/adapter persists sid, current jti, rotation, valid-after, expiry, revocation and reviewer-organization session state.",
-    requested_migration_or_wiring: "Add an append-safe canonical identity-session migration and IdentitySessionStateReader adapter before restart-continuous product sessions are enabled.",
+    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
+    exact_reason: "The typed adapter is present and fail-closed; it cannot operate until the forward-only durable-product migration is installed by the integration branch.",
+    requested_migration_or_wiring: "Install the declared migration and provide the canonical PostgreSQL connection factory; never substitute an in-memory session cache.",
+    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
     blocker_id: "W2_CUSTOMER_OWNER_BINDING_SCHEMA_ABSENT",
     acceptance_ids: Object.freeze(["MC-06"] as const),
-    status: "BLOCKED_SCHEMA",
-    exact_reason: "The canonical case schema has tenant/case scope but no durable verified-subject to customer-owner binding.",
-    requested_migration_or_wiring: "Add a tenant-scoped immutable owner binding consumed only after canonical identity verification.",
+    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
+    exact_reason: "The typed exact-owner adapter is present and fail-closed; its server-only table/functions require installation by the integration branch.",
+    requested_migration_or_wiring: "Install the declared migration and wire the adapter only after canonical identity verification.",
+    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
     blocker_id: "W2_PRIVACY_WORKFLOW_SCHEMA_ABSENT",
     acceptance_ids: Object.freeze(["MC-06", "MC-07"] as const),
-    status: "BLOCKED_SCHEMA",
-    exact_reason: "The frozen migration chain has no durable privacy-request revision/idempotency/legal-hold-conflict workflow.",
-    requested_migration_or_wiring: "Add a revisioned privacy-request ledger with legal-hold conflict and grant-revocation bindings.",
+    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
+    exact_reason: "The typed revisioned privacy adapter is present and fail-closed; its append-only ledger requires installation by the integration branch.",
+    requested_migration_or_wiring: "Install the declared migration before enabling privacy-request HTTP composition.",
+    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
     blocker_id: "W2_PRIVATE_REPORT_OBJECT_METADATA_SCHEMA_ABSENT",
     acceptance_ids: Object.freeze(["MC-06", "MC-08"] as const),
-    status: "BLOCKED_SCHEMA",
-    exact_reason: "Report rows persist deterministic artifacts, but no durable provider locator/length/grant/revocation metadata binds them to the new private-storage provider across restart.",
-    requested_migration_or_wiring: "Add immutable report-object metadata and durable private-grant/revocation bindings before claiming storage-backed report delivery.",
+    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
+    exact_reason: "The typed exact-object adapter and integrity reader are present and fail-closed; their durable metadata contract requires installation by the integration branch.",
+    requested_migration_or_wiring: "Install the declared migration and wire it to the verified private-storage provider before report delivery.",
+    installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
@@ -144,6 +145,7 @@ export const DURABLE_PRODUCT_BLOCKERS: readonly DurableProductBlocker[] = Object
     status: "BLOCKED_COMPOSITION",
     exact_reason: "Stable Next routes still resolve their pre-existing test runtime; no non-test startup path installs the canonical PostgreSQL product composition and canonical identity session verifier.",
     requested_migration_or_wiring: "Wire one server bootstrap to install the durable product adapters and canonical verifier, then run rendered browser E2E.",
+    installed_contract_path: null,
     safe_behavior: "FAIL_CLOSED",
   }),
 ]);
