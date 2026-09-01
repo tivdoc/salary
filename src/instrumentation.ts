@@ -36,11 +36,13 @@ export function hermeticBrowserRuntimeBootstrapEnabled(
 }
 
 export async function register(): Promise<void> {
-  if (!hermeticBrowserRuntimeBootstrapEnabled()) return;
-  const { initializeHermeticBrowserRuntime } = await import(
-    "./server/product/integration/browser-runtime"
-  );
-  await initializeHermeticBrowserRuntime();
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    if (!hermeticBrowserRuntimeBootstrapEnabled()) return;
+    const { initializeHermeticBrowserRuntime } = await import(
+      "./server/product/integration/browser-runtime"
+    );
+    await initializeHermeticBrowserRuntime();
+  }
 }
 
 function runtimeEnvironmentValue(environment: RuntimeEnvironment, key: string): string | undefined {
