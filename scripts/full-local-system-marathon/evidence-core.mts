@@ -35,6 +35,42 @@ const REQUIRED_FINAL_COMMANDS = [
   "canonical_reachability",
   "persistence_wiring",
 ] as const;
+const POST_VERIFICATION_CLOSURE_PATH = "git/post-verification-closure.json";
+const PRE_CLOSURE_ASSESSMENT_PATH = "assessment/pre-closure-assessment.json";
+const POST_VERIFICATION_COMMIT_SPECS = [
+  Object.freeze({
+    classification: "TARGETED_REPAIR_UNVERIFIED_BY_COMPLETE_FINAL_RUN",
+    subject: "fix(postgres): reuse canonical report bytes in matrix",
+    changed_paths: Object.freeze([
+      "scripts/canonical-persistence-v091/matrix/marathon-v010.mts",
+      "scripts/canonical-persistence-v091/matrix/marathon-v010.test.mjs",
+    ]),
+  }),
+  Object.freeze({
+    classification: "EVIDENCE_TOOLING_CLOSURE_SUPPORT",
+    subject: "fix(marathon): support exhausted-attempt evidence closure",
+    changed_paths: Object.freeze([
+      "scripts/full-local-system-marathon/evidence-core.mts",
+      "scripts/full-local-system-marathon/run.mts",
+      "src/server/system-marathon/evidence-core.test.ts",
+    ]),
+  }),
+  Object.freeze({
+    classification: "ASSESSMENT_ONLY_CLOSURE",
+    subject: "docs(marathon): record exhausted final verification",
+    changed_paths: Object.freeze([
+      "src/server/system-marathon/acceptance-assessment.v0.10.0.json",
+    ]),
+  }),
+] as const;
+const W2_OLD_COMPLETED = "real V0.10 restart matrix";
+const W2_NEW_COMPLETED = "V0.10 restart-matrix tooling and targeted exact-byte repair";
+const W2_NEW_REMAINING = "complete V0.10 dynamic restart regression remains FAILED_LOCAL_WITH_EVIDENCE";
+const POSTGRES_REPAIR_CHECK = Object.freeze({
+  commit_subject: "fix(postgres): reuse canonical report bytes in matrix",
+  checks: Object.freeze(["FC-008", "FC-010"]),
+  status: "PASS",
+});
 const ZERO_TRUTH_COUNTERS = [
   "REAL_SOURCES_ACTIVE",
   "REAL_PARAMETERS_ACTIVE",
@@ -104,6 +140,251 @@ export function canonicalAcceptanceMarkdown(assessment: Record<string, unknown>)
   return lines.join("\n");
 }
 
+type PostVerificationClosureInput = Readonly<{
+  previousAssessmentBytes: Uint8Array;
+  currentAssessment: Record<string, unknown>;
+  finalVerification: Record<string, unknown>;
+  git: Record<string, unknown>;
+  commits: readonly Record<string, unknown>[];
+}>;
+
+type PostVerificationClosureVerificationInput = PostVerificationClosureInput & Readonly<{
+  receipt: Record<string, unknown>;
+}>;
+
+export function createPostVerificationClosureReceipt(
+  input: PostVerificationClosureInput,
+): Readonly<Record<string, unknown>> {
+  const attempts = Array.isArray(input.finalVerification.attempts)
+    ? input.finalVerification.attempts.map((entry) => asObject(entry, "MARATHON_CLOSURE_ATTEMPTS_INVALID"))
+    : [];
+  const latest = attempts.at(-1);
+  if (!latest) throw new Error("MARATHON_CLOSURE_ATTEMPTS_INVALID");
+  const suffix = postVerificationCommitSuffix(input.commits, String(latest.verified_head));
+  const receipt = Object.freeze({
+    schema_version: "tivdoc-full-local-system-marathon-post-verification-closure-v0.10.0",
+    closure_mode: "EXHAUSTED_ATTEMPT_TARGETED_REPAIR_TOOLING_AND_ASSESSMENT_CLOSURE",
+    status: "PASS",
+    final_verification_status: input.finalVerification.status,
+    complete_final_attempts: attempts.length,
+    complete_attempt_limit: input.finalVerification.complete_attempt_limit,
+    verified_head: latest.verified_head,
+    verified_tree: latest.verified_tree,
+    final_head: input.git.final_head,
+    final_tree: input.git.final_tree,
+    previous_assessment_path: PRE_CLOSURE_ASSESSMENT_PATH,
+    previous_assessment_sha256: sha256(input.previousAssessmentBytes),
+    post_attempt_commits: Object.freeze(suffix.map((commit, index) => Object.freeze({
+      ordinal: index + 1,
+      classification: POST_VERIFICATION_COMMIT_SPECS[index]?.classification,
+      sha: commit.sha,
+      tree: commit.tree,
+      parent: commit.parent,
+      subject: commit.subject,
+      changed_paths: Object.freeze([...(commit.changed_paths as readonly string[])]),
+    }))),
+  });
+  verifyPostVerificationClosure({ ...input, receipt });
+  return receipt;
+}
+
+export function verifyPostVerificationClosure(input: PostVerificationClosureVerificationInput): void {
+  const { receipt, finalVerification, git, commits } = input;
+  assertExactObjectKeys(receipt, [
+    "schema_version", "closure_mode", "status", "final_verification_status", "complete_final_attempts",
+    "complete_attempt_limit", "verified_head", "verified_tree", "final_head", "final_tree",
+    "previous_assessment_path", "previous_assessment_sha256", "post_attempt_commits",
+  ], "MARATHON_CLOSURE_RECEIPT_INVALID");
+  if (receipt.schema_version !== "tivdoc-full-local-system-marathon-post-verification-closure-v0.10.0"
+      || receipt.closure_mode !== "EXHAUSTED_ATTEMPT_TARGETED_REPAIR_TOOLING_AND_ASSESSMENT_CLOSURE"
+      || receipt.status !== "PASS"
+      || receipt.final_verification_status !== "FAIL"
+      || receipt.complete_final_attempts !== 2
+      || receipt.complete_attempt_limit !== 2
+      || receipt.previous_assessment_path !== PRE_CLOSURE_ASSESSMENT_PATH
+      || typeof receipt.previous_assessment_sha256 !== "string"
+      || !SHA256.test(receipt.previous_assessment_sha256)
+      || receipt.previous_assessment_sha256 !== sha256(input.previousAssessmentBytes)) {
+    throw new Error("MARATHON_CLOSURE_RECEIPT_INVALID");
+  }
+  if (finalVerification.status !== "FAIL"
+      || finalVerification.complete_attempt_limit !== 2
+      || !Array.isArray(finalVerification.attempts)
+      || finalVerification.attempts.length !== 2
+      || finalVerification.attempts.some((entry) => asObject(entry, "MARATHON_CLOSURE_ATTEMPTS_INVALID").status !== "FAIL")
+      || asObject(finalVerification.run_counts, "MARATHON_CLOSURE_RUN_COUNTS_INVALID").complete_final_attempts !== 2) {
+    throw new Error("MARATHON_CLOSURE_REQUIRES_EXHAUSTED_FAILURE");
+  }
+  const latest = asObject(finalVerification.attempts[1], "MARATHON_CLOSURE_ATTEMPTS_INVALID");
+  if (latest.status !== "FAIL"
+      || finalVerification.verified_head !== latest.verified_head
+      || finalVerification.verified_tree !== latest.verified_tree
+      || receipt.verified_head !== latest.verified_head
+      || receipt.verified_tree !== latest.verified_tree
+      || receipt.final_head !== git.final_head
+      || receipt.final_tree !== git.final_tree
+      || latest.verified_head === git.final_head) {
+    throw new Error("MARATHON_CLOSURE_GIT_BINDING_INVALID");
+  }
+
+  const suffix = postVerificationCommitSuffix(commits, String(latest.verified_head));
+  if (!Array.isArray(receipt.post_attempt_commits)
+      || receipt.post_attempt_commits.length !== POST_VERIFICATION_COMMIT_SPECS.length) {
+    throw new Error("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+  }
+  let expectedParent = String(latest.verified_head);
+  for (const [index, spec] of POST_VERIFICATION_COMMIT_SPECS.entries()) {
+    const commit = suffix[index]!;
+    const claimed = asObject(receipt.post_attempt_commits[index], "MARATHON_CLOSURE_COMMIT_RECEIPT_INVALID");
+    assertExactObjectKeys(claimed, [
+      "ordinal", "classification", "sha", "tree", "parent", "subject", "changed_paths",
+    ], "MARATHON_CLOSURE_COMMIT_RECEIPT_INVALID");
+    if (commit.parent !== expectedParent
+        || commit.subject !== spec.subject
+        || JSON.stringify(commit.changed_paths) !== JSON.stringify(spec.changed_paths)
+        || claimed.ordinal !== index + 1
+        || claimed.classification !== spec.classification
+        || claimed.sha !== commit.sha
+        || claimed.tree !== commit.tree
+        || claimed.parent !== commit.parent
+        || claimed.subject !== commit.subject
+        || JSON.stringify(claimed.changed_paths) !== JSON.stringify(commit.changed_paths)) {
+      throw new Error("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+    }
+    expectedParent = String(commit.sha);
+  }
+  const finalCommit = suffix.at(-1)!;
+  if (expectedParent !== git.final_head || finalCommit.tree !== git.final_tree) {
+    throw new Error("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+  }
+
+  let previousAssessment: Record<string, unknown>;
+  try {
+    previousAssessment = asObject(
+      JSON.parse(Buffer.from(input.previousAssessmentBytes).toString("utf8")),
+      "MARATHON_PRE_CLOSURE_ASSESSMENT_INVALID",
+    );
+  } catch {
+    throw new Error("MARATHON_PRE_CLOSURE_ASSESSMENT_INVALID");
+  }
+  verifyAssessment(previousAssessment);
+  verifyAssessment(input.currentAssessment);
+  verifyPostVerificationAssessmentDelta(previousAssessment, input.currentAssessment);
+}
+
+function postVerificationCommitSuffix(
+  commits: readonly Record<string, unknown>[],
+  verifiedHead: string,
+): readonly Record<string, unknown>[] {
+  const verifiedIndexes = commits.flatMap((commit, index) => commit.sha === verifiedHead ? [index] : []);
+  if (verifiedIndexes.length !== 1) throw new Error("MARATHON_CLOSURE_VERIFIED_COMMIT_MISSING");
+  const suffix = commits.slice(verifiedIndexes[0]! + 1);
+  if (suffix.length !== POST_VERIFICATION_COMMIT_SPECS.length) {
+    throw new Error("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+  }
+  return suffix;
+}
+
+function verifyPostVerificationAssessmentDelta(
+  previous: Record<string, unknown>,
+  current: Record<string, unknown>,
+): void {
+  const previousAcceptance = (previous.acceptance as readonly unknown[])
+    .map((entry) => asObject(entry, "MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID"));
+  const currentAcceptance = (current.acceptance as readonly unknown[])
+    .map((entry) => asObject(entry, "MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID"));
+  const previousById = new Map(previousAcceptance.map((entry) => [String(entry.id), entry]));
+  const currentById = new Map(currentAcceptance.map((entry) => [String(entry.id), entry]));
+  const previousMc01 = previousById.get("MC-01")!;
+  const currentMc01 = currentById.get("MC-01")!;
+  const previousMc11 = previousById.get("MC-11")!;
+  const currentMc11 = currentById.get("MC-11")!;
+  const previousMc34 = previousById.get("MC-34")!;
+  const currentMc34 = currentById.get("MC-34")!;
+  const previousCounts = asObject(previous.acceptance_counts, "MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  const currentCounts = asObject(current.acceptance_counts, "MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  if (previousMc01.status !== "PASS" || currentMc01.status !== "PASS"
+      || previousMc01.evidence === currentMc01.evidence
+      || previousMc11.status !== "PASS" || currentMc11.status !== "FAIL"
+      || previousMc11.evidence === currentMc11.evidence
+      || previousMc34.status !== "PASS" || currentMc34.status !== "FAIL"
+      || previousMc34.evidence === currentMc34.evidence
+      || previousCounts.PASS !== 22 || currentCounts.PASS !== 20
+      || previousCounts.FAIL !== 14 || currentCounts.FAIL !== 16
+      || previousCounts.BLOCKED !== 3 || currentCounts.BLOCKED !== 3
+      || previousCounts.SKIPPED_DEPENDENCY !== 0 || currentCounts.SKIPPED_DEPENDENCY !== 0
+      || previousCounts.NOT_APPLICABLE !== 0 || currentCounts.NOT_APPLICABLE !== 0) {
+    throw new Error("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  }
+  const mc01Evidence = String(currentMc01.evidence);
+  const mc11Evidence = String(currentMc11.evidence);
+  const mc34Evidence = String(currentMc34.evidence);
+  if (!mc01Evidence.includes("attempt HEAD")
+      || !mc01Evidence.includes("closure HEAD")
+      || !mc01Evidence.includes(POST_VERIFICATION_CLOSURE_PATH)
+      || !mc01Evidence.includes(PRE_CLOSURE_ASSESSMENT_PATH)
+      || !mc11Evidence.includes("FAILED_LOCAL_WITH_EVIDENCE")
+      || !mc11Evidence.includes("POSTGRES_TRANSACTION_FAILED")
+      || !mc34Evidence.includes("2/2")
+      || !mc34Evidence.includes("FAIL")
+      || !mc34Evidence.includes("BROWSER_E2E_SERVER_EXITED:1")
+      || !mc34Evidence.includes("POSTGRES_TRANSACTION_FAILED")) {
+    throw new Error("MARATHON_CLOSURE_ASSESSMENT_EVIDENCE_INVALID");
+  }
+
+  const previousWaves = previous.wave_receipts as readonly unknown[];
+  const currentWaves = current.wave_receipts as readonly unknown[];
+  if (!Array.isArray(previousWaves) || !Array.isArray(currentWaves)) {
+    throw new Error("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  }
+  const previousW2 = previousWaves.map((entry) => asObject(entry, "MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID"))
+    .find((entry) => entry.wave === "W2");
+  const currentW2 = currentWaves.map((entry) => asObject(entry, "MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID"))
+    .find((entry) => entry.wave === "W2");
+  if (!previousW2 || !currentW2 || !Array.isArray(previousW2.completed) || !Array.isArray(currentW2.completed)
+      || !Array.isArray(previousW2.remaining) || !Array.isArray(currentW2.remaining)) {
+    throw new Error("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  }
+  const completedIndex = previousW2.completed.indexOf(W2_OLD_COMPLETED);
+  if (completedIndex < 0
+      || previousW2.completed.filter((entry) => entry === W2_OLD_COMPLETED).length !== 1
+      || currentW2.completed.length !== previousW2.completed.length
+      || currentW2.completed[completedIndex] !== W2_NEW_COMPLETED
+      || currentW2.remaining.length !== previousW2.remaining.length + 1
+      || currentW2.remaining.at(-1) !== W2_NEW_REMAINING
+      || previousW2.remaining.includes(W2_NEW_REMAINING)) {
+    throw new Error("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  }
+  const previousChecks = previous.commit_checks as readonly unknown[];
+  const currentChecks = current.commit_checks as readonly unknown[];
+  if (!Array.isArray(previousChecks) || !Array.isArray(currentChecks)
+      || currentChecks.length !== previousChecks.length + 1
+      || canonicalSha256(currentChecks.at(-1)) !== canonicalSha256(POSTGRES_REPAIR_CHECK)) {
+    throw new Error("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  }
+
+  const normalized = structuredClone(current);
+  const normalizedAcceptance = normalized.acceptance as Record<string, unknown>[];
+  const restoreAcceptance = (id: string, fields: readonly string[]) => {
+    const oldEntry = previousById.get(id)!;
+    const newEntry = normalizedAcceptance.find((entry) => entry.id === id)!;
+    for (const field of fields) newEntry[field] = oldEntry[field];
+  };
+  restoreAcceptance("MC-01", ["evidence"]);
+  restoreAcceptance("MC-11", ["status", "evidence"]);
+  restoreAcceptance("MC-34", ["status", "evidence"]);
+  const normalizedCounts = normalized.acceptance_counts as Record<string, unknown>;
+  normalizedCounts.PASS = previousCounts.PASS;
+  normalizedCounts.FAIL = previousCounts.FAIL;
+  const normalizedW2 = (normalized.wave_receipts as Record<string, unknown>[]).find((entry) => entry.wave === "W2")!;
+  normalizedW2.completed = structuredClone(previousW2.completed);
+  normalizedW2.remaining = structuredClone(previousW2.remaining);
+  normalized.commit_checks = structuredClone(previousChecks);
+  if (canonicalSha256(normalized) !== canonicalSha256(previous)) {
+    throw new Error("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  }
+}
+
 export async function createEvidenceManifest(
   root: string,
   payloadNames: readonly string[],
@@ -169,16 +450,17 @@ export async function verifyEvidenceDirectory(input: Readonly<{
   verifyNdjson(await readTextPayload(root, manifest, "ledgers/focused-checks.ndjson"), "check_id");
   const git = asObject(await readJsonPayload(root, manifest, "git/base-final.json"), "MARATHON_GIT_RECEIPT_INVALID");
   verifyGitReceipt(git);
+  const commits = verifyCommitReceipts(
+    asObject(await readJsonPayload(root, manifest, "git/commits.json"), "MARATHON_COMMIT_RECEIPTS_INVALID"),
+    git,
+  );
   await verifyFinalVerification(
     asObject(await readJsonPayload(root, manifest, "verification/final-verification.json"), "MARATHON_FINAL_VERIFICATION_INVALID"),
     assessment,
     git,
+    commits,
     root,
     manifest,
-  );
-  verifyCommitReceipts(
-    asObject(await readJsonPayload(root, manifest, "git/commits.json"), "MARATHON_COMMIT_RECEIPTS_INVALID"),
-    git,
   );
   if ((await readBytesPayload(root, manifest, "git/full.diff")).byteLength === 0) throw new Error("MARATHON_FULL_DIFF_EMPTY");
   verifyProhibitedScan(asObject(await readJsonPayload(root, manifest, "security/prohibited-operation-scan.json"), "MARATHON_PROHIBITED_SCAN_INVALID"));
@@ -317,6 +599,7 @@ async function verifyFinalVerification(
   value: Record<string, unknown>,
   assessment: Record<string, unknown>,
   git: Record<string, unknown>,
+  commits: readonly Record<string, unknown>[],
   root: string,
   manifest: MarathonManifest,
 ): Promise<void> {
@@ -364,11 +647,25 @@ async function verifyFinalVerification(
   if (value.status !== latest.status || JSON.stringify(value.commands) !== JSON.stringify(latest.commands)) {
     throw new Error("MARATHON_FINAL_LATEST_ATTEMPT_MISMATCH");
   }
-  if (value.verified_head !== latest.verified_head
-      || value.verified_tree !== latest.verified_tree
-      || latest.verified_head !== git.final_head
-      || latest.verified_tree !== git.final_tree) {
+  if (value.verified_head !== latest.verified_head || value.verified_tree !== latest.verified_tree) {
     throw new Error("MARATHON_FINAL_VERIFIED_GIT_MISMATCH");
+  }
+  const exactHeadBinding = latest.verified_head === git.final_head && latest.verified_tree === git.final_tree;
+  const closurePayloadPresent = manifest.payload_files.some((entry) => entry.path === POST_VERIFICATION_CLOSURE_PATH);
+  const previousAssessmentPresent = manifest.payload_files.some((entry) => entry.path === PRE_CLOSURE_ASSESSMENT_PATH);
+  if (exactHeadBinding) {
+    if (closurePayloadPresent || previousAssessmentPresent) throw new Error("MARATHON_CLOSURE_PAYLOAD_UNEXPECTED");
+  } else {
+    if (!closurePayloadPresent || !previousAssessmentPresent) throw new Error("MARATHON_FINAL_VERIFIED_GIT_MISMATCH");
+    const previousAssessmentBytes = await readBytesPayload(root, manifest, PRE_CLOSURE_ASSESSMENT_PATH);
+    verifyPostVerificationClosure({
+      receipt: asObject(await readJsonPayload(root, manifest, POST_VERIFICATION_CLOSURE_PATH), "MARATHON_CLOSURE_RECEIPT_INVALID"),
+      previousAssessmentBytes,
+      currentAssessment: assessment,
+      finalVerification: value,
+      git,
+      commits,
+    });
   }
   const runCounts = asObject(value.run_counts, "MARATHON_FINAL_RUN_COUNTS_INVALID");
   const commandCount = (commandId: string) => attempts.reduce(
@@ -769,7 +1066,10 @@ function verifyGitReceipt(value: Record<string, unknown>): void {
   }
 }
 
-function verifyCommitReceipts(value: Record<string, unknown>, git: Record<string, unknown>): void {
+function verifyCommitReceipts(
+  value: Record<string, unknown>,
+  git: Record<string, unknown>,
+): readonly Record<string, unknown>[] {
   if (value.schema_version !== "tivdoc-marathon-commit-receipts-v0.10.0"
       || !Array.isArray(value.commits)
       || value.commits.length === 0) throw new Error("MARATHON_COMMIT_RECEIPTS_INVALID");
@@ -793,6 +1093,7 @@ function verifyCommitReceipts(value: Record<string, unknown>, git: Record<string
     expectedParent = commit.sha;
   }
   if (expectedParent !== git.final_head) throw new Error("MARATHON_COMMIT_CHAIN_FINAL_HEAD_MISMATCH");
+  return commits;
 }
 
 function verifyNdjson(text: string, identityKey: string): void {
@@ -850,6 +1151,12 @@ function assertWithin(root: string, candidate: string): void {
 function asObject(value: unknown, code: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(code);
   return value as Record<string, unknown>;
+}
+
+function assertExactObjectKeys(value: Record<string, unknown>, expected: readonly string[], code: string): void {
+  if (JSON.stringify(Object.keys(value).sort(compareStrings)) !== JSON.stringify([...expected].sort(compareStrings))) {
+    throw new Error(code);
+  }
 }
 
 function compareStrings(left: string, right: string): number {

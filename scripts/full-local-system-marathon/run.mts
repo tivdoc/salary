@@ -21,6 +21,7 @@ import {
 } from "../canonical-persistence-v091/foundation/trusted-git.mts";
 import {
   canonicalAcceptanceMarkdown,
+  createPostVerificationClosureReceipt,
   createEvidenceManifest,
   sha256,
   verifyEvidenceDirectory,
@@ -60,6 +61,7 @@ async function build(): Promise<void> {
   const assessment = JSON.parse(await readFile(ASSESSMENT, "utf8")) as Record<string, unknown>;
   const finalVerification = JSON.parse(await readFile(FINAL_VERIFICATION, "utf8")) as Record<string, unknown>;
   const commits = commitReceipts(assessment);
+  const closure = postVerificationClosure(git, finalVerification, assessment, commits);
   const fullDiff = trustedGitBuffer(ROOT, ["diff", "--binary", `${BASE_HEAD}..HEAD`, "--"]);
   const blockers = (assessment.acceptance as readonly Record<string, unknown>[]).filter((entry) => entry.status !== "PASS");
   const focusedChecks = Array.isArray(assessment.focused_checks) ? assessment.focused_checks : [];
@@ -70,6 +72,10 @@ async function build(): Promise<void> {
   await writeJson("git/base-final.json", git);
   await writeJson("git/trusted-git.json", trustedGit);
   await writeJson("git/commits.json", { schema_version: "tivdoc-marathon-commit-receipts-v0.10.0", commits });
+  if (closure) {
+    await writeBytes("assessment/pre-closure-assessment.json", closure.previousAssessmentBytes);
+    await writeJson("git/post-verification-closure.json", closure.receipt);
+  }
   await writeBytes("git/full.diff", fullDiff);
   await copyPayload("contracts/execution-contract.json", path.join(ROOT, "src", "server", "system-marathon", "execution-contract.v0.10.0.json"));
   await copyPayload("contracts/inventory.json", path.join(ROOT, "src", "server", "system-marathon", "inventory.v0.10.0.json"));
@@ -184,6 +190,30 @@ function commitReceipts(assessment: Record<string, unknown>) {
       focused_checks: checks.filter((entry) => entry.commit === sha || entry.commit_subject === trustedGitText(ROOT, ["show", "-s", "--format=%s", sha])),
     });
   });
+}
+
+function postVerificationClosure(
+  git: ReturnType<typeof gitReceipt>,
+  finalVerification: Record<string, unknown>,
+  assessment: Record<string, unknown>,
+  commits: ReturnType<typeof commitReceipts>,
+) {
+  if (finalVerification.verified_head === git.final_head && finalVerification.verified_tree === git.final_tree) return null;
+  if (typeof finalVerification.verified_head !== "string" || !/^[a-f0-9]{40}$/u.test(finalVerification.verified_head)) {
+    throw new Error("MARATHON_CLOSURE_VERIFIED_HEAD_INVALID");
+  }
+  const previousAssessmentBytes = trustedGitBuffer(ROOT, [
+    "show",
+    `${finalVerification.verified_head}:src/server/system-marathon/acceptance-assessment.v0.10.0.json`,
+  ]);
+  const receipt = createPostVerificationClosureReceipt({
+    previousAssessmentBytes,
+    currentAssessment: assessment,
+    finalVerification,
+    git,
+    commits,
+  });
+  return Object.freeze({ previousAssessmentBytes, receipt });
 }
 
 function scanDiff(diff: Buffer) {

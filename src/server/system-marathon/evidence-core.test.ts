@@ -7,14 +7,18 @@ import { canonicalSha256 } from "../../engine/rule-runtime/canonical.ts";
 import { writeDeterministicStoreZip } from "../../../scripts/canonical-persistence-v091/evidence/deterministic-zip.mts";
 import {
   canonicalAcceptanceMarkdown,
+  createPostVerificationClosureReceipt,
   createEvidenceManifest,
   sha256,
   verifyEvidenceDirectory,
+  verifyPostVerificationClosure,
 } from "../../../scripts/full-local-system-marathon/evidence-core.mts";
 
 const temporaryRoots: string[] = [];
 const FINAL_HEAD = "b".repeat(40);
 const FINAL_TREE = "c".repeat(40);
+const ATTEMPT_HEAD = "a".repeat(40);
+const ATTEMPT_TREE = "1".repeat(40);
 const POSTGRESQL_MARATHON_RECEIPT_PATH =
   "output/canonical-postgresql-dynamic-v0.9.1/development/marathon-v010-matrix.json";
 
@@ -235,6 +239,152 @@ function postgresqlRows(privacyRevisions: 2 | 3) {
   }));
 }
 
+function exhaustedClosureFixture() {
+  const blocked = new Set([3, 10, 27]);
+  const failed = new Set([2, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18]);
+  const acceptance = Array.from({ length: 39 }, (_, index) => ({
+    id: `MC-${String(index + 1).padStart(2, "0")}`,
+    status: blocked.has(index + 1) ? "BLOCKED" : failed.has(index + 1) ? "FAIL" : "PASS",
+    evidence: `pre-closure-evidence-${index + 1}`,
+  }));
+  const previousAssessment = {
+    schema_version: "tivdoc-full-local-system-marathon-assessment-v0.10.0",
+    final_status: "LOCAL_SYSTEM_ENGINEERING_MARATHON_PARTIAL",
+    status_constants: [
+      "LEGAL_SOURCE_CORPUS_INCOMPLETE",
+      "CUSTOMER_SHADOW_NOT_AUTHORIZED",
+      "PRODUCTION_DELIVERY_DISABLED",
+    ],
+    acceptance,
+    acceptance_counts: { PASS: 22, FAIL: 14, BLOCKED: 3, SKIPPED_DEPENDENCY: 0, NOT_APPLICABLE: 0 },
+    truth_counters: {
+      REAL_LEGAL_TOPICS_READY: "0/7",
+      REAL_SOURCES_ACTIVE: 0,
+      REAL_PARAMETERS_ACTIVE: 0,
+      REAL_RULES_ACTIVE: 0,
+      REAL_CALCULATIONS_OR_FINDINGS: 0,
+      HUMAN_GROUND_TRUTH_LOCKED: 0,
+      REAL_CUSTOMER_DATA_READS: 0,
+      CUSTOMER_PROCESSING_ENABLED: "NO",
+      CUSTOMER_SHADOW_AUTHORIZED: "NO",
+      PRODUCTION_DELIVERY_ENABLED: "NO",
+      DEPLOYMENTS: 0,
+      REMOTE_MIGRATIONS: 0,
+      LIVE_PROVIDER_CALLS: 0,
+      OPENAI_CALLS: 0,
+      PRODUCT_REACHABLE_MEMORY_FALLBACKS: 0,
+      FULL_SUITE_RUN_COUNT: 2,
+      PRODUCTION_BUILD_RUN_COUNT: 2,
+      BROWSER_E2E_FULL_RUN_COUNT: 2,
+    },
+    wave_receipts: [{
+      wave: "W2",
+      local_status: "PARTIAL",
+      completed: ["durable PostgreSQL report pipeline", "real V0.10 restart matrix"],
+      remaining: ["stable product composition not wired"],
+      truth: { memory_fallbacks: 0 },
+    }],
+    commit_checks: [{
+      commit_subject: "test(postgres): add V0.10 durable restart matrix",
+      checks: ["FC-008"],
+      status: "PASS",
+    }],
+  };
+  const currentAssessment = structuredClone(previousAssessment);
+  currentAssessment.acceptance[0]!.evidence =
+    "attempt HEAD and assessment-only closure HEAD are independently bound by "
+    + "git/post-verification-closure.json and assessment/pre-closure-assessment.json";
+  currentAssessment.acceptance[10]!.status = "FAIL";
+  currentAssessment.acceptance[10]!.evidence =
+    "dynamic PostgreSQL regression remains FAILED_LOCAL_WITH_EVIDENCE: POSTGRES_TRANSACTION_FAILED";
+  currentAssessment.acceptance[33]!.status = "FAIL";
+  currentAssessment.acceptance[33]!.evidence =
+    "2/2 complete final attempts exhausted with FAIL: BROWSER_E2E_SERVER_EXITED:1 and POSTGRES_TRANSACTION_FAILED";
+  currentAssessment.acceptance_counts.PASS = 20;
+  currentAssessment.acceptance_counts.FAIL = 16;
+  currentAssessment.wave_receipts[0]!.completed[1] =
+    "V0.10 restart-matrix tooling and targeted exact-byte repair";
+  currentAssessment.wave_receipts[0]!.remaining.push(
+    "complete V0.10 dynamic restart regression remains FAILED_LOCAL_WITH_EVIDENCE",
+  );
+  currentAssessment.commit_checks.push({
+    commit_subject: "fix(postgres): reuse canonical report bytes in matrix",
+    checks: ["FC-008", "FC-010"],
+    status: "PASS",
+  });
+
+  const repairHead = "2".repeat(40);
+  const toolingHead = "3".repeat(40);
+  const commits = [
+    commitReceipt(ATTEMPT_HEAD, ATTEMPT_TREE, "0".repeat(40), "attempt-verified", ["attempt.txt"]),
+    commitReceipt(
+      repairHead,
+      "4".repeat(40),
+      ATTEMPT_HEAD,
+      "fix(postgres): reuse canonical report bytes in matrix",
+      [
+        "scripts/canonical-persistence-v091/matrix/marathon-v010.mts",
+        "scripts/canonical-persistence-v091/matrix/marathon-v010.test.mjs",
+      ],
+    ),
+    commitReceipt(
+      toolingHead,
+      "5".repeat(40),
+      repairHead,
+      "fix(marathon): support exhausted-attempt evidence closure",
+      [
+        "scripts/full-local-system-marathon/evidence-core.mts",
+        "scripts/full-local-system-marathon/run.mts",
+        "src/server/system-marathon/evidence-core.test.ts",
+      ],
+    ),
+    commitReceipt(
+      FINAL_HEAD,
+      FINAL_TREE,
+      toolingHead,
+      "docs(marathon): record exhausted final verification",
+      ["src/server/system-marathon/acceptance-assessment.v0.10.0.json"],
+    ),
+  ];
+  const finalVerification = {
+    schema_version: "tivdoc-full-local-system-marathon-final-verification-v0.10.0",
+    status: "FAIL",
+    verified_head: ATTEMPT_HEAD,
+    verified_tree: ATTEMPT_TREE,
+    commands: [],
+    attempts: [
+      { attempt_number: 1, status: "FAIL", verified_head: "9".repeat(40), verified_tree: "8".repeat(40), commands: [] },
+      { attempt_number: 2, status: "FAIL", verified_head: ATTEMPT_HEAD, verified_tree: ATTEMPT_TREE, commands: [] },
+    ],
+    run_counts: { complete_final_attempts: 2 },
+    complete_attempt_limit: 2,
+  };
+  const git = { final_head: FINAL_HEAD, final_tree: FINAL_TREE };
+  const previousAssessmentBytes = Buffer.from(`${JSON.stringify(previousAssessment, null, 2)}\n`, "utf8");
+  const input = { previousAssessmentBytes, currentAssessment, finalVerification, git, commits };
+  const receipt = createPostVerificationClosureReceipt(input);
+  return { ...input, receipt };
+}
+
+function commitReceipt(
+  sha: string,
+  tree: string,
+  parent: string,
+  subject: string,
+  changedPaths: readonly string[],
+) {
+  return {
+    sha,
+    tree,
+    parent,
+    subject,
+    stable_patch_id: "d".repeat(40),
+    diffstat: "synthetic diffstat",
+    changed_paths: [...changedPaths],
+    focused_checks: [],
+  };
+}
+
 async function fixture(options: Readonly<{ postgresql?: boolean }> = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "tivdoc-marathon-evidence-"));
   temporaryRoots.push(root);
@@ -442,6 +592,94 @@ async function rebuild(value: Awaited<ReturnType<typeof fixture>>): Promise<void
 }
 
 describe("Marathon independent evidence verifier", () => {
+  it("accepts only the fixed three-commit exhausted-attempt closure", () => {
+    const value = exhaustedClosureFixture();
+    expect(() => verifyPostVerificationClosure(value)).not.toThrow();
+    expect(value.receipt.final_verification_status).toBe("FAIL");
+    expect(value.receipt.complete_final_attempts).toBe(2);
+  });
+
+  it("rejects a closure unless two failed complete attempts are exhausted", () => {
+    const value = exhaustedClosureFixture();
+    value.finalVerification.status = "PASS";
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_REQUIRES_EXHAUSTED_FAILURE");
+
+    const count = exhaustedClosureFixture();
+    count.finalVerification.attempts.pop();
+    count.finalVerification.run_counts.complete_final_attempts = 1;
+    expect(() => verifyPostVerificationClosure(count)).toThrow("MARATHON_CLOSURE_REQUIRES_EXHAUSTED_FAILURE");
+  });
+
+  it("rejects a non-linear, reordered or renamed post-attempt suffix", () => {
+    const value = exhaustedClosureFixture();
+    value.commits[2]!.parent = ATTEMPT_HEAD;
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+
+    const renamed = exhaustedClosureFixture();
+    renamed.commits[1]!.subject = "fix(postgres): almost the expected repair";
+    expect(() => verifyPostVerificationClosure(renamed)).toThrow("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+
+    const reordered = exhaustedClosureFixture();
+    [reordered.commits[1], reordered.commits[2]] = [reordered.commits[2]!, reordered.commits[1]!];
+    expect(() => verifyPostVerificationClosure(reordered)).toThrow("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+  });
+
+  it("rejects any path outside the three fixed closure path sets", () => {
+    const value = exhaustedClosureFixture();
+    value.commits[3]!.changed_paths.push("src/server/system-marathon/extra.json");
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_COMMIT_SUFFIX_INVALID");
+  });
+
+  it("rejects a pre-closure assessment whose exact byte hash is not bound", () => {
+    const value = exhaustedClosureFixture();
+    value.previousAssessmentBytes = Buffer.concat([value.previousAssessmentBytes, Buffer.from(" ")]);
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_RECEIPT_INVALID");
+  });
+
+  it("rejects assessment inflation beyond MC-01, MC-11, MC-34 and exact counts", () => {
+    const value = exhaustedClosureFixture();
+    value.currentAssessment.acceptance[18]!.evidence = "unapproved semantic change";
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  });
+
+  it("requires MC-11 and MC-34 to remain honest FAIL after the repair", () => {
+    const value = exhaustedClosureFixture();
+    value.currentAssessment.acceptance[10]!.status = "PASS";
+    value.currentAssessment.acceptance_counts.PASS = 21;
+    value.currentAssessment.acceptance_counts.FAIL = 15;
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+
+    const mc34 = exhaustedClosureFixture();
+    mc34.currentAssessment.acceptance[33]!.status = "PASS";
+    mc34.currentAssessment.acceptance_counts.PASS = 21;
+    mc34.currentAssessment.acceptance_counts.FAIL = 15;
+    expect(() => verifyPostVerificationClosure(mc34)).toThrow("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  });
+
+  it("rejects false MC evidence that omits the recorded exhausted-attempt failures", () => {
+    const value = exhaustedClosureFixture();
+    value.currentAssessment.acceptance[33]!.evidence = "2/2 attempts passed after repair";
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_ASSESSMENT_EVIDENCE_INVALID");
+
+    const mc01 = exhaustedClosureFixture();
+    mc01.currentAssessment.acceptance[0]!.evidence = "the current HEAD is clean";
+    expect(() => verifyPostVerificationClosure(mc01)).toThrow("MARATHON_CLOSURE_ASSESSMENT_EVIDENCE_INVALID");
+
+    const mc11 = exhaustedClosureFixture();
+    mc11.currentAssessment.acceptance[10]!.evidence = "the targeted repair proves PostgreSQL PASS";
+    expect(() => verifyPostVerificationClosure(mc11)).toThrow("MARATHON_CLOSURE_ASSESSMENT_EVIDENCE_INVALID");
+  });
+
+  it("requires the exact W2 and commit-check repair disclosures", () => {
+    const value = exhaustedClosureFixture();
+    value.currentAssessment.wave_receipts[0]!.remaining.pop();
+    expect(() => verifyPostVerificationClosure(value)).toThrow("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+
+    const checks = exhaustedClosureFixture();
+    checks.currentAssessment.commit_checks.at(-1)!.checks = ["FC-008"];
+    expect(() => verifyPostVerificationClosure(checks)).toThrow("MARATHON_CLOSURE_ASSESSMENT_DELTA_INVALID");
+  });
+
   it("recomputes every payload, final log, receipt and deterministic archive", async () => {
     const value = await fixture();
     const receipt = await verifyEvidenceDirectory(value);
