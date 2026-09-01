@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
@@ -6,6 +7,7 @@ import { canonicalSha256 } from "../../../src/engine/rule-runtime/canonical.ts";
 import {
   createMarathonV010DeterministicFixture,
   MARATHON_V010_DEVELOPMENT_RECEIPT_PATH,
+  MARATHON_V010_RUNTIME_BOUNDARY,
   MARATHON_V010_TRUTH_COUNTERS,
 } from "./marathon-v010.mts";
 import { createSyntheticCapabilityFixtures } from "./synthetic-fixtures.mts";
@@ -82,6 +84,45 @@ describe("V0.10 real PostgreSQL delta-matrix contract", () => {
       OPENAI_CALLS: 0,
       PRODUCT_REACHABLE_MEMORY_FALLBACKS: 0,
     });
+  });
+
+  it("declares the exact four-role verified runtime boundary", () => {
+    expect(MARATHON_V010_RUNTIME_BOUNDARY).toEqual({
+      schema_version: "tivdoc-marathon-v0102-runtime-boundary-v1",
+      identity_session_verification: "tivdoc_identity_runtime",
+      operations_mutations: "tivdoc_operations_runtime",
+      report_binding: "tivdoc_worker_runtime",
+      owner_portal_read: "tivdoc_web_runtime",
+      identity_lifecycle_maintenance: "service_role",
+      verified_context_function: "private.runtime_context_install",
+      runtime_product_boundary_service_role_calls: 0,
+      runtime_roles_verified: 4,
+    });
+  });
+
+  it("routes product-boundary regression work through verified role sessions", async () => {
+    const source = await readFile(new URL("./marathon-v010.mts", import.meta.url), "utf8");
+    expect(source).not.toContain("service_role_connection_url");
+    expect(source).toContain("private.runtime_context_install($1, $2, $3)");
+    expect(source).toContain("withVerifiedRuntimeTransaction(managers.operations");
+    expect(source).toContain("withVerifiedRuntimeTransaction(managers.worker");
+    expect(source).toContain("withVerifiedRuntimeTransaction(managers.web");
+    expect(source).toContain("managers.identity.transaction");
+    expect(source).toContain("expectVerifiedRuntimeDenied");
+    expect(source.match(/runtime_role_connection_urls/g)?.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("wires the marathon from generated least-privilege role URLs", async () => {
+    const source = await readFile(new URL("../run.mts", import.meta.url), "utf8");
+    expect(source).not.toContain("service_role_connection_url:");
+    expect(source.match(/maintenance_connection_url: urls\.service_role/g)).toHaveLength(2);
+    expect(source.match(/runtime_role_connection_urls: marathonRuntimeRoleConnectionUrls/g)).toHaveLength(2);
+    for (const role of [
+      "tivdoc_identity_runtime",
+      "tivdoc_operations_runtime",
+      "tivdoc_worker_runtime",
+      "tivdoc_web_runtime",
+    ]) expect(source).toContain(role);
   });
 });
 

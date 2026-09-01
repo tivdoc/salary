@@ -257,6 +257,17 @@ try {
   } else {
     assert(migrationMatrix?.status === "PASS", "DYNAMIC_MIGRATION_MATRIX_FAILED");
     const urls = roleConnectionUrls({ target, database: target.descriptor.database, secrets: roleSecrets });
+    const runtimeUrls = runtimeRoleConnectionUrls({
+      target,
+      database: target.descriptor.database,
+      secrets: runtimeRoleSecrets,
+    });
+    const marathonRuntimeRoleConnectionUrls = Object.freeze({
+      identity: runtimeUrls.tivdoc_identity_runtime,
+      operations: runtimeUrls.tivdoc_operations_runtime,
+      worker: runtimeUrls.tivdoc_worker_runtime,
+      web: runtimeUrls.tivdoc_web_runtime,
+    });
     const runtimeSecurity = await runRuntimeSecurity();
     assert(runtimeSecurity.status === "PASS"
       && runtimeSecurity.governance_exposed_functions === 21
@@ -318,7 +329,8 @@ try {
       "DYNAMIC_CONCURRENCY_MATRIX_FAILED");
 
     const marathonV010Before = await runMarathonV010BeforeRestart({
-      service_role_connection_url: urls.service_role,
+      maintenance_connection_url: urls.service_role,
+      runtime_role_connection_urls: marathonRuntimeRoleConnectionUrls,
       administrative_connection_url: adminUrl,
       build_identity_sha: git.head,
       fixture_suffix: `m${runId}`,
@@ -332,7 +344,8 @@ try {
     await stopOwnedCluster({ target, paths, binaries });
     await startOwnedCluster({ target, paths, binaries });
     const marathonV010After = await runMarathonV010AfterRestart({
-      service_role_connection_url: urls.service_role,
+      maintenance_connection_url: urls.service_role,
+      runtime_role_connection_urls: marathonRuntimeRoleConnectionUrls,
       administrative_connection_url: adminUrl,
       checkpoint: marathonV010Before.checkpoint,
       restart_observation: Object.freeze({

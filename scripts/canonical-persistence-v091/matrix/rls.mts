@@ -4,6 +4,7 @@ import { Pool, type PoolClient } from "pg";
 
 import {
   EXPECTED_CANONICAL_RLS_TABLES,
+  EXPECTED_RUNTIME_OWNER_POLICY_TABLES,
   EXPECTED_TENANT_POLICY_TABLES,
 } from "../foundation/inventory.mts";
 
@@ -14,11 +15,11 @@ const EXPECTED_POLICY_TABLE_NAMES = Object.freeze(
   EXPECTED_TENANT_POLICY_TABLES.map((table) => table.slice("public.".length)),
 );
 
-const EXPECTED_SECURITY_DEFINERS = Object.freeze(new Map<string, boolean>([
+export const RLS_SECURITY_DEFINER_SERVICE_EXPECTATIONS = Object.freeze(new Map<string, boolean>([
   ["private.append_controlled_import_audit", false],
   ["private.claim_controlled_import_recovery", true],
-  ["private.claim_engine_platform_jobs", true],
-  ["private.claim_engine_platform_outbox", true],
+  ["private.claim_engine_platform_jobs", false],
+  ["private.claim_engine_platform_outbox", false],
   ["private.controlled_import_forbid_mutation", false],
   ["private.controlled_import_publish", true],
   ["private.controlled_import_reject", true],
@@ -30,57 +31,62 @@ const EXPECTED_SECURITY_DEFINERS = Object.freeze(new Map<string, boolean>([
   ["private.enforce_document_extraction_history", false],
   ["private.enforce_engine_analysis_run_history", false],
   ["private.enforce_engine_case_scope", false],
-  ["private.finish_engine_platform_job", true],
-  ["private.governance_aggregate_read", true],
+  ["private.finish_engine_platform_job", false],
+  ["private.governance_aggregate_read", false],
   ["private.governance_append_audit", false],
   ["private.governance_claim_assert", false],
   ["private.governance_complete_claim", false],
   ["private.governance_decision_assert", false],
   ["private.governance_finish_mutation", false],
   ["private.governance_forbid_mutation", false],
-  ["private.governance_golden_case_set_import", true],
-  ["private.governance_gt_eligibility_append", true],
-  ["private.governance_gt_manifest_append", true],
-  ["private.governance_human_decision_admit", true],
+  ["private.governance_golden_case_set_import", false],
+  ["private.governance_gt_eligibility_append", false],
+  ["private.governance_gt_manifest_append", false],
+  ["private.governance_human_decision_admit", false],
   ["private.governance_idempotency_lookup", false],
   ["private.governance_jsonb_canonical_text", false],
   ["private.governance_jsonb_compact_text", false],
   ["private.governance_jsonb_sha256", false],
-  ["private.governance_key_challenge_append", true],
-  ["private.governance_legal_observation_decide", true],
-  ["private.governance_legal_observation_import", true],
-  ["private.governance_parameter_attestation_append", true],
-  ["private.governance_parameter_import", true],
-  ["private.governance_reviewer_append", true],
-  ["private.governance_reviewer_key_register", true],
-  ["private.governance_reviewer_key_revoke", true],
-  ["private.governance_reviewer_verification_material_read", true],
-  ["private.governance_rulespec_approval_append", true],
-  ["private.governance_rulespec_import", true],
+  ["private.governance_key_challenge_append", false],
+  ["private.governance_legal_observation_decide", false],
+  ["private.governance_legal_observation_import", false],
+  ["private.governance_parameter_attestation_append", false],
+  ["private.governance_parameter_import", false],
+  ["private.governance_reviewer_append", false],
+  ["private.governance_reviewer_key_register", false],
+  ["private.governance_reviewer_key_revoke", false],
+  ["private.governance_reviewer_verification_material_read", false],
+  ["private.governance_rulespec_approval_append", false],
+  ["private.governance_rulespec_import", false],
   ["private.governance_store_idempotency", false],
-  ["private.governance_trust_organization_append", true],
-  ["private.governance_trust_policy_append", true],
-  ["private.governance_work_claim", true],
-  ["private.governance_work_enqueue", true],
-  ["private.governance_work_release", true],
-  ["private.heartbeat_engine_platform_job", true],
+  ["private.governance_trust_organization_append", false],
+  ["private.governance_trust_policy_append", false],
+  ["private.governance_work_claim", false],
+  ["private.governance_work_enqueue", false],
+  ["private.governance_work_release", false],
+  ["private.heartbeat_engine_platform_job", false],
   ["private.open_controlled_import_published_bytes", true],
-  ["private.product_case_owner_bind", true],
+  ["private.product_case_owner_bind", false],
   ["private.product_forbid_delete", false],
   ["private.product_forbid_privacy_mutation", false],
-  ["private.product_identity_session_read", true],
+  ["private.product_identity_session_read", false],
   ["private.product_identity_session_register", true],
-  ["private.product_owner_lookup", true],
-  ["private.product_owner_revoke", true],
-  ["private.product_privacy_append", true],
-  ["private.product_private_report_object_bind", true],
-  ["private.product_report_object_approve", true],
-  ["private.product_report_object_approved_read", true],
-  ["private.product_report_object_revoke", true],
+  ["private.product_owner_lookup", false],
+  ["private.product_owner_revoke", false],
+  ["private.product_privacy_append", false],
+  ["private.product_private_report_object_bind", false],
+  ["private.product_report_object_approve", false],
+  ["private.product_report_object_approved_read", false],
+  ["private.product_report_object_revoke", false],
   ["private.product_session_revoke", true],
   ["private.product_session_rotate", true],
   ["private.reject_engine_append_only_mutation", false],
   ["private.resolve_engine_case_id", true],
+  ["private.runtime_assert_actor", false],
+  ["private.runtime_assert_reviewer_role", false],
+  ["private.runtime_context_install", false],
+  ["private.runtime_verified_actor", false],
+  ["private.runtime_verified_tenant", false],
   ["public.claim_salary_ga4_purchase", true],
   ["public.claim_salary_meta_purchase", true],
   ["public.claim_salary_payment_completed", true],
@@ -239,25 +245,47 @@ export async function runRealPostgresRlsMatrix(input: Readonly<{
       where n.nspname in ('public', 'private') and p.prosecdef
       order by n.nspname, p.proname, p.oid`);
     const definerNames = definers.rows.map((row) => `${row.schema_name}.${row.function_name}`);
-    if (!sameStrings(definerNames, [...EXPECTED_SECURITY_DEFINERS.keys()])) {
+    if (!sameStrings(definerNames, [...RLS_SECURITY_DEFINER_SERVICE_EXPECTATIONS.keys()])) {
       throw new Error("RLS_SECURITY_DEFINER_INVENTORY_INVALID");
     }
     const securityDefinerFunctions = definers.rows.length;
     const unsafeSecurityDefinerFunctions = definers.rows.filter((row) => !row.safe_search_path).length;
     const securityDefinerAclMismatches = definers.rows.filter((row) => {
-      const serviceExpected = EXPECTED_SECURITY_DEFINERS.get(`${row.schema_name}.${row.function_name}`);
+      const serviceExpected = RLS_SECURITY_DEFINER_SERVICE_EXPECTATIONS
+        .get(`${row.schema_name}.${row.function_name}`);
       return row.anon_execute || row.authenticated_execute || row.service_execute !== serviceExpected;
     }).length;
-    const policies = await admin.query<{ tablename: string; roles: string[]; command: string }>(`
-      select tablename, roles::text[] as roles, cmd as command from pg_policies
+    const policies = await admin.query<{
+      tablename: string;
+      policyname: string;
+      roles: string[];
+      command: string;
+    }>(`
+      select tablename, policyname, roles::text[] as roles, cmd as command from pg_policies
       where schemaname = 'public'
-      order by tablename`);
-    if (!sameStrings(policies.rows.map(({ tablename }) => tablename), EXPECTED_POLICY_TABLE_NAMES)
-      || policies.rows.some((policy) => policy.roles.length !== 1 || policy.roles[0] !== "service_role"
-        || policy.command !== "ALL")) {
+      order by tablename, policyname`);
+    const servicePolicies = policies.rows.filter((policy) => policy.policyname === "tivdoc_service_tenant_scope"
+      && policy.command === "ALL" && sameStrings(policy.roles, ["service_role"]));
+    const runtimePolicies = policies.rows.filter((policy) => policy.policyname === "tivdoc_runtime_verified_tenant"
+      && policy.command === "ALL" && sameStrings(policy.roles, [
+        "tivdoc_operations_runtime", "tivdoc_worker_runtime", "tivdoc_web_runtime",
+      ]));
+    const runtimeOwnerPolicies = policies.rows.filter((policy) => policy.policyname === "tivdoc_owner_verified_tenant"
+      && policy.command === "ALL" && sameStrings(policy.roles, ["tivdoc_governance_owner"]));
+    const identityContextPolicies = policies.rows.filter((policy) =>
+      policy.policyname === "tivdoc_runtime_context_session_lookup"
+        && policy.command === "ALL" && policy.tablename === "product_identity_sessions"
+        && sameStrings(policy.roles, ["tivdoc_governance_owner"]));
+    if (policies.rows.length !== EXPECTED_POLICY_TABLE_NAMES.length * 2
+        + EXPECTED_RUNTIME_OWNER_POLICY_TABLES.length + 1
+      || !sameStrings(servicePolicies.map(({ tablename }) => tablename), EXPECTED_POLICY_TABLE_NAMES)
+      || !sameStrings(runtimePolicies.map(({ tablename }) => tablename), EXPECTED_POLICY_TABLE_NAMES)
+      || !sameStrings(runtimeOwnerPolicies.map(({ tablename }) => `public.${tablename}`),
+        EXPECTED_RUNTIME_OWNER_POLICY_TABLES)
+      || identityContextPolicies.length !== 1) {
       throw new Error("RLS_TENANT_POLICY_INVENTORY_INVALID");
     }
-    const policyNames = new Set(policies.rows.map(({ tablename }) => tablename));
+    const policyNames = new Set(servicePolicies.map(({ tablename }) => tablename));
     const policyTables = inventory.rows.filter(({ table_name: tableName }) => policyNames.has(tableName));
     if (policyTables.length !== EXPECTED_POLICY_TABLE_NAMES.length) {
       throw new Error("RLS_TENANT_POLICY_DENOMINATOR_INVALID");
@@ -291,7 +319,7 @@ export async function runRealPostgresRlsMatrix(input: Readonly<{
     const status = rlsEnabled === tables.length
       && rlsForced === 0
       && unsafeSecurityDefinerFunctions === 0
-      && securityDefinerFunctions === EXPECTED_SECURITY_DEFINERS.size
+      && securityDefinerFunctions === RLS_SECURITY_DEFINER_SERVICE_EXPECTATIONS.size
       && securityDefinerAclMismatches === 0
       && roles.every((entry) => entry.status === "PASS")
       && probe.tenant_policy_denominators.expected_tables === EXPECTED_POLICY_TABLE_NAMES.length
@@ -820,7 +848,7 @@ async function assertCurrentRole(client: PoolClient, expected: string): Promise<
 async function denied(client: PoolClient, sql: string, values: readonly string[] = []): Promise<boolean> {
   try {
     await client.query("begin");
-    await client.query(sql, values);
+    await client.query(sql, [...values]);
     await client.query("rollback");
     return false;
   } catch (error) {

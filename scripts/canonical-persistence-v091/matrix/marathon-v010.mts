@@ -23,6 +23,7 @@ import {
   PostgresPrivacyRequestRepository,
   PostgresPrivateReportObjectRepository,
 } from "../../../src/server/product/durable-postgres/boundary-repositories.ts";
+import { durableBoundaryStatements } from "../../../src/server/product/durable-postgres/boundary-sql.ts";
 import {
   CANONICAL_REPORT_IDENTITY_SCHEMA_VERSION,
   CanonicalReportIdentityError,
@@ -59,13 +60,56 @@ const HASH = /^[a-f0-9]{64}$/u;
 const BUILD_IDENTITY = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/u;
 const FIXTURE_SUFFIX = /^[a-z0-9]{8,24}$/u;
 
-const RUNTIME_CONTEXT = statement(
-  "marathon_v010_runtime_context",
+const MAINTENANCE_CONTEXT = statement(
+  "marathon_v010_maintenance_context",
   `select set_config('tivdoc.engine_git_sha', $1, true),
           set_config('tivdoc.tenant_id', $2, true),
           set_config('tivdoc.runtime_role', $3, true)`,
   ["0".repeat(40), "tenant:placeholder", "service_role"],
 );
+
+const RUNTIME_BUILD_CONTEXT = statement(
+  "marathon_v010_runtime_build_context",
+  "select pg_catalog.set_config('tivdoc.engine_git_sha', $1, true)",
+  ["0".repeat(40)],
+);
+
+const VERIFIED_RUNTIME_CONTEXT = statement(
+  "marathon_v010_verified_runtime_context",
+  `select tenant_id, actor_id, runtime_role, reviewer_organization_id,
+          session_rotation_counter::text as session_rotation_counter
+     from private.runtime_context_install($1, $2, $3)`,
+  ["session:placeholder", "token:placeholder", "correlation:placeholder"],
+);
+
+export const MARATHON_V010_RUNTIME_BOUNDARY = Object.freeze({
+  schema_version: "tivdoc-marathon-v0102-runtime-boundary-v1" as const,
+  identity_session_verification: "tivdoc_identity_runtime" as const,
+  operations_mutations: "tivdoc_operations_runtime" as const,
+  report_binding: "tivdoc_worker_runtime" as const,
+  owner_portal_read: "tivdoc_web_runtime" as const,
+  identity_lifecycle_maintenance: "service_role" as const,
+  verified_context_function: "private.runtime_context_install" as const,
+  runtime_product_boundary_service_role_calls: 0 as const,
+  runtime_roles_verified: 4 as const,
+});
+
+type MarathonRuntimeRole = "operations" | "worker" | "web";
+
+type MarathonRuntimeConnectionUrls = Readonly<{
+  identity: string;
+  operations: string;
+  worker: string;
+  web: string;
+}>;
+
+type MarathonRuntimeManagers = Readonly<{
+  maintenance: CanonicalPostgresTransactionManager;
+  identity: CanonicalPostgresTransactionManager;
+  operations: CanonicalPostgresTransactionManager;
+  worker: CanonicalPostgresTransactionManager;
+  web: CanonicalPostgresTransactionManager;
+}>;
 
 export const MARATHON_V010_TRUTH_COUNTERS = Object.freeze({
   REAL_LEGAL_TOPICS_READY: "0/7" as const,
@@ -100,6 +144,7 @@ export type MarathonV010Checkpoint = Readonly<{
   target_id: string;
   fixture_suffix: string;
   tenant_ordinal: 3;
+  runtime_boundary: typeof MARATHON_V010_RUNTIME_BOUNDARY;
   capability_state: DurableCapabilityState;
   import_command: ControlledImportCommand;
   import_lease: ControlledImportLease;
@@ -182,10 +227,15 @@ export type MarathonV010BeforeRestartReceipt = Readonly<{
   row_counts: readonly MarathonV010TableState[];
   connection_attempts: Readonly<{
     capability_seed: number;
-    service_role: number;
+    maintenance: number;
+    identity_runtime: number;
+    operations_runtime: number;
+    worker_runtime: number;
+    web_runtime: number;
     administrative_count_probe: number;
     observed_total: number;
   }>;
+  runtime_boundary: typeof MARATHON_V010_RUNTIME_BOUNDARY;
   checkpoint: MarathonV010Checkpoint;
   truth_counters: typeof MARATHON_V010_TRUTH_COUNTERS;
 }>;
@@ -227,10 +277,15 @@ export type MarathonV010AfterRestartReceipt = Readonly<{
   final_row_counts: readonly MarathonV010TableState[];
   connection_attempts: Readonly<{
     capability_replay: number;
-    service_role: number;
+    maintenance: number;
+    identity_runtime: number;
+    operations_runtime: number;
+    worker_runtime: number;
+    web_runtime: number;
     administrative_count_probe: number;
     observed_total: number;
   }>;
+  runtime_boundary: typeof MARATHON_V010_RUNTIME_BOUNDARY;
   checkpoint_sha256: string;
   truth_counters: typeof MARATHON_V010_TRUTH_COUNTERS;
 }>;
@@ -253,7 +308,8 @@ export type MarathonV010PostgresMatrixReceipt = Readonly<{
 }>;
 
 export type MarathonV010BeforeRestartInput = Readonly<{
-  service_role_connection_url: string;
+  maintenance_connection_url: string;
+  runtime_role_connection_urls: MarathonRuntimeConnectionUrls;
   administrative_connection_url: string;
   build_identity_sha: string;
   fixture_suffix: string;
@@ -261,7 +317,8 @@ export type MarathonV010BeforeRestartInput = Readonly<{
 }>;
 
 export type MarathonV010AfterRestartInput = Readonly<{
-  service_role_connection_url: string;
+  maintenance_connection_url: string;
+  runtime_role_connection_urls: MarathonRuntimeConnectionUrls;
   administrative_connection_url: string;
   checkpoint: MarathonV010Checkpoint;
   restart_observation: Readonly<{
@@ -438,32 +495,41 @@ export async function runMarathonV010BeforeRestart(
 ): Promise<MarathonV010BeforeRestartReceipt> {
   assertBeforeInput(input);
   const capability = await runCanonicalCapabilityMatrix({
-    connection_url: input.service_role_connection_url,
+    connection_url: input.maintenance_connection_url,
     build_identity_sha: input.build_identity_sha,
     fixture_suffix: input.fixture_suffix,
   });
   assertCapabilitySeed(capability, input.fixture_suffix);
   const fixture = createMarathonV010DeterministicFixture(capability.durable_state);
-  const service = createDriver(input.service_role_connection_url, "tivdoc-marathon-v010-before-service");
+  const maintenance = createDriver(input.maintenance_connection_url, "tivdoc-marathon-v010-before-maintenance");
+  const identity = createDriver(input.runtime_role_connection_urls.identity, "tivdoc-marathon-v010-before-identity");
+  const operations = createDriver(input.runtime_role_connection_urls.operations, "tivdoc-marathon-v010-before-operations");
+  const worker = createDriver(input.runtime_role_connection_urls.worker, "tivdoc-marathon-v010-before-worker");
+  const web = createDriver(input.runtime_role_connection_urls.web, "tivdoc-marathon-v010-before-web");
   const admin = createDriver(input.administrative_connection_url, "tivdoc-marathon-v010-before-counts");
-  assertSameTarget(service, admin, capability.target_id);
-  const manager = new CanonicalPostgresTransactionManager(service);
+  assertSameTarget(capability.target_id, maintenance, identity, operations, worker, web, admin);
+  const managers = Object.freeze({
+    maintenance: new CanonicalPostgresTransactionManager(maintenance),
+    identity: new CanonicalPostgresTransactionManager(identity),
+    operations: new CanonicalPostgresTransactionManager(operations),
+    worker: new CanonicalPostgresTransactionManager(worker),
+    web: new CanonicalPostgresTransactionManager(web),
+  });
   let rowCounts: readonly MarathonV010TableState[];
   let importResult: Awaited<ReturnType<typeof exerciseControlledImportBeforeRestart>>;
   let boundaryResult: Awaited<ReturnType<typeof exerciseBoundariesBeforeRestart>>;
   try {
-    await exerciseReportBindingRollback(manager, input.build_identity_sha, fixture);
-    boundaryResult = await exerciseBoundariesBeforeRestart(manager, input.build_identity_sha, fixture);
+    boundaryResult = await exerciseBoundariesBeforeRestart(managers, input.build_identity_sha, fixture);
     importResult = await exerciseControlledImportBeforeRestart(
-      manager,
-      service,
+      managers.maintenance,
+      maintenance,
       input.build_identity_sha,
       fixture,
     );
     rowCounts = await collectMarathonRows(admin, fixture);
     assertExpectedRows(rowCounts, 2);
   } finally {
-    await closeDrivers(service, admin);
+    await closeDrivers(maintenance, identity, operations, worker, web, admin);
   }
 
   const checkpointSeed = Object.freeze({
@@ -472,6 +538,7 @@ export async function runMarathonV010BeforeRestart(
     target_id: capability.target_id,
     fixture_suffix: fixture.suffix,
     tenant_ordinal: 3 as const,
+    runtime_boundary: MARATHON_V010_RUNTIME_BOUNDARY,
     capability_state: capability.durable_state,
     import_command: fixture.import_command,
     import_lease: importResult!.lease,
@@ -514,12 +581,22 @@ export async function runMarathonV010BeforeRestart(
     ...checkpointSeed,
     checkpoint_sha256: canonicalSha256(checkpointSeed),
   });
-  const serviceMetrics = service.metrics();
+  const maintenanceMetrics = maintenance.metrics();
+  const identityMetrics = identity.metrics();
+  const operationsMetrics = operations.metrics();
+  const workerMetrics = worker.metrics();
+  const webMetrics = web.metrics();
   const adminMetrics = admin.metrics();
-  assert(serviceMetrics.closed && adminMetrics.closed, "MARATHON_V010_PRE_RESTART_POOL_NOT_CLOSED");
+  assert([maintenanceMetrics, identityMetrics, operationsMetrics, workerMetrics, webMetrics, adminMetrics]
+    .every((metrics) => metrics.closed), "MARATHON_V010_PRE_RESTART_POOL_NOT_CLOSED");
+  assert([maintenanceMetrics, identityMetrics, operationsMetrics, workerMetrics, webMetrics]
+    .every((metrics) => metrics.connection_attempts > 0), "MARATHON_V010_RUNTIME_ROLE_NOT_EXERCISED");
   const observedTotal = capability.driver_metrics.connection_attempts
-    + serviceMetrics.connection_attempts + adminMetrics.connection_attempts;
+    + maintenanceMetrics.connection_attempts + identityMetrics.connection_attempts
+    + operationsMetrics.connection_attempts + workerMetrics.connection_attempts
+    + webMetrics.connection_attempts + adminMetrics.connection_attempts;
   assert(observedTotal > 0, "MARATHON_V010_CONNECTIONS_NOT_OBSERVED");
+  assert(boundaryResult!.report_byte_reads === 1, "MARATHON_V010_REPORT_PROVIDER_READ_COUNT_INVALID");
 
   return Object.freeze({
     schema_version: "tivdoc-marathon-v010-postgresql-before-restart-v1",
@@ -556,17 +633,22 @@ export async function runMarathonV010BeforeRestart(
       report_approval_replayed: true,
       wrong_report_binding_denied: true,
       report_binding_late_failure_rolled_back: true,
-      exact_report_bytes_read: boundaryResult!.report_byte_reads === 1,
+      exact_report_bytes_read: true,
       report_byte_provider: "EXPLICIT_SYNTHETIC_TEST_DOUBLE_NOT_PRODUCT_COMPOSITION",
       managed_storage_proof_claimed: false,
     }),
     row_counts: rowCounts!,
     connection_attempts: Object.freeze({
       capability_seed: capability.driver_metrics.connection_attempts,
-      service_role: serviceMetrics.connection_attempts,
+      maintenance: maintenanceMetrics.connection_attempts,
+      identity_runtime: identityMetrics.connection_attempts,
+      operations_runtime: operationsMetrics.connection_attempts,
+      worker_runtime: workerMetrics.connection_attempts,
+      web_runtime: webMetrics.connection_attempts,
       administrative_count_probe: adminMetrics.connection_attempts,
       observed_total: observedTotal,
     }),
+    runtime_boundary: MARATHON_V010_RUNTIME_BOUNDARY,
     checkpoint,
     truth_counters: MARATHON_V010_TRUTH_COUNTERS,
   });
@@ -580,23 +662,33 @@ export async function runMarathonV010AfterRestart(
   const fixture = createMarathonV010DeterministicFixture(input.checkpoint.capability_state);
   assertCheckpointMatchesFixture(input.checkpoint, fixture);
   const replay = await replayCanonicalCapabilityMatrix({
-    connection_url: input.service_role_connection_url,
+    connection_url: input.maintenance_connection_url,
     build_identity_sha: input.checkpoint.build_identity_sha,
   }, input.checkpoint.capability_state);
   assert(replay.matrix.length === 14, "MARATHON_V010_CAPABILITY_REPLAY_COUNT_INVALID");
   assert(replay.adapter_replay.status === "PASS", "MARATHON_V010_CAPABILITY_ADAPTER_REPLAY_FAILED");
 
-  const service = createDriver(input.service_role_connection_url, "tivdoc-marathon-v010-after-service");
+  const maintenance = createDriver(input.maintenance_connection_url, "tivdoc-marathon-v010-after-maintenance");
+  const identity = createDriver(input.runtime_role_connection_urls.identity, "tivdoc-marathon-v010-after-identity");
+  const operations = createDriver(input.runtime_role_connection_urls.operations, "tivdoc-marathon-v010-after-operations");
+  const worker = createDriver(input.runtime_role_connection_urls.worker, "tivdoc-marathon-v010-after-worker");
+  const web = createDriver(input.runtime_role_connection_urls.web, "tivdoc-marathon-v010-after-web");
   const admin = createDriver(input.administrative_connection_url, "tivdoc-marathon-v010-after-counts");
-  assertSameTarget(service, admin, input.checkpoint.target_id);
-  const manager = new CanonicalPostgresTransactionManager(service);
+  assertSameTarget(input.checkpoint.target_id, maintenance, identity, operations, worker, web, admin);
+  const managers = Object.freeze({
+    maintenance: new CanonicalPostgresTransactionManager(maintenance),
+    identity: new CanonicalPostgresTransactionManager(identity),
+    operations: new CanonicalPostgresTransactionManager(operations),
+    worker: new CanonicalPostgresTransactionManager(worker),
+    web: new CanonicalPostgresTransactionManager(web),
+  });
   let preRevocationRows: readonly MarathonV010TableState[];
   let finalRows: readonly MarathonV010TableState[];
   let replayResult: Awaited<ReturnType<typeof exerciseAfterRestartReplay>>;
   let revocationResult: Awaited<ReturnType<typeof exerciseFailClosedRevocation>>;
   try {
     replayResult = await exerciseAfterRestartReplay(
-      manager,
+      managers,
       input.checkpoint.build_identity_sha,
       fixture,
       input.checkpoint,
@@ -604,20 +696,29 @@ export async function runMarathonV010AfterRestart(
     preRevocationRows = await collectMarathonRows(admin, fixture);
     assertRowsUnchanged(preRevocationRows, input.checkpoint.before_restart_rows);
     revocationResult = await exerciseFailClosedRevocation(
-      manager,
+      managers,
       input.checkpoint.build_identity_sha,
       fixture,
     );
     finalRows = await collectMarathonRows(admin, fixture);
     assertExpectedRows(finalRows, 3);
   } finally {
-    await closeDrivers(service, admin);
+    await closeDrivers(maintenance, identity, operations, worker, web, admin);
   }
-  const serviceMetrics = service.metrics();
+  const maintenanceMetrics = maintenance.metrics();
+  const identityMetrics = identity.metrics();
+  const operationsMetrics = operations.metrics();
+  const workerMetrics = worker.metrics();
+  const webMetrics = web.metrics();
   const adminMetrics = admin.metrics();
-  assert(serviceMetrics.closed && adminMetrics.closed, "MARATHON_V010_POST_RESTART_POOL_NOT_CLOSED");
+  assert([maintenanceMetrics, identityMetrics, operationsMetrics, workerMetrics, webMetrics, adminMetrics]
+    .every((metrics) => metrics.closed), "MARATHON_V010_POST_RESTART_POOL_NOT_CLOSED");
+  assert([maintenanceMetrics, identityMetrics, operationsMetrics, workerMetrics, webMetrics]
+    .every((metrics) => metrics.connection_attempts > 0), "MARATHON_V010_REPLAY_RUNTIME_ROLE_NOT_EXERCISED");
   const observedTotal = replay.driver_metrics.connection_attempts
-    + serviceMetrics.connection_attempts + adminMetrics.connection_attempts;
+    + maintenanceMetrics.connection_attempts + identityMetrics.connection_attempts
+    + operationsMetrics.connection_attempts + workerMetrics.connection_attempts
+    + webMetrics.connection_attempts + adminMetrics.connection_attempts;
   assert(observedTotal > 0, "MARATHON_V010_REPLAY_CONNECTIONS_NOT_OBSERVED");
 
   return Object.freeze({
@@ -657,10 +758,15 @@ export async function runMarathonV010AfterRestart(
     final_row_counts: finalRows!,
     connection_attempts: Object.freeze({
       capability_replay: replay.driver_metrics.connection_attempts,
-      service_role: serviceMetrics.connection_attempts,
+      maintenance: maintenanceMetrics.connection_attempts,
+      identity_runtime: identityMetrics.connection_attempts,
+      operations_runtime: operationsMetrics.connection_attempts,
+      worker_runtime: workerMetrics.connection_attempts,
+      web_runtime: webMetrics.connection_attempts,
       administrative_count_probe: adminMetrics.connection_attempts,
       observed_total: observedTotal,
     }),
+    runtime_boundary: MARATHON_V010_RUNTIME_BOUNDARY,
     checkpoint_sha256: input.checkpoint.checkpoint_sha256,
     truth_counters: MARATHON_V010_TRUTH_COUNTERS,
   });
@@ -684,6 +790,9 @@ export function combineMarathonV010Receipts(
   assert(canonicalSha256(before.truth_counters) === canonicalSha256(MARATHON_V010_TRUTH_COUNTERS)
     && canonicalSha256(after.truth_counters) === canonicalSha256(MARATHON_V010_TRUTH_COUNTERS),
   "MARATHON_V010_RECEIPT_TRUTH_COUNTER_INVALID");
+  assert(canonicalSha256(before.runtime_boundary) === canonicalSha256(MARATHON_V010_RUNTIME_BOUNDARY)
+    && canonicalSha256(after.runtime_boundary) === canonicalSha256(MARATHON_V010_RUNTIME_BOUNDARY),
+  "MARATHON_V010_RECEIPT_RUNTIME_BOUNDARY_INVALID");
   assertExpectedRows(after.final_row_counts, 3);
   return Object.freeze({
     schema_version: "tivdoc-marathon-v010-postgresql-matrix-v1",
@@ -704,31 +813,25 @@ export function combineMarathonV010Receipts(
 }
 
 async function exerciseReportBindingRollback(
-  manager: CanonicalPostgresTransactionManager,
+  managers: MarathonRuntimeManagers,
   buildIdentitySha: string,
   fixture: MarathonV010DeterministicFixture,
 ): Promise<void> {
+  await assertCanonicalReportIdentityForWorker(managers.operations, buildIdentitySha, fixture);
   try {
-    await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
-      await new PostgresCaseOwnerRepository(context.client).bind({
-        tenant_id: fixture.identity.tenant_id,
-        case_id: fixture.identity.case_id,
-        subject: fixture.identity.subject,
-        created_at: fixture.timestamps.created_at,
-      });
-      await new PostgresPrivateReportObjectRepository(context.client).bind(reportBindInput(fixture));
+    await withVerifiedRuntimeTransaction(managers.worker, buildIdentitySha, fixture, "worker",
+      "report-rollback", async (context) => {
+      await bindReportAsWorker(context, fixture);
       throw new Error("MARATHON_V010_SYNTHETIC_LATE_REPORT_FAILURE");
     });
   } catch (error) {
     if (!(error instanceof CanonicalPostgresError) || error.code !== "POSTGRES_TRANSACTION_FAILED") throw error;
   }
-  await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
+  await withVerifiedRuntimeTransaction(managers.worker, buildIdentitySha, fixture, "worker",
+    "report-rollback-probe", async (context) => {
     const result = await context.client.query(statement(
       "marathon_v010_report_rollback_probe",
-      `select
-        (select count(*)::text from public.product_case_owners owner
-          where owner.tenant_id = $1 and owner.canonical_case_id = $2) as owner_rows,
-        (select count(*)::text from public.product_private_report_objects object
+      `select (select count(*)::text from public.product_private_report_objects object
           where object.tenant_id = $1 and object.canonical_case_id = $2
             and object.report_id = $3 and object.report_revision = $4) as report_object_rows`,
       [
@@ -739,18 +842,18 @@ async function exerciseReportBindingRollback(
       ],
     ));
     const row = result.rows[0];
-    assert(result.row_count === 1 && row?.owner_rows === "0" && row.report_object_rows === "0",
+    assert(result.row_count === 1 && row?.report_object_rows === "0",
       "MARATHON_V010_REPORT_LATE_FAILURE_NOT_ROLLED_BACK");
   });
 }
 
 async function exerciseBoundariesBeforeRestart(
-  manager: CanonicalPostgresTransactionManager,
+  managers: MarathonRuntimeManagers,
   buildIdentitySha: string,
   fixture: MarathonV010DeterministicFixture,
 ) {
   const provider = createSyntheticReadOnlyProvider(fixture.report.provider_locator, fixture.report_bytes);
-  return withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
+  await withMaintenanceTransaction(managers.maintenance, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
     const sessions = new PostgresIdentitySessionRepository(context.client);
     const registration = Object.freeze({
       tenant_id: fixture.identity.tenant_id,
@@ -774,9 +877,6 @@ async function exerciseBoundariesBeforeRestart(
       expected_rotation_counter: 0,
       rotated_at: fixture.timestamps.rotated_at,
     });
-    const rotated = await sessions.read(fixture.identity.session_id);
-    assert(rotated?.status === "active" && rotated.current_token_id === fixture.identity.current_token_id
-      && rotated.rotation_counter === 1, "MARATHON_V010_IDENTITY_ROTATION_NOT_VISIBLE");
     await expectDurableBoundaryError(() => sessions.rotate({
       tenant_id: fixture.identity.tenant_id,
       session_id: fixture.identity.session_id,
@@ -784,7 +884,16 @@ async function exerciseBoundariesBeforeRestart(
       expected_rotation_counter: 0,
       rotated_at: fixture.timestamps.rotated_at,
     }), "DURABLE_BOUNDARY_OPERATION_REJECTED");
+  });
 
+  await managers.identity.transaction(async (context) => {
+    const rotated = await new PostgresIdentitySessionRepository(context.client).read(fixture.identity.session_id);
+    assert(rotated?.status === "active" && rotated.current_token_id === fixture.identity.current_token_id
+      && rotated.rotation_counter === 1, "MARATHON_V010_IDENTITY_RUNTIME_READ_INVALID");
+  });
+
+  await withVerifiedRuntimeTransaction(managers.operations, buildIdentitySha, fixture, "operations",
+    "owner-bind", async (context) => {
     const owners = new PostgresCaseOwnerRepository(context.client);
     const ownerInput = Object.freeze({
       tenant_id: fixture.identity.tenant_id,
@@ -800,7 +909,22 @@ async function exerciseBoundariesBeforeRestart(
       case_id: fixture.identity.case_id,
       subject: `subject:synthetic:v010:${fixture.suffix}:other`,
     }), "DURABLE_BOUNDARY_OWNER_DENIED");
+  });
 
+  await withVerifiedRuntimeTransaction(managers.web, buildIdentitySha, fixture, "web",
+    "owner-read", async (context) => {
+    const owner = await new PostgresCaseOwnerRepository(context.client).requireActive({
+      tenant_id: fixture.identity.tenant_id,
+      case_id: fixture.identity.case_id,
+      subject: fixture.identity.subject,
+    });
+    assert(owner.status === "active", "MARATHON_V010_WEB_OWNER_READ_INVALID");
+  });
+
+  await exerciseReportBindingRollback(managers, buildIdentitySha, fixture);
+
+  await withVerifiedRuntimeTransaction(managers.operations, buildIdentitySha, fixture, "operations",
+    "privacy-before-restart", async (context) => {
     const privacy = new PostgresPrivacyRequestRepository(context.client);
     const privacyOne = await privacy.append(fixture.privacy_revision_1);
     const privacyReplay = await privacy.append(fixture.privacy_revision_1);
@@ -809,13 +933,19 @@ async function exerciseBoundariesBeforeRestart(
     const privacyTwo = await privacy.append(fixture.privacy_revision_2);
     assert(privacyTwo.revision === 2 && privacyTwo.state === "acknowledged",
       "MARATHON_V010_PRIVACY_REVISION_INVALID");
+  });
 
-    const reports = new PostgresPrivateReportObjectRepository(context.client);
-    const reportInput = reportBindInput(fixture);
-    const report = await reports.bind(reportInput);
-    const reportReplay = await reports.bind(reportInput);
-    assert(report.object_version_id === reportReplay.object_version_id,
+  await assertCanonicalReportIdentityForWorker(managers.operations, buildIdentitySha, fixture);
+  const reportBinding = await withVerifiedRuntimeTransaction(managers.worker, buildIdentitySha, fixture, "worker",
+    "report-bind", (context) => bindReportAsWorker(context, fixture));
+  const reportBindingReplay = await withVerifiedRuntimeTransaction(managers.worker, buildIdentitySha, fixture, "worker",
+    "report-bind-replay", (context) => bindReportAsWorker(context, fixture));
+  assert(reportBinding.object_version_id === reportBindingReplay.object_version_id,
       "MARATHON_V010_REPORT_BIND_REPLAY_MISMATCH");
+
+  return withVerifiedRuntimeTransaction(managers.operations, buildIdentitySha, fixture, "operations",
+    "report-approval-read", async (context) => {
+    const reports = new PostgresPrivateReportObjectRepository(context.client);
     await reports.approve({
       tenant_id: fixture.identity.tenant_id,
       case_id: fixture.identity.case_id,
@@ -849,9 +979,9 @@ async function exerciseControlledImportBeforeRestart(
   fixture: MarathonV010DeterministicFixture,
 ) {
   const repository = new PostgresControlledImportLedgerRepository();
-  const reserve = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const reserve = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.reserve(context, fixture.import_command));
-  const reserveReplay = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const reserveReplay = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.reserve(context, fixture.import_command));
   assert(reserve.state === "received" && reserveReplay.operation_id === reserve.operation_id,
     "MARATHON_V010_IMPORT_RESERVE_REPLAY_INVALID");
@@ -879,7 +1009,7 @@ async function exerciseControlledImportBeforeRestart(
     conflictingCommand.requested_at,
   ]), "CI001");
 
-  const firstClaims = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const firstClaims = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.claimRecoverable(context, {
       worker_id: `worker:synthetic:v010:${fixture.suffix}:first`,
       now: fixture.timestamps.first_claim_at,
@@ -887,7 +1017,7 @@ async function exerciseControlledImportBeforeRestart(
       limit: 100,
     }));
   const firstLease = requiredLease(firstClaims, fixture.import_command.operation_id);
-  const secondClaims = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const secondClaims = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.claimRecoverable(context, {
       worker_id: `worker:synthetic:v010:${fixture.suffix}:second`,
       now: fixture.timestamps.second_claim_at,
@@ -916,7 +1046,7 @@ async function exerciseControlledImportBeforeRestart(
     }),
     "IMPORT_TOCTOU_REOPEN_MISMATCH",
   ));
-  const staged = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const staged = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.stageExactBytes(context, {
       lease: secondLease,
       source: immutableExactSource(fixture.import_bytes, fixture.import_identity_token),
@@ -925,14 +1055,14 @@ async function exerciseControlledImportBeforeRestart(
     }));
   assert(staged.status.state === "validated" && !staged.status.visible,
     "MARATHON_V010_IMPORT_STAGE_INVALID");
-  const published = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const published = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.publish(context, {
       lease: secondLease,
       request_sha256: fixture.import_command.request_sha256,
       artifact_sha256: fixture.import_artifact_sha256,
       occurred_at: fixture.timestamps.publish_at,
     }));
-  const publicationReplay = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const publicationReplay = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.publish(context, {
       lease: secondLease,
       request_sha256: fixture.import_command.request_sha256,
@@ -942,7 +1072,7 @@ async function exerciseControlledImportBeforeRestart(
   assert(published.visible && published.state === "published"
     && publicationReplay.publication_id === published.publication_id,
   "MARATHON_V010_IMPORT_PUBLICATION_REPLAY_INVALID");
-  const opened = await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
+  const opened = await withMaintenanceTransaction(manager, buildIdentitySha, fixture.identity.tenant_id,
     (context) => repository.openPublishedBytes(context, fixture.import_command.operation_id));
   assertBytes(opened.bytes, fixture.import_bytes, "MARATHON_V010_IMPORT_PUBLISHED_BYTES_MISMATCH");
   assert(opened.artifact_sha256 === fixture.import_artifact_sha256
@@ -958,13 +1088,17 @@ async function exerciseControlledImportBeforeRestart(
 }
 
 async function exerciseAfterRestartReplay(
-  manager: CanonicalPostgresTransactionManager,
+  managers: MarathonRuntimeManagers,
   buildIdentitySha: string,
   fixture: MarathonV010DeterministicFixture,
   checkpoint: MarathonV010Checkpoint,
 ) {
   const provider = createSyntheticReadOnlyProvider(fixture.report.provider_locator, fixture.report_bytes);
-  return withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
+  await withMaintenanceTransaction(
+    managers.maintenance,
+    buildIdentitySha,
+    fixture.identity.tenant_id,
+    async (context) => {
     const imports = new PostgresControlledImportLedgerRepository();
     const status = await imports.getStatus(context, fixture.import_command.operation_id);
     assert(status?.state === "published" && status.visible
@@ -981,17 +1115,30 @@ async function exerciseAfterRestartReplay(
       "MARATHON_V010_IMPORT_PUBLICATION_NOT_REPLAYED");
     const opened = await imports.openPublishedBytes(context, fixture.import_command.operation_id);
     assertBytes(opened.bytes, fixture.import_bytes, "MARATHON_V010_IMPORT_BYTES_NOT_RELOADED");
+  });
 
+  await managers.identity.transaction(async (context) => {
     const sessions = new PostgresIdentitySessionRepository(context.client);
     const session = await sessions.read(fixture.identity.session_id);
     assert(session?.status === "active" && session.current_token_id === fixture.identity.current_token_id
       && session.rotation_counter === 1, "MARATHON_V010_IDENTITY_NOT_RELOADED");
+  });
+
+  await withVerifiedRuntimeTransaction(managers.web, buildIdentitySha, fixture, "web",
+    "owner-replay-read", async (context) => {
     const owner = await new PostgresCaseOwnerRepository(context.client).requireActive({
       tenant_id: fixture.identity.tenant_id,
       case_id: fixture.identity.case_id,
       subject: fixture.identity.subject,
     });
     assert(owner.status === "active", "MARATHON_V010_OWNER_NOT_RELOADED");
+  });
+
+  await withVerifiedRuntimeTransaction(managers.worker, buildIdentitySha, fixture, "worker",
+    "report-replay-read", (context) => assertReportReadableAsWorker(context, fixture));
+
+  await withVerifiedRuntimeTransaction(managers.operations, buildIdentitySha, fixture, "operations",
+    "privacy-report-replay", async (context) => {
     const privacy = await new PostgresPrivacyRequestRepository(context.client)
       .append(fixture.privacy_revision_2);
     assert(privacy.revision === 2 && privacy.state === "acknowledged",
@@ -1001,24 +1148,27 @@ async function exerciseAfterRestartReplay(
       .download(reportReadInput(fixture));
     assertBytes(downloaded.bytes, fixture.report_bytes, "MARATHON_V010_REPORT_BYTES_NOT_RELOADED");
     assert(provider.readCount() === 1, "MARATHON_V010_REPORT_REPLAY_READ_COUNT_INVALID");
-    return Object.freeze({
-      import_status_reloaded: true as const,
-      import_publication_replayed: true as const,
-      published_exact_bytes_reopened: true as const,
-      identity_rotation_reloaded: true as const,
-      owner_binding_reloaded: true as const,
-      privacy_revision_replayed: true as const,
-      approved_report_exact_bytes_reloaded: true as const,
-    });
+  });
+
+  return Object.freeze({
+    import_status_reloaded: true as const,
+    import_publication_replayed: true as const,
+    published_exact_bytes_reopened: true as const,
+    identity_rotation_reloaded: true as const,
+    owner_binding_reloaded: true as const,
+    privacy_revision_replayed: true as const,
+    approved_report_exact_bytes_reloaded: true as const,
   });
 }
 
 async function exerciseFailClosedRevocation(
-  manager: CanonicalPostgresTransactionManager,
+  managers: MarathonRuntimeManagers,
   buildIdentitySha: string,
   fixture: MarathonV010DeterministicFixture,
 ) {
-  await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
+  const provider = createSyntheticReadOnlyProvider(fixture.report.provider_locator, fixture.report_bytes);
+  await withVerifiedRuntimeTransaction(managers.operations, buildIdentitySha, fixture, "operations",
+    "boundary-revocation", async (context) => {
     await new PostgresPrivateReportObjectRepository(context.client).revoke({
       tenant_id: fixture.identity.tenant_id,
       case_id: fixture.identity.case_id,
@@ -1027,11 +1177,6 @@ async function exerciseFailClosedRevocation(
       revocation_receipt_sha256: fixture.privacy_revision_3.grant_revocation_receipt_sha256,
       revoked_at: fixture.timestamps.revoked_at,
       canonical_identity: fixture.report.approved_identity,
-    });
-    await new PostgresIdentitySessionRepository(context.client).revoke({
-      tenant_id: fixture.identity.tenant_id,
-      session_id: fixture.identity.session_id,
-      revoked_at: fixture.timestamps.revoked_at,
     });
     await new PostgresCaseOwnerRepository(context.client).revoke({
       tenant_id: fixture.identity.tenant_id,
@@ -1043,20 +1188,6 @@ async function exerciseFailClosedRevocation(
       .append(fixture.privacy_revision_3);
     assert(privacy.revision === 3 && privacy.state === "completed_by_authorized_operations",
       "MARATHON_V010_PRIVACY_COMPLETION_NOT_PERSISTED");
-  });
-
-  const provider = createSyntheticReadOnlyProvider(fixture.report.provider_locator, fixture.report_bytes);
-  return withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
-    const sessions = new PostgresIdentitySessionRepository(context.client);
-    const session = await sessions.read(fixture.identity.session_id);
-    assert(session?.status === "revoked", "MARATHON_V010_IDENTITY_REVOCATION_NOT_VISIBLE");
-    await expectDurableBoundaryError(() => sessions.rotate({
-      tenant_id: fixture.identity.tenant_id,
-      session_id: fixture.identity.session_id,
-      next_token_id: fixture.identity.rejected_token_id,
-      expected_rotation_counter: 1,
-      rotated_at: fixture.timestamps.revoked_at,
-    }), "DURABLE_BOUNDARY_OPERATION_REJECTED");
     const owners = new PostgresCaseOwnerRepository(context.client);
     const owner = await owners.lookup({
       tenant_id: fixture.identity.tenant_id,
@@ -1077,15 +1208,51 @@ async function exerciseFailClosedRevocation(
       "DURABLE_BOUNDARY_REPORT_DENIED",
     );
     assert(provider.readCount() === 0, "MARATHON_V010_REVOKED_REPORT_REACHED_PROVIDER");
-    return Object.freeze({
-      identity_revoked: true as const,
-      revoked_identity_rotation_denied: true as const,
-      owner_revoked: true as const,
-      owner_read_denied: true as const,
-      report_revoked: true as const,
-      report_read_denied_before_provider_access: true as const,
-      privacy_completion_revision_persisted: true as const,
-    });
+  });
+
+  await withMaintenanceTransaction(
+    managers.maintenance,
+    buildIdentitySha,
+    fixture.identity.tenant_id,
+    async (context) => {
+      const sessions = new PostgresIdentitySessionRepository(context.client);
+      await sessions.revoke({
+        tenant_id: fixture.identity.tenant_id,
+        session_id: fixture.identity.session_id,
+        revoked_at: fixture.timestamps.revoked_at,
+      });
+      await expectDurableBoundaryError(() => sessions.rotate({
+        tenant_id: fixture.identity.tenant_id,
+        session_id: fixture.identity.session_id,
+        next_token_id: fixture.identity.rejected_token_id,
+        expected_rotation_counter: 1,
+        rotated_at: fixture.timestamps.revoked_at,
+      }), "DURABLE_BOUNDARY_OPERATION_REJECTED");
+    },
+  );
+
+  await managers.identity.transaction(async (context) => {
+    const session = await new PostgresIdentitySessionRepository(context.client)
+      .read(fixture.identity.session_id);
+    assert(session?.status === "revoked", "MARATHON_V010_IDENTITY_REVOCATION_NOT_VISIBLE");
+  });
+  await expectVerifiedRuntimeDenied(() => withVerifiedRuntimeTransaction(
+    managers.operations,
+    buildIdentitySha,
+    fixture,
+    "operations",
+    "revoked-session-probe",
+    async () => undefined,
+  ));
+
+  return Object.freeze({
+    identity_revoked: true as const,
+    revoked_identity_rotation_denied: true as const,
+    owner_revoked: true as const,
+    owner_read_denied: true as const,
+    report_revoked: true as const,
+    report_read_denied_before_provider_access: true as const,
+    privacy_completion_revision_persisted: true as const,
   });
 }
 
@@ -1215,7 +1382,7 @@ function assertRowsUnchanged(
     "MARATHON_V010_PRE_RESTART_ROWS_CHANGED");
 }
 
-async function withTenantTransaction<T>(
+async function withMaintenanceTransaction<T>(
   manager: CanonicalPostgresTransactionManager,
   buildIdentitySha: string,
   tenantId: string,
@@ -1223,11 +1390,132 @@ async function withTenantTransaction<T>(
 ): Promise<T> {
   return manager.transaction(async (context) => {
     await context.client.query(Object.freeze({
-      ...RUNTIME_CONTEXT,
+      ...MAINTENANCE_CONTEXT,
       values: Object.freeze([buildIdentitySha, tenantId, "service_role"]),
     }));
     return operation(context);
   });
+}
+
+async function withVerifiedRuntimeTransaction<T>(
+  manager: CanonicalPostgresTransactionManager,
+  buildIdentitySha: string,
+  fixture: MarathonV010DeterministicFixture,
+  role: MarathonRuntimeRole,
+  operationSuffix: string,
+  operation: (context: PostgresTransactionContext) => Promise<T>,
+): Promise<T> {
+  return manager.transaction(async (context) => {
+    await context.client.query(Object.freeze({
+      ...RUNTIME_BUILD_CONTEXT,
+      values: Object.freeze([buildIdentitySha]),
+    }));
+    const installed = await context.client.query(Object.freeze({
+      ...VERIFIED_RUNTIME_CONTEXT,
+      values: Object.freeze([
+        fixture.identity.session_id,
+        fixture.identity.current_token_id,
+        `marathon:${fixture.suffix}:${role}:${operationSuffix}`,
+      ]),
+    }));
+    const row = installed.rows[0];
+    assert(installed.row_count === 1 && installed.rows.length === 1
+      && row?.tenant_id === fixture.identity.tenant_id
+      && row.actor_id === fixture.identity.subject
+      && row.runtime_role === role
+      && row.reviewer_organization_id === fixture.identity.reviewer_organization_id
+      && row.session_rotation_counter === "1",
+    "MARATHON_V010_VERIFIED_RUNTIME_CONTEXT_INVALID");
+    return operation(context);
+  });
+}
+
+async function assertCanonicalReportIdentityForWorker(
+  operations: CanonicalPostgresTransactionManager,
+  buildIdentitySha: string,
+  fixture: MarathonV010DeterministicFixture,
+): Promise<void> {
+  await withVerifiedRuntimeTransaction(operations, buildIdentitySha, fixture, "operations",
+    "worker-report-identity", async (context) => {
+    const identity = await new PostgresPrivateReportObjectRepository(context.client)
+      .currentCanonicalIdentity({
+        tenant_id: fixture.identity.tenant_id,
+        case_id: fixture.identity.case_id,
+        report_id: fixture.report.report_id,
+        report_revision: fixture.report.report_revision,
+        download_grant_revision: 0,
+      });
+    assert(identity?.identity_sha256 === fixture.report.staged_identity.identity_sha256,
+      "MARATHON_V010_WORKER_REPORT_IDENTITY_INVALID");
+  });
+}
+
+async function bindReportAsWorker(
+  context: PostgresTransactionContext,
+  fixture: MarathonV010DeterministicFixture,
+): Promise<Readonly<{ object_version_id: string }>> {
+  const result = await context.client.query(durableBoundaryStatements.reportBind([
+    fixture.identity.tenant_id,
+    fixture.identity.case_id,
+    fixture.report.report_id,
+    fixture.report.report_revision,
+    fixture.report.report_sha256,
+    fixture.report.object_version_id,
+    fixture.report.provider_locator,
+    fixture.report.byte_length,
+    fixture.report.artifact_sha256,
+    fixture.timestamps.created_at,
+  ]));
+  const row = result.rows[0];
+  assert(result.row_count === 1 && result.rows.length === 1
+    && row?.tenant_id === fixture.identity.tenant_id
+    && row.canonical_case_id === fixture.identity.case_id
+    && row.report_id === fixture.report.report_id
+    && decimal(row.report_revision) === fixture.report.report_revision
+    && row.report_sha256 === fixture.report.report_sha256
+    && row.object_version_id === fixture.report.object_version_id
+    && row.provider_locator === fixture.report.provider_locator
+    && decimal(row.byte_length) === fixture.report.byte_length
+    && row.artifact_sha256 === fixture.report.artifact_sha256
+    && row.state === "staged"
+    && decimal(row.grant_epoch) === 0
+    && row.revocation_receipt_sha256 === null
+    && row.revoked_at === null
+    && row.created_at === fixture.timestamps.created_at,
+  "MARATHON_V010_WORKER_REPORT_BIND_INVALID");
+  return Object.freeze({ object_version_id: fixture.report.object_version_id });
+}
+
+async function assertReportReadableAsWorker(
+  context: PostgresTransactionContext,
+  fixture: MarathonV010DeterministicFixture,
+): Promise<void> {
+  const result = await context.client.query(durableBoundaryStatements.reportApprovedRead([
+    fixture.identity.tenant_id,
+    fixture.identity.case_id,
+    fixture.report.report_id,
+    fixture.report.report_revision,
+    fixture.report.report_sha256,
+    fixture.report.artifact_sha256,
+  ]));
+  const row = result.rows[0];
+  assert(result.row_count === 1 && result.rows.length === 1
+    && row?.object_version_id === fixture.report.object_version_id
+    && row.provider_locator === fixture.report.provider_locator
+    && decimal(row.byte_length) === fixture.report.byte_length
+    && row.artifact_sha256 === fixture.report.artifact_sha256
+    && decimal(row.grant_epoch) === 1,
+  "MARATHON_V010_WORKER_REPORT_READ_INVALID");
+}
+
+async function expectVerifiedRuntimeDenied(operation: () => Promise<unknown>): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    if (error instanceof CanonicalPostgresError && error.sqlstate === "42501") return;
+    throw error;
+  }
+  throw new Error("MARATHON_V010_REVOKED_RUNTIME_CONTEXT_ACCEPTED");
 }
 
 async function withAutocommitContext<T>(
@@ -1343,22 +1631,6 @@ function createSyntheticReadOnlyProvider(locator: string, bytes: Uint8Array): Re
   return Object.freeze({ provider, readCount: () => reads });
 }
 
-function reportBindInput(fixture: MarathonV010DeterministicFixture) {
-  return Object.freeze({
-    tenant_id: fixture.identity.tenant_id,
-    case_id: fixture.identity.case_id,
-    report_id: fixture.report.report_id,
-    report_revision: fixture.report.report_revision,
-    report_sha256: fixture.report.report_sha256,
-    object_version_id: fixture.report.object_version_id,
-    provider_locator: fixture.report.provider_locator,
-    byte_length: fixture.report.byte_length,
-    artifact_sha256: fixture.report.artifact_sha256,
-    created_at: fixture.timestamps.created_at,
-    canonical_identity: fixture.report.staged_identity,
-  });
-}
-
 function reportReadInput(fixture: MarathonV010DeterministicFixture) {
   return Object.freeze({
     tenant_id: fixture.identity.tenant_id,
@@ -1410,6 +1682,8 @@ function assertCheckpoint(checkpoint: MarathonV010Checkpoint): void {
     && FIXTURE_SUFFIX.test(checkpoint.fixture_suffix) && HASH.test(checkpoint.import_artifact_sha256)
     && HASH.test(checkpoint.import_publication_id) && HASH.test(checkpoint.import_publication_receipt_sha256),
   "MARATHON_V010_CHECKPOINT_CONTRACT_INVALID");
+  assert(canonicalSha256(checkpoint.runtime_boundary) === canonicalSha256(MARATHON_V010_RUNTIME_BOUNDARY),
+    "MARATHON_V010_CHECKPOINT_RUNTIME_BOUNDARY_INVALID");
   assertDurableCapabilityState(checkpoint.capability_state);
 }
 
@@ -1456,14 +1730,15 @@ function createDriver(connectionUrl: string, applicationName: string): NodePostg
 }
 
 function assertSameTarget(
-  service: NodePostgresConnectionFactory,
-  admin: NodePostgresConnectionFactory,
   expectedTargetId: string,
+  ...drivers: readonly NodePostgresConnectionFactory[]
 ): void {
-  assert(service.target.target_id === expectedTargetId && admin.target.target_id === expectedTargetId
-    && service.target.host === admin.target.host && service.target.port === admin.target.port
-    && service.target.database === admin.target.database,
-  "MARATHON_V010_POSTGRES_TARGET_MISMATCH");
+  const reference = drivers[0]?.target;
+  assert(reference !== undefined && drivers.length >= 2 && drivers.every((driver) =>
+    driver.target.target_id === expectedTargetId
+      && driver.target.host === reference.host
+      && driver.target.port === reference.port
+      && driver.target.database === reference.database), "MARATHON_V010_POSTGRES_TARGET_MISMATCH");
 }
 
 async function closeDrivers(...drivers: readonly NodePostgresConnectionFactory[]): Promise<void> {
