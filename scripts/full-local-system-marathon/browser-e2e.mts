@@ -55,15 +55,18 @@ try {
       commands.push(runCli(`snapshot_${page.id}`, ["snapshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.md`)]));
       commands.push(runCli(`screenshot_${page.id}`, ["screenshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.png`), "--full-page"]));
     }
+    const requestHeaders = new Headers({ connection: "close" });
+    if (session) requestHeaders.set("cookie", `${MARATHON_BROWSER_SESSION_COOKIE}=${session}`);
     const response = await fetch(`${BASE_URL}${page.path}`, {
       redirect: "manual",
-      headers: session ? { cookie: `${MARATHON_BROWSER_SESSION_COOKIE}=${session}` } : undefined,
+      headers: requestHeaders,
       signal: AbortSignal.timeout(10_000),
     });
     if (response.status !== 200) throw new Error(`BROWSER_E2E_HTTP_STATUS:${page.id}:${response.status}`);
     if (!isHermeticBrowserDocumentResponse(response.headers)) {
       throw new Error(`BROWSER_E2E_SECURITY_HEADERS:${page.id}`);
     }
+    await response.body?.cancel();
   }
   if (!STARTUP_SMOKE) {
     commands.push(runCli("resize_mobile", ["resize", "390", "844"]));
@@ -139,13 +142,15 @@ function runCliAllowFailure(commandId: string, args: readonly string[]): void {
 async function issueSession(audience: "portal" | "operations", ticket: string): Promise<string> {
   const response = await fetch(`${BASE_URL}/api/${audience}/session`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "connection": "close", "content-type": "application/json" },
     body: JSON.stringify({ ticket }),
     redirect: "manual",
     signal: AbortSignal.timeout(10_000),
   });
   if (response.status !== 201) throw new Error(`BROWSER_E2E_SESSION_ISSUE_FAILED:${audience}:${response.status}`);
-  return extractMarathonBrowserSessionCookie(response.headers.get("set-cookie"));
+  const session = extractMarathonBrowserSessionCookie(response.headers.get("set-cookie"));
+  await response.arrayBuffer();
+  return session;
 }
 
 function installBrowserSession(commandId: string, value: string): Readonly<Record<string, unknown>> {
@@ -164,8 +169,14 @@ async function waitForServer(): Promise<void> {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     if (server?.exitCode !== null) throw new Error(`BROWSER_E2E_SERVER_EXITED:${server?.exitCode}`);
     try {
-      const response = await fetch(BASE_URL, { signal: AbortSignal.timeout(1_000) });
-      if (response.status > 0) return;
+      const response = await fetch(BASE_URL, {
+        headers: { connection: "close" },
+        signal: AbortSignal.timeout(1_000),
+      });
+      if (response.status > 0) {
+        await response.body?.cancel();
+        return;
+      }
     } catch {
       // The bounded loop continues while the local server starts.
     }
