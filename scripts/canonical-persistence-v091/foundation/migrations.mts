@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { lstat, readFile, readdir, realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { Pool } from "pg";
+
 import type { PinnedPostgresBinaries } from "./pinned-binaries.mts";
 import { contained, type DynamicPostgresPaths } from "./paths.mts";
 import {
@@ -224,6 +226,35 @@ async function runPsqlFile(input: Readonly<{
   file: string;
 }>) {
   assertSafeTargetIdentity(input.target.descriptor);
+  if (input.binaries.source_kind === "edb_authenticode_signed_windows_installer") {
+    const started = Date.now();
+    const sql = await readFile(input.file, "utf8");
+    const pool = new Pool({
+      host: input.target.descriptor.host,
+      port: input.target.descriptor.port,
+      database: input.target.descriptor.database,
+      user: input.target.username.reveal(),
+      password: input.target.password.reveal(),
+      ssl: false,
+      max: 1,
+      allowExitOnIdle: true,
+      application_name: "tivdoc-v091-node-migration",
+      connectionTimeoutMillis: 5_000,
+    });
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query(sql);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+      await pool.end();
+    }
+    return Object.freeze({ duration_ms: Date.now() - started });
+  }
   return await input.runner({
     executable: input.binaries.executable_paths.psql,
     args: Object.freeze([

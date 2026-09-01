@@ -58,7 +58,8 @@ function assertLease(input: ControlledImportLease) {
 
 function mapDatabaseError(error: unknown): never {
   if (error instanceof ControlledImportLedgerError) throw error;
-  const code = (error as { code?: unknown }).code;
+  const candidate = error as { code?: unknown; sqlstate?: unknown };
+  const code = typeof candidate.sqlstate === "string" ? candidate.sqlstate : candidate.code;
   if (code === "CI001") throw new ControlledImportLedgerError("IMPORT_IDEMPOTENCY_BINDING_MISMATCH");
   if (code === "CI002") throw new ControlledImportLedgerError("IMPORT_LEASE_FENCED");
   if (code === "CI003") throw new ControlledImportLedgerError("IMPORT_INVALID_STATE");

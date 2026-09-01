@@ -118,7 +118,7 @@ describe("W2 durable PostgreSQL product boundary", () => {
     expect(DURABLE_PRODUCT_BLOCKERS).toHaveLength(5);
     expect(new Set(DURABLE_PRODUCT_BLOCKERS.map((item) => item.blocker_id)).size).toBe(5);
     expect(DURABLE_PRODUCT_BLOCKERS.every((item) => item.safe_behavior === "FAIL_CLOSED")).toBe(true);
-    expect(DURABLE_PRODUCT_BLOCKERS.some((item) => item.blocker_id === "W2_PRIVACY_WORKFLOW_SCHEMA_ABSENT")).toBe(true);
+    expect(DURABLE_PRODUCT_BLOCKERS.some((item) => item.blocker_id === "W2_PRIVACY_WORKFLOW_NOT_WIRED")).toBe(true);
     expect(DURABLE_PRODUCT_BLOCKERS.some((item) => item.blocker_id === "W2_RENDERED_NEXT_COMPOSITION_BOOTSTRAP_ABSENT")).toBe(true);
   });
 });

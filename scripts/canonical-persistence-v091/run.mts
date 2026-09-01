@@ -19,6 +19,7 @@ import {
   discoverMigrationChain,
   initializeOwnedCluster,
   inspectExplicitDynamicTarget,
+  inspectAuthenticodeInstalledPostgresRuntime,
   ensurePinnedPostgresBinaries,
   runDynamicPreflight,
   resolveDynamicPostgresPaths,
@@ -112,7 +113,9 @@ try {
     const port = await selectRandomHighLoopbackPort();
     target = createOwnedLocalTarget({ port, suffix: `dynamic_${runId}` });
     paths = resolveDynamicPostgresPaths(root, target);
-    const prepared = await ensurePinnedPostgresBinaries(paths);
+    const prepared = smokeOnly
+      ? await inspectAuthenticodeInstalledPostgresRuntime(paths)
+      : await ensurePinnedPostgresBinaries(paths);
     binaries = prepared.binaries;
     provisioning = prepared.provisioning;
     await initializeOwnedCluster({ target, paths, binaries });
@@ -129,6 +132,7 @@ try {
   const roles = await configureDynamicRoleSessions({ admin_connection_url: adminUrl, secrets: roleSecrets });
   const clean = await applyCleanMigrationChain({ target, paths, binaries, chain });
   const inventory = await collectPostgresInventory({ target, paths, binaries });
+  if (smokeOnly) await writeJson(path.join(developmentRoot, "inventory-latest.json"), inventory);
   assertPlainPostgresFoundationInventory(inventory);
   const clusterMarker = ownsServer ? await assertOwnedCluster(target, paths) : null;
   const environment = Object.freeze({
@@ -335,10 +339,24 @@ try {
     });
 
     if (matrixSmoke) {
+      const runtimeProvenance = Object.freeze({
+        source_kind: binaries.source_kind,
+        source_sha256: binaries.source_sha256,
+        source_integrity: binaries.source_integrity,
+        distribution_file_count: binaries.distribution_file_count,
+        distribution_bytes: binaries.distribution_bytes,
+        distribution_tree_sha256: binaries.distribution_tree_sha256,
+        binary_sha256: binaries.binary_sha256,
+        authenticode_status: provisioning.authenticode_status ?? null,
+        authenticode_subject: provisioning.authenticode_subject ?? null,
+        authenticode_issuer: provisioning.authenticode_issuer ?? null,
+        authenticode_thumbprint: provisioning.authenticode_thumbprint ?? null,
+      });
       const receipt = Object.freeze({
         schema_version: "tivdoc-real-postgresql-matrix-smoke-v0.9.1",
         status: "PASS",
         postgres_version: environment.postgres_version,
+        runtime_provenance: runtimeProvenance,
         migrations: migrationMatrix.status,
         capabilities: capabilities.matrix.length,
         restart: restart.status,

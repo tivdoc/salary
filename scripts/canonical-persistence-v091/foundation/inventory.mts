@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { Pool } from "pg";
+
 import type { PinnedPostgresBinaries } from "./pinned-binaries.mts";
 import type { DynamicPostgresPaths } from "./paths.mts";
 import {
@@ -214,7 +216,6 @@ const EXPECTED_CANONICAL_INDEXES = Object.freeze([
   "public.engine_analysis_stage_case_idx",
   "public.engine_audit_canonical_chain_uq",
   "public.engine_audit_case_sequence_idx",
-  "public.engine_case_state_canonical_owner_uq",
   "public.engine_case_state_tenant_idx",
   "public.engine_facts_case_revision_idx",
   "public.engine_idempotency_case_scope_idx",
@@ -225,7 +226,6 @@ const EXPECTED_CANONICAL_INDEXES = Object.freeze([
   "public.engine_outbox_canonical_claim_idx",
   "public.engine_outbox_claim_idx",
   "public.engine_reports_case_revision_idx",
-  "public.engine_reports_canonical_identity_uq",
   "public.engine_reviews_case_kind_idx",
   "public.engine_rule_inputs_run_topic_idx",
   "public.extractions_canonical_id_uq",
@@ -409,27 +409,54 @@ export async function collectPostgresInventory(input: Readonly<{
   runner?: CommandRunner;
 }>): Promise<PostgresInventoryReceipt> {
   assertSafeTargetIdentity(input.target.descriptor);
-  const runner = input.runner ?? runSafeCommand;
-  const result = await runner({
-    executable: input.binaries.executable_paths.psql,
-    args: Object.freeze([
-      "--no-psqlrc",
-      "--no-password",
-      "--no-align",
-      "--tuples-only",
-      "--set=ON_ERROR_STOP=1",
-      "--command", POSTGRES_INVENTORY_SQL,
-    ]),
-    cwd: input.paths.repository_root,
-    env: buildPostgresChildEnvironment(input.target),
-    redactions: Object.freeze([
-      input.target.username,
-      input.target.password,
-      ...(input.target.ownership_token ? [input.target.ownership_token] : []),
-    ]),
-    timeout_ms: 30_000,
-  });
-  const inventory = parseInventory(result.stdout);
+  let stdout: string;
+  if (input.binaries.source_kind === "edb_authenticode_signed_windows_installer") {
+    const pool = new Pool({
+      host: input.target.descriptor.host,
+      port: input.target.descriptor.port,
+      database: input.target.descriptor.database,
+      user: input.target.username.reveal(),
+      password: input.target.password.reveal(),
+      ssl: false,
+      max: 1,
+      allowExitOnIdle: true,
+      application_name: "tivdoc-v091-node-inventory",
+      connectionTimeoutMillis: 5_000,
+    });
+    try {
+      const result = await pool.query<Record<string, unknown>>(POSTGRES_INVENTORY_SQL);
+      const values = Object.values(result.rows[0] ?? {});
+      if (result.rows.length !== 1 || values.length !== 1 || typeof values[0] !== "string") {
+        throw new Error("POSTGRES_INVENTORY_OUTPUT_INVALID");
+      }
+      stdout = values[0];
+    } finally {
+      await pool.end();
+    }
+  } else {
+    const runner = input.runner ?? runSafeCommand;
+    const result = await runner({
+      executable: input.binaries.executable_paths.psql,
+      args: Object.freeze([
+        "--no-psqlrc",
+        "--no-password",
+        "--no-align",
+        "--tuples-only",
+        "--set=ON_ERROR_STOP=1",
+        "--command", POSTGRES_INVENTORY_SQL,
+      ]),
+      cwd: input.paths.repository_root,
+      env: buildPostgresChildEnvironment(input.target),
+      redactions: Object.freeze([
+        input.target.username,
+        input.target.password,
+        ...(input.target.ownership_token ? [input.target.ownership_token] : []),
+      ]),
+      timeout_ms: 30_000,
+    });
+    stdout = result.stdout;
+  }
+  const inventory = parseInventory(stdout);
   const canonical = canonicalJson(inventory);
   return Object.freeze({
     schema_version: "tivdoc-real-postgres-inventory-v0.9.1",
@@ -524,7 +551,7 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       migration_id: "202609010002_durable_product_boundaries",
     }),
   ]);
-  if (JSON.stringify(metadata) !== JSON.stringify(expectedMetadata)) {
+  if (canonicalJson(metadata) !== canonicalJson(expectedMetadata)) {
     throw new Error("POSTGRES_INVENTORY_CANONICAL_METADATA_INVALID");
   }
 

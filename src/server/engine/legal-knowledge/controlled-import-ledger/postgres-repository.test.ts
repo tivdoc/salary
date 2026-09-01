@@ -14,6 +14,7 @@ import {
 } from "./contracts.ts";
 import { PostgresControlledImportLedgerRepository } from "./postgres-repository.ts";
 import { controlledImportMigrationRequest } from "./sql.ts";
+import { CanonicalPostgresError } from "../../../platform/persistence/postgres/runtime/errors.ts";
 
 class QueueClient implements PostgresClient {
   readonly statements: PostgresStatement[] = [];
@@ -169,6 +170,22 @@ describe("MC-11 canonical PostgreSQL controlled import ledger", () => {
     expect(client.statements).toHaveLength(0);
   });
 
+  it.each([
+    ["CI001", "IMPORT_IDEMPOTENCY_BINDING_MISMATCH"],
+    ["CI002", "IMPORT_LEASE_FENCED"],
+    ["CI003", "IMPORT_INVALID_STATE"],
+    ["42P01", "IMPORT_DATABASE_CONTRACT_MISSING"],
+    ["42883", "IMPORT_DATABASE_CONTRACT_MISSING"],
+  ] as const)("maps canonical driver sqlstate %s without exposing database text", async (sqlstate, expected) => {
+    const repository = new PostgresControlledImportLedgerRepository();
+    const failingClient: PostgresClient = {
+      async query() {
+        throw new CanonicalPostgresError("POSTGRES_STATEMENT_FAILED", { sqlstate });
+      },
+    };
+    await expect(repository.reserve(context(failingClient), command)).rejects.toThrow(expected);
+  });
+
   it("keeps the installed forward migration explicit and bypass-resistant", async () => {
     const migration = await readFile(path.join(import.meta.dirname, "migration-request.sql"), "utf8");
     const installed = await readFile(path.resolve(
@@ -179,7 +196,7 @@ describe("MC-11 canonical PostgreSQL controlled import ledger", () => {
     expect(installed.replaceAll("\r\n", "\n").trimEnd()).toBe(migration.replaceAll("\r\n", "\n").trimEnd());
     expect(controlledImportMigrationRequest).toMatchObject({
       status: "CANONICAL_FORWARD_MIGRATION_INSTALLED",
-      product_wiring_enabled: true,
+      product_wiring_enabled: false,
       isolated_dynamic_verification_required: true,
     });
     for (const required of [

@@ -62,13 +62,13 @@ export type PinnedPostgresBinaries = Readonly<{
   schema_version: "tivdoc-pinned-postgresql-binaries-v0.9.1";
   postgres_version: typeof PINNED_POSTGRES_VERSION;
   architecture: "x64";
-  source_kind: PinnedBinaryProvenance["source_kind"];
+  source_kind: PinnedBinaryProvenance["source_kind"] | "edb_authenticode_signed_windows_installer";
   source_url: string;
   source_sha256: string;
-  source_integrity: "PINNED_SHA256_OFFICIAL_HTTPS";
-  distribution_file_count: typeof PINNED_DISTRIBUTION_FILE_COUNT;
-  distribution_bytes: typeof PINNED_DISTRIBUTION_BYTES;
-  distribution_tree_sha256: typeof PINNED_DISTRIBUTION_TREE_SHA256;
+  source_integrity: "PINNED_SHA256_OFFICIAL_HTTPS" | "PINNED_SHA256_AND_VALID_AUTHENTICODE";
+  distribution_file_count: number;
+  distribution_bytes: number;
+  distribution_tree_sha256: string;
   executable_paths: Readonly<Record<PostgresBinaryName, string>>;
   binary_sha256: Readonly<Record<PostgresBinaryName, string>>;
   version_output: string;
@@ -78,21 +78,22 @@ export type PinnedPostgresBinaries = Readonly<{
 export type PinnedPostgresProvisioningReceipt = Readonly<{
   schema_version: "tivdoc-pinned-postgresql-provisioning-v0.9.1";
   action: "REUSED_VERIFIED_DISTRIBUTION" | "REEXTRACTED_VERIFIED_DISTRIBUTION"
-    | "DOWNLOADED_AND_REEXTRACTED_VERIFIED_DISTRIBUTION";
-  final_source_url: typeof PINNED_EDB_ARCHIVE_URL;
-  archive_size_bytes: 340722468;
+    | "DOWNLOADED_AND_REEXTRACTED_VERIFIED_DISTRIBUTION"
+    | "REUSED_AUTHENTICODE_VERIFIED_INSTALLER_DISTRIBUTION";
+  final_source_url: string;
+  archive_size_bytes: number;
   downloaded_bytes: 0 | 340722468;
-  archive_sha256: typeof PINNED_EDB_ARCHIVE_SHA256;
-  source_integrity: "PINNED_SHA256_OFFICIAL_HTTPS";
-  extract_only: true;
-  extraction_launcher: "DOTNET_VALIDATED_ZIP_ARCHIVE";
-  archive_root: "pgsql";
+  archive_sha256: string;
+  source_integrity: "PINNED_SHA256_OFFICIAL_HTTPS" | "PINNED_SHA256_AND_VALID_AUTHENTICODE";
+  extract_only: boolean;
+  extraction_launcher: "DOTNET_VALIDATED_ZIP_ARCHIVE" | "PREEXISTING_AUTHENTICODE_VERIFIED_INSTALLER";
+  archive_root: "pgsql" | "installer_distribution";
   archive_entries: number;
   extracted_files: number;
   uncompressed_bytes: number;
-  distribution_file_count: typeof PINNED_DISTRIBUTION_FILE_COUNT;
-  distribution_bytes: typeof PINNED_DISTRIBUTION_BYTES;
-  distribution_tree_sha256: typeof PINNED_DISTRIBUTION_TREE_SHA256;
+  distribution_file_count: number;
+  distribution_bytes: number;
+  distribution_tree_sha256: string;
   fresh_extract: boolean;
   distribution_reused: boolean;
   reparse_points_detected: 0;
@@ -100,6 +101,10 @@ export type PinnedPostgresProvisioningReceipt = Readonly<{
   administrator_privileges_used: false;
   system_install_performed: false;
   credentials_emitted: 0;
+  authenticode_status?: "Valid";
+  authenticode_subject?: string;
+  authenticode_issuer?: string;
+  authenticode_thumbprint?: string;
   status: "PASS";
 }>;
 

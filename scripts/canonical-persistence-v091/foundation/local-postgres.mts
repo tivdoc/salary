@@ -3,6 +3,8 @@ import { constants as fsConstants } from "node:fs";
 import { access, appendFile, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 
+import { Pool } from "pg";
+
 import type { PinnedPostgresBinaries } from "./pinned-binaries.mts";
 import type { DynamicPostgresPaths } from "./paths.mts";
 import {
@@ -221,6 +223,30 @@ export async function createOwnedDatabase(input: Readonly<{
   runner?: CommandRunner;
 }>): Promise<ClusterControlReceipt> {
   await assertOwnedCluster(input.target, input.paths);
+  if (input.binaries.source_kind === "edb_authenticode_signed_windows_installer") {
+    const database = input.target.descriptor.database;
+    if (!/^tivdoc_v09_[a-z0-9_]{8,48}$/u.test(database)) {
+      throw new Error("POSTGRES_DATABASE_NAME_UNSAFE");
+    }
+    const pool = new Pool({
+      host: input.target.descriptor.host,
+      port: input.target.descriptor.port,
+      database: "postgres",
+      user: input.target.username.reveal(),
+      password: input.target.password.reveal(),
+      ssl: false,
+      max: 1,
+      allowExitOnIdle: true,
+      application_name: "tivdoc-v091-node-create-database",
+      connectionTimeoutMillis: 5_000,
+    });
+    try {
+      await pool.query(`create database "${database}" encoding 'UTF8' template template0`);
+    } finally {
+      await pool.end();
+    }
+    return receipt("create_database", input.target);
+  }
   const runner = input.runner ?? runSafeCommand;
   await runner({
     executable: input.binaries.executable_paths.createdb,

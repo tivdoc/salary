@@ -1,4 +1,5 @@
 export * from "./inventory.mts";
+export * from "./installed-runtime.mts";
 export * from "./dependency-integrity.mts";
 export * from "./local-postgres.mts";
 export * from "./migrations.mts";

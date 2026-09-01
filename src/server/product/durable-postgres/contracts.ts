@@ -94,7 +94,7 @@ export type DurableProductActor = VerifiedActor;
 export type DurableProductBlocker = Readonly<{
   blocker_id: string;
   acceptance_ids: readonly ("MC-06" | "MC-07" | "MC-08")[];
-  status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION" | "BLOCKED_COMPOSITION";
+  status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED" | "BLOCKED_COMPOSITION";
   exact_reason: string;
   requested_migration_or_wiring: string;
   installed_contract_path: string | null;
@@ -104,38 +104,38 @@ export type DurableProductBlocker = Readonly<{
 /** Machine-readable installation/composition receipts; none may be treated as a rendered journey claim. */
 export const DURABLE_PRODUCT_BLOCKERS: readonly DurableProductBlocker[] = Object.freeze([
   Object.freeze({
-    blocker_id: "W2_DURABLE_IDENTITY_SESSION_SCHEMA_ABSENT",
+    blocker_id: "W2_DURABLE_IDENTITY_SESSION_NOT_WIRED",
     acceptance_ids: Object.freeze(["MC-06", "MC-07"] as const),
-    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
-    exact_reason: "The typed adapter is present and fail-closed; it cannot operate until the forward-only durable-product migration is installed by the integration branch.",
-    requested_migration_or_wiring: "Install the declared migration and provide the canonical PostgreSQL connection factory; never substitute an in-memory session cache.",
+    status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
+    exact_reason: "The typed adapter and installed forward migration are present and fail-closed; the stable rendered product composition does not provide the canonical PostgreSQL connection factory.",
+    requested_migration_or_wiring: "Wire the canonical PostgreSQL connection factory into the stable product composition; never substitute an in-memory session cache.",
     installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
-    blocker_id: "W2_CUSTOMER_OWNER_BINDING_SCHEMA_ABSENT",
+    blocker_id: "W2_CUSTOMER_OWNER_BINDING_NOT_WIRED",
     acceptance_ids: Object.freeze(["MC-06"] as const),
-    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
-    exact_reason: "The typed exact-owner adapter is present and fail-closed; its server-only table/functions require installation by the integration branch.",
-    requested_migration_or_wiring: "Install the declared migration and wire the adapter only after canonical identity verification.",
+    status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
+    exact_reason: "The typed exact-owner adapter and installed server-only table/functions are present and fail-closed; stable product composition does not call them.",
+    requested_migration_or_wiring: "Wire the adapter only after canonical identity verification.",
     installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
-    blocker_id: "W2_PRIVACY_WORKFLOW_SCHEMA_ABSENT",
+    blocker_id: "W2_PRIVACY_WORKFLOW_NOT_WIRED",
     acceptance_ids: Object.freeze(["MC-06", "MC-07"] as const),
-    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
-    exact_reason: "The typed revisioned privacy adapter is present and fail-closed; its append-only ledger requires installation by the integration branch.",
-    requested_migration_or_wiring: "Install the declared migration before enabling privacy-request HTTP composition.",
+    status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
+    exact_reason: "The typed revisioned privacy adapter and installed append-only ledger are present and fail-closed; privacy-request HTTP composition does not call them.",
+    requested_migration_or_wiring: "Wire the installed adapter before enabling privacy-request HTTP composition.",
     installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
   Object.freeze({
-    blocker_id: "W2_PRIVATE_REPORT_OBJECT_METADATA_SCHEMA_ABSENT",
+    blocker_id: "W2_PRIVATE_REPORT_OBJECT_METADATA_NOT_WIRED",
     acceptance_ids: Object.freeze(["MC-06", "MC-08"] as const),
-    status: "IMPLEMENTED_REQUIRES_MIGRATION_INSTALLATION",
-    exact_reason: "The typed exact-object adapter and integrity reader are present and fail-closed; their durable metadata contract requires installation by the integration branch.",
-    requested_migration_or_wiring: "Install the declared migration and wire it to the verified private-storage provider before report delivery.",
+    status: "IMPLEMENTED_SCHEMA_INSTALLED_NOT_WIRED",
+    exact_reason: "The typed exact-object adapter, integrity reader and installed durable metadata contract are present and fail-closed; stable report delivery does not call them.",
+    requested_migration_or_wiring: "Wire the adapter to the verified private-storage provider before report delivery.",
     installed_contract_path: "supabase/migrations/202609010002_durable_product_boundaries.sql",
     safe_behavior: "FAIL_CLOSED",
   }),
