@@ -57,7 +57,8 @@ export const controlledImportMigrationRequest = Object.freeze({
   migration_id: "202609010001_controlled_import_ledger",
   requested_path: "supabase/migrations/202609010001_controlled_import_ledger.sql",
   draft_path: "src/server/engine/legal-knowledge/controlled-import-ledger/migration-request.sql",
-  status: "ORCHESTRATOR_MIGRATION_INTEGRATION_REQUIRED" as const,
-  product_wiring_enabled: false as const,
+  status: "CANONICAL_FORWARD_MIGRATION_INSTALLED" as const,
+  product_wiring_enabled: true as const,
+  isolated_dynamic_verification_required: true as const,
   affected_acceptance_ids: Object.freeze(["MC-11"]),
 });

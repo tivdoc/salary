@@ -169,11 +169,18 @@ describe("MC-11 canonical PostgreSQL controlled import ledger", () => {
     expect(client.statements).toHaveLength(0);
   });
 
-  it("keeps the unapplied migration request explicit and bypass-resistant", async () => {
+  it("keeps the installed forward migration explicit and bypass-resistant", async () => {
     const migration = await readFile(path.join(import.meta.dirname, "migration-request.sql"), "utf8");
+    const installed = await readFile(path.resolve(
+      import.meta.dirname,
+      "..", "..", "..", "..", "..",
+      controlledImportMigrationRequest.requested_path,
+    ), "utf8");
+    expect(installed.replaceAll("\r\n", "\n").trimEnd()).toBe(migration.replaceAll("\r\n", "\n").trimEnd());
     expect(controlledImportMigrationRequest).toMatchObject({
-      status: "ORCHESTRATOR_MIGRATION_INTEGRATION_REQUIRED",
-      product_wiring_enabled: false,
+      status: "CANONICAL_FORWARD_MIGRATION_INSTALLED",
+      product_wiring_enabled: true,
+      isolated_dynamic_verification_required: true,
     });
     for (const required of [
       "pg_advisory_xact_lock",
@@ -184,6 +191,7 @@ describe("MC-11 canonical PostgreSQL controlled import ledger", () => {
       "octet_length(artifact_bytes) = byte_count",
       "digest(artifact_bytes, 'sha256')",
       "revoke all on private.controlled_import_requests",
+      "grant execute on function private.controlled_import_publish",
       "security definer",
     ]) expect(migration.toLocaleLowerCase("en-US")).toContain(required.toLocaleLowerCase("en-US"));
   });

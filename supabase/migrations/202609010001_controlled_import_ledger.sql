@@ -430,3 +430,4 @@ set schema_version = excluded.schema_version,
 
 comment on view public.controlled_import_publication_status_v1 is
   'Server-only controlled-import publication state; no browser or authenticated-client grant.';
+
