@@ -89,4 +89,26 @@ describe("controlled import recovery protocol", () => {
     await writeFile(path.join(lockPath, "owner.json"), controlledImportStableJson({ pid: 2_147_483_647, token: "dead-owner" }));
     await expect(withControlledImportLock({ ledgerRoot: root, acquisitionRequestId: "ACQ-WAVE2-STALE", sourceId: "IL_SYNTHETIC_SOURCE" }, async () => "recovered")).resolves.toBe("recovered");
   });
+
+  it("fails closed on a truncated committed journal record", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "tivdoc-mc12-truncated-journal-"));
+    roots.push(root);
+    const item = binding();
+    const journal = path.join(root, ".journals", item.operation_id);
+    await mkdir(journal, { recursive: true });
+    await writeFile(path.join(journal, "0001-received.json"), "{\"schema_version\":");
+    await expect(readControlledImportJournal(root, item.operation_id)).rejects.toThrow();
+  });
+
+  it("treats a power-loss-simulated pending record as invisible", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "tivdoc-mc12-power-loss-"));
+    roots.push(root);
+    const item = binding();
+    await advanceControlledImportJournal({ ledgerRoot: root, binding: item, stage: "received" });
+    await writeFile(
+      path.join(root, ".journals", item.operation_id, "0002-quarantined.json.pending-simulated-power-loss"),
+      "{\"schema_version\":\"partial",
+    );
+    expect((await readControlledImportJournal(root, item.operation_id)).map((entry) => entry.stage)).toEqual(["received"]);
+  });
 });

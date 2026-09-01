@@ -57,7 +57,8 @@ startxref
 
 describe("separate-process untrusted PDF screening", () => {
   it("returns only a complete bounded result from a permission-restricted child", async () => {
-    await expect(screenUntrustedPdfIsolated({ bytes: validPdf() })).resolves.toMatchObject({
+    const result = await screenUntrustedPdfIsolated({ bytes: validPdf() });
+    expect(result).toMatchObject({
       status: "screened",
       media_type: "application/pdf",
       page_count: 1,
@@ -66,12 +67,18 @@ describe("separate-process untrusted PDF screening", () => {
       published: false,
       application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED",
       os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
+      persistent_owner_import_enabled: false,
+      workspace_cleanup_verified: true,
     });
+    expect(result.request_sha256).toMatch(/^[a-f0-9]{64}$/u);
+    expect(result.receipt_sha256).toMatch(/^[a-f0-9]{64}$/u);
   });
 
   it.each([
     ["encryption", "/Encrypt", "isolated_parser_encrypted"],
     ["JavaScript/action", "/JavaScript /OpenAction", "isolated_parser_active_content"],
+    ["AcroForm", "/AcroForm", "isolated_parser_interactive_content"],
+    ["annotation", "/Annots [4 0 R]", "isolated_parser_interactive_content"],
     ["embedded file", "/EmbeddedFile /Filespec", "isolated_parser_embedded_content"],
     ["external reference", "/URI (https://example.invalid)", "isolated_parser_external_reference"],
     ["page bomb", "/Count 999999", "isolated_parser_page_limit_exceeded"],
@@ -111,5 +118,15 @@ describe("separate-process untrusted PDF screening", () => {
       os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
     });
     expect(parserIsolationAssurance.os_sandbox).toBe("PARSER_OS_SANDBOX_NOT_VERIFIED");
+  });
+
+  it("proves exact filesystem and process permission denials without claiming a kernel network boundary", async () => {
+    await expect(screenUntrustedPdfIsolated({ bytes: validPdf(), testOnlyBehavior: "permission_canaries" })).resolves.toMatchObject({
+      status: "permission_canaries",
+      filesystem_read_denied: true,
+      child_process_denied: true,
+      network_kernel_denial: false,
+      workspace_cleanup_verified: true,
+    });
   });
 });
