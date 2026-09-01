@@ -84,7 +84,10 @@ export const legalObservationCandidateSchema = z.object({
   topic: governanceIdSchema.nullable(),
   candidate_valid_from: z.iso.date().nullable(),
   candidate_valid_to: z.iso.date().nullable(),
-  knowledge_time: governanceTimestampSchema,
+  // Historical acquisition evidence did not always retain a trustworthy
+  // observation timestamp.  Absence stays explicit instead of being filled
+  // with an import time that would change the meaning of the source record.
+  knowledge_time: governanceTimestampSchema.nullable(),
   sectors: z.array(governanceIdSchema).max(64).readonly(),
   populations: z.array(governanceIdSchema).max(64).readonly(),
   geographies: z.array(governanceIdSchema).max(64).readonly(),
