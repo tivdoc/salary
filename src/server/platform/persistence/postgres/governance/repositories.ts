@@ -6,7 +6,7 @@ import {
   trustedGroundTruthActionPayload,
   TRUSTED_GT_SCHEMA,
   type GroundTruthVisualEligibility,
-} from "../../../../../engine/extraction-ground-truth/trusted-workflow.ts";
+} from "../../../../../engine/extraction-ground-truth/trusted-contracts.ts";
 import { validateGroundTruthManifest } from "../../../../../engine/extraction-ground-truth/validation.ts";
 import {
   humanDecisionEnvelopeBody,
@@ -39,7 +39,7 @@ import {
   type ReviewerTrustPolicy,
   type TrustedReviewer,
   type TrustOrganization,
-} from "../../../trust/reviewer-trust-store.ts";
+} from "../../../trust/reviewer-trust-contracts.ts";
 import {
   validateGoldenCaseSet,
   validateRuleSpecPackage,
