@@ -37,10 +37,14 @@ export function deriveVerifiedActor(
   config: IdentityVerificationConfig,
   nowMs: number,
 ): VerifiedActor {
+  // This legacy envelope exists only for hermetic integration fixtures. Runtime
+  // identities must enter through CryptographicJwtIdentityVerifier.
+  if (process.env.NODE_ENV !== "test" || process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview" || config.runtime !== "test" || envelope.test_only !== true) {
+    throw new Error("TEST_IDENTITY_PRODUCTION_FORBIDDEN");
+  }
   if (envelope.source !== "verified_server_adapter" || envelope.signature_valid !== true) throw new Error("IDENTITY_UNVERIFIED");
   if (envelope.issuer !== config.issuer) throw new Error("IDENTITY_ISSUER_INVALID");
   if (envelope.audience !== config.audience) throw new Error("IDENTITY_AUDIENCE_INVALID");
-  if (config.runtime === "production" && envelope.test_only) throw new Error("TEST_IDENTITY_PRODUCTION_FORBIDDEN");
   if (!OPAQUE.test(envelope.actor_id) || (envelope.tenant_id !== null && !OPAQUE.test(envelope.tenant_id))) throw new Error("IDENTITY_REFERENCE_INVALID");
   if (!(V07_ROLES as readonly string[]).includes(envelope.role)) throw new Error("IDENTITY_ROLE_INVALID");
   if (new Set(envelope.assigned_case_ids).size !== envelope.assigned_case_ids.length || envelope.assigned_case_ids.some((id) => !OPAQUE.test(id))) {

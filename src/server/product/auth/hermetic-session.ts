@@ -56,7 +56,8 @@ export class HermeticSessionManager {
   readonly #nodeEnv: string | undefined;
   readonly #vercelEnv: string | undefined;
   readonly #now: () => number;
-  readonly #activeSessionIds = new Set<string>();
+  readonly #activeSessionPrincipals = new Map<string, string>();
+  readonly #currentSessionByPrincipal = new Map<string, string>();
 
   constructor(input: Readonly<{
     environment?: Environment;
@@ -88,7 +89,11 @@ export class HermeticSessionManager {
       expires_at_epoch: expiresAt,
     });
     const token = signClaims(claims, configuration.secret);
-    this.#activeSessionIds.add(claims.session_id);
+    const principal = sessionPrincipal(claims.actor.actor_id, claims.audience);
+    const previousSessionId = this.#currentSessionByPrincipal.get(principal);
+    if (previousSessionId) this.#activeSessionPrincipals.delete(previousSessionId);
+    this.#activeSessionPrincipals.set(claims.session_id, principal);
+    this.#currentSessionByPrincipal.set(principal, claims.session_id);
     return Object.freeze({
       cookie: serializeCookie(token, expiresAt - issuedAt, new URL(request.url).protocol === "https:"),
       csrf_token: claims.csrf_token,
@@ -103,7 +108,8 @@ export class HermeticSessionManager {
     if (!token) return null;
     const claims = verifyClaims(token, configuration.secret);
     if (!claims || claims.audience !== audience || claims.mode !== "local_hermetic") return null;
-    if (!this.#activeSessionIds.has(claims.session_id)) return null;
+    const principal = sessionPrincipal(claims.actor.actor_id, claims.audience);
+    if (this.#activeSessionPrincipals.get(claims.session_id) !== principal || this.#currentSessionByPrincipal.get(principal) !== claims.session_id) return null;
     const now = this.#now();
     if (claims.issued_at_epoch > now + 5 || claims.expires_at_epoch <= now || claims.expires_at_epoch - claims.issued_at_epoch > configuration.maxSessionSeconds) return null;
     if (!roleAllowedForAudience(claims.actor.role, audience)) return null;
@@ -123,13 +129,19 @@ export class HermeticSessionManager {
     if (!token) return null;
     const claims = verifyClaims(token, configuration.secret);
     if (!claims || claims.audience !== audience || !validCsrf(request, claims.csrf_token)) return null;
-    this.#activeSessionIds.delete(claims.session_id);
+    const now = this.#now();
+    const principal = sessionPrincipal(claims.actor.actor_id, claims.audience);
+    if (claims.expires_at_epoch <= now || this.#activeSessionPrincipals.get(claims.session_id) !== principal || this.#currentSessionByPrincipal.get(principal) !== claims.session_id) return null;
+    this.#activeSessionPrincipals.delete(claims.session_id);
+    this.#currentSessionByPrincipal.delete(principal);
     return expireCookie(new URL(request.url).protocol === "https:");
   }
 
   #configurationFor(request: Request): Readonly<{ secret: string; tickets: ReadonlyMap<string, TicketRecord>; maxSessionSeconds: number }> | null {
     if (!isLoopbackUrl(request.url)) return null;
-    if (this.#nodeEnv === "production" || this.#vercelEnv === "production" || this.#vercelEnv === "preview") return null;
+    // Both the real process and the injectable test seam must be test. A caller
+    // cannot turn this hermetic fixture into a development/preview provider.
+    if (process.env.NODE_ENV !== "test" || process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview" || this.#nodeEnv !== "test" || this.#vercelEnv === "production" || this.#vercelEnv === "preview") return null;
     if (!enabled(this.#environment.TIVDOC_HERMETIC_MODE)) return null;
     const secret = this.#environment.TIVDOC_PRODUCT_SESSION_SECRET;
     if (!secret || Buffer.byteLength(secret, "utf8") < 32) return null;
@@ -253,6 +265,10 @@ function hasIdentitySpoof(request: Request): boolean {
 function roleAllowedForAudience(role: string, audience: ProductAudience): boolean {
   if (audience === "portal") return role === "customer_owner";
   return role !== "anonymous" && role !== "customer_owner";
+}
+
+function sessionPrincipal(actorId: string, audience: ProductAudience): string {
+  return `${audience}:${actorId}`;
 }
 
 function isLoopbackUrl(value: string): boolean {

@@ -73,6 +73,16 @@ describe("hermetic product sessions", () => {
     expect(manager.verify(request("/api/portal/cases", { headers: { cookie } }), "portal", false)).toBeNull();
   });
 
+  it("rotates a principal to one current session and invalidates the previous cookie", () => {
+    const manager = new HermeticSessionManager({ environment: environment(), nodeEnv: "test", now: () => 1_900_000_000 });
+    const first = manager.issue(request(), "portal", OWNER_TICKET)!;
+    const second = manager.issue(request(), "portal", OWNER_TICKET)!;
+    const firstCookie = `${PRODUCT_SESSION_COOKIE}=${cookieValue(first.cookie)}`;
+    const secondCookie = `${PRODUCT_SESSION_COOKIE}=${cookieValue(second.cookie)}`;
+    expect(manager.verify(request("/api/portal/cases", { headers: { cookie: firstCookie } }), "portal", false)).toBeNull();
+    expect(manager.verify(request("/api/portal/cases", { headers: { cookie: secondCookie } }), "portal", false)).not.toBeNull();
+  });
+
   it("rejects expiry, non-loopback hosts, audience confusion, production and preview", () => {
     let now = 1_900_000_000;
     const manager = new HermeticSessionManager({ environment: environment(), nodeEnv: "test", now: () => now });
@@ -83,6 +93,7 @@ describe("hermetic product sessions", () => {
     expect(manager.verify(request("/api/operations/queue", { headers: { cookie } }), "operations", false)).toBeNull();
     expect(manager.issue(new Request("http://example.test/api/portal/session"), "portal", OWNER_TICKET)).toBeNull();
     expect(new HermeticSessionManager({ environment: environment(), nodeEnv: "production" }).issue(request(), "portal", OWNER_TICKET)).toBeNull();
+    expect(new HermeticSessionManager({ environment: environment(), nodeEnv: "development" }).issue(request(), "portal", OWNER_TICKET)).toBeNull();
     expect(new HermeticSessionManager({ environment: environment(), nodeEnv: "development", vercelEnv: "preview" }).issue(request(), "portal", OWNER_TICKET)).toBeNull();
   });
 
