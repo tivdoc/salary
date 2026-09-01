@@ -9,6 +9,7 @@ import {
   MARATHON_BROWSER_RUNTIME_SENTINEL,
   MARATHON_BROWSER_SERVER_ARGS,
   extractMarathonBrowserSessionCookie,
+  isHermeticBrowserDocumentResponse,
   marathonBrowserServerEnvironment,
   marathonBrowserToolEnvironment,
 } from "../../../scripts/full-local-system-marathon/browser-e2e-runtime.mts";
@@ -121,5 +122,16 @@ describe("V0.10 marathon browser runtime preflight", () => {
     const token = `${"a".repeat(48)}.${"b".repeat(43)}`;
     expect(extractMarathonBrowserSessionCookie(`tivdoc_hermetic_session=${token}; Path=/; HttpOnly; SameSite=Strict`)).toBe(token);
     expect(() => extractMarathonBrowserSessionCookie("other=value; Path=/")).toThrow("BROWSER_E2E_SESSION_COOKIE_MISSING");
+  });
+
+  it("accepts only the exact hermetic document cache policies with CSP", () => {
+    const headers = (cacheControl: string, csp = "default-src 'self'") => new Headers({
+      "cache-control": cacheControl,
+      "content-security-policy": csp,
+    });
+    expect(isHermeticBrowserDocumentResponse(headers("private, no-store, max-age=0"))).toBe(true);
+    expect(isHermeticBrowserDocumentResponse(headers("no-cache, must-revalidate"))).toBe(true);
+    expect(isHermeticBrowserDocumentResponse(headers("public, max-age=3600"))).toBe(false);
+    expect(isHermeticBrowserDocumentResponse(new Headers({ "cache-control": "no-cache, must-revalidate" }))).toBe(false);
   });
 });

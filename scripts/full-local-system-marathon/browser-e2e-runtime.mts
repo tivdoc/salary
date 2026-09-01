@@ -95,3 +95,17 @@ export function extractMarathonBrowserSessionCookie(setCookie: string | null): s
   if (!value) throw new Error("BROWSER_E2E_SESSION_COOKIE_MISSING");
   return value;
 }
+
+/**
+ * Next development mode intentionally replaces configured HTML cache headers
+ * with its own revalidation policy. The hermetic browser lane accepts only
+ * that exact development policy or the configured production no-store policy;
+ * CSP remains mandatory in both cases. API responses are checked separately
+ * and continue to require private no-store headers.
+ */
+export function isHermeticBrowserDocumentResponse(headers: Headers): boolean {
+  const cacheControl = headers.get("cache-control");
+  const cacheSafe = cacheControl?.includes("no-store") === true
+    || cacheControl === "no-cache, must-revalidate";
+  return cacheSafe && Boolean(headers.get("content-security-policy"));
+}

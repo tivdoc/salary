@@ -9,6 +9,7 @@ import {
   MARATHON_BROWSER_SERVER_ARGS,
   MARATHON_BROWSER_SESSION_COOKIE,
   extractMarathonBrowserSessionCookie,
+  isHermeticBrowserDocumentResponse,
   marathonBrowserServerEnvironment,
   marathonBrowserToolEnvironment,
 } from "./browser-e2e-runtime.mts";
@@ -56,7 +57,7 @@ try {
       signal: AbortSignal.timeout(10_000),
     });
     if (response.status !== 200) throw new Error(`BROWSER_E2E_HTTP_STATUS:${page.id}:${response.status}`);
-    if (!response.headers.get("content-security-policy") || !response.headers.get("cache-control")?.includes("no-store")) {
+    if (!isHermeticBrowserDocumentResponse(response.headers)) {
       throw new Error(`BROWSER_E2E_SECURITY_HEADERS:${page.id}`);
     }
   }
