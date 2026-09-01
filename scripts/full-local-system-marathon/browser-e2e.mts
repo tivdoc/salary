@@ -85,7 +85,13 @@ try {
   process.stdout.write(`${JSON.stringify(receipt)}\n`);
 } finally {
   runCliAllowFailure("close", ["close"]);
-  if (server && !server.killed) server.kill();
+  if (server?.exitCode === null) {
+    if (process.platform === "win32" && server.pid) {
+      spawnSync("taskkill", ["/PID", String(server.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+    } else {
+      server.kill("SIGTERM");
+    }
+  }
 }
 
 function runCli(commandId: string, args: readonly string[]): Readonly<Record<string, unknown>> {
