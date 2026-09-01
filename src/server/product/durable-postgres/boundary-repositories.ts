@@ -280,6 +280,28 @@ export class PostgresPrivateReportObjectRepository {
     this.#client = client;
   }
 
+  async currentCanonicalIdentity(input: Readonly<{
+    tenant_id: string;
+    case_id: string;
+    report_id: string;
+    report_revision: number;
+    download_grant_revision: number;
+  }>): Promise<CanonicalReportIdentity | null> {
+    assertOpaque(input.tenant_id);
+    assertOpaque(input.case_id);
+    assertOpaque(input.report_id);
+    assertPositiveRevision(input.report_revision);
+    assertCounter(input.download_grant_revision);
+    const result = await safeQuery(this.#client, durableBoundaryStatements.reportIdentity([
+      input.tenant_id,
+      input.case_id,
+      input.report_id,
+      input.report_revision,
+    ]));
+    if (result.row_count === 0 && result.rows.length === 0) return null;
+    return canonicalReportIdentity(exactlyOne(result), input.download_grant_revision);
+  }
+
   async bind(input: Readonly<{
     tenant_id: string;
     case_id: string;
@@ -405,16 +427,16 @@ export class PostgresPrivateReportObjectRepository {
 
   async #requireCanonicalIdentity(expected: CanonicalReportIdentity): Promise<void> {
     assertCanonicalReportIdentity(expected);
-    const result = await safeQuery(this.#client, durableBoundaryStatements.reportIdentity([
-      expected.tenant_id,
-      expected.case_id,
-      expected.report_id,
-      expected.report_revision,
-    ]));
-    if (result.row_count === 0 && result.rows.length === 0) {
+    const actual = await this.currentCanonicalIdentity({
+      tenant_id: expected.tenant_id,
+      case_id: expected.case_id,
+      report_id: expected.report_id,
+      report_revision: expected.report_revision,
+      download_grant_revision: expected.download_grant_revision,
+    });
+    if (!actual) {
       throw new CanonicalReportIdentityError("CANONICAL_REPORT_IDENTITY_STALE");
     }
-    const actual = canonicalReportIdentity(exactlyOne(result), expected.download_grant_revision);
     assertCanonicalReportIdentityMatches(expected, actual);
   }
 }
