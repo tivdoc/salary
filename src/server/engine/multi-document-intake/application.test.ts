@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ImmutableDocument } from "../../../engine/domain/documents.ts";
+import type { DateRange } from "../../../engine/domain/primitives.ts";
 import type { ExtractionResult } from "../../../engine/extraction/contracts.ts";
 import type { CanonicalFact } from "../../../engine/facts/contracts.ts";
 import type { EmploymentSnapshot } from "../../../engine/facts/snapshot.ts";
@@ -184,13 +185,23 @@ class RecordingSource implements DurableMultiDocumentSnapshotPort {
   readonly persistence_mode = "isolated_postgres" as const;
   readonly product_reachable_memory_fallbacks = 0 as const;
   context: PostgresTransactionContext | null = null;
-  request: Readonly<{ tenant_id: string; case_id: string; analysis_run_id: string }> | null = null;
+  request: Readonly<{
+    tenant_id: string;
+    case_id: string;
+    analysis_run_id: string;
+    required_period: DateRange;
+  }> | null = null;
 
   constructor(public snapshot: DurableMultiDocumentSourceSnapshot) {}
 
   async load(
     context: PostgresTransactionContext,
-    input: Readonly<{ tenant_id: string; case_id: string; analysis_run_id: string }>,
+    input: Readonly<{
+      tenant_id: string;
+      case_id: string;
+      analysis_run_id: string;
+      required_period: DateRange;
+    }>,
   ) {
     this.context = context;
     this.request = input;
@@ -307,6 +318,7 @@ describe("durable twelve-month multi-document intake", () => {
       tenant_id: "tenant:synthetic:multi-document",
       case_id: CASE_ID,
       analysis_run_id: ANALYSIS_RUN_ID,
+      required_period: REQUIRED_PERIOD,
     });
     expect(fixture.client.statements).toHaveLength(7);
     expect(fixture.client.statements.every((entry) => entry.name === "multi_document_rule_input_current")).toBe(true);

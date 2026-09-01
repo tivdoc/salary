@@ -61,7 +61,12 @@ export interface DurableMultiDocumentSnapshotPort {
   readonly product_reachable_memory_fallbacks: 0;
   load(
     context: PostgresTransactionContext,
-    input: Readonly<{ tenant_id: string; case_id: string; analysis_run_id: string }>,
+    input: Readonly<{
+      tenant_id: string;
+      case_id: string;
+      analysis_run_id: string;
+      required_period: DateRange;
+    }>,
   ): Promise<DurableMultiDocumentSourceSnapshot>;
 }
 
@@ -192,6 +197,7 @@ export class DurableMultiDocumentIntakeApplication {
         tenant_id: tenantId,
         case_id: command.caseId,
         analysis_run_id: command.analysisRunId,
+        required_period: command.requiredPeriod,
       }),
       command,
     );
