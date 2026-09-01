@@ -17,6 +17,7 @@ export type V0101EvidenceEntry = Readonly<{
 }>;
 
 const SHA256 = /^[a-f0-9]{64}$/u;
+const GIT_OBJECT_ID = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
 const REQUIRED_ZERO_COUNTERS = Object.freeze([
   "REAL_SOURCES_ACTIVE",
   "REAL_PARAMETERS_ACTIVE",
@@ -61,6 +62,13 @@ export const V0101_FINAL_COMMAND_IDS = Object.freeze([
   "prohibited_operation_audit",
   "canonical_reachability",
   "persistence_wiring",
+] as const);
+export const V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS = Object.freeze([
+  "scripts/canonical-integration-repair-v0101/assess.mts",
+  "scripts/canonical-integration-repair-v0101/build.mts",
+  "scripts/canonical-integration-repair-v0101/verify.mts",
+  "src/server/system-marathon/integration-repair-evidence.test.ts",
+  "src/server/system-marathon/integration-repair-evidence.ts",
 ] as const);
 export const V0101_COMMAND_FAILURE_IMPACTS: Readonly<Record<
   (typeof V0101_FINAL_COMMAND_IDS)[number], readonly string[]
@@ -134,8 +142,8 @@ export function parseOrderedIntegrationLedger(raw: string): readonly Readonly<Re
       throw new Error("V0101_LEDGER_MALFORMED");
     }
     if (record.kind === "integration_commit"
-        && (!SHA256.test(String(record.commit_sha)) || !SHA256.test(String(record.tree_sha))
-          || !SHA256.test(String(record.parent_sha)) || typeof record.subject !== "string")) {
+        && (!GIT_OBJECT_ID.test(String(record.commit_sha)) || !GIT_OBJECT_ID.test(String(record.tree_sha))
+          || !GIT_OBJECT_ID.test(String(record.parent_sha)) || typeof record.subject !== "string")) {
       throw new Error("V0101_LEDGER_COMMIT_INVALID");
     }
     return Object.freeze(record);
@@ -150,8 +158,25 @@ export function validateV0101Assessment(value: unknown): void {
     throw new Error("V0101_ASSESSMENT_SCHEMA_INVALID");
   }
   if (!(V0101_HEADLINES as readonly unknown[]).includes(assessment.headline)) throw new Error("V0101_ASSESSMENT_HEADLINE_INVALID");
-  if (!SHA256.test(String(assessment.verified_head)) || !SHA256.test(String(assessment.verified_tree))) {
+  if (!GIT_OBJECT_ID.test(String(assessment.verified_head)) || !GIT_OBJECT_ID.test(String(assessment.verified_tree))
+      || !GIT_OBJECT_ID.test(String(assessment.matrix_head)) || !GIT_OBJECT_ID.test(String(assessment.matrix_tree))) {
     throw new Error("V0101_ASSESSMENT_GIT_INVALID");
+  }
+  if (assessment.matrix_head === assessment.verified_head && assessment.matrix_tree === assessment.verified_tree) {
+    if (assessment.post_matrix_evidence_only_repair !== null) throw new Error("V0101_POST_MATRIX_REPAIR_INVALID");
+  } else {
+    const repair = record(assessment.post_matrix_evidence_only_repair, "V0101_POST_MATRIX_REPAIR_INVALID");
+    const changedPaths = Array.isArray(repair.changed_paths) ? repair.changed_paths : [];
+    if (repair.from_head !== assessment.matrix_head || repair.from_tree !== assessment.matrix_tree
+        || repair.to_head !== assessment.verified_head || repair.to_tree !== assessment.verified_tree
+        || repair.scope !== "EVIDENCE_TOOLING_ONLY_NO_PRODUCT_RUNTIME_CHANGE"
+        || repair.product_runtime_changed !== false || repair.matrix_reused_as_final_head_proof !== false
+        || changedPaths.length < 1 || changedPaths.some((entry) => typeof entry !== "string")
+        || new Set(changedPaths).size !== changedPaths.length
+        || JSON.stringify(changedPaths) !== JSON.stringify([...changedPaths].sort(compare))
+        || changedPaths.some((entry) => !(V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS as readonly unknown[]).includes(entry))) {
+      throw new Error("V0101_POST_MATRIX_REPAIR_INVALID");
+    }
   }
   const mc = exactResults(assessment.mc_results, "MC", 39);
   const ir = exactResults(assessment.ir_results, "IR", 27);
@@ -221,8 +246,8 @@ export function validateV0101AssessmentAgainstReceipts(
   const verification = record(finalVerificationValue, "V0101_FINAL_VERIFICATION_MALFORMED");
   if (verification.schema_version !== "tivdoc-canonical-integration-durability-repair-final-verification-v0.10.1"
       || verification.verified_branch !== "codex/tivdoc-engine-foundation"
-      || verification.verified_head !== assessment.verified_head
-      || verification.verified_tree !== assessment.verified_tree
+      || verification.verified_head !== assessment.matrix_head
+      || verification.verified_tree !== assessment.matrix_tree
       || verification.exact_once !== true
       || verification.working_preflight !== "FRESH_DIRECTORY_CREATED_BEFORE_FIRST_COMMAND"
       || verification.journal_log !== "final-command-journal.ndjson"
@@ -244,8 +269,8 @@ export function validateV0101AssessmentAgainstReceipts(
         || command.proof_contract_status !== command.status
         || (command.status === "PASS" && command.execution_status !== "PASS")
         || command.attempt_ordinal !== 1 || command.execution_ordinal !== index + 1
-        || command.verified_head !== assessment.verified_head
-        || command.verified_tree !== assessment.verified_tree
+        || command.verified_head !== assessment.matrix_head
+        || command.verified_tree !== assessment.matrix_tree
         || !Number.isSafeInteger(command.started_epoch_ms) || !Number.isSafeInteger(command.finished_epoch_ms)
         || (command.finished_epoch_ms as number) < (command.started_epoch_ms as number)
         || !SHA256.test(String(command.stdout_sha256)) || !SHA256.test(String(command.stderr_sha256))
@@ -284,10 +309,22 @@ export function validateV0101AssessmentAgainstReceipts(
   }
   const command = (id: (typeof V0101_FINAL_COMMAND_IDS)[number]) => commands.find((item) => item.command_id === id)!;
   const truth = record(assessment.truth, "V0101_ASSESSMENT_TRUTH_INVALID");
-  if (truth.REAL_POSTGRESQL_CURRENT_HEAD_PROOF !== command("postgresql_full_regression").status
-      || truth.REAL_BROWSER_DURABLE_PRODUCT_PATH !== command("browser_e2e_full").status
-      || results.get("IR-25")?.status !== verification.status) {
+  const finalMatrixStatus = verification.status === "PASS"
+    && assessment.post_matrix_evidence_only_repair === null ? "PASS" : "FAIL";
+  const exactFinalHeadProof = (id: (typeof V0101_FINAL_COMMAND_IDS)[number]) => command(id).status === "PASS"
+    && assessment.post_matrix_evidence_only_repair === null ? "PASS" : "FAIL";
+  if (truth.REAL_POSTGRESQL_CURRENT_HEAD_PROOF !== exactFinalHeadProof("postgresql_full_regression")
+      || truth.REAL_BROWSER_DURABLE_PRODUCT_PATH !== exactFinalHeadProof("browser_e2e_full")
+      || results.get("IR-25")?.status !== finalMatrixStatus) {
     throw new Error("V0101_RUNTIME_TRUTH_CONTRADICTION");
+  }
+  for (const commandId of ["postgresql_full_regression", "browser_e2e_full"] as const) {
+    if (exactFinalHeadProof(commandId) === "PASS") continue;
+    for (const id of V0101_COMMAND_FAILURE_IMPACTS[commandId]) {
+      if (results.get(id)?.status === "PASS") {
+        throw new Error(`V0101_EXACT_FINAL_HEAD_PROOF_FALSE_PASS:${commandId}:${id}`);
+      }
+    }
   }
 
   validateExternalGates(assessment, externalGatesValue, results);

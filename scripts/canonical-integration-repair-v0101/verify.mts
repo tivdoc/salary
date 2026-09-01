@@ -9,6 +9,7 @@ import {
   parseOrderedIntegrationLedger,
   validateV0101AssessmentAgainstReceipts,
   V0101_FINAL_COMMAND_IDS,
+  V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS,
   type V0101EvidenceEntry,
 } from "../../src/server/system-marathon/integration-repair-evidence.ts";
 import { inspectDeterministicStoreZip } from "../canonical-persistence-v091/evidence/deterministic-zip.mts";
@@ -25,6 +26,19 @@ const ASSESSMENT_ENTRY = "payload/working/integration-repair-assessment.v0.10.1.
 const FINAL_VERIFICATION_ENTRY = "payload/working/final-verification.json";
 const EXTERNAL_GATES_ENTRY = "payload/repository/src/server/system-marathon/external-gates.v0.10.1.json";
 const LEDGER_ENTRY = "payload/repository/src/server/system-marathon/integration-repair-ledger.v0.10.1.ndjson";
+const FIXED_WORKING_FILES = Object.freeze([
+  "final-command-journal.ndjson",
+  "final-verification.json",
+  "integration-repair-assessment.v0.10.1.json",
+  "product/unified-timeline.json",
+  "regressions/browser.json",
+  "regressions/postgresql.json",
+  "verification/safety-and-reachability.json",
+  ...V0101_FINAL_COMMAND_IDS.flatMap((id) => [
+    `final-logs/${id}.stderr.log`,
+    `final-logs/${id}.stdout.log`,
+  ]),
+]);
 
 const manifestBytes = await ordinaryBytes(MANIFEST_PATH);
 const manifest = record(JSON.parse(manifestBytes.toString("utf8")), "V0101_VERIFY_MANIFEST_INVALID");
@@ -75,6 +89,8 @@ if (declaredHash !== `${archiveSha256}  ${path.basename(ARCHIVE_PATH)}`) {
 const assessment = await jsonPayload(ASSESSMENT_ENTRY, "V0101_VERIFY_ASSESSMENT_INVALID");
 const finalVerification = await jsonPayload(FINAL_VERIFICATION_ENTRY, "V0101_VERIFY_FINAL_VERIFICATION_INVALID");
 const externalGates = await jsonPayload(EXTERNAL_GATES_ENTRY, "V0101_VERIFY_EXTERNAL_GATES_INVALID");
+const matrixHead = String(assessment.matrix_head);
+const matrixTree = String(assessment.matrix_tree);
 validateV0101AssessmentAgainstReceipts(assessment, finalVerification, externalGates);
 parseOrderedIntegrationLedger((await payloadBytes(LEDGER_ENTRY)).toString("utf8"));
 await validateFinalVerificationReferences(finalVerification);
@@ -85,10 +101,12 @@ const tree = git(["rev-parse", "HEAD^{tree}"]);
 const branch = git(["branch", "--show-current"]);
 if (branch !== BRANCH || manifest.final_head !== head || manifest.final_tree !== tree
     || assessment.verified_head !== head || assessment.verified_tree !== tree
-    || finalVerification.verified_branch !== branch || finalVerification.verified_head !== head
-    || finalVerification.verified_tree !== tree) {
+    || finalVerification.verified_branch !== branch || finalVerification.verified_head !== matrixHead
+    || finalVerification.verified_tree !== matrixTree) {
   throw new Error("V0101_VERIFY_STALE_HEAD");
 }
+validatePostMatrixRepair(assessment, matrixHead, matrixTree, head, tree);
+await validateWorkingArtifactSet(branch, head, tree, matrixHead, matrixTree, finalVerification);
 const gitProof = await jsonPayload("payload/git/base-final.json", "V0101_VERIFY_GIT_PROOF_INVALID");
 if (gitProof.branch !== branch || gitProof.base_head !== BASE || gitProof.final_head !== head
     || gitProof.final_tree !== tree || gitProof.base_is_ancestor !== true || gitProof.worktree_clean_before_build !== true) {
@@ -120,6 +138,9 @@ const receipt = Object.freeze({
   verified_branch: branch,
   final_head: head,
   final_tree: tree,
+  matrix_head: matrixHead,
+  matrix_tree: matrixTree,
+  post_matrix_evidence_only_repair_verified: assessment.post_matrix_evidence_only_repair !== null,
   manifest_sha256: sha256(manifestBytes),
   payload_file_count: payload.length,
   payload_set_sha256: manifest.payload_set_sha256,
@@ -186,6 +207,163 @@ async function validateFinalVerificationReferences(verification: Record<string, 
         || completed.stderr_sha256 !== command.stderr_sha256) {
       throw new Error("V0101_VERIFY_JOURNAL_COMMAND_MISMATCH");
     }
+  }
+}
+
+function validatePostMatrixRepair(
+  assessment: Record<string, unknown>,
+  matrixHead: string,
+  matrixTree: string,
+  finalHead: string,
+  finalTree: string,
+): void {
+  if (git(["rev-parse", `${matrixHead}^{tree}`]) !== matrixTree) {
+    throw new Error("V0101_VERIFY_MATRIX_TREE_INVALID");
+  }
+  if (matrixHead === finalHead && matrixTree === finalTree) {
+    if (assessment.post_matrix_evidence_only_repair !== null) throw new Error("V0101_VERIFY_POST_MATRIX_REPAIR_INVALID");
+    return;
+  }
+  if (spawnSync("git", ["merge-base", "--is-ancestor", matrixHead, finalHead], { cwd: ROOT }).status !== 0) {
+    throw new Error("V0101_VERIFY_POST_MATRIX_ANCESTRY_INVALID");
+  }
+  const repair = record(assessment.post_matrix_evidence_only_repair, "V0101_VERIFY_POST_MATRIX_REPAIR_INVALID");
+  const changedPaths = git(["diff", "--name-only", `${matrixHead}..${finalHead}`])
+    .split(/\r?\n/u).filter(Boolean).sort(compare);
+  if (changedPaths.length < 1
+      || changedPaths.some((entry) => !(V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS as readonly string[]).includes(entry))
+      || JSON.stringify(repair.changed_paths) !== JSON.stringify(changedPaths)
+      || repair.from_head !== matrixHead || repair.from_tree !== matrixTree
+      || repair.to_head !== finalHead || repair.to_tree !== finalTree
+      || repair.scope !== "EVIDENCE_TOOLING_ONLY_NO_PRODUCT_RUNTIME_CHANGE"
+      || repair.product_runtime_changed !== false || repair.matrix_reused_as_final_head_proof !== false) {
+    throw new Error("V0101_VERIFY_POST_MATRIX_REPAIR_INVALID");
+  }
+}
+
+async function validateWorkingArtifactSet(
+  expectedBranch: string,
+  finalHead: string,
+  finalTree: string,
+  matrixHead: string,
+  matrixTree: string,
+  verification: Record<string, unknown>,
+): Promise<void> {
+  const schemaArtifacts = [
+    ["regressions/browser.json", "tivdoc-canonical-integration-durability-repair-browser-regression-v0.10.1", matrixHead, matrixTree, true],
+    ["regressions/postgresql.json", "tivdoc-canonical-integration-durability-repair-postgresql-regression-v0.10.1", matrixHead, matrixTree, true],
+    ["product/unified-timeline.json", "tivdoc-canonical-integration-durability-repair-product-timeline-v0.10.1", matrixHead, matrixTree, true],
+    ["verification/safety-and-reachability.json", "tivdoc-canonical-integration-durability-repair-safety-reachability-v0.10.1", matrixHead, matrixTree, true],
+    ["integration-repair-assessment.v0.10.1.json", "tivdoc-canonical-integration-durability-repair-assessment-v0.10.1", finalHead, finalTree, false],
+  ] as const;
+  for (const [relative, schema, artifactHead, artifactTree, requiresBranch] of schemaArtifacts) {
+    const value = await jsonPayload(`payload/working/${relative}`, "V0101_VERIFY_WORKING_JSON_INVALID");
+    if (value.schema_version !== schema || value.verified_head !== artifactHead || value.verified_tree !== artifactTree
+        || (requiresBranch && value.verified_branch !== expectedBranch)) {
+      throw new Error(`V0101_VERIFY_WORKING_IDENTITY_INVALID:${relative}`);
+    }
+  }
+
+  const postgresRegression = await jsonPayload("payload/working/regressions/postgresql.json",
+    "V0101_VERIFY_POSTGRES_REGRESSION_INVALID");
+  const after = record(postgresRegression.after, "V0101_VERIFY_POSTGRES_REGRESSION_INVALID");
+  const copied = array(after.copied_receipts, "V0101_VERIFY_POSTGRES_COPIES_INVALID")
+    .map((value) => record(value, "V0101_VERIFY_POSTGRES_COPY_INVALID"));
+  const commands = array(verification.commands, "V0101_VERIFY_FINAL_COMMANDS_INVALID")
+    .map((value) => record(value, "V0101_VERIFY_FINAL_COMMAND_INVALID"));
+  await validateRecordedArtifactBindings(commands);
+  const postgresCommand = commands.find((command) => command.command_id === "postgresql_full_regression");
+  const allowedPostgres = new Map([
+    ["postgresql/matrix-smoke.json", "tivdoc-real-postgresql-matrix-smoke-v0.9.1"],
+    ["postgresql/marathon-v010-matrix.json", "tivdoc-marathon-v010-postgresql-matrix-v1"],
+  ]);
+  if (!postgresCommand || (postgresCommand.status === "PASS" && copied.length !== allowedPostgres.size)
+      || (postgresCommand.status === "FAIL" && copied.length !== 0)) {
+    throw new Error("V0101_VERIFY_POSTGRES_COPIES_INVALID");
+  }
+  const postgresFiles: string[] = [];
+  for (const copy of copied) {
+    const destination = String(copy.destination);
+    const expectedSchema = allowedPostgres.get(destination);
+    if (!expectedSchema || postgresFiles.includes(destination) || copy.status !== "PASS"
+        || copy.schema_version !== expectedSchema || copy.current_head_bound_by_command !== matrixHead
+        || copy.current_tree_bound_by_command !== matrixTree) {
+      throw new Error("V0101_VERIFY_POSTGRES_COPY_INVALID");
+    }
+    const entryPath = `payload/working/${destination}`;
+    const bytes = await payloadBytes(entryPath);
+    const value = record(JSON.parse(bytes.toString("utf8")), "V0101_VERIFY_POSTGRES_COPY_INVALID");
+    if (copy.sha256 !== sha256(bytes) || copy.byte_count !== bytes.byteLength
+        || value.schema_version !== expectedSchema || value.status !== "PASS") {
+      throw new Error("V0101_VERIFY_POSTGRES_COPY_INVALID");
+    }
+    postgresFiles.push(destination);
+  }
+
+  const expectedFiles = [...FIXED_WORKING_FILES, ...postgresFiles].sort(compare);
+  const actualFiles = [...payloadMap.keys()].filter((entry) => entry.startsWith("payload/working/"))
+    .map((entry) => entry.slice("payload/working/".length)).sort(compare);
+  if (JSON.stringify(actualFiles) !== JSON.stringify(expectedFiles)) {
+    throw new Error("V0101_VERIFY_WORKING_ARTIFACT_SET_INVALID");
+  }
+}
+
+async function validateRecordedArtifactBindings(commands: readonly Record<string, unknown>[]): Promise<void> {
+  const command = (id: string) => {
+    const value = commands.find((entry) => entry.command_id === id);
+    if (!value) throw new Error(`V0101_VERIFY_ARTIFACT_COMMAND_MISSING:${id}`);
+    return value;
+  };
+  const browser = command("browser_e2e_full");
+  const postgres = command("postgresql_full_regression");
+  const browserRegression = await jsonPayload("payload/working/regressions/browser.json",
+    "V0101_VERIFY_BROWSER_REGRESSION_INVALID");
+  const browserAfter = record(browserRegression.after, "V0101_VERIFY_BROWSER_REGRESSION_INVALID");
+  const browserDurableProof = browser.status === "PASS" && browser.proof_contract_status === "PASS";
+  if (browserAfter.status !== browser.status || browserAfter.execution_status !== browser.execution_status
+      || browserAfter.proof_contract_status !== browser.proof_contract_status
+      || browserAfter.durable_identity_postgres_private_storage_proven !== browserDurableProof
+      || JSON.stringify(browserAfter.command_receipt) !== JSON.stringify(browser)) {
+    throw new Error("V0101_VERIFY_BROWSER_COMMAND_BINDING_INVALID");
+  }
+
+  const postgresRegression = await jsonPayload("payload/working/regressions/postgresql.json",
+    "V0101_VERIFY_POSTGRES_REGRESSION_INVALID");
+  const postgresAfter = record(postgresRegression.after, "V0101_VERIFY_POSTGRES_REGRESSION_INVALID");
+  if (postgresAfter.status !== postgres.status
+      || JSON.stringify(postgresAfter.command_receipt) !== JSON.stringify(postgres)) {
+    throw new Error("V0101_VERIFY_POSTGRES_COMMAND_BINDING_INVALID");
+  }
+
+  const timeline = await jsonPayload("payload/working/product/unified-timeline.json", "V0101_VERIFY_TIMELINE_INVALID");
+  const expectedSteps = [
+    { step: "durable_cookie_identity", status: "IMPLEMENTED_NOT_INSTALLED" },
+    { step: "portal_http", status: "IMPLEMENTED_NOT_WIRED" },
+    { step: "operations_http", status: "IMPLEMENTED_NOT_WIRED" },
+    { step: "postgres_worker_report_private_object_restart", status: postgres.status },
+    { step: "rendered_browser_download", status: browserDurableProof ? "PASS" : "NOT_PROVEN" },
+  ];
+  if (timeline.status !== "FAIL" || JSON.stringify(timeline.steps) !== JSON.stringify(expectedSteps)
+      || timeline.exact_pdf_bytes_at_postgres_boundary !== (postgres.status === "PASS")
+      || timeline.durable_browser_product_path !== browserDurableProof) {
+    throw new Error("V0101_VERIFY_TIMELINE_COMMAND_BINDING_INVALID");
+  }
+
+  const safety = await jsonPayload("payload/working/verification/safety-and-reachability.json",
+    "V0101_VERIFY_SAFETY_INVALID");
+  for (const [field, id] of [
+    ["prohibited_operation_audit", "prohibited_operation_audit"],
+    ["canonical_reachability", "canonical_reachability"],
+    ["persistence_wiring", "persistence_wiring"],
+  ] as const) {
+    if (JSON.stringify(safety[field]) !== JSON.stringify(command(id))) {
+      throw new Error(`V0101_VERIFY_SAFETY_COMMAND_BINDING_INVALID:${id}`);
+    }
+  }
+  const counters = record(safety.counters, "V0101_VERIFY_SAFETY_COUNTERS_INVALID");
+  for (const name of ["deployments", "remote_migrations", "customer_data_reads", "live_provider_calls", "openai_calls",
+    "real_activations", "manufactured_human_evidence"] as const) {
+    if (counters[name] !== 0) throw new Error(`V0101_VERIFY_SAFETY_COUNTER_INVALID:${name}`);
   }
 }
 

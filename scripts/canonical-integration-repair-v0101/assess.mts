@@ -6,10 +6,13 @@ import {
   validateV0101AssessmentAgainstReceipts,
   V0101_COMMAND_FAILURE_IMPACTS,
   V0101_FINAL_COMMAND_IDS,
+  V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS,
   type V0101ResultStatus,
 } from "../../src/server/system-marathon/integration-repair-evidence.ts";
 
 const ROOT = path.resolve(process.cwd());
+const BASE = "3b1740d63bb6978d990d1a6127730f3cec3574cc";
+const BRANCH = "codex/tivdoc-engine-foundation";
 const WORKING = path.join(ROOT, "output", "canonical-integration-durability-repair-v0.10.1", "working");
 const FINAL_VERIFICATION = path.join(WORKING, "final-verification.json");
 const OUTPUT = path.join(WORKING, "integration-repair-assessment.v0.10.1.json");
@@ -23,12 +26,20 @@ const metrics = record(JSON.parse(await readFile(METRICS, "utf8")));
 const browserRegression = record(JSON.parse(await readFile(BROWSER_REGRESSION, "utf8")));
 const head = git("HEAD");
 const tree = git("HEAD^{tree}");
-if (verification.verified_head !== head || verification.verified_tree !== tree) {
-  throw new Error("V0101_ASSESS_FINAL_VERIFICATION_STALE");
+if (gitOutput(["branch", "--show-current"]) !== BRANCH) throw new Error("V0101_ASSESS_BRANCH_INVALID");
+if (spawnSync("git", ["merge-base", "--is-ancestor", BASE, head], { cwd: ROOT, windowsHide: true }).status !== 0) {
+  throw new Error("V0101_ASSESS_BASE_NOT_ANCESTOR");
 }
-if (browserRegression.verified_head !== head || browserRegression.verified_tree !== tree) {
+if (gitOutput(["status", "--porcelain", "--untracked-files=all"]) !== "") {
+  throw new Error("V0101_ASSESS_WORKTREE_NOT_CLEAN");
+}
+const matrixHead = String(verification.verified_head);
+const matrixTree = String(verification.verified_tree);
+if (git(`${matrixHead}^{tree}`) !== matrixTree) throw new Error("V0101_ASSESS_MATRIX_TREE_INVALID");
+if (browserRegression.verified_head !== matrixHead || browserRegression.verified_tree !== matrixTree) {
   throw new Error("V0101_ASSESS_BROWSER_REGRESSION_STALE");
 }
+const postMatrixRepair = matrixHead === head && matrixTree === tree ? null : postMatrixEvidenceRepair(matrixHead, matrixTree, head, tree);
 const persistenceMetrics = record(metrics.persistence_capabilities);
 const entrypointMetrics = record(metrics.canonical_entrypoints);
 const processLocalMetrics = record(metrics.process_local_product_repositories);
@@ -48,9 +59,11 @@ const queuedObservations = nonnegativeInteger(
 );
 const commands = Array.isArray(verification.commands) ? verification.commands.map(record) : [];
 const commandStatus = (id: string): V0101ResultStatus => commands.find((item) => item.command_id === id)?.status === "PASS" ? "PASS" : "FAIL";
-const postgres = commandStatus("postgresql_full_regression");
-const browserCommand = commandStatus("browser_e2e_full");
-const finalMatrix = verification.status === "PASS" ? "PASS" : "FAIL";
+const matrixPostgresCommand = commandStatus("postgresql_full_regression");
+const matrixBrowserCommand = commandStatus("browser_e2e_full");
+const postgres = matrixPostgresCommand === "PASS" && postMatrixRepair === null ? "PASS" : "FAIL";
+const browserCommand = matrixBrowserCommand === "PASS" && postMatrixRepair === null ? "PASS" : "FAIL";
+const finalMatrix = verification.status === "PASS" && postMatrixRepair === null ? "PASS" : "FAIL";
 const runCounts = record(verification.run_counts);
 const commandFailureReason = (id: string): string | undefined => {
   const failed = V0101_FINAL_COMMAND_IDS.filter((commandId) => commandStatus(commandId) === "FAIL"
@@ -95,12 +108,17 @@ const mcRequirements = [
 const mcResults = Array.from({ length: 39 }, (_, index) => {
   const id = `MC-${String(index + 1).padStart(2, "0")}`;
   if (mcBlocked[id]) return result(id, "BLOCKED", mcRequirements[index]!, mcBlocked[id], ["payload/repository/src/server/system-marathon/external-gates.v0.10.1.json"]);
-  if (id === "MC-11" && postgres !== "PASS") return result(id, "FAIL", mcRequirements[index]!, "REAL_POSTGRESQL_CURRENT_HEAD_PROOF did not pass; current-head controlled-import migration behavior is unproven.");
+  if (id === "MC-11" && postgres !== "PASS") return result(id, "FAIL", mcRequirements[index]!,
+    postMatrixRepair === null
+      ? "REAL_POSTGRESQL_CURRENT_HEAD_PROOF did not pass; current-head controlled-import migration behavior is unproven."
+      : "CURRENT_HEAD_PROOF_ABSENT: the PostgreSQL regression passed on the pre-repair matrix commit, but exact final-head controlled-import migration proof was not rerun after the disclosed evidence-tooling repair.");
   if (id === "MC-08" && postgres !== "PASS") return result(id, "FAIL", mcRequirements[index]!,
-    "REGRESSION_FAILED: the current-head PostgreSQL regression failed, so canonical report binding is not dynamically proven; the unified durable UI-to-worker-to-storage-to-download product timeline is also absent.",
+    postMatrixRepair === null
+      ? "REGRESSION_FAILED: the current-head PostgreSQL regression failed, so canonical report binding is not dynamically proven; the unified durable UI-to-worker-to-storage-to-download product timeline is also absent."
+      : "CURRENT_HEAD_PROOF_ABSENT: PostgreSQL passed on the pre-repair matrix commit, but exact final-head proof was not rerun after the disclosed evidence-tooling repair; the unified durable UI-to-worker-to-storage-to-download product timeline is also absent.",
     ["payload/working/regressions/postgresql.json", "payload/working/product/unified-timeline.json"]);
   if (id === "MC-34" && finalMatrix !== "PASS") return result(id, "FAIL", mcRequirements[index]!,
-    finalMatrixFailureReason(commands), ["payload/working/final-verification.json"]);
+    finalMatrixFailureReason(commands, postMatrixRepair), ["payload/working/final-verification.json"]);
   if (mcFailures[id]) return result(id, "FAIL", mcRequirements[index]!, mcFailures[id], mcEvidence(id));
   const commandFailure = commandFailureReason(id);
   if (commandFailure) return result(id, "FAIL", mcRequirements[index]!, commandFailure);
@@ -143,10 +161,13 @@ const irResults = Array.from({ length: 27 }, (_, index) => {
   if (id === "IR-02" && browserCommand !== "PASS") return result(id, "FAIL", irRequirements[index]!, browserReason,
     ["payload/working/regressions/browser.json"]);
   if (["IR-03", "IR-08", "IR-20"].includes(id) && postgres !== "PASS") {
-    return result(id, "FAIL", irRequirements[index]!, "REAL_POSTGRESQL_CURRENT_HEAD_PROOF failed; the required current-head durable regression was not established.",
+    return result(id, "FAIL", irRequirements[index]!, postMatrixRepair === null
+      ? "REAL_POSTGRESQL_CURRENT_HEAD_PROOF failed; the required current-head durable regression was not established."
+      : "REAL_POSTGRESQL_CURRENT_HEAD_PROOF is absent: PostgreSQL passed on the pre-repair matrix commit, but was not rerun on the exact final evidence-tooling-repair HEAD.",
       ["payload/working/regressions/postgresql.json"]);
   }
-  if (id === "IR-25" && finalMatrix !== "PASS") return result(id, "FAIL", irRequirements[index]!, "The single final integrated quality matrix contains one or more failed commands.");
+  if (id === "IR-25" && finalMatrix !== "PASS") return result(id, "FAIL", irRequirements[index]!,
+    finalMatrixFailureReason(commands, postMatrixRepair));
   if (irFailureReasons[id]) return result(id, "FAIL", irRequirements[index]!, irFailureReasons[id], irEvidence(id));
   const commandFailure = commandFailureReason(id);
   if (commandFailure) return result(id, "FAIL", irRequirements[index]!, commandFailure);
@@ -168,6 +189,9 @@ const assessment = Object.freeze({
   headline,
   verified_head: head,
   verified_tree: tree,
+  matrix_head: matrixHead,
+  matrix_tree: matrixTree,
+  post_matrix_evidence_only_repair: postMatrixRepair,
   mc_results: mcResults,
   ir_results: irResults,
   blockers,
@@ -235,10 +259,15 @@ function irEvidence(id: string): readonly string[] {
     "payload/repository/src/server/system-marathon/integration-repair-audit.v0.10.1.json"];
 }
 
-function finalMatrixFailureReason(finalCommands: readonly Record<string, unknown>[]): string {
+function finalMatrixFailureReason(
+  finalCommands: readonly Record<string, unknown>[],
+  postMatrixRepair: Readonly<Record<string, unknown>> | null,
+): string {
   const failed = finalCommands.filter((command) => command.status !== "PASS")
     .map((command) => String(command.command_id));
-  return `FAILED_LOCAL_WITH_EVIDENCE: the one-shot final quality matrix is non-PASS; failed command IDs: ${failed.join(", ")}.`;
+  const repair = postMatrixRepair === null ? ""
+    : " The final commit also contains a disclosed evidence-tooling-only repair after the one-shot matrix, so the matrix is not exact final-head proof.";
+  return `FAILED_LOCAL_WITH_EVIDENCE: the one-shot final quality matrix is non-PASS; failed command IDs: ${failed.join(", ") || "none"}.${repair}`;
 }
 
 function browserFailureReason(
@@ -266,8 +295,50 @@ function nonnegativeInteger(value: unknown, code: string): number {
   return value as number;
 }
 
+function postMatrixEvidenceRepair(
+  fromHead: string,
+  fromTree: string,
+  toHead: string,
+  toTree: string,
+): Readonly<Record<string, unknown>> {
+  const allowed = new Set<string>(V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS);
+  if (gitMergeBase(fromHead, toHead) !== fromHead) throw new Error("V0101_ASSESS_POST_MATRIX_ANCESTRY_INVALID");
+  const changedPaths = gitDiffPaths(fromHead, toHead);
+  if (changedPaths.length < 1 || changedPaths.some((entry) => !allowed.has(entry))) {
+    throw new Error("V0101_ASSESS_POST_MATRIX_SCOPE_INVALID");
+  }
+  return Object.freeze({
+    from_head: fromHead,
+    from_tree: fromTree,
+    to_head: toHead,
+    to_tree: toTree,
+    scope: "EVIDENCE_TOOLING_ONLY_NO_PRODUCT_RUNTIME_CHANGE",
+    product_runtime_changed: false,
+    changed_paths: Object.freeze(changedPaths),
+    matrix_reused_as_final_head_proof: false,
+  });
+}
+
 function git(revision: string): string {
-  const result = spawnSync("git", ["rev-parse", revision], { cwd: ROOT, encoding: "utf8", windowsHide: true });
+  return gitOutput(["rev-parse", revision]);
+}
+
+function gitOutput(args: readonly string[]): string {
+  const result = spawnSync("git", args, { cwd: ROOT, encoding: "utf8", windowsHide: true });
   if (result.status !== 0 || result.error) throw new Error("V0101_ASSESS_GIT_FAILED");
   return result.stdout.trim();
+}
+
+function gitMergeBase(left: string, right: string): string {
+  const result = spawnSync("git", ["merge-base", left, right], { cwd: ROOT, encoding: "utf8", windowsHide: true });
+  if (result.status !== 0 || result.error) throw new Error("V0101_ASSESS_GIT_FAILED");
+  return result.stdout.trim();
+}
+
+function gitDiffPaths(left: string, right: string): string[] {
+  const result = spawnSync("git", ["diff", "--name-only", `${left}..${right}`], {
+    cwd: ROOT, encoding: "utf8", windowsHide: true,
+  });
+  if (result.status !== 0 || result.error) throw new Error("V0101_ASSESS_GIT_FAILED");
+  return result.stdout.trim().split(/\r?\n/u).filter(Boolean).sort();
 }

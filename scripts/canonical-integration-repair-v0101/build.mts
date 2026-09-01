@@ -9,6 +9,7 @@ import {
   parseOrderedIntegrationLedger,
   validateV0101AssessmentAgainstReceipts,
   V0101_FINAL_COMMAND_IDS,
+  V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS,
   V0101_RUN_COUNT_NAMES,
   type V0101EvidenceEntry,
 } from "../../src/server/system-marathon/integration-repair-evidence.ts";
@@ -77,9 +78,12 @@ if (workerReceiptLedger.schema_version !== "tivdoc-canonical-integration-durabil
     || workerReceiptLedger.receipt_count !== workerReceipts.length) throw new Error("V0101_BUILD_WORKER_RECEIPTS_INVALID");
 validateV0101AssessmentAgainstReceipts(assessment, finalVerification, externalGates);
 if (assessment.verified_head !== head || assessment.verified_tree !== tree) throw new Error("V0101_BUILD_ASSESSMENT_STALE_HEAD");
+const matrixHead = String(assessment.matrix_head);
+const matrixTree = String(assessment.matrix_tree);
+validatePostMatrixRepair(assessment, matrixHead, matrixTree, head, tree);
 parseOrderedIntegrationLedger(await readFile(path.join(ROOT,
   "src/server/system-marathon/integration-repair-ledger.v0.10.1.ndjson"), "utf8"));
-await validateWorkingArtifacts(branch, head, tree, finalVerification);
+await validateWorkingArtifacts(branch, head, tree, matrixHead, matrixTree, finalVerification);
 
 await mkdir(PAYLOAD, { recursive: true });
 for (const source of SOURCE_FILES) await copyOrdinaryFile(path.join(ROOT, source), path.join(PAYLOAD, "repository", source));
@@ -156,13 +160,15 @@ process.stdout.write(`${JSON.stringify({
 
 async function validateWorkingArtifacts(
   expectedBranch: string,
-  expectedHead: string,
-  expectedTree: string,
+  finalHead: string,
+  finalTree: string,
+  matrixHead: string,
+  matrixTree: string,
   verification: Record<string, unknown>,
 ): Promise<void> {
   if (verification.schema_version !== "tivdoc-canonical-integration-durability-repair-final-verification-v0.10.1"
-      || verification.verified_branch !== expectedBranch || verification.verified_head !== expectedHead
-      || verification.verified_tree !== expectedTree || verification.exact_once !== true
+      || verification.verified_branch !== expectedBranch || verification.verified_head !== matrixHead
+      || verification.verified_tree !== matrixTree || verification.exact_once !== true
       || verification.working_preflight !== "FRESH_DIRECTORY_CREATED_BEFORE_FIRST_COMMAND") {
     throw new Error("V0101_BUILD_FINAL_VERIFICATION_IDENTITY_INVALID");
   }
@@ -178,7 +184,7 @@ async function validateWorkingArtifacts(
   for (const [index, command] of commands.entries()) {
     const id = V0101_FINAL_COMMAND_IDS[index]!;
     if (command.command_id !== id || command.attempt_ordinal !== 1 || command.execution_ordinal !== index + 1
-        || command.verified_head !== expectedHead || command.verified_tree !== expectedTree
+        || command.verified_head !== matrixHead || command.verified_tree !== matrixTree
         || (command.status !== "PASS" && command.status !== "FAIL")
         || (command.execution_status !== "PASS" && command.execution_status !== "FAIL")
         || (command.proof_contract_status !== "PASS" && command.proof_contract_status !== "FAIL")
@@ -223,19 +229,20 @@ async function validateWorkingArtifacts(
   }
 
   const schemaArtifacts = [
-    ["regressions/browser.json", "tivdoc-canonical-integration-durability-repair-browser-regression-v0.10.1"],
-    ["regressions/postgresql.json", "tivdoc-canonical-integration-durability-repair-postgresql-regression-v0.10.1"],
-    ["product/unified-timeline.json", "tivdoc-canonical-integration-durability-repair-product-timeline-v0.10.1"],
-    ["verification/safety-and-reachability.json", "tivdoc-canonical-integration-durability-repair-safety-reachability-v0.10.1"],
-    ["integration-repair-assessment.v0.10.1.json", "tivdoc-canonical-integration-durability-repair-assessment-v0.10.1"],
+    ["regressions/browser.json", "tivdoc-canonical-integration-durability-repair-browser-regression-v0.10.1", matrixHead, matrixTree, true],
+    ["regressions/postgresql.json", "tivdoc-canonical-integration-durability-repair-postgresql-regression-v0.10.1", matrixHead, matrixTree, true],
+    ["product/unified-timeline.json", "tivdoc-canonical-integration-durability-repair-product-timeline-v0.10.1", matrixHead, matrixTree, true],
+    ["verification/safety-and-reachability.json", "tivdoc-canonical-integration-durability-repair-safety-reachability-v0.10.1", matrixHead, matrixTree, true],
+    ["integration-repair-assessment.v0.10.1.json", "tivdoc-canonical-integration-durability-repair-assessment-v0.10.1", finalHead, finalTree, false],
   ] as const;
-  for (const [relative, schema] of schemaArtifacts) {
+  for (const [relative, schema, artifactHead, artifactTree, requiresBranch] of schemaArtifacts) {
     const value = jsonRecord(await ordinaryBytes(path.join(WORKING, ...relative.split("/"))), "V0101_BUILD_WORKING_JSON_INVALID");
-    if (value.schema_version !== schema || value.verified_head !== expectedHead || value.verified_tree !== expectedTree
-        || (relative !== "integration-repair-assessment.v0.10.1.json" && value.verified_branch !== expectedBranch)) {
+    if (value.schema_version !== schema || value.verified_head !== artifactHead || value.verified_tree !== artifactTree
+        || (requiresBranch && value.verified_branch !== expectedBranch)) {
       throw new Error(`V0101_BUILD_WORKING_IDENTITY_INVALID:${relative}`);
     }
   }
+  await validateRecordedArtifactBindings(commands);
 
   const postgresRegression = jsonRecord(await ordinaryBytes(path.join(WORKING, "regressions", "postgresql.json")),
     "V0101_BUILD_POSTGRES_REGRESSION_INVALID");
@@ -254,8 +261,8 @@ async function validateWorkingArtifacts(
     const destination = String(copy.destination);
     const expectedSchema = allowedPostgres.get(destination);
     if (!expectedSchema || postgresFiles.includes(destination) || copy.status !== "PASS"
-        || copy.schema_version !== expectedSchema || copy.current_head_bound_by_command !== expectedHead
-        || copy.current_tree_bound_by_command !== expectedTree) throw new Error("V0101_BUILD_POSTGRES_COPY_INVALID");
+        || copy.schema_version !== expectedSchema || copy.current_head_bound_by_command !== matrixHead
+        || copy.current_tree_bound_by_command !== matrixTree) throw new Error("V0101_BUILD_POSTGRES_COPY_INVALID");
     const bytes = await ordinaryBytes(path.join(WORKING, ...destination.split("/")));
     const value = jsonRecord(bytes, "V0101_BUILD_POSTGRES_COPY_INVALID");
     if (copy.sha256 !== sha256(bytes) || copy.byte_count !== bytes.byteLength
@@ -266,6 +273,97 @@ async function validateWorkingArtifacts(
   const expectedFiles = [...FIXED_WORKING_FILES, ...postgresFiles].sort(compare);
   const actualFiles = (await ordinaryFiles(WORKING)).map((file) => portableRelative(WORKING, file)).sort(compare);
   if (JSON.stringify(actualFiles) !== JSON.stringify(expectedFiles)) throw new Error("V0101_BUILD_WORKING_ARTIFACT_SET_INVALID");
+}
+
+async function validateRecordedArtifactBindings(commands: readonly Record<string, unknown>[]): Promise<void> {
+  const command = (id: string) => {
+    const value = commands.find((entry) => entry.command_id === id);
+    if (!value) throw new Error(`V0101_BUILD_ARTIFACT_COMMAND_MISSING:${id}`);
+    return value;
+  };
+  const browser = command("browser_e2e_full");
+  const postgres = command("postgresql_full_regression");
+  const browserRegression = jsonRecord(await ordinaryBytes(path.join(WORKING, "regressions", "browser.json")),
+    "V0101_BUILD_BROWSER_REGRESSION_INVALID");
+  const browserAfter = record(browserRegression.after, "V0101_BUILD_BROWSER_REGRESSION_INVALID");
+  const browserDurableProof = browser.status === "PASS" && browser.proof_contract_status === "PASS";
+  if (browserAfter.status !== browser.status || browserAfter.execution_status !== browser.execution_status
+      || browserAfter.proof_contract_status !== browser.proof_contract_status
+      || browserAfter.durable_identity_postgres_private_storage_proven !== browserDurableProof
+      || JSON.stringify(browserAfter.command_receipt) !== JSON.stringify(browser)) {
+    throw new Error("V0101_BUILD_BROWSER_COMMAND_BINDING_INVALID");
+  }
+
+  const postgresRegression = jsonRecord(await ordinaryBytes(path.join(WORKING, "regressions", "postgresql.json")),
+    "V0101_BUILD_POSTGRES_REGRESSION_INVALID");
+  const postgresAfter = record(postgresRegression.after, "V0101_BUILD_POSTGRES_REGRESSION_INVALID");
+  if (postgresAfter.status !== postgres.status
+      || JSON.stringify(postgresAfter.command_receipt) !== JSON.stringify(postgres)) {
+    throw new Error("V0101_BUILD_POSTGRES_COMMAND_BINDING_INVALID");
+  }
+
+  const timeline = jsonRecord(await ordinaryBytes(path.join(WORKING, "product", "unified-timeline.json")),
+    "V0101_BUILD_TIMELINE_INVALID");
+  const expectedSteps = [
+    { step: "durable_cookie_identity", status: "IMPLEMENTED_NOT_INSTALLED" },
+    { step: "portal_http", status: "IMPLEMENTED_NOT_WIRED" },
+    { step: "operations_http", status: "IMPLEMENTED_NOT_WIRED" },
+    { step: "postgres_worker_report_private_object_restart", status: postgres.status },
+    { step: "rendered_browser_download", status: browserDurableProof ? "PASS" : "NOT_PROVEN" },
+  ];
+  if (timeline.status !== "FAIL" || JSON.stringify(timeline.steps) !== JSON.stringify(expectedSteps)
+      || timeline.exact_pdf_bytes_at_postgres_boundary !== (postgres.status === "PASS")
+      || timeline.durable_browser_product_path !== browserDurableProof) {
+    throw new Error("V0101_BUILD_TIMELINE_COMMAND_BINDING_INVALID");
+  }
+
+  const safety = jsonRecord(await ordinaryBytes(path.join(WORKING, "verification", "safety-and-reachability.json")),
+    "V0101_BUILD_SAFETY_INVALID");
+  for (const [field, id] of [
+    ["prohibited_operation_audit", "prohibited_operation_audit"],
+    ["canonical_reachability", "canonical_reachability"],
+    ["persistence_wiring", "persistence_wiring"],
+  ] as const) {
+    if (JSON.stringify(safety[field]) !== JSON.stringify(command(id))) {
+      throw new Error(`V0101_BUILD_SAFETY_COMMAND_BINDING_INVALID:${id}`);
+    }
+  }
+  const counters = record(safety.counters, "V0101_BUILD_SAFETY_COUNTERS_INVALID");
+  for (const name of ["deployments", "remote_migrations", "customer_data_reads", "live_provider_calls", "openai_calls",
+    "real_activations", "manufactured_human_evidence"] as const) {
+    if (counters[name] !== 0) throw new Error(`V0101_BUILD_SAFETY_COUNTER_INVALID:${name}`);
+  }
+}
+
+function validatePostMatrixRepair(
+  assessment: Record<string, unknown>,
+  matrixHead: string,
+  matrixTree: string,
+  finalHead: string,
+  finalTree: string,
+): void {
+  if (gitText(["rev-parse", `${matrixHead}^{tree}`]) !== matrixTree) {
+    throw new Error("V0101_BUILD_MATRIX_TREE_INVALID");
+  }
+  if (matrixHead === finalHead && matrixTree === finalTree) {
+    if (assessment.post_matrix_evidence_only_repair !== null) throw new Error("V0101_BUILD_POST_MATRIX_REPAIR_INVALID");
+    return;
+  }
+  if (spawnSync("git", ["merge-base", "--is-ancestor", matrixHead, finalHead], { cwd: ROOT }).status !== 0) {
+    throw new Error("V0101_BUILD_POST_MATRIX_ANCESTRY_INVALID");
+  }
+  const repair = record(assessment.post_matrix_evidence_only_repair, "V0101_BUILD_POST_MATRIX_REPAIR_INVALID");
+  const changedPaths = gitText(["diff", "--name-only", `${matrixHead}..${finalHead}`])
+    .split(/\r?\n/u).filter(Boolean).sort(compare);
+  if (changedPaths.length < 1
+      || changedPaths.some((entry) => !(V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS as readonly string[]).includes(entry))
+      || JSON.stringify(repair.changed_paths) !== JSON.stringify(changedPaths)
+      || repair.from_head !== matrixHead || repair.from_tree !== matrixTree
+      || repair.to_head !== finalHead || repair.to_tree !== finalTree
+      || repair.scope !== "EVIDENCE_TOOLING_ONLY_NO_PRODUCT_RUNTIME_CHANGE"
+      || repair.product_runtime_changed !== false || repair.matrix_reused_as_final_head_proof !== false) {
+    throw new Error("V0101_BUILD_POST_MATRIX_REPAIR_INVALID");
+  }
 }
 
 async function validateAssessmentEvidencePaths(assessment: Record<string, unknown>): Promise<void> {

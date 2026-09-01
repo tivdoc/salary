@@ -9,6 +9,11 @@ import {
 } from "./integration-repair-evidence.ts";
 
 const HASH = "a".repeat(64);
+const GIT_HASH = "b".repeat(40);
+const COMMAND_IDS = [
+  "focused_acceptance", "full_suite", "eslint", "typescript", "production_build", "postgresql_full_regression",
+  "browser_e2e_full", "prohibited_operation_audit", "canonical_reachability", "persistence_wiring",
+] as const;
 
 function result(
   prefix: "MC" | "IR",
@@ -37,8 +42,11 @@ function assessment() {
   return {
     schema_version: "tivdoc-canonical-integration-durability-repair-assessment-v0.10.1",
     headline: "V0101_ENGINEERING_INTEGRATION_COMPLETE_EXTERNAL_AND_HUMAN_GATES_REMAIN",
-    verified_head: HASH,
-    verified_tree: HASH,
+    verified_head: GIT_HASH,
+    verified_tree: GIT_HASH,
+    matrix_head: GIT_HASH,
+    matrix_tree: GIT_HASH,
+    post_matrix_evidence_only_repair: null as Record<string, unknown> | null,
     mc_results: mc,
     ir_results: ir,
     blockers: results.filter((item) => item.status !== "PASS")
@@ -100,6 +108,13 @@ describe("V0.10.1 evidence contracts", () => {
   it("requires an ordered machine-readable ledger", () => {
     expect(parseOrderedIntegrationLedger('{"event_id":"IRL-0001","kind":"plan","status":"PASS"}\n{"event_id":"IRL-0002","kind":"check","status":"PASS"}')).toHaveLength(2);
     expect(() => parseOrderedIntegrationLedger('{"event_id":"IRL-0002","kind":"plan","status":"PASS"}')).toThrow("V0101_LEDGER_ORDER_INVALID");
+    const commit = JSON.stringify({
+      event_id: "IRL-0001", kind: "integration_commit", status: "PASS",
+      commit_sha: GIT_HASH, tree_sha: GIT_HASH, parent_sha: GIT_HASH, subject: "evidence repair",
+    });
+    expect(parseOrderedIntegrationLedger(commit)).toHaveLength(1);
+    expect(() => parseOrderedIntegrationLedger(commit.replace(GIT_HASH, "f".repeat(39))))
+      .toThrow("V0101_LEDGER_COMMIT_INVALID");
   });
 
   it("accepts honest counters and rejects blockers labelled PASS", () => {
@@ -135,57 +150,105 @@ describe("V0.10.1 evidence contracts", () => {
       { id: "MC-34", status: "FAIL", reason: "EXACT_BLOCKER_REASON" },
       { id: "IR-25", status: "FAIL", reason: "EXACT_BLOCKER_REASON" },
     );
-    const commandIds = [
-      "focused_acceptance", "full_suite", "eslint", "typescript", "production_build", "postgresql_full_regression",
-      "browser_e2e_full", "prohibited_operation_audit", "canonical_reachability", "persistence_wiring",
-    ];
-    const verification = {
-      schema_version: "tivdoc-canonical-integration-durability-repair-final-verification-v0.10.1",
-      status: "FAIL",
-      verified_branch: "codex/tivdoc-engine-foundation",
-      verified_head: HASH,
-      verified_tree: HASH,
-      command_count: commandIds.length,
-      execution_order: commandIds,
-      commands: commandIds.map((command_id, index) => {
-        const status = command_id === "typescript" ? "FAIL" : "PASS";
-        return {
-          command_id, status, execution_status: status, proof_contract_status: status,
-          attempt_ordinal: 1, execution_ordinal: index + 1, verified_head: HASH, verified_tree: HASH,
-          started_epoch_ms: index + 1, finished_epoch_ms: index + 2,
-          stdout_sha256: HASH, stderr_sha256: HASH, stdout_byte_count: 0, stderr_byte_count: 0,
-          stdout_log: `final-logs/${command_id}.stdout.log`, stderr_log: `final-logs/${command_id}.stderr.log`,
-        };
-      }),
-      run_counts: value.run_counts,
-      exact_once: true,
-      working_preflight: "FRESH_DIRECTORY_CREATED_BEFORE_FIRST_COMMAND",
-      journal_log: "final-command-journal.ndjson",
-      journal_sha256: HASH,
-      journal_byte_count: 1,
-    };
-    const gates = {
-      schema_version: "tivdoc-canonical-integration-durability-repair-external-gates-v0.10.1",
-      bounded_checks_performed_once: true,
-      bounded_check_run_count: 1,
-      final_head_reexecution_forbidden_by_task: true,
-      gates: [
-        gate("MC-03", ["supabase", "docker", "podman"],
-          ["SUPABASE_CLI_NOT_FOUND", "SUPABASE_CONTAINER_ENGINE_NOT_FOUND"]),
-        gate("MC-10", ["node", "WindowsSandbox.exe", "docker.exe", "podman.exe"],
-          ["PARSER_OS_SANDBOX_NOT_VERIFIED", "NODE_PERMISSION_MODEL_HAS_NO_KERNEL_NETWORK_OR_RESOURCE_BOUNDARY"]),
-        gate("MC-27", ["configured_off_host_destination"],
-          ["OFF_HOST_AUDIT_CUSTODY_PENDING", "DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED"]),
-      ],
-      deployments: 0, remote_migrations: 0, live_provider_calls: 0, openai_calls: 0,
-    };
+    const verification = finalVerification(["typescript"]);
+    const gates = externalGates();
     expect(() => validateV0101AssessmentAgainstReceipts(value, verification, gates)).not.toThrow();
     value.ir_results[24] = result("IR", 25, "PASS");
     value.blockers = value.blockers.filter((item) => item.id !== "IR-25");
     expect(() => validateV0101AssessmentAgainstReceipts(value, verification, gates))
       .toThrow("V0101_COMMAND_FAILURE_FALSE_PASS");
   });
+
+  it("requires stale matrix browser and PostgreSQL impacts to fail after an evidence-only repair", () => {
+    const value = assessment();
+    const finalHead = "c".repeat(40);
+    const finalTree = "d".repeat(40);
+    value.headline = "V0101_ENGINEERING_INTEGRATION_PARTIAL";
+    value.verified_head = finalHead;
+    value.verified_tree = finalTree;
+    value.post_matrix_evidence_only_repair = {
+      from_head: GIT_HASH,
+      from_tree: GIT_HASH,
+      to_head: finalHead,
+      to_tree: finalTree,
+      scope: "EVIDENCE_TOOLING_ONLY_NO_PRODUCT_RUNTIME_CHANGE",
+      product_runtime_changed: false,
+      changed_paths: ["scripts/canonical-integration-repair-v0101/assess.mts"],
+      matrix_reused_as_final_head_proof: false,
+    };
+    const failedMc = [6, 7, 8, 11, 29, 34];
+    const failedIr = [2, 3, 5, 6, 7, 8, 17, 20, 21, 25];
+    for (const index of failedMc) value.mc_results[index - 1] = result("MC", index, "FAIL");
+    for (const index of failedIr) value.ir_results[index - 1] = result("IR", index, "FAIL");
+    value.blockers = [...value.mc_results, ...value.ir_results]
+      .filter((item) => item.status !== "PASS")
+      .map((item) => ({ id: item.id, status: item.status, reason: item.reason }));
+    value.truth.CORE_LOCAL_MC_PASS = "30/36";
+    value.truth.CORE_LOCAL_MC_FAIL = 6;
+    value.truth.REAL_POSTGRESQL_CURRENT_HEAD_PROOF = "FAIL";
+    value.truth.REAL_BROWSER_DURABLE_PRODUCT_PATH = "FAIL";
+    expect(() => validateV0101AssessmentAgainstReceipts(value, finalVerification([]), externalGates())).not.toThrow();
+
+    value.mc_results[10] = result("MC", 11, "PASS");
+    value.blockers = value.blockers.filter((item) => item.id !== "MC-11");
+    value.truth.CORE_LOCAL_MC_PASS = "31/36";
+    value.truth.CORE_LOCAL_MC_FAIL = 5;
+    expect(() => validateV0101AssessmentAgainstReceipts(value, finalVerification([]), externalGates()))
+      .toThrow("V0101_EXACT_FINAL_HEAD_PROOF_FALSE_PASS:postgresql_full_regression:MC-11");
+  });
 });
+
+function finalVerification(failedCommands: readonly string[]) {
+  const failed = new Set(failedCommands);
+  return {
+    schema_version: "tivdoc-canonical-integration-durability-repair-final-verification-v0.10.1",
+    status: failed.size === 0 ? "PASS" : "FAIL",
+    verified_branch: "codex/tivdoc-engine-foundation",
+    verified_head: GIT_HASH,
+    verified_tree: GIT_HASH,
+    command_count: COMMAND_IDS.length,
+    execution_order: COMMAND_IDS,
+    commands: COMMAND_IDS.map((command_id, index) => {
+      const status = failed.has(command_id) ? "FAIL" : "PASS";
+      return {
+        command_id, status, execution_status: status, proof_contract_status: status,
+        attempt_ordinal: 1, execution_ordinal: index + 1, verified_head: GIT_HASH, verified_tree: GIT_HASH,
+        started_epoch_ms: index + 1, finished_epoch_ms: index + 2,
+        stdout_sha256: HASH, stderr_sha256: HASH, stdout_byte_count: 0, stderr_byte_count: 0,
+        stdout_log: `final-logs/${command_id}.stdout.log`, stderr_log: `final-logs/${command_id}.stderr.log`,
+      };
+    }),
+    run_counts: {
+      FULL_SUITE_RUN_COUNT: 1,
+      PRODUCTION_BUILD_RUN_COUNT: 1,
+      BROWSER_E2E_FULL_RUN_COUNT: 1,
+      POSTGRESQL_FULL_REGRESSION_RUN_COUNT: 1,
+    },
+    exact_once: true,
+    working_preflight: "FRESH_DIRECTORY_CREATED_BEFORE_FIRST_COMMAND",
+    journal_log: "final-command-journal.ndjson",
+    journal_sha256: HASH,
+    journal_byte_count: 1,
+  };
+}
+
+function externalGates() {
+  return {
+    schema_version: "tivdoc-canonical-integration-durability-repair-external-gates-v0.10.1",
+    bounded_checks_performed_once: true,
+    bounded_check_run_count: 1,
+    final_head_reexecution_forbidden_by_task: true,
+    gates: [
+      gate("MC-03", ["supabase", "docker", "podman"],
+        ["SUPABASE_CLI_NOT_FOUND", "SUPABASE_CONTAINER_ENGINE_NOT_FOUND"]),
+      gate("MC-10", ["node", "WindowsSandbox.exe", "docker.exe", "podman.exe"],
+        ["PARSER_OS_SANDBOX_NOT_VERIFIED", "NODE_PERMISSION_MODEL_HAS_NO_KERNEL_NETWORK_OR_RESOURCE_BOUNDARY"]),
+      gate("MC-27", ["configured_off_host_destination"],
+        ["OFF_HOST_AUDIT_CUSTODY_PENDING", "DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED"]),
+    ],
+    deployments: 0, remote_migrations: 0, live_provider_calls: 0, openai_calls: 0,
+  };
+}
 
 function gate(id: string, tools: readonly string[], reasonCodes: readonly string[]) {
   const observed = id === "MC-03"
