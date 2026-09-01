@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { constants, createPublicKey, verify } from "node:crypto";
-import test from "node:test";
+
+import { test } from "vitest";
 
 import {
   DURABLE_BROWSER_CSRF_COOKIE,
