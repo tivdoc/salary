@@ -72,10 +72,10 @@ describe("durable fresh worker launcher composition", () => {
       TIVDOC_IDENTITY_KEY_EXPIRES_AT_EPOCH: "2000000000",
       TIVDOC_IDENTITY_CLOCK_SKEW_SECONDS: "5",
       TIVDOC_IDENTITY_MAX_TOKEN_LIFETIME_SECONDS: "900",
-      TIVDOC_IDENTITY_POSTGRES_URL: `postgresql://tivdoc_identity_runtime:identity@127.0.0.1:5432/${database}`,
-      TIVDOC_WEB_POSTGRES_URL: `postgresql://tivdoc_web_runtime:web@127.0.0.1:5432/${database}`,
-      TIVDOC_OPERATIONS_POSTGRES_URL: `postgresql://tivdoc_operations_runtime:operations@127.0.0.1:5432/${database}`,
-      TIVDOC_WORKER_POSTGRES_URL: `postgresql://tivdoc_worker_runtime:worker@127.0.0.1:5432/${database}`,
+      TIVDOC_IDENTITY_POSTGRES_URL: postgresTestUrl("tivdoc_identity_runtime", "identity", "127.0.0.1", database),
+      TIVDOC_WEB_POSTGRES_URL: postgresTestUrl("tivdoc_web_runtime", "web", "127.0.0.1", database),
+      TIVDOC_OPERATIONS_POSTGRES_URL: postgresTestUrl("tivdoc_operations_runtime", "operations", "127.0.0.1", database),
+      TIVDOC_WORKER_POSTGRES_URL: postgresTestUrl("tivdoc_worker_runtime", "worker", "127.0.0.1", database),
       TIVDOC_PRIVATE_STORAGE_ROOT: "C:\\ignored\\tivdoc-private-runtime-launcher",
       TIVDOC_DOWNLOAD_GRANT_HMAC_KEY_BASE64URL: randomBytes(32).toString("base64url"),
       TIVDOC_WORKER_ACTOR_ID: "worker-runtime-001",
@@ -100,3 +100,13 @@ describe("durable fresh worker launcher composition", () => {
     });
   });
 });
+
+function postgresTestUrl(role: string, password: string, host: string, database: string): string {
+  const value = new URL("postgresql://127.0.0.1");
+  value.username = role;
+  value.password = password;
+  value.hostname = host;
+  value.port = "5432";
+  value.pathname = `/${database}`;
+  return value.toString();
+}

@@ -753,7 +753,10 @@ export async function collectPostgresInventory(input: Readonly<{
   });
 }
 
-export function assertPlainPostgresFoundationInventory(receipt: PostgresInventoryReceipt): void {
+export function assertPlainPostgresFoundationInventory(
+  receipt: PostgresInventoryReceipt,
+  expectation: Readonly<{ runtime_roles_login: boolean }> = Object.freeze({ runtime_roles_login: true }),
+): void {
   const inventory = receipt.inventory;
   const server = record(inventory.server, "server");
   expectValue(server.version, "17.11", "POSTGRES_INVENTORY_SERVER_VERSION_INVALID");
@@ -798,7 +801,8 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     "tivdoc_worker_runtime",
   ] as const) {
     const role = roles.find((candidate) => candidate.name === roleName);
-    if (!role || role.login !== true || role.superuser !== false || role.bypass_rls !== false) {
+    if (!role || role.login !== expectation.runtime_roles_login
+        || role.superuser !== false || role.bypass_rls !== false) {
       throw new Error(`POSTGRES_INVENTORY_ROLE_INVALID:${roleName}`);
     }
   }
@@ -995,6 +999,11 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       component: "governance_runtime_security",
       schema_version: "tivdoc-governance-runtime-security-v0.10.2",
       migration_id: "202609010005_governance_runtime_security",
+    }),
+    Object.freeze({
+      component: "runtime_canonical_helper_acl_repair",
+      schema_version: "tivdoc-runtime-canonical-helper-acl-repair-v0.10.2",
+      migration_id: "202609010010_runtime_canonical_helper_acl_repair",
     }),
     Object.freeze({
       component: "runtime_product_forward_repair",

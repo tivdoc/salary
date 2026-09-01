@@ -1,0 +1,77 @@
+{
+  "schema_version": "tivdoc-runtime-product-worker-ledger-v0.10.2",
+  "status": "FROZEN_VERIFICATION_ROUTING",
+  "scope": "V0.10.2_RUNTIME_PRODUCT_CLOSURE",
+  "cwd": "C:/dev/tivdoc/salary",
+  "result_binding": "Each lane is bound to an exact final-matrix command receipt; commit-level patch IDs, diffstats, paths, hashes, exit/result and the final environment digest are generated and independently verified from Git and the frozen matrix.",
+  "lanes": [
+    {
+      "lane_id": "W0.1_TYPESCRIPT_BASELINE",
+      "owner": "W1",
+      "waves": ["WAVE_0"],
+      "allowed_paths": ["scripts/canonical-persistence-v091/foundation/"],
+      "focused_command_id": "typescript",
+      "focused_command_text": "node node_modules/typescript/bin/tsc --noEmit"
+    },
+    {
+      "lane_id": "W0.2_BROWSER_BOOTSTRAP",
+      "owner": "W1",
+      "waves": ["WAVE_0", "WAVE_1"],
+      "allowed_paths": ["src/instrumentation.ts", "src/server/product/auth/", "src/server/product/routes/", "scripts/full-local-system-marathon/"],
+      "focused_command_id": "browser_durable_product_e2e",
+      "focused_command_text": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/durable-browser-e2e.mts"
+    },
+    {
+      "lane_id": "W1_DURABLE_PRODUCT_RUNTIME",
+      "owner": "W2",
+      "waves": ["WAVE_1"],
+      "allowed_paths": ["src/server/product/runtime/", "src/server/product/durable-postgres/", "src/server/product/worker-runtime/", "src/server/platform/storage/local-runtime/"],
+      "focused_command_id": "focused_v0102_acceptance",
+      "focused_command_text": "node node_modules/vitest/vitest.mjs run src/server/product/runtime/durable-local-runtime.test.ts src/server/product/durable-postgres/runtime-product-lane.test.ts src/server/product/worker-runtime/durable-worker-launcher.test.ts src/server/platform/storage/local-runtime/private-blob-provider.test.ts --maxWorkers=1"
+    },
+    {
+      "lane_id": "W2_DURABLE_GOVERNANCE",
+      "owner": "W3",
+      "waves": ["WAVE_2", "WAVE_4"],
+      "allowed_paths": ["src/server/platform/persistence/postgres/governance/", "src/server/product/internal-ops/durable-governance/", "src/server/platform/trust/", "src/engine/extraction-ground-truth/"],
+      "focused_command_id": "postgresql_full_regression",
+      "focused_command_text": "node scripts/canonical-persistence-v091/bootstrap.mjs"
+    },
+    {
+      "lane_id": "W3_SQL_RLS_ACL",
+      "owner": "W3",
+      "waves": ["WAVE_3"],
+      "allowed_paths": ["supabase/migrations/", "scripts/canonical-persistence-v091/matrix/", "scripts/canonical-persistence-v091/foundation/", "scripts/canonical-persistence-v091/evidence/"],
+      "focused_command_id": "postgresql_full_regression",
+      "focused_command_text": "node scripts/canonical-persistence-v091/bootstrap.mjs"
+    },
+    {
+      "lane_id": "W5_RULESPEC_INVALIDATION_INTAKE",
+      "owner": "W2",
+      "waves": ["WAVE_5"],
+      "allowed_paths": ["src/engine/legal-operations/", "src/engine/legal-quality/", "src/server/product/dependency-invalidation/", "src/server/engine/multi-document-intake/", "src/server/product/multi-document-intake/"],
+      "focused_command_id": "security_limits_negative_matrix",
+      "focused_command_text": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/runtime-product-negative-matrix.mts"
+    },
+    {
+      "lane_id": "W6_W7_ENTRYPOINT_CAPABILITY",
+      "owner": "ORCHESTRATOR",
+      "waves": ["WAVE_6", "WAVE_7"],
+      "allowed_paths": ["src/app/", "src/server/platform/capabilities/", "src/server/system-marathon/entrypoint-disposition-ledger.v0.10.2.ts", "scripts/product-integration/"],
+      "focused_command_id": "reachability_wiring_capability_audit",
+      "focused_command_text": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/runtime-product-audit.mts"
+    },
+    {
+      "lane_id": "ORCHESTRATOR_INTEGRATION_EVIDENCE",
+      "owner": "ORCHESTRATOR",
+      "waves": ["CONTRACT", "INTEGRATION", "EVIDENCE"],
+      "allowed_paths": ["package.json", ".gitignore", "src/server/system-marathon/", "scripts/canonical-integration-repair-v0101/", "scripts/full-local-system-marathon/"],
+      "focused_command_id": "repeat_archive_hash_verifier",
+      "focused_command_text": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/verify.mts --contract src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json --repeat --no-write"
+    }
+  ],
+  "environment_policy": "FINAL_MATRIX_ALLOWLISTED_OFFLINE_LOCAL_ONLY",
+  "customer_data_allowed": false,
+  "remote_mutation_allowed": false,
+  "live_provider_calls_allowed": false
+}

@@ -18,7 +18,12 @@ import {
   type MigrationChainReceipt,
   type PinnedPostgresBinaries,
 } from "../foundation/index.mts";
-import { targetConnectionUrl } from "../orchestration/roles.mts";
+import {
+  configureRuntimeRoleSessions,
+  generateRuntimeRoleSecrets,
+  runtimeRoleConnectionUrls,
+  targetConnectionUrl,
+} from "../orchestration/roles.mts";
 import { runCanonicalCapabilityMatrix } from "./capabilities.mts";
 import { analysisCommand } from "./runtime.mts";
 
@@ -40,6 +45,9 @@ export type MigrationMatrixReceipt = Readonly<{
     terminal_history_immutability: true;
     canonical_capability_count: 14;
     canonical_capabilities_passed: 14;
+    capability_connection_class: "owned_admin_migration_rehearsal_with_verified_worker_runtime";
+    worker_runtime_principal: "tivdoc_worker_runtime";
+    worker_runtime_service_role_calls: 0;
   }>;
   failed_partial: Readonly<{
     status: "PASS";
@@ -60,7 +68,6 @@ export async function runRealMigrationMatrix(input: Readonly<{
   chain: MigrationChainReceipt;
   build_identity_sha: string;
   run_id: string;
-  service_role_password: string;
 }>): Promise<MigrationMatrixReceipt> {
   const upgrade = cloneTarget(input.owner_target, `upgrade_${input.run_id}`);
   const failure = cloneTarget(input.owner_target, `failure_${input.run_id}`);
@@ -80,15 +87,10 @@ export async function runRealMigrationMatrix(input: Readonly<{
     paths: upgradePaths,
     binaries: input.binaries,
   });
-  assertPlainPostgresFoundationInventory(upgradedInventory);
+  assertPlainPostgresFoundationInventory(upgradedInventory, { runtime_roles_login: false });
   const enrichment = await verifyUpgradeEnrichment(targetConnectionUrl(upgrade), seeded);
   const reachable = await proveUpgradedApplicationRoot({
-    connection_url: targetConnectionUrl(
-      upgrade,
-      upgrade.descriptor.database,
-      "service_role",
-      input.service_role_password,
-    ),
+    connection_url: targetConnectionUrl(upgrade),
     build_identity_sha: input.build_identity_sha,
     ...seeded,
   });
@@ -96,20 +98,30 @@ export async function runRealMigrationMatrix(input: Readonly<{
     targetConnectionUrl(upgrade),
     seeded.analysis_run_id,
   );
+  const upgradeRuntimeSecrets = generateRuntimeRoleSecrets();
+  await configureRuntimeRoleSessions({
+    admin_connection_url: targetConnectionUrl(upgrade),
+    secrets: upgradeRuntimeSecrets,
+  });
+  const upgradeRuntimeUrls = runtimeRoleConnectionUrls({
+    target: upgrade,
+    database: upgrade.descriptor.database,
+    secrets: upgradeRuntimeSecrets,
+  });
   const upgradedCapabilities = await runCanonicalCapabilityMatrix({
-    connection_url: targetConnectionUrl(
-      upgrade,
-      upgrade.descriptor.database,
-      "service_role",
-      input.service_role_password,
-    ),
+    connection_url: targetConnectionUrl(upgrade),
+    worker_runtime_connection_url: upgradeRuntimeUrls.tivdoc_worker_runtime,
+    worker_runtime_principal: "tivdoc_worker_runtime",
     build_identity_sha: input.build_identity_sha,
     fixture_suffix: input.run_id,
   });
   const capabilitiesPassed = upgradedCapabilities.matrix.filter((row) => row.status === "PASS").length;
   if (before.rows !== 3 || after.rows !== before.rows || after.sha256 !== before.sha256 || !reachable
     || !enrichment.analysis_run || !enrichment.document || !terminalHistoryImmutability
-    || upgradedCapabilities.matrix.length !== 14 || capabilitiesPassed !== 14) {
+    || upgradedCapabilities.matrix.length !== 14 || capabilitiesPassed !== 14
+    || upgradedCapabilities.worker_runtime_principal !== "tivdoc_worker_runtime"
+    || upgradedCapabilities.worker_runtime_verified_session !== true
+    || upgradedCapabilities.worker_runtime_service_role_calls !== 0) {
     throw new Error("POSTGRES_UPGRADE_RECONCILIATION_FAILED");
   }
 
@@ -131,7 +143,7 @@ export async function runRealMigrationMatrix(input: Readonly<{
     paths: failurePaths,
     binaries: input.binaries,
   });
-  assertPlainPostgresFoundationInventory(recoveredInventory);
+  assertPlainPostgresFoundationInventory(recoveredInventory, { runtime_roles_login: false });
 
   return Object.freeze({
     schema_version: "tivdoc-real-postgresql-migration-matrix-v0.9.1",
@@ -151,6 +163,9 @@ export async function runRealMigrationMatrix(input: Readonly<{
       terminal_history_immutability: true,
       canonical_capability_count: 14,
       canonical_capabilities_passed: 14,
+      capability_connection_class: "owned_admin_migration_rehearsal_with_verified_worker_runtime",
+      worker_runtime_principal: "tivdoc_worker_runtime",
+      worker_runtime_service_role_calls: 0,
     }),
     failed_partial: Object.freeze({
       status: "PASS",

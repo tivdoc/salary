@@ -25,6 +25,7 @@
 /output/canonical-postgresql-dynamic-v0.9.1/
 /output/full-local-system-marathon-v0.10.0/
 /output/canonical-integration-durability-repair-v0.10.1/
+/output/runtime-product-closure-v0.10.2/
 /.tools/postgresql/
 /.tmp/postgresql-dynamic-v0.9.1/
 

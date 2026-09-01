@@ -42,6 +42,11 @@ const WORKER_FUNCTIONS = new Set([
   "governance_rulespec_import", "governance_work_enqueue",
 ]);
 
+const CANONICAL_HELPERS = Object.freeze([
+  "canonical_text_uuid",
+  "resolve_engine_case_id",
+] as const);
+
 type RuntimeSecurityRole =
   | "anon"
   | "authenticated"
@@ -57,6 +62,19 @@ export type RuntimeSecurityMatrixReceipt = Readonly<{
   governance_security_definer_functions: 32;
   governance_exposed_functions: 21;
   helper_functions: 11;
+  canonical_helper_functions: 2;
+  canonical_helper_acl_rows: readonly Readonly<{
+    role: RuntimeSecurityRole;
+    function: (typeof CANONICAL_HELPERS)[number];
+    execute: boolean;
+    expected: boolean;
+    status: "PASS";
+  }>[];
+  canonical_helper_owner: "tivdoc_governance_owner";
+  canonical_helper_owner_login: false;
+  canonical_helper_owner_bypass_rls: false;
+  canonical_helper_security_invoker_functions: 2;
+  canonical_helper_safe_search_path_functions: 2;
   acl_rows: readonly Readonly<{
     role: RuntimeSecurityRole;
     function: (typeof EXPOSED_FUNCTIONS)[number];
@@ -126,7 +144,35 @@ export async function runRuntimeSecurityV0102Matrix(input: Readonly<{
     assert(catalog.rows.every((row) => row.security_definer && row.owner === "tivdoc_governance_owner"
       && row.config?.includes("search_path=\"\"") === true), "RUNTIME_SECURITY_FUNCTION_CONFIGURATION_INVALID");
 
+    const canonicalHelpers = await admin.query<{
+      function: (typeof CANONICAL_HELPERS)[number];
+      security_definer: boolean;
+      owner: string;
+      owner_login: boolean;
+      owner_bypass_rls: boolean;
+      config: readonly string[] | null;
+    }>(`
+      select procedure.proname as function,
+             procedure.prosecdef as security_definer,
+             owner.rolname as owner,
+             owner.rolcanlogin as owner_login,
+             owner.rolbypassrls as owner_bypass_rls,
+             procedure.proconfig as config
+      from pg_catalog.pg_proc procedure
+      join pg_catalog.pg_namespace namespace on namespace.oid = procedure.pronamespace
+      join pg_catalog.pg_roles owner on owner.oid = procedure.proowner
+      where namespace.nspname = 'private' and procedure.proname = any($1::text[])
+      order by procedure.proname`, [CANONICAL_HELPERS]);
+    assert(canonicalHelpers.rows.length === CANONICAL_HELPERS.length
+      && canonicalHelpers.rows.every((row) => !row.security_definer
+        && row.owner === "tivdoc_governance_owner"
+        && !row.owner_login
+        && !row.owner_bypass_rls
+        && row.config?.includes("search_path=\"\"") === true),
+    "RUNTIME_SECURITY_CANONICAL_HELPER_CONFIGURATION_INVALID");
+
     const aclRows: RuntimeSecurityMatrixReceipt["acl_rows"][number][] = [];
+    const canonicalHelperAclRows: RuntimeSecurityMatrixReceipt["canonical_helper_acl_rows"][number][] = [];
     for (const [role, connection] of Object.entries(connections) as [RuntimeSecurityRole, Pool][]) {
       const result = await connection.query<{ function: (typeof EXPOSED_FUNCTIONS)[number]; execute: boolean }>(`
         select procedure.proname as function,
@@ -141,6 +187,26 @@ export async function runRuntimeSecurityV0102Matrix(input: Readonly<{
           : role === "worker" ? WORKER_FUNCTIONS.has(row.function) : false;
         assert(row.execute === expected, `RUNTIME_SECURITY_ACL_INVALID:${role}:${row.function}`);
         aclRows.push(Object.freeze({ role, function: row.function, execute: row.execute, expected, status: "PASS" }));
+      }
+      const helpers = await connection.query<{
+        function: (typeof CANONICAL_HELPERS)[number];
+        execute: boolean;
+      }>(`
+        select procedure.proname as function,
+               pg_catalog.has_function_privilege(current_user, procedure.oid, 'EXECUTE') as execute
+        from pg_catalog.pg_proc procedure
+        join pg_catalog.pg_namespace namespace on namespace.oid = procedure.pronamespace
+        where namespace.nspname = 'private' and procedure.proname = any($1::text[])
+        order by procedure.proname`, [CANONICAL_HELPERS]);
+      assert(helpers.rows.length === CANONICAL_HELPERS.length,
+        `RUNTIME_SECURITY_CANONICAL_HELPER_ACL_DENOMINATOR_INVALID:${role}`);
+      for (const row of helpers.rows) {
+        const expected = role === "web" || role === "operations" || role === "worker";
+        assert(row.execute === expected,
+          `RUNTIME_SECURITY_CANONICAL_HELPER_ACL_INVALID:${role}:${row.function}`);
+        canonicalHelperAclRows.push(Object.freeze({
+          role, function: row.function, execute: row.execute, expected, status: "PASS",
+        }));
       }
     }
 
@@ -159,6 +225,13 @@ export async function runRuntimeSecurityV0102Matrix(input: Readonly<{
       governance_security_definer_functions: 32,
       governance_exposed_functions: 21,
       helper_functions: 11,
+      canonical_helper_functions: 2,
+      canonical_helper_acl_rows: Object.freeze(canonicalHelperAclRows),
+      canonical_helper_owner: "tivdoc_governance_owner",
+      canonical_helper_owner_login: false,
+      canonical_helper_owner_bypass_rls: false,
+      canonical_helper_security_invoker_functions: 2,
+      canonical_helper_safe_search_path_functions: 2,
       acl_rows: Object.freeze(aclRows),
       unsafe_or_unexplained_functions: 0,
       cross_tenant_read_successes: 0,

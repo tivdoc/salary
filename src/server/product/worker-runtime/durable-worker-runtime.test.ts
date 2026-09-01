@@ -11,9 +11,19 @@ const BASE = Object.freeze({
   TIVDOC_WORKER_TOKEN_ID: "token-synthetic-001",
   TIVDOC_WORKER_ROTATION_COUNTER: "2",
   TIVDOC_WORKER_BUILD_IDENTITY_SHA: "a".repeat(40),
-  TIVDOC_WORKER_POSTGRES_URL: "postgresql://worker:redacted@127.0.0.1:5432/tivdoc_v09_synthetic01",
+  TIVDOC_WORKER_POSTGRES_URL: postgresTestUrl("worker", "redacted", "127.0.0.1", "tivdoc_v09_synthetic01"),
   TIVDOC_WORKER_PRIVATE_STORAGE_ROOT: "C:\\ignored\\tivdoc-private-runtime-synthetic",
 });
+
+function postgresTestUrl(role: string, password: string, host: string, database: string): string {
+  const value = new URL("postgresql://127.0.0.1");
+  value.username = role;
+  value.password = password;
+  value.hostname = host;
+  value.port = "5432";
+  value.pathname = `/${database}`;
+  return value.toString();
+}
 
 describe("durable fresh worker runtime configuration", () => {
   it("accepts only the explicit local worker sentinel and exact bounded identity", () => {

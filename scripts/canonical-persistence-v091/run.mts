@@ -282,6 +282,15 @@ try {
     const runtimeSecurity = await runRuntimeSecurity();
     assert(runtimeSecurity.status === "PASS"
       && runtimeSecurity.governance_exposed_functions === 21
+      && runtimeSecurity.canonical_helper_functions === 2
+      && runtimeSecurity.canonical_helper_acl_rows.length === 16
+      && runtimeSecurity.canonical_helper_acl_rows.every((row) => row.status === "PASS"
+        && row.execute === row.expected)
+      && runtimeSecurity.canonical_helper_owner === "tivdoc_governance_owner"
+      && runtimeSecurity.canonical_helper_owner_login === false
+      && runtimeSecurity.canonical_helper_owner_bypass_rls === false
+      && runtimeSecurity.canonical_helper_security_invoker_functions === 2
+      && runtimeSecurity.canonical_helper_safe_search_path_functions === 2
       && runtimeSecurity.unsafe_or_unexplained_functions === 0,
     "DYNAMIC_RUNTIME_SECURITY_MATRIX_FAILED");
     const runtimeProductRepair = await runRuntimeProductRepairV0102Matrix({

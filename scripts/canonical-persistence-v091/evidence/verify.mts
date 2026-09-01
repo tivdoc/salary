@@ -53,6 +53,7 @@ const MIGRATIONS = Object.freeze([
   ["202609010007_global_dependency_invalidation.sql", "6d57e778a95d8e0988d4cf986a30577ec841847f189c225abdb29b9441eb45af"],
   ["202609010008_runtime_product_forward_repair.sql", "2271602fc133a4552d813278697138634b9ebb4327c941c3e373e2c99cbfacbe"],
   ["202609010009_governance_owner_schema_usage_repair.sql", "806480d5d6ff7a807bd7154909aab9711a613c25e0afe35651de2a1b77016ba9"],
+  ["202609010010_runtime_canonical_helper_acl_repair.sql", "4aaa964b7288d38fa209df3058d76bba67bdf9031d7067410c8fa6073b96e1c2"],
 ] as const);
 const CAPABILITIES = Object.freeze([
   ["cases_and_lifecycle_revisions", "intake.case_lifecycle"],
@@ -541,7 +542,10 @@ function verifyMigration(value: Obj, chain: Obj): void {
     && upgrade.application_root_reachable === true && upgrade.analysis_run_metadata_enrichment === true
     && upgrade.document_metadata_enrichment === true && upgrade.schema_inventory_reconciled === true
     && upgrade.terminal_history_immutability === true && upgrade.canonical_capability_count === 14
-    && upgrade.canonical_capabilities_passed === 14, "DYNAMIC_MIGRATION_UPGRADE_INVALID");
+    && upgrade.canonical_capabilities_passed === 14
+    && upgrade.capability_connection_class === "owned_admin_migration_rehearsal_with_verified_worker_runtime"
+    && upgrade.worker_runtime_principal === "tivdoc_worker_runtime"
+    && upgrade.worker_runtime_service_role_calls === 0, "DYNAMIC_MIGRATION_UPGRADE_INVALID");
   digest(upgrade.pre_upgrade_state_sha256, "DYNAMIC_MIGRATION_UPGRADE_HASH_INVALID");
   digest(upgrade.upgraded_inventory_sha256, "DYNAMIC_MIGRATION_UPGRADE_INVENTORY_INVALID");
   const failed = object(value.failed_partial, "DYNAMIC_MIGRATION_FAILURE_INVALID");
@@ -565,7 +569,10 @@ function verifyCapabilities(value: Obj, environment: Obj): void {
   });
   assert(value.idempotency_replay_verified === true && value.report_export_eligibility_verified === true
     && value.findings_persisted === 0 && value.customer_documents_used === 0
-    && value.real_legal_activations === 0, "DYNAMIC_CAPABILITY_SAFETY_INVALID");
+    && value.real_legal_activations === 0 && value.worker_runtime_principal === "tivdoc_worker_runtime"
+    && value.worker_runtime_verified_session === true && value.worker_runtime_service_role_calls === 0
+    && value.broad_application_scope === "LEGACY_CANONICAL_V091_MIGRATION_COMPATIBILITY",
+  "DYNAMIC_CAPABILITY_SAFETY_INVALID");
   const metrics = object(value.driver_metrics, "DYNAMIC_DRIVER_METRICS_INVALID");
   assert(metrics.driver === "node-postgres" && count(metrics.connection_attempts, "DYNAMIC_DRIVER_CONNECTIONS_INVALID") === metrics.acquisitions
     && count(metrics.queries, "DYNAMIC_DRIVER_QUERIES_INVALID") > 0 && metrics.releases === metrics.acquisitions
@@ -623,6 +630,12 @@ function verifyRuntimeSecurity(value: Obj): void {
   assert(value.schema_version === "tivdoc-governance-runtime-security-matrix-v0.10.2"
     && value.governance_security_definer_functions === 32
     && value.governance_exposed_functions === 21 && value.helper_functions === 11
+    && value.canonical_helper_functions === 2
+    && value.canonical_helper_owner === "tivdoc_governance_owner"
+    && value.canonical_helper_owner_login === false
+    && value.canonical_helper_owner_bypass_rls === false
+    && value.canonical_helper_security_invoker_functions === 2
+    && value.canonical_helper_safe_search_path_functions === 2
     && value.unsafe_or_unexplained_functions === 0
     && value.cross_tenant_read_successes === 0 && value.cross_tenant_write_successes === 0
     && value.cross_tenant_rpc_successes === 0 && value.revoked_session_acceptances === 0
@@ -636,6 +649,10 @@ function verifyRuntimeSecurity(value: Obj): void {
   const acl = objects(value.acl_rows, "DYNAMIC_RUNTIME_SECURITY_ACL_INVALID");
   assert(acl.length === 168 && acl.every((row) => row.status === "PASS"
     && row.execute === row.expected), "DYNAMIC_RUNTIME_SECURITY_ACL_INVALID");
+  const helpers = objects(value.canonical_helper_acl_rows,
+    "DYNAMIC_RUNTIME_SECURITY_CANONICAL_HELPER_ACL_INVALID");
+  assert(helpers.length === 16 && helpers.every((row) => row.status === "PASS"
+    && row.execute === row.expected), "DYNAMIC_RUNTIME_SECURITY_CANONICAL_HELPER_ACL_INVALID");
   safePass(value, "DYNAMIC_RUNTIME_SECURITY_INVALID");
 }
 

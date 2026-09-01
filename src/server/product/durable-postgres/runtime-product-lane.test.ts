@@ -107,7 +107,7 @@ describe("V0.10.2 durable worker/storage/timeline registrar", () => {
     expect(source).toContain("role.rolbypassrls as bypasses_rls");
     expect(source).toContain("timingSafeEqual(actual, expected)");
     expect(source).toContain("input.ttl_seconds > 300");
-    expect(source).toContain("subject = nullif(current_setting('tivdoc.actor_id', true), '')");
+    expect(source).toContain("private.product_owner_lookup($1, $2, $3)");
     expect(source).toContain("currentCanonicalIdentity");
     expect(source).toContain("for update skip locked");
   });
@@ -137,6 +137,15 @@ describe("V0.10.2 durable worker/storage/timeline registrar", () => {
       storage,
       download_grant_hmac_key: key,
     }).proof()).toMatchObject({ database_principal: "tivdoc_web_runtime" });
+  });
+
+  it("routes web owner proof through the scoped owner RPC without widening table reads", async () => {
+    const source = await readFile(new URL("./runtime-product-lane.ts", import.meta.url), "utf8");
+    const ownerQuery = /const CURRENT_OWNER = `([\s\S]*?)`;/u.exec(source)?.[1] ?? "";
+    expect(ownerQuery).toContain("private.product_owner_lookup($1, $2, $3)");
+    expect(ownerQuery).toContain("tenant_id, canonical_case_id, subject, revision::text, binding_sha256");
+    expect(ownerQuery).not.toContain("public.product_case_owners");
+    expect(source).toContain("stringValue(row.subject) !== actorId");
   });
 
   it("binds worker authority through verified transactions without exposing session credentials", () => {

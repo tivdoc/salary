@@ -165,7 +165,13 @@
     "marathon:v0101:evidence:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/verify.mts",
     "marathon:v0101:finalize": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/finalize.mts",
     "marathon:v0101:assess": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/assess.mts",
-    "marathon:v0101:record": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/record.mts"
+    "marathon:v0101:record": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/record.mts",
+    "marathon:v0102:finalize": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/finalize.mts --contract src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json",
+    "marathon:v0102:record": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/record.mts --contract src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json",
+    "marathon:v0102:assess": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/assess.mts --contract src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json",
+    "marathon:v0102:evidence:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/build.mts --contract src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json",
+    "marathon:v0102:evidence:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/verify.mts --contract src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json",
+    "marathon:v0102:evidence:verify-repeat": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/verify.mts --contract src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json --repeat --no-write"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

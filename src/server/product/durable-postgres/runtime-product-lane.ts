@@ -398,13 +398,8 @@ where report.tenant_id = $1
 limit 1`;
 
 const CURRENT_OWNER = `
-select revision::text, binding_sha256
-from public.product_case_owners
-where tenant_id = $1 and canonical_case_id = $2 and subject = $3
-  and status = 'active' and revoked_at is null
-  and tenant_id = nullif(current_setting('tivdoc.tenant_id', true), '')
-  and subject = nullif(current_setting('tivdoc.actor_id', true), '')
-limit 1`;
+select tenant_id, canonical_case_id, subject, revision::text, binding_sha256
+from private.product_owner_lookup($1, $2, $3)`;
 
 const JOB_READ = `
 select job_id, tenant_id, canonical_case_id as case_id, job_kind, idempotency_key,
@@ -1578,7 +1573,10 @@ async function requireCurrentOwner(
     CURRENT_OWNER,
     [identity.tenant_id, identity.case_id, actorId],
   )), "RUNTIME_PRODUCT_DOWNLOAD_NOT_FOUND");
-  if (positiveInteger(row.revision) !== identity.owner_binding_revision
+  if (stringValue(row.tenant_id) !== identity.tenant_id
+    || stringValue(row.canonical_case_id) !== identity.case_id
+    || stringValue(row.subject) !== actorId
+    || positiveInteger(row.revision) !== identity.owner_binding_revision
     || hashValue(row.binding_sha256) !== identity.owner_binding_sha256) {
     throw new Error("RUNTIME_PRODUCT_DOWNLOAD_NOT_FOUND");
   }

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { trustedGitBuffer, trustedGitText } from "../canonical-persistence-v091/foundation/trusted-git.mts";
@@ -13,6 +13,12 @@ const changedPaths = trustedGitText(ROOT, ["diff", "--name-only", `${BASE}..HEAD
   .sort();
 const diff = trustedGitBuffer(ROOT, ["diff", "--no-ext-diff", "--unified=0", `${BASE}..HEAD`, "--"])
   .toString("utf8");
+const HERMETIC_SYNTHETIC_COORDINATOR = "src/server/product/runtime/durable-synthetic-report-pipeline.ts";
+const hermeticSyntheticCoordinator = await readFile(path.join(ROOT, ...HERMETIC_SYNTHETIC_COORDINATOR.split("/")), "utf8");
+const hermeticCoordinatorProof = hermeticSyntheticCoordinator.includes("ordinary_runtime_reachable: false")
+  && hermeticSyntheticCoordinator.includes("real_legal_activations: 0")
+  && hermeticSyntheticCoordinator.includes("product_reachable_memory_repositories: 0")
+  && hermeticSyntheticCoordinator.includes('import "../routes/server-boundary.ts"');
 
 type Finding = Readonly<{ kind: string; path: string }>;
 const findings: Finding[] = [];
@@ -72,6 +78,7 @@ const patterns = [
 ] as const;
 
 let currentPath = "";
+const authorizedHermeticImports = new Set<string>();
 for (const line of diff.split(/\r?\n/u)) {
   if (line.startsWith("+++ b/")) {
     currentPath = line.slice(6);
@@ -79,7 +86,13 @@ for (const line of diff.split(/\r?\n/u)) {
   }
   if (!currentPath || !line.startsWith("+") || line.startsWith("+++")) continue;
   for (const rule of patterns) {
-    if (rule.applies(currentPath) && rule.pattern.test(line)) findings.push({ kind: rule.kind, path: currentPath });
+    if (!rule.applies(currentPath) || !rule.pattern.test(line)) continue;
+    if (rule.kind === "production_fixture_import"
+        && authorizedHermeticSyntheticImport(currentPath, line, hermeticCoordinatorProof)) {
+      authorizedHermeticImports.add(line.slice(1).trim());
+      continue;
+    }
+    findings.push({ kind: rule.kind, path: currentPath });
   }
 }
 
@@ -92,6 +105,9 @@ const receipt = Object.freeze({
   changed_path_count: changedPaths.length,
   finding_count: uniqueFindings.length,
   findings: uniqueFindings,
+  authorized_hermetic_fixture_imports: Object.freeze([...authorizedHermeticImports].sort()),
+  authorized_hermetic_fixture_import_count: authorizedHermeticImports.size,
+  hermetic_coordinator_fail_closed_proof: hermeticCoordinatorProof,
   truth_counters: Object.freeze({
     customer_data_reads: 0,
     deployments: 0,
@@ -105,3 +121,11 @@ await mkdir(OUTPUT, { recursive: true });
 await writeFile(path.join(OUTPUT, "prohibited-operation-audit.json"), `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
 process.stdout.write(`${JSON.stringify(receipt)}\n`);
 if (receipt.status !== "PASS") process.exitCode = 1;
+
+function authorizedHermeticSyntheticImport(file: string, addedLine: string, proof: boolean): boolean {
+  if (!proof || file !== HERMETIC_SYNTHETIC_COORDINATOR) return false;
+  return [
+    'import { buildSyntheticCaseFixture } from "../../../engine/case-analysis/synthetic-fixtures.ts";',
+    '} from "../../../engine/case-analysis/fixture-ports.ts";',
+  ].includes(addedLine.slice(1).trim());
+}

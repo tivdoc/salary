@@ -261,7 +261,7 @@ describe("durable InternalOps PostgreSQL application", () => {
       sentinel: DURABLE_LOCAL_PRODUCT_RUNTIME_SENTINEL,
       config: Object.freeze({ ...localConfig(), connection_urls: Object.freeze({
         ...localConfig().connection_urls,
-        operations: "postgresql://tivdoc_operations_runtime:secret@192.0.2.1:5432/tivdoc_v09_runtime01",
+        operations: postgresTestUrl("tivdoc_operations_runtime", "secret", "192.0.2.1", "tivdoc_v09_runtime01"),
       }) }),
     })).toThrow("DURABLE_INTERNAL_OPS_LOCAL_RUNTIME_CLASS_INVALID");
     expect(() => createDurableInternalOpsLocalRuntimeClass({
@@ -518,10 +518,10 @@ function localConfig(): DurableLocalProductRuntimeConfig {
       max_token_lifetime_seconds: 900,
     }),
     connection_urls: Object.freeze({
-      identity: `postgresql://tivdoc_identity_runtime:secret@127.0.0.1:5432/${database}`,
-      web: `postgresql://tivdoc_web_runtime:secret@127.0.0.1:5432/${database}`,
-      operations: `postgresql://tivdoc_operations_runtime:secret@127.0.0.1:5432/${database}`,
-      worker: `postgresql://tivdoc_worker_runtime:secret@127.0.0.1:5432/${database}`,
+      identity: postgresTestUrl("tivdoc_identity_runtime", "secret", "127.0.0.1", database),
+      web: postgresTestUrl("tivdoc_web_runtime", "secret", "127.0.0.1", database),
+      operations: postgresTestUrl("tivdoc_operations_runtime", "secret", "127.0.0.1", database),
+      worker: postgresTestUrl("tivdoc_worker_runtime", "secret", "127.0.0.1", database),
     }),
     private_storage_root: "C:\\ignored\\durable-ops-private",
     download_grant_hmac_key: new Uint8Array(32).fill(7),
@@ -533,6 +533,16 @@ function localConfig(): DurableLocalProductRuntimeConfig {
       rotation_counter: 1,
     }),
   });
+}
+
+function postgresTestUrl(role: string, password: string, host: string, database: string): string {
+  const value = new URL("postgresql://127.0.0.1");
+  value.username = role;
+  value.password = password;
+  value.hostname = host;
+  value.port = "5432";
+  value.pathname = `/${database}`;
+  return value.toString();
 }
 
 function actor(role: V07Role): VerifiedActor {

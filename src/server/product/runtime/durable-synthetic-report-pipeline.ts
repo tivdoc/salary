@@ -487,10 +487,15 @@ function exactCaseFixture(
     mode: "synthetic_test",
     idempotency_key: `analysis:${seed.slice(0, 48)}`,
   });
-  const documents = Object.freeze(fixture.stored.documents.map((document) => Object.freeze({
-    ...document,
-    case_id: input.case_id,
-  })));
+  const documents = Object.freeze(fixture.stored.documents.map((document) => {
+    const originalObject = /\/(original\.[A-Za-z0-9]{1,16})$/u.exec(document.storage_path)?.[1];
+    if (!originalObject) throw new Error("DURABLE_SYNTHETIC_DOCUMENT_STORAGE_PATH_INVALID");
+    return Object.freeze({
+      ...document,
+      case_id: input.case_id,
+      storage_path: `cases/${input.case_id}/documents/${document.document_id}/${originalObject}`,
+    });
+  }));
   const declaredFacts = Object.freeze(fixture.stored.declared_fact_snapshot.facts.map((fact) => Object.freeze({
     ...fact,
     case_id: input.case_id,
