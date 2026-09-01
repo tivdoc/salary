@@ -177,7 +177,7 @@
     {
       "id": "MC-33",
       "status": "PASS",
-      "evidence": "Worker lanes used only affected tests/typecheck/security negatives; integration used focused matrices; the final immutable attempt ledger records the single release-grade verification run."
+      "evidence": "Worker lanes used only affected tests/typecheck/security negatives; integration used focused matrices; the immutable attempt ledger preserves the failed first final run and the one permitted complete repair rerun."
     },
     {
       "id": "MC-34",
@@ -233,9 +233,9 @@
     "LIVE_PROVIDER_CALLS": 0,
     "OPENAI_CALLS": 0,
     "PRODUCT_REACHABLE_MEMORY_FALLBACKS": 0,
-    "FULL_SUITE_RUN_COUNT": 1,
-    "PRODUCTION_BUILD_RUN_COUNT": 1,
-    "BROWSER_E2E_FULL_RUN_COUNT": 1
+    "FULL_SUITE_RUN_COUNT": 2,
+    "PRODUCTION_BUILD_RUN_COUNT": 2,
+    "BROWSER_E2E_FULL_RUN_COUNT": 2
   },
   "wave_receipts": [
     {
@@ -312,7 +312,8 @@
     { "check_id": "FC-007", "lane": "PostgreSQL", "scope": "Signed runtime foundation smoke with current migration chain", "test_count": 1, "status": "PASS" },
     { "check_id": "FC-008", "lane": "PostgreSQL", "scope": "V0.10 matrix deterministic contract", "test_count": 3, "status": "PASS" },
     { "check_id": "FC-009", "lane": "Integration", "scope": "TypeScript noEmit and scoped ESLint after every trust-boundary integration", "test_count": 2, "status": "PASS" },
-    { "check_id": "FC-010", "lane": "PostgreSQL hardening", "scope": "Cross-platform migration-byte verification and durable identity/report/privacy integrity", "test_count": 50, "status": "PASS" }
+    { "check_id": "FC-010", "lane": "PostgreSQL hardening", "scope": "Cross-platform migration-byte verification and durable identity/report/privacy integrity", "test_count": 50, "status": "PASS" },
+    { "check_id": "FC-011", "lane": "Final repair", "scope": "Attempt-01 closure assertions, contention budgets, exact PDF-bound RLS seed and authenticated hermetic browser runtime", "test_count": 44, "status": "PASS" }
   ],
   "commit_checks": [
     { "commit_subject": "feat(platform): add fail-closed Supabase harness", "checks": ["FC-001"], "status": "PASS" },
@@ -328,6 +329,11 @@
     { "commit_subject": "feat(postgres): integrate V0.10 restart matrix", "checks": ["FC-008", "FC-009"], "status": "PASS" },
     { "commit_subject": "fix(marathon): bind current PostgreSQL matrix evidence", "checks": ["FC-006", "FC-008"], "status": "PASS" },
     { "commit_subject": "fix(postgres): harden durable product integrity", "checks": ["FC-002", "FC-010"], "status": "PASS" },
-    { "commit_subject": "fix(postgres): verify cross-platform migration bytes", "checks": ["FC-007", "FC-010"], "status": "PASS" }
+    { "commit_subject": "fix(postgres): verify cross-platform migration bytes", "checks": ["FC-007", "FC-010"], "status": "PASS" },
+    { "commit_subject": "test(marathon): repair final verification failures", "checks": ["FC-006", "FC-011"], "status": "PASS" },
+    { "commit_subject": "fix(postgres): align RLS report seed with canonical PDF", "checks": ["FC-010", "FC-011"], "status": "PASS" },
+    { "commit_subject": "fix(marathon): serialize final verification workers", "checks": ["FC-011"], "status": "PASS" },
+    { "commit_subject": "fix(marathon): authenticate hermetic browser routes", "checks": ["FC-011"], "status": "PASS" },
+    { "commit_subject": "fix(marathon): terminate browser process tree", "checks": ["FC-011"], "status": "PASS" }
   ]
 }
