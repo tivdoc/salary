@@ -10,6 +10,49 @@ export const V0101_HEADLINES = Object.freeze([
 export const V0101_RESULT_STATUSES = Object.freeze(["PASS", "FAIL", "BLOCKED"] as const);
 export type V0101ResultStatus = (typeof V0101_RESULT_STATUSES)[number];
 
+export const RUNTIME_PRODUCT_CLOSURE_HEADLINES = Object.freeze([
+  "V0102_LOCAL_ENGINEERING_CLOSURE_COMPLETE_EXTERNAL_AND_HUMAN_GATES_REMAIN",
+  "V0102_LOCAL_ENGINEERING_CLOSURE_PARTIAL",
+  "BLOCKED_SAFETY_OR_REPOSITORY_STATE",
+] as const);
+export const RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS = Object.freeze([
+  "focused_v0102_acceptance",
+  "full_suite",
+  "eslint",
+  "typescript",
+  "production_build",
+  "postgresql_full_regression",
+  "browser_durable_product_e2e",
+  "security_limits_negative_matrix",
+  "reachability_wiring_capability_audit",
+  "evidence_build",
+  "detached_verifier",
+  "repeat_archive_hash_verifier",
+] as const);
+export const RUNTIME_PRODUCT_CLOSURE_SELF_REFERENCE_BASENAMES = Object.freeze([
+  "manifest.json",
+  "tivdoc-runtime-product-closure-v0.10.2-evidence.zip",
+  "tivdoc-runtime-product-closure-v0.10.2-evidence.zip.sha256",
+  "detached-verifier-output.json",
+  "final-verification.json",
+  "final-command-journal.ndjson",
+] as const);
+
+export type IntegrationEvidenceProfile = Readonly<{
+  contract_schema_version: string;
+  branch: string;
+  base_head: string;
+  base_tree: string;
+  final_output_root: string;
+  mc_ids: readonly string[];
+  ir_ids: readonly string[];
+  cr_ids: readonly string[];
+  closure_map: Readonly<Record<string, readonly string[]>>;
+  final_command_ids: readonly string[];
+  external_blocked_pairs: Readonly<Record<string, string>>;
+  truth_baseline: Readonly<Record<string, unknown>>;
+}>;
+
 export type V0101EvidenceEntry = Readonly<{
   path: string;
   sha256: string;
@@ -18,6 +61,38 @@ export type V0101EvidenceEntry = Readonly<{
 
 const SHA256 = /^[a-f0-9]{64}$/u;
 const GIT_OBJECT_ID = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
+const RUNTIME_PRODUCT_CLOSURE_CONTRACT_SCHEMA = "tivdoc-runtime-product-closure-contract-v0.10.2";
+const RUNTIME_PRODUCT_CLOSURE_ASSESSMENT_SCHEMA =
+  "tivdoc-canonical-integration-durability-repair-assessment-v0.10.2";
+const RUNTIME_PRODUCT_CLOSURE_FINAL_VERIFICATION_SCHEMA =
+  "tivdoc-canonical-integration-durability-repair-final-verification-v0.10.2";
+const RUNTIME_PRODUCT_CLOSURE_OUTPUT = "output/runtime-product-closure-v0.10.2/final";
+const RUNTIME_PRODUCT_EXTERNAL_BLOCKED_PAIRS = Object.freeze({
+  "MC-03": "IR-22",
+  "MC-10": "IR-23",
+  "MC-27": "IR-24",
+} as const);
+const RUNTIME_PRODUCT_TRUTH_BASELINE = Object.freeze({
+  REAL_LEGAL_TOPICS_READY: "0/7",
+  REAL_SOURCES_ACTIVE: 0,
+  REAL_PARAMETERS_ACTIVE: 0,
+  REAL_RULES_ACTIVE: 0,
+  REAL_CALCULATIONS_OR_FINDINGS: 0,
+  HUMAN_GROUND_TRUTH_LOCKED: 0,
+  GENERATED_HUMAN_DECISIONS: 0,
+  GENERATED_HUMAN_SIGNATURES: 0,
+  MANUFACTURED_HUMAN_EVIDENCE: 0,
+  REAL_ACTIVATIONS: 0,
+  REAL_CUSTOMER_DATA_READS: 0,
+  CUSTOMER_PROCESSING_ENABLED: "NO",
+  CUSTOMER_SHADOW_AUTHORIZED: "NO",
+  PRODUCTION_DELIVERY_ENABLED: "NO",
+  DEPLOYMENTS: 0,
+  REMOTE_MIGRATIONS: 0,
+  LIVE_PROVIDER_CALLS: 0,
+  OPENAI_CALLS: 0,
+  PRODUCT_REACHABLE_MEMORY_FALLBACKS: 0,
+} as const);
 const REQUIRED_ZERO_COUNTERS = Object.freeze([
   "REAL_SOURCES_ACTIVE",
   "REAL_PARAMETERS_ACTIVE",
@@ -121,6 +196,178 @@ export function canonicalPayloadSetHash(entries: readonly V0101EvidenceEntry[]):
   }
   const payload = sorted.map((entry) => `${entry.path}\0${entry.sha256}\0${entry.byte_count}\n`).join("");
   return createHash("sha256").update(payload, "utf8").digest("hex");
+}
+
+export function parseIntegrationEvidenceProfile(value: unknown): IntegrationEvidenceProfile {
+  const contract = record(value, "INTEGRATION_EVIDENCE_CONTRACT_MALFORMED");
+  if (contract.schema_version !== RUNTIME_PRODUCT_CLOSURE_CONTRACT_SCHEMA || contract.frozen !== true) {
+    throw new Error("INTEGRATION_EVIDENCE_CONTRACT_IDENTITY_INVALID");
+  }
+  const base = record(contract.base, "INTEGRATION_EVIDENCE_CONTRACT_BASE_INVALID");
+  if (base.branch !== "codex/tivdoc-engine-foundation" || !GIT_OBJECT_ID.test(String(base.head))
+      || !GIT_OBJECT_ID.test(String(base.tree)) || base.ancestry_required !== true || base.clean_required !== true) {
+    throw new Error("INTEGRATION_EVIDENCE_CONTRACT_BASE_INVALID");
+  }
+  if (contract.final_output_root !== RUNTIME_PRODUCT_CLOSURE_OUTPUT) {
+    throw new Error("INTEGRATION_EVIDENCE_OUTPUT_ROOT_INVALID");
+  }
+  assertPortableEvidencePath(String(contract.final_output_root));
+
+  const mcIds = exactRequirementIds(contract.acceptance_requirements, "MC", 39);
+  const irIds = exactRequirementIds(contract.integration_requirements, "IR", 27);
+  const crIds = exactIds("CR", 22);
+  const validDependencies = new Set([...mcIds, ...irIds, "GOVERNANCE_FUNCTION_ACL_RLS_SECURITY"]);
+  const rawClosure = record(contract.closure_map, "INTEGRATION_EVIDENCE_CLOSURE_MAP_INVALID");
+  if (JSON.stringify(Object.keys(rawClosure)) !== JSON.stringify(crIds)) {
+    throw new Error("INTEGRATION_EVIDENCE_CLOSURE_MAP_INVALID");
+  }
+  const closureMap: Record<string, readonly string[]> = {};
+  for (const id of crIds) {
+    const dependencies = array(rawClosure[id], "INTEGRATION_EVIDENCE_CLOSURE_MAP_INVALID");
+    if (dependencies.length < 1 || dependencies.some((entry) => typeof entry !== "string"
+        || !validDependencies.has(entry)) || new Set(dependencies).size !== dependencies.length) {
+      throw new Error(`INTEGRATION_EVIDENCE_CLOSURE_MAP_INVALID:${id}`);
+    }
+    if ((id === "CR-22") !== (dependencies.length === 1
+        && dependencies[0] === "GOVERNANCE_FUNCTION_ACL_RLS_SECURITY")) {
+      throw new Error(`INTEGRATION_EVIDENCE_CLOSURE_MAP_INVALID:${id}`);
+    }
+    closureMap[id] = Object.freeze(dependencies.map(String));
+  }
+
+  const finalCommandIds = array(contract.final_command_ids, "INTEGRATION_EVIDENCE_COMMAND_SET_INVALID");
+  if (JSON.stringify(finalCommandIds) !== JSON.stringify(RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS)) {
+    throw new Error("INTEGRATION_EVIDENCE_COMMAND_SET_INVALID");
+  }
+  const externalBlockedPairs = record(contract.external_blocked_pairs,
+    "INTEGRATION_EVIDENCE_EXTERNAL_BLOCKERS_INVALID");
+  if (JSON.stringify(externalBlockedPairs) !== JSON.stringify(RUNTIME_PRODUCT_EXTERNAL_BLOCKED_PAIRS)) {
+    throw new Error("INTEGRATION_EVIDENCE_EXTERNAL_BLOCKERS_INVALID");
+  }
+  const truthBaseline = record(contract.truth_baseline, "INTEGRATION_EVIDENCE_TRUTH_BASELINE_INVALID");
+  if (JSON.stringify(truthBaseline) !== JSON.stringify(RUNTIME_PRODUCT_TRUTH_BASELINE)) {
+    throw new Error("INTEGRATION_EVIDENCE_TRUTH_BASELINE_INVALID");
+  }
+
+  return Object.freeze({
+    contract_schema_version: RUNTIME_PRODUCT_CLOSURE_CONTRACT_SCHEMA,
+    branch: String(base.branch),
+    base_head: String(base.head),
+    base_tree: String(base.tree),
+    final_output_root: RUNTIME_PRODUCT_CLOSURE_OUTPUT,
+    mc_ids: Object.freeze(mcIds),
+    ir_ids: Object.freeze(irIds),
+    cr_ids: Object.freeze(crIds),
+    closure_map: Object.freeze(closureMap),
+    final_command_ids: Object.freeze(finalCommandIds.map(String)),
+    external_blocked_pairs: Object.freeze({ ...RUNTIME_PRODUCT_EXTERNAL_BLOCKED_PAIRS }),
+    truth_baseline: Object.freeze({ ...truthBaseline }),
+  });
+}
+
+export function assertEvidenceSelfReferenceAbsent(
+  paths: readonly string[],
+  excludedBasenames: readonly string[] = RUNTIME_PRODUCT_CLOSURE_SELF_REFERENCE_BASENAMES,
+): void {
+  const excluded = new Set(excludedBasenames.map((entry) => entry.toLowerCase()));
+  const seen = new Set<string>();
+  for (const entry of paths) {
+    assertPortableEvidencePath(entry);
+    const folded = entry.toLowerCase();
+    if (seen.has(folded)) throw new Error("INTEGRATION_EVIDENCE_PATH_DUPLICATE");
+    seen.add(folded);
+    if (excluded.has(path.posix.basename(entry).toLowerCase()) || folded.startsWith("outer-matrix/")) {
+      throw new Error(`INTEGRATION_EVIDENCE_SELF_REFERENCE:${entry}`);
+    }
+  }
+}
+
+export function validateRuntimeProductClosureAssessment(
+  profile: IntegrationEvidenceProfile,
+  value: unknown,
+): void {
+  runtimeAssessment(profile, value);
+}
+
+export function validateRuntimeProductClosureAssessmentAgainstReceipts(
+  profile: IntegrationEvidenceProfile,
+  assessmentValue: unknown,
+  finalVerificationValue: unknown,
+): void {
+  const parsed = runtimeAssessment(profile, assessmentValue);
+  const assessment = parsed.assessment;
+  const verification = record(finalVerificationValue, "INTEGRATION_EVIDENCE_FINAL_VERIFICATION_MALFORMED");
+  if (verification.schema_version !== RUNTIME_PRODUCT_CLOSURE_FINAL_VERIFICATION_SCHEMA
+      || verification.contract_schema_version !== profile.contract_schema_version
+      || verification.verified_branch !== profile.branch
+      || verification.verified_head !== assessment.verified_head
+      || verification.verified_tree !== assessment.verified_tree
+      || verification.exact_once !== true
+      || verification.working_preflight !== "FRESH_DIRECTORY_CREATED_BEFORE_FIRST_COMMAND"
+      || verification.journal_log !== "outer-matrix/final-command-journal.ndjson"
+      || !SHA256.test(String(verification.journal_sha256))
+      || !positiveInteger(verification.journal_byte_count)) {
+    throw new Error("INTEGRATION_EVIDENCE_FINAL_VERIFICATION_IDENTITY_INVALID");
+  }
+  if (JSON.stringify(verification.execution_order) !== JSON.stringify(profile.final_command_ids)) {
+    throw new Error("INTEGRATION_EVIDENCE_COMMAND_SET_INVALID");
+  }
+  const rawCommands = array(verification.commands, "INTEGRATION_EVIDENCE_COMMAND_SET_INVALID");
+  if (rawCommands.length !== profile.final_command_ids.length || verification.command_count !== rawCommands.length) {
+    throw new Error("INTEGRATION_EVIDENCE_COMMAND_SET_INVALID");
+  }
+  const commands = rawCommands.map((entry, index) => validateFinalCommandReceipt(
+    entry,
+    profile.final_command_ids[index]!,
+    index + 1,
+    String(assessment.verified_head),
+    String(assessment.verified_tree),
+  ));
+  const allPass = commands.every((command) => command.status === "PASS");
+  if (verification.status !== (allPass ? "PASS" : "FAIL")) {
+    throw new Error("INTEGRATION_EVIDENCE_FINAL_STATUS_CONTRADICTION");
+  }
+
+  const resultMap = new Map([...parsed.mc, ...parsed.ir, ...parsed.cr].map((entry) => [entry.id, entry]));
+  const command = (id: string) => commands.find((entry) => entry.command_id === id)!;
+  const assertNonPass = (commandId: string, ids: readonly string[]) => {
+    if (command(commandId).status === "PASS") return;
+    for (const id of ids) {
+      if (resultMap.get(id)?.status === "PASS") {
+        throw new Error(`INTEGRATION_EVIDENCE_COMMAND_FAILURE_FALSE_PASS:${commandId}:${id}`);
+      }
+    }
+  };
+  for (const commandId of ["focused_v0102_acceptance", "full_suite", "eslint", "typescript", "production_build"] as const) {
+    assertNonPass(commandId, ["MC-34", "IR-25", "CR-01"]);
+  }
+  assertNonPass("postgresql_full_regression", ["MC-08", "MC-11", "MC-34", "IR-03", "IR-08", "IR-20", "IR-25", "CR-03"]);
+  assertNonPass("browser_durable_product_e2e", ["MC-04", "MC-05", "MC-06", "MC-07", "MC-08", "MC-34",
+    "IR-02", "IR-04", "IR-05", "IR-06", "IR-07", "IR-08", "IR-21", "IR-25", "CR-02", "CR-04", "CR-05", "CR-06"]);
+  assertNonPass("security_limits_negative_matrix", ["MC-34", "MC-39", "IR-18", "IR-21", "IR-25", "CR-17", "CR-18"]);
+  assertNonPass("reachability_wiring_capability_audit", ["MC-02", "MC-09", "MC-29", "MC-34", "MC-39",
+    "IR-17", "IR-18", "IR-19", "IR-25", "CR-16", "CR-17", "CR-19"]);
+  for (const commandId of ["evidence_build", "detached_verifier", "repeat_archive_hash_verifier"] as const) {
+    assertNonPass(commandId, ["MC-35", "IR-26", "CR-21"]);
+  }
+
+  const truth = parsed.truth;
+  const proofStatus = (id: string) => command(id).status;
+  if (truth.TYPESCRIPT !== proofStatus("typescript")
+      || truth.PRODUCTION_BUILD !== proofStatus("production_build")
+      || truth.REAL_POSTGRESQL_CURRENT_HEAD_PROOF !== proofStatus("postgresql_full_regression")
+      || truth.REAL_BROWSER_DURABLE_PRODUCT_PATH !== proofStatus("browser_durable_product_e2e")) {
+    throw new Error("INTEGRATION_EVIDENCE_RUNTIME_TRUTH_CONTRADICTION");
+  }
+  const assessmentRunCounts = record(assessment.run_counts, "INTEGRATION_EVIDENCE_RUN_COUNTS_INVALID");
+  const verificationRunCounts = record(verification.run_counts, "INTEGRATION_EVIDENCE_RUN_COUNTS_INVALID");
+  for (const name of V0101_RUN_COUNT_NAMES) {
+    const count = verificationRunCounts[name];
+    if (!Number.isSafeInteger(count) || (count as number) < 1 || (count as number) > 2
+        || assessmentRunCounts[name] !== count || truth[name] !== count) {
+      throw new Error(`INTEGRATION_EVIDENCE_RUN_COUNT_CONTRADICTION:${name}`);
+    }
+  }
 }
 
 export function parseOrderedIntegrationLedger(raw: string): readonly Readonly<Record<string, unknown>>[] {
@@ -442,6 +689,288 @@ function validateExternalGates(
       || truth.LIVE_PROVIDER_CALLS !== external.live_provider_calls || truth.OPENAI_CALLS !== external.openai_calls) {
     throw new Error("V0101_EXTERNAL_TRUTH_CONTRADICTION");
   }
+}
+
+type RuntimeClosureResult = Readonly<{
+  id: string;
+  status: V0101ResultStatus;
+  evidence: readonly string[];
+  reason?: string;
+}>;
+
+type ParsedRuntimeAssessment = Readonly<{
+  assessment: Record<string, unknown>;
+  mc: readonly RuntimeClosureResult[];
+  ir: readonly RuntimeClosureResult[];
+  cr: readonly RuntimeClosureResult[];
+  truth: Record<string, unknown>;
+}>;
+
+function runtimeAssessment(profile: IntegrationEvidenceProfile, value: unknown): ParsedRuntimeAssessment {
+  const assessment = record(value, "INTEGRATION_EVIDENCE_ASSESSMENT_MALFORMED");
+  if (assessment.schema_version !== RUNTIME_PRODUCT_CLOSURE_ASSESSMENT_SCHEMA
+      || assessment.contract_schema_version !== profile.contract_schema_version
+      || !(RUNTIME_PRODUCT_CLOSURE_HEADLINES as readonly unknown[]).includes(assessment.headline)
+      || !GIT_OBJECT_ID.test(String(assessment.verified_head))
+      || !GIT_OBJECT_ID.test(String(assessment.verified_tree))
+      || assessment.matrix_head !== assessment.verified_head
+      || assessment.matrix_tree !== assessment.verified_tree
+      || assessment.post_matrix_evidence_only_repair !== null) {
+    throw new Error("INTEGRATION_EVIDENCE_ASSESSMENT_IDENTITY_INVALID");
+  }
+  const mc = exactRuntimeResults(assessment.mc_results, "MC", profile.mc_ids);
+  const ir = exactRuntimeResults(assessment.ir_results, "IR", profile.ir_ids);
+  const cr = exactRuntimeResults(assessment.cr_results, "CR", profile.cr_ids);
+  const permittedBlocked = new Set([
+    ...Object.keys(profile.external_blocked_pairs),
+    ...Object.values(profile.external_blocked_pairs),
+  ]);
+  for (const item of [...mc, ...ir]) {
+    if (permittedBlocked.has(item.id)) {
+      if (item.status !== "BLOCKED") throw new Error(`INTEGRATION_EVIDENCE_EXTERNAL_GATE_FALSE_PASS:${item.id}`);
+    } else if (item.status === "BLOCKED") {
+      throw new Error(`INTEGRATION_EVIDENCE_BLOCKED_ID_INVALID:${item.id}`);
+    }
+  }
+
+  const truth = record(assessment.truth, "INTEGRATION_EVIDENCE_TRUTH_INVALID");
+  for (const [name, expected] of Object.entries(profile.truth_baseline)) {
+    if (truth[name] !== expected) throw new Error(`INTEGRATION_EVIDENCE_TRUTH_BASELINE_CONTRADICTION:${name}`);
+  }
+  const coreMc = mc.filter((item) => !permittedBlocked.has(item.id));
+  const localIr = ir.filter((item) => !permittedBlocked.has(item.id));
+  const corePass = coreMc.filter((item) => item.status === "PASS").length;
+  const coreFail = coreMc.filter((item) => item.status === "FAIL").length;
+  const localIrPass = localIr.filter((item) => item.status === "PASS").length;
+  const localIrFail = localIr.filter((item) => item.status === "FAIL").length;
+  if (coreMc.length !== 36 || corePass + coreFail !== 36 || localIr.length !== 24
+      || localIrPass + localIrFail !== 24) {
+    throw new Error("INTEGRATION_EVIDENCE_LOCAL_DENOMINATOR_INVALID");
+  }
+  if (truth.CORE_LOCAL_MC_PASS !== `${corePass}/36` || truth.CORE_LOCAL_MC_FAIL !== coreFail
+      || truth.LOCALLY_SOLVABLE_IR_PASS !== `${localIrPass}/24`
+      || truth.LOCALLY_SOLVABLE_IR_FAIL !== localIrFail) {
+    throw new Error("INTEGRATION_EVIDENCE_LOCAL_COUNTER_CONTRADICTION");
+  }
+  for (const name of ["TYPESCRIPT", "PRODUCTION_BUILD", "REAL_POSTGRESQL_CURRENT_HEAD_PROOF",
+    "REAL_BROWSER_DURABLE_PRODUCT_PATH"] as const) {
+    if (truth[name] !== "PASS" && truth[name] !== "FAIL") {
+      throw new Error(`INTEGRATION_EVIDENCE_TRUTH_STATUS_INVALID:${name}`);
+    }
+  }
+  if (truth.CANONICAL_SESSION_STARTUP_INSTALLED !== "YES" && truth.CANONICAL_SESSION_STARTUP_INSTALLED !== "NO") {
+    throw new Error("INTEGRATION_EVIDENCE_SESSION_TRUTH_INVALID");
+  }
+  for (const name of ["PROCESS_LOCAL_PRODUCT_REPOSITORIES", "PARTIAL_OR_UNWIRED_PRODUCT_STABLE_ENTRYPOINTS",
+    "UNSAFE_OR_UNEXPLAINED_FUNCTIONS"] as const) {
+    if (!nonnegativeIntegerValue(truth[name])) throw new Error(`INTEGRATION_EVIDENCE_TRUTH_COUNTER_INVALID:${name}`);
+  }
+  if (!boundedFraction(truth.DURABLE_GOVERNANCE_REPLACEMENTS_WIRED, 4)
+      || !boundedFraction(truth.KNOWN_STAGED_SOURCE_OBSERVATIONS_IN_DURABLE_QUEUE, 71)
+      || truth.GOVERNANCE_SECURITY_DEFINER_FUNCTIONS !== 32
+      || truth.GOVERNANCE_EXPOSED_FUNCTIONS !== 21
+      || truth.CROSS_TENANT_RPC_SUCCESSES !== 0 || truth.POOL_CONTEXT_LEAKS !== 0
+      || truth.ISOLATED_SUPABASE_PLATFORM_PROOF !== "BLOCKED"
+      || truth.PARSER_OS_SANDBOX_PROOF !== "BLOCKED"
+      || truth.OFF_HOST_AUDIT_CUSTODY !== "BLOCKED"
+      || truth.MANAGED_IDENTITY_PROVIDER_VERIFIED !== "NO"
+      || truth.MANAGED_PRIVATE_STORAGE_VERIFIED !== "NO") {
+    throw new Error("INTEGRATION_EVIDENCE_TRUTH_COUNTER_INVALID");
+  }
+
+  const governance = record(assessment.governance_security, "INTEGRATION_EVIDENCE_GOVERNANCE_SECURITY_INVALID");
+  const governanceEvidence = array(governance.evidence, "INTEGRATION_EVIDENCE_GOVERNANCE_SECURITY_INVALID");
+  if (governanceEvidence.length < 1 || governanceEvidence.some((entry) => typeof entry !== "string")) {
+    throw new Error("INTEGRATION_EVIDENCE_GOVERNANCE_SECURITY_INVALID");
+  }
+  for (const entry of governanceEvidence as string[]) assertPortableEvidencePath(entry);
+  const governanceSafe = governance.security_definer_functions === 32 && governance.exposed_functions === 21
+    && governance.unsafe_or_unexplained_functions === 0 && governance.cross_tenant_rpc_successes === 0
+    && governance.pool_context_leaks === 0;
+  const governanceStatus: V0101ResultStatus = governanceSafe ? "PASS" : "FAIL";
+  if (governance.status !== governanceStatus
+      || truth.GOVERNANCE_SECURITY_DEFINER_FUNCTIONS !== governance.security_definer_functions
+      || truth.GOVERNANCE_EXPOSED_FUNCTIONS !== governance.exposed_functions
+      || truth.UNSAFE_OR_UNEXPLAINED_FUNCTIONS !== governance.unsafe_or_unexplained_functions
+      || truth.CROSS_TENANT_RPC_SUCCESSES !== governance.cross_tenant_rpc_successes
+      || truth.POOL_CONTEXT_LEAKS !== governance.pool_context_leaks) {
+    throw new Error("INTEGRATION_EVIDENCE_GOVERNANCE_SECURITY_CONTRADICTION");
+  }
+
+  const resultMap = new Map([...mc, ...ir].map((item) => [item.id, item]));
+  for (const closure of cr) {
+    const dependencies = profile.closure_map[closure.id]!;
+    const expectedStatus = dependencies[0] === "GOVERNANCE_FUNCTION_ACL_RLS_SECURITY"
+      ? governanceStatus
+      : combinedStatus(dependencies.map((id) => resultMap.get(id)?.status));
+    if (closure.status !== expectedStatus) {
+      throw new Error(`INTEGRATION_EVIDENCE_CLOSURE_CONTRADICTION:${closure.id}`);
+    }
+  }
+
+  const allResults = [...mc, ...ir, ...cr];
+  const nonPass = allResults.filter((item) => item.status !== "PASS");
+  const blockers = array(assessment.blockers, "INTEGRATION_EVIDENCE_BLOCKER_SET_INVALID");
+  if (blockers.length !== nonPass.length) throw new Error("INTEGRATION_EVIDENCE_BLOCKER_SET_INVALID");
+  const seenBlockers = new Set<string>();
+  for (const raw of blockers) {
+    const blocker = record(raw, "INTEGRATION_EVIDENCE_BLOCKER_INVALID");
+    const result = nonPass.find((entry) => entry.id === blocker.id);
+    if (!result || seenBlockers.has(result.id) || blocker.status !== result.status || blocker.reason !== result.reason) {
+      throw new Error("INTEGRATION_EVIDENCE_BLOCKER_CONTRADICTION");
+    }
+    seenBlockers.add(result.id);
+  }
+  const complete = corePass === 36 && coreFail === 0 && localIrPass === 24 && localIrFail === 0
+    && cr.every((item) => item.status === "PASS");
+  if (complete && (truth.TYPESCRIPT !== "PASS" || truth.PRODUCTION_BUILD !== "PASS"
+      || truth.REAL_POSTGRESQL_CURRENT_HEAD_PROOF !== "PASS"
+      || truth.REAL_BROWSER_DURABLE_PRODUCT_PATH !== "PASS"
+      || truth.CANONICAL_SESSION_STARTUP_INSTALLED !== "YES"
+      || truth.PROCESS_LOCAL_PRODUCT_REPOSITORIES !== 0
+      || truth.DURABLE_GOVERNANCE_REPLACEMENTS_WIRED !== "4/4"
+      || truth.PARTIAL_OR_UNWIRED_PRODUCT_STABLE_ENTRYPOINTS !== 0
+      || truth.KNOWN_STAGED_SOURCE_OBSERVATIONS_IN_DURABLE_QUEUE !== "71/71"
+      || truth.UNSAFE_OR_UNEXPLAINED_FUNCTIONS !== 0)) {
+    throw new Error("INTEGRATION_EVIDENCE_COMPLETE_TRUTH_CONTRADICTION");
+  }
+  const expectedHeadline = complete
+    ? "V0102_LOCAL_ENGINEERING_CLOSURE_COMPLETE_EXTERNAL_AND_HUMAN_GATES_REMAIN"
+    : "V0102_LOCAL_ENGINEERING_CLOSURE_PARTIAL";
+  if (assessment.headline !== expectedHeadline) {
+    if (assessment.headline !== "BLOCKED_SAFETY_OR_REPOSITORY_STATE"
+        || typeof assessment.safety_blocker !== "string" || assessment.safety_blocker.length < 3) {
+      throw new Error("INTEGRATION_EVIDENCE_HEADLINE_CONTRADICTION");
+    }
+  }
+
+  return Object.freeze({ assessment, mc, ir, cr, truth });
+}
+
+function validateFinalCommandReceipt(
+  value: unknown,
+  expectedId: string,
+  expectedOrdinal: number,
+  expectedHead: string,
+  expectedTree: string,
+): Record<string, unknown> {
+  const command = record(value, "INTEGRATION_EVIDENCE_COMMAND_INVALID");
+  if (!Array.isArray(command.argv) || !Array.isArray(command.environment_allowlist_names)
+      || !command.input_hashes || typeof command.input_hashes !== "object" || Array.isArray(command.input_hashes)
+      || !command.toolchain || typeof command.toolchain !== "object" || Array.isArray(command.toolchain)) {
+    throw new Error(`INTEGRATION_EVIDENCE_COMMAND_PROVENANCE_INVALID:${expectedId}`);
+  }
+  const argv = command.argv;
+  const environmentNames = command.environment_allowlist_names;
+  const inputHashes = record(command.input_hashes, `INTEGRATION_EVIDENCE_COMMAND_PROVENANCE_INVALID:${expectedId}`);
+  const toolchain = record(command.toolchain, `INTEGRATION_EVIDENCE_COMMAND_PROVENANCE_INVALID:${expectedId}`);
+  if (command.command_id !== expectedId || command.attempt_ordinal !== 1
+      || command.execution_ordinal !== expectedOrdinal || command.verified_head !== expectedHead
+      || command.verified_tree !== expectedTree || (command.status !== "PASS" && command.status !== "FAIL")
+      || (command.execution_status !== "PASS" && command.execution_status !== "FAIL")
+      || command.proof_contract_status !== command.status
+      || (command.status === "PASS" && command.execution_status !== "PASS")
+      || !nonnegativeIntegerValue(command.started_epoch_ms) || !nonnegativeIntegerValue(command.finished_epoch_ms)
+      || (command.finished_epoch_ms as number) < (command.started_epoch_ms as number)
+      || !positiveInteger(command.timeout_ms) || typeof command.executable !== "string" || command.executable.length < 1
+      || typeof command.cwd !== "string" || command.cwd.length < 1 || typeof command.command_text !== "string"
+      || command.command_text.length < 1 || argv.some((entry) => typeof entry !== "string")
+      || environmentNames.length < 1 || environmentNames.some((entry) => typeof entry !== "string")
+      || new Set(environmentNames).size !== environmentNames.length
+      || JSON.stringify(environmentNames) !== JSON.stringify([...environmentNames].sort(compare))
+      || !SHA256.test(String(command.environment_allowlist_sha256))
+      || !SHA256.test(String(command.command_text_sha256))
+      || command.command_text_sha256 !== sha256Utf8(String(command.command_text))
+      || !SHA256.test(String(command.command_fingerprint_sha256))
+      || command.command_fingerprint_sha256 !== sha256Utf8(JSON.stringify({
+        executable: command.executable, argv, cwd: command.cwd,
+      }))
+      || !SHA256.test(String(inputHashes.package_json_sha256))
+      || !SHA256.test(String(inputHashes.package_lock_sha256))
+      || !SHA256.test(String(inputHashes.contract_sha256))
+      || typeof toolchain.node !== "string" || typeof toolchain.platform !== "string" || typeof toolchain.arch !== "string"
+      || !SHA256.test(String(command.stdout_sha256)) || !SHA256.test(String(command.stderr_sha256))
+      || !nonnegativeIntegerValue(command.stdout_byte_count) || !nonnegativeIntegerValue(command.stderr_byte_count)
+      || command.stdout_log !== `outer-matrix/final-logs/${expectedId}.stdout.log`
+      || command.stderr_log !== `outer-matrix/final-logs/${expectedId}.stderr.log`) {
+    throw new Error(`INTEGRATION_EVIDENCE_COMMAND_PROVENANCE_INVALID:${expectedId}`);
+  }
+  return command;
+}
+
+function exactRuntimeResults(
+  value: unknown,
+  prefix: "MC" | "IR" | "CR",
+  expectedIds: readonly string[],
+): readonly RuntimeClosureResult[] {
+  const values = array(value, `INTEGRATION_EVIDENCE_${prefix}_RESULTS_INVALID`);
+  if (values.length !== expectedIds.length) throw new Error(`INTEGRATION_EVIDENCE_${prefix}_RESULT_COUNT_INVALID`);
+  return Object.freeze(values.map((raw, index) => {
+    const result = record(raw, `INTEGRATION_EVIDENCE_${prefix}_RESULT_INVALID`);
+    const evidence = array(result.evidence, `INTEGRATION_EVIDENCE_${prefix}_EVIDENCE_INVALID`);
+    if (result.id !== expectedIds[index] || !(V0101_RESULT_STATUSES as readonly unknown[]).includes(result.status)
+        || evidence.length < 1 || evidence.some((entry) => typeof entry !== "string")) {
+      throw new Error(`INTEGRATION_EVIDENCE_${prefix}_RESULT_INVALID`);
+    }
+    const portable = new Set<string>();
+    for (const entry of evidence as string[]) {
+      assertPortableEvidencePath(entry);
+      const folded = entry.toLowerCase();
+      if (portable.has(folded)) throw new Error(`INTEGRATION_EVIDENCE_${prefix}_EVIDENCE_DUPLICATE`);
+      portable.add(folded);
+    }
+    if (result.status !== "PASS" && (typeof result.reason !== "string" || result.reason.length < 3)) {
+      throw new Error(`INTEGRATION_EVIDENCE_${prefix}_NONPASS_REASON_INVALID`);
+    }
+    return Object.freeze({
+      id: String(result.id),
+      status: result.status as V0101ResultStatus,
+      evidence: Object.freeze((evidence as string[]).map(String)),
+      ...(typeof result.reason === "string" ? { reason: result.reason } : {}),
+    });
+  }));
+}
+
+function exactRequirementIds(value: unknown, prefix: "MC" | "IR", count: number): string[] {
+  const requirements = record(value, "INTEGRATION_EVIDENCE_REQUIREMENTS_INVALID");
+  const ids = exactIds(prefix, count);
+  if (JSON.stringify(Object.keys(requirements)) !== JSON.stringify(ids)
+      || ids.some((id) => typeof requirements[id] !== "string" || String(requirements[id]).length < 30)) {
+    throw new Error(`INTEGRATION_EVIDENCE_${prefix}_REQUIREMENTS_INVALID`);
+  }
+  return ids;
+}
+
+function exactIds(prefix: "MC" | "IR" | "CR", count: number): string[] {
+  return Array.from({ length: count }, (_, index) => `${prefix}-${String(index + 1).padStart(2, "0")}`);
+}
+
+function combinedStatus(statuses: readonly (V0101ResultStatus | undefined)[]): V0101ResultStatus {
+  if (statuses.length < 1 || statuses.some((status) => status === undefined)) {
+    throw new Error("INTEGRATION_EVIDENCE_CLOSURE_DEPENDENCY_MISSING");
+  }
+  if (statuses.includes("FAIL")) return "FAIL";
+  if (statuses.includes("BLOCKED")) return "BLOCKED";
+  return "PASS";
+}
+
+function positiveInteger(value: unknown): boolean {
+  return Number.isSafeInteger(value) && (value as number) > 0;
+}
+
+function nonnegativeIntegerValue(value: unknown): boolean {
+  return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function boundedFraction(value: unknown, denominator: number): boolean {
+  const match = /^(\d+)\/(\d+)$/u.exec(String(value));
+  if (!match || Number(match[2]) !== denominator) return false;
+  const numerator = Number(match[1]);
+  return Number.isSafeInteger(numerator) && numerator >= 0 && numerator <= denominator;
+}
+
+function sha256Utf8(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
 function array(value: unknown, code: string): unknown[] {

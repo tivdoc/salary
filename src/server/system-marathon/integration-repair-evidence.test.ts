@@ -1,9 +1,17 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
+  assertEvidenceSelfReferenceAbsent,
   assertPortableEvidencePath,
   canonicalPayloadSetHash,
   parseOrderedIntegrationLedger,
+  parseIntegrationEvidenceProfile,
+  RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS,
+  validateRuntimeProductClosureAssessment,
+  validateRuntimeProductClosureAssessmentAgainstReceipts,
   validateV0101Assessment,
   validateV0101AssessmentAgainstReceipts,
 } from "./integration-repair-evidence.ts";
@@ -197,6 +205,245 @@ describe("V0.10.1 evidence contracts", () => {
       .toThrow("V0101_EXACT_FINAL_HEAD_PROOF_FALSE_PASS:postgresql_full_regression:MC-11");
   });
 });
+
+describe("contract-derived V0.10.2 evidence profile", () => {
+  it("loads the frozen contract without creating a parallel command descriptor", () => {
+    const profile = runtimeProfile();
+    expect(profile.base_head).toBe("5c1945da425e7049835838923f9b15a32b125e21");
+    expect(profile.base_tree).toBe("79b606104399b547bb1bb86444971010e6850d2c");
+    expect(profile.final_output_root).toBe("output/runtime-product-closure-v0.10.2/final");
+    expect(profile.mc_ids).toHaveLength(39);
+    expect(profile.ir_ids).toHaveLength(27);
+    expect(profile.cr_ids).toHaveLength(22);
+    expect(profile.final_command_ids).toEqual(RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS);
+  });
+
+  it("rejects a reordered command matrix and weakened frozen truth", () => {
+    const contract = runtimeContract();
+    expect(() => parseIntegrationEvidenceProfile({
+      ...contract,
+      final_command_ids: [...RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS].reverse(),
+    })).toThrow("INTEGRATION_EVIDENCE_COMMAND_SET_INVALID");
+    expect(() => parseIntegrationEvidenceProfile({
+      ...contract,
+      truth_baseline: { ...recordValue(contract.truth_baseline), OPENAI_CALLS: 1 },
+    })).toThrow("INTEGRATION_EVIDENCE_TRUTH_BASELINE_INVALID");
+  });
+
+  it("validates exact 39 MC, 27 IR, 22 CR and the full provenance-bound 12-command receipt", () => {
+    const profile = runtimeProfile();
+    const value = runtimeClosureAssessment();
+    expect(() => validateRuntimeProductClosureAssessment(profile, value)).not.toThrow();
+    expect(() => validateRuntimeProductClosureAssessmentAgainstReceipts(
+      profile,
+      value,
+      runtimeFinalVerification(),
+    )).not.toThrow();
+  });
+
+  it("rejects stale/post-matrix evidence, CR contradictions and false human truth", () => {
+    const profile = runtimeProfile();
+    const value = runtimeClosureAssessment();
+    expect(() => validateRuntimeProductClosureAssessment(profile, {
+      ...value,
+      matrix_head: "c".repeat(40),
+    })).toThrow("INTEGRATION_EVIDENCE_ASSESSMENT_IDENTITY_INVALID");
+    expect(() => validateRuntimeProductClosureAssessment(profile, {
+      ...value,
+      post_matrix_evidence_only_repair: { scope: "EVIDENCE_ONLY" },
+    })).toThrow("INTEGRATION_EVIDENCE_ASSESSMENT_IDENTITY_INVALID");
+    expect(() => validateRuntimeProductClosureAssessment(profile, {
+      ...value,
+      cr_results: value.cr_results.map((entry, index) => index === 0
+        ? { ...entry, status: "FAIL", reason: "FALSE_CLOSURE_FAILURE" }
+        : entry),
+    })).toThrow("INTEGRATION_EVIDENCE_CLOSURE_CONTRADICTION:CR-01");
+    expect(() => validateRuntimeProductClosureAssessment(profile, {
+      ...value,
+      truth: { ...value.truth, GENERATED_HUMAN_DECISIONS: 1 },
+    })).toThrow("INTEGRATION_EVIDENCE_TRUTH_BASELINE_CONTRADICTION:GENERATED_HUMAN_DECISIONS");
+  });
+
+  it("rejects missing command provenance and command failures labelled PASS", () => {
+    const profile = runtimeProfile();
+    const verification = runtimeFinalVerification();
+    const missingArgv = Object.fromEntries(Object.entries(verification.commands[0]!)
+      .filter(([name]) => name !== "argv"));
+    expect(() => validateRuntimeProductClosureAssessmentAgainstReceipts(profile, runtimeClosureAssessment(), {
+      ...verification,
+      commands: [missingArgv, ...verification.commands.slice(1)],
+    })).toThrow("INTEGRATION_EVIDENCE_COMMAND_PROVENANCE_INVALID:focused_v0102_acceptance");
+
+    const failed = runtimeFinalVerification("postgresql_full_regression");
+    expect(() => validateRuntimeProductClosureAssessmentAgainstReceipts(profile, runtimeClosureAssessment(), failed))
+      .toThrow("INTEGRATION_EVIDENCE_COMMAND_FAILURE_FALSE_PASS:postgresql_full_regression:MC-08");
+  });
+
+  it("rejects self-reference, traversal and case-folded duplicate outer paths", () => {
+    expect(() => assertEvidenceSelfReferenceAbsent(["payload/manifest.json"]))
+      .toThrow("INTEGRATION_EVIDENCE_SELF_REFERENCE");
+    expect(() => assertEvidenceSelfReferenceAbsent(["../escape.json"]))
+      .toThrow("V0101_EVIDENCE_PATH_UNSAFE");
+    expect(() => assertEvidenceSelfReferenceAbsent(["payload/a.json", "PAYLOAD/A.JSON"]))
+      .toThrow("INTEGRATION_EVIDENCE_PATH_DUPLICATE");
+  });
+});
+
+function runtimeContract(): Record<string, unknown> {
+  return JSON.parse(
+    readFileSync(new URL("./runtime-product-closure-contract.v0.10.2.json", import.meta.url), "utf8"),
+  ) as Record<string, unknown>;
+}
+
+function runtimeProfile() {
+  return parseIntegrationEvidenceProfile(runtimeContract());
+}
+
+function runtimeClosureAssessment() {
+  const profile = runtimeProfile();
+  type FixtureResult = { id: string; status: "PASS" | "FAIL" | "BLOCKED"; evidence: string[]; reason?: string };
+  const mc: FixtureResult[] = profile.mc_ids.map((id) => ({ id, status: "PASS", evidence: ["payload/acceptance.json"] }));
+  const ir: FixtureResult[] = profile.ir_ids.map((id) => ({ id, status: "PASS", evidence: ["payload/integration.json"] }));
+  for (const [mcId, irId] of Object.entries(profile.external_blocked_pairs)) {
+    const mcIndex = profile.mc_ids.indexOf(mcId);
+    const irIndex = profile.ir_ids.indexOf(irId);
+    mc[mcIndex] = { id: mcId, status: "BLOCKED", evidence: ["payload/external-gates.json"],
+      reason: "EXACT_FRESH_EXTERNAL_BLOCKER" };
+    ir[irIndex] = { id: irId, status: "BLOCKED", evidence: ["payload/external-gates.json"],
+      reason: "EXACT_FRESH_EXTERNAL_BLOCKER" };
+  }
+  const cr: FixtureResult[] = profile.cr_ids.map((id) => ({ id, status: "PASS", evidence: ["payload/closure.json"] }));
+  const blockers = [...mc, ...ir, ...cr]
+    .filter((entry) => entry.status !== "PASS")
+    .map((entry) => ({ id: entry.id, status: entry.status, reason: entry.reason }));
+  const runCounts = {
+    FULL_SUITE_RUN_COUNT: 1,
+    PRODUCTION_BUILD_RUN_COUNT: 1,
+    BROWSER_E2E_FULL_RUN_COUNT: 1,
+    POSTGRESQL_FULL_REGRESSION_RUN_COUNT: 1,
+  };
+  return {
+    schema_version: "tivdoc-canonical-integration-durability-repair-assessment-v0.10.2",
+    contract_schema_version: profile.contract_schema_version,
+    headline: "V0102_LOCAL_ENGINEERING_CLOSURE_COMPLETE_EXTERNAL_AND_HUMAN_GATES_REMAIN",
+    verified_head: GIT_HASH,
+    verified_tree: GIT_HASH,
+    matrix_head: GIT_HASH,
+    matrix_tree: GIT_HASH,
+    post_matrix_evidence_only_repair: null,
+    mc_results: mc,
+    ir_results: ir,
+    cr_results: cr,
+    blockers,
+    governance_security: {
+      status: "PASS",
+      security_definer_functions: 32,
+      exposed_functions: 21,
+      unsafe_or_unexplained_functions: 0,
+      cross_tenant_rpc_successes: 0,
+      pool_context_leaks: 0,
+      evidence: ["payload/governance-security.json"],
+    },
+    run_counts: runCounts,
+    truth: {
+      ...profile.truth_baseline,
+      CORE_LOCAL_MC_PASS: "36/36",
+      CORE_LOCAL_MC_FAIL: 0,
+      LOCALLY_SOLVABLE_IR_PASS: "24/24",
+      LOCALLY_SOLVABLE_IR_FAIL: 0,
+      TYPESCRIPT: "PASS",
+      PRODUCTION_BUILD: "PASS",
+      REAL_POSTGRESQL_CURRENT_HEAD_PROOF: "PASS",
+      REAL_BROWSER_DURABLE_PRODUCT_PATH: "PASS",
+      CANONICAL_SESSION_STARTUP_INSTALLED: "YES",
+      PROCESS_LOCAL_PRODUCT_REPOSITORIES: 0,
+      DURABLE_GOVERNANCE_REPLACEMENTS_WIRED: "4/4",
+      PARTIAL_OR_UNWIRED_PRODUCT_STABLE_ENTRYPOINTS: 0,
+      KNOWN_STAGED_SOURCE_OBSERVATIONS_IN_DURABLE_QUEUE: "71/71",
+      GOVERNANCE_SECURITY_DEFINER_FUNCTIONS: 32,
+      GOVERNANCE_EXPOSED_FUNCTIONS: 21,
+      UNSAFE_OR_UNEXPLAINED_FUNCTIONS: 0,
+      CROSS_TENANT_RPC_SUCCESSES: 0,
+      POOL_CONTEXT_LEAKS: 0,
+      ISOLATED_SUPABASE_PLATFORM_PROOF: "BLOCKED",
+      PARSER_OS_SANDBOX_PROOF: "BLOCKED",
+      OFF_HOST_AUDIT_CUSTODY: "BLOCKED",
+      MANAGED_IDENTITY_PROVIDER_VERIFIED: "NO",
+      MANAGED_PRIVATE_STORAGE_VERIFIED: "NO",
+      ...runCounts,
+    },
+  };
+}
+
+function runtimeFinalVerification(failedCommand?: string) {
+  const commands = RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS.map((commandId, index) => {
+    const status = commandId === failedCommand ? "FAIL" as const : "PASS" as const;
+    const executable = "node";
+    const argv = [commandId];
+    const cwd = ".";
+    const commandText = `node ${commandId}`;
+    return {
+      command_id: commandId,
+      status,
+      execution_status: status,
+      proof_contract_status: status,
+      attempt_ordinal: 1,
+      execution_ordinal: index + 1,
+      verified_head: GIT_HASH,
+      verified_tree: GIT_HASH,
+      started_epoch_ms: index + 1,
+      finished_epoch_ms: index + 2,
+      timeout_ms: 1_000,
+      executable,
+      argv,
+      cwd,
+      command_text: commandText,
+      command_text_sha256: hash(commandText),
+      command_fingerprint_sha256: hash(JSON.stringify({ executable, argv, cwd })),
+      environment_allowlist_names: ["CI", "PATH"],
+      environment_allowlist_sha256: HASH,
+      input_hashes: { package_json_sha256: HASH, package_lock_sha256: HASH, contract_sha256: HASH },
+      toolchain: { node: "22.22.2", platform: "win32", arch: "x64" },
+      stdout_sha256: HASH,
+      stderr_sha256: HASH,
+      stdout_byte_count: 0,
+      stderr_byte_count: 0,
+      stdout_log: `outer-matrix/final-logs/${commandId}.stdout.log`,
+      stderr_log: `outer-matrix/final-logs/${commandId}.stderr.log`,
+    };
+  });
+  return {
+    schema_version: "tivdoc-canonical-integration-durability-repair-final-verification-v0.10.2",
+    contract_schema_version: "tivdoc-runtime-product-closure-contract-v0.10.2",
+    status: failedCommand ? "FAIL" : "PASS",
+    verified_branch: "codex/tivdoc-engine-foundation",
+    verified_head: GIT_HASH,
+    verified_tree: GIT_HASH,
+    command_count: commands.length,
+    execution_order: RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS,
+    commands,
+    run_counts: {
+      FULL_SUITE_RUN_COUNT: 1,
+      PRODUCTION_BUILD_RUN_COUNT: 1,
+      BROWSER_E2E_FULL_RUN_COUNT: 1,
+      POSTGRESQL_FULL_REGRESSION_RUN_COUNT: 1,
+    },
+    exact_once: true,
+    working_preflight: "FRESH_DIRECTORY_CREATED_BEFORE_FIRST_COMMAND",
+    journal_log: "outer-matrix/final-command-journal.ndjson",
+    journal_sha256: HASH,
+    journal_byte_count: 1,
+  };
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("TEST_RECORD_INVALID");
+  return value as Record<string, unknown>;
+}
+
+function hash(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 function finalVerification(failedCommands: readonly string[]) {
   const failed = new Set(failedCommands);
