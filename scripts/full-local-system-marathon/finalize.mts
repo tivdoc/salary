@@ -23,6 +23,7 @@ const specifications = [
   spec("production_build", [NODE, [NEXT, "build"]], 20 * 60_000),
   spec("browser_e2e", [NODE, [stripTypes(), path.join(ROOT, "scripts", "full-local-system-marathon", "browser-e2e.mts")]], 10 * 60_000),
   ...(migrationChanged ? [spec("postgresql_regression", [NODE, [path.join(ROOT, "scripts", "canonical-persistence-v091", "bootstrap.mjs")]], 45 * 60_000)] : []),
+  spec("prohibited_operation_audit", [NODE, [stripTypes(), path.join(ROOT, "scripts", "full-local-system-marathon", "security-scan.mts")]], 5 * 60_000),
   spec("canonical_reachability", [NODE, [stripTypes(), path.join(ROOT, "scripts", "product-integration", "reachability", "verify.mts")]], 10 * 60_000),
   spec("persistence_wiring", [NODE, [stripTypes(), path.join(ROOT, "scripts", "product-integration", "persistence", "wiring-map.mts")]], 10 * 60_000),
 ] as const;
