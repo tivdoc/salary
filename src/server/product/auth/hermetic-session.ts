@@ -66,8 +66,8 @@ export class HermeticSessionManager {
     now?: () => number;
   }> = {}) {
     this.#environment = input.environment ?? process.env;
-    this.#nodeEnv = input.nodeEnv ?? process.env.NODE_ENV;
-    this.#vercelEnv = input.vercelEnv ?? process.env.VERCEL_ENV;
+    this.#nodeEnv = input.nodeEnv ?? runtimeEnvironmentValue(process.env, "NODE_ENV");
+    this.#vercelEnv = input.vercelEnv ?? runtimeEnvironmentValue(process.env, "VERCEL_ENV");
     this.#now = input.now ?? (() => Math.floor(Date.now() / 1_000));
   }
 
@@ -141,7 +141,9 @@ export class HermeticSessionManager {
     if (!isLoopbackUrl(request.url)) return null;
     // Both the real process and the injectable test seam must be test. A caller
     // cannot turn this hermetic fixture into a development/preview provider.
-    if (process.env.NODE_ENV !== "test" || process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview" || this.#nodeEnv !== "test" || this.#vercelEnv === "production" || this.#vercelEnv === "preview") return null;
+    const nodeEnvironment = runtimeEnvironmentValue(process.env, "NODE_ENV");
+    const vercelEnvironment = runtimeEnvironmentValue(process.env, "VERCEL_ENV");
+    if (nodeEnvironment !== "test" || vercelEnvironment === "production" || vercelEnvironment === "preview" || this.#nodeEnv !== "test" || this.#vercelEnv === "production" || this.#vercelEnv === "preview") return null;
     if (!enabled(this.#environment.TIVDOC_HERMETIC_MODE)) return null;
     const secret = this.#environment.TIVDOC_PRODUCT_SESSION_SECRET;
     if (!secret || Buffer.byteLength(secret, "utf8") < 32) return null;
@@ -162,8 +164,13 @@ export function runtimeHermeticSessionManager(): HermeticSessionManager {
 }
 
 export function resetRuntimeHermeticSessionManagerForTests(): void {
-  if (process.env.NODE_ENV !== "test") throw new Error("auth_runtime_reset_forbidden");
+  if (runtimeEnvironmentValue(process.env, "NODE_ENV") !== "test") throw new Error("auth_runtime_reset_forbidden");
   delete (globalThis as HermeticRuntimeGlobal).__tivdocProductHermeticSessionManager;
+}
+
+function runtimeEnvironmentValue(environment: Environment, key: string): string | undefined {
+  const value = Reflect.get(environment, key);
+  return typeof value === "string" ? value : undefined;
 }
 
 function parseTickets(raw: string | undefined): ReadonlyMap<string, TicketRecord> | null {

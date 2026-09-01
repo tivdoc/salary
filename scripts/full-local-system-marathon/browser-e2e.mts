@@ -4,16 +4,18 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  MARATHON_BROWSER_BASE_URL,
   MARATHON_BROWSER_ROUTES,
   MARATHON_BROWSER_SERVER_ARGS,
   MARATHON_BROWSER_SESSION_COOKIE,
   extractMarathonBrowserSessionCookie,
   marathonBrowserServerEnvironment,
+  marathonBrowserToolEnvironment,
 } from "./browser-e2e-runtime.mts";
 
 const ROOT = path.resolve(process.cwd());
 const OUTPUT = path.join(ROOT, "output", "playwright", "v010-marathon");
-const BASE_URL = "http://127.0.0.1:45123";
+const BASE_URL = MARATHON_BROWSER_BASE_URL;
 const SESSION = "tivdoc-v010-marathon";
 const CLI = path.join(ROOT, "node_modules", "@playwright", "cli", "playwright-cli.js");
 const NEXT = path.join(ROOT, "node_modules", "next", "dist", "bin", "next");
@@ -159,6 +161,10 @@ async function waitForServer(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error("BROWSER_E2E_SERVER_START_TIMEOUT");
+}
+
+function safeEnvironment(): NodeJS.ProcessEnv {
+  return marathonBrowserToolEnvironment();
 }
 
 function hash(value: Uint8Array | string): string {

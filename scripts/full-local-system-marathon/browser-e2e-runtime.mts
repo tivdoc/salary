@@ -1,4 +1,16 @@
 export const MARATHON_BROWSER_SESSION_COOKIE = "tivdoc_hermetic_session" as const;
+export const MARATHON_BROWSER_RUNTIME_SENTINEL = "TIVDOC_HERMETIC_LOOPBACK_E2E_V0101" as const;
+export const MARATHON_BROWSER_BASE_URL = "http://127.0.0.1:45123" as const;
+
+type Environment = Readonly<Record<string, string | undefined>>;
+
+const SAFE_CHILD_ENVIRONMENT_KEYS = Object.freeze([
+  "ALLUSERSPROFILE", "APPDATA", "CI", "COMSPEC", "CommonProgramFiles", "CommonProgramFiles(x86)",
+  "CommonProgramW6432", "HOMEDRIVE", "HOMEPATH", "LANG", "LC_ALL", "LOCALAPPDATA",
+  "NUMBER_OF_PROCESSORS", "OS", "Path", "PATH", "PATHEXT", "PROCESSOR_ARCHITECTURE", "ProgramData",
+  "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "SystemDrive", "SystemRoot", "TEMP", "TMP", "TZ",
+  "USERPROFILE", "windir",
+] as const);
 
 export const MARATHON_BROWSER_SERVER_ARGS = Object.freeze([
   "dev",
@@ -35,21 +47,16 @@ const TICKETS = Object.freeze({
 });
 
 export function marathonBrowserServerEnvironment(
-  environment: Readonly<NodeJS.ProcessEnv> = process.env,
+  environment: Environment = process.env,
 ): NodeJS.ProcessEnv {
   return {
-    ...environment,
+    ...marathonBrowserToolEnvironment(environment),
     NODE_ENV: "test",
     VERCEL_ENV: "",
-    NEXT_TELEMETRY_DISABLED: "1",
-    OPENAI_API_KEY: "",
-    TIVDOC_OPENAI_LIVE_TESTS: "0",
-    TIVDOC_CUSTOMER_PROCESSING_ENABLED: "0",
-    TIVDOC_CUSTOMER_SHADOW_AUTHORIZED: "0",
-    TIVDOC_PRODUCTION_DELIVERY_ENABLED: "0",
-    TIVDOC_RUNTIME_TARGET: "local_only",
     TIVDOC_HERMETIC_MODE: "true",
     TIVDOC_PRODUCT_BROWSER_RUNTIME_ENABLED: "true",
+    TIVDOC_PRODUCT_BROWSER_RUNTIME_SENTINEL: MARATHON_BROWSER_RUNTIME_SENTINEL,
+    TIVDOC_PRODUCT_BROWSER_RUNTIME_ORIGIN: MARATHON_BROWSER_BASE_URL,
     TIVDOC_PRODUCT_E2E_LANE: "synthetic",
     TIVDOC_PRODUCT_SESSION_SECRET: "v010-marathon-hermetic-session-key-material-00000001",
     TIVDOC_PRODUCT_SESSION_MAX_AGE_SECONDS: "900",
@@ -58,6 +65,28 @@ export function marathonBrowserServerEnvironment(
     TIVDOC_PORTAL_API_ENABLED: "true",
     TIVDOC_OPERATIONS_UI_ENABLED: "true",
     TIVDOC_OPERATIONS_API_ENABLED: "true",
+  };
+}
+
+export function marathonBrowserToolEnvironment(
+  environment: Environment = process.env,
+): NodeJS.ProcessEnv {
+  const safe: Record<string, string> = {};
+  for (const key of SAFE_CHILD_ENVIRONMENT_KEYS) {
+    const value = environment[key];
+    if (value !== undefined) safe[key] = value;
+  }
+  return {
+    ...safe,
+    CI: "1",
+    NODE_ENV: "test",
+    NEXT_TELEMETRY_DISABLED: "1",
+    OPENAI_API_KEY: "",
+    TIVDOC_OPENAI_LIVE_TESTS: "0",
+    TIVDOC_CUSTOMER_PROCESSING_ENABLED: "0",
+    TIVDOC_CUSTOMER_SHADOW_AUTHORIZED: "0",
+    TIVDOC_PRODUCTION_DELIVERY_ENABLED: "0",
+    TIVDOC_RUNTIME_TARGET: "local_only",
   };
 }
 

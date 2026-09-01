@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { HermeticSessionManager, PRODUCT_CSRF_HEADER, PRODUCT_SESSION_COOKIE } from "./hermetic-session.ts";
 
 const SECRET = "local-hermetic-session-secret-32-bytes-minimum";
 const OWNER_TICKET = "ticket-owner-a-00000001";
 const OPERATOR_TICKET = "ticket-operator-0000001";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function environment() {
   return Object.freeze({
@@ -95,6 +99,17 @@ describe("hermetic product sessions", () => {
     expect(new HermeticSessionManager({ environment: environment(), nodeEnv: "production" }).issue(request(), "portal", OWNER_TICKET)).toBeNull();
     expect(new HermeticSessionManager({ environment: environment(), nodeEnv: "development" }).issue(request(), "portal", OWNER_TICKET)).toBeNull();
     expect(new HermeticSessionManager({ environment: environment(), nodeEnv: "development", vercelEnv: "preview" }).issue(request(), "portal", OWNER_TICKET)).toBeNull();
+  });
+
+  it("cannot use an injectable test seam to override the actual process environment", () => {
+    const manager = new HermeticSessionManager({ environment: environment(), nodeEnv: "test" });
+    vi.stubEnv("NODE_ENV", "development");
+    expect(manager.issue(request(), "portal", OWNER_TICKET)).toBeNull();
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect(manager.issue(request(), "portal", OWNER_TICKET)).toBeNull();
+    vi.stubEnv("VERCEL_ENV", "");
+    expect(manager.issue(request(), "portal", OWNER_TICKET)).not.toBeNull();
   });
 
   it("rejects malformed ticket catalogs and role/audience mismatches", () => {

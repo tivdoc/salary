@@ -39,7 +39,9 @@ export function deriveVerifiedActor(
 ): VerifiedActor {
   // This legacy envelope exists only for hermetic integration fixtures. Runtime
   // identities must enter through CryptographicJwtIdentityVerifier.
-  if (process.env.NODE_ENV !== "test" || process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview" || config.runtime !== "test" || envelope.test_only !== true) {
+  const nodeEnvironment = runtimeEnvironmentValue("NODE_ENV");
+  const vercelEnvironment = runtimeEnvironmentValue("VERCEL_ENV");
+  if (nodeEnvironment !== "test" || vercelEnvironment === "production" || vercelEnvironment === "preview" || config.runtime !== "test" || envelope.test_only !== true) {
     throw new Error("TEST_IDENTITY_PRODUCTION_FORBIDDEN");
   }
   if (envelope.source !== "verified_server_adapter" || envelope.signature_valid !== true) throw new Error("IDENTITY_UNVERIFIED");
@@ -74,4 +76,9 @@ export function deriveVerifiedActor(
     break_glass_reason: envelope.break_glass_reason,
     break_glass_expires_at: envelope.break_glass_expires_at,
   });
+}
+
+function runtimeEnvironmentValue(key: string): string | undefined {
+  const value = Reflect.get(process.env, key);
+  return typeof value === "string" ? value : undefined;
 }

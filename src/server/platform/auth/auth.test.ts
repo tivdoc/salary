@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { V07_ROLES, type V07Role, type VerifiedActor } from "../../../engine/wave4/contracts";
 import { AUTHORIZATION_ACTIONS, authorize, type AuthorizationAction, type AuthorizationResource } from "./authorization";
@@ -6,6 +6,10 @@ import { deriveVerifiedActor, type TrustedIdentityEnvelope } from "./claims";
 import { buildStaticRlsContract, verifyStaticRlsContract } from "./rls-contract";
 
 const NOW = Date.parse("2026-08-30T00:05:00.000Z");
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function envelope(overrides: Partial<TrustedIdentityEnvelope> = {}): TrustedIdentityEnvelope {
   return {
@@ -48,6 +52,19 @@ describe("V07-P2-AUTHZ verified claims", () => {
     expect(() => deriveVerifiedActor(envelope({ audience: "wrong_audience_1" }), { issuer: "issuer_local_01", audience: "audience_local_1", runtime: "test", clock_skew_ms: 0 }, NOW)).toThrow("IDENTITY_AUDIENCE_INVALID");
     expect(() => deriveVerifiedActor(envelope({ expires_at: "2026-08-29T00:00:00.000Z" }), { issuer: "issuer_local_01", audience: "audience_local_1", runtime: "test", clock_skew_ms: 0 }, NOW)).toThrow("IDENTITY_EXPIRED");
     expect(() => deriveVerifiedActor(envelope(), { issuer: "issuer_local_01", audience: "audience_local_1", runtime: "production", clock_skew_ms: 0 }, NOW)).toThrow("TEST_IDENTITY_PRODUCTION_FORBIDDEN");
+  });
+
+  it("reads the actual process environment and keeps test identity fail-closed", () => {
+    const config = { issuer: "issuer_local_01", audience: "audience_local_1", runtime: "test" as const, clock_skew_ms: 0 };
+    vi.stubEnv("NODE_ENV", "development");
+    expect(() => deriveVerifiedActor(envelope(), config, NOW)).toThrow("TEST_IDENTITY_PRODUCTION_FORBIDDEN");
+    vi.stubEnv("NODE_ENV", "production");
+    expect(() => deriveVerifiedActor(envelope(), config, NOW)).toThrow("TEST_IDENTITY_PRODUCTION_FORBIDDEN");
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect(() => deriveVerifiedActor(envelope(), config, NOW)).toThrow("TEST_IDENTITY_PRODUCTION_FORBIDDEN");
+    vi.stubEnv("VERCEL_ENV", "");
+    expect(deriveVerifiedActor(envelope(), config, NOW).verified_server_side).toBe(true);
   });
 
   it("requires bounded break-glass reason/expiry", () => {
