@@ -53,7 +53,9 @@ const patterns = [
   {
     kind: "deploy_or_remote_migration_command",
     pattern: new RegExp([
-      "(?:vercel", "\\s+deploy|supabase", "\\s+(?:link|db\\s+push)|git", "\\s+push)",
+      "(?:[\"'`]\\s*(?:vercel", "\\s+deploy|supabase", "\\s+(?:link|db\\s+push)|git", "\\s+push)",
+      "|[\"'`]vercel[\"'`]\\s*,\\s*[\"'`]deploy[\"'`]",
+      "|[\"'`]supabase[\"'`]\\s*,\\s*[\"'`](?:link|db\\s+push)[\"'`])",
     ].join(""), "iu"),
     applies: () => true,
   },
