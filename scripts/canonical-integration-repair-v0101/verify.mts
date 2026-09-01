@@ -4,25 +4,32 @@ import { lstat, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  assertPortableEvidencePath,
   canonicalPayloadSetHash,
   parseOrderedIntegrationLedger,
-  validateV0101Assessment,
+  validateV0101AssessmentAgainstReceipts,
+  V0101_FINAL_COMMAND_IDS,
   type V0101EvidenceEntry,
 } from "../../src/server/system-marathon/integration-repair-evidence.ts";
 import { inspectDeterministicStoreZip } from "../canonical-persistence-v091/evidence/deterministic-zip.mts";
 
 const ROOT = path.resolve(process.cwd());
 const BASE = "3b1740d63bb6978d990d1a6127730f3cec3574cc";
+const BRANCH = "codex/tivdoc-engine-foundation";
 const FINAL = path.join(ROOT, "output", "canonical-integration-durability-repair-v0.10.1", "final");
 const MANIFEST_PATH = path.join(FINAL, "manifest.json");
 const ARCHIVE_PATH = path.join(FINAL, "tivdoc-v0101-evidence.zip");
 const ARCHIVE_HASH_PATH = `${ARCHIVE_PATH}.sha256`;
 const OUTPUT_PATH = path.join(FINAL, "detached-verifier-output.json");
+const ASSESSMENT_ENTRY = "payload/working/integration-repair-assessment.v0.10.1.json";
+const FINAL_VERIFICATION_ENTRY = "payload/working/final-verification.json";
+const EXTERNAL_GATES_ENTRY = "payload/repository/src/server/system-marathon/external-gates.v0.10.1.json";
+const LEDGER_ENTRY = "payload/repository/src/server/system-marathon/integration-repair-ledger.v0.10.1.ndjson";
 
 const manifestBytes = await ordinaryBytes(MANIFEST_PATH);
 const manifest = record(JSON.parse(manifestBytes.toString("utf8")), "V0101_VERIFY_MANIFEST_INVALID");
 if (manifest.schema_version !== "tivdoc-canonical-integration-durability-repair-manifest-v0.10.1"
-    || manifest.base_head !== BASE
+    || manifest.branch !== BRANCH || manifest.base_head !== BASE
     || manifest.self_reference_rule !== "manifest_archive_hash_and_detached_verifier_are_not_payload_files") {
   throw new Error("V0101_VERIFY_MANIFEST_INVALID");
 }
@@ -32,6 +39,12 @@ if (manifest.payload_file_count !== payload.length
     || manifest.payload_set_sha256 !== canonicalPayloadSetHash(payload)) {
   throw new Error("V0101_VERIFY_PAYLOAD_SET_INVALID");
 }
+const payloadMap = new Map(payload.map((entry) => [entry.path, entry]));
+for (const required of [ASSESSMENT_ENTRY, FINAL_VERIFICATION_ENTRY, EXTERNAL_GATES_ENTRY, LEDGER_ENTRY]) {
+  if (!payloadMap.has(required)) throw new Error(`V0101_VERIFY_REQUIRED_PAYLOAD_MISSING:${required}`);
+}
+if (payload.some((entry) => /(?:^|\/)(?:manifest\.json|tivdoc-v0101-evidence\.zip(?:\.sha256)?|detached-verifier-output\.json)$/u
+  .test(entry.path))) throw new Error("V0101_VERIFY_SELF_REFERENCE_IN_PAYLOAD");
 
 for (const entry of payload) {
   const bytes = await ordinaryBytes(path.join(FINAL, ...entry.path.split("/")));
@@ -44,10 +57,10 @@ const inspection = await inspectDeterministicStoreZip(ARCHIVE_PATH);
 const expectedArchive = Object.freeze([
   Object.freeze({ path: "manifest.json", sha256: sha256(manifestBytes), byte_count: manifestBytes.byteLength }),
   ...payload,
-].sort((left, right) => left.path.localeCompare(right.path)));
+].sort((left, right) => compare(left.path, right.path)));
 const actualArchive = [...inspection.entries]
   .map((entry) => ({ path: entry.path, sha256: entry.sha256, byte_count: entry.byte_count }))
-  .sort((left, right) => left.path.localeCompare(right.path));
+  .sort((left, right) => compare(left.path, right.path));
 if (JSON.stringify(actualArchive) !== JSON.stringify(expectedArchive)) {
   throw new Error("V0101_VERIFY_ARCHIVE_ENTRY_SET_INVALID");
 }
@@ -59,18 +72,27 @@ if (declaredHash !== `${archiveSha256}  ${path.basename(ARCHIVE_PATH)}`) {
   throw new Error("V0101_VERIFY_ARCHIVE_HASH_INVALID");
 }
 
-const assessmentPath = payload.find((entry) => entry.path.endsWith("integration-repair-assessment.v0.10.1.json"))?.path;
-const ledgerPath = payload.find((entry) => entry.path.endsWith("integration-repair-ledger.v0.10.1.ndjson"))?.path;
-if (!assessmentPath || !ledgerPath) throw new Error("V0101_VERIFY_REQUIRED_PAYLOAD_MISSING");
-const assessment = JSON.parse((await ordinaryBytes(path.join(FINAL, ...assessmentPath.split("/")))).toString("utf8"));
-validateV0101Assessment(assessment);
-parseOrderedIntegrationLedger((await ordinaryBytes(path.join(FINAL, ...ledgerPath.split("/")))).toString("utf8"));
+const assessment = await jsonPayload(ASSESSMENT_ENTRY, "V0101_VERIFY_ASSESSMENT_INVALID");
+const finalVerification = await jsonPayload(FINAL_VERIFICATION_ENTRY, "V0101_VERIFY_FINAL_VERIFICATION_INVALID");
+const externalGates = await jsonPayload(EXTERNAL_GATES_ENTRY, "V0101_VERIFY_EXTERNAL_GATES_INVALID");
+validateV0101AssessmentAgainstReceipts(assessment, finalVerification, externalGates);
+parseOrderedIntegrationLedger((await payloadBytes(LEDGER_ENTRY)).toString("utf8"));
+await validateFinalVerificationReferences(finalVerification);
+await validateAssessmentEvidencePaths(assessment);
 
 const head = git(["rev-parse", "HEAD"]);
 const tree = git(["rev-parse", "HEAD^{tree}"]);
-if (manifest.final_head !== head || manifest.final_tree !== tree
-    || assessment.verified_head !== head || assessment.verified_tree !== tree) {
+const branch = git(["branch", "--show-current"]);
+if (branch !== BRANCH || manifest.final_head !== head || manifest.final_tree !== tree
+    || assessment.verified_head !== head || assessment.verified_tree !== tree
+    || finalVerification.verified_branch !== branch || finalVerification.verified_head !== head
+    || finalVerification.verified_tree !== tree) {
   throw new Error("V0101_VERIFY_STALE_HEAD");
+}
+const gitProof = await jsonPayload("payload/git/base-final.json", "V0101_VERIFY_GIT_PROOF_INVALID");
+if (gitProof.branch !== branch || gitProof.base_head !== BASE || gitProof.final_head !== head
+    || gitProof.final_tree !== tree || gitProof.base_is_ancestor !== true || gitProof.worktree_clean_before_build !== true) {
+  throw new Error("V0101_VERIFY_GIT_PROOF_INVALID");
 }
 if (spawnSync("git", ["merge-base", "--is-ancestor", BASE, head], { cwd: ROOT }).status !== 0) {
   throw new Error("V0101_VERIFY_BASE_NOT_ANCESTOR");
@@ -79,9 +101,23 @@ if (git(["status", "--porcelain", "--untracked-files=all"]) !== "") {
   throw new Error("V0101_VERIFY_WORKTREE_NOT_CLEAN");
 }
 
+const closureResults = new Map<string, Record<string, unknown>>();
+for (const value of [...array(assessment.mc_results, "V0101_VERIFY_RESULTS_INVALID"),
+  ...array(assessment.ir_results, "V0101_VERIFY_RESULTS_INVALID")]) {
+  const result = record(value, "V0101_VERIFY_RESULT_INVALID");
+  closureResults.set(String(result.id), result);
+}
+for (const id of ["MC-35", "IR-26"] as const) {
+  const result = closureResults.get(id);
+  if (result?.status !== "PASS" || JSON.stringify(result.evidence) !== JSON.stringify(["detached-verifier-output.json"])) {
+    throw new Error(`V0101_VERIFY_DETACHED_CLOSURE_NOT_ADMISSIBLE:${id}`);
+  }
+}
+
 const receipt = Object.freeze({
   schema_version: "tivdoc-canonical-integration-durability-repair-detached-verifier-v0.10.1",
   status: "PASS",
+  verified_branch: branch,
   final_head: head,
   final_tree: tree,
   manifest_sha256: sha256(manifestBytes),
@@ -91,28 +127,118 @@ const receipt = Object.freeze({
   archive_sha256: archiveSha256,
   traversal_rejected: true,
   duplicate_normalized_paths_rejected: true,
+  out_of_root_evidence_rejected: true,
+  missing_evidence_rejected: true,
+  malformed_ledgers_rejected: true,
   self_reference_absent: true,
   stale_head_rejected: true,
   contradictory_statuses_rejected: true,
+  blocked_gate_false_pass_rejected: true,
+  detached_closure: Object.freeze({
+    status: "PASS",
+    closes_assessment_ids: Object.freeze(["MC-35", "IR-26"]),
+    proof_established_after_manifest_payload_archive_and_status_verification: true,
+    self_reference_rule_preserved: true,
+  }),
 });
-await writeFile(OUTPUT_PATH, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "w", mode: 0o600 });
+await writeFile(OUTPUT_PATH, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx", mode: 0o600 });
 process.stdout.write(`${JSON.stringify(receipt)}\n`);
+
+async function validateFinalVerificationReferences(verification: Record<string, unknown>): Promise<void> {
+  const commands = array(verification.commands, "V0101_VERIFY_FINAL_COMMANDS_INVALID").map((value) => record(value,
+    "V0101_VERIFY_FINAL_COMMAND_INVALID"));
+  if (commands.length !== V0101_FINAL_COMMAND_IDS.length
+      || JSON.stringify(verification.execution_order) !== JSON.stringify(V0101_FINAL_COMMAND_IDS)) {
+    throw new Error("V0101_VERIFY_FINAL_COMMANDS_INVALID");
+  }
+  for (const [index, command] of commands.entries()) {
+    const id = V0101_FINAL_COMMAND_IDS[index]!;
+    if (command.command_id !== id || command.attempt_ordinal !== 1 || command.execution_ordinal !== index + 1) {
+      throw new Error("V0101_VERIFY_FINAL_COMMAND_INVALID");
+    }
+    for (const stream of ["stdout", "stderr"] as const) {
+      const relative = `final-logs/${id}.${stream}.log`;
+      if (command[`${stream}_log`] !== relative) throw new Error("V0101_VERIFY_LOG_REFERENCE_INVALID");
+      const bytes = await payloadBytes(`payload/working/${relative}`);
+      if (command[`${stream}_sha256`] !== sha256(bytes) || command[`${stream}_byte_count`] !== bytes.byteLength) {
+        throw new Error("V0101_VERIFY_LOG_HASH_INVALID");
+      }
+    }
+  }
+  if (verification.journal_log !== "final-command-journal.ndjson") throw new Error("V0101_VERIFY_JOURNAL_REFERENCE_INVALID");
+  const journal = await payloadBytes("payload/working/final-command-journal.ndjson");
+  if (verification.journal_sha256 !== sha256(journal) || verification.journal_byte_count !== journal.byteLength) {
+    throw new Error("V0101_VERIFY_JOURNAL_HASH_INVALID");
+  }
+  const events = journal.toString("utf8").trim().split(/\r?\n/u).filter(Boolean).map((line) => {
+    try { return record(JSON.parse(line), "V0101_VERIFY_JOURNAL_INVALID"); } catch { throw new Error("V0101_VERIFY_JOURNAL_INVALID"); }
+  });
+  if (events.length !== commands.length * 2) throw new Error("V0101_VERIFY_JOURNAL_INVALID");
+  for (const [index, command] of commands.entries()) {
+    const started = events[index * 2]!;
+    const completed = events[index * 2 + 1]!;
+    if (started.event_id !== `V0101-FINAL-${String(index * 2 + 1).padStart(4, "0")}`
+        || completed.event_id !== `V0101-FINAL-${String(index * 2 + 2).padStart(4, "0")}`
+        || started.event_type !== "COMMAND_STARTED" || completed.event_type !== "COMMAND_COMPLETED"
+        || started.command_id !== command.command_id || completed.command_id !== command.command_id
+        || started.attempt_ordinal !== 1 || completed.attempt_ordinal !== 1
+        || completed.status !== command.status || completed.stdout_sha256 !== command.stdout_sha256
+        || completed.stderr_sha256 !== command.stderr_sha256) {
+      throw new Error("V0101_VERIFY_JOURNAL_COMMAND_MISMATCH");
+    }
+  }
+}
+
+async function validateAssessmentEvidencePaths(assessment: Record<string, unknown>): Promise<void> {
+  for (const value of [...array(assessment.mc_results, "V0101_VERIFY_RESULTS_INVALID"),
+    ...array(assessment.ir_results, "V0101_VERIFY_RESULTS_INVALID")]) {
+    const result = record(value, "V0101_VERIFY_RESULT_INVALID");
+    const evidence = array(result.evidence, "V0101_VERIFY_EVIDENCE_INVALID");
+    if (result.id === "MC-35" || result.id === "IR-26") {
+      if (evidence.length !== 1 || evidence[0] !== "detached-verifier-output.json") {
+        throw new Error("V0101_VERIFY_DETACHED_CLOSURE_REFERENCE_INVALID");
+      }
+      continue;
+    }
+    for (const raw of evidence) {
+      if (typeof raw !== "string") throw new Error("V0101_VERIFY_EVIDENCE_INVALID");
+      assertPortableEvidencePath(raw);
+      if (!raw.startsWith("payload/") || !payloadMap.has(raw)) throw new Error(`V0101_VERIFY_EVIDENCE_MISSING:${raw}`);
+      await payloadBytes(raw);
+    }
+  }
+}
 
 function entries(value: unknown): V0101EvidenceEntry[] {
   if (!Array.isArray(value) || value.length < 1) throw new Error("V0101_VERIFY_PAYLOAD_ENTRIES_INVALID");
   return value.map((item) => {
     const entry = record(item, "V0101_VERIFY_PAYLOAD_ENTRY_INVALID");
     if (typeof entry.path !== "string" || !entry.path.startsWith("payload/")
-        || typeof entry.sha256 !== "string" || typeof entry.byte_count !== "number") {
+        || typeof entry.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(entry.sha256)
+        || !Number.isSafeInteger(entry.byte_count) || (entry.byte_count as number) < 0) {
       throw new Error("V0101_VERIFY_PAYLOAD_ENTRY_INVALID");
     }
-    return Object.freeze({ path: entry.path, sha256: entry.sha256, byte_count: entry.byte_count });
+    assertPortableEvidencePath(entry.path);
+    return Object.freeze({ path: entry.path, sha256: entry.sha256, byte_count: entry.byte_count as number });
   });
+}
+
+async function payloadBytes(entryPath: string): Promise<Buffer> {
+  if (!payloadMap.has(entryPath)) throw new Error(`V0101_VERIFY_REQUIRED_PAYLOAD_MISSING:${entryPath}`);
+  return await ordinaryBytes(path.join(FINAL, ...entryPath.split("/")));
+}
+
+async function jsonPayload(entryPath: string, code: string): Promise<Record<string, unknown>> {
+  try {
+    return record(JSON.parse((await payloadBytes(entryPath)).toString("utf8")), code);
+  } catch {
+    throw new Error(code);
+  }
 }
 
 async function ordinaryBytes(file: string): Promise<Buffer> {
   const metadata = await lstat(file);
-  if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1 || metadata.size > 64 * 1024 * 1024) {
+  if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1 || metadata.size > 128 * 1024 * 1024) {
     throw new Error("V0101_VERIFY_FILE_INVALID");
   }
   const bytes = await readFile(file);
@@ -125,8 +251,17 @@ function record(value: unknown, code: string): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function array(value: unknown, code: string): unknown[] {
+  if (!Array.isArray(value)) throw new Error(code);
+  return value;
+}
+
 function git(args: readonly string[]): string {
   return execFileSync("git", args, { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).trim();
+}
+
+function compare(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function sha256(bytes: Uint8Array): string {

@@ -2,25 +2,61 @@ import { spawnSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { validateV0101Assessment, type V0101ResultStatus } from "../../src/server/system-marathon/integration-repair-evidence.ts";
+import {
+  validateV0101AssessmentAgainstReceipts,
+  V0101_COMMAND_FAILURE_IMPACTS,
+  V0101_FINAL_COMMAND_IDS,
+  type V0101ResultStatus,
+} from "../../src/server/system-marathon/integration-repair-evidence.ts";
 
 const ROOT = path.resolve(process.cwd());
 const WORKING = path.join(ROOT, "output", "canonical-integration-durability-repair-v0.10.1", "working");
 const FINAL_VERIFICATION = path.join(WORKING, "final-verification.json");
 const OUTPUT = path.join(WORKING, "integration-repair-assessment.v0.10.1.json");
+const EXTERNAL_GATES = path.join(ROOT, "src", "server", "system-marathon", "external-gates.v0.10.1.json");
+const METRICS = path.join(ROOT, "src", "server", "system-marathon", "integration-repair-metrics.v0.10.1.json");
+const BROWSER_REGRESSION = path.join(WORKING, "regressions", "browser.json");
 
 const verification = record(JSON.parse(await readFile(FINAL_VERIFICATION, "utf8")));
+const externalGates = record(JSON.parse(await readFile(EXTERNAL_GATES, "utf8")));
+const metrics = record(JSON.parse(await readFile(METRICS, "utf8")));
+const browserRegression = record(JSON.parse(await readFile(BROWSER_REGRESSION, "utf8")));
 const head = git("HEAD");
 const tree = git("HEAD^{tree}");
 if (verification.verified_head !== head || verification.verified_tree !== tree) {
   throw new Error("V0101_ASSESS_FINAL_VERIFICATION_STALE");
 }
+if (browserRegression.verified_head !== head || browserRegression.verified_tree !== tree) {
+  throw new Error("V0101_ASSESS_BROWSER_REGRESSION_STALE");
+}
+const persistenceMetrics = record(metrics.persistence_capabilities);
+const entrypointMetrics = record(metrics.canonical_entrypoints);
+const processLocalMetrics = record(metrics.process_local_product_repositories);
+const legalObservationMetrics = record(metrics.legal_observations);
+if (metrics.schema_version !== "tivdoc-canonical-integration-durability-repair-metrics-v0.10.1"
+    || persistenceMetrics.product_reachable_memory_fallbacks !== 0
+    || processLocalMetrics.durable_governance_replacement_wired_to_stable_product !== false
+    || legalObservationMetrics.known_staged_observations_reported !== 71
+    || legalObservationMetrics.activation_allowed !== false) {
+  throw new Error("V0101_ASSESS_METRICS_INVALID");
+}
+const processLocalRepositoryCount = nonnegativeInteger(processLocalMetrics.count, "V0101_ASSESS_METRICS_INVALID");
+const partialOrUnwiredEntrypoints = nonnegativeInteger(entrypointMetrics.partial_or_unwired, "V0101_ASSESS_METRICS_INVALID");
+const queuedObservations = nonnegativeInteger(
+  legalObservationMetrics.known_staged_observations_in_durable_queue,
+  "V0101_ASSESS_METRICS_INVALID",
+);
 const commands = Array.isArray(verification.commands) ? verification.commands.map(record) : [];
 const commandStatus = (id: string): V0101ResultStatus => commands.find((item) => item.command_id === id)?.status === "PASS" ? "PASS" : "FAIL";
 const postgres = commandStatus("postgresql_full_regression");
 const browserCommand = commandStatus("browser_e2e_full");
 const finalMatrix = verification.status === "PASS" ? "PASS" : "FAIL";
 const runCounts = record(verification.run_counts);
+const commandFailureReason = (id: string): string | undefined => {
+  const failed = V0101_FINAL_COMMAND_IDS.filter((commandId) => commandStatus(commandId) === "FAIL"
+    && V0101_COMMAND_FAILURE_IMPACTS[commandId].includes(id));
+  return failed.length > 0 ? `FINAL_COMMAND_FAILED: ${failed.join(", ")}.` : undefined;
+};
 
 const mcFailures: Readonly<Record<string, string>> = Object.freeze({
   "MC-04": "IMPLEMENTED_NOT_WIRED: the durable cryptographic session reader and shared route boundary exist, but no non-test startup root installs the durable verifier for every stable product entrypoint.",
@@ -36,7 +72,6 @@ const mcFailures: Readonly<Record<string, string>> = Object.freeze({
   "MC-21": "PARTIAL: the required complete synthetic golden, mutation and property matrix plus human-reviewed cases is not complete.",
   "MC-22": "PARTIAL: dependency invalidation is not proven across every run, report, approval and access grant.",
   "MC-29": "IMPLEMENTED_NOT_WIRED: 46 canonical inventory entries remain PARTIAL or IMPLEMENTED_NOT_WIRED.",
-  "MC-34": "FAILED_LOCAL_WITH_EVIDENCE: the one final quality matrix is non-PASS because the required rendered durable browser-product proof did not complete.",
   "MC-37": "PARTIAL: immutable twelve-month multi-document currentness, conflict and adaptive clarification are not integrated into the durable product path.",
   "MC-38": "IMPLEMENTED_NOT_WIRED: the 11-tab operations workspace is not bound to the durable Legal, Parameters, Rules, Golden and Ground Truth queues.",
   "MC-39": "PARTIAL: capability projection, startup prerequisites, limits, cancellation and partial-state enforcement do not cover every stable entrypoint.",
@@ -61,11 +96,18 @@ const mcResults = Array.from({ length: 39 }, (_, index) => {
   const id = `MC-${String(index + 1).padStart(2, "0")}`;
   if (mcBlocked[id]) return result(id, "BLOCKED", mcRequirements[index]!, mcBlocked[id], ["payload/repository/src/server/system-marathon/external-gates.v0.10.1.json"]);
   if (id === "MC-11" && postgres !== "PASS") return result(id, "FAIL", mcRequirements[index]!, "REAL_POSTGRESQL_CURRENT_HEAD_PROOF did not pass; current-head controlled-import migration behavior is unproven.");
-  if (mcFailures[id]) return result(id, "FAIL", mcRequirements[index]!, mcFailures[id]);
+  if (id === "MC-08" && postgres !== "PASS") return result(id, "FAIL", mcRequirements[index]!,
+    "REGRESSION_FAILED: the current-head PostgreSQL regression failed, so canonical report binding is not dynamically proven; the unified durable UI-to-worker-to-storage-to-download product timeline is also absent.",
+    ["payload/working/regressions/postgresql.json", "payload/working/product/unified-timeline.json"]);
+  if (id === "MC-34" && finalMatrix !== "PASS") return result(id, "FAIL", mcRequirements[index]!,
+    finalMatrixFailureReason(commands), ["payload/working/final-verification.json"]);
+  if (mcFailures[id]) return result(id, "FAIL", mcRequirements[index]!, mcFailures[id], mcEvidence(id));
+  const commandFailure = commandFailureReason(id);
+  if (commandFailure) return result(id, "FAIL", mcRequirements[index]!, commandFailure);
   return result(id, "PASS", mcRequirements[index]!);
 });
 
-const browserReason = "REGRESSION_FAILED / FAILED_LOCAL_WITH_EVIDENCE: Webpack rejected node:crypto with UnhandledSchemeError while compiling src/instrumentation.ts -> src/server/product/integration/browser-runtime.ts before readiness, session issuance or route navigation. The prior TEST_IDENTITY_PRODUCTION_FORBIDDEN defect is no longer observed and its production guard remains fail-closed.";
+const browserReason = browserFailureReason(browserRegression, commands);
 const irRequirements = [
   "exact base/ancestry/contract/clean tree", "browser instrumentation repair", "current-head PostgreSQL report binding",
   "durable identity on stable entrypoints", "portal PostgreSQL/private storage", "shared operations revision", "unified restart timeline",
@@ -98,23 +140,32 @@ const irBlocked: Readonly<Record<string, string>> = Object.freeze({
 const irResults = Array.from({ length: 27 }, (_, index) => {
   const id = `IR-${String(index + 1).padStart(2, "0")}`;
   if (irBlocked[id]) return result(id, "BLOCKED", irRequirements[index]!, irBlocked[id], ["payload/repository/src/server/system-marathon/external-gates.v0.10.1.json"]);
-  if (id === "IR-02" && browserCommand !== "PASS") return result(id, "FAIL", irRequirements[index]!, browserReason);
+  if (id === "IR-02" && browserCommand !== "PASS") return result(id, "FAIL", irRequirements[index]!, browserReason,
+    ["payload/working/regressions/browser.json"]);
   if (["IR-03", "IR-08", "IR-20"].includes(id) && postgres !== "PASS") {
-    return result(id, "FAIL", irRequirements[index]!, "REAL_POSTGRESQL_CURRENT_HEAD_PROOF failed; the required current-head durable regression was not established.");
+    return result(id, "FAIL", irRequirements[index]!, "REAL_POSTGRESQL_CURRENT_HEAD_PROOF failed; the required current-head durable regression was not established.",
+      ["payload/working/regressions/postgresql.json"]);
   }
   if (id === "IR-25" && finalMatrix !== "PASS") return result(id, "FAIL", irRequirements[index]!, "The single final integrated quality matrix contains one or more failed commands.");
-  if (irFailureReasons[id]) return result(id, "FAIL", irRequirements[index]!, irFailureReasons[id]);
+  if (irFailureReasons[id]) return result(id, "FAIL", irRequirements[index]!, irFailureReasons[id], irEvidence(id));
+  const commandFailure = commandFailureReason(id);
+  if (commandFailure) return result(id, "FAIL", irRequirements[index]!, commandFailure);
   return result(id, "PASS", irRequirements[index]!);
 });
 
 const corePass = mcResults.filter((entry) => !["MC-03", "MC-10", "MC-27"].includes(entry.id) && entry.status === "PASS").length;
-const coreFail = 36 - corePass;
+const coreFail = mcResults.filter((entry) => !["MC-03", "MC-10", "MC-27"].includes(entry.id) && entry.status === "FAIL").length;
+if (corePass + coreFail !== 36) throw new Error("V0101_ASSESS_CORE_STATUS_INVALID");
+const headline = corePass === 36 && coreFail === 0
+  && irResults.every((entry) => ["IR-22", "IR-23", "IR-24"].includes(entry.id) || entry.status === "PASS")
+  ? "V0101_ENGINEERING_INTEGRATION_COMPLETE_EXTERNAL_AND_HUMAN_GATES_REMAIN"
+  : "V0101_ENGINEERING_INTEGRATION_PARTIAL";
 const blockers = [...mcResults, ...irResults]
   .filter((entry) => entry.status !== "PASS")
   .map((entry) => Object.freeze({ id: entry.id, status: entry.status, reason: entry.reason }));
 const assessment = Object.freeze({
   schema_version: "tivdoc-canonical-integration-durability-repair-assessment-v0.10.1",
-  headline: "V0101_ENGINEERING_INTEGRATION_PARTIAL",
+  headline,
   verified_head: head,
   verified_tree: tree,
   mc_results: mcResults,
@@ -124,11 +175,11 @@ const assessment = Object.freeze({
   truth: Object.freeze({
     CORE_LOCAL_MC_PASS: `${corePass}/36`, CORE_LOCAL_MC_FAIL: coreFail,
     REAL_POSTGRESQL_CURRENT_HEAD_PROOF: postgres,
-    REAL_BROWSER_DURABLE_PRODUCT_PATH: "FAIL",
+    REAL_BROWSER_DURABLE_PRODUCT_PATH: browserCommand,
     PRODUCT_REACHABLE_MEMORY_FALLBACKS: 0,
-    PROCESS_LOCAL_PRODUCT_REPOSITORIES: 4,
-    PARTIAL_OR_UNWIRED_STABLE_ENTRYPOINTS: 46,
-    KNOWN_STAGED_SOURCE_OBSERVATIONS_IN_DURABLE_QUEUE: 0,
+    PROCESS_LOCAL_PRODUCT_REPOSITORIES: processLocalRepositoryCount,
+    PARTIAL_OR_UNWIRED_STABLE_ENTRYPOINTS: partialOrUnwiredEntrypoints,
+    KNOWN_STAGED_SOURCE_OBSERVATIONS_IN_DURABLE_QUEUE: queuedObservations,
     REAL_LEGAL_TOPICS_READY: "0/7", REAL_SOURCES_ACTIVE: 0, REAL_PARAMETERS_ACTIVE: 0,
     REAL_RULES_ACTIVE: 0, REAL_CALCULATIONS_OR_FINDINGS: 0, HUMAN_GROUND_TRUTH_LOCKED: 0,
     REAL_CUSTOMER_DATA_READS: 0, CUSTOMER_PROCESSING_ENABLED: "NO", CUSTOMER_SHADOW_AUTHORIZED: "NO",
@@ -139,24 +190,80 @@ const assessment = Object.freeze({
     POSTGRESQL_FULL_REGRESSION_RUN_COUNT: runCounts.POSTGRESQL_FULL_REGRESSION_RUN_COUNT,
   }),
 });
-validateV0101Assessment(assessment);
+validateV0101AssessmentAgainstReceipts(assessment, verification, externalGates);
 await writeFile(OUTPUT, `${JSON.stringify(assessment, null, 2)}\n`, { flag: "wx", mode: 0o600 });
 process.stdout.write(`${JSON.stringify({ status: "PASS", headline: assessment.headline, core_pass: corePass, core_fail: coreFail,
   postgres, browser_command: browserCommand, verified_head: head, verified_tree: tree })}\n`);
+
+type AssessmentResult = Readonly<{
+  id: string;
+  requirement: string;
+  status: V0101ResultStatus;
+  evidence: readonly string[];
+  reason?: string;
+}>;
 
 function result(
   id: string,
   status: V0101ResultStatus,
   requirement: string,
   reason?: string,
-  evidence: readonly string[] = ["payload/working/final-verification.json"],
-): Readonly<Record<string, unknown>> {
-  return Object.freeze({ id, requirement, status, evidence: Object.freeze([...evidence]), ...(status === "PASS" ? {} : { reason }) });
+  evidence?: readonly string[],
+): AssessmentResult {
+  const resolvedEvidence = evidence ?? (["MC-35", "IR-26"].includes(id)
+    ? ["detached-verifier-output.json"]
+    : ["payload/working/final-verification.json"]);
+  return Object.freeze({ id, requirement, status, evidence: Object.freeze([...resolvedEvidence]), ...(status === "PASS" ? {} : { reason }) });
+}
+
+function mcEvidence(id: string): readonly string[] {
+  if (["MC-06", "MC-07", "MC-08", "MC-34"].includes(id)) {
+    return ["payload/working/regressions/browser.json", "payload/working/product/unified-timeline.json"];
+  }
+  if (["MC-13", "MC-14", "MC-15", "MC-17", "MC-19", "MC-20", "MC-21", "MC-22", "MC-29", "MC-37", "MC-38", "MC-39"].includes(id)) {
+    return ["payload/repository/src/server/system-marathon/integration-repair-metrics.v0.10.1.json",
+      "payload/repository/src/server/system-marathon/integration-repair-audit.v0.10.1.json"];
+  }
+  return ["payload/working/final-verification.json"];
+}
+
+function irEvidence(id: string): readonly string[] {
+  if (["IR-02", "IR-05", "IR-06", "IR-07", "IR-21"].includes(id)) {
+    return ["payload/working/regressions/browser.json", "payload/working/product/unified-timeline.json"];
+  }
+  return ["payload/repository/src/server/system-marathon/integration-repair-metrics.v0.10.1.json",
+    "payload/repository/src/server/system-marathon/integration-repair-audit.v0.10.1.json"];
+}
+
+function finalMatrixFailureReason(finalCommands: readonly Record<string, unknown>[]): string {
+  const failed = finalCommands.filter((command) => command.status !== "PASS")
+    .map((command) => String(command.command_id));
+  return `FAILED_LOCAL_WITH_EVIDENCE: the one-shot final quality matrix is non-PASS; failed command IDs: ${failed.join(", ")}.`;
+}
+
+function browserFailureReason(
+  regression: Record<string, unknown>,
+  finalCommands: readonly Record<string, unknown>[],
+): string {
+  const after = record(regression.after);
+  const browser = finalCommands.find((command) => command.command_id === "browser_e2e_full");
+  const observed = typeof after.observed_error === "string" ? after.observed_error : null;
+  const failureCode = typeof browser?.failure_code === "string" ? browser.failure_code : "BROWSER_DURABLE_PROOF_ABSENT";
+  const ready = after.next_ready_observed === true ? "Next.js readiness was observed" : "Next.js readiness was not proven";
+  const routeState = Array.isArray(after.routes_not_observed_in_logs)
+    ? `routes not observed in the captured logs: ${after.routes_not_observed_in_logs.map(String).join(", ") || "none"}`
+    : "route evidence was unavailable";
+  return `REGRESSION_FAILED / FAILED_LOCAL_WITH_EVIDENCE: ${ready}; browser proof code ${failureCode}; ${routeState}; observed error: ${observed ?? "none captured"}. The TEST_IDENTITY_PRODUCTION_FORBIDDEN guard remains fail-closed, and no current-head durable signed-session/PostgreSQL/private-storage browser receipt was established.`;
 }
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("V0101_ASSESS_INPUT_INVALID");
   return value as Record<string, unknown>;
+}
+
+function nonnegativeInteger(value: unknown, code: string): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 0) throw new Error(code);
+  return value as number;
 }
 
 function git(revision: string): string {
