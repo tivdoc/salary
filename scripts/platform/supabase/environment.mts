@@ -172,7 +172,12 @@ function localEngineHost(value: string | undefined): boolean {
 
 function minimalLocalProcessEnvironment(environment: Readonly<Record<string, string | undefined>>): NodeJS.ProcessEnv {
   const allowed = ["COMSPEC", "CONTAINER_HOST", "DOCKER_HOST", "HOME", "PATH", "PATHEXT", "SYSTEMDRIVE", "SYSTEMROOT", "TEMP", "TMP", "USERPROFILE"];
-  return Object.fromEntries(allowed.flatMap((key) => typeof environment[key] === "string" ? [[key, environment[key]]] : []));
+  const result: NodeJS.ProcessEnv = { NODE_ENV: "production" };
+  for (const key of allowed) {
+    const value = environment[key];
+    if (typeof value === "string") result[key] = value;
+  }
+  return result;
 }
 
 function safeExecutable(candidate: string): boolean {
