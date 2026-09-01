@@ -37,6 +37,8 @@ describe("V0.10.2 bounded fresh worker child launcher", () => {
         transport: "single_bounded_stdin_stdout_frame",
         shell: false,
         direct_child_required: true,
+        inherited_runtime_configuration: false,
+        inherited_parent_environment_keys: 0,
         protocol_credentials_allowed: false,
         protocol_urls_allowed: false,
         protocol_storage_paths_allowed: false,
@@ -103,6 +105,44 @@ describe("V0.10.2 bounded fresh worker child launcher", () => {
       expect(serialized).not.toContain(connectionScheme);
     });
   });
+
+  it("passes only the explicit worker environment and never inherits parent web secrets", async () => {
+    const parentSecretKey = "TIVDOC_DURABLE_DOWNLOAD_HMAC_KEY";
+    const previous = process.env[parentSecretKey];
+    process.env[parentSecretKey] = "parent-web-secret-must-not-enter-child";
+    try {
+      await withEntrypoint(environmentProgram(), async (entrypointPath, workingDirectory) => {
+        const launcher = new FreshWorkerChildProcessLauncher({
+          entrypoint_path: entrypointPath,
+          working_directory: workingDirectory,
+          timeout_ms: 2_000,
+          termination_grace_ms: 500,
+          child_environment: {
+            NODE_ENV: "development",
+            TIVDOC_WORKER_RUNTIME_SENTINEL: "TIVDOC_FRESH_WORKER_V0102",
+          },
+        });
+        await expect(launcher.launch({ request: fixtureRequest() })).resolves.toMatchObject({
+          fresh_process_verified: true,
+        });
+      });
+    } finally {
+      if (previous === undefined) delete process.env[parentSecretKey];
+      else process.env[parentSecretKey] = previous;
+    }
+  });
+
+  it("rejects a non-worker environment key before spawning", async () => {
+    await withEntrypoint(successProgram(), async (entrypointPath, workingDirectory) => {
+      expect(() => new FreshWorkerChildProcessLauncher({
+        entrypoint_path: entrypointPath,
+        working_directory: workingDirectory,
+        timeout_ms: 2_000,
+        termination_grace_ms: 500,
+        child_environment: { TIVDOC_DURABLE_DOWNLOAD_HMAC_KEY: "forbidden" } as never,
+      })).toThrow("FRESH_WORKER_CHILD_RUNTIME_FAILED");
+    });
+  });
 });
 
 function createLauncher(
@@ -116,7 +156,38 @@ function createLauncher(
     working_directory: workingDirectory,
     timeout_ms: timeoutMs,
     termination_grace_ms: terminationGraceMs,
+    child_environment: {},
   });
+}
+
+function environmentProgram(): string {
+  return `
+import { serveFreshWorkerChildProcess } from ${JSON.stringify(MODULE_URL)};
+if (process.env.TIVDOC_WORKER_RUNTIME_SENTINEL !== "TIVDOC_FRESH_WORKER_V0102"
+    || process.env.TIVDOC_DURABLE_DOWNLOAD_HMAC_KEY !== undefined) {
+  throw new Error("unsafe child environment");
+}
+const hash = ${JSON.stringify(HASH)};
+await serveFreshWorkerChildProcess(async () => ({
+  worker: {
+    async process() {
+      return {
+        state: "SUCCEEDED",
+        job_revision: 3,
+        fencing_token: 2,
+        attempt_count: 1,
+        report_sha256: hash,
+        artifact_sha256: hash,
+        logical_effect_sha256: hash,
+        storage_locator_sha256: hash,
+        worker_process_sha256: hash,
+        audit_event_sha256: hash,
+      };
+    },
+  },
+  async close() {},
+}), { input_timeout_ms: 1_000, shutdown_timeout_ms: 500 });
+`;
 }
 
 function fixtureRequest(): FreshWorkerRequest {

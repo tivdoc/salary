@@ -26,6 +26,18 @@ const MAX_INPUT_TIMEOUT_MS = 30_000;
 const MAX_TERMINATION_GRACE_MS = 5_000;
 const CHILD_CANCEL_CONTROL = "tivdoc:fresh-worker:cancel:v0.10.2" as const;
 const CHILD_ENTRYPOINT_EXTENSIONS = Object.freeze([".js", ".mjs", ".cjs", ".ts", ".mts"] as const);
+export const FRESH_WORKER_CHILD_ENVIRONMENT_KEYS = Object.freeze([
+  "NODE_ENV",
+  "SYSTEMROOT",
+  "TEMP",
+  "TMP",
+  "WINDIR",
+  "TIVDOC_WORKER_BUILD_IDENTITY_SHA",
+  "TIVDOC_WORKER_POSTGRES_URL",
+  "TIVDOC_WORKER_PRIVATE_STORAGE_ROOT",
+  "TIVDOC_WORKER_RUNTIME_SENTINEL",
+] as const);
+export type FreshWorkerChildEnvironmentKey = (typeof FRESH_WORKER_CHILD_ENVIRONMENT_KEYS)[number];
 
 export type FreshWorkerChildErrorCode =
   | "FRESH_WORKER_CHILD_CANCELLED"
@@ -65,6 +77,7 @@ export type FreshWorkerChildProcessLauncherConfig = Readonly<{
   working_directory: string;
   timeout_ms: number;
   termination_grace_ms: number;
+  child_environment: Readonly<Partial<Record<FreshWorkerChildEnvironmentKey, string>>>;
 }>;
 
 export type FreshWorkerChildProcessLaunchInput = Readonly<{
@@ -88,6 +101,7 @@ export class FreshWorkerChildProcessLauncher {
   readonly #workingDirectory: string;
   readonly #timeoutMs: number;
   readonly #terminationGraceMs: number;
+  readonly #childEnvironment: Readonly<Record<string, string>>;
 
   constructor(config: FreshWorkerChildProcessLauncherConfig) {
     assertLocalPath(config.entrypoint_path, true);
@@ -98,6 +112,7 @@ export class FreshWorkerChildProcessLauncher {
     this.#workingDirectory = config.working_directory;
     this.#timeoutMs = config.timeout_ms;
     this.#terminationGraceMs = config.termination_grace_ms;
+    this.#childEnvironment = validateChildEnvironment(config.child_environment);
   }
 
   proof() {
@@ -108,7 +123,9 @@ export class FreshWorkerChildProcessLauncher {
       cancellation_control_fields: 0 as const,
       direct_child_required: true as const,
       shell: false as const,
-      inherited_runtime_configuration: true as const,
+      inherited_runtime_configuration: false as const,
+      explicit_environment_allowlist: FRESH_WORKER_CHILD_ENVIRONMENT_KEYS,
+      inherited_parent_environment_keys: 0 as const,
       protocol_credentials_allowed: false as const,
       protocol_urls_allowed: false as const,
       protocol_storage_paths_allowed: false as const,
@@ -145,7 +162,7 @@ export class FreshWorkerChildProcessLauncher {
 
     let child: OwnedFreshWorkerProcess;
     try {
-      child = spawnOwnedFreshWorker(this.#entrypointPath, this.#workingDirectory);
+      child = spawnOwnedFreshWorker(this.#entrypointPath, this.#workingDirectory, this.#childEnvironment);
     } catch {
       return Promise.reject(new FreshWorkerChildError("FRESH_WORKER_CHILD_SPAWN_FAILED"));
     }
@@ -483,6 +500,7 @@ function assertChildRuntime(value: unknown): asserts value is FreshWorkerChildRu
 function spawnOwnedFreshWorker(
   entrypointPath: string,
   workingDirectory: string,
+  environment: Readonly<Record<string, string>>,
 ): OwnedFreshWorkerProcess {
   const child = spawn(process.execPath, [
     "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
@@ -490,12 +508,32 @@ function spawnOwnedFreshWorker(
     entrypointPath,
   ], {
     cwd: workingDirectory,
+    env: { ...environment },
     shell: false,
     windowsHide: true,
     stdio: ["pipe", "pipe", "pipe", "ipc"],
   });
   assertOwnedFreshWorkerProcess(child);
   return child;
+}
+
+function validateChildEnvironment(
+  value: Readonly<Partial<Record<FreshWorkerChildEnvironmentKey, string>>>,
+): Readonly<Record<string, string>> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new FreshWorkerChildError("FRESH_WORKER_CHILD_RUNTIME_FAILED");
+  }
+  const allowed = new Set<string>(FRESH_WORKER_CHILD_ENVIRONMENT_KEYS);
+  const entries = Object.entries(value);
+  if (entries.some(([key, candidate]) => !allowed.has(key)
+      || typeof candidate !== "string"
+      || candidate.length === 0
+      || candidate.includes("\0")
+      || /[\r\n]/u.test(candidate)
+      || Buffer.byteLength(candidate, "utf8") > MAX_PATH_BYTES)) {
+    throw new FreshWorkerChildError("FRESH_WORKER_CHILD_RUNTIME_FAILED");
+  }
+  return Object.freeze(Object.fromEntries(entries.sort(([left], [right]) => left.localeCompare(right))));
 }
 
 function assertOwnedFreshWorkerProcess(child: ChildProcess): asserts child is OwnedFreshWorkerProcess {
