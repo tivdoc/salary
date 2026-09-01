@@ -1,8 +1,23 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import type { VerifiedProductIdentity } from "../auth/identity-session.ts";
 import { bindDurableProductActor } from "../auth/identity-session.ts";
-import { CANONICAL_POSTGRES_SCHEMA_VERSION } from "../../platform/composition/canonical-postgres.ts";
+import {
+  CANONICAL_POSTGRES_SCHEMA_VERSION,
+  type CanonicalVerifiedTransactionInput,
+  type TransactionScopedPostgresBundle,
+} from "../../platform/composition/canonical-postgres.ts";
+import {
+  createPostgresAnalysisRepositories,
+  type PostgresAnalysisRepositories,
+} from "../../platform/persistence/postgres/analysis/index.ts";
+import {
+  intake_factory,
+  type PostgresIntakeAdapterBundle,
+} from "../../platform/persistence/postgres/intake/index.ts";
+import type { PostgresTransactionContext } from "../../platform/persistence/postgres/contracts.ts";
+import { PostgresIdempotencyRepository } from "../../platform/persistence/postgres/runtime/idempotency.ts";
+import { PostgresJobsOutboxAuditRepository } from "../../platform/persistence/postgres/runtime/jobs-outbox-audit.ts";
 import type { DurableProductPostgresRoot } from "./durable-registration.ts";
 import { createLeastPrivilegeProductSessionContext } from "./least-privilege-session-context.ts";
 
@@ -29,21 +44,35 @@ function identity(role: "customer_owner" | "legal_reviewer"): VerifiedProductIde
   });
 }
 
-function postgres(verifiedTransaction = vi.fn(async (_input, operation) => operation({}))): DurableProductPostgresRoot {
-  return Object.freeze({
-    mode: "isolated_postgres" as const,
-    durable: true as const,
-    target_id: "v0102-session-context-test",
-    schema_version: CANONICAL_POSTGRES_SCHEMA_VERSION,
-    transaction: vi.fn(),
-    verified_transaction: verifiedTransaction,
-  }) as unknown as DurableProductPostgresRoot;
+class FocusedPostgresRoot implements DurableProductPostgresRoot {
+  readonly mode = "isolated_postgres" as const;
+  readonly durable = true as const;
+  readonly target_id = "v0102-session-context-test";
+  readonly schema_version = CANONICAL_POSTGRES_SCHEMA_VERSION;
+  readonly verified_inputs: CanonicalVerifiedTransactionInput[] = [];
+
+  async transaction<T>(
+    tenantId: string,
+    caseId: string,
+    operation: (bundle: FocusedBundle) => Promise<T>,
+  ): Promise<T> {
+    return operation(focusedBundle(tenantId, caseId));
+  }
+
+  async verified_transaction<T>(
+    input: CanonicalVerifiedTransactionInput,
+    operation: (bundle: FocusedBundle) => Promise<T>,
+  ): Promise<T> {
+    this.verified_inputs.push(input);
+    return operation(focusedBundle(input.identity.tenant_id, input.case_id));
+  }
 }
+
+type FocusedBundle = TransactionScopedPostgresBundle<PostgresIntakeAdapterBundle, PostgresAnalysisRepositories>;
 
 describe("least-privilege product session context", () => {
   it("passes only durable session coordinates to the web runtime transaction", async () => {
-    const transaction = vi.fn(async (_input, operation) => operation(Object.freeze({ marker: true })));
-    const root = postgres(transaction);
+    const root = new FocusedPostgresRoot();
     const context = createLeastPrivilegeProductSessionContext(root);
     const actor = bindDurableProductActor(identity("customer_owner"));
     await expect(context.transaction({
@@ -51,8 +80,8 @@ describe("least-privilege product session context", () => {
       audience: "portal",
       case_id: "case:synthetic:001",
       correlation_id: "portal:synthetic:001",
-    }, async (bundle) => bundle)).resolves.toEqual({ marker: true });
-    expect(transaction).toHaveBeenCalledWith(expect.objectContaining({
+    }, async (bundle) => bundle.context.transaction_id)).resolves.toBe("focused:case:synthetic:001");
+    expect(root.verified_inputs).toContainEqual(expect.objectContaining({
       runtime_role: "web",
       identity: expect.objectContaining({
         session_id: "session:customer_owner:001",
@@ -60,11 +89,12 @@ describe("least-privilege product session context", () => {
         tenant_id: "tenant:synthetic:001",
         actor_id: "owner:synthetic:001",
       }),
-    }), expect.any(Function));
+    }));
   });
 
   it("fails closed without a durable binding or reviewer organization", async () => {
-    const context = createLeastPrivilegeProductSessionContext(postgres());
+    const root = new FocusedPostgresRoot();
+    const context = createLeastPrivilegeProductSessionContext(root);
     const plain = identity("customer_owner").actor;
     await expect(context.transaction({
       actor: plain,
@@ -84,5 +114,34 @@ describe("least-privilege product session context", () => {
       case_id: "case:synthetic:001",
       correlation_id: "operations:synthetic:001",
     }, async () => null)).rejects.toThrow("DURABLE_PRODUCT_REVIEWER_ORGANIZATION_REQUIRED");
+
+    const owner = bindDurableProductActor(identity("customer_owner"));
+    await expect(context.transaction({
+      actor: owner,
+      audience: "operations",
+      case_id: "case:synthetic:001",
+      correlation_id: "operations:synthetic:001",
+    }, async () => null)).rejects.toThrow("DURABLE_PRODUCT_SESSION_AUDIENCE_MISMATCH");
+    expect(root.verified_inputs).toHaveLength(0);
   });
 });
+
+function focusedBundle(tenantId: string, caseId: string): FocusedBundle {
+  const context: PostgresTransactionContext = Object.freeze({
+    transaction_id: `focused:${caseId}`,
+    client: Object.freeze({
+      async query() {
+        throw new Error("FOCUSED_POSTGRES_QUERY_NOT_EXPECTED");
+      },
+    }),
+  });
+  return Object.freeze({
+    context,
+    intake: intake_factory(context, tenantId),
+    analysis: createPostgresAnalysisRepositories(context, tenantId),
+    runtime: Object.freeze({
+      idempotency: new PostgresIdempotencyRepository(),
+      jobs_outbox_audit: new PostgresJobsOutboxAuditRepository(context, tenantId, caseId),
+    }),
+  });
+}

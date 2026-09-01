@@ -204,7 +204,7 @@ function requiredIsoDate(value: Record<string, unknown>, key: string): string {
 
 function requiredGrant(value: Record<string, unknown>): ReportAccessGrant {
   return Object.freeze({
-    grant_id: requiredString(value, "grant_id"),
+    grant_id: requiredBoundedString(value, "grant_id", 4_096),
     case_id: requiredString(value, "case_id"),
     report_id: requiredString(value, "report_id"),
     artifact_sha256: requiredSha256(value, "artifact_sha256"),
@@ -212,4 +212,12 @@ function requiredGrant(value: Record<string, unknown>): ReportAccessGrant {
     expires_at: requiredIsoDate(value, "expires_at"),
     grant_sha256: requiredSha256(value, "grant_sha256"),
   });
+}
+
+function requiredBoundedString(value: Record<string, unknown>, key: string, maximum: number): string {
+  const item = value[key];
+  if (typeof item !== "string" || item.length < 1 || item.length > maximum || /[\u0000-\u001f]/u.test(item)) {
+    throw new PortalHttpError("INVALID_REQUEST");
+  }
+  return item;
 }

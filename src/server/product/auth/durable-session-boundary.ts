@@ -4,7 +4,12 @@ import { timingSafeEqual } from "node:crypto";
 
 import type { IdentityVerificationPort } from "../../platform/auth/identity-verification.ts";
 import { internalOpsActorSchema } from "../internal-ops/contracts.ts";
-import { authenticateProductIdentity, bindDurableProductActor } from "./identity-session.ts";
+import {
+  authenticateProductIdentity,
+  bindDurableProductActor,
+  canonicalProductIdentityOrigin,
+  type ProductIdentityTransportPolicy,
+} from "./identity-session.ts";
 import type { ProductAudience, VerifiedProductSession } from "./hermetic-session.ts";
 import type { ProductSessionBoundary } from "./runtime.ts";
 
@@ -20,16 +25,31 @@ export class DurableCryptographicProductSessionBoundary implements ProductSessio
   readonly proof_class = "DURABLE_CRYPTOGRAPHIC_SESSION" as const;
   readonly #verifier: IdentityVerificationPort;
   readonly #allowedOrigin: string;
+  readonly #transport: ProductIdentityTransportPolicy;
 
-  constructor(input: Readonly<{ verifier: IdentityVerificationPort; allowed_origin: string }>) {
-    const origin = exactHttpsOrigin(input.allowed_origin);
+  constructor(input: Readonly<{
+    verifier: IdentityVerificationPort;
+    allowed_origin: string;
+    allow_local_loopback_http?: boolean;
+    environment?: Readonly<Record<string, string | undefined>>;
+  }>) {
+    const environment = input.environment === undefined ? undefined : Object.freeze({ ...input.environment });
+    const origin = canonicalProductIdentityOrigin(input.allowed_origin, {
+      allow_local_loopback_http: input.allow_local_loopback_http,
+      environment,
+    });
     if (!origin) throw new Error("PRODUCT_SESSION_ALLOWED_ORIGIN_INVALID");
     this.#verifier = input.verifier;
     this.#allowedOrigin = origin;
+    this.#transport = Object.freeze({
+      allowed_origin: origin,
+      allow_local_loopback_http: input.allow_local_loopback_http === true,
+      environment,
+    });
   }
 
   async verify(request: Request, audience: ProductAudience, requireCsrf: boolean): Promise<VerifiedProductSession | null> {
-    const identity = await authenticateProductIdentity(request, audience, this.#verifier);
+    const identity = await authenticateProductIdentity(request, audience, this.#verifier, this.#transport);
     if (!identity) return null;
     const actor = internalOpsActorSchema.safeParse(identity.actor);
     if (!actor.success) return null;
@@ -42,18 +62,6 @@ export class DurableCryptographicProductSessionBoundary implements ProductSessio
       csrf_token: csrf,
       expires_at_epoch: identity.expires_at_epoch,
     });
-  }
-}
-
-function exactHttpsOrigin(value: string): string | null {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.username === "" && url.password === ""
-      && url.pathname === "/" && url.search === "" && url.hash === ""
-      ? url.origin
-      : null;
-  } catch {
-    return null;
   }
 }
 

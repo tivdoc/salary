@@ -29,9 +29,9 @@ function verifier(identity: VerifiedIdentity | null = IDENTITY): IdentityVerific
   return Object.freeze({ async verify() { return identity; } });
 }
 
-function request(input: Readonly<{ csrf?: string; origin?: string; spoof?: boolean }> = {}): Request {
+function request(input: Readonly<{ csrf?: string; origin?: string; spoof?: boolean; url?: string }> = {}): Request {
   const csrf = input.csrf ?? CSRF;
-  return new Request("https://local.tivdoc.invalid/api/portal/cases", {
+  return new Request(input.url ?? "https://local.tivdoc.invalid/api/portal/cases", {
     method: "POST",
     headers: {
       cookie: `${PRODUCT_IDENTITY_COOKIE}=header.claims.signature; tivdoc_csrf=${CSRF}`,
@@ -64,6 +64,9 @@ describe("durable cryptographic product session boundary", () => {
       rotation_counter: IDENTITY.rotation_counter,
       reviewer_organization_id: null,
       issuer: IDENTITY.issuer,
+      audience: IDENTITY.audience,
+      issued_at_epoch: IDENTITY.issued_at_epoch,
+      expires_at_epoch: IDENTITY.expires_at_epoch,
     });
     expect(JSON.stringify(session!.actor)).not.toContain(IDENTITY.session_id);
   });
@@ -78,9 +81,60 @@ describe("durable cryptographic product session boundary", () => {
   });
 
   it("rejects non-HTTPS or path-bearing allowed origins", () => {
-    expect(() => new DurableCryptographicProductSessionBoundary({ verifier: verifier(), allowed_origin: "http://local.tivdoc.invalid" }))
+    expect(() => new DurableCryptographicProductSessionBoundary({ verifier: verifier(), allowed_origin: "http://127.0.0.1:43191" }))
       .toThrow("PRODUCT_SESSION_ALLOWED_ORIGIN_INVALID");
     expect(() => new DurableCryptographicProductSessionBoundary({ verifier: verifier(), allowed_origin: "https://local.tivdoc.invalid/path" }))
       .toThrow("PRODUCT_SESSION_ALLOWED_ORIGIN_INVALID");
+  });
+
+  it("permits only an explicitly enabled exact local loopback HTTP origin", async () => {
+    const boundary = new DurableCryptographicProductSessionBoundary({
+      verifier: verifier(),
+      allowed_origin: "http://127.0.0.1:43191",
+      allow_local_loopback_http: true,
+      environment: {},
+    });
+    const session = await boundary.verify(request({
+      url: "http://127.0.0.1:43191/api/portal/cases",
+      origin: "http://127.0.0.1:43191",
+    }), "portal", true);
+    expect(session?.actor.actor_id).toBe(IDENTITY.actor.actor_id);
+
+    await expect(boundary.verify(request({
+      url: "http://localhost:43191/api/portal/cases",
+      origin: "http://localhost:43191",
+    }), "portal", true)).resolves.toBeNull();
+
+    const localhostBoundary = new DurableCryptographicProductSessionBoundary({
+      verifier: verifier(),
+      allowed_origin: "http://localhost:43191",
+      allow_local_loopback_http: true,
+      environment: {},
+    });
+    await expect(localhostBoundary.verify(request({
+      url: "http://localhost:43191/api/portal/cases",
+      origin: "http://localhost:43191",
+    }), "portal", true)).resolves.toMatchObject({ audience: "portal" });
+  });
+
+  it("never enables remote, lookalike or Vercel HTTP origins", () => {
+    for (const allowedOrigin of [
+      "http://192.168.1.8:43191",
+      "http://localhost.example.invalid:43191",
+      "http://[::1]:43191",
+    ]) {
+      expect(() => new DurableCryptographicProductSessionBoundary({
+        verifier: verifier(),
+        allowed_origin: allowedOrigin,
+        allow_local_loopback_http: true,
+        environment: {},
+      })).toThrow("PRODUCT_SESSION_ALLOWED_ORIGIN_INVALID");
+    }
+    expect(() => new DurableCryptographicProductSessionBoundary({
+      verifier: verifier(),
+      allowed_origin: "http://localhost:43191",
+      allow_local_loopback_http: true,
+      environment: { VERCEL_ENV: "preview" },
+    })).toThrow("PRODUCT_SESSION_ALLOWED_ORIGIN_INVALID");
   });
 });

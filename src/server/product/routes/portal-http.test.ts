@@ -109,6 +109,52 @@ describe("stable portal HTTP boundary", () => {
     expect((await handler.handle(request("reports/download", ownerB, grant), ["reports", "download"])).status).toBe(404);
   });
 
+  it("accepts a bounded durable grant token and rejects oversized or control-bearing tokens before dispatch", async () => {
+    const active = portalHarness();
+    const receivedGrantIds: string[] = [];
+    const service = new Proxy(active.service, {
+      get(target, property, receiver) {
+        if (property === "downloadReport") {
+          return async (_actor: unknown, grant: Readonly<{ grant_id: string }>) => {
+            receivedGrantIds.push(grant.grant_id);
+            return Object.freeze({
+              bytes: new Uint8Array(Buffer.from("durable-report", "utf8")),
+              artifact_sha256: "a".repeat(64),
+              object_version_id: "object-version-001",
+              content_type: "application/pdf" as const,
+              filename: "report.pdf",
+            });
+          };
+        }
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) as CustomerPortalApplicationPort;
+    const handler = createPortalHttpHandler({ enabled: true, service, sessions: active.sessions });
+    const body = Object.freeze({
+      grant_id: "g".repeat(2_048),
+      case_id: "case-durable-001",
+      report_id: "report-durable-001",
+      artifact_sha256: "a".repeat(64),
+      object_version_id: "object-version-001",
+      expires_at: "2030-01-01T00:00:00.000Z",
+      grant_sha256: "b".repeat(64),
+    });
+    expect((await handler.handle(
+      request("reports/download", active.ownerA, body),
+      ["reports", "download"],
+    )).status).toBe(200);
+    expect(receivedGrantIds).toEqual([body.grant_id]);
+
+    for (const grantId of ["g".repeat(4_097), "grant\ncontrol"]) {
+      expect((await handler.handle(
+        request("reports/download", active.ownerA, { ...body, grant_id: grantId }),
+        ["reports", "download"],
+      )).status).toBe(400);
+    }
+    expect(receivedGrantIds).toEqual([body.grant_id]);
+  });
+
   it("records privacy requests idempotently and rejects stale revisions", async () => {
     const { handler, ownerA } = portalHarness();
     const path = "cases/synthetic-case-a/privacy";
