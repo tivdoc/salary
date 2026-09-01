@@ -13,6 +13,7 @@ import { createSyntheticCapabilityFixtures } from "./synthetic-fixtures.mts";
 describe("V0.10 real PostgreSQL delta-matrix contract", () => {
   it("derives one deterministic synthetic fixture from the third capability tenant", () => {
     const state = durableState("m00000001");
+    const capability = createSyntheticCapabilityFixtures(state.fixture_suffix);
     const first = createMarathonV010DeterministicFixture(state);
     const second = createMarathonV010DeterministicFixture(state);
 
@@ -26,6 +27,8 @@ describe("V0.10 real PostgreSQL delta-matrix contract", () => {
     expect(first.import_artifact_sha256).toBe(second.import_artifact_sha256);
     expect(Buffer.from(first.import_bytes)).toEqual(Buffer.from(second.import_bytes));
     expect(first.import_artifact_sha256).toBe(sha256(first.import_bytes));
+    expect(Buffer.from(first.report_bytes)).toEqual(Buffer.from(capability.report_artifacts.pdf));
+    expect(first.report.artifact_sha256).toBe(capability.report_artifacts.pdf_sha256);
     expect(first.report.artifact_sha256).toBe(sha256(first.report_bytes));
     expect(first.privacy_revision_1.state).toBe("requested");
     expect(first.privacy_revision_2.state).toBe("acknowledged");

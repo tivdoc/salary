@@ -265,12 +265,10 @@ export type MarathonV010DeterministicFixture = ReturnType<typeof createMarathonV
  * parameters, rules, findings, customer processing, delivery, or live providers.
  */
 export function createMarathonV010DeterministicFixture(durableState: DurableCapabilityState) {
-  assertDurableCapabilityState(durableState);
+  const capabilityFixture = assertDurableCapabilityState(durableState);
   const suffix = durableState.fixture_suffix;
   const importBytes = new TextEncoder().encode(`%PDF-1.4\n% Tivdoc V0.10 synthetic controlled import ${suffix}\n`);
-  const reportBytes = new TextEncoder().encode(
-    `%PDF-1.4\n% Tivdoc V0.10 synthetic report ${durableState.report_id} ${durableState.report_sha256}\n`,
-  );
+  const reportBytes = Uint8Array.from(capabilityFixture.report_artifacts.pdf);
   const importArtifactSha256 = byteSha256(importBytes);
   const reportArtifactSha256 = byteSha256(reportBytes);
   const objectVersionId = `object_${canonicalSha256({ suffix, kind: "marathon-v010-report-object" }).slice(0, 48)}`;
@@ -1249,7 +1247,9 @@ function assertCapabilitySeed(capability: CapabilityMatrixReceipt, fixtureSuffix
   assertDurableCapabilityState(capability.durable_state);
 }
 
-function assertDurableCapabilityState(state: DurableCapabilityState): void {
+function assertDurableCapabilityState(
+  state: DurableCapabilityState,
+): ReturnType<typeof createSyntheticCapabilityFixtures> {
   const { durable_state_sha256: stateSha256, ...seed } = state;
   assert(canonicalSha256(seed) === stateSha256, "MARATHON_V010_DURABLE_STATE_HASH_INVALID");
   const fixture = createSyntheticCapabilityFixtures(state.fixture_suffix);
@@ -1259,6 +1259,7 @@ function assertDurableCapabilityState(state: DurableCapabilityState): void {
     && fixture.review_task_id === state.review_task_id && fixture.job_id === state.job_id
     && fixture.outbox_id === state.outbox_id && fixture.idempotency_key === state.idempotency_key,
   "MARATHON_V010_DURABLE_STATE_IDENTITY_INVALID");
+  return fixture;
 }
 
 function assertCheckpoint(checkpoint: MarathonV010Checkpoint): void {
