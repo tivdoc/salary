@@ -66,7 +66,10 @@ describe("V0.10 Marathon frozen contracts", () => {
   it("keeps the Marathon ledger append-only, unique and machine-readable", () => {
     const lines = readFileSync(new URL("./marathon-ledger.v0.10.0.ndjson", import.meta.url), "utf8").trim().split(/\r?\n/u);
     const entries = lines.map((line) => JSON.parse(line) as Readonly<{ event_id: string; status: string }>);
-    expect(entries.map((entry) => entry.event_id)).toEqual(["MCL-0001", "MCL-0002", "MCL-0003"]);
+    expect(entries.length).toBeGreaterThanOrEqual(3);
+    expect(entries.map((entry) => entry.event_id)).toEqual(
+      Array.from({ length: entries.length }, (_, index) => `MCL-${String(index + 1).padStart(4, "0")}`),
+    );
     expect(new Set(entries.map((entry) => entry.event_id)).size).toBe(entries.length);
     expect(entries.every((entry) => entry.status === "PASS")).toBe(true);
   });

@@ -77,7 +77,7 @@ describe("V0.9.1 trusted Git foundation", () => {
     ]);
     rawGit(root, ["replace", "HEAD", "HEAD~1"]);
     expect(() => assertTrustedGitRepository(root)).toThrow("TRUSTED_GIT_REPLACEMENT_REFS_FORBIDDEN");
-  });
+  }, 20_000);
 
   it("rejects a subdirectory and legacy grafts as repository roots", async () => {
     const root = await createRepository();

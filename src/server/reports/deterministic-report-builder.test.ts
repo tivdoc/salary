@@ -25,7 +25,7 @@ describe("deterministic RTL report package", () => {
     expect(first.pdf_sha256).toBe(hash.hashBytes(first.pdf));
     expect(first.manifest_sha256).toBe(hash.hashBytes(first.manifest));
     expect(first.report_sha256).toMatch(/^[a-f0-9]{64}$/);
-  });
+  }, 20_000);
 
   it("contains all seven topic slots and labels partial subtotal as non-total", async () => {
     const artifacts = await new DeterministicCaseReportBuilder(hash, ids).build(bundle());

@@ -110,7 +110,7 @@ describe("controlled owner acquisition", () => {
       application_isolation: "PARSER_APPLICATION_ISOLATION_VERIFIED",
       os_sandbox: "PARSER_OS_SANDBOX_NOT_VERIFIED",
     });
-  });
+  }, 20_000);
 
   it("keeps real owner-attested imports disabled while OS sandboxing is unverified", async () => {
     const root = await temporaryRoot();

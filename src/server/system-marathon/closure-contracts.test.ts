@@ -29,7 +29,7 @@ const ownerActions = readJson<OwnerActionIndex>("./owner-action-index.v0.10.0.js
 describe("V0.10 W9 canonical closure contracts", () => {
   it("validates the exact inventory, canonical authorities and zero invariants", () => {
     expect(validateCanonicalEntrypointInventory(entrypoints)).toEqual([]);
-    expect(entrypoints.generated_from_head).toBe("a060e71c271bdc510bef9c8eb64699635dbdec3a");
+    expect(entrypoints.generated_from_head).toBe("11f8a90c6e88b171fd639a05e60e2d6412de1cce");
     expect(entrypoints.baseline_truth).toEqual(MARATHON_TRUTH_BASELINE);
     expect(entrypoints.authority.asserted_invariants).toEqual({
       unknown_production_reachable_symbols: 0,
