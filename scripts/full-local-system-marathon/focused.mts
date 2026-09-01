@@ -12,13 +12,14 @@ const tests = git.stdout.split(/\r?\n/u)
   .filter((name) => !name.includes(".external.test."))
   .sort();
 if (tests.length === 0) throw new Error("MARATHON_FOCUSED_TEST_SET_EMPTY");
-run(process.execPath, [path.join(ROOT, "node_modules", "vitest", "vitest.mjs"), "run", ...tests, "--reporter=verbose"]);
+run(process.execPath, [path.join(ROOT, "node_modules", "vitest", "vitest.mjs"), "run", ...tests, "--reporter=verbose", "--maxWorkers=1"]);
 run(process.execPath, [
   path.join(ROOT, "node_modules", "vitest", "vitest.mjs"),
   "run",
   "--config",
   "scripts/platform/supabase/vitest.config.mts",
   "--reporter=verbose",
+  "--maxWorkers=1",
 ]);
 process.stdout.write(`${JSON.stringify({ schema_version: "tivdoc-marathon-focused-tests-v0.10.0", status: "PASS", changed_test_count: tests.length, changed_tests: tests, supabase_detector_tests: true })}\n`);
 

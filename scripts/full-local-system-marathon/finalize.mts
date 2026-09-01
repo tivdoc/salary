@@ -29,7 +29,7 @@ await mkdir(ATTEMPTS, { recursive: true });
 const migrationChanged = changedMigrations();
 const specifications = [
   spec("focused_marathon", [NODE, [stripTypes(), path.join(ROOT, "scripts", "full-local-system-marathon", "focused.mts")]], 15 * 60_000),
-  spec("full_suite", [NODE, [VITEST, "run"]], 20 * 60_000),
+  spec("full_suite", [NODE, [VITEST, "run", "--maxWorkers=1"]], 20 * 60_000),
   spec("eslint", [NODE, [ESLINT, "."]], 15 * 60_000),
   spec("typescript", [NODE, [TSC, "--noEmit"]], 15 * 60_000),
   spec("production_build", [NODE, [NEXT, "build"]], 20 * 60_000),
