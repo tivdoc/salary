@@ -7,6 +7,9 @@ const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 const SAFE_DATABASE = /^tivdoc_v09_[a-z0-9_]{8,48}$/;
 const SAFE_TARGET_ID = /^tivdoc-v09-[a-z0-9-]{8,48}$/;
 const FORBIDDEN_DATABASE_MARKER = /prod|production|live|customer|shared/i;
+const INSPECTED_ENVIRONMENT_KEYS: readonly [typeof DYNAMIC_POSTGRES_ENV_KEY] = Object.freeze([
+  DYNAMIC_POSTGRES_ENV_KEY,
+]);
 
 export class SecretValue {
   readonly #value: string;
@@ -131,7 +134,7 @@ export function inspectExplicitDynamicTarget(
   return Object.freeze({
     receipt: Object.freeze({
       schema_version: "tivdoc-dynamic-postgres-target-safety-v0.9.1",
-      inspected_environment_keys: Object.freeze([DYNAMIC_POSTGRES_ENV_KEY]),
+      inspected_environment_keys: INSPECTED_ENVIRONMENT_KEYS,
       approved: true,
       reason: "approved_explicit_loopback_target",
       target: descriptor,
@@ -223,7 +226,7 @@ function denied(reason: TargetSafetyReceipt["reason"]): Readonly<{
   return Object.freeze({
     receipt: Object.freeze({
       schema_version: "tivdoc-dynamic-postgres-target-safety-v0.9.1",
-      inspected_environment_keys: Object.freeze([DYNAMIC_POSTGRES_ENV_KEY]),
+      inspected_environment_keys: INSPECTED_ENVIRONMENT_KEYS,
       approved: false,
       reason,
       target: null,

@@ -47,7 +47,7 @@ export const runSafeCommand: CommandRunner = async (command) => {
   return await new Promise<SafeCommandResult>((resolvePromise, rejectPromise) => {
     const child = spawn(command.executable, [...command.args], {
       cwd: command.cwd,
-      env: command.env ? { ...command.env } : minimalChildEnvironment(),
+      env: command.env ? childProcessEnvironment(command.env) : minimalChildEnvironment(),
       shell: false,
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
@@ -151,12 +151,26 @@ function validateCommand(command: SafeCommand): void {
   }
 }
 
-function minimalChildEnvironment(): Record<string, string> {
+function minimalChildEnvironment(): NodeJS.ProcessEnv {
   const source = process.env;
-  const environment: Record<string, string> = {};
+  const environment: NodeJS.ProcessEnv = { NODE_ENV: "production" };
   for (const name of ["SystemRoot", "WINDIR", "ComSpec", "PATHEXT", "TEMP", "TMP", "LANG", "LC_ALL"] as const) {
     const value = source[name];
     if (value) environment[name] = value;
+  }
+  return environment;
+}
+
+function childProcessEnvironment(source: Readonly<Record<string, string>>): NodeJS.ProcessEnv {
+  const requestedNodeEnvironment = source.NODE_ENV;
+  const nodeEnvironment = requestedNodeEnvironment === "development"
+    || requestedNodeEnvironment === "test"
+    || requestedNodeEnvironment === "production"
+    ? requestedNodeEnvironment
+    : "production";
+  const environment: NodeJS.ProcessEnv = { NODE_ENV: nodeEnvironment };
+  for (const [name, value] of Object.entries(source)) {
+    if (name !== "NODE_ENV") environment[name] = value;
   }
   return environment;
 }
