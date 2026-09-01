@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -24,7 +24,7 @@ async function harness(now: { value: number }) {
   roots.push(root);
   const audit = new InMemoryHashChainAudit();
   const storage = new LocalPrivateObjectStorage({ root, environment: "generated_local_test_root", audit, nowMs: () => now.value, authorizeRead: (candidate, _version, scope) => candidate.actor_id === actor.actor_id && scope === "case_000000001" });
-  return { storage, audit };
+  return { storage, audit, root };
 }
 
 async function writeObject(storage: LocalPrivateObjectStorage, bytes: Uint8Array, mime = "application/octet-stream", index = 1, retention: ObjectRetentionClass = "case_record") {
@@ -43,7 +43,7 @@ describe("V07-P2-STORAGE", () => {
     const { storage, audit } = await harness(now);
     const bytes = Uint8Array.from([1, 2, 3, 4]);
     const finalized = await writeObject(storage, bytes);
-    expect(storage.metadata(finalized.object_version_id)).toMatchObject({ status: "active", sha256: hash(bytes), legal_hold: false });
+    expect(storage.metadata(finalized.object_version_id)).toMatchObject({ status: "active", sha256: hash(bytes), legal_hold: false, owner_actor_id: actor.actor_id, tenant_id: actor.tenant_id, case_id: "case_000000001" });
     const grant = await storage.issuePrivateGrant({ actor, version_id: finalized.object_version_id, scope_ref: "case_000000001", ttl_ms: 60_000 });
     expect(await storage.readWithGrant(grant.token, actor, "case_000000001")).toEqual(bytes);
     expect((await audit.verify()).valid).toBe(true);
@@ -127,9 +127,22 @@ describe("V07-P2-STORAGE", () => {
     await expect(storage.tombstone(other.object_version_id, command({ retention_complete: true as const }, 6, 2))).rejects.toThrow("PRIVATE_OBJECT_LEGAL_HOLD");
     await storage.setLegalHold(other.object_version_id, false, command({ held: false }, 7, 2));
     const tombstone = command({ retention_complete: true as const }, 8, 3);
-    await storage.tombstone(other.object_version_id, tombstone);
-    await storage.tombstone(other.object_version_id, tombstone);
+    const receipt = await storage.tombstone(other.object_version_id, tombstone);
+    expect(receipt).toMatchObject({ object_version_id: other.object_version_id, deleted_sha256: hash(Uint8Array.from([7, 8])), bytes_removed: 2, retention_complete: true, legal_hold: false });
+    expect(await storage.tombstone(other.object_version_id, tombstone)).toEqual(receipt);
     expect(storage.metadata(other.object_version_id)?.status).toBe("tombstoned");
+  });
+
+  it("binds grants to tenant/case and supports reason-coded object-wide revocation", async () => {
+    const now = { value: Date.parse("2026-08-30T00:00:00.000Z") };
+    const { storage } = await harness(now);
+    const finalized = await writeObject(storage, Uint8Array.from([9, 8, 7]));
+    const grant = await storage.issuePrivateGrant({ actor, version_id: finalized.object_version_id, scope_ref: "case_000000001", ttl_ms: 60_000 });
+    await expect(storage.issuePrivateGrant({ actor: { ...actor, tenant_id: "tenant_0000002" }, version_id: finalized.object_version_id, scope_ref: "case_000000001", ttl_ms: 60_000 })).rejects.toThrow("PRIVATE_OBJECT_ACCESS_DENIED");
+    const revocation = command({ cause_code: "PRIVACY_REQUEST" }, 2, 1);
+    expect(await storage.revokeObjectGrants(finalized.object_version_id, revocation)).toMatchObject({ grants_revoked: 1, cause_code: "PRIVACY_REQUEST" });
+    await expect(storage.readWithGrant(grant.token, actor, "case_000000001")).rejects.toThrow("PRIVATE_OBJECT_ACCESS_DENIED");
+    expect(await storage.revokeObjectGrants(finalized.object_version_id, revocation)).toMatchObject({ grants_revoked: 1 });
   });
 
   it("reconciles only old staging records and never changes visible objects", async () => {
@@ -140,6 +153,28 @@ describe("V07-P2-STORAGE", () => {
     now.value += 120_000;
     expect(storage.reconcileStaging({ older_than_ms: 60_000, dry_run: true })).toMatchObject({ removed: 0, visible_objects_changed: 0 });
     expect(storage.reconcileStaging({ older_than_ms: 60_000, dry_run: false })).toMatchObject({ removed: 1, visible_objects_changed: 0 });
+  });
+
+  it("detects/removes provider orphans and quarantines missing metadata objects without exposing paths", async () => {
+    const now = { value: Date.parse("2026-08-30T00:00:00.000Z") };
+    const { storage, root } = await harness(now);
+    const bytes = Uint8Array.from([2, 4, 6]);
+    const finalized = await writeObject(storage, bytes);
+    const metadata = storage.metadata(finalized.object_version_id)!;
+    const activePath = join(root, "objects", metadata.sha256.slice(0, 2), metadata.opaque_key);
+    await unlink(activePath);
+    const orphanKey = `object_${"b".repeat(48)}`;
+    const orphanDirectory = join(root, "objects", "aa");
+    await mkdir(orphanDirectory, { recursive: true });
+    await writeFile(join(orphanDirectory, orphanKey), Uint8Array.from([8, 8]));
+
+    const dryRun = await storage.reconcileInventory(command({ dry_run: true }, 2));
+    expect(dryRun).toMatchObject({ missing_object_version_ids: [finalized.object_version_id], orphan_locators: [`objects/aa/${orphanKey}`], orphan_blobs_removed: 0, objects_quarantined: 0, dry_run: true });
+    expect(JSON.stringify(dryRun)).not.toContain(root);
+
+    const applied = await storage.reconcileInventory(command({ dry_run: false }, 3));
+    expect(applied).toMatchObject({ orphan_blobs_removed: 1, objects_quarantined: 1, dry_run: false });
+    expect(storage.metadata(finalized.object_version_id)?.status).toBe("quarantined");
   });
 });
 

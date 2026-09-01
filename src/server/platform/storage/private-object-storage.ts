@@ -1,6 +1,4 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
-import { basename, join, resolve, sep } from "node:path";
 
 import type {
   AuditEventPort,
@@ -10,6 +8,10 @@ import type {
   ObjectWriteReservation,
   VerifiedActor,
 } from "../../../engine/wave4/contracts";
+import {
+  HermeticFilesystemPrivateBlobProvider,
+  type PrivateBlobProvider,
+} from "./private-storage-provider";
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const OPAQUE = /^[a-z][a-z0-9_-]{7,63}$/;
@@ -21,6 +23,7 @@ const MAX_BYTES = 8 * 1024 * 1024;
 type ReservationState = Readonly<{
   reservation: ObjectWriteReservation;
   actor_id: string;
+  scope: PrivateObjectScope;
   command_hash: string;
   created_ms: number;
   staged: Uint8Array | null;
@@ -38,7 +41,10 @@ type ObjectRecord = Readonly<{
   revision: number;
   status: "active" | "quarantined" | "tombstoned";
   legal_hold: boolean;
-  internal_path: string;
+  owner_actor_id: string;
+  tenant_id: string;
+  case_id: string;
+  provider_locator: string | null;
 }>;
 
 type Grant = Readonly<{
@@ -47,6 +53,41 @@ type Grant = Readonly<{
   actor_id: string;
   scope_ref: string;
   expires_ms: number;
+}>;
+
+export type PrivateObjectScope = Readonly<{
+  owner_actor_id: string;
+  tenant_id: string;
+  case_id: string;
+}>;
+
+export type PrivateGrantRevocationReceipt = Readonly<{
+  receipt_id: string;
+  object_version_id: string;
+  grants_revoked: number;
+  cause_code: string;
+  revoked_at: string;
+}>;
+
+export type PrivateObjectDeletionReceipt = Readonly<{
+  receipt_id: string;
+  object_version_id: string;
+  deleted_sha256: string;
+  deleted_at: string;
+  bytes_removed: number;
+  grants_revoked: number;
+  retention_complete: true;
+  legal_hold: false;
+}>;
+
+export type PrivateObjectInventoryReconciliation = Readonly<{
+  orphan_locators: readonly string[];
+  missing_object_version_ids: readonly string[];
+  integrity_failure_version_ids: readonly string[];
+  orphan_blobs_removed: number;
+  objects_quarantined: number;
+  grants_revoked: number;
+  dry_run: boolean;
 }>;
 
 function hash(value: Uint8Array | string): string {
@@ -100,31 +141,33 @@ function detectAndValidateMime(bytes: Uint8Array, expected: string): string {
   return "application/octet-stream";
 }
 
-export class LocalPrivateObjectStorage implements ObjectStoragePort {
-  readonly #root: string;
+export class CanonicalPrivateObjectStorage implements ObjectStoragePort {
+  readonly #provider: PrivateBlobProvider;
   readonly #audit: AuditEventPort;
   readonly #nowMs: () => number;
   readonly #authorizeRead: (actor: VerifiedActor, versionId: string, scopeRef: string) => boolean;
+  readonly #resolveWriteScope: (actor: VerifiedActor) => PrivateObjectScope;
   readonly #reservations = new Map<string, ReservationState>();
   readonly #idempotency = new Map<string, string>();
   readonly #mutationIdempotency = new Map<string, string>();
   readonly #objects = new Map<string, ObjectRecord>();
   readonly #byHash = new Map<string, string>();
   readonly #grants = new Map<string, Grant>();
+  readonly #deletionReceipts = new Map<string, PrivateObjectDeletionReceipt>();
+  readonly #revocationReceipts = new Map<string, PrivateGrantRevocationReceipt>();
 
   constructor(input: Readonly<{
-    root: string;
-    environment: "generated_local_test_root";
+    provider: PrivateBlobProvider;
     audit: AuditEventPort;
     nowMs: () => number;
     authorizeRead: (actor: VerifiedActor, versionId: string, scopeRef: string) => boolean;
+    resolveWriteScope?: (actor: VerifiedActor) => PrivateObjectScope;
   }>) {
-    const root = resolve(input.root);
-    if (input.environment !== "generated_local_test_root" || !basename(root).startsWith("tivdoc-")) throw new Error("PRIVATE_OBJECT_ROOT_NOT_GENERATED");
-    this.#root = root;
+    this.#provider = input.provider;
     this.#audit = input.audit;
     this.#nowMs = input.nowMs;
     this.#authorizeRead = input.authorizeRead;
+    this.#resolveWriteScope = input.resolveWriteScope ?? defaultWriteScope;
   }
 
   async reserve(input: CommandEnvelope<Omit<ObjectWriteReservation, "reservation_id" | "opaque_key">>): Promise<ObjectWriteReservation> {
@@ -136,7 +179,8 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
     if (!SHA256.test(payload.expected_sha256) || !Number.isSafeInteger(payload.expected_length) || payload.expected_length <= 0 || payload.expected_length > MAX_BYTES || !ALLOWED_MIME.has(payload.detected_mime) || !RETENTION_CLASSES.has(payload.retention_class)) {
       throw new Error("PRIVATE_OBJECT_RESERVATION_INVALID");
     }
-    const commandHash = hash(JSON.stringify({ command_id: input.command_id, expected_revision: input.expected_revision, actor_id: input.actor.actor_id, reason: input.reason, payload }));
+    const scope = assertScope(this.#resolveWriteScope(input.actor), input.actor);
+    const commandHash = hash(JSON.stringify({ command_id: input.command_id, expected_revision: input.expected_revision, actor_id: input.actor.actor_id, scope, reason: input.reason, payload }));
     const existingId = this.#idempotency.get(input.idempotency_key);
     if (this.#mutationIdempotency.has(input.idempotency_key)) throw new Error("PRIVATE_OBJECT_IDEMPOTENCY_CONFLICT");
     if (existingId) {
@@ -153,7 +197,7 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
       detected_mime: payload.detected_mime,
       retention_class: payload.retention_class,
     });
-    this.#reservations.set(reservationId, Object.freeze({ reservation, actor_id: input.actor.actor_id, command_hash: commandHash, created_ms: this.#nowMs(), staged: null, staged_sha256: null, status: "reserved" }));
+    this.#reservations.set(reservationId, Object.freeze({ reservation, actor_id: input.actor.actor_id, scope, command_hash: commandHash, created_ms: this.#nowMs(), staged: null, staged_sha256: null, status: "reserved" }));
     this.#idempotency.set(input.idempotency_key, reservationId);
     await this.#audit.append({ actor_id: input.actor.actor_id, action: "OBJECT_RESERVED", resource_id: reservationId, resource_revision: 0, resource_sha256: payload.expected_sha256, reason: input.reason, occurred_at: new Date(this.#nowMs()).toISOString() });
     return reservation;
@@ -191,15 +235,20 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
     if (!state || state.reservation !== reservation || state.status !== "verified_quarantine" || !state.staged || state.staged_sha256 !== reservation.expected_sha256) {
       throw new Error("PRIVATE_OBJECT_NOT_VERIFIED_CLEAN");
     }
-    if (this.#byHash.has(reservation.expected_sha256)) throw new Error("PRIVATE_OBJECT_IMMUTABLE_EXISTS");
-    const directory = join(this.#root, "objects", reservation.expected_sha256.slice(0, 2));
-    const internalPath = resolve(directory, reservation.expected_sha256);
-    if (!internalPath.startsWith(`${this.#root}${sep}`)) throw new Error("PRIVATE_OBJECT_INTERNAL_PATH_ESCAPE");
-    await mkdir(directory, { recursive: true });
-    try {
-      await writeFile(internalPath, state.staged, { flag: "wx" });
-    } catch {
+    const duplicateVersionId = this.#byHash.get(reservation.expected_sha256);
+    if (duplicateVersionId) {
+      const duplicate = this.#objects.get(duplicateVersionId);
+      if (!duplicate || duplicate.tenant_id !== state.scope.tenant_id || duplicate.case_id !== state.scope.case_id) throw new Error("PRIVATE_OBJECT_ACCESS_DENIED");
       throw new Error("PRIVATE_OBJECT_IMMUTABLE_EXISTS");
+    }
+    let quarantineLocator: string | null = null;
+    let activeLocator: string;
+    try {
+      quarantineLocator = (await this.#provider.putQuarantined({ object_key: reservation.opaque_key, expected_sha256: reservation.expected_sha256, expected_length: reservation.expected_length, bytes: state.staged })).quarantine_locator;
+      activeLocator = (await this.#provider.promoteQuarantined({ quarantine_locator: quarantineLocator, object_key: reservation.opaque_key, expected_sha256: reservation.expected_sha256, expected_length: reservation.expected_length })).active_locator;
+    } catch (error) {
+      if (quarantineLocator) await this.#provider.deleteExact({ locator: quarantineLocator, expected_sha256: reservation.expected_sha256 }).catch(() => Object.freeze({ deleted: false }));
+      throw error;
     }
     const versionId = `version_${hash(`${reservation.reservation_id}:${reservation.expected_sha256}`).slice(0, 24)}`;
     const record = Object.freeze({
@@ -212,7 +261,10 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
       revision: 1,
       status: "active" as const,
       legal_hold: false,
-      internal_path: internalPath,
+      owner_actor_id: state.scope.owner_actor_id,
+      tenant_id: state.scope.tenant_id,
+      case_id: state.scope.case_id,
+      provider_locator: activeLocator,
     });
     this.#objects.set(versionId, record);
     this.#byHash.set(record.sha256, versionId);
@@ -228,6 +280,7 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
     if (!record || record.status !== "active" || !REASON.test(command.payload.cause_code)) throw new Error("PRIVATE_OBJECT_ACCESS_DENIED");
     if (command.expected_revision !== record.revision) throw new Error("PRIVATE_OBJECT_STALE_REVISION");
     this.#recordMutation(command, "quarantine", objectVersionId);
+    this.#revokeGrantsForVersion(objectVersionId);
     this.#objects.set(objectVersionId, Object.freeze({ ...record, status: "quarantined", revision: record.revision + 1 }));
     await this.#audit.append({ actor_id: command.actor.actor_id, action: "OBJECT_QUARANTINED", resource_id: objectVersionId, resource_revision: record.revision + 1, resource_sha256: record.sha256, reason: command.reason, occurred_at: new Date(this.#nowMs()).toISOString() });
   }
@@ -235,7 +288,7 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
   async issuePrivateGrant(input: Readonly<{ actor: VerifiedActor; version_id: string; scope_ref: string; ttl_ms: number }>): Promise<Readonly<{ token: string; expires_at: string }>> {
     assertActor(input.actor);
     const record = this.#objects.get(input.version_id);
-    if (!record || record.status !== "active" || !OPAQUE.test(input.scope_ref) || !Number.isSafeInteger(input.ttl_ms) || input.ttl_ms <= 0 || input.ttl_ms > 5 * 60_000 || !this.#authorizeRead(input.actor, input.version_id, input.scope_ref)) {
+    if (!record || record.status !== "active" || record.tenant_id !== input.actor.tenant_id || record.case_id !== input.scope_ref || !input.actor.assigned_case_ids.includes(record.case_id) || !OPAQUE.test(input.scope_ref) || !Number.isSafeInteger(input.ttl_ms) || input.ttl_ms <= 0 || input.ttl_ms > 5 * 60_000 || !this.#authorizeRead(input.actor, input.version_id, input.scope_ref)) {
       throw new Error("PRIVATE_OBJECT_ACCESS_DENIED");
     }
     const token = `grant_${randomBytes(24).toString("hex")}`;
@@ -249,11 +302,10 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
     assertActor(actor);
     const grant = this.#grants.get(hash(token));
     const record = grant ? this.#objects.get(grant.version_id) : undefined;
-    if (!grant || !record || record.status !== "active" || grant.actor_id !== actor.actor_id || grant.scope_ref !== scopeRef || grant.expires_ms <= this.#nowMs() || !this.#authorizeRead(actor, grant.version_id, scopeRef)) {
+    if (!grant || !record || !record.provider_locator || record.status !== "active" || record.tenant_id !== actor.tenant_id || record.case_id !== scopeRef || !actor.assigned_case_ids.includes(record.case_id) || grant.actor_id !== actor.actor_id || grant.scope_ref !== scopeRef || grant.expires_ms <= this.#nowMs() || !this.#authorizeRead(actor, grant.version_id, scopeRef)) {
       throw new Error("PRIVATE_OBJECT_ACCESS_DENIED");
     }
-    const bytes = await readFile(record.internal_path);
-    if (bytes.byteLength !== record.byte_count || hash(bytes) !== record.sha256) throw new Error("PRIVATE_OBJECT_INTEGRITY_FAILURE");
+    const bytes = await this.#provider.readExact({ locator: record.provider_locator, expected_sha256: record.sha256, expected_length: record.byte_count });
     await this.#audit.append({ actor_id: actor.actor_id, action: "PRIVATE_OBJECT_READ", resource_id: record.version_id, resource_revision: record.revision, resource_sha256: record.sha256, reason: "PRIVATE_ACCESS", occurred_at: new Date(this.#nowMs()).toISOString() });
     return Uint8Array.from(bytes);
   }
@@ -271,19 +323,63 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
     await this.#audit.append({ actor_id: command.actor.actor_id, action: "OBJECT_LEGAL_HOLD_CHANGED", resource_id: versionId, resource_revision: revision, resource_sha256: record.sha256, reason: command.reason, occurred_at: new Date(this.#nowMs()).toISOString() });
   }
 
-  async tombstone(versionId: string, command: CommandEnvelope<Readonly<{ retention_complete: true }>>): Promise<void> {
+  async revokeObjectGrants(versionId: string, command: CommandEnvelope<Readonly<{ cause_code: string }>>): Promise<PrivateGrantRevocationReceipt> {
     assertCommand(command);
-    if (this.#isMutationReplay(command, "tombstone", versionId)) return;
+    if (!REASON.test(command.payload.cause_code)) throw new Error("PRIVATE_OBJECT_COMMAND_INVALID");
+    if (this.#isMutationReplay(command, "revoke_grants", versionId)) {
+      const replay = this.#revocationReceipts.get(command.idempotency_key);
+      if (!replay) throw new Error("PRIVATE_OBJECT_IDEMPOTENCY_CONFLICT");
+      return replay;
+    }
     const record = this.#objects.get(versionId);
     if (!record || record.status === "tombstoned") throw new Error("PRIVATE_OBJECT_ACCESS_DENIED");
+    if (command.expected_revision !== record.revision) throw new Error("PRIVATE_OBJECT_STALE_REVISION");
+    this.#recordMutation(command, "revoke_grants", versionId);
+    const grantsRevoked = this.#revokeGrantsForVersion(versionId);
+    const revision = record.revision + 1;
+    this.#objects.set(versionId, Object.freeze({ ...record, revision }));
+    const receipt = Object.freeze({
+      receipt_id: `revocation_${hash(`${command.command_id}:${command.idempotency_key}:${versionId}`).slice(0, 24)}`,
+      object_version_id: versionId,
+      grants_revoked: grantsRevoked,
+      cause_code: command.payload.cause_code,
+      revoked_at: new Date(this.#nowMs()).toISOString(),
+    });
+    this.#revocationReceipts.set(command.idempotency_key, receipt);
+    await this.#audit.append({ actor_id: command.actor.actor_id, action: "PRIVATE_GRANTS_REVOKED", resource_id: versionId, resource_revision: revision, resource_sha256: record.sha256, reason: command.reason, occurred_at: receipt.revoked_at });
+    return receipt;
+  }
+
+  async tombstone(versionId: string, command: CommandEnvelope<Readonly<{ retention_complete: true }>>): Promise<PrivateObjectDeletionReceipt> {
+    assertCommand(command);
+    if (this.#isMutationReplay(command, "tombstone", versionId)) {
+      const replay = this.#deletionReceipts.get(command.idempotency_key);
+      if (!replay) throw new Error("PRIVATE_OBJECT_IDEMPOTENCY_CONFLICT");
+      return replay;
+    }
+    const record = this.#objects.get(versionId);
+    if (!record || record.status === "tombstoned" || !record.provider_locator) throw new Error("PRIVATE_OBJECT_ACCESS_DENIED");
     if (record.legal_hold) throw new Error("PRIVATE_OBJECT_LEGAL_HOLD");
     if (command.payload.retention_complete !== true) throw new Error("PRIVATE_OBJECT_RETENTION_ACTIVE");
     if (command.expected_revision !== record.revision) throw new Error("PRIVATE_OBJECT_STALE_REVISION");
     this.#recordMutation(command, "tombstone", versionId);
-    await unlink(record.internal_path);
-    this.#objects.set(versionId, Object.freeze({ ...record, status: "tombstoned", revision: record.revision + 1 }));
+    const deleted = await this.#provider.deleteExact({ locator: record.provider_locator, expected_sha256: record.sha256 });
+    const grantsRevoked = this.#revokeGrantsForVersion(versionId);
+    this.#objects.set(versionId, Object.freeze({ ...record, status: "tombstoned", revision: record.revision + 1, provider_locator: null }));
     this.#byHash.delete(record.sha256);
-    await this.#audit.append({ actor_id: command.actor.actor_id, action: "OBJECT_TOMBSTONED", resource_id: versionId, resource_revision: record.revision + 1, resource_sha256: record.sha256, reason: command.reason, occurred_at: new Date(this.#nowMs()).toISOString() });
+    const receipt = Object.freeze({
+      receipt_id: `deletion_${hash(`${command.command_id}:${command.idempotency_key}:${versionId}`).slice(0, 24)}`,
+      object_version_id: versionId,
+      deleted_sha256: record.sha256,
+      deleted_at: new Date(this.#nowMs()).toISOString(),
+      bytes_removed: deleted.deleted ? record.byte_count : 0,
+      grants_revoked: grantsRevoked,
+      retention_complete: true as const,
+      legal_hold: false as const,
+    });
+    this.#deletionReceipts.set(command.idempotency_key, receipt);
+    await this.#audit.append({ actor_id: command.actor.actor_id, action: "OBJECT_TOMBSTONED", resource_id: versionId, resource_revision: record.revision + 1, resource_sha256: record.sha256, reason: command.reason, occurred_at: receipt.deleted_at });
+    return receipt;
   }
 
   reconcileStaging(input: Readonly<{ older_than_ms: number; dry_run: boolean }>): Readonly<{ candidates: readonly string[]; removed: number; visible_objects_changed: 0 }> {
@@ -296,10 +392,52 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
     return Object.freeze({ candidates: Object.freeze(candidates), removed: input.dry_run ? 0 : candidates.length, visible_objects_changed: 0 });
   }
 
-  metadata(versionId: string): Readonly<Omit<ObjectRecord, "internal_path">> | null {
+  async reconcileInventory(command: CommandEnvelope<Readonly<{ dry_run: boolean }>>): Promise<PrivateObjectInventoryReconciliation> {
+    assertCommand(command);
+    if (typeof command.payload.dry_run !== "boolean" || Object.keys(command.payload).some((key) => key !== "dry_run")) throw new Error("PRIVATE_OBJECT_COMMAND_INVALID");
+    const inventory = await this.#provider.inventory();
+    const inventoryByLocator = new Map(inventory.map((entry) => [entry.locator, entry]));
+    const recordsByLocator = new Map([...this.#objects.values()].filter((record) => record.status !== "tombstoned" && record.provider_locator).map((record) => [record.provider_locator!, record]));
+    const orphanEntries = inventory.filter((entry) => !recordsByLocator.has(entry.locator)).sort((left, right) => left.locator.localeCompare(right.locator));
+    const missing = [...recordsByLocator.entries()].filter(([locator]) => !inventoryByLocator.has(locator)).map(([, record]) => record.version_id).sort();
+    const integrityFailures = [...recordsByLocator.entries()].filter(([locator, record]) => {
+      const entry = inventoryByLocator.get(locator);
+      return Boolean(entry && (entry.sha256 !== record.sha256 || entry.byte_count !== record.byte_count));
+    }).map(([, record]) => record.version_id).sort();
+    let orphanBlobsRemoved = 0;
+    let objectsQuarantined = 0;
+    let grantsRevoked = 0;
+
+    if (!command.payload.dry_run) {
+      for (const entry of orphanEntries) {
+        const deletion = await this.#provider.deleteExact({ locator: entry.locator, expected_sha256: entry.sha256 });
+        if (deletion.deleted) orphanBlobsRemoved += 1;
+      }
+      for (const versionId of [...new Set([...missing, ...integrityFailures])].sort()) {
+        const record = this.#objects.get(versionId);
+        if (!record || record.status === "tombstoned") continue;
+        grantsRevoked += this.#revokeGrantsForVersion(versionId);
+        this.#objects.set(versionId, Object.freeze({ ...record, status: "quarantined", revision: record.revision + 1 }));
+        objectsQuarantined += 1;
+        await this.#audit.append({ actor_id: command.actor.actor_id, action: "OBJECT_RECONCILIATION_QUARANTINE", resource_id: versionId, resource_revision: record.revision + 1, resource_sha256: record.sha256, reason: command.reason, occurred_at: new Date(this.#nowMs()).toISOString() });
+      }
+    }
+
+    return Object.freeze({
+      orphan_locators: Object.freeze(orphanEntries.map((entry) => entry.locator)),
+      missing_object_version_ids: Object.freeze(missing),
+      integrity_failure_version_ids: Object.freeze(integrityFailures),
+      orphan_blobs_removed: orphanBlobsRemoved,
+      objects_quarantined: objectsQuarantined,
+      grants_revoked: grantsRevoked,
+      dry_run: command.payload.dry_run,
+    });
+  }
+
+  metadata(versionId: string): Readonly<Omit<ObjectRecord, "provider_locator">> | null {
     const record = this.#objects.get(versionId);
     if (!record) return null;
-    const { internal_path: ignored, ...safe } = record;
+    const { provider_locator: ignored, ...safe } = record;
     void ignored;
     return Object.freeze(safe);
   }
@@ -319,4 +457,45 @@ export class LocalPrivateObjectStorage implements ObjectStoragePort {
   #recordMutation(command: CommandEnvelope<unknown>, operation: string, versionId: string): void {
     this.#mutationIdempotency.set(command.idempotency_key, this.#mutationHash(command, operation, versionId));
   }
+
+  #revokeGrantsForVersion(versionId: string): number {
+    let revoked = 0;
+    for (const [tokenHash, grant] of this.#grants.entries()) {
+      if (grant.version_id !== versionId) continue;
+      this.#grants.delete(tokenHash);
+      revoked += 1;
+    }
+    return revoked;
+  }
+}
+
+export class LocalPrivateObjectStorage extends CanonicalPrivateObjectStorage {
+  constructor(input: Readonly<{
+    root: string;
+    environment: "generated_local_test_root";
+    audit: AuditEventPort;
+    nowMs: () => number;
+    authorizeRead: (actor: VerifiedActor, versionId: string, scopeRef: string) => boolean;
+    resolveWriteScope?: (actor: VerifiedActor) => PrivateObjectScope;
+  }>) {
+    super({
+      provider: new HermeticFilesystemPrivateBlobProvider({ root: input.root, environment: input.environment }),
+      audit: input.audit,
+      nowMs: input.nowMs,
+      authorizeRead: input.authorizeRead,
+      resolveWriteScope: input.resolveWriteScope,
+    });
+  }
+}
+
+function defaultWriteScope(actor: VerifiedActor): PrivateObjectScope {
+  if (actor.tenant_id === null || actor.assigned_case_ids.length !== 1) throw new Error("PRIVATE_OBJECT_SCOPE_REQUIRED");
+  return Object.freeze({ owner_actor_id: actor.actor_id, tenant_id: actor.tenant_id, case_id: actor.assigned_case_ids[0]! });
+}
+
+function assertScope(scope: PrivateObjectScope, actor: VerifiedActor): PrivateObjectScope {
+  if (!OPAQUE.test(scope.owner_actor_id) || !OPAQUE.test(scope.tenant_id) || !OPAQUE.test(scope.case_id) || scope.owner_actor_id !== actor.actor_id || scope.tenant_id !== actor.tenant_id || !actor.assigned_case_ids.includes(scope.case_id)) {
+    throw new Error("PRIVATE_OBJECT_SCOPE_INVALID");
+  }
+  return Object.freeze({ ...scope });
 }
