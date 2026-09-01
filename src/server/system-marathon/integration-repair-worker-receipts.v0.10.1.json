@@ -1,0 +1,114 @@
+{
+  "schema_version": "tivdoc-canonical-integration-durability-repair-worker-receipts-v0.10.1",
+  "receipt_scope": "ORIGINAL_NON_ORCHESTRATOR_WORKER_COMMITS_BEFORE_INTEGRATION",
+  "receipts": [
+    {
+      "worker": "W1_BROWSER_IDENTITY_PRODUCT_PATH",
+      "lane": "WAVE_1_BROWSER_TEST_IDENTITY_REGRESSION",
+      "commit_sha": "1b04ef5fdb721577a3bd5626f58a6b4d12b34b0e",
+      "tree_sha": "efc0abce998da03234b1d61b7de04ec3c64d6a40",
+      "parent_sha": "3b1740d63bb6978d990d1a6127730f3cec3574cc",
+      "stable_patch_id": "ae1f4b4dd50a8d2e16b709d232f270b8b42bb62d",
+      "subject": "fix(marathon): restore hermetic browser bootstrap",
+      "diffstat": {
+        "files_changed": 8,
+        "insertions": 231,
+        "deletions": 22,
+        "git_shortstat": "8 files changed, 231 insertions(+), 22 deletions(-)"
+      },
+      "changed_paths": [
+        "scripts/full-local-system-marathon/browser-e2e-runtime.mts",
+        "scripts/full-local-system-marathon/browser-e2e.mts",
+        "src/instrumentation.ts",
+        "src/server/platform/auth/auth.test.ts",
+        "src/server/platform/auth/claims.ts",
+        "src/server/product/auth/hermetic-session.test.ts",
+        "src/server/product/auth/hermetic-session.ts",
+        "src/server/system-marathon/browser-e2e-runtime.test.ts"
+      ],
+      "allowlist_result": "PASS",
+      "focused_checks": {
+        "status": "PASS",
+        "passed": 41,
+        "total": 41,
+        "command": null,
+        "command_state": "EXACT_COMMAND_TEXT_NOT_RETAINED_IN_ORCHESTRATOR_CONTEXT"
+      },
+      "integration_note": "The worker commit is a provenance object; its patch was integrated and then followed by bounded diagnostics and canonical session work."
+    },
+    {
+      "worker": "W2_POSTGRES_REPORT_TIMELINE",
+      "lane": "WAVE_1_POSTGRESQL_CANONICAL_REPORT_BINDING",
+      "commit_sha": "4b6506cf6f85aa30541f56e771ce6f90b0bdaa93",
+      "tree_sha": "a4548f6c506b2d56ca9a4f85682cb67c48a6350f",
+      "parent_sha": "3b1740d63bb6978d990d1a6127730f3cec3574cc",
+      "stable_patch_id": "a32e2276bf9ed32b114f91f298f44bb2884b25a4",
+      "subject": "fix(postgres): bind canonical report identity",
+      "diffstat": {
+        "files_changed": 8,
+        "insertions": 972,
+        "deletions": 39,
+        "git_shortstat": "8 files changed, 972 insertions(+), 39 deletions(-)"
+      },
+      "changed_paths": [
+        "scripts/canonical-persistence-v091/matrix/marathon-v010.mts",
+        "scripts/canonical-persistence-v091/matrix/marathon-v010.test.mjs",
+        "src/server/product/durable-postgres/boundary-repositories.test.ts",
+        "src/server/product/durable-postgres/boundary-repositories.ts",
+        "src/server/product/durable-postgres/boundary-sql.ts",
+        "src/server/product/durable-postgres/index.ts",
+        "src/server/product/durable-postgres/report-identity.test.ts",
+        "src/server/product/durable-postgres/report-identity.ts"
+      ],
+      "allowlist_result": "PASS",
+      "focused_checks": {
+        "status": "PASS",
+        "passed": 40,
+        "total": 40,
+        "command": null,
+        "command_state": "EXACT_COMMAND_TEXT_NOT_RETAINED_IN_ORCHESTRATOR_CONTEXT"
+      },
+      "integration_note": "The worker commit is a provenance object; its patch was integrated after the canonical session boundary."
+    },
+    {
+      "worker": "W3_DURABLE_HUMAN_LEGAL_WORKFLOWS",
+      "lane": "WAVE_3_DURABLE_GOVERNANCE_REPOSITORY_BOUNDARIES",
+      "commit_sha": "881ec0a175b225badb6e2b837211aa6ac8cfcf22",
+      "tree_sha": "30804c20772be6841b3452161fb50a7c72636be7",
+      "parent_sha": "36c211130a3fd412bcc9a59de9a862a9250e5b7f",
+      "stable_patch_id": "c342b9f1c1eebaea92077bdcffcd06d11fe074e7",
+      "subject": "feat(governance): add durable postgres repository boundaries",
+      "diffstat": {
+        "files_changed": 6,
+        "insertions": 2109,
+        "deletions": 0,
+        "git_shortstat": "6 files changed, 2109 insertions(+)"
+      },
+      "changed_paths": [
+        "src/server/platform/persistence/postgres/governance/codecs.ts",
+        "src/server/platform/persistence/postgres/governance/contracts.ts",
+        "src/server/platform/persistence/postgres/governance/governance.test.ts",
+        "src/server/platform/persistence/postgres/governance/index.ts",
+        "src/server/platform/persistence/postgres/governance/repositories.ts",
+        "src/server/platform/persistence/postgres/governance/statements.ts"
+      ],
+      "allowlist_result": "PASS",
+      "focused_checks": {
+        "status": "PASS",
+        "passed": 5,
+        "total": 5,
+        "command": null,
+        "command_state": "EXACT_COMMAND_TEXT_NOT_RETAINED_IN_ORCHESTRATOR_CONTEXT"
+      },
+      "integration_note": "The worker commit is a provenance object; its repository patch was integrated and remains separate from the forward-only migration owned by the orchestrator."
+    }
+  ],
+  "receipt_count": 3,
+  "unknown_fields_are_explicit": true,
+  "generated_human_decisions": 0,
+  "generated_human_signatures": 0,
+  "deployments": 0,
+  "remote_migrations": 0,
+  "live_provider_calls": 0,
+  "openai_calls": 0
+}

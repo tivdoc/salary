@@ -1,19 +1,63 @@
 {
   "schema_version": "tivdoc-canonical-integration-durability-repair-external-gates-v0.10.1",
   "bounded_checks_performed_once": true,
+  "bounded_check_run_count": 1,
   "final_head_reexecution_forbidden_by_task": true,
+  "unknown_exit_code_policy": "Use null plus an explicit exit_code_state when the detector did not spawn a process or did not retain the child exit code; never infer an exit code.",
   "gates": [
     {
       "id": "MC-03",
       "status": "BLOCKED",
       "detector": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/platform/supabase/detect.mts",
+      "detector_execution": {
+        "run_count": 1,
+        "process_exit_code": 0,
+        "exit_code_basis": "The detect operation intentionally exits 0 after emitting a BLOCKED_ENVIRONMENT receipt; no platform mutation operation ran."
+      },
       "reason_codes": ["SUPABASE_CLI_NOT_FOUND", "SUPABASE_CONTAINER_ENGINE_NOT_FOUND"],
+      "checked_tools": [
+        {
+          "tool": "supabase",
+          "version": null,
+          "probe_status": "NOT_FOUND",
+          "exit_code": null,
+          "exact_reason": "No safe Supabase executable path was found; the PATH lookup did not spawn a process, so no tool exit code exists.",
+          "check_method": "safe executable lookup on PATH or TIVDOC_SUPABASE_CLI_PATH",
+          "found": false,
+          "version_state": "NOT_QUERIED_EXECUTABLE_NOT_FOUND",
+          "exit_code_state": "NOT_APPLICABLE_PATH_LOOKUP_DID_NOT_SPAWN_PROCESS"
+        },
+        {
+          "tool": "docker",
+          "version": null,
+          "probe_status": "NOT_FOUND",
+          "exit_code": null,
+          "exact_reason": "No safe Docker executable path was found; the PATH lookup did not spawn a process, so no tool exit code exists.",
+          "check_method": "safe executable lookup on PATH",
+          "found": false,
+          "version_state": "NOT_QUERIED_EXECUTABLE_NOT_FOUND",
+          "exit_code_state": "NOT_APPLICABLE_PATH_LOOKUP_DID_NOT_SPAWN_PROCESS"
+        },
+        {
+          "tool": "podman",
+          "version": null,
+          "probe_status": "NOT_FOUND",
+          "exit_code": null,
+          "exact_reason": "No safe Podman executable path was found; the PATH lookup did not spawn a process, so no tool exit code exists.",
+          "check_method": "safe executable lookup on PATH",
+          "found": false,
+          "version_state": "NOT_QUERIED_EXECUTABLE_NOT_FOUND",
+          "exit_code_state": "NOT_APPLICABLE_PATH_LOOKUP_DID_NOT_SPAWN_PROCESS"
+        }
+      ],
       "observed": {
         "supabase_cli": false,
         "container_engine": null,
         "cached_images_complete": false,
         "linked_project": false,
-        "remote_credential_environment": false
+        "remote_credential_environment": false,
+        "platform_proof_performed": false,
+        "plain_postgresql_substitution_allowed": false
       },
       "external_mutations": 0
     },
@@ -21,9 +65,60 @@
       "id": "MC-10",
       "status": "BLOCKED",
       "detector": "detectLocalParserSandboxPlatform",
+      "detector_execution": {
+        "run_count": 1,
+        "execution_mode": "IN_PROCESS_READ_ONLY_CAPABILITY_DETECTION",
+        "process_exit_code": null,
+        "exit_code_state": "NOT_APPLICABLE_NO_CHILD_DETECTOR_PROCESS"
+      },
       "reason_codes": [
         "PARSER_OS_SANDBOX_NOT_VERIFIED",
         "NODE_PERMISSION_MODEL_HAS_NO_KERNEL_NETWORK_OR_RESOURCE_BOUNDARY"
+      ],
+      "checked_tools": [
+        {
+          "tool": "node",
+          "version": "22.22.2",
+          "probe_status": "PRESENT_INSUFFICIENT_ISOLATION",
+          "exit_code": null,
+          "exact_reason": "The current Node process exposes the permission model, but it does not provide a verified kernel network or resource boundary; no child probe process was needed.",
+          "check_method": "in-process runtime and allowed-flag inspection",
+          "found": true,
+          "exit_code_state": "NOT_APPLICABLE_CURRENT_PROCESS"
+        },
+        {
+          "tool": "WindowsSandbox.exe",
+          "version": null,
+          "probe_status": "NOT_FOUND",
+          "exit_code": null,
+          "exact_reason": "The Windows Sandbox binary was absent at the checked System32 path; a filesystem existence check has no process exit code.",
+          "check_method": "SystemRoot/System32 path existence check",
+          "found": false,
+          "version_state": "NOT_QUERIED_BINARY_NOT_FOUND",
+          "exit_code_state": "NOT_APPLICABLE_FILESYSTEM_EXISTENCE_CHECK"
+        },
+        {
+          "tool": "docker.exe",
+          "version": null,
+          "probe_status": "NOT_DETECTED",
+          "exit_code": null,
+          "exact_reason": "The boolean presence detector did not detect Docker and does not retain the child version output or exit code.",
+          "check_method": "boolean --version presence probe",
+          "found": false,
+          "version_state": "NOT_RETAINED_BY_BOOLEAN_DETECTOR",
+          "exit_code_state": "NOT_RETAINED_BY_BOOLEAN_DETECTOR"
+        },
+        {
+          "tool": "podman.exe",
+          "version": null,
+          "probe_status": "NOT_DETECTED",
+          "exit_code": null,
+          "exact_reason": "The boolean presence detector did not detect Podman and does not retain the child version output or exit code.",
+          "check_method": "boolean --version presence probe",
+          "found": false,
+          "version_state": "NOT_RETAINED_BY_BOOLEAN_DETECTOR",
+          "exit_code_state": "NOT_RETAINED_BY_BOOLEAN_DETECTOR"
+        }
       ],
       "observed": {
         "platform": "win32",
@@ -31,7 +126,9 @@
         "node_version": "22.22.2",
         "node_permission_model": true,
         "kernel_network_or_resource_boundary": false,
-        "locally_detected_primitives": []
+        "locally_detected_primitives": [],
+        "selected_profile": "node_permission_model_application_isolation",
+        "persistent_owner_import_enabled": false
       },
       "external_mutations": 0
     },
@@ -39,10 +136,32 @@
       "id": "MC-27",
       "status": "BLOCKED",
       "detector": "offHostCustodyCapability",
+      "detector_execution": {
+        "run_count": 1,
+        "execution_mode": "IN_PROCESS_READ_ONLY_CAPABILITY_READ",
+        "process_exit_code": null,
+        "exit_code_state": "NOT_APPLICABLE_NO_TOOL_OR_CHILD_PROCESS"
+      },
       "reason_codes": ["OFF_HOST_AUDIT_CUSTODY_PENDING", "DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED"],
+      "checked_tools": [
+        {
+          "tool": "configured_off_host_destination",
+          "version": null,
+          "probe_status": "NOT_CONFIGURED",
+          "exit_code": null,
+          "exact_reason": "No authorized managed off-host destination is configured; the in-process capability read did not invoke an external tool or destination.",
+          "check_method": "in-process configured-destination capability read",
+          "found": false,
+          "version_state": "NOT_APPLICABLE_NO_DESTINATION",
+          "exit_code_state": "NOT_APPLICABLE_NO_TOOL_OR_CHILD_PROCESS"
+        }
+      ],
+      "tool_version_state": "NOT_APPLICABLE_CAPABILITY_REQUIRES_AN_AUTHORIZED_DESTINATION_NOT_A_LOCAL_TOOL",
       "observed": {
         "local_two_store_available": true,
-        "managed_destination_available": false
+        "managed_destination_available": false,
+        "off_host_transfer_performed": false,
+        "external_delivery_performed": false
       },
       "external_mutations": 0
     }
