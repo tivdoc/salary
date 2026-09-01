@@ -20,8 +20,11 @@ const OPAQUE_ID = /^[a-z][a-z0-9_-]{7,63}$/;
 const SAFE_LEVELS = new Set(["debug", "info", "warn", "error"]);
 const SAFE_QUEUE_VALUES = new Set(["analysis", "audit", "delivery", "reports"]);
 const SAFE_REVIEW_VALUES = new Set(["extraction", "facts", "legal", "report"]);
-const SAFE_SCHEMA_VALUES = new Set(["analysis", "audit", "backup", "jobs", "storage"]);
-const LABEL_KEYS = new Set<MetricLabelKey>(["component", "outcome", "queue", "review_stage", "schema_family"]);
+const SAFE_SCHEMA_VALUES = new Set(["analysis", "audit", "backup", "jobs", "shadow", "storage"]);
+const SAFE_MODE_VALUES = new Set(["offline_synthetic"]);
+const SAFE_RUN_STATE_VALUES = new Set(["scheduled", "queued", "leased", "running", "completed", "failed", "cancelled", "degraded"]);
+const SAFE_INTEGRITY_VALUES = new Set(["valid", "invalid"]);
+const LABEL_KEYS = new Set<MetricLabelKey>(["component", "outcome", "queue", "review_stage", "schema_family", "mode", "run_state", "integrity"]);
 
 function includes<T extends string>(values: readonly T[], value: string): value is T {
   return (values as readonly string[]).includes(value);
@@ -46,6 +49,7 @@ function assertFiniteBounded(value: number, code: string): void {
 export class SafeLogSink {
   readonly #records: SafeLogRecord[] = [];
   readonly #now: () => string;
+  #sequence = 0;
 
   constructor(now: () => string) {
     this.#now = now;
@@ -72,7 +76,7 @@ export class SafeLogSink {
     const record: SafeLogRecord = Object.freeze({
       schema_version: "tivdoc-safe-log-v0.7.0",
       timestamp: this.#now(),
-      sequence: this.#records.length + 1,
+      sequence: ++this.#sequence,
       level: input.level,
       event: input.event,
       component: input.component,
@@ -88,6 +92,21 @@ export class SafeLogSink {
   records(): readonly SafeLogRecord[] {
     return this.#records.map((record) => Object.freeze({ ...record, correlation: Object.freeze({ ...record.correlation }) }));
   }
+
+  deleteBefore(timestamp: string): number {
+    const boundary = Date.parse(timestamp);
+    if (!Number.isFinite(boundary)) throw new Error("SAFE_LOG_RETENTION_TIME_INVALID");
+    const retained = this.#records.filter((record) => Date.parse(record.timestamp) >= boundary);
+    const deleted = this.#records.length - retained.length;
+    this.#records.splice(0, this.#records.length, ...retained);
+    return deleted;
+  }
+
+  deleteAll(): number {
+    const deleted = this.#records.length;
+    this.#records.splice(0, deleted);
+    return deleted;
+  }
 }
 
 function assertLabels(labels: SafeMetricLabels): void {
@@ -98,7 +117,10 @@ function assertLabels(labels: SafeMetricLabels): void {
       (key === "outcome" && includes(SAFE_OUTCOMES, value)) ||
       (key === "queue" && SAFE_QUEUE_VALUES.has(value)) ||
       (key === "review_stage" && SAFE_REVIEW_VALUES.has(value)) ||
-      (key === "schema_family" && SAFE_SCHEMA_VALUES.has(value));
+      (key === "schema_family" && SAFE_SCHEMA_VALUES.has(value)) ||
+      (key === "mode" && SAFE_MODE_VALUES.has(value)) ||
+      (key === "run_state" && SAFE_RUN_STATE_VALUES.has(value)) ||
+      (key === "integrity" && SAFE_INTEGRITY_VALUES.has(value));
     if (!allowed) throw new Error("METRIC_LABEL_VALUE_UNBOUNDED");
   }
 }
@@ -130,6 +152,12 @@ export class SafeMetricsRegistry {
     return [...this.#samples.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([, sample]) => sample);
+  }
+
+  clear(): number {
+    const deleted = this.#samples.size;
+    this.#samples.clear();
+    return deleted;
   }
 }
 

@@ -6,6 +6,7 @@ export const SAFE_COMPONENTS = [
   "jobs",
   "operations",
   "reports",
+  "shadow",
   "storage",
 ] as const;
 
@@ -23,6 +24,10 @@ export const SAFE_EVENT_NAMES = [
   "operator_command",
   "queue_observation",
   "restore_verification",
+  "shadow_audit_verification",
+  "shadow_disagreement_transition",
+  "shadow_retention",
+  "shadow_run_transition",
 ] as const;
 export type SafeEventName = (typeof SAFE_EVENT_NAMES)[number];
 
@@ -35,6 +40,9 @@ export const SAFE_ERROR_CODES = [
   "INVALID_INPUT",
   "KILL_SWITCH_DISABLED",
   "STALE_REVISION",
+  "SHADOW_AUDIT_INVALID",
+  "SHADOW_RETRY_EXHAUSTED",
+  "SHADOW_WORKER_FAILURE",
 ] as const;
 export type SafeErrorCode = (typeof SAFE_ERROR_CODES)[number];
 
@@ -75,10 +83,16 @@ export const SAFE_METRIC_NAMES = [
   "schema_version_info",
   "storage_orphans",
   "storage_quarantine",
+  "shadow_audit_chain_valid",
+  "shadow_disagreement_backlog",
+  "shadow_errors_total",
+  "shadow_retries_total",
+  "shadow_run_health",
+  "shadow_run_latency_ms",
 ] as const;
 export type SafeMetricName = (typeof SAFE_METRIC_NAMES)[number];
 
-export type MetricLabelKey = "component" | "outcome" | "queue" | "review_stage" | "schema_family";
+export type MetricLabelKey = "component" | "outcome" | "queue" | "review_stage" | "schema_family" | "mode" | "run_state" | "integrity";
 export type SafeMetricLabels = Readonly<Partial<Record<MetricLabelKey, string>>>;
 
 export type SafeMetricSample = Readonly<{
