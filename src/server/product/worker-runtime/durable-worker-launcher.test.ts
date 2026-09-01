@@ -1,10 +1,46 @@
 import { generateKeyPairSync, randomBytes } from "node:crypto";
+import { spawn } from "node:child_process";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { readDurableLocalProductRuntimeConfig } from "../runtime/durable-local-config.ts";
 import { createDurableFreshWorkerLauncher } from "./durable-worker-launcher.ts";
 
 describe("durable fresh worker launcher composition", () => {
+  it("loads the exact raw-Node child graph without an ESM resolution failure", async () => {
+    const entrypoint = resolve(process.cwd(),
+      "src/server/product/worker-runtime/durable-worker-child-entrypoint.mts");
+    const result = await new Promise<Readonly<{ code: number | null; stdout: string; stderr: string }>>((done, reject) => {
+      const child = spawn(process.execPath, [
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--experimental-strip-types",
+        entrypoint,
+      ], {
+        cwd: process.cwd(),
+        env: {
+          NODE_ENV: "test",
+          PATH: process.env.PATH,
+          SYSTEMROOT: process.env.SYSTEMROOT,
+          WINDIR: process.env.WINDIR,
+        },
+        stdio: ["pipe", "pipe", "pipe"],
+        windowsHide: true,
+      });
+      const stdout: Buffer[] = [];
+      const stderr: Buffer[] = [];
+      child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
+      child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
+      child.once("error", reject);
+      child.once("exit", (code) => done(Object.freeze({
+        code,
+        stdout: Buffer.concat(stdout).toString("utf8"),
+        stderr: Buffer.concat(stderr).toString("utf8"),
+      })));
+      child.stdin.end();
+    });
+    expect(result).toEqual({ code: 1, stdout: "", stderr: "" });
+  });
+
   it("keeps worker configuration out of protocol/proof and excludes web-only secrets", () => {
     const publicKey = generateKeyPairSync("rsa", { modulusLength: 2_048 }).publicKey
       .export({ format: "pem", type: "spki" }).toString();

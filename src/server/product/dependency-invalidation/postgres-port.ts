@@ -54,33 +54,67 @@ where tenant_id = $1 and canonical_case_id = $2
 for update`;
 
 const CURRENT_LOCK_SQL = `
-select dependency.case_revision::text,
-       dependency.dependency_epoch::text,
-       dependency.cache_epoch::text,
-       dependency.download_grant_epoch::text,
-       dependency.current_dependency_sha256,
-       dependency.stale_stages,
-       dependency.release_hold,
-       dependency.dependencies_approved,
-       dependency.execution_binding_sha256,
-       dependency.approval_binding_sha256,
-       dependency.download_binding_sha256,
-       dependency.latest_invalidation_sha256,
-       state.lifecycle_state,
-       state.updated_at,
+with locked as materialized (
+  select dependency.tenant_id,
+         dependency.canonical_case_id,
+         dependency.case_revision as dependency_case_revision,
+         state.revision as authoritative_case_revision,
+         dependency.dependency_epoch,
+         dependency.cache_epoch,
+         dependency.download_grant_epoch,
+         dependency.current_dependency_sha256,
+         dependency.stale_stages,
+         dependency.release_hold,
+         dependency.dependencies_approved,
+         dependency.execution_binding_sha256,
+         dependency.approval_binding_sha256,
+         dependency.download_binding_sha256,
+         dependency.latest_invalidation_sha256,
+         state.lifecycle_state,
+         pg_catalog.greatest(dependency.updated_at, state.updated_at) as updated_at,
        (
          select history.event_sha256
          from public.engine_case_lifecycle_revisions history
          where history.tenant_id = state.tenant_id and history.case_id = state.case_id
          order by history.revision desc limit 1
        ) as lifecycle_previous_sha256
-from public.engine_global_dependency_state dependency
-join public.engine_case_state state
-  on state.tenant_id = dependency.tenant_id
- and state.canonical_case_id = dependency.canonical_case_id
- and state.revision = dependency.case_revision
-where dependency.tenant_id = $1 and dependency.canonical_case_id = $2
-for update of dependency, state`;
+  from public.engine_global_dependency_state dependency
+  join public.engine_case_state state
+    on state.tenant_id = dependency.tenant_id
+   and state.canonical_case_id = dependency.canonical_case_id
+  where dependency.tenant_id = $1 and dependency.canonical_case_id = $2
+  for update of dependency, state
+), synchronized as (
+  update public.engine_global_dependency_state dependency
+     set case_revision = locked.authoritative_case_revision,
+         release_hold = dependency.release_hold
+           or locked.lifecycle_state in ('release_hold','cancelled'),
+         updated_at = locked.updated_at
+    from locked
+   where dependency.tenant_id = locked.tenant_id
+     and dependency.canonical_case_id = locked.canonical_case_id
+     and dependency.case_revision = locked.dependency_case_revision
+     and locked.authoritative_case_revision > locked.dependency_case_revision
+  returning dependency.case_revision
+)
+select locked.authoritative_case_revision::text as case_revision,
+       locked.dependency_epoch::text,
+       locked.cache_epoch::text,
+       locked.download_grant_epoch::text,
+       locked.current_dependency_sha256,
+       locked.stale_stages,
+       locked.release_hold or locked.lifecycle_state in ('release_hold','cancelled') as release_hold,
+       locked.dependencies_approved,
+       locked.execution_binding_sha256,
+       locked.approval_binding_sha256,
+       locked.download_binding_sha256,
+       locked.latest_invalidation_sha256,
+       locked.lifecycle_state,
+       locked.updated_at,
+       locked.lifecycle_previous_sha256
+from locked
+where locked.authoritative_case_revision = locked.dependency_case_revision
+   or exists (select 1 from synchronized)`;
 
 const WORKER_FENCE_SQL = `
 select job_id, lease_owner,

@@ -37,7 +37,20 @@ export function hermeticBrowserRuntimeBootstrapEnabled(
 
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    if (!hermeticBrowserRuntimeBootstrapEnabled()) return;
+    const durableRequested = enabled(process.env.TIVDOC_DURABLE_PRODUCT_RUNTIME_ENABLED);
+    const hermeticRequested = enabled(process.env.TIVDOC_PRODUCT_BROWSER_RUNTIME_ENABLED);
+    if (durableRequested && hermeticRequested) {
+      throw new Error("PRODUCT_RUNTIME_BOOTSTRAP_MODE_CONFLICT");
+    }
+    const hermeticEnabled = hermeticRequested && hermeticBrowserRuntimeBootstrapEnabled();
+    if (durableRequested) {
+      const { initializeDurableLocalProductRuntime } = await import(
+        "./server/product/runtime/durable-local-runtime"
+      );
+      await initializeDurableLocalProductRuntime();
+      return;
+    }
+    if (!hermeticEnabled) return;
     const { initializeHermeticBrowserRuntime } = await import(
       "./server/product/integration/browser-runtime"
     );

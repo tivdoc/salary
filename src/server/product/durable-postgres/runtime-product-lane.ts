@@ -5,14 +5,11 @@ import type { VerifiedActor } from "../../../engine/wave4/contracts.ts";
 import type { DurableJob } from "../../platform/jobs/durable-job-queue.ts";
 import {
   CANONICAL_POSTGRES_SCHEMA_VERSION,
-  requireIsolatedCanonicalPostgres,
   type CanonicalPostgresRuntimeRole,
   type CanonicalVerifiedRuntimeIdentity,
   type TransactionScopedPostgresBundle,
 } from "../../platform/composition/canonical-postgres.ts";
 import type { CanonicalApplicationPostgresComposition } from "../../platform/composition/canonical-postgres-application.ts";
-import type { PostgresAnalysisRepositories } from "../../platform/persistence/postgres/analysis/index.ts";
-import type { PostgresIntakeAdapterBundle } from "../../platform/persistence/postgres/intake/index.ts";
 import { PlatformPersistenceError } from "../../platform/persistence/contracts.ts";
 import {
   statement,
@@ -20,7 +17,6 @@ import {
   type PostgresParameter,
   type PostgresQueryResult,
 } from "../../platform/persistence/postgres/contracts.ts";
-import { decodeReport } from "../../platform/persistence/postgres/analysis/validation.ts";
 import { LocalRuntimePrivateBlobProvider } from "../../platform/storage/local-runtime/private-blob-provider.ts";
 import type { VerifiedProductIdentity } from "../auth/identity-session.ts";
 import {
@@ -38,6 +34,7 @@ import {
   withCanonicalReportGrantRevision,
   type CanonicalReportIdentity,
 } from "./report-identity.ts";
+import { decodeDurableReportArtifacts } from "./report-artifacts.ts";
 
 export const DURABLE_RUNTIME_PRODUCT_SCHEMA_VERSION =
   "tivdoc-runtime-product-lane-v0.10.2" as const;
@@ -51,10 +48,30 @@ export type DurableRuntimeDatabasePrincipal =
   | "tivdoc_operations_runtime"
   | "tivdoc_worker_runtime";
 
-export type DurableRuntimeTransactionBundle = TransactionScopedPostgresBundle<
-  PostgresIntakeAdapterBundle,
-  PostgresAnalysisRepositories
+export type DurableRuntimeTransactionBundle = Pick<
+  TransactionScopedPostgresBundle<unknown, unknown>,
+  "context" | "runtime"
 >;
+
+export type DurableRuntimeIsolatedPostgresCompositionPort = Readonly<{
+  mode: "isolated_postgres";
+  durable: true;
+  target_id: string;
+  schema_version: typeof CANONICAL_POSTGRES_SCHEMA_VERSION;
+  verified_transaction<T>(
+    input: Readonly<{
+      identity: CanonicalVerifiedRuntimeIdentity;
+      runtime_role: CanonicalPostgresRuntimeRole;
+      case_id: string;
+      correlation_id: string;
+    }>,
+    operation: (bundle: DurableRuntimeTransactionBundle) => Promise<T>,
+  ): Promise<T>;
+}>;
+
+export type DurableRuntimePostgresCompositionPort =
+  | DurableRuntimeIsolatedPostgresCompositionPort
+  | Readonly<{ mode: "disabled"; durable: false; reason: "PERSISTENCE_DISABLED" }>;
 
 /**
  * Request/worker-scoped seam supplied by the canonical root after it has
@@ -70,7 +87,7 @@ export interface DurableRuntimePostgresContextPort {
   readonly actor_id: string;
   readonly session_revision: number;
   readonly session_binding_sha256: string;
-  readonly postgres: CanonicalApplicationPostgresComposition;
+  readonly postgres: DurableRuntimePostgresCompositionPort;
   transaction<T>(
     input: Readonly<{ case_id: string; correlation_id: string }>,
     operation: (bundle: DurableRuntimeTransactionBundle) => Promise<T>,
@@ -81,6 +98,9 @@ export function createDurableRuntimeProductIdentityContext(input: Readonly<{
   postgres: CanonicalApplicationPostgresComposition;
   identity: VerifiedProductIdentity;
 }>): DurableRuntimePostgresContextPort {
+  if (input.postgres.mode !== "isolated_postgres") {
+    throw new Error("RUNTIME_PRODUCT_POSTGRES_REQUIRED");
+  }
   assertVerifiedProductIdentityForRuntimeContext(input.identity);
   const runtimeRole = input.identity.product_audience === "portal" ? "web" : "operations";
   return createVerifiedRuntimeContext({
@@ -99,7 +119,7 @@ export function createDurableRuntimeProductIdentityContext(input: Readonly<{
 }
 
 export function createDurableRuntimeWorkerContext(input: Readonly<{
-  postgres: CanonicalApplicationPostgresComposition;
+  postgres: DurableRuntimeIsolatedPostgresCompositionPort;
   identity: CanonicalVerifiedRuntimeIdentity;
 }>): DurableRuntimePostgresContextPort {
   return createVerifiedRuntimeContext({
@@ -114,12 +134,16 @@ export function createDurableRuntimeWorkerContext(input: Readonly<{
 }
 
 function createVerifiedRuntimeContext(input: Readonly<{
-  postgres: CanonicalApplicationPostgresComposition;
+  postgres: DurableRuntimeIsolatedPostgresCompositionPort;
   runtime_role: CanonicalPostgresRuntimeRole;
   identity: CanonicalVerifiedRuntimeIdentity;
   session_binding_sha256: string;
 }>): DurableRuntimePostgresContextPort {
-  const postgres = requireIsolatedCanonicalPostgres(input.postgres);
+  const postgres = input.postgres;
+  if (postgres.mode !== "isolated_postgres" || postgres.durable !== true
+      || postgres.schema_version !== CANONICAL_POSTGRES_SCHEMA_VERSION) {
+    throw new Error("RUNTIME_PRODUCT_POSTGRES_REQUIRED");
+  }
   const identity = Object.freeze({ ...input.identity });
   assertOpaque(identity.session_id, "RUNTIME_PRODUCT_VERIFIED_CONTEXT_REQUIRED");
   assertOpaque(identity.token_id, "RUNTIME_PRODUCT_VERIFIED_CONTEXT_REQUIRED");
@@ -551,7 +575,7 @@ export function createDurableRuntimeProductRegistrar(input: Readonly<{
 }
 
 export class DurableRuntimeProductRegistrar implements FreshWorkerExecutionPort {
-  readonly #application: Extract<CanonicalApplicationPostgresComposition, { mode: "isolated_postgres" }>;
+  readonly #application: DurableRuntimeIsolatedPostgresCompositionPort;
   readonly #context: DurableRuntimePostgresContextPort;
   readonly #storage: LocalRuntimePrivateBlobProvider;
   readonly #grants: DownloadGrantCodec | null;
@@ -573,7 +597,10 @@ export class DurableRuntimeProductRegistrar implements FreshWorkerExecutionPort 
       || typeof input.context.transaction !== "function") {
       throw new Error("RUNTIME_PRODUCT_VERIFIED_CONTEXT_REQUIRED");
     }
-    const application = requireIsolatedCanonicalPostgres(input.context.postgres);
+    const application = input.context.postgres;
+    if (application.mode === "disabled") {
+      throw new Error(application.reason);
+    }
     if (!application.durable || application.schema_version !== CANONICAL_POSTGRES_SCHEMA_VERSION) {
       throw new Error("RUNTIME_PRODUCT_POSTGRES_REQUIRED");
     }
@@ -1530,7 +1557,7 @@ async function readCurrentReport(client: PostgresClient, binding: DurableRuntime
   ]));
   const row = exactlyOne(result, "RUNTIME_PRODUCT_REPORT_STALE");
   if (positiveInteger(row.case_revision) !== binding.case_revision) throw new Error("RUNTIME_PRODUCT_REPORT_STALE");
-  const report = decodeReport(row.artifacts_payload);
+  const report = decodeDurableReportArtifacts(row.artifacts_payload);
   if (report.report_id !== binding.report_id
     || report.report_revision !== binding.report_revision
     || report.report_sha256 !== binding.report_sha256

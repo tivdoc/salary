@@ -1,6 +1,6 @@
 import "../routes/server-boundary.ts";
 
-import { startCanonicalApplicationPostgres } from "../../platform/composition/canonical-postgres-application.ts";
+import { startCanonicalPostgresComposition } from "../../platform/composition/canonical-postgres.ts";
 import { NodePostgresConnectionFactory } from "../../platform/persistence/postgres/runtime/node-pg-driver.ts";
 import { LocalRuntimePrivateBlobProvider } from "../../platform/storage/local-runtime/private-blob-provider.ts";
 import {
@@ -68,14 +68,19 @@ export async function createDurableFreshWorkerChildRuntime(
     application_name: "tivdoc-v0102-fresh-worker",
   });
   try {
-    const postgres = await startCanonicalApplicationPostgres({
+    const postgres = await startCanonicalPostgresComposition({
       mode: "isolated_postgres",
       execution_boundary: "non_test",
       target: factory.target,
       build_identity_sha: config.build_identity_sha,
     }, {
       runtime_connection_factories: { worker: factory },
+      intake_factory: () => Object.freeze({}),
+      analysis_factory: () => Object.freeze({}),
     });
+    if (postgres.mode !== "isolated_postgres") {
+      throw new Error("DURABLE_WORKER_POSTGRES_REQUIRED");
+    }
     const storage = new LocalRuntimePrivateBlobProvider({
       root: config.private_storage_root,
       runtime_class: "ignored_local_private_filesystem",

@@ -154,7 +154,15 @@ function fullApplySteps(): readonly Step[] {
   return Object.freeze([
     { name: "global_invalidation_case_lock" },
     { name: "global_invalidation_idempotency_read", result: result() },
-    { name: "global_invalidation_current_lock", result: result([currentRow()]) },
+    {
+      name: "global_invalidation_current_lock",
+      result: result([currentRow()]),
+      inspect: (statement) => {
+        expect(statement.text).toContain("authoritative_case_revision");
+        expect(statement.text).toContain("update public.engine_global_dependency_state");
+        expect(statement.text).toContain("locked.authoritative_case_revision > locked.dependency_case_revision");
+      },
+    },
     { name: "global_invalidation_fence_assert", result: result([{
       job_id: fence.job_id,
       lease_owner: fence.worker_id,

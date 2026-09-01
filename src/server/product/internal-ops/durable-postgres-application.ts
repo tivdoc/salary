@@ -176,12 +176,14 @@ export function createDurableInternalOpsLocalRuntimeClass(input: Readonly<{
   config: DurableLocalProductRuntimeConfig;
 }>): DurableInternalOpsLocalRuntimeClass {
   if (input.sentinel !== DURABLE_LOCAL_PRODUCT_RUNTIME_SENTINEL
-      || !/^[a-f0-9]{40}(?:[a-f0-9]{24})?$/u.test(input.config.build_identity_sha)
-      || input.config.allow_loopback_http !== true) {
+      || !/^[a-f0-9]{40}(?:[a-f0-9]{24})?$/u.test(input.config.build_identity_sha)) {
     throw new Error("DURABLE_INTERNAL_OPS_LOCAL_RUNTIME_CLASS_INVALID");
   }
   const origin = new URL(input.config.allowed_origin);
-  if (origin.protocol !== "http:" || origin.hostname !== "127.0.0.1" || !origin.port
+  const transportMatches = origin.protocol === "https:"
+    ? input.config.allow_loopback_http === false
+    : origin.protocol === "http:" && input.config.allow_loopback_http === true;
+  if (!transportMatches || origin.hostname !== "127.0.0.1" || !origin.port
       || origin.pathname !== "/" || origin.search || origin.hash || origin.username || origin.password) {
     throw new Error("DURABLE_INTERNAL_OPS_LOCAL_RUNTIME_CLASS_INVALID");
   }

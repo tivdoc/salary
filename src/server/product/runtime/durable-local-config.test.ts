@@ -91,6 +91,13 @@ describe("durable local product runtime configuration", () => {
       TIVDOC_CUSTOMER_SHADOW_ENABLED: false,
       TIVDOC_PRODUCTION_DELIVERY_ENABLED: false,
     });
+    expect(readDurableLocalProductRuntimeConfig({
+      ...env,
+      TIVDOC_LOCAL_PRODUCT_ALLOWED_ORIGIN: "https://127.0.0.1:45124",
+    })).toMatchObject({
+      allowed_origin: "https://127.0.0.1:45124",
+      allow_loopback_http: false,
+    });
   });
 
   it("rejects service-role reuse, cross-target connections, and non-loopback HTTP", () => {

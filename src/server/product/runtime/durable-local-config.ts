@@ -221,8 +221,9 @@ function validateRoleScopedConnections(urls: DurableLocalProductRuntimeConfig["c
 
 function strictLocalOrigin(raw: string): URL {
   const url = new URL(raw);
-  const localHttp = url.protocol === "http:" && url.hostname === "127.0.0.1";
-  if ((!localHttp && url.protocol !== "https:") || url.username || url.password
+  const localTransport = (url.protocol === "http:" || url.protocol === "https:")
+    && url.hostname === "127.0.0.1";
+  if (!localTransport || url.username || url.password
       || url.pathname !== "/" || url.search || url.hash || !url.port) {
     throw new Error("DURABLE_LOCAL_PRODUCT_ORIGIN_INVALID");
   }

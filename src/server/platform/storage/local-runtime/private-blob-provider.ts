@@ -8,7 +8,6 @@ import {
   readFile,
   readdir,
   realpath,
-  rename,
   unlink,
 } from "node:fs/promises";
 import { basename, dirname, isAbsolute, parse, resolve, sep } from "node:path";
@@ -33,6 +32,7 @@ export type LocalRuntimePrivateStorageProof = Readonly<{
   publicly_addressable: false;
   managed_platform_verified: false;
   immutable_active_objects: true;
+  quarantine_retained_for_transaction_recovery: true;
   content_hash_verified_on_every_read: true;
   absolute_path_disclosed: false;
 }>;
@@ -79,6 +79,7 @@ export class LocalRuntimePrivateBlobProvider implements PrivateBlobProvider {
       publicly_addressable: false,
       managed_platform_verified: false,
       immutable_active_objects: true,
+      quarantine_retained_for_transaction_recovery: true,
       content_hash_verified_on_every_read: true,
       absolute_path_disclosed: false,
     });
@@ -146,7 +147,11 @@ export class LocalRuntimePrivateBlobProvider implements PrivateBlobProvider {
         expected_sha256: input.expected_sha256,
         expected_length: input.expected_length,
       });
-      await this.#removeExactQuarantineIfPresent(input);
+      await this.readExact({
+        locator: input.quarantine_locator,
+        expected_sha256: input.expected_sha256,
+        expected_length: input.expected_length,
+      });
       return Object.freeze({ active_locator: activeLocator });
     }
     await this.readExact({
@@ -156,7 +161,11 @@ export class LocalRuntimePrivateBlobProvider implements PrivateBlobProvider {
     });
     const source = await this.#existingPath(input.quarantine_locator);
     try {
-      await rename(source, destination);
+      // Promotion is a recoverable prepare step, not a destructive move. The
+      // quarantine link remains until an independently proven committed bind
+      // can clean it. If PostgreSQL rolls back after this point, an exact
+      // replay still has the source bytes needed to complete the approval.
+      await link(source, destination);
       await chmod(destination, 0o400);
     } catch {
       if (await exists(destination)) {
@@ -165,7 +174,11 @@ export class LocalRuntimePrivateBlobProvider implements PrivateBlobProvider {
           expected_sha256: input.expected_sha256,
           expected_length: input.expected_length,
         });
-        await this.#removeExactQuarantineIfPresent(input);
+        await this.readExact({
+          locator: input.quarantine_locator,
+          expected_sha256: input.expected_sha256,
+          expected_length: input.expected_length,
+        });
         return Object.freeze({ active_locator: activeLocator });
       }
       throw new Error("LOCAL_PRIVATE_STORAGE_PROMOTION_FAILED");
@@ -246,25 +259,6 @@ export class LocalRuntimePrivateBlobProvider implements PrivateBlobProvider {
       }
     }
     return Object.freeze(entries.sort((left, right) => left.locator.localeCompare(right.locator)));
-  }
-
-  async #removeExactQuarantineIfPresent(input: Readonly<{
-    quarantine_locator: string;
-    expected_sha256: string;
-    expected_length: number;
-  }>): Promise<void> {
-    const source = this.#path(input.quarantine_locator);
-    if (!await exists(source)) return;
-    await this.readExact({
-      locator: input.quarantine_locator,
-      expected_sha256: input.expected_sha256,
-      expected_length: input.expected_length,
-    });
-    try {
-      await unlink(source);
-    } catch {
-      throw new Error("LOCAL_PRIVATE_STORAGE_PROMOTION_FAILED");
-    }
   }
 
   async #initializeRoot(): Promise<void> {

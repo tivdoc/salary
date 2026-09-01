@@ -49,6 +49,7 @@ const MIGRATIONS = Object.freeze([
   ["202609010005_governance_runtime_security.sql", "3632b1a8d6b8a08360e3f1d99aadb591d42fa577677ce87f77c114e89f41c63e"],
   ["202609010006_durable_portal_runtime_security.sql", "994bb2a3f14dd58e002f4e605bc8e03c5422a1904b9ec1f733ca1d1e21f9635d"],
   ["202609010007_global_dependency_invalidation.sql", "6d57e778a95d8e0988d4cf986a30577ec841847f189c225abdb29b9441eb45af"],
+  ["202609010008_runtime_product_forward_repair.sql", "2271602fc133a4552d813278697138634b9ebb4327c941c3e373e2c99cbfacbe"],
 ] as const);
 const CAPABILITIES = Object.freeze([
   ["cases_and_lifecycle_revisions", "intake.case_lifecycle"],

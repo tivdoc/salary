@@ -52,21 +52,61 @@ describe("V0.10.2 local private immutable filesystem storage", () => {
       expected_sha256: hash,
       expected_length: bytes.byteLength,
     })).toEqual(bytes);
-    expect(await provider.inventory()).toEqual([{
-      locator: active.active_locator,
-      sha256: hash,
-      byte_count: bytes.byteLength,
-    }]);
+    expect(await provider.inventory()).toEqual([
+      {
+        locator: active.active_locator,
+        sha256: hash,
+        byte_count: bytes.byteLength,
+      },
+      {
+        locator: first.quarantine_locator,
+        sha256: hash,
+        byte_count: bytes.byteLength,
+      },
+    ]);
     expect(provider.proof()).toMatchObject({
       provider_kind: "local_private_immutable_filesystem",
       managed_platform_verified: false,
       publicly_addressable: false,
       immutable_active_objects: true,
+      quarantine_retained_for_transaction_recovery: true,
       absolute_path_disclosed: false,
     });
     expect(JSON.stringify(provider.proof())).not.toContain(root);
     await expect(provider.deleteExact({ locator: active.active_locator, expected_sha256: hash }))
       .rejects.toThrow("LOCAL_PRIVATE_STORAGE_ACTIVE_DELETE_FORBIDDEN");
+  });
+
+  it("retains exact quarantine bytes so a rolled-back bind can be replayed", async () => {
+    const { provider } = await fixture();
+    const bytes = Uint8Array.from(Buffer.from("synthetic approval recovery bytes", "utf8"));
+    const hash = sha256(bytes);
+    const staged = await provider.putQuarantined({
+      object_key: `object_${"4".repeat(48)}`,
+      expected_sha256: hash,
+      expected_length: bytes.byteLength,
+      bytes,
+    });
+    const request = {
+      quarantine_locator: staged.quarantine_locator,
+      object_key: `object_${"5".repeat(48)}`,
+      expected_sha256: hash,
+      expected_length: bytes.byteLength,
+    } as const;
+
+    const prepared = await provider.promoteQuarantined(request);
+    // Simulate the database transaction failing after object preparation.
+    expect(await provider.readExact({
+      locator: staged.quarantine_locator,
+      expected_sha256: hash,
+      expected_length: bytes.byteLength,
+    })).toEqual(bytes);
+    expect(await provider.promoteQuarantined(request)).toEqual(prepared);
+    expect(await provider.readExact({
+      locator: prepared.active_locator,
+      expected_sha256: hash,
+      expected_length: bytes.byteLength,
+    })).toEqual(bytes);
   });
 
   it("fails closed after an out-of-band byte mutation", async () => {

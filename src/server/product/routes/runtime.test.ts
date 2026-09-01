@@ -13,6 +13,7 @@ import {
   installCanonicalProductEntrypointCapabilities,
   resetCanonicalProductRouteServicesForTests,
   resolveCanonicalApplicationProofClass,
+  resolveCanonicalOperationsService,
 } from "./runtime.ts";
 
 const services = Object.freeze({ portal: {} as CustomerPortalService });
@@ -24,6 +25,10 @@ afterEach(() => {
 });
 
 describe("canonical product route composition", () => {
+  it("fails closed instead of falling back to a process-local operations service", () => {
+    expect(resolveCanonicalOperationsService()).toBeNull();
+  });
+
   it("installs and verifies the stable entrypoint capability registrar exactly once", () => {
     const projection = buildSystemCapabilityProjection({
       schema_version: SYSTEM_CAPABILITY_SCHEMA_VERSION,

@@ -1,7 +1,6 @@
 import "../routes/server-boundary.ts";
 
-import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 
 import type { DurableLocalProductRuntimeConfig } from "../runtime/durable-local-config.ts";
 import {
@@ -9,7 +8,11 @@ import {
   type FreshWorkerChildEnvironment,
 } from "./fresh-child-launcher.ts";
 
-const ENTRYPOINT = fileURLToPath(new URL("./durable-worker-child-entrypoint.mts", import.meta.url));
+// This runtime is explicitly local-only. Resolve the source entrypoint from the
+// canonical checkout so a Next production chunk cannot accidentally redirect
+// the fresh process to a non-existent chunk-relative `.mts` path.
+const ENTRYPOINT = resolve(process.cwd(),
+  "src", "server", "product", "worker-runtime", "durable-worker-child-entrypoint.mts");
 
 export function createDurableFreshWorkerLauncher(
   config: DurableLocalProductRuntimeConfig,

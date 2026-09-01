@@ -8,7 +8,6 @@ import {
 import { resolveProductSessionBoundary } from "../auth/runtime.ts";
 import type { CustomerPortalApplicationPort } from "../customer-portal/repository.ts";
 import type { InternalOpsApplicationPort } from "../internal-ops/application-port.ts";
-import { resolveInternalOpsRuntime } from "../internal-ops/runtime.ts";
 
 export type CanonicalProductRouteServices = Readonly<{
   portal: CustomerPortalApplicationPort;
@@ -73,7 +72,7 @@ export function resolveCanonicalPortalService(): CustomerPortalApplicationPort |
 }
 
 export function resolveCanonicalOperationsService(): InternalOpsApplicationPort | null {
-  return runtimeGlobal().__tivdocCanonicalProductRouteServices?.operations ?? resolveInternalOpsRuntime().service;
+  return runtimeGlobal().__tivdocCanonicalProductRouteServices?.operations ?? null;
 }
 
 export function resolveCanonicalApplicationPersistence(): CanonicalApplicationPersistence | null {

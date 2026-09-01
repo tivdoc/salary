@@ -216,6 +216,9 @@ export const EXPECTED_PORTAL_WEB_READ_POLICY_TABLES = Object.freeze([
   "public.case_conversations",
   "public.documents",
   "public.engine_case_identity",
+  "public.engine_report_versions",
+  "public.engine_review_task_versions",
+  "public.product_case_owners",
   "public.product_privacy_request_versions",
   "public.product_private_report_objects",
 ] as const);
@@ -554,6 +557,7 @@ select jsonb_build_object(
           'engine_case_identity', 'engine_case_state', 'engine_case_lifecycle_revisions',
           'documents', 'case_conversations', 'case_messages', 'case_confirmations',
           'analysis_runs', 'engine_idempotency_records', 'engine_platform_audit_events',
+          'engine_report_versions', 'engine_review_task_versions', 'product_case_owners',
           'product_privacy_request_versions', 'product_private_report_objects'
         )
     ),
@@ -595,6 +599,11 @@ select jsonb_build_object(
     'operations_bind_execute', pg_catalog.has_function_privilege(
       'tivdoc_operations_runtime',
       'private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz)',
+      'EXECUTE'
+    ),
+    'operations_resolver_execute', pg_catalog.has_function_privilege(
+      'tivdoc_operations_runtime',
+      'private.resolve_engine_case_id(text,text)',
       'EXECUTE'
     ),
     'worker_bind_execute', pg_catalog.has_function_privilege(
@@ -911,7 +920,7 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   const portalAcl = record(inventory.portal_runtime_acl, "portal_runtime_acl");
   expectValue(portalAcl.web_surface_table_privileges, 0,
     "POSTGRES_INVENTORY_PORTAL_WEB_TABLE_ACL_INVALID");
-  expectValue(portalAcl.web_column_select, 115,
+  expectValue(portalAcl.web_column_select, 151,
     "POSTGRES_INVENTORY_PORTAL_WEB_SELECT_ACL_INVALID");
   expectValue(portalAcl.web_column_insert, 68,
     "POSTGRES_INVENTORY_PORTAL_WEB_INSERT_ACL_INVALID");
@@ -925,6 +934,8 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     "POSTGRES_INVENTORY_PORTAL_WEB_SEQUENCE_SELECT_INVALID");
   expectValue(portalAcl.operations_bind_execute, true,
     "POSTGRES_INVENTORY_PORTAL_OPERATIONS_BIND_INVALID");
+  expectValue(portalAcl.operations_resolver_execute, true,
+    "POSTGRES_INVENTORY_OPERATIONS_RESOLVER_ACL_INVALID");
   expectValue(portalAcl.worker_bind_execute, true,
     "POSTGRES_INVENTORY_PORTAL_WORKER_BIND_INVALID");
   expectValue(portalAcl.web_bind_execute, false,
@@ -979,6 +990,11 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       component: "governance_runtime_security",
       schema_version: "tivdoc-governance-runtime-security-v0.10.2",
       migration_id: "202609010005_governance_runtime_security",
+    }),
+    Object.freeze({
+      component: "runtime_product_forward_repair",
+      schema_version: "tivdoc-runtime-product-forward-repair-v0.10.2",
+      migration_id: "202609010008_runtime_product_forward_repair",
     }),
   ]);
   if (canonicalJson(metadata) !== canonicalJson(expectedMetadata)) {

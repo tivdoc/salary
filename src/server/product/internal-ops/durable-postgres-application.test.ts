@@ -269,6 +269,11 @@ describe("durable InternalOps PostgreSQL application", () => {
       config: Object.freeze({ ...localConfig(), allowed_origin: "https://remote.example.test:443",
         allow_loopback_http: false }),
     })).toThrow("DURABLE_INTERNAL_OPS_LOCAL_RUNTIME_CLASS_INVALID");
+    expect(() => createDurableInternalOpsLocalRuntimeClass({
+      sentinel: DURABLE_LOCAL_PRODUCT_RUNTIME_SENTINEL,
+      config: Object.freeze({ ...localConfig(), allowed_origin: "https://127.0.0.1:45124",
+        allow_loopback_http: false }),
+    })).not.toThrow();
   });
 });
 
