@@ -11,10 +11,16 @@ import {
 import { EXPECTED_MIGRATION_SHA256 } from "../../../scripts/canonical-persistence-v091/foundation/migrations.mts";
 
 const MIGRATION = "202609010006_durable_portal_runtime_security.sql" as const;
+const FORWARD_REPAIR_MIGRATION = "202609010008_runtime_product_forward_repair.sql" as const;
 const migrationPath = path.resolve(process.cwd(), "supabase", "migrations", MIGRATION);
+const forwardRepairPath = path.resolve(process.cwd(), "supabase", "migrations", FORWARD_REPAIR_MIGRATION);
 
 async function sql(): Promise<string> {
   return (await readFile(migrationPath, "utf8")).replaceAll("\r\n", "\n");
+}
+
+async function forwardRepairSql(): Promise<string> {
+  return (await readFile(forwardRepairPath, "utf8")).replaceAll("\r\n", "\n");
 }
 
 describe("V0.10.2 durable portal runtime security migration", () => {
@@ -25,6 +31,12 @@ describe("V0.10.2 durable portal runtime security migration", () => {
     expect(source).toContain("'durable_portal_runtime_security'");
     expect(source).toContain("'tivdoc-durable-portal-runtime-security-v0.10.2'");
     expect(source).toContain("'202609010006_durable_portal_runtime_security'");
+
+    const forwardRepair = await forwardRepairSql();
+    expect(createHash("sha256").update(forwardRepair, "utf8").digest("hex"))
+      .toBe(EXPECTED_MIGRATION_SHA256[FORWARD_REPAIR_MIGRATION]);
+    expect(forwardRepair).toContain("'runtime_product_forward_repair'");
+    expect(forwardRepair).toContain("'202609010008_runtime_product_forward_repair'");
   });
 
   it("derives active ownership only from the verified durable web session", async () => {
@@ -42,16 +54,28 @@ describe("V0.10.2 durable portal runtime security migration", () => {
     expect(source).not.toContain("current_setting('tivdoc.actor_id'");
   });
 
-  it("adds exactly twelve restrictive owner policies over the directly reachable portal surface", async () => {
+  it("composes exactly fifteen restrictive owner policies over the canonical portal surface", async () => {
     const source = await sql();
-    const policies = [...source.matchAll(
-      /^create policy tivdoc_portal_web_owned_case on public\.([a-z0-9_]+)\n  as restrictive for (select|all) to tivdoc_web_runtime$/gmu,
-    )].map((match) => Object.freeze({ table: `public.${match[1]}`, command: match[2] }));
-    expect(policies).toHaveLength(12);
+    const forwardRepair = await forwardRepairSql();
+    const sealed = portalOwnerPolicies(source);
+    const repaired = portalOwnerPolicies(forwardRepair);
+    expect(sealed).toHaveLength(12);
+    expect(repaired).toHaveLength(3);
+
+    const policies = [...sealed, ...repaired];
+    expect(policies).toHaveLength(
+      EXPECTED_PORTAL_WEB_READ_POLICY_TABLES.length + EXPECTED_PORTAL_WEB_MUTATION_POLICY_TABLES.length,
+    );
+    expect(new Set(policies.map(({ table }) => table)).size).toBe(policies.length);
     expect(policies.filter(({ command }) => command === "select").map(({ table }) => table).sort())
       .toEqual([...EXPECTED_PORTAL_WEB_READ_POLICY_TABLES].sort());
     expect(policies.filter(({ command }) => command === "all").map(({ table }) => table).sort())
       .toEqual([...EXPECTED_PORTAL_WEB_MUTATION_POLICY_TABLES].sort());
+    for (const { table } of repaired) {
+      expect(forwardRepair).toContain(`create policy tivdoc_portal_web_owned_case on ${table}
+  as restrictive for select to tivdoc_web_runtime
+  using (private.runtime_web_owns_case(tenant_id, canonical_case_id));`);
+    }
     expect(source).toContain("and state = 'approved'\n    and revoked_at is null");
   });
 
@@ -114,6 +138,12 @@ describe("V0.10.2 durable portal runtime security migration", () => {
     expect(source).toContain("message = 'PORTAL_CASE_STATE_LIFECYCLE_REQUIRED'");
   });
 });
+
+function portalOwnerPolicies(source: string): readonly Readonly<{ table: string; command: string }>[] {
+  return [...source.matchAll(
+    /^create policy tivdoc_portal_web_owned_case on public\.([a-z0-9_]+)\n  as restrictive for (select|all) to tivdoc_web_runtime$/gmu,
+  )].map((match) => Object.freeze({ table: `public.${match[1]}`, command: match[2] }));
+}
 
 function functionBody(source: string, name: string): string {
   const start = source.indexOf(`function ${name}(`);
