@@ -255,6 +255,11 @@ const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.product_session_rotate",
   "private.reject_engine_append_only_mutation",
   "private.resolve_engine_case_id",
+  "private.runtime_assert_actor",
+  "private.runtime_assert_reviewer_role",
+  "private.runtime_context_install",
+  "private.runtime_verified_actor",
+  "private.runtime_verified_tenant",
   "public.claim_salary_ga4_purchase",
   "public.claim_salary_meta_purchase",
   "public.claim_salary_payment_completed",
@@ -419,7 +424,10 @@ select jsonb_build_object(
       'bypass_rls', rolbypassrls
     ) order by rolname)
     from pg_catalog.pg_roles
-    where rolname in ('anon', 'authenticated', 'service_role')
+    where rolname in (
+      'anon', 'authenticated', 'service_role', 'tivdoc_governance_owner',
+      'tivdoc_operations_runtime', 'tivdoc_web_runtime', 'tivdoc_worker_runtime'
+    )
   ), '[]'::jsonb),
   'schemas', coalesce((
     select jsonb_agg(nspname order by nspname)
@@ -613,7 +621,7 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   assertExactStrings(tables, EXPECTED_CANONICAL_TABLES, "POSTGRES_INVENTORY_TABLES_INVALID");
 
   const roles = recordArray(inventory.roles, "roles");
-  if (roles.length !== 3) throw new Error("POSTGRES_INVENTORY_ROLES_INVALID");
+  if (roles.length !== 7) throw new Error("POSTGRES_INVENTORY_ROLES_INVALID");
   for (const roleName of ["anon", "authenticated", "service_role"] as const) {
     const role = roles.find((candidate) => candidate.name === roleName);
     if (!role || role.login !== true || role.superuser !== false
@@ -631,6 +639,17 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     const table = stringField(entry, "table", "rls");
     if (entry.enabled !== expectedRls.has(table) || entry.forced !== false) {
       throw new Error(`POSTGRES_INVENTORY_RLS_STATE_INVALID:${table}`);
+    }
+  }
+  for (const roleName of [
+    "tivdoc_governance_owner",
+    "tivdoc_operations_runtime",
+    "tivdoc_web_runtime",
+    "tivdoc_worker_runtime",
+  ] as const) {
+    const role = roles.find((candidate) => candidate.name === roleName);
+    if (!role || role.login !== false || role.superuser !== false || role.bypass_rls !== false) {
+      throw new Error(`POSTGRES_INVENTORY_ROLE_INVALID:${roleName}`);
     }
   }
 
@@ -660,13 +679,15 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     const table = stringField(entry, "table", "policies");
     const rolesValue = stringArray(entry.roles, "policy.roles");
     const qualifiedTable = `${schema}.${table}`;
-    const commonShapeValid = entry.command === "ALL"
+    const publicShapeValid = entry.command === "ALL"
       && rolesValue.length === 1 && rolesValue[0] === "service_role";
-    if (schema === "public" && entry.name === "tivdoc_service_tenant_scope" && commonShapeValid) {
+    const governanceShapeValid = entry.command === "ALL"
+      && rolesValue.length === 1 && rolesValue[0] === "tivdoc_governance_owner";
+    if (schema === "public" && entry.name === "tivdoc_service_tenant_scope" && publicShapeValid) {
       publicPolicyTables.push(qualifiedTable);
       continue;
     }
-    if (schema === "private" && entry.name === `${table}_service_tenant` && commonShapeValid
+    if (schema === "private" && entry.name === `${table}_verified_tenant` && governanceShapeValid
       && EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES.includes(
         qualifiedTable as (typeof EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES)[number],
       )) {
@@ -714,6 +735,11 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       component: "durable_product_boundaries",
       schema_version: "tivdoc-durable-product-postgresql-v0.10.1",
       migration_id: "202609010003_durable_product_integrity_hardening",
+    }),
+    Object.freeze({
+      component: "governance_runtime_security",
+      schema_version: "tivdoc-governance-runtime-security-v0.10.2",
+      migration_id: "202609010005_governance_runtime_security",
     }),
   ]);
   if (canonicalJson(metadata) !== canonicalJson(expectedMetadata)) {

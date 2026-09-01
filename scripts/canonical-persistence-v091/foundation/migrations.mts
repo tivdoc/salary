@@ -34,6 +34,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609010002_durable_product_boundaries.sql",
   "202609010003_durable_product_integrity_hardening.sql",
   "202609010004_durable_governance_workflows.sql",
+  "202609010005_governance_runtime_security.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -53,6 +54,7 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
   "202609010002_durable_product_boundaries.sql": "455e8789de89bef18fb1041e009ab87d7a7e005a294209df3b83456d42ff3e6f",
   "202609010003_durable_product_integrity_hardening.sql": "2882adc09d5faccbee2f96cf9f1c75b1b40b586f206408795bde189914501029",
   "202609010004_durable_governance_workflows.sql": "343f72ff7ee9d15c1007261c382223e4aac59e1f0227fad7c32fc05e230ed012",
+  "202609010005_governance_runtime_security.sql": "3a852ef640bf94d9ea7c4d1dab5b0db49b38592306bba8b5910080158dcd4767",
 });
 
 export type MigrationFile = Readonly<{
