@@ -1375,8 +1375,8 @@ begin
      or exists (
        select 1 from pg_catalog.jsonb_array_elements_text(target_record -> 'reviewer_roles') reviewer_role(value)
        where not exists (
-         select 1 from pg_catalog.jsonb_array_elements(policy.record_json -> 'grants') grant(value)
-         where grant.value ->> 'reviewer_role' = reviewer_role.value
+         select 1 from pg_catalog.jsonb_array_elements(policy.record_json -> 'grants') role_grant(value)
+         where role_grant.value ->> 'reviewer_role' = reviewer_role.value
        )
      ) then
     raise exception using errcode = 'P0001', message = 'GOVERNANCE_REVIEWER_INVALID';
@@ -1705,9 +1705,9 @@ begin
         where role.value = target_required_reviewer_role
       )
       and exists (
-        select 1 from pg_catalog.jsonb_array_elements(policy.record_json -> 'grants') grant(value),
-          pg_catalog.jsonb_array_elements_text(grant.value -> 'purposes') purpose(value)
-        where grant.value ->> 'reviewer_role' = target_required_reviewer_role
+        select 1 from pg_catalog.jsonb_array_elements(policy.record_json -> 'grants') role_grant(value),
+          pg_catalog.jsonb_array_elements_text(role_grant.value -> 'purposes') purpose(value)
+        where role_grant.value ->> 'reviewer_role' = target_required_reviewer_role
           and purpose.value = target_purpose
       )
       and not exists (
