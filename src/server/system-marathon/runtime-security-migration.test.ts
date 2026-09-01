@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const MIGRATION = "202609010005_governance_runtime_security.sql" as const;
-const EXPECTED_SHA256 = "3c2562b9841ddf1f3d73a901f1c2b86cb8f600a4a94c26ca4a17464b0dcb9e5c" as const;
+const EXPECTED_SHA256 = "3632b1a8d6b8a08360e3f1d99aadb591d42fa577677ce87f77c114e89f41c63e" as const;
 const migrationPath = path.resolve(process.cwd(), "supabase", "migrations", MIGRATION);
 
 async function sql(): Promise<string> {
@@ -47,9 +47,19 @@ describe("V0.10.2 governance runtime security migration", () => {
     expect(source).toContain("alter role tivdoc_governance_owner nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;");
     expect(source).toContain("alter role tivdoc_operations_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;");
     expect(source).toContain("alter role tivdoc_worker_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;");
+    expect(source).toContain("alter role tivdoc_identity_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;");
     expect(count(source, /^revoke all on function private\.governance_[a-z0-9_]+\(.+\) from service_role;$/gmu)).toBe(21);
     expect(source).not.toMatch(/^grant execute on function private\.governance_.+ to service_role;$/gmu);
     expect(source).not.toMatch(/grant (?:select|insert|update|delete|all) on (?:table )?private\.governance_/iu);
+  });
+
+  it("isolates durable session verification behind one non-bypass identity reader", async () => {
+    const source = await sql();
+    expect(source).toContain("grant usage on schema private to tivdoc_identity_runtime;");
+    expect(source).toContain("revoke all on function private.product_identity_session_read(text) from service_role;");
+    expect(source).toContain("grant execute on function private.product_identity_session_read(text) to tivdoc_identity_runtime;");
+    expect(source).not.toMatch(/grant (?:select|insert|update|delete|all) on (?:table )?(?:public|private)\..+ to tivdoc_identity_runtime/iu);
+    expect(source).not.toContain("grant execute on function private.runtime_context_install(text,text,text) to tivdoc_identity_runtime");
   });
 
   it("binds actor and reviewer role inside the transaction and documents both mutable projections", async () => {

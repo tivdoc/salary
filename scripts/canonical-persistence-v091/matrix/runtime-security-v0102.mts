@@ -45,6 +45,7 @@ const WORKER_FUNCTIONS = new Set([
 type RuntimeSecurityRole =
   | "anon"
   | "authenticated"
+  | "identity"
   | "service_role"
   | "unauthorized"
   | "web"
@@ -73,9 +74,12 @@ export type RuntimeSecurityMatrixReceipt = Readonly<{
   owner_login: false;
   owner_bypass_rls: false;
   owner_context_successes: 0;
-  observed_role_connections: 7;
+  identity_session_reader_rows: 1;
+  identity_direct_table_reads: 0;
+  identity_context_install_successes: 0;
+  observed_role_connections: 8;
   administrative_connections: 1;
-  connection_attempts: 8;
+  connection_attempts: 9;
   credentials_recorded: 0;
   status: "PASS";
 }>;
@@ -84,7 +88,7 @@ export async function runRuntimeSecurityV0102Matrix(input: Readonly<{
   admin_connection_url: string;
   role_connection_urls: Readonly<Record<
     "anon" | "authenticated" | "service_role" | "unauthorized"
-      | "tivdoc_web_runtime" | "tivdoc_operations_runtime" | "tivdoc_worker_runtime",
+      | "tivdoc_identity_runtime" | "tivdoc_web_runtime" | "tivdoc_operations_runtime" | "tivdoc_worker_runtime",
     string
   >>;
   fixture_suffix: string;
@@ -94,6 +98,7 @@ export async function runRuntimeSecurityV0102Matrix(input: Readonly<{
   const connections = Object.freeze({
     anon: pool(input.role_connection_urls.anon, "tivdoc-v0102-security-anon"),
     authenticated: pool(input.role_connection_urls.authenticated, "tivdoc-v0102-security-authenticated"),
+    identity: pool(input.role_connection_urls.tivdoc_identity_runtime, "tivdoc-v0102-security-identity"),
     service_role: pool(input.role_connection_urls.service_role, "tivdoc-v0102-security-service"),
     unauthorized: pool(input.role_connection_urls.unauthorized, "tivdoc-v0102-security-unauthorized"),
     web: pool(input.role_connection_urls.tivdoc_web_runtime, "tivdoc-v0102-security-web"),
@@ -145,6 +150,7 @@ export async function runRuntimeSecurityV0102Matrix(input: Readonly<{
     assert(owner.rows.length === 1 && !owner.rows[0]!.login && !owner.rows[0]!.bypass_rls,
       "RUNTIME_SECURITY_OWNER_INVALID");
     await ownerCannotInstallContext(admin, fixture);
+    await identityRoleIsolation(connections.identity, fixture);
     await revokedSessionDenied(connections.operations, fixture);
     await crossTenantAndPoolReuse(connections.operations, fixture);
 
@@ -164,9 +170,12 @@ export async function runRuntimeSecurityV0102Matrix(input: Readonly<{
       owner_login: false,
       owner_bypass_rls: false,
       owner_context_successes: 0,
-      observed_role_connections: 7,
+      identity_session_reader_rows: 1,
+      identity_direct_table_reads: 0,
+      identity_context_install_successes: 0,
+      observed_role_connections: 8,
       administrative_connections: 1,
-      connection_attempts: 8,
+      connection_attempts: 9,
       credentials_recorded: 0,
       status: "PASS",
     });
@@ -241,6 +250,25 @@ async function ownerCannotInstallContext(admin: Pool, fixture: ReturnType<typeof
     await expectSqlstate(client, "select * from private.runtime_context_install($1,$2,$3)",
       [fixture.sid_a, fixture.jti_a, `owner:context:${fixture.sid_a.slice(-8)}`], "42501");
     await client.query("rollback");
+  } finally {
+    client.release();
+  }
+}
+
+async function identityRoleIsolation(connection: Pool, fixture: ReturnType<typeof fixtureIds>): Promise<void> {
+  const session = await connection.query<{ tenant_id: string; session_id: string }>(
+    "select tenant_id, session_id from private.product_identity_session_read($1)",
+    [fixture.sid_a],
+  );
+  assert(session.rowCount === 1 && session.rows[0]?.tenant_id === fixture.tenant_a
+    && session.rows[0]?.session_id === fixture.sid_a, "RUNTIME_SECURITY_IDENTITY_READER_INVALID");
+
+  const client = await connection.connect();
+  try {
+    await expectSqlstate(client, "select tenant_id from public.product_identity_sessions where sid = $1",
+      [fixture.sid_a], "42501");
+    await expectSqlstate(client, "select * from private.runtime_context_install($1,$2,$3)",
+      [fixture.sid_a, fixture.jti_a, `identity:context:${fixture.sid_a.slice(-8)}`], "42501");
   } finally {
     client.release();
   }

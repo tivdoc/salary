@@ -19,6 +19,9 @@ begin
   if not exists (select 1 from pg_catalog.pg_roles where rolname = 'tivdoc_web_runtime') then
     execute 'create role tivdoc_web_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls';
   end if;
+  if not exists (select 1 from pg_catalog.pg_roles where rolname = 'tivdoc_identity_runtime') then
+    execute 'create role tivdoc_identity_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls';
+  end if;
 end;
 $roles$;
 
@@ -26,9 +29,10 @@ alter role tivdoc_governance_owner nologin nosuperuser nocreatedb nocreaterole n
 alter role tivdoc_operations_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
 alter role tivdoc_worker_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
 alter role tivdoc_web_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
+alter role tivdoc_identity_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
 
-revoke tivdoc_governance_owner from anon, authenticated, service_role, tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
-revoke service_role from tivdoc_governance_owner, tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
+revoke tivdoc_governance_owner from anon, authenticated, service_role, tivdoc_identity_runtime, tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
+revoke service_role from tivdoc_governance_owner, tivdoc_identity_runtime, tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
 
 create function private.runtime_context_install(
   target_sid text,
@@ -365,6 +369,7 @@ revoke all on function private.runtime_assert_actor(text) from public, anon, aut
 revoke all on function private.runtime_assert_reviewer_role(text) from public, anon, authenticated, service_role, tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
 
 grant usage on schema private to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
+grant usage on schema private to tivdoc_identity_runtime;
 grant execute on function private.runtime_context_install(text,text,text) to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
 
 -- Remove every V0.10.1 governance grant before applying the per-purpose
@@ -718,6 +723,12 @@ grant execute on function private.product_private_report_object_bind(text,text,t
 grant execute on function private.product_report_object_approve(text,text,text,bigint) to tivdoc_operations_runtime;
 grant execute on function private.product_report_object_approved_read(text,text,text,bigint,text,text) to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
 grant execute on function private.product_report_object_revoke(text,text,text,bigint,text,timestamptz) to tivdoc_operations_runtime, tivdoc_worker_runtime;
+
+-- JWT verification has a separate non-bypass principal that can resolve only
+-- the exact opaque sid through the narrow SECURITY DEFINER reader. It cannot
+-- install runtime context or access any table directly.
+revoke all on function private.product_identity_session_read(text) from service_role;
+grant execute on function private.product_identity_session_read(text) to tivdoc_identity_runtime;
 
 insert into public.engine_schema_metadata (component, schema_version, migration_id)
 values (

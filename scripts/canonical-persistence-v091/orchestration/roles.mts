@@ -12,6 +12,7 @@ export type DynamicRoleSecrets = Readonly<{
 }>;
 
 export type RuntimeRoleSecrets = Readonly<{
+  tivdoc_identity_runtime: SecretValue;
   tivdoc_operations_runtime: SecretValue;
   tivdoc_web_runtime: SecretValue;
   tivdoc_worker_runtime: SecretValue;
@@ -32,7 +33,7 @@ export type RuntimeRoleReceipt = Readonly<{
     superuser: false;
     bypass_rls: false;
   }>;
-  scram_passwords_configured: 3;
+  scram_passwords_configured: 4;
   credentials_emitted: 0;
   status: "PASS";
 }>;
@@ -52,6 +53,7 @@ export type DynamicRoleReceipt = Readonly<{
 
 const ROLE_NAMES = Object.freeze(["anon", "authenticated", "service_role", "tivdoc_policy_probe"] as const);
 const RUNTIME_ROLE_NAMES = Object.freeze([
+  "tivdoc_identity_runtime",
   "tivdoc_operations_runtime",
   "tivdoc_web_runtime",
   "tivdoc_worker_runtime",
@@ -70,13 +72,14 @@ export function generateDynamicRoleSecrets(): DynamicRoleSecrets {
 export function generateRuntimeRoleSecrets(): RuntimeRoleSecrets {
   const secret = (): SecretValue => new SecretValue(randomBytes(36).toString("base64url"));
   return Object.freeze({
+    tivdoc_identity_runtime: secret(),
     tivdoc_operations_runtime: secret(),
     tivdoc_web_runtime: secret(),
     tivdoc_worker_runtime: secret(),
   });
 }
 
-/** Enables only the three migration-defined NOBYPASS runtime logins. */
+/** Enables only the four migration-defined NOBYPASS runtime logins. */
 export async function configureRuntimeRoleSessions(input: Readonly<{
   admin_connection_url: string;
   secrets: RuntimeRoleSecrets;
@@ -134,7 +137,7 @@ export async function configureRuntimeRoleSessions(input: Readonly<{
           superuser: false as const, bypass_rls: false as const, owns_governance_objects: false as const }))),
         owner: Object.freeze({ ...owner.rows[0]!, role: "tivdoc_governance_owner" as const,
           login: false as const, superuser: false as const, bypass_rls: false as const }),
-        scram_passwords_configured: 3,
+        scram_passwords_configured: 4,
         credentials_emitted: 0,
         status: "PASS",
       });

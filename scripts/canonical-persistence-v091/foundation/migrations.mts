@@ -54,7 +54,7 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
   "202609010002_durable_product_boundaries.sql": "455e8789de89bef18fb1041e009ab87d7a7e005a294209df3b83456d42ff3e6f",
   "202609010003_durable_product_integrity_hardening.sql": "2882adc09d5faccbee2f96cf9f1c75b1b40b586f206408795bde189914501029",
   "202609010004_durable_governance_workflows.sql": "343f72ff7ee9d15c1007261c382223e4aac59e1f0227fad7c32fc05e230ed012",
-  "202609010005_governance_runtime_security.sql": "3c2562b9841ddf1f3d73a901f1c2b86cb8f600a4a94c26ca4a17464b0dcb9e5c",
+  "202609010005_governance_runtime_security.sql": "3632b1a8d6b8a08360e3f1d99aadb591d42fa577677ce87f77c114e89f41c63e",
 });
 
 export type MigrationFile = Readonly<{

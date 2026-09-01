@@ -437,7 +437,7 @@ select jsonb_build_object(
     from pg_catalog.pg_roles
     where rolname in (
       'anon', 'authenticated', 'service_role', 'tivdoc_governance_owner',
-      'tivdoc_operations_runtime', 'tivdoc_web_runtime', 'tivdoc_worker_runtime'
+      'tivdoc_identity_runtime', 'tivdoc_operations_runtime', 'tivdoc_web_runtime', 'tivdoc_worker_runtime'
     )
   ), '[]'::jsonb),
   'schemas', coalesce((
@@ -632,7 +632,7 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   assertExactStrings(tables, EXPECTED_CANONICAL_TABLES, "POSTGRES_INVENTORY_TABLES_INVALID");
 
   const roles = recordArray(inventory.roles, "roles");
-  if (roles.length !== 7) throw new Error("POSTGRES_INVENTORY_ROLES_INVALID");
+  if (roles.length !== 8) throw new Error("POSTGRES_INVENTORY_ROLES_INVALID");
   for (const roleName of ["anon", "authenticated", "service_role"] as const) {
     const role = roles.find((candidate) => candidate.name === roleName);
     if (!role || role.login !== true || role.superuser !== false
@@ -653,6 +653,7 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     }
   }
   for (const roleName of [
+    "tivdoc_identity_runtime",
     "tivdoc_operations_runtime",
     "tivdoc_web_runtime",
     "tivdoc_worker_runtime",
