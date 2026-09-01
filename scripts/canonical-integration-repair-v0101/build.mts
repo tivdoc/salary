@@ -20,13 +20,12 @@ const PAYLOAD = path.join(FINAL, "payload");
 const MANIFEST = path.join(FINAL, "manifest.json");
 const ARCHIVE = path.join(FINAL, "tivdoc-v0101-evidence.zip");
 const ARCHIVE_HASH = `${ARCHIVE}.sha256`;
-const ASSESSMENT_SOURCE = "src/server/system-marathon/integration-repair-assessment.v0.10.1.json";
+const ASSESSMENT_PATH = path.join(WORKING, "integration-repair-assessment.v0.10.1.json");
 
 const SOURCE_FILES = Object.freeze([
   "src/server/system-marathon/integration-repair-contract.v0.10.1.json",
   "src/server/system-marathon/integration-repair-audit.v0.10.1.json",
   "src/server/system-marathon/integration-repair-ledger.v0.10.1.ndjson",
-  ASSESSMENT_SOURCE,
   "src/server/system-marathon/external-gates.v0.10.1.json",
   "src/server/system-marathon/integration-repair-metrics.v0.10.1.json",
   "src/server/system-marathon/owner-action-index.v0.10.1.json",
@@ -35,7 +34,7 @@ const SOURCE_FILES = Object.freeze([
 ]);
 
 await assertFreshOutput();
-const assessmentBytes = await readFile(path.join(ROOT, ASSESSMENT_SOURCE));
+const assessmentBytes = await readFile(ASSESSMENT_PATH);
 const assessment = JSON.parse(assessmentBytes.toString("utf8")) as Record<string, unknown>;
 validateV0101Assessment(assessment);
 parseOrderedIntegrationLedger(await readFile(path.join(ROOT,
