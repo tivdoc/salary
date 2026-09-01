@@ -165,16 +165,16 @@ with latest as materialized (
   select prior.task_id, prior.revision + 1, prior.tenant_id, prior.case_id,
          prior.task_kind, prior.input_sha256, $3,
          pg_catalog.encode(public.digest(pg_catalog.convert_to(
-           $4 || ':' || prior.task_id || ':' || (prior.revision + 1)::text,
+           $4::text || ':' || prior.task_id || ':' || (prior.revision + 1)::text,
            'UTF8'
          ), 'sha256'), 'hex'),
          pg_catalog.jsonb_build_object(
-           'decision', 'invalidated', 'reason_code', $5,
-           'invalidation_id', $6, 'mutation_kind', $7,
+           'decision', 'invalidated', 'reason_code', $5::text,
+           'invalidation_id', $6::text, 'mutation_kind', $7::text,
            'prior_revision', prior.revision
          ),
          pg_catalog.encode(public.digest(pg_catalog.convert_to(
-           $4 || ':' || prior.task_id || ':' || (prior.revision + 1)::text,
+           $4::text || ':' || prior.task_id || ':' || (prior.revision + 1)::text,
            'UTF8'
          ), 'sha256'), 'hex'),
          $8::timestamptz, $8::timestamptz,

@@ -170,7 +170,15 @@ function fullApplySteps(): readonly Step[] {
       lease_expires_at_ms: String(fence.lease_expires_at_ms),
     }]) },
     { name: "global_invalidation_case_advance", result: result([{ revision: "6" }]) },
-    { name: "global_invalidation_approvals_append", result: result([{ approvals_invalidated: "1" }]) },
+    {
+      name: "global_invalidation_approvals_append",
+      result: result([{ approvals_invalidated: "1" }]),
+      inspect: (statement) => {
+        expect(statement.text).toContain("'reason_code', $5::text");
+        expect(statement.text).toContain("'invalidation_id', $6::text");
+        expect(statement.text).toContain("'mutation_kind', $7::text");
+      },
+    },
     { name: "global_invalidation_report_objects_revoke", result: result([{
       grants_revoked: "2", objects_revoked: "3",
     }]) },
