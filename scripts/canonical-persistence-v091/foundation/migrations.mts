@@ -103,8 +103,9 @@ export async function discoverMigrationChain(paths: DynamicPostgresPaths): Promi
     const resolved = await realpath(path);
     contained(realMigrationRoot, resolved);
     const bytes = await readFile(resolved);
-    const digest = createHash("sha256").update(bytes).digest("hex");
-    if (digest !== EXPECTED_MIGRATION_SHA256[name as (typeof EXPECTED_MIGRATION_CHAIN)[number]]) {
+    const expectedDigest = EXPECTED_MIGRATION_SHA256[name as (typeof EXPECTED_MIGRATION_CHAIN)[number]];
+    const digest = sqlSha256(bytes, expectedDigest);
+    if (digest !== expectedDigest) {
       throw new Error(`POSTGRES_MIGRATION_CHECKSUM_MISMATCH:${name}`);
     }
     migrations.push(Object.freeze({
@@ -207,7 +208,7 @@ async function applyMigrationFiles(
   const applied: Array<MigrationApplyReceipt["applied"][number]> = [];
   for (const migration of migrations) {
     contained(input.paths.migrations_root, migration.path);
-    const actualDigest = await hashApprovedSqlFile(input.paths.migrations_root, migration.path);
+    const actualDigest = await hashApprovedSqlFile(input.paths.migrations_root, migration.path, migration.sha256);
     if (actualDigest !== migration.sha256) throw new Error(`POSTGRES_MIGRATION_CHANGED_AFTER_DISCOVERY:${migration.name}`);
     const result = await runPsqlFile({ ...input, runner, file: migration.path });
     applied.push(Object.freeze({
@@ -293,10 +294,20 @@ function applyReceipt(
   });
 }
 
-async function hashApprovedSqlFile(parent: string, path: string): Promise<string> {
+async function hashApprovedSqlFile(parent: string, path: string, expectedSha256?: string): Promise<string> {
   contained(parent, path);
   const metadata = await lstat(path);
   if (!metadata.isFile() || metadata.isSymbolicLink()) throw new Error("POSTGRES_SQL_FILE_UNSAFE");
   const bytes = await readFile(path);
-  return createHash("sha256").update(bytes).digest("hex");
+  return sqlSha256(bytes, expectedSha256);
+}
+
+function sqlSha256(bytes: Buffer, expectedSha256?: string): string {
+  const raw = createHash("sha256").update(bytes).digest("hex");
+  if (!expectedSha256 || raw === expectedSha256) return raw;
+  const text = bytes.toString("utf8");
+  if (text.includes("\uFFFD") || /\r(?!\n)/u.test(text)) {
+    throw new Error("POSTGRES_SQL_FILE_ENCODING_INVALID");
+  }
+  return createHash("sha256").update(text.replaceAll("\r\n", "\n"), "utf8").digest("hex");
 }
