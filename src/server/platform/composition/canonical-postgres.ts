@@ -12,6 +12,23 @@ export const CANONICAL_POSTGRES_SCHEMA_VERSION = "tivdoc-canonical-postgresql-v0
 export const CANONICAL_POSTGRES_RUNTIME_MODES = ["memory_test_only", "isolated_postgres", "disabled"] as const;
 export type CanonicalPostgresRuntimeMode = (typeof CANONICAL_POSTGRES_RUNTIME_MODES)[number];
 export type CanonicalPostgresExecutionBoundary = "test" | "hermetic_synthetic" | "non_test";
+export type CanonicalPostgresRuntimeRole = "web" | "operations" | "worker";
+
+export type CanonicalVerifiedRuntimeIdentity = Readonly<{
+  session_id: string;
+  token_id: string;
+  tenant_id: string;
+  actor_id: string;
+  reviewer_organization_id: string | null;
+  rotation_counter: number;
+}>;
+
+export type CanonicalVerifiedTransactionInput = Readonly<{
+  identity: CanonicalVerifiedRuntimeIdentity;
+  runtime_role: CanonicalPostgresRuntimeRole;
+  case_id: string;
+  correlation_id: string;
+}>;
 
 export type CanonicalPostgresTarget = Readonly<{
   target_id: string;
@@ -54,6 +71,7 @@ export type CanonicalPostgresAdapterFactory<T> = (
 
 export type CanonicalPostgresDependencies<TIntake, TAnalysis, TMemoryTestOnly = never> = Readonly<{
   connection_factory?: PostgresConnectionFactory;
+  runtime_connection_factories?: Partial<Readonly<Record<CanonicalPostgresRuntimeRole, PostgresConnectionFactory>>>;
   intake_factory?: CanonicalPostgresAdapterFactory<TIntake>;
   analysis_factory?: CanonicalPostgresAdapterFactory<TAnalysis>;
   memory_test_only_factory?: () => TMemoryTestOnly;
@@ -82,6 +100,10 @@ export type IsolatedCanonicalPostgresComposition<TIntake, TAnalysis> = Readonly<
     caseId: string,
     operation: (bundle: TransactionScopedPostgresBundle<TIntake, TAnalysis>) => Promise<T>,
   ): Promise<T>;
+  verified_transaction<T>(
+    input: CanonicalVerifiedTransactionInput,
+    operation: (bundle: TransactionScopedPostgresBundle<TIntake, TAnalysis>) => Promise<T>,
+  ): Promise<T>;
 }>;
 
 export type CanonicalPostgresComposition<TIntake, TAnalysis, TMemoryTestOnly> =
@@ -98,6 +120,13 @@ const RUNTIME_CONTEXT = `
 select set_config('tivdoc.engine_git_sha', $1, true),
        set_config('tivdoc.tenant_id', $2, true),
        set_config('tivdoc.runtime_role', $3, true)`;
+
+const BUILD_CONTEXT = `select pg_catalog.set_config('tivdoc.engine_git_sha', $1, true)`;
+
+const VERIFIED_RUNTIME_CONTEXT = `
+select tenant_id, actor_id, runtime_role, reviewer_organization_id,
+       session_rotation_counter::text as session_rotation_counter
+from private.runtime_context_install($1, $2, $3)`;
 
 /**
  * Single version-neutral non-test root. It accepts the W1/W2 adapter factories
@@ -130,13 +159,26 @@ export async function startCanonicalPostgresComposition<TIntake, TAnalysis, TMem
   if (!/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u.test(config.build_identity_sha)) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_REQUIRED");
   }
-  if (!dependencies.connection_factory || !dependencies.intake_factory || !dependencies.analysis_factory) {
+  const runtimeFactories = dependencies.runtime_connection_factories ?? {};
+  const runtimeRoles = (["web", "operations", "worker"] as const)
+    .filter((role) => runtimeFactories[role] !== undefined);
+  if ((!dependencies.connection_factory && runtimeRoles.length === 0)
+      || !dependencies.intake_factory || !dependencies.analysis_factory) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_REQUIRED");
   }
 
-  const transactionManager = new CanonicalPostgresTransactionManager(dependencies.connection_factory);
-  await transactionManager.transaction(async (context) => {
-    await setRuntimeContext(context, config.build_identity_sha, "startup_schema_probe");
+  const transactionManager = dependencies.connection_factory
+    ? new CanonicalPostgresTransactionManager(dependencies.connection_factory)
+    : null;
+  const runtimeManagers = new Map<CanonicalPostgresRuntimeRole, CanonicalPostgresTransactionManager>();
+  for (const role of runtimeRoles) {
+    runtimeManagers.set(role, new CanonicalPostgresTransactionManager(runtimeFactories[role]!));
+  }
+  const startupManager = transactionManager ?? runtimeManagers.values().next().value;
+  if (!startupManager) throw new CanonicalPostgresError("POSTGRES_TARGET_REQUIRED");
+  await startupManager.transaction(async (context) => {
+    if (transactionManager) await setRuntimeContext(context, config.build_identity_sha, "startup_schema_probe");
+    else await setBuildContext(context, config.build_identity_sha);
     const result = await context.client.query(statement("schema_compatibility_read", SCHEMA_COMPATIBILITY, []));
     if (result.row_count !== 1 || result.rows.length !== 1 || result.rows[0].schema_version !== CANONICAL_POSTGRES_SCHEMA_VERSION) {
       throw new CanonicalPostgresError("POSTGRES_SCHEMA_INCOMPATIBLE");
@@ -152,19 +194,28 @@ export async function startCanonicalPostgresComposition<TIntake, TAnalysis, TMem
       tenantId: string,
       caseId: string,
       operation: (bundle: TransactionScopedPostgresBundle<TIntake, TAnalysis>) => Promise<T>,
-    ): Promise<T> => transactionManager.transaction(async (context) => {
+    ): Promise<T> => {
+      if (!transactionManager) return Promise.reject(new CanonicalPostgresError("POSTGRES_RUNTIME_IDENTITY_REQUIRED"));
+      return transactionManager.transaction(async (context) => {
       await setRuntimeContext(context, config.build_identity_sha, tenantId);
-      const bundle: TransactionScopedPostgresBundle<TIntake, TAnalysis> = Object.freeze({
-        context,
-        intake: dependencies.intake_factory!(context, tenantId),
-        analysis: dependencies.analysis_factory!(context, tenantId),
-        runtime: Object.freeze({
-          idempotency: new PostgresIdempotencyRepository(),
-          jobs_outbox_audit: new PostgresJobsOutboxAuditRepository(context, tenantId, caseId),
-        }),
-      });
+      const bundle = createTransactionBundle(context, tenantId, caseId, dependencies);
       return operation(bundle);
-    }),
+      });
+    },
+    verified_transaction: <T>(
+      input: CanonicalVerifiedTransactionInput,
+      operation: (bundle: TransactionScopedPostgresBundle<TIntake, TAnalysis>) => Promise<T>,
+    ): Promise<T> => {
+      assertVerifiedTransactionInput(input);
+      const manager = runtimeManagers.get(input.runtime_role);
+      if (!manager) return Promise.reject(new CanonicalPostgresError("POSTGRES_RUNTIME_ROLE_UNAVAILABLE"));
+      return manager.transaction(async (context) => {
+        await setBuildContext(context, config.build_identity_sha);
+        const verified = await installVerifiedRuntimeContext(context, input);
+        const bundle = createTransactionBundle(context, verified.tenant_id, input.case_id, dependencies);
+        return operation(bundle);
+      });
+    },
   });
 }
 
@@ -185,4 +236,64 @@ function validateTarget(target: CanonicalPostgresTarget | undefined): void {
 
 async function setRuntimeContext(context: PostgresTransactionContext, buildIdentitySha: string, tenantId: string): Promise<void> {
   await context.client.query(statement("runtime_context_set", RUNTIME_CONTEXT, [buildIdentitySha, tenantId, "service_role"]));
+}
+
+async function setBuildContext(context: PostgresTransactionContext, buildIdentitySha: string): Promise<void> {
+  await context.client.query(statement("runtime_build_context_set", BUILD_CONTEXT, [buildIdentitySha]));
+}
+
+function createTransactionBundle<TIntake, TAnalysis, TMemoryTestOnly>(
+  context: PostgresTransactionContext,
+  tenantId: string,
+  caseId: string,
+  dependencies: CanonicalPostgresDependencies<TIntake, TAnalysis, TMemoryTestOnly>,
+): TransactionScopedPostgresBundle<TIntake, TAnalysis> {
+  return Object.freeze({
+    context,
+    intake: dependencies.intake_factory!(context, tenantId),
+    analysis: dependencies.analysis_factory!(context, tenantId),
+    runtime: Object.freeze({
+      idempotency: new PostgresIdempotencyRepository(),
+      jobs_outbox_audit: new PostgresJobsOutboxAuditRepository(context, tenantId, caseId),
+    }),
+  });
+}
+
+function assertVerifiedTransactionInput(input: CanonicalVerifiedTransactionInput): void {
+  const opaque = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/u;
+  if (!opaque.test(input.identity.session_id) || !opaque.test(input.identity.token_id)
+      || !opaque.test(input.identity.tenant_id) || !opaque.test(input.identity.actor_id)
+      || !opaque.test(input.case_id) || !opaque.test(input.correlation_id)
+      || !Number.isSafeInteger(input.identity.rotation_counter) || input.identity.rotation_counter < 0
+      || (input.identity.reviewer_organization_id !== null
+        && !opaque.test(input.identity.reviewer_organization_id))) {
+    throw new CanonicalPostgresError("POSTGRES_RUNTIME_IDENTITY_INVALID");
+  }
+  if (input.runtime_role === "operations" && input.identity.reviewer_organization_id === null) {
+    throw new CanonicalPostgresError("POSTGRES_RUNTIME_REVIEWER_ORGANIZATION_REQUIRED");
+  }
+}
+
+async function installVerifiedRuntimeContext(
+  context: PostgresTransactionContext,
+  input: CanonicalVerifiedTransactionInput,
+): Promise<CanonicalVerifiedRuntimeIdentity & Readonly<{ runtime_role: CanonicalPostgresRuntimeRole }>> {
+  const result = await context.client.query(statement("runtime_verified_context_install", VERIFIED_RUNTIME_CONTEXT, [
+    input.identity.session_id,
+    input.identity.token_id,
+    input.correlation_id,
+  ]));
+  const row = result.rows[0];
+  const rotation = typeof row?.session_rotation_counter === "string"
+    ? Number(row.session_rotation_counter)
+    : Number.NaN;
+  if (result.row_count !== 1 || result.rows.length !== 1 || !row
+      || row.tenant_id !== input.identity.tenant_id
+      || row.actor_id !== input.identity.actor_id
+      || row.runtime_role !== input.runtime_role
+      || (row.reviewer_organization_id ?? null) !== input.identity.reviewer_organization_id
+      || rotation !== input.identity.rotation_counter) {
+    throw new CanonicalPostgresError("POSTGRES_RUNTIME_IDENTITY_MISMATCH");
+  }
+  return Object.freeze({ ...input.identity, runtime_role: input.runtime_role });
 }

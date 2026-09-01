@@ -20,6 +20,7 @@ function postgres(): Extract<CanonicalApplicationPostgresComposition, { mode: "i
     target_id: "v0102-route-registration-test",
     schema_version: CANONICAL_POSTGRES_SCHEMA_VERSION,
     transaction: vi.fn(),
+    verified_transaction: vi.fn(),
   });
 }
 

@@ -34,6 +34,7 @@ function isolated(transaction = vi.fn()): CanonicalApplicationPostgresCompositio
     target_id: "tivdoc-v09-test-only",
     schema_version: "tivdoc-canonical-postgresql-v0.9.0" as const,
     transaction,
+    verified_transaction: vi.fn(),
   }) as CanonicalApplicationPostgresComposition;
 }
 

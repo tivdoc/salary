@@ -4,7 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import type { IdentityVerificationPort } from "../../platform/auth/identity-verification.ts";
 import { internalOpsActorSchema } from "../internal-ops/contracts.ts";
-import { authenticateProductIdentity } from "./identity-session.ts";
+import { authenticateProductIdentity, bindDurableProductActor } from "./identity-session.ts";
 import type { ProductAudience, VerifiedProductSession } from "./hermetic-session.ts";
 import type { ProductSessionBoundary } from "./runtime.ts";
 
@@ -37,7 +37,7 @@ export class DurableCryptographicProductSessionBoundary implements ProductSessio
     if (!csrf || !/^[A-Za-z0-9_-]{32,86}$/u.test(csrf)) return null;
     if (requireCsrf && !validMutationCsrf(request, csrf, this.#allowedOrigin)) return null;
     return Object.freeze({
-      actor: actor.data,
+      actor: bindDurableProductActor(Object.freeze({ ...identity, actor: actor.data })),
       audience,
       csrf_token: csrf,
       expires_at_epoch: identity.expires_at_epoch,

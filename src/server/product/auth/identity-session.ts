@@ -5,6 +5,7 @@ import type {
   VerifiedIdentity,
 } from "../../platform/auth/identity-verification.ts";
 import type { ProductAudience } from "./hermetic-session.ts";
+import type { VerifiedActor } from "../../../engine/wave4/contracts.ts";
 
 export const PRODUCT_IDENTITY_COOKIE = "__Host-tivdoc_identity" as const;
 
@@ -40,6 +41,47 @@ const IDENTITY_QUERY_KEYS = Object.freeze([
 export type VerifiedProductIdentity = Readonly<VerifiedIdentity & {
   product_audience: ProductAudience;
 }>;
+
+export const DURABLE_PRODUCT_ACTOR_SESSION = Symbol("tivdoc.durable-product-actor-session.v0.10.2");
+
+export type DurableProductActorSessionBinding = Readonly<{
+  session_id: string;
+  token_id: string;
+  rotation_counter: number;
+  reviewer_organization_id: string | null;
+  issuer: string;
+}>;
+
+export type DurableSessionBoundActor<TActor extends VerifiedActor = VerifiedActor> = TActor & Readonly<{
+  [DURABLE_PRODUCT_ACTOR_SESSION]: DurableProductActorSessionBinding;
+}>;
+
+/** Binds verified session coordinates without making them JSON-visible. */
+export function bindDurableProductActor<TActor extends VerifiedActor>(
+  identity: Omit<VerifiedProductIdentity, "actor"> & Readonly<{ actor: TActor }>,
+): DurableSessionBoundActor<TActor> {
+  const actor = { ...identity.actor } as TActor & {
+    [DURABLE_PRODUCT_ACTOR_SESSION]?: DurableProductActorSessionBinding;
+  };
+  Object.defineProperty(actor, DURABLE_PRODUCT_ACTOR_SESSION, {
+    configurable: false,
+    enumerable: false,
+    writable: false,
+    value: Object.freeze({
+      session_id: identity.session_id,
+      token_id: identity.token_id,
+      rotation_counter: identity.rotation_counter,
+      reviewer_organization_id: identity.reviewer_organization_id,
+      issuer: identity.issuer,
+    }),
+  });
+  return Object.freeze(actor) as DurableSessionBoundActor<TActor>;
+}
+
+export function durableProductActorSession(actor: VerifiedActor): DurableProductActorSessionBinding | null {
+  const value = (actor as Partial<DurableSessionBoundActor>)[DURABLE_PRODUCT_ACTOR_SESSION];
+  return value && typeof value === "object" ? value : null;
+}
 
 /**
  * Canonical HTTP identity boundary. The only credential source is the exact,

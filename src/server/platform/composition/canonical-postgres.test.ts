@@ -73,6 +73,62 @@ describe("single canonical PostgreSQL composition root", () => {
     expect(driver.inventory()).toMatchObject({ acquisitions: 2, releases: 2, remaining_steps: 0 });
   });
 
+  it("derives product tenant and actor only through a role-specific durable session", async () => {
+    const driver = new StrictRecordingPostgresDriver([
+      { statement_name: "transaction_begin" },
+      { statement_name: "runtime_build_context_set" },
+      { statement_name: "schema_compatibility_read", result: { rows: [{ schema_version: CANONICAL_POSTGRES_SCHEMA_VERSION }], row_count: 1 } },
+      { statement_name: "transaction_commit" },
+      { statement_name: "transaction_begin" },
+      { statement_name: "runtime_build_context_set" },
+      {
+        statement_name: "runtime_verified_context_install",
+        result: {
+          rows: [{
+            tenant_id: "tenant:synthetic:001",
+            actor_id: "owner:synthetic:001",
+            runtime_role: "web",
+            reviewer_organization_id: null,
+            session_rotation_counter: "3",
+          }],
+          row_count: 1,
+        },
+      },
+      { statement_name: "transaction_commit" },
+    ]);
+    const composition = await startCanonicalPostgresComposition({
+      mode: "isolated_postgres",
+      execution_boundary: "non_test",
+      target,
+      build_identity_sha: "e".repeat(40),
+    }, {
+      runtime_connection_factories: { web: driver },
+      intake_factory: (context, tenantId) => ({ context, tenantId }),
+      analysis_factory: (context, tenantId) => ({ context, tenantId }),
+    });
+    const operational = requireIsolatedCanonicalPostgres(composition);
+    await expect(operational.transaction("tenant:forged", "case:synthetic:001", async () => null))
+      .rejects.toMatchObject({ code: "POSTGRES_RUNTIME_IDENTITY_REQUIRED" });
+    await expect(operational.verified_transaction({
+      identity: {
+        session_id: "session:synthetic:001",
+        token_id: "token:synthetic:001",
+        tenant_id: "tenant:synthetic:001",
+        actor_id: "owner:synthetic:001",
+        reviewer_organization_id: null,
+        rotation_counter: 3,
+      },
+      runtime_role: "web",
+      case_id: "case:synthetic:001",
+      correlation_id: "correlation:synthetic:001",
+    }, async (bundle) => {
+      expect(bundle.intake.tenantId).toBe("tenant:synthetic:001");
+      expect(bundle.analysis.context).toBe(bundle.context);
+      return bundle.context.transaction_id;
+    })).resolves.toBe("postgres-transaction-00000002");
+    expect(driver.inventory()).toMatchObject({ acquisitions: 2, releases: 2, remaining_steps: 0 });
+  });
+
   it("fails startup closed on an incompatible schema and does not expose adapters", async () => {
     const driver = new StrictRecordingPostgresDriver([
       { statement_name: "transaction_begin" },

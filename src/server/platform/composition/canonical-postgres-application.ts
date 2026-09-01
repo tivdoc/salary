@@ -5,6 +5,7 @@ import {
   startCanonicalPostgresComposition,
   type CanonicalPostgresComposition,
   type CanonicalPostgresConfig,
+  type CanonicalPostgresRuntimeRole,
 } from "./canonical-postgres.ts";
 
 export const CANONICAL_POSTGRES_CAPABILITY_BINDINGS = Object.freeze([
@@ -42,11 +43,13 @@ export function startCanonicalApplicationPostgres<TMemoryTestOnly = never>(
   config: CanonicalPostgresConfig,
   dependencies: Readonly<{
     connection_factory?: PostgresConnectionFactory;
+    runtime_connection_factories?: Partial<Readonly<Record<CanonicalPostgresRuntimeRole, PostgresConnectionFactory>>>;
     memory_test_only_factory?: () => TMemoryTestOnly;
   }>,
 ): Promise<CanonicalApplicationPostgresComposition<TMemoryTestOnly>> {
   return startCanonicalPostgresComposition(config, {
     connection_factory: dependencies.connection_factory,
+    runtime_connection_factories: dependencies.runtime_connection_factories,
     intake_factory,
     analysis_factory: createPostgresAnalysisRepositories,
     memory_test_only_factory: dependencies.memory_test_only_factory,

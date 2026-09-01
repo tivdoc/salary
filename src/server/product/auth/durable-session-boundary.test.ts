@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { IdentityVerificationPort, VerifiedIdentity } from "../../platform/auth/identity-verification.ts";
-import { PRODUCT_IDENTITY_COOKIE } from "./identity-session.ts";
+import { durableProductActorSession, PRODUCT_IDENTITY_COOKIE } from "./identity-session.ts";
 import { DurableCryptographicProductSessionBoundary } from "./durable-session-boundary.ts";
 
 const CSRF = "csrf_token_0000000000000000000000000001";
@@ -51,12 +51,21 @@ describe("durable cryptographic product session boundary", () => {
       verifier: verifier(),
       allowed_origin: "https://local.tivdoc.invalid",
     });
-    await expect(boundary.verify(request(), "portal", true)).resolves.toEqual({
+    const session = await boundary.verify(request(), "portal", true);
+    expect(session).toEqual({
       actor: IDENTITY.actor,
       audience: "portal",
       csrf_token: CSRF,
       expires_at_epoch: IDENTITY.expires_at_epoch,
     });
+    expect(durableProductActorSession(session!.actor)).toEqual({
+      session_id: IDENTITY.session_id,
+      token_id: IDENTITY.token_id,
+      rotation_counter: IDENTITY.rotation_counter,
+      reviewer_organization_id: null,
+      issuer: IDENTITY.issuer,
+    });
+    expect(JSON.stringify(session!.actor)).not.toContain(IDENTITY.session_id);
   });
 
   it("fails closed for spoof identity, CSRF mismatch, origin mismatch or absent durable identity", async () => {
