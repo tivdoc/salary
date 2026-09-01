@@ -3,6 +3,14 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import {
+  MARATHON_BROWSER_ROUTES,
+  MARATHON_BROWSER_SERVER_ARGS,
+  MARATHON_BROWSER_SESSION_COOKIE,
+  extractMarathonBrowserSessionCookie,
+  marathonBrowserServerEnvironment,
+} from "./browser-e2e-runtime.mts";
+
 const ROOT = path.resolve(process.cwd());
 const OUTPUT = path.join(ROOT, "output", "playwright", "v010-marathon");
 const BASE_URL = "http://127.0.0.1:45123";
@@ -15,9 +23,9 @@ let server: ChildProcessWithoutNullStreams | null = null;
 await mkdir(OUTPUT, { recursive: true });
 const commands: Readonly<Record<string, unknown>>[] = [];
 try {
-  server = spawn(process.execPath, [NEXT, "start", "--hostname", "127.0.0.1", "--port", "45123"], {
+  server = spawn(process.execPath, [NEXT, ...MARATHON_BROWSER_SERVER_ARGS], {
     cwd: ROOT,
-    env: safeEnvironment(),
+    env: marathonBrowserServerEnvironment(),
     windowsHide: true,
     stdio: ["pipe", "pipe", "pipe"],
   });
@@ -27,21 +35,28 @@ try {
 
   commands.push(runCli("open", ["open", BASE_URL, "--browser", "msedge"]));
   commands.push(runCli("resize_desktop", ["resize", "1440", "900"]));
-  for (const page of [
-    { id: "home", path: "/" },
-    { id: "portal", path: "/portal" },
-    { id: "operations", path: "/operations" },
-  ] as const) {
+  const sessions = Object.freeze({
+    portal: await issueSession("portal", MARATHON_BROWSER_ROUTES[1].ticket),
+    operations: await issueSession("operations", MARATHON_BROWSER_ROUTES[2].ticket),
+  });
+  for (const page of MARATHON_BROWSER_ROUTES) {
+    const session = page.audience ? sessions[page.audience] : null;
+    if (session) commands.push(installBrowserSession(`session_${page.id}`, session));
     commands.push(runCli(`goto_${page.id}`, ["goto", `${BASE_URL}${page.path}`]));
     commands.push(runCli(`snapshot_${page.id}`, ["snapshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.md`)]));
     commands.push(runCli(`screenshot_${page.id}`, ["screenshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.png`), "--full-page"]));
-    const response = await fetch(`${BASE_URL}${page.path}`, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
+    const response = await fetch(`${BASE_URL}${page.path}`, {
+      redirect: "manual",
+      headers: session ? { cookie: `${MARATHON_BROWSER_SESSION_COOKIE}=${session}` } : undefined,
+      signal: AbortSignal.timeout(10_000),
+    });
     if (response.status !== 200) throw new Error(`BROWSER_E2E_HTTP_STATUS:${page.id}:${response.status}`);
     if (!response.headers.get("content-security-policy") || !response.headers.get("cache-control")?.includes("no-store")) {
       throw new Error(`BROWSER_E2E_SECURITY_HEADERS:${page.id}`);
     }
   }
   commands.push(runCli("resize_mobile", ["resize", "390", "844"]));
+  commands.push(installBrowserSession("session_portal_mobile", sessions.portal));
   commands.push(runCli("goto_portal_mobile", ["goto", `${BASE_URL}/portal`]));
   commands.push(runCli("snapshot_portal_mobile", ["snapshot", "--filename", path.join(OUTPUT, "portal-mobile.md")]));
   commands.push(runCli("screenshot_portal_mobile", ["screenshot", "--filename", path.join(OUTPUT, "portal-mobile.png"), "--full-page"]));
@@ -102,6 +117,30 @@ function runCliAllowFailure(commandId: string, args: readonly string[]): void {
   }
 }
 
+async function issueSession(audience: "portal" | "operations", ticket: string): Promise<string> {
+  const response = await fetch(`${BASE_URL}/api/${audience}/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ticket }),
+    redirect: "manual",
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.status !== 201) throw new Error(`BROWSER_E2E_SESSION_ISSUE_FAILED:${audience}:${response.status}`);
+  return extractMarathonBrowserSessionCookie(response.headers.get("set-cookie"));
+}
+
+function installBrowserSession(commandId: string, value: string): Readonly<Record<string, unknown>> {
+  const cookie = [{
+    name: MARATHON_BROWSER_SESSION_COOKIE,
+    value,
+    url: BASE_URL,
+    httpOnly: true,
+    secure: false,
+    sameSite: "Strict",
+  }];
+  return runCli(commandId, ["run-code", [`async (page) => { await page.context().addCookies(${JSON.stringify(cookie)}); return true; }`]]);
+}
+
 async function waitForServer(): Promise<void> {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     if (server?.exitCode !== null) throw new Error(`BROWSER_E2E_SERVER_EXITED:${server?.exitCode}`);
@@ -114,18 +153,6 @@ async function waitForServer(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error("BROWSER_E2E_SERVER_START_TIMEOUT");
-}
-
-function safeEnvironment(): NodeJS.ProcessEnv {
-  return {
-    ...process.env,
-    OPENAI_API_KEY: "",
-    TIVDOC_OPENAI_LIVE_TESTS: "0",
-    TIVDOC_CUSTOMER_PROCESSING_ENABLED: "0",
-    TIVDOC_CUSTOMER_SHADOW_AUTHORIZED: "0",
-    TIVDOC_PRODUCTION_DELIVERY_ENABLED: "0",
-    TIVDOC_RUNTIME_TARGET: "local_only",
-  };
 }
 
 function hash(value: Uint8Array | string): string {
