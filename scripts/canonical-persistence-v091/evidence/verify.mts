@@ -45,6 +45,7 @@ const MIGRATIONS = Object.freeze([
   ["202609010001_controlled_import_ledger.sql", "3e51b4c1cd06c4f654566937c486856c78c192c1923fc287da29f8c0a1463e34"],
   ["202609010002_durable_product_boundaries.sql", "455e8789de89bef18fb1041e009ab87d7a7e005a294209df3b83456d42ff3e6f"],
   ["202609010003_durable_product_integrity_hardening.sql", "2882adc09d5faccbee2f96cf9f1c75b1b40b586f206408795bde189914501029"],
+  ["202609010004_durable_governance_workflows.sql", "47bdc778e09d66140b6aee997f32461596dacf1213d9515eb0ce32afd66ffd6f"],
 ] as const);
 const CAPABILITIES = Object.freeze([
   ["cases_and_lifecycle_revisions", "intake.case_lifecycle"],
@@ -580,7 +581,7 @@ function verifyRls(value: Obj): void {
   const tables = values(value.sensitive_tables, "DYNAMIC_RLS_TABLES_INVALID");
   assert(JSON.stringify(tables) === JSON.stringify(RLS_TABLES) && value.rls_enabled === 39
     && value.rls_enabled === tables.length && value.rls_forced === 0, "DYNAMIC_RLS_TABLES_INVALID");
-  assert(value.security_definer_functions === 42 && value.unsafe_security_definer_functions === 0
+  assert(value.security_definer_functions === 74 && value.unsafe_security_definer_functions === 0
     && value.security_definer_acl_mismatches === 0 && value.tenant_policy_tables === 31
     && value.cross_tenant_rows_visible === 0
     && value.cross_tenant_write_rejections === 31

@@ -15,6 +15,31 @@ export const EXPECTED_CANONICAL_TABLES = Object.freeze([
   "private.controlled_import_artifacts",
   "private.controlled_import_audit_events",
   "private.controlled_import_requests",
+  "private.governance_aggregate_snapshots",
+  "private.governance_audit_events",
+  "private.governance_golden_case_sets",
+  "private.governance_gt_active_locks",
+  "private.governance_gt_eligibility_versions",
+  "private.governance_gt_lock_supersessions",
+  "private.governance_gt_locks",
+  "private.governance_gt_manifest_versions",
+  "private.governance_human_decisions",
+  "private.governance_idempotency",
+  "private.governance_key_challenge_consumptions",
+  "private.governance_key_challenges",
+  "private.governance_key_revocations",
+  "private.governance_key_rotations",
+  "private.governance_legal_observation_decisions",
+  "private.governance_legal_observation_versions",
+  "private.governance_parameter_attestations",
+  "private.governance_parameter_versions",
+  "private.governance_reviewer_keys",
+  "private.governance_reviewer_organizations",
+  "private.governance_reviewer_policies",
+  "private.governance_reviewers",
+  "private.governance_rulespec_approvals",
+  "private.governance_rulespec_versions",
+  "private.governance_work_items",
   "public.analysis_findings",
   "public.analysis_hypotheses",
   "public.analysis_jobs",
@@ -134,6 +159,34 @@ export const EXPECTED_TENANT_POLICY_TABLES = Object.freeze([
   "public.product_private_report_objects",
 ] as const);
 
+export const EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES = Object.freeze([
+  "private.governance_aggregate_snapshots",
+  "private.governance_audit_events",
+  "private.governance_golden_case_sets",
+  "private.governance_gt_active_locks",
+  "private.governance_gt_eligibility_versions",
+  "private.governance_gt_lock_supersessions",
+  "private.governance_gt_locks",
+  "private.governance_gt_manifest_versions",
+  "private.governance_human_decisions",
+  "private.governance_idempotency",
+  "private.governance_key_challenge_consumptions",
+  "private.governance_key_challenges",
+  "private.governance_key_revocations",
+  "private.governance_key_rotations",
+  "private.governance_legal_observation_decisions",
+  "private.governance_legal_observation_versions",
+  "private.governance_parameter_attestations",
+  "private.governance_parameter_versions",
+  "private.governance_reviewer_keys",
+  "private.governance_reviewer_organizations",
+  "private.governance_reviewer_policies",
+  "private.governance_reviewers",
+  "private.governance_rulespec_approvals",
+  "private.governance_rulespec_versions",
+  "private.governance_work_items",
+] as const);
+
 const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.append_controlled_import_audit",
   "private.canonical_text_uuid",
@@ -152,6 +205,38 @@ const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.enforce_engine_analysis_run_history",
   "private.enforce_engine_case_scope",
   "private.finish_engine_platform_job",
+  "private.governance_aggregate_read",
+  "private.governance_append_audit",
+  "private.governance_claim_assert",
+  "private.governance_complete_claim",
+  "private.governance_decision_assert",
+  "private.governance_finish_mutation",
+  "private.governance_forbid_mutation",
+  "private.governance_golden_case_set_import",
+  "private.governance_gt_eligibility_append",
+  "private.governance_gt_manifest_append",
+  "private.governance_human_decision_admit",
+  "private.governance_idempotency_lookup",
+  "private.governance_jsonb_canonical_text",
+  "private.governance_jsonb_compact_text",
+  "private.governance_jsonb_sha256",
+  "private.governance_key_challenge_append",
+  "private.governance_legal_observation_decide",
+  "private.governance_legal_observation_import",
+  "private.governance_parameter_attestation_append",
+  "private.governance_parameter_import",
+  "private.governance_reviewer_append",
+  "private.governance_reviewer_key_register",
+  "private.governance_reviewer_key_revoke",
+  "private.governance_reviewer_verification_material_read",
+  "private.governance_rulespec_approval_append",
+  "private.governance_rulespec_import",
+  "private.governance_store_idempotency",
+  "private.governance_trust_organization_append",
+  "private.governance_trust_policy_append",
+  "private.governance_work_claim",
+  "private.governance_work_enqueue",
+  "private.governance_work_release",
   "private.heartbeat_engine_platform_job",
   "private.open_controlled_import_published_bytes",
   "private.product_case_owner_bind",
@@ -184,6 +269,14 @@ const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
 const EXPECTED_CANONICAL_INDEXES = Object.freeze([
   "private.controlled_import_audit_operation_sequence_idx",
   "private.controlled_import_requests_recovery_idx",
+  "private.governance_audit_chain_idx",
+  "private.governance_gt_document_history_idx",
+  "private.governance_legal_observation_current_idx",
+  "private.governance_parameter_current_idx",
+  "private.governance_rulespec_current_idx",
+  "private.governance_snapshot_current_idx",
+  "private.governance_work_claim_idx",
+  "private.governance_work_claimant_idx",
   "public.analysis_findings_run_status_idx",
   "public.analysis_hypotheses_run_status_idx",
   "public.analysis_jobs_claim_idx",
@@ -261,6 +354,29 @@ const EXPECTED_CANONICAL_TRIGGERS = Object.freeze([
   "case_messages_case_scope_guard",
   "controlled_import_audit_append_only",
   "controlled_import_publication_append_only",
+  "governance_aggregate_snapshots_immutable",
+  "governance_audit_events_immutable",
+  "governance_golden_case_sets_immutable",
+  "governance_gt_eligibility_versions_immutable",
+  "governance_gt_lock_supersessions_immutable",
+  "governance_gt_locks_immutable",
+  "governance_gt_manifest_versions_immutable",
+  "governance_human_decisions_immutable",
+  "governance_idempotency_immutable",
+  "governance_key_challenge_consumptions_immutable",
+  "governance_key_challenges_immutable",
+  "governance_key_revocations_immutable",
+  "governance_key_rotations_immutable",
+  "governance_legal_observation_decisions_immutable",
+  "governance_legal_observation_versions_immutable",
+  "governance_parameter_attestations_immutable",
+  "governance_parameter_versions_immutable",
+  "governance_reviewer_keys_immutable",
+  "governance_reviewer_organizations_immutable",
+  "governance_reviewer_policies_immutable",
+  "governance_reviewers_immutable",
+  "governance_rulespec_approvals_immutable",
+  "governance_rulespec_versions_immutable",
   "cases_touch_updated_at",
   "document_extractions_case_scope_guard",
   "document_extractions_history_guard",
@@ -325,6 +441,18 @@ select jsonb_build_object(
     from pg_catalog.pg_class c
     join pg_catalog.pg_namespace n on n.oid = c.relnamespace
     where c.relkind in ('r', 'p') and n.nspname = 'public'
+  ), '[]'::jsonb),
+  'private_governance_rls', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'table', format('%I.%I', n.nspname, c.relname),
+      'enabled', c.relrowsecurity,
+      'forced', c.relforcerowsecurity
+    ) order by c.relname)
+    from pg_catalog.pg_class c
+    join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+    where c.relkind in ('r', 'p')
+      and n.nspname = 'private'
+      and c.relname like 'governance\_%' escape '\'
   ), '[]'::jsonb),
   'policies', coalesce((
     select jsonb_agg(jsonb_build_object(
@@ -506,21 +634,53 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     }
   }
 
+  const privateGovernanceRls = recordArray(inventory.private_governance_rls, "private_governance_rls");
+  assertExactStrings(
+    privateGovernanceRls.map((entry) => stringField(entry, "table", "private_governance_rls")),
+    EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES,
+    "POSTGRES_INVENTORY_PRIVATE_GOVERNANCE_RLS_DENOMINATOR_INVALID",
+  );
+  for (const entry of privateGovernanceRls) {
+    if (entry.enabled !== true || entry.forced !== true) {
+      throw new Error(
+        `POSTGRES_INVENTORY_PRIVATE_GOVERNANCE_RLS_STATE_INVALID:${stringField(entry, "table", "private_governance_rls")}`,
+      );
+    }
+  }
+
   const policies = recordArray(inventory.policies, "policies");
-  if (policies.length !== EXPECTED_TENANT_POLICY_TABLES.length) {
+  if (policies.length !== EXPECTED_TENANT_POLICY_TABLES.length
+    + EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES.length) {
     throw new Error("POSTGRES_INVENTORY_POLICY_COUNT_INVALID");
   }
-  const policyTables = policies.map((entry) => {
+  const publicPolicyTables: string[] = [];
+  const privateGovernancePolicyTables: string[] = [];
+  for (const entry of policies) {
     const schema = stringField(entry, "schema", "policies");
     const table = stringField(entry, "table", "policies");
     const rolesValue = stringArray(entry.roles, "policy.roles");
-    if (schema !== "public" || entry.name !== "tivdoc_service_tenant_scope"
-      || entry.command !== "ALL" || rolesValue.length !== 1 || rolesValue[0] !== "service_role") {
+    const qualifiedTable = `${schema}.${table}`;
+    const commonShapeValid = entry.command === "ALL"
+      && rolesValue.length === 1 && rolesValue[0] === "service_role";
+    if (schema === "public" && entry.name === "tivdoc_service_tenant_scope" && commonShapeValid) {
+      publicPolicyTables.push(qualifiedTable);
+      continue;
+    }
+    if (schema === "private" && entry.name === `${table}_service_tenant` && commonShapeValid
+      && EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES.includes(
+        qualifiedTable as (typeof EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES)[number],
+      )) {
+      privateGovernancePolicyTables.push(qualifiedTable);
+      continue;
+    }
+    {
       throw new Error(`POSTGRES_INVENTORY_POLICY_INVALID:${schema}.${table}`);
     }
-    return `${schema}.${table}`;
-  });
-  assertExactStrings(policyTables, EXPECTED_TENANT_POLICY_TABLES, "POSTGRES_INVENTORY_POLICY_TABLES_INVALID");
+  }
+  assertExactStrings(publicPolicyTables, EXPECTED_TENANT_POLICY_TABLES,
+    "POSTGRES_INVENTORY_POLICY_TABLES_INVALID");
+  assertExactStrings(privateGovernancePolicyTables, EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES,
+    "POSTGRES_INVENTORY_PRIVATE_GOVERNANCE_POLICY_TABLES_INVALID");
 
   const functions = stringArray(inventory.functions, "functions");
   const functionNames = functions.map((signature) => signature.slice(0, signature.indexOf("(")));
@@ -544,6 +704,11 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       component: "controlled_import_ledger",
       schema_version: "tivdoc-controlled-import-ledger-v0.10.0",
       migration_id: "202609010001_controlled_import_ledger",
+    }),
+    Object.freeze({
+      component: "durable_human_legal_governance",
+      schema_version: "tivdoc-durable-governance-v0.10.1",
+      migration_id: "202609010004_durable_governance_workflows",
     }),
     Object.freeze({
       component: "durable_product_boundaries",
