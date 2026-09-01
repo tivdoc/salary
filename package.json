@@ -160,7 +160,9 @@
     "marathon:v010:finalize": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/finalize.mts",
     "marathon:v010:security": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/security-scan.mts",
     "marathon:v010:evidence:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/run.mts build",
-    "marathon:v010:evidence:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/run.mts verify"
+    "marathon:v010:evidence:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/run.mts verify",
+    "marathon:v0101:evidence:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/build.mts",
+    "marathon:v0101:evidence:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-integration-repair-v0101/verify.mts"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

@@ -156,4 +156,3 @@ function record(value: unknown, code: string): Record<string, unknown> {
 function compare(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
-

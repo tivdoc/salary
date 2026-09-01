@@ -25,4 +25,3 @@ describe("canonical product session boundary runtime", () => {
     expect(() => installProductSessionBoundary(boundary())).toThrow("PRODUCT_SESSION_BOUNDARY_ALREADY_INSTALLED");
   });
 });
-

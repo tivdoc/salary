@@ -96,4 +96,3 @@ describe("V0.10.1 evidence contracts", () => {
     expect(() => validateV0101Assessment(contradictory)).toThrow("V0101_BLOCKER_FALSE_PASS");
   });
 });
-

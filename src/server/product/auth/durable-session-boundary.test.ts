@@ -75,4 +75,3 @@ describe("durable cryptographic product session boundary", () => {
       .toThrow("PRODUCT_SESSION_ALLOWED_ORIGIN_INVALID");
   });
 });
-
