@@ -4,13 +4,18 @@ import { copyFile, lstat, mkdir, readFile, readdir, writeFile } from "node:fs/pr
 import path from "node:path";
 
 import {
+  assertEvidenceSelfReferenceAbsent,
   assertPortableEvidencePath,
   canonicalPayloadSetHash,
+  parseIntegrationEvidenceProfile,
   parseOrderedIntegrationLedger,
+  RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS,
+  validateRuntimeProductClosureAssessment,
   validateV0101AssessmentAgainstReceipts,
   V0101_FINAL_COMMAND_IDS,
   V0101_POST_MATRIX_EVIDENCE_ONLY_PATHS,
   V0101_RUN_COUNT_NAMES,
+  type IntegrationEvidenceProfile,
   type V0101EvidenceEntry,
 } from "../../src/server/system-marathon/integration-repair-evidence.ts";
 import { writeDeterministicStoreZip } from "../canonical-persistence-v091/evidence/deterministic-zip.mts";
@@ -55,6 +60,31 @@ const FIXED_WORKING_FILES = Object.freeze([
     `final-logs/${id}.stdout.log`,
   ]),
 ]);
+
+const V0102_CONTRACT_RELATIVE =
+  "src/server/system-marathon/runtime-product-closure-contract.v0.10.2.json" as const;
+const V0102_FIRST_NINE = Object.freeze(RUNTIME_PRODUCT_CLOSURE_COMMAND_IDS.slice(0, 9));
+const V0102_ARCHIVE_BASENAME = "tivdoc-runtime-product-closure-v0.10.2-evidence.zip" as const;
+const V0102_MANIFEST_SCHEMA = "tivdoc-runtime-product-closure-inner-manifest-v0.10.2" as const;
+const V0102_SELF_REFERENCE_RULE =
+  "manifest_archive_hash_verifier_outputs_and_outer_matrix_sidecars_are_excluded_from_the_inner_payload" as const;
+const V0102_REPOSITORY_FILES = Object.freeze([
+  "package.json",
+  "package-lock.json",
+  V0102_CONTRACT_RELATIVE,
+  "src/server/system-marathon/integration-repair-evidence.ts",
+  "scripts/canonical-integration-repair-v0101/build.mts",
+  "scripts/canonical-integration-repair-v0101/verify.mts",
+  "scripts/canonical-integration-repair-v0101/finalize.mts",
+  "scripts/canonical-integration-repair-v0101/record.mts",
+  "scripts/canonical-integration-repair-v0101/assess.mts",
+] as const);
+
+const runtimeProductContract = contractArgumentV0102(process.argv.slice(2));
+if (runtimeProductContract !== null) {
+  await buildRuntimeProductClosure(runtimeProductContract);
+  process.exit(0);
+}
 
 await assertFreshOutput();
 const head = gitText(["rev-parse", "HEAD"]);
@@ -384,6 +414,647 @@ async function validateAssessmentEvidencePaths(assessment: Record<string, unknow
       await ordinaryBytes(path.join(FINAL, ...raw.split("/")));
     }
   }
+}
+
+type RuntimeProductBuildContext = Readonly<{
+  profile: IntegrationEvidenceProfile;
+  contract_path: string;
+  contract_relative: string;
+  contract_bytes: Buffer;
+  contract_sha256: string;
+  output_root: string;
+  working: string;
+  final: string;
+  payload: string;
+  manifest: string;
+  archive: string;
+  archive_hash: string;
+  branch: string;
+  head: string;
+  tree: string;
+}>;
+
+type RuntimeProductStageReceipt = Readonly<{
+  stage: "record" | "assess";
+  stdout_path: string;
+  stdout_sha256: string;
+  stdout_byte_count: number;
+  stderr_path: string;
+  stderr_sha256: string;
+  stderr_byte_count: number;
+}>;
+
+function contractArgumentV0102(args: readonly string[]): string | null {
+  if (!args.includes("--contract")) return null;
+  if (args.length !== 2 || args[0] !== "--contract" || !args[1] || args[1].startsWith("-")) {
+    throw new Error("V0102_BUILD_CONTRACT_ARGUMENT_INVALID");
+  }
+  return args[1];
+}
+
+async function buildRuntimeProductClosure(contractInput: string): Promise<void> {
+  const context = await runtimeProductBuildContext(contractInput);
+  await assertFreshRuntimeProductOutput(context);
+
+  const recordStage = await runInternalRuntimeProductStage(context, "record");
+  const assessStage = await runInternalRuntimeProductStage(context, "assess");
+  const internalStages = Object.freeze([recordStage, assessStage]);
+
+  const assessmentPath = path.join(context.working, "runtime-product-closure-assessment.v0.10.2.json");
+  const assessmentBytes = await ordinaryRuntimeProductBytes(assessmentPath);
+  const assessment = jsonRecord(assessmentBytes, "V0102_BUILD_ASSESSMENT_INVALID");
+  validateRuntimeProductClosureAssessment(context.profile, assessment);
+  if (assessment.verified_head !== context.head || assessment.verified_tree !== context.tree
+      || assessment.matrix_head !== context.head || assessment.matrix_tree !== context.tree) {
+    throw new Error("V0102_BUILD_ASSESSMENT_STALE_HEAD");
+  }
+
+  const readWorking = (relative: string) => ordinaryRuntimeProductBytes(
+    path.join(context.working, ...relative.split("/")),
+  );
+  const runtime = await validateRuntimeProductProgress({
+    profile: context.profile,
+    branch: context.branch,
+    head: context.head,
+    tree: context.tree,
+    contract_sha256: context.contract_sha256,
+    read: readWorking,
+  });
+  await validateRuntimeProductAssessmentBindings(
+    context.profile,
+    assessment,
+    runtime.commands,
+    runtime.progress,
+    context.head,
+    context.tree,
+    readWorking,
+  );
+
+  const allWorkingFiles = await ordinaryRuntimeProductFiles(context.working);
+  const innerWorkingFiles: ReadonlyArray<Readonly<{ absolute: string; relative: string }>> = Object.freeze(
+    allWorkingFiles.map((absolute) => Object.freeze({
+      absolute,
+      relative: runtimeProductRelative(context.working, absolute),
+    })).filter(({ relative }) => {
+      if (relative === "final-command-journal.ndjson") return false;
+      assertPortableEvidencePath(relative);
+      if (relative.startsWith("final-logs/")) {
+        const allowed = V0102_FIRST_NINE.some((id) => relative === `final-logs/${id}.stdout.log`
+          || relative === `final-logs/${id}.stderr.log`);
+        if (!allowed) throw new Error(`V0102_BUILD_OUTER_LOG_IN_INNER_SET:${relative}`);
+      }
+      assertEvidenceSelfReferenceAbsent([`payload/working/${relative}`]);
+      return true;
+    }).sort((left, right) => compare(left.relative, right.relative)),
+  );
+  const innerRelativeSet = new Set(innerWorkingFiles.map(({ relative }) => relative));
+  for (const required of [
+    "runtime-matrix-progress.json",
+    "runtime-command-journal.ndjson",
+    "runtime-product-closure-assessment.v0.10.2.json",
+    "internal-stages/record.stdout.log",
+    "internal-stages/record.stderr.log",
+    "internal-stages/assess.stdout.log",
+    "internal-stages/assess.stderr.log",
+    ...V0102_FIRST_NINE.flatMap((id) => [`final-logs/${id}.stdout.log`, `final-logs/${id}.stderr.log`]),
+  ]) {
+    if (!innerRelativeSet.has(required)) throw new Error(`V0102_BUILD_REQUIRED_INNER_FILE_MISSING:${required}`);
+  }
+
+  await mkdir(context.payload, { recursive: true });
+  for (const source of V0102_REPOSITORY_FILES) {
+    await copyRuntimeProductFile(
+      path.join(ROOT, ...source.split("/")),
+      path.join(context.payload, "repository", ...source.split("/")),
+      128 * 1024 * 1024,
+    );
+  }
+  for (const source of innerWorkingFiles) {
+    await copyRuntimeProductFile(
+      source.absolute,
+      path.join(context.payload, "working", ...source.relative.split("/")),
+      128 * 1024 * 1024,
+    );
+  }
+
+  await writeJson(path.join(context.payload, "git", "base-final.json"), {
+    schema_version: "tivdoc-runtime-product-closure-git-provenance-v0.10.2",
+    branch: context.branch,
+    base_head: context.profile.base_head,
+    base_tree: context.profile.base_tree,
+    final_head: context.head,
+    final_tree: context.tree,
+    base_is_ancestor: true,
+    worktree_clean_before_build: true,
+    contract_path: context.contract_relative,
+    contract_sha256: context.contract_sha256,
+  });
+  await writeFile(
+    path.join(context.payload, "git", "full.diff"),
+    gitBytes(["diff", "--binary", "--full-index", `${context.profile.base_head}..${context.head}`]),
+    { flag: "wx", mode: 0o600 },
+  );
+  const commits = gitText(["rev-list", "--reverse", `${context.profile.base_head}..${context.head}`])
+    .split(/\r?\n/u).filter(Boolean).map((commit, index) => runtimeProductCommitReceipt(commit, index + 1));
+  await writeJson(path.join(context.payload, "git", "commit-provenance.json"), {
+    schema_version: "tivdoc-runtime-product-closure-commit-provenance-v0.10.2",
+    branch: context.branch,
+    base_head: context.profile.base_head,
+    final_head: context.head,
+    final_tree: context.tree,
+    commit_count: commits.length,
+    commits,
+  });
+
+  const payloadFiles = await ordinaryRuntimeProductFiles(context.payload);
+  const payloadEntries: V0101EvidenceEntry[] = [];
+  for (const file of payloadFiles) {
+    const bytes = await ordinaryRuntimeProductBytes(file);
+    payloadEntries.push(Object.freeze({
+      path: `payload/${runtimeProductRelative(context.payload, file)}`,
+      sha256: sha256(bytes),
+      byte_count: bytes.byteLength,
+    }));
+  }
+  payloadEntries.sort((left, right) => compare(left.path, right.path));
+  assertEvidenceSelfReferenceAbsent(payloadEntries.map((entry) => entry.path));
+  const manifest = Object.freeze({
+    schema_version: V0102_MANIFEST_SCHEMA,
+    contract_schema_version: context.profile.contract_schema_version,
+    branch: context.branch,
+    base_head: context.profile.base_head,
+    base_tree: context.profile.base_tree,
+    final_head: context.head,
+    final_tree: context.tree,
+    contract_path: context.contract_relative,
+    contract_sha256: context.contract_sha256,
+    payload_files: Object.freeze(payloadEntries),
+    payload_file_count: payloadEntries.length,
+    payload_bytes: payloadEntries.reduce((sum, entry) => sum + entry.byte_count, 0),
+    payload_set_sha256: canonicalPayloadSetHash(payloadEntries),
+    inner_working_file_count: innerWorkingFiles.length,
+    internal_stages: internalStages,
+    self_reference_rule: V0102_SELF_REFERENCE_RULE,
+    outer_matrix_sidecars_in_payload: 0,
+  });
+  await writeJson(context.manifest, manifest);
+  await writeDeterministicStoreZip({
+    root: context.final,
+    output: context.archive,
+    entries: Object.freeze(["manifest.json", ...payloadEntries.map((entry) => entry.path)]),
+  });
+  const archiveBytes = await ordinaryRuntimeProductBytes(context.archive);
+  const archiveSha256 = sha256(archiveBytes);
+  await writeFile(
+    context.archive_hash,
+    `${archiveSha256}  ${path.basename(context.archive)}\n`,
+    { flag: "wx", mode: 0o600 },
+  );
+
+  process.stdout.write(`${JSON.stringify({
+    schema_version: "tivdoc-runtime-product-closure-evidence-build-v0.10.2",
+    status: "PASS",
+    verified_branch: context.branch,
+    final_head: context.head,
+    final_tree: context.tree,
+    contract_sha256: context.contract_sha256,
+    internal_stage_count: internalStages.length,
+    payload_file_count: payloadEntries.length,
+    payload_set_sha256: manifest.payload_set_sha256,
+    archive_sha256: archiveSha256,
+    archive_byte_count: archiveBytes.byteLength,
+    self_reference_absent: true,
+    outer_matrix_sidecars_in_payload: 0,
+  })}\n`);
+}
+
+async function runtimeProductBuildContext(contractInput: string): Promise<RuntimeProductBuildContext> {
+  const contractPath = path.resolve(ROOT, contractInput);
+  const expectedContract = path.join(ROOT, ...V0102_CONTRACT_RELATIVE.split("/"));
+  if (contractPath !== expectedContract || !containedRuntimeProductPath(ROOT, contractPath)) {
+    throw new Error("V0102_BUILD_CONTRACT_PATH_INVALID");
+  }
+  const contractBytes = await ordinaryRuntimeProductBytes(contractPath);
+  const profile = parseIntegrationEvidenceProfile(jsonRecord(contractBytes, "V0102_BUILD_CONTRACT_INVALID"));
+  const final = path.resolve(ROOT, ...profile.final_output_root.split("/"));
+  if (!containedRuntimeProductPath(ROOT, final)
+      || final !== path.join(ROOT, "output", "runtime-product-closure-v0.10.2", "final")) {
+    throw new Error("V0102_BUILD_OUTPUT_PATH_INVALID");
+  }
+  const branch = gitText(["branch", "--show-current"]);
+  const head = gitText(["rev-parse", "HEAD"]);
+  const tree = gitText(["rev-parse", "HEAD^{tree}"]);
+  if (branch !== profile.branch
+      || gitText(["rev-parse", `${profile.base_head}^{tree}`]) !== profile.base_tree
+      || spawnSync("git", ["merge-base", "--is-ancestor", profile.base_head, head], { cwd: ROOT }).status !== 0
+      || gitText(["status", "--porcelain", "--untracked-files=all"]) !== "") {
+    throw new Error("V0102_BUILD_REPOSITORY_STATE_INVALID");
+  }
+  const outputRoot = path.dirname(final);
+  return Object.freeze({
+    profile,
+    contract_path: contractPath,
+    contract_relative: V0102_CONTRACT_RELATIVE,
+    contract_bytes: contractBytes,
+    contract_sha256: sha256(contractBytes),
+    output_root: outputRoot,
+    working: path.join(outputRoot, "working"),
+    final,
+    payload: path.join(final, "payload"),
+    manifest: path.join(final, "manifest.json"),
+    archive: path.join(final, V0102_ARCHIVE_BASENAME),
+    archive_hash: path.join(final, `${V0102_ARCHIVE_BASENAME}.sha256`),
+    branch,
+    head,
+    tree,
+  });
+}
+
+async function assertFreshRuntimeProductOutput(context: RuntimeProductBuildContext): Promise<void> {
+  try {
+    await lstat(context.final);
+    throw new Error("V0102_BUILD_FINAL_ALREADY_EXISTS");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  const metadata = await lstat(context.working);
+  if (!metadata.isDirectory() || metadata.isSymbolicLink()) throw new Error("V0102_BUILD_WORKING_INVALID");
+  for (const forbidden of [
+    "runtime-product-closure-assessment.v0.10.2.json",
+    "internal-stages/record.stdout.log",
+    "internal-stages/record.stderr.log",
+    "internal-stages/assess.stdout.log",
+    "internal-stages/assess.stderr.log",
+  ]) {
+    if (await runtimeProductExists(path.join(context.working, ...forbidden.split("/")))) {
+      throw new Error(`V0102_BUILD_INTERNAL_STAGE_NOT_FRESH:${forbidden}`);
+    }
+  }
+}
+
+async function runInternalRuntimeProductStage(
+  context: RuntimeProductBuildContext,
+  stage: "record" | "assess",
+): Promise<RuntimeProductStageReceipt> {
+  const script = path.join(ROOT, "scripts", "canonical-integration-repair-v0101", `${stage}.mts`);
+  const result = spawnSync(process.execPath, [
+    "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+    "--experimental-strip-types",
+    script,
+    "--contract",
+    context.contract_relative,
+  ], {
+    cwd: ROOT,
+    env: runtimeProductChildEnvironment(),
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 10 * 60_000,
+    maxBuffer: 128 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const stdout = result.stdout ?? "";
+  const stderr = result.stderr ?? (result.error ? String(result.error) : "");
+  const stdoutRelative = `internal-stages/${stage}.stdout.log`;
+  const stderrRelative = `internal-stages/${stage}.stderr.log`;
+  await mkdir(path.join(context.working, "internal-stages"), { recursive: true });
+  await writeFile(path.join(context.working, ...stdoutRelative.split("/")), stdout, { flag: "wx", mode: 0o600 });
+  await writeFile(path.join(context.working, ...stderrRelative.split("/")), stderr, { flag: "wx", mode: 0o600 });
+  const receipt = lastRuntimeProductJson(stdout);
+  const identityValid = receipt?.status === "PASS" && receipt.verified_head === context.head
+    && receipt.verified_tree === context.tree;
+  const stageValid = stage === "record"
+    ? receipt?.schema_version === "tivdoc-runtime-product-record-v0.10.2"
+      && receipt.first_nine_commands === V0102_FIRST_NINE.length && receipt.derived_artifacts === 11
+    : receipt?.headline === "V0102_LOCAL_ENGINEERING_CLOSURE_COMPLETE_EXTERNAL_AND_HUMAN_GATES_REMAIN"
+      && receipt.mc_pass === 36 && receipt.mc_blocked === 3 && receipt.ir_pass === 24
+      && receipt.ir_blocked === 3 && receipt.cr_pass === 22;
+  if (result.error || result.status !== 0 || result.signal !== null || !identityValid || !stageValid) {
+    throw new Error(`V0102_BUILD_INTERNAL_STAGE_FAILED:${stage}`);
+  }
+  return Object.freeze({
+    stage,
+    stdout_path: `payload/working/${stdoutRelative}`,
+    stdout_sha256: sha256(Buffer.from(stdout, "utf8")),
+    stdout_byte_count: Buffer.byteLength(stdout),
+    stderr_path: `payload/working/${stderrRelative}`,
+    stderr_sha256: sha256(Buffer.from(stderr, "utf8")),
+    stderr_byte_count: Buffer.byteLength(stderr),
+  });
+}
+
+async function validateRuntimeProductProgress(input: Readonly<{
+  profile: IntegrationEvidenceProfile;
+  branch: string;
+  head: string;
+  tree: string;
+  contract_sha256: string;
+  read: (relative: string) => Promise<Buffer>;
+}>): Promise<Readonly<{ progress: Record<string, unknown>; commands: readonly Record<string, unknown>[] }>> {
+  const progress = jsonRecord(await input.read("runtime-matrix-progress.json"), "V0102_BUILD_MATRIX_INVALID");
+  const commands = array(progress.commands, "V0102_BUILD_MATRIX_COMMANDS_INVALID")
+    .map((value) => record(value, "V0102_BUILD_MATRIX_COMMAND_INVALID"));
+  if (progress.schema_version !== "tivdoc-runtime-product-closure-runtime-matrix-progress-v0.10.2"
+      || progress.status !== "PASS" || progress.contract_schema_version !== input.profile.contract_schema_version
+      || progress.verified_branch !== input.branch || progress.verified_head !== input.head
+      || progress.verified_tree !== input.tree || progress.command_count !== V0102_FIRST_NINE.length
+      || JSON.stringify(progress.execution_order) !== JSON.stringify(V0102_FIRST_NINE)
+      || commands.length !== V0102_FIRST_NINE.length || progress.exact_once !== true
+      || progress.journal_log !== "runtime-command-journal.ndjson") {
+    throw new Error("V0102_BUILD_MATRIX_INVALID");
+  }
+  const packageJsonSha256 = sha256(await ordinaryRuntimeProductBytes(path.join(ROOT, "package.json")));
+  const packageLockSha256 = sha256(await ordinaryRuntimeProductBytes(path.join(ROOT, "package-lock.json")));
+  for (const [index, command] of commands.entries()) {
+    const id = V0102_FIRST_NINE[index]!;
+    const argv = array(command.argv, `V0102_BUILD_COMMAND_PROVENANCE_INVALID:${id}`);
+    const environment = array(command.environment_allowlist_names, `V0102_BUILD_COMMAND_PROVENANCE_INVALID:${id}`);
+    const hashes = record(command.input_hashes, `V0102_BUILD_COMMAND_PROVENANCE_INVALID:${id}`);
+    const toolchain = record(command.toolchain, `V0102_BUILD_COMMAND_PROVENANCE_INVALID:${id}`);
+    const expectedFingerprint = sha256(Buffer.from(JSON.stringify({
+      executable: command.executable,
+      argv,
+      cwd: command.cwd,
+    }), "utf8"));
+    if (command.command_id !== id || command.attempt_ordinal !== 1 || command.execution_ordinal !== index + 1
+        || command.status !== "PASS" || command.execution_status !== "PASS"
+        || command.proof_contract_status !== "PASS" || command.verified_head !== input.head
+        || command.verified_tree !== input.tree || !nonnegativeRuntimeProductInteger(command.started_epoch_ms)
+        || !nonnegativeRuntimeProductInteger(command.finished_epoch_ms)
+        || (command.finished_epoch_ms as number) < (command.started_epoch_ms as number)
+        || !positiveRuntimeProductInteger(command.timeout_ms) || typeof command.executable !== "string"
+        || command.executable.length < 1 || typeof command.cwd !== "string" || command.cwd.length < 1
+        || typeof command.command_text !== "string" || command.command_text.length < 1
+        || argv.some((entry) => typeof entry !== "string") || environment.length < 1
+        || environment.some((entry) => typeof entry !== "string")
+        || JSON.stringify(environment) !== JSON.stringify([...environment].sort(compare))
+        || new Set(environment).size !== environment.length
+        || command.command_text_sha256 !== sha256(Buffer.from(command.command_text, "utf8"))
+        || command.command_fingerprint_sha256 !== expectedFingerprint
+        || !runtimeProductSha256(command.environment_allowlist_sha256)
+        || hashes.package_json_sha256 !== packageJsonSha256 || hashes.package_lock_sha256 !== packageLockSha256
+        || hashes.contract_sha256 !== input.contract_sha256 || toolchain.node !== process.version
+        || toolchain.platform !== process.platform || toolchain.arch !== process.arch) {
+      throw new Error(`V0102_BUILD_COMMAND_PROVENANCE_INVALID:${id}`);
+    }
+    for (const stream of ["stdout", "stderr"] as const) {
+      const relative = `final-logs/${id}.${stream}.log`;
+      if (command[`working_${stream}_log`] !== relative
+          || command[`${stream}_log`] !== `outer-matrix/${relative}`) {
+        throw new Error(`V0102_BUILD_COMMAND_LOG_REFERENCE_INVALID:${id}`);
+      }
+      const bytes = await input.read(relative);
+      if (command[`${stream}_sha256`] !== sha256(bytes)
+          || command[`${stream}_byte_count`] !== bytes.byteLength) {
+        throw new Error(`V0102_BUILD_COMMAND_LOG_HASH_INVALID:${id}`);
+      }
+    }
+  }
+  const runCounts = record(progress.run_counts, "V0102_BUILD_RUN_COUNTS_INVALID");
+  for (const name of V0101_RUN_COUNT_NAMES) {
+    if (runCounts[name] !== 1) throw new Error(`V0102_BUILD_RUN_COUNT_INVALID:${name}`);
+  }
+  const journal = await input.read("runtime-command-journal.ndjson");
+  if (progress.journal_sha256 !== sha256(journal) || progress.journal_byte_count !== journal.byteLength) {
+    throw new Error("V0102_BUILD_JOURNAL_HASH_INVALID");
+  }
+  validateRuntimeProductJournal(journal, commands);
+  return Object.freeze({ progress, commands: Object.freeze(commands) });
+}
+
+async function validateRuntimeProductAssessmentBindings(
+  profile: IntegrationEvidenceProfile,
+  assessment: Record<string, unknown>,
+  commands: readonly Record<string, unknown>[],
+  progress: Record<string, unknown>,
+  head: string,
+  tree: string,
+  read: (relative: string) => Promise<Buffer>,
+): Promise<void> {
+  const command = (id: string) => commands.find((entry) => entry.command_id === id)!;
+  const truth = record(assessment.truth, "V0102_BUILD_ASSESSMENT_TRUTH_INVALID");
+  const assessmentCounts = record(assessment.run_counts, "V0102_BUILD_ASSESSMENT_RUN_COUNTS_INVALID");
+  const progressCounts = record(progress.run_counts, "V0102_BUILD_MATRIX_RUN_COUNTS_INVALID");
+  if (truth.TYPESCRIPT !== command("typescript").status
+      || truth.PRODUCTION_BUILD !== command("production_build").status
+      || truth.REAL_POSTGRESQL_CURRENT_HEAD_PROOF !== command("postgresql_full_regression").status
+      || truth.REAL_BROWSER_DURABLE_PRODUCT_PATH !== command("browser_durable_product_e2e").status) {
+    throw new Error("V0102_BUILD_ASSESSMENT_COMMAND_CONTRADICTION");
+  }
+  for (const name of V0101_RUN_COUNT_NAMES) {
+    if (assessmentCounts[name] !== 1 || progressCounts[name] !== 1 || truth[name] !== 1) {
+      throw new Error(`V0102_BUILD_ASSESSMENT_RUN_COUNT_CONTRADICTION:${name}`);
+    }
+  }
+  const schemas = new Map<string, Readonly<{
+    schema: string;
+    status: "PASS" | "BLOCKED";
+    branch_required: boolean;
+  }>>([
+    ["external-gates.json", { schema: "tivdoc-runtime-product-closure-external-gates-v0.10.2", status: "BLOCKED", branch_required: false }],
+    ["regressions/browser.json", { schema: "tivdoc-runtime-product-browser-regression-v0.10.2", status: "PASS", branch_required: true }],
+    ["regressions/postgresql.json", { schema: "tivdoc-runtime-product-postgresql-regression-v0.10.2", status: "PASS", branch_required: true }],
+    ["product/unified-timeline.json", { schema: "tivdoc-runtime-product-unified-durable-timeline-v0.10.2", status: "PASS", branch_required: true }],
+    ["security/governance-function-acl-rls.json", { schema: "tivdoc-runtime-product-governance-function-acl-rls-v0.10.2", status: "PASS", branch_required: true }],
+    ["legal/observation-import.json", { schema: "tivdoc-runtime-product-observation-import-v0.10.2", status: "PASS", branch_required: true }],
+    ["workflows/human-legal-ground-truth.json", { schema: "tivdoc-runtime-product-human-legal-ground-truth-workflows-v0.10.2", status: "PASS", branch_required: true }],
+    ["quality/golden-mutation-property.json", { schema: "tivdoc-runtime-product-synthetic-golden-mutation-property-v0.10.2", status: "PASS", branch_required: true }],
+    ["product/global-invalidation.json", { schema: "tivdoc-runtime-product-global-invalidation-v0.10.2", status: "PASS", branch_required: true }],
+    ["product/entrypoint-disposition.json", { schema: "tivdoc-runtime-product-entrypoint-disposition-v0.10.2", status: "PASS", branch_required: true }],
+    ["verification/capability-limits-cancellation.json", { schema: "tivdoc-runtime-product-capability-limits-cancellation-v0.10.2", status: "PASS", branch_required: true }],
+    ["verification/safety-and-reachability.json", { schema: "tivdoc-runtime-product-safety-reachability-v0.10.2", status: "PASS", branch_required: true }],
+  ]);
+  for (const [relative, expectation] of schemas) {
+    const artifact = jsonRecord(await read(relative), `V0102_BUILD_ARTIFACT_INVALID:${relative}`);
+    if (artifact.schema_version !== expectation.schema || artifact.status !== expectation.status
+        || artifact.verified_head !== head || artifact.verified_tree !== tree
+        || (expectation.branch_required && artifact.verified_branch !== profile.branch)) {
+      throw new Error(`V0102_BUILD_ARTIFACT_STALE_OR_CONTRADICTORY:${relative}`);
+    }
+  }
+  const evidenceResults = [
+    ...array(assessment.mc_results, "V0102_BUILD_RESULTS_INVALID"),
+    ...array(assessment.ir_results, "V0102_BUILD_RESULTS_INVALID"),
+    ...array(assessment.cr_results, "V0102_BUILD_RESULTS_INVALID"),
+  ];
+  const governance = record(assessment.governance_security, "V0102_BUILD_GOVERNANCE_INVALID");
+  evidenceResults.push({ evidence: governance.evidence });
+  for (const value of evidenceResults) {
+    const result = record(value, "V0102_BUILD_RESULT_INVALID");
+    for (const raw of array(result.evidence, "V0102_BUILD_RESULT_EVIDENCE_INVALID")) {
+      if (typeof raw !== "string" || raw.startsWith("payload/")) {
+        throw new Error("V0102_BUILD_RESULT_EVIDENCE_INVALID");
+      }
+      assertPortableEvidencePath(raw);
+      assertEvidenceSelfReferenceAbsent([`payload/working/${raw}`]);
+      await read(raw);
+    }
+  }
+}
+
+function validateRuntimeProductJournal(
+  bytes: Buffer,
+  commands: readonly Record<string, unknown>[],
+): void {
+  const lines = bytes.toString("utf8").trim().split(/\r?\n/u).filter(Boolean);
+  if (lines.length !== commands.length * 2) throw new Error("V0102_BUILD_JOURNAL_EVENT_COUNT_INVALID");
+  const events = lines.map((line) => {
+    try {
+      return record(JSON.parse(line), "V0102_BUILD_JOURNAL_INVALID");
+    } catch {
+      throw new Error("V0102_BUILD_JOURNAL_INVALID");
+    }
+  });
+  for (const [index, command] of commands.entries()) {
+    const started = events[index * 2]!;
+    const completed = events[index * 2 + 1]!;
+    if (started.event_id !== `V0102-FINAL-${String(index * 2 + 1).padStart(4, "0")}`
+        || completed.event_id !== `V0102-FINAL-${String(index * 2 + 2).padStart(4, "0")}`
+        || started.event_type !== "COMMAND_STARTED" || completed.event_type !== "COMMAND_COMPLETED"
+        || started.command_id !== command.command_id || completed.command_id !== command.command_id
+        || started.attempt_ordinal !== 1 || completed.attempt_ordinal !== 1
+        || started.execution_ordinal !== index + 1 || completed.execution_ordinal !== index + 1
+        || started.verified_head !== command.verified_head || started.verified_tree !== command.verified_tree
+        || started.command_text_sha256 !== command.command_text_sha256
+        || started.command_fingerprint_sha256 !== command.command_fingerprint_sha256
+        || completed.status !== command.status || completed.execution_status !== command.execution_status
+        || completed.proof_contract_status !== command.proof_contract_status
+        || completed.stdout_sha256 !== command.stdout_sha256 || completed.stderr_sha256 !== command.stderr_sha256
+        || completed.finished_epoch_ms !== command.finished_epoch_ms) {
+      throw new Error("V0102_BUILD_JOURNAL_COMMAND_MISMATCH");
+    }
+  }
+}
+
+function runtimeProductCommitReceipt(commit: string, ordinal: number): Readonly<Record<string, unknown>> {
+  const changedPaths = gitText(["diff-tree", "--no-commit-id", "--name-only", "-r", commit])
+    .split(/\r?\n/u).filter(Boolean).sort(compare);
+  changedPaths.forEach(assertPortableEvidencePath);
+  return Object.freeze({
+    ordinal,
+    commit,
+    tree: gitText(["rev-parse", `${commit}^{tree}`]),
+    parents: Object.freeze(gitText(["show", "-s", "--format=%P", commit]).split(" ").filter(Boolean)),
+    subject: gitText(["show", "-s", "--format=%s", commit]),
+    changed_paths: Object.freeze(changedPaths),
+  });
+}
+
+function runtimeProductChildEnvironment(): NodeJS.ProcessEnv {
+  const environment: NodeJS.ProcessEnv = {};
+  for (const key of [
+    "ALLUSERSPROFILE", "APPDATA", "CI", "COMSPEC", "CommonProgramFiles", "CommonProgramFiles(x86)",
+    "CommonProgramW6432", "HOMEDRIVE", "HOMEPATH", "LANG", "LC_ALL", "LOCALAPPDATA",
+    "NUMBER_OF_PROCESSORS", "OS", "Path", "PATH", "PATHEXT", "PROCESSOR_ARCHITECTURE", "ProgramData",
+    "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "SystemDrive", "SystemRoot", "TEMP", "TMP", "TZ",
+    "USERPROFILE", "windir",
+  ] as const) {
+    if (process.env[key] !== undefined) environment[key] = process.env[key];
+  }
+  return {
+    ...environment,
+    CI: "1",
+    GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null",
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_NO_REPLACE_OBJECTS: "1",
+    GIT_OPTIONAL_LOCKS: "0",
+    OPENAI_API_KEY: "",
+    TIVDOC_OPENAI_LIVE_TESTS: "0",
+    TIVDOC_CUSTOMER_PROCESSING_ENABLED: "0",
+    TIVDOC_CUSTOMER_SHADOW_AUTHORIZED: "0",
+    TIVDOC_PRODUCTION_DELIVERY_ENABLED: "0",
+    TIVDOC_RUNTIME_TARGET: "local_only",
+  };
+}
+
+function lastRuntimeProductJson(stdout: string): Record<string, unknown> | null {
+  for (const line of stdout.trim().split(/\r?\n/u).reverse()) {
+    try {
+      const value: unknown = JSON.parse(line);
+      if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
+    } catch {
+      // Child diagnostics are not evidence receipts.
+    }
+  }
+  return null;
+}
+
+async function ordinaryRuntimeProductFiles(root: string): Promise<string[]> {
+  const metadata = await lstat(root);
+  if (!metadata.isDirectory() || metadata.isSymbolicLink()) throw new Error("V0102_BUILD_SOURCE_ROOT_INVALID");
+  const files: string[] = [];
+  async function visit(directory: string): Promise<void> {
+    const children = await readdir(directory, { withFileTypes: true });
+    children.sort((left, right) => compare(left.name, right.name));
+    for (const child of children) {
+      if (child.isSymbolicLink()) throw new Error("V0102_BUILD_SOURCE_SYMLINK_FORBIDDEN");
+      const candidate = path.join(directory, child.name);
+      if (child.isDirectory()) await visit(candidate);
+      else if (child.isFile()) files.push(candidate);
+      else throw new Error("V0102_BUILD_SOURCE_NOT_ORDINARY");
+    }
+  }
+  await visit(root);
+  return files;
+}
+
+async function ordinaryRuntimeProductBytes(file: string): Promise<Buffer> {
+  const metadata = await lstat(file);
+  if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1
+      || metadata.size > 128 * 1024 * 1024) {
+    throw new Error("V0102_BUILD_SOURCE_FILE_INVALID");
+  }
+  const bytes = await readFile(file);
+  if (bytes.byteLength !== metadata.size) throw new Error("V0102_BUILD_SOURCE_FILE_CHANGED");
+  return bytes;
+}
+
+async function copyRuntimeProductFile(source: string, destination: string, maxBytes: number): Promise<void> {
+  const metadata = await lstat(source);
+  if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1 || metadata.size > maxBytes) {
+    throw new Error("V0102_BUILD_SOURCE_FILE_INVALID");
+  }
+  await mkdir(path.dirname(destination), { recursive: true });
+  await copyFile(source, destination, 1);
+  const copied = await ordinaryRuntimeProductBytes(destination);
+  const original = await ordinaryRuntimeProductBytes(source);
+  if (!copied.equals(original)) throw new Error("V0102_BUILD_SOURCE_COPY_CHANGED");
+}
+
+function runtimeProductRelative(root: string, candidate: string): string {
+  const relative = path.relative(root, candidate);
+  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error("V0102_BUILD_SOURCE_ESCAPE");
+  }
+  const portable = relative.split(path.sep).join("/");
+  assertPortableEvidencePath(portable);
+  return portable;
+}
+
+function containedRuntimeProductPath(root: string, candidate: string): boolean {
+  const relative = path.relative(root, candidate);
+  return relative !== "" && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
+async function runtimeProductExists(candidate: string): Promise<boolean> {
+  try {
+    await lstat(candidate);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+function runtimeProductSha256(value: unknown): boolean {
+  return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value);
+}
+
+function nonnegativeRuntimeProductInteger(value: unknown): boolean {
+  return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function positiveRuntimeProductInteger(value: unknown): boolean {
+  return Number.isSafeInteger(value) && (value as number) > 0;
 }
 
 async function assertFreshOutput(): Promise<void> {
