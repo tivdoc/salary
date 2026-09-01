@@ -1,4 +1,4 @@
-import { runtimeHermeticSessionManager } from "@/server/product/auth/hermetic-session";
+import { resolveProductSessionBoundary } from "@/server/product/auth/runtime";
 import { readStableProductRouteFlags } from "@/server/product/routes/flags";
 import { createPortalHttpHandler } from "@/server/product/routes/portal-http";
 import { resolveCanonicalPortalService } from "@/server/product/routes/runtime";
@@ -10,10 +10,12 @@ type Context = Readonly<{ params: Promise<Readonly<{ resource?: string[] }>> }>;
 
 async function handle(request: Request, context: Context): Promise<Response> {
   const { resource = [] } = await context.params;
+  const sessions = resolveProductSessionBoundary();
+  if (!sessions) return new Response(null, { status: 404 });
   return createPortalHttpHandler({
     enabled: readStableProductRouteFlags().portalApi,
     service: resolveCanonicalPortalService(),
-    sessions: runtimeHermeticSessionManager(),
+    sessions,
   }).handle(request, resource);
 }
 

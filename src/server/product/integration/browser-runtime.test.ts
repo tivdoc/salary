@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSyntheticCaseFixture } from "../../../engine/case-analysis/synthetic-fixtures.ts";
 import { WAVE3_TOPICS } from "../../../engine/wave3/contracts.ts";
 import { resetRuntimeHermeticSessionManagerForTests } from "../auth/hermetic-session.ts";
+import { resetProductSessionBoundaryForTests } from "../auth/runtime.ts";
 import { INTERNAL_OPS_SCHEMA_VERSION } from "../internal-ops/contracts.ts";
 import {
   resetCanonicalProductRouteServicesForTests,
@@ -16,6 +17,7 @@ import { verifiedSyntheticActor } from "./ready-harness.ts";
 describe("V0.8 hermetic browser startup composition", () => {
   afterEach(() => {
     resetCanonicalProductRouteServicesForTests();
+    resetProductSessionBoundaryForTests();
     resetRuntimeHermeticSessionManagerForTests();
     vi.unstubAllEnvs();
   });
@@ -26,6 +28,9 @@ describe("V0.8 hermetic browser startup composition", () => {
     vi.stubEnv("TIVDOC_PRODUCT_BROWSER_RUNTIME_ENABLED", "true");
     vi.stubEnv("TIVDOC_HERMETIC_MODE", "true");
     vi.stubEnv("TIVDOC_PRODUCT_E2E_LANE", "synthetic");
+    vi.stubEnv("TIVDOC_PRODUCT_BROWSER_RUNTIME_SENTINEL", "TIVDOC_HERMETIC_LOOPBACK_E2E_V0101");
+    vi.stubEnv("TIVDOC_PRODUCT_BROWSER_RUNTIME_ORIGIN", "http://127.0.0.1:45123");
+    vi.stubEnv("TIVDOC_RUNTIME_TARGET", "local_only");
     vi.stubEnv("TIVDOC_PRODUCT_SESSION_SECRET", "browser-runtime-test-secret-000000000000000000000001");
     vi.stubEnv("TIVDOC_PRODUCT_HERMETIC_TICKETS_JSON", JSON.stringify({ "browser-owner-ticket-0001": { audience: "portal", actor } }));
     vi.stubEnv("TIVDOC_PORTAL_UI_ENABLED", "true");

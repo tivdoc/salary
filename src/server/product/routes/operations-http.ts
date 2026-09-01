@@ -1,7 +1,7 @@
 import "./server-boundary.ts";
 
 import { randomUUID } from "node:crypto";
-import type { HermeticSessionManager } from "../auth/hermetic-session.ts";
+import type { ProductSessionBoundary } from "../auth/runtime.ts";
 import { INTERNAL_OPS_SCHEMA_VERSION, type InternalOpsAction, type OpsProblemCode } from "../internal-ops/contracts.ts";
 import { InternalOpsError, type InternalOpsReadKind, type InternalOpsService } from "../internal-ops/service.ts";
 import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
@@ -19,7 +19,7 @@ export type OperationsHttpHandler = Readonly<{
 export function createOperationsHttpHandler(input: Readonly<{
   enabled: boolean;
   service: InternalOpsService | null;
-  sessions: HermeticSessionManager;
+  sessions: Pick<ProductSessionBoundary, "verify">;
 }>): OperationsHttpHandler {
   return Object.freeze({
     async handle(request, rawSegments) {
@@ -28,7 +28,7 @@ export function createOperationsHttpHandler(input: Readonly<{
       if (!segments) return productNotFound();
       const route = matchOperationsRoute(request.method, segments);
       if (!route) return productNotFound();
-      const session = input.sessions.verify(request, "operations", route.method === "POST");
+      const session = await input.sessions.verify(request, "operations", route.method === "POST");
       if (!session) return productNotFound();
       const correlationId = correlationIdFor(request);
       try {

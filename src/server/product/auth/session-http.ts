@@ -1,7 +1,7 @@
 import "./server-boundary.ts";
 
 import type { ProductAudience } from "./hermetic-session.ts";
-import { runtimeHermeticSessionManager } from "./hermetic-session.ts";
+import { resolveProductSessionBoundary } from "./runtime.ts";
 
 const SAFE_HEADERS = Object.freeze({
   "cache-control": "private, no-store, max-age=0",
@@ -12,9 +12,11 @@ const SAFE_HEADERS = Object.freeze({
 
 export async function issueProductSession(request: Request, audience: ProductAudience, enabled: boolean): Promise<Response> {
   if (!enabled) return notFound();
+  const boundary = resolveProductSessionBoundary();
+  if (!boundary?.issue) return notFound();
   const body = await strictTicketBody(request);
   if (!body) return notFound();
-  const issued = runtimeHermeticSessionManager().issue(request, audience, body.ticket);
+  const issued = await boundary.issue(request, audience, body.ticket);
   if (!issued) return notFound();
   return Response.json(
     { csrf_token: issued.csrf_token, expires_at_epoch: issued.expires_at_epoch },
@@ -24,7 +26,9 @@ export async function issueProductSession(request: Request, audience: ProductAud
 
 export async function revokeProductSession(request: Request, audience: ProductAudience, enabled: boolean): Promise<Response> {
   if (!enabled) return notFound();
-  const cookie = runtimeHermeticSessionManager().revoke(request, audience);
+  const boundary = resolveProductSessionBoundary();
+  if (!boundary?.revoke) return notFound();
+  const cookie = await boundary.revoke(request, audience);
   if (!cookie) return notFound();
   return new Response(null, { status: 204, headers: { ...SAFE_HEADERS, "set-cookie": cookie } });
 }

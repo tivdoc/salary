@@ -27,6 +27,8 @@ describe("stable product capability gate", () => {
       TIVDOC_HERMETIC_MODE: "true",
       TIVDOC_PRODUCT_BROWSER_RUNTIME_ENABLED: "true",
       TIVDOC_PRODUCT_E2E_LANE: "synthetic",
+      TIVDOC_PRODUCT_BROWSER_RUNTIME_SENTINEL: "TIVDOC_HERMETIC_LOOPBACK_E2E_V0101",
+      TIVDOC_PRODUCT_BROWSER_RUNTIME_ORIGIN: "http://127.0.0.1:45123",
     };
     const flags = readStableProductRouteFlags(environment);
     expect(classifyStableProductRuntime(environment, flags)).toBe("hermetic_test");

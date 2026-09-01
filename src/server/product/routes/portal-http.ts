@@ -1,6 +1,7 @@
 import "./server-boundary.ts";
 
-import type { HermeticSessionManager, VerifiedProductSession } from "../auth/hermetic-session.ts";
+import type { VerifiedProductSession } from "../auth/hermetic-session.ts";
+import type { ProductSessionBoundary } from "../auth/runtime.ts";
 import { PortalError, type PrivacyRequestKind, type ReportAccessGrant } from "../customer-portal/contracts.ts";
 import type { CustomerPortalService, ReportDownload } from "../customer-portal/service.ts";
 import { PRODUCT_HTTP_HEADERS, exactObjectKeys, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
@@ -12,7 +13,7 @@ export type PortalHttpHandler = Readonly<{
 export function createPortalHttpHandler(input: Readonly<{
   enabled: boolean;
   service: CustomerPortalService | null;
-  sessions: HermeticSessionManager;
+  sessions: Pick<ProductSessionBoundary, "verify">;
 }>): PortalHttpHandler {
   return Object.freeze({
     async handle(request, rawSegments) {
@@ -21,7 +22,7 @@ export function createPortalHttpHandler(input: Readonly<{
       if (!segments) return productNotFound();
       const mutating = request.method === "POST";
       if (request.method !== "GET" && !mutating) return productNotFound();
-      const session = input.sessions.verify(request, "portal", mutating);
+      const session = await input.sessions.verify(request, "portal", mutating);
       if (!session) return productNotFound();
       try {
         return request.method === "GET"

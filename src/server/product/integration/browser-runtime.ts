@@ -15,6 +15,8 @@ import {
 import { CANONICAL_POSTGRES_SCHEMA_VERSION } from "../../platform/composition/canonical-postgres.ts";
 import { StrictRecordingPostgresDriver } from "../../platform/persistence/postgres/runtime/recording-driver.ts";
 import type { StoredReportEdition } from "../customer-portal/contracts.ts";
+import { runtimeHermeticSessionManager } from "../auth/hermetic-session.ts";
+import { installProductSessionBoundary } from "../auth/runtime.ts";
 import { installCanonicalProductApplicationComposition } from "../routes/runtime.ts";
 import {
   P8_NOW,
@@ -56,6 +58,13 @@ export async function initializeHermeticBrowserRuntime(): Promise<void> {
 async function buildHermeticBrowserRuntime(): Promise<void> {
   assertHermeticEnvironment();
   installLoopbackOnlyFetchGuard();
+  const sessions = runtimeHermeticSessionManager();
+  installProductSessionBoundary(Object.freeze({
+    proof_class: "HERMETIC_LOOPBACK_TEST_SESSION" as const,
+    verify: sessions.verify.bind(sessions),
+    issue: sessions.issue.bind(sessions),
+    revoke: sessions.revoke.bind(sessions),
+  }));
 
   const fixture = buildSyntheticCaseFixture({ fixture_id: "p8-0", mode: "synthetic_test" });
   const caseId = fixture.command.case_id;
@@ -526,13 +535,26 @@ function installLoopbackOnlyFetchGuard(): void {
 
 function assertHermeticEnvironment(): void {
   if (!enabled(process.env.TIVDOC_HERMETIC_MODE)) throw new Error("BROWSER_RUNTIME_HERMETIC_MODE_REQUIRED");
-  if (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview") {
+  const nodeEnvironment = runtimeEnvironmentValue("NODE_ENV");
+  const vercelEnvironment = runtimeEnvironmentValue("VERCEL_ENV");
+  if (nodeEnvironment !== "test" || vercelEnvironment === "production" || vercelEnvironment === "preview") {
     throw new Error("BROWSER_RUNTIME_PRODUCTION_PREVIEW_FORBIDDEN");
+  }
+  if (process.env.TIVDOC_PRODUCT_BROWSER_RUNTIME_SENTINEL !== "TIVDOC_HERMETIC_LOOPBACK_E2E_V0101"
+      || process.env.TIVDOC_PRODUCT_BROWSER_RUNTIME_ORIGIN !== "http://127.0.0.1:45123"
+      || process.env.TIVDOC_RUNTIME_TARGET !== "local_only"
+      || process.env.TIVDOC_PRODUCT_E2E_LANE !== "synthetic") {
+    throw new Error("BROWSER_RUNTIME_SENTINEL_INVALID");
   }
   if (!enabled(process.env.TIVDOC_PORTAL_UI_ENABLED) || !enabled(process.env.TIVDOC_PORTAL_API_ENABLED)
       || !enabled(process.env.TIVDOC_OPERATIONS_UI_ENABLED) || !enabled(process.env.TIVDOC_OPERATIONS_API_ENABLED)) {
     throw new Error("BROWSER_RUNTIME_STABLE_ROUTES_REQUIRED");
   }
+}
+
+function runtimeEnvironmentValue(key: string): string | undefined {
+  const value = Reflect.get(process.env, key);
+  return typeof value === "string" ? value : undefined;
 }
 
 function isLoopback(hostname: string): boolean {

@@ -41,7 +41,9 @@ export function classifyStableProductRuntime(
     && localOnly
     && enabled(environment.TIVDOC_HERMETIC_MODE)
     && enabled(environment.TIVDOC_PRODUCT_BROWSER_RUNTIME_ENABLED)
-    && environment.TIVDOC_PRODUCT_E2E_LANE === "synthetic";
+    && environment.TIVDOC_PRODUCT_E2E_LANE === "synthetic"
+    && environment.TIVDOC_PRODUCT_BROWSER_RUNTIME_SENTINEL === "TIVDOC_HERMETIC_LOOPBACK_E2E_V0101"
+    && environment.TIVDOC_PRODUCT_BROWSER_RUNTIME_ORIGIN === "http://127.0.0.1:45123";
   if (hermetic) return "hermetic_test";
   const durable = localOnly
     && enabled(environment.TIVDOC_DURABLE_PRODUCT_RUNTIME_ENABLED)
