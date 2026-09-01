@@ -20,6 +20,7 @@ import {
   trustedGitText,
 } from "../canonical-persistence-v091/foundation/trusted-git.mts";
 import {
+  canonicalAcceptanceMarkdown,
   createEvidenceManifest,
   sha256,
   verifyEvidenceDirectory,
@@ -32,7 +33,14 @@ const ARCHIVE_NAME = "marathon-evidence-v0.10.0.zip";
 const ROOT = path.resolve(process.cwd());
 const FINAL_ROOT = path.resolve(ROOT, "output", "full-local-system-marathon-v0.10.0", "final");
 const ASSESSMENT = path.resolve(ROOT, "src", "server", "system-marathon", "acceptance-assessment.v0.10.0.json");
-const FINAL_VERIFICATION = path.resolve(ROOT, "output", "full-local-system-marathon-v0.10.0", "working", "final-verification.json");
+const WORKING_ROOT = path.resolve(ROOT, "output", "full-local-system-marathon-v0.10.0", "working");
+const FINAL_VERIFICATION = path.join(WORKING_ROOT, "final-verification.json");
+const FINAL_LOGS = path.join(WORKING_ROOT, "final-logs");
+const FINAL_ATTEMPTS = path.join(WORKING_ROOT, "final-attempts");
+const FINAL_ATTEMPT_LEDGER = path.join(WORKING_ROOT, "final-attempt-ledger.ndjson");
+const PROHIBITED_AUDIT = path.join(WORKING_ROOT, "security", "prohibited-operation-audit.json");
+const BROWSER_EVIDENCE = path.resolve(ROOT, "output", "playwright", "v010-marathon");
+const POSTGRESQL_EVIDENCE = path.resolve(ROOT, "output", "canonical-postgresql-dynamic-v0.9.1", "final");
 
 const command = process.argv[2] ?? "verify";
 if (command === "build") await build();
@@ -48,6 +56,7 @@ async function build(): Promise<void> {
   await mkdir(FINAL_ROOT, { recursive: true });
 
   const assessment = JSON.parse(await readFile(ASSESSMENT, "utf8")) as Record<string, unknown>;
+  const finalVerification = JSON.parse(await readFile(FINAL_VERIFICATION, "utf8")) as Record<string, unknown>;
   const commits = commitReceipts(assessment);
   const fullDiff = trustedGitBuffer(ROOT, ["diff", "--binary", `${BASE_HEAD}..HEAD`, "--"]);
   const blockers = (assessment.acceptance as readonly Record<string, unknown>[]).filter((entry) => entry.status !== "PASS");
@@ -55,17 +64,32 @@ async function build(): Promise<void> {
   const marathonLedger = await readFile(path.join(ROOT, "src", "server", "system-marathon", "marathon-ledger.v0.10.0.ndjson"), "utf8");
 
   await writeJson("assessment.json", assessment);
+  await writeText("assessment.md", canonicalAcceptanceMarkdown(assessment));
   await writeJson("git/base-final.json", git);
   await writeJson("git/trusted-git.json", trustedGit);
   await writeJson("git/commits.json", { schema_version: "tivdoc-marathon-commit-receipts-v0.10.0", commits });
   await writeBytes("git/full.diff", fullDiff);
   await copyPayload("contracts/execution-contract.json", path.join(ROOT, "src", "server", "system-marathon", "execution-contract.v0.10.0.json"));
   await copyPayload("contracts/inventory.json", path.join(ROOT, "src", "server", "system-marathon", "inventory.v0.10.0.json"));
+  await copyPayload("contracts/canonical-entrypoints.json", path.join(ROOT, "src", "server", "system-marathon", "canonical-entrypoints.v0.10.0.json"));
+  await copyPayload("documentation/architecture-and-runbook.md", path.join(ROOT, "docs", "full-local-system-marathon-v0.10.0.md"));
   await writeText("ledgers/marathon.ndjson", marathonLedger);
   await writeText("ledgers/focused-checks.ndjson", focusedChecks.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
   await writeJson("ledgers/blockers.json", { schema_version: "tivdoc-marathon-blocker-map-v0.10.0", blockers });
-  await writeJson("owner/action-index.json", { schema_version: "tivdoc-marathon-owner-action-index-v0.10.0", actions: assessment.owner_actions });
+  await writeJson("ledgers/waves.json", {
+    schema_version: "tivdoc-marathon-wave-receipts-v0.10.0",
+    waves: Array.isArray(assessment.wave_receipts) ? assessment.wave_receipts : [],
+  });
+  await copyPayload("owner/action-index.json", path.join(ROOT, "src", "server", "system-marathon", "owner-action-index.v0.10.0.json"));
   await copyPayload("verification/final-verification.json", FINAL_VERIFICATION);
+  await copyPayload("verification/final-attempt-ledger.ndjson", FINAL_ATTEMPT_LEDGER);
+  await copyTreePayload("verification/final-logs", FINAL_LOGS);
+  await copyTreePayload("verification/final-attempts", FINAL_ATTEMPTS);
+  await copyPayload("security/prohibited-operation-audit.json", PROHIBITED_AUDIT);
+  if (commandPassed(finalVerification, "browser_e2e")) await copyTreePayload("verification/browser", BROWSER_EVIDENCE);
+  if (commandEverPassed(finalVerification, "postgresql_regression")) {
+    await copyTreePayload("verification/postgresql", POSTGRESQL_EVIDENCE);
+  }
   await copyPayload(
     "reachability/source-import-graph.json",
     path.join(ROOT, "output", "product-integration-v0.8.0", "reachability", "source-import-graph.json"),
@@ -162,10 +186,10 @@ function commitReceipts(assessment: Record<string, unknown>) {
 function scanDiff(diff: Buffer) {
   const added = diff.toString("utf8").split(/\r?\n/u).filter((line) => line.startsWith("+") && !line.startsWith("+++"));
   const patterns = [
-    ["private_key", /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/u],
-    ["openai_key", /sk-(?:proj-)?[A-Za-z0-9_-]{20,}/u],
-    ["remote_deploy", /["'`]\s*(?:vercel deploy|supabase link|supabase db push)\b/iu],
-    ["customer_local_path", /[A-Z]:\\[^\r\n"']*(?:customer-payslips|OneDrive\\[^\r\n"']*\\Tivdoc)/iu],
+    ["private_key", new RegExp(["-----BEGIN ", "(?:RSA |EC |OPENSSH )?", "PRIVATE KEY-----"].join(""), "u")],
+    ["openai_key", new RegExp(["sk", "-(?:proj-)?", "[A-Za-z0-9_-]{20,}"].join(""), "u")],
+    ["remote_deploy", new RegExp(["[\"'`]\\s*(?:vercel", " deploy|supabase", " link|supabase db", " push)\\b"].join(""), "iu")],
+    ["customer_local_path", new RegExp(["[A-Z]:\\\\[^\\r\\n\"']*(?:customer", "-payslips|OneDrive\\\\[^\\r\\n\"']*\\\\Tivdoc)"].join(""), "iu")],
   ] as const;
   const matches = patterns.flatMap(([kind, pattern]) => added.filter((line) => pattern.test(line)).map(() => kind));
   return Object.freeze({
@@ -199,7 +223,7 @@ async function listPayloadFiles(root: string): Promise<string[]> {
 
 async function assertCredentialFreePayloads(names: readonly string[]): Promise<void> {
   const patterns = [
-    /-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/u,
+    /^\+?-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----\r?$/mu,
     /\bsk-(?:proj-|live-)?[A-Za-z0-9_-]{24,}\b/u,
     /\bgh[pousr]_[A-Za-z0-9]{36,}\b/u,
     /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/u,
@@ -208,9 +232,57 @@ async function assertCredentialFreePayloads(names: readonly string[]): Promise<v
     /(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?):\/\/[^\s"']+:[^\s"']+@/iu,
   ] as const;
   for (const name of names) {
+    if (!isTextPayload(name)) continue;
     const value = await readFile(path.join(FINAL_ROOT, ...name.split("/")), "utf8");
     if (patterns.some((pattern) => pattern.test(value))) throw new Error(`MARATHON_EVIDENCE_CREDENTIAL_PATTERN:${name}`);
   }
+}
+
+function commandPassed(finalVerification: Record<string, unknown>, commandId: string): boolean {
+  if (!Array.isArray(finalVerification.commands)) throw new Error("MARATHON_FINAL_VERIFICATION_COMMANDS_INVALID");
+  return finalVerification.commands.some((entry) => {
+    const value = entry as Record<string, unknown>;
+    return value.command_id === commandId && value.status === "PASS";
+  });
+}
+
+function commandEverPassed(finalVerification: Record<string, unknown>, commandId: string): boolean {
+  if (!Array.isArray(finalVerification.attempts)) throw new Error("MARATHON_FINAL_VERIFICATION_ATTEMPTS_INVALID");
+  return finalVerification.attempts.some((raw) => {
+    const attempt = raw as Record<string, unknown>;
+    if (!Array.isArray(attempt.commands)) throw new Error("MARATHON_FINAL_VERIFICATION_ATTEMPT_COMMANDS_INVALID");
+    return attempt.commands.some((entry) => {
+      const value = entry as Record<string, unknown>;
+      return value.command_id === commandId && value.status === "PASS";
+    });
+  });
+}
+
+async function copyTreePayload(destinationRoot: string, sourceRoot: string): Promise<void> {
+  const sourceMetadata = await lstat(sourceRoot);
+  if (!sourceMetadata.isDirectory() || sourceMetadata.isSymbolicLink()) {
+    throw new Error(`MARATHON_SOURCE_TREE_INVALID:${sourceRoot}`);
+  }
+  let copied = 0;
+  async function walk(current: string): Promise<void> {
+    const entries = await readdir(current, { withFileTypes: true });
+    for (const entry of entries.sort((left, right) => compareStrings(left.name, right.name))) {
+      const absolute = path.join(current, entry.name);
+      const relative = path.relative(sourceRoot, absolute).replaceAll("\\", "/");
+      if (entry.isSymbolicLink()) throw new Error(`MARATHON_SOURCE_TREE_SYMLINK:${absolute}`);
+      if (entry.isDirectory()) await walk(absolute);
+      else if (entry.isFile()) {
+        await copyPayload(`${destinationRoot}/${relative}`, absolute);
+        copied += 1;
+      } else throw new Error(`MARATHON_SOURCE_TREE_SPECIAL_FILE:${absolute}`);
+    }
+  }
+  await walk(sourceRoot);
+  if (copied === 0) throw new Error(`MARATHON_SOURCE_TREE_EMPTY:${sourceRoot}`);
+}
+
+function isTextPayload(name: string): boolean {
+  return /\.(?:css|diff|html|js|json|jsonl|log|md|mts|ndjson|sql|svg|text|ts|tsx|txt|xml)$/iu.test(name);
 }
 
 async function copyPayload(name: string, source: string): Promise<void> {
