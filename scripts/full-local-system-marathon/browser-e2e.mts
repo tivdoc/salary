@@ -1,0 +1,133 @@
+import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+const ROOT = path.resolve(process.cwd());
+const OUTPUT = path.join(ROOT, "output", "playwright", "v010-marathon");
+const BASE_URL = "http://127.0.0.1:45123";
+const SESSION = "tivdoc-v010-marathon";
+const CLI = path.join(ROOT, "node_modules", "@playwright", "cli", "playwright-cli.js");
+const NEXT = path.join(ROOT, "node_modules", "next", "dist", "bin", "next");
+const serverOutput: string[] = [];
+let server: ChildProcessWithoutNullStreams | null = null;
+
+await mkdir(OUTPUT, { recursive: true });
+const commands: Readonly<Record<string, unknown>>[] = [];
+try {
+  server = spawn(process.execPath, [NEXT, "start", "--hostname", "127.0.0.1", "--port", "45123"], {
+    cwd: ROOT,
+    env: safeEnvironment(),
+    windowsHide: true,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  server.stdout.on("data", (chunk: Buffer) => serverOutput.push(chunk.toString("utf8")));
+  server.stderr.on("data", (chunk: Buffer) => serverOutput.push(chunk.toString("utf8")));
+  await waitForServer();
+
+  commands.push(runCli("open", ["open", BASE_URL, "--browser", "msedge"]));
+  commands.push(runCli("resize_desktop", ["resize", "1440", "900"]));
+  for (const page of [
+    { id: "home", path: "/" },
+    { id: "portal", path: "/portal" },
+    { id: "operations", path: "/operations" },
+  ] as const) {
+    commands.push(runCli(`goto_${page.id}`, ["goto", `${BASE_URL}${page.path}`]));
+    commands.push(runCli(`snapshot_${page.id}`, ["snapshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.md`)]));
+    commands.push(runCli(`screenshot_${page.id}`, ["screenshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.png`), "--full-page"]));
+    const response = await fetch(`${BASE_URL}${page.path}`, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
+    if (response.status !== 200) throw new Error(`BROWSER_E2E_HTTP_STATUS:${page.id}:${response.status}`);
+    if (!response.headers.get("content-security-policy") || !response.headers.get("cache-control")?.includes("no-store")) {
+      throw new Error(`BROWSER_E2E_SECURITY_HEADERS:${page.id}`);
+    }
+  }
+  commands.push(runCli("resize_mobile", ["resize", "390", "844"]));
+  commands.push(runCli("goto_portal_mobile", ["goto", `${BASE_URL}/portal`]));
+  commands.push(runCli("snapshot_portal_mobile", ["snapshot", "--filename", path.join(OUTPUT, "portal-mobile.md")]));
+  commands.push(runCli("screenshot_portal_mobile", ["screenshot", "--filename", path.join(OUTPUT, "portal-mobile.png"), "--full-page"]));
+  commands.push(runCli("console_errors", ["console", "error"]));
+
+  const snapshots = await Promise.all(["home-desktop.md", "portal-desktop.md", "operations-desktop.md", "portal-mobile.md"].map(async (name) => {
+    const bytes = await readFile(path.join(OUTPUT, name));
+    if (bytes.byteLength < 32) throw new Error(`BROWSER_E2E_SNAPSHOT_EMPTY:${name}`);
+    return Object.freeze({ path: `output/playwright/v010-marathon/${name}`, byte_count: bytes.byteLength, sha256: hash(bytes) });
+  }));
+  const receipt = Object.freeze({
+    schema_version: "tivdoc-full-local-system-marathon-browser-e2e-v0.10.0",
+    status: "PASS",
+    browser: "msedge",
+    origin: BASE_URL,
+    rendered_routes: ["/", "/portal", "/operations"],
+    viewports: ["1440x900", "390x844"],
+    real_browser_cli: true,
+    direct_service_shortcuts: false,
+    snapshots,
+    command_count: commands.length,
+    command_receipts: commands,
+    server_output_sha256: hash(serverOutput.join("")),
+  });
+  await writeFile(path.join(OUTPUT, "browser-e2e-receipt.json"), `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
+  process.stdout.write(`${JSON.stringify(receipt)}\n`);
+} finally {
+  runCliAllowFailure("close", ["close"]);
+  if (server && !server.killed) server.kill();
+}
+
+function runCli(commandId: string, args: readonly string[]): Readonly<Record<string, unknown>> {
+  const result = spawnSync(process.execPath, [CLI, `-s=${SESSION}`, ...args], {
+    cwd: ROOT,
+    env: safeEnvironment(),
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 60_000,
+    maxBuffer: 8 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.error || result.status !== 0 || result.signal !== null) {
+    throw new Error(`BROWSER_E2E_CLI_FAILED:${commandId}:${result.stderr.trim()}`);
+  }
+  return Object.freeze({
+    command_id: commandId,
+    exit_code: result.status,
+    stdout_sha256: hash(result.stdout),
+    stderr_sha256: hash(result.stderr),
+  });
+}
+
+function runCliAllowFailure(commandId: string, args: readonly string[]): void {
+  try {
+    runCli(commandId, args);
+  } catch {
+    // Cleanup is best-effort; the primary receipt has already retained failure.
+  }
+}
+
+async function waitForServer(): Promise<void> {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (server?.exitCode !== null) throw new Error(`BROWSER_E2E_SERVER_EXITED:${server?.exitCode}`);
+    try {
+      const response = await fetch(BASE_URL, { signal: AbortSignal.timeout(1_000) });
+      if (response.status > 0) return;
+    } catch {
+      // The bounded loop continues while the local server starts.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error("BROWSER_E2E_SERVER_START_TIMEOUT");
+}
+
+function safeEnvironment(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    OPENAI_API_KEY: "",
+    TIVDOC_OPENAI_LIVE_TESTS: "0",
+    TIVDOC_CUSTOMER_PROCESSING_ENABLED: "0",
+    TIVDOC_CUSTOMER_SHADOW_AUTHORIZED: "0",
+    TIVDOC_PRODUCTION_DELIVERY_ENABLED: "0",
+    TIVDOC_RUNTIME_TARGET: "local_only",
+  };
+}
+
+function hash(value: Uint8Array | string): string {
+  return createHash("sha256").update(value).digest("hex");
+}

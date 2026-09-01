@@ -155,7 +155,11 @@
     "canonical:persistence:v09:recording": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/driver/recording-receipt.mts",
     "canonical:persistence:v09:verify-evidence": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/evidence/verify.mts",
     "canonical:persistence:v09:acceptance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/canonical-persistence-v09/acceptance/run.mts",
-    "verify:postgres:dynamic": "node scripts/canonical-persistence-v091/bootstrap.mjs"
+    "verify:postgres:dynamic": "node scripts/canonical-persistence-v091/bootstrap.mjs",
+    "marathon:v010:focused": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/focused.mts",
+    "marathon:v010:finalize": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/finalize.mts",
+    "marathon:v010:evidence:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/run.mts build",
+    "marathon:v010:evidence:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/full-local-system-marathon/run.mts verify"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
