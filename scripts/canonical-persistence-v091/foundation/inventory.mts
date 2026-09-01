@@ -59,6 +59,8 @@ export const EXPECTED_CANONICAL_TABLES = Object.freeze([
   "public.engine_case_lifecycle_revisions",
   "public.engine_case_state",
   "public.engine_durable_jobs",
+  "public.engine_global_dependency_invalidations",
+  "public.engine_global_dependency_state",
   "public.engine_idempotency_records",
   "public.engine_job_history",
   "public.engine_legal_version_pins",
@@ -103,6 +105,8 @@ export const EXPECTED_CANONICAL_RLS_TABLES = Object.freeze([
   "public.engine_case_lifecycle_revisions",
   "public.engine_case_state",
   "public.engine_durable_jobs",
+  "public.engine_global_dependency_invalidations",
+  "public.engine_global_dependency_state",
   "public.engine_idempotency_records",
   "public.engine_job_history",
   "public.engine_legal_version_pins",
@@ -141,6 +145,8 @@ export const EXPECTED_TENANT_POLICY_TABLES = Object.freeze([
   "public.engine_case_lifecycle_revisions",
   "public.engine_case_state",
   "public.engine_durable_jobs",
+  "public.engine_global_dependency_invalidations",
+  "public.engine_global_dependency_state",
   "public.engine_idempotency_records",
   "public.engine_job_history",
   "public.engine_legal_version_pins",
@@ -158,6 +164,11 @@ export const EXPECTED_TENANT_POLICY_TABLES = Object.freeze([
   "public.product_privacy_request_versions",
   "public.product_private_report_objects",
 ] as const);
+
+const EXPECTED_FORCED_RLS_TABLES = new Set<string>([
+  "public.engine_global_dependency_invalidations",
+  "public.engine_global_dependency_state",
+]);
 
 export const EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES = Object.freeze([
   "private.governance_aggregate_snapshots",
@@ -189,6 +200,8 @@ export const EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES = Object.freeze([
 
 export const EXPECTED_RUNTIME_OWNER_POLICY_TABLES = Object.freeze([
   "public.engine_durable_jobs",
+  "public.engine_global_dependency_invalidations",
+  "public.engine_global_dependency_state",
   "public.engine_logical_effect_receipts",
   "public.engine_outbox_events",
   "public.engine_report_versions",
@@ -234,6 +247,8 @@ const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.enforce_engine_analysis_run_history",
   "private.enforce_engine_case_scope",
   "private.finish_engine_platform_job",
+  "private.global_dependency_actor_assert",
+  "private.global_dependency_state_initialize",
   "private.governance_aggregate_read",
   "private.governance_append_audit",
   "private.governance_claim_assert",
@@ -351,6 +366,7 @@ const EXPECTED_CANONICAL_INDEXES = Object.freeze([
   "public.engine_audit_case_sequence_idx",
   "public.engine_case_state_tenant_idx",
   "public.engine_facts_case_revision_idx",
+  "public.engine_global_dependency_history_case_idx",
   "public.engine_idempotency_case_scope_idx",
   "public.engine_jobs_canonical_claim_idx",
   "public.engine_jobs_claim_idx",
@@ -358,6 +374,7 @@ const EXPECTED_CANONICAL_INDEXES = Object.freeze([
   "public.engine_one_active_report_approval_uq",
   "public.engine_outbox_canonical_claim_idx",
   "public.engine_outbox_claim_idx",
+  "public.engine_outbox_superseded_case_idx",
   "public.engine_reports_case_revision_idx",
   "public.engine_reviews_case_kind_idx",
   "public.engine_rule_inputs_run_topic_idx",
@@ -424,6 +441,9 @@ const EXPECTED_CANONICAL_TRIGGERS = Object.freeze([
   "engine_audit_append_only",
   "engine_effects_append_only",
   "engine_facts_append_only",
+  "engine_global_dependency_history_append_only",
+  "engine_global_dependency_state_initialize",
+  "engine_global_dependency_state_no_delete",
   "engine_job_history_append_only",
   "engine_legal_pins_append_only",
   "engine_lifecycle_append_only",
@@ -757,7 +777,8 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   const expectedRls = new Set<string>(EXPECTED_CANONICAL_RLS_TABLES);
   for (const entry of rls) {
     const table = stringField(entry, "table", "rls");
-    if (entry.enabled !== expectedRls.has(table) || entry.forced !== false) {
+    if (entry.enabled !== expectedRls.has(table)
+      || entry.forced !== EXPECTED_FORCED_RLS_TABLES.has(table)) {
       throw new Error(`POSTGRES_INVENTORY_RLS_STATE_INVALID:${table}`);
     }
   }
@@ -948,6 +969,11 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
       component: "durable_product_boundaries",
       schema_version: "tivdoc-durable-product-postgresql-v0.10.1",
       migration_id: "202609010003_durable_product_integrity_hardening",
+    }),
+    Object.freeze({
+      component: "global_dependency_invalidation",
+      schema_version: "tivdoc-global-dependency-invalidation-v0.10.2",
+      migration_id: "202609010007_global_dependency_invalidation",
     }),
     Object.freeze({
       component: "governance_runtime_security",

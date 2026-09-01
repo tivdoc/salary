@@ -36,6 +36,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609010004_durable_governance_workflows.sql",
   "202609010005_governance_runtime_security.sql",
   "202609010006_durable_portal_runtime_security.sql",
+  "202609010007_global_dependency_invalidation.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -56,7 +57,8 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
   "202609010003_durable_product_integrity_hardening.sql": "2882adc09d5faccbee2f96cf9f1c75b1b40b586f206408795bde189914501029",
   "202609010004_durable_governance_workflows.sql": "343f72ff7ee9d15c1007261c382223e4aac59e1f0227fad7c32fc05e230ed012",
   "202609010005_governance_runtime_security.sql": "3632b1a8d6b8a08360e3f1d99aadb591d42fa577677ce87f77c114e89f41c63e",
-  "202609010006_durable_portal_runtime_security.sql": "e03229fd46d15543ec8cc3db1c1e906a303b767d98ff55f861854bf0b8828bf4",
+  "202609010006_durable_portal_runtime_security.sql": "994bb2a3f14dd58e002f4e605bc8e03c5422a1904b9ec1f733ca1d1e21f9635d",
+  "202609010007_global_dependency_invalidation.sql": "6d57e778a95d8e0988d4cf986a30577ec841847f189c225abdb29b9441eb45af",
 });
 
 export type MigrationFile = Readonly<{

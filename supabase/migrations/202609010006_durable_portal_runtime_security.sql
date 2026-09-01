@@ -8,7 +8,7 @@ create function private.runtime_web_owns_case(
   target_case text
 ) returns boolean
 language sql stable security definer set search_path = '' as $$
-  select pg_catalog.coalesce(session_user = 'tivdoc_web_runtime'
+  select coalesce(session_user = 'tivdoc_web_runtime'
     and target_tenant = private.runtime_verified_tenant()
     and exists (
       select 1
