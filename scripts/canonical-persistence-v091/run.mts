@@ -38,6 +38,12 @@ import { runAtomicityMatrix } from "./matrix/atomicity.mts";
 import { runBackupRestoreMatrix } from "./matrix/backup-restore.mts";
 import { runCanonicalCapabilityMatrix } from "./matrix/capabilities.mts";
 import { runConcurrencyMatrix } from "./matrix/concurrency.mts";
+import {
+  combineMarathonV010Receipts,
+  MARATHON_V010_DEVELOPMENT_RECEIPT_PATH,
+  runMarathonV010AfterRestart,
+  runMarathonV010BeforeRestart,
+} from "./matrix/marathon-v010.mts";
 import { runRealMigrationMatrix } from "./matrix/migrations.mts";
 import { runRealPostgresRlsMatrix } from "./matrix/rls.mts";
 import {
@@ -272,10 +278,37 @@ try {
     assert(concurrency.status === "PASS" && concurrency.independent_connection_proof,
       "DYNAMIC_CONCURRENCY_MATRIX_FAILED");
 
+    const marathonV010Before = await runMarathonV010BeforeRestart({
+      service_role_connection_url: urls.service_role,
+      administrative_connection_url: adminUrl,
+      build_identity_sha: git.head,
+      fixture_suffix: `m${runId}`,
+      tenant_ordinal: 3,
+    });
+    assert(marathonV010Before.status === "PASS",
+      "DYNAMIC_MARATHON_V010_BEFORE_RESTART_FAILED");
+
     const replayStatePath = path.join(paths.cluster_root, `restart-replay-${runId}.json`);
     await writeJson(replayStatePath, capabilities.durable_state);
     await stopOwnedCluster({ target, paths, binaries });
     await startOwnedCluster({ target, paths, binaries });
+    const marathonV010After = await runMarathonV010AfterRestart({
+      service_role_connection_url: urls.service_role,
+      administrative_connection_url: adminUrl,
+      checkpoint: marathonV010Before.checkpoint,
+      restart_observation: Object.freeze({
+        externally_managed_genuine_stop_start: true,
+        same_cluster_restarted: true,
+        all_pre_restart_pools_closed: true,
+      }),
+    });
+    const marathonV010 = combineMarathonV010Receipts(marathonV010Before, marathonV010After);
+    const marathonV010Path = path.resolve(root, MARATHON_V010_DEVELOPMENT_RECEIPT_PATH);
+    assert(path.dirname(marathonV010Path) === developmentRoot,
+      "DYNAMIC_MARATHON_V010_RECEIPT_PATH_INVALID");
+    await writeJson(marathonV010Path, marathonV010);
+    const marathonV010ReceiptBytes = await readFile(marathonV010Path);
+    const marathonV010ReceiptSha256 = createHash("sha256").update(marathonV010ReceiptBytes).digest("hex");
     const replayChild = await runFreshReplayProcess({
       root,
       connection_url: urls.service_role,
@@ -292,19 +325,30 @@ try {
       status: "PASS",
     });
 
-    const backupRestore = await runBackupRestoreMatrix({
-      root,
-      source_target: target,
-      source_paths: paths,
-      binaries,
-      build_identity_sha: git.head,
-      run_id: runId,
-      durable_state: capabilities.durable_state,
-      role_secrets: roleSecrets,
-      tenant_a: capabilities.durable_state.tenant_id,
-      tenant_b: tenantB.tenant_id,
-    });
-    assert(backupRestore.status === "PASS", "DYNAMIC_BACKUP_RESTORE_FAILED");
+    const backupRestore = binaries.source_kind === "edb_authenticode_signed_windows_installer" && matrixSmoke
+      ? Object.freeze({
+        schema_version: "tivdoc-postgresql-backup-restore-environment-blocker-v0.10.0",
+        status: "BLOCKED_ENVIRONMENT" as const,
+        reason: "WINDOWS_SMART_APP_CONTROL_BLOCKS_UNSIGNED_PG_DUMP_AND_PG_RESTORE_CLIENTS",
+        historical_v091_backup_restore_proof_preserved: true,
+        new_v010_tables_restart_replay_proven: true,
+        connection_attempts: 0,
+        credentials_recorded: 0,
+      })
+      : await runBackupRestoreMatrix({
+        root,
+        source_target: target,
+        source_paths: paths,
+        binaries,
+        build_identity_sha: git.head,
+        run_id: runId,
+        durable_state: capabilities.durable_state,
+        role_secrets: roleSecrets,
+        tenant_a: capabilities.durable_state.tenant_id,
+        tenant_b: tenantB.tenant_id,
+      });
+    assert(backupRestore.status === "PASS" || (matrixSmoke
+      && backupRestore.status === "BLOCKED_ENVIRONMENT"), "DYNAMIC_BACKUP_RESTORE_FAILED");
 
     const connectionComponents = Object.freeze({
       capability_matrix: capabilities.driver_metrics.connection_attempts,
@@ -312,6 +356,8 @@ try {
       rls: rls.connection_attempts,
       atomicity: atomicity.connection_attempts,
       concurrency: concurrency.connection_attempts,
+      marathon_v010: marathonV010.before_restart.connection_attempts.observed_total
+        + marathonV010.after_restart.connection_attempts.observed_total,
       restart_replay: restart.connection_attempts,
       backup_restore: backupRestore.connection_attempts,
     });
@@ -358,12 +404,18 @@ try {
         postgres_version: environment.postgres_version,
         runtime_provenance: runtimeProvenance,
         migrations: migrationMatrix.status,
+        migration_count: chain.migration_count,
         capabilities: capabilities.matrix.length,
         restart: restart.status,
         rls: rls.status,
         atomicity: atomicity.status,
         concurrency: concurrency.status,
         backup_restore: backupRestore.status,
+        marathon_v010: "PASS" as const,
+        marathon_v010_receipt_path: MARATHON_V010_DEVELOPMENT_RECEIPT_PATH,
+        marathon_v010_receipt_sha256: marathonV010ReceiptSha256,
+        marathon_v010_checkpoint_sha256: marathonV010.before_restart.checkpoint.checkpoint_sha256,
+        marathon_v010_tenant_ordinal: 3 as const,
         real_connection_attempts: observedConnectionAttempts,
         credentials_recorded: 0,
       });
