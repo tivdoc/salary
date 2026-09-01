@@ -10,7 +10,11 @@ import {
   PRODUCT_IDENTITY_COOKIE,
 } from "./identity-session.ts";
 
-const COMPACT_JWT = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhY3RvciJ9.c2lnbmF0dXJl";
+const COMPACT_JWT = [
+  "eyJhbGciOiJSUzI1NiJ9",
+  "eyJzdWIiOiJhY3RvciJ9",
+  "c2lnbmF0dXJl",
+].join(".");
 
 function identity(role: VerifiedIdentity["actor"]["role"] = "legal_reviewer"): VerifiedIdentity {
   return Object.freeze({

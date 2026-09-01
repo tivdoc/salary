@@ -10,6 +10,9 @@ import {
 import { assertSafeTargetIdentity, type ApprovedPostgresTarget } from "./safety.mts";
 
 export const EXPECTED_CANONICAL_TABLES = Object.freeze([
+  "private.controlled_import_artifacts",
+  "private.controlled_import_audit_events",
+  "private.controlled_import_requests",
   "public.analysis_findings",
   "public.analysis_hypotheses",
   "public.analysis_jobs",
@@ -18,6 +21,7 @@ export const EXPECTED_CANONICAL_TABLES = Object.freeze([
   "public.case_conversations",
   "public.case_messages",
   "public.cases",
+  "public.controlled_import_publication_markers",
   "public.document_extractions",
   "public.documents",
   "public.employment_snapshots",
@@ -44,6 +48,10 @@ export const EXPECTED_CANONICAL_TABLES = Object.freeze([
   "public.funnel_events",
   "public.funnel_sessions",
   "public.payments",
+  "public.product_case_owners",
+  "public.product_identity_sessions",
+  "public.product_privacy_request_versions",
+  "public.product_private_report_objects",
   "public.questionnaire_responses",
   "storage.buckets",
 ] as const);
@@ -57,6 +65,7 @@ export const EXPECTED_CANONICAL_RLS_TABLES = Object.freeze([
   "public.case_conversations",
   "public.case_messages",
   "public.cases",
+  "public.controlled_import_publication_markers",
   "public.document_extractions",
   "public.documents",
   "public.employment_snapshots",
@@ -82,6 +91,10 @@ export const EXPECTED_CANONICAL_RLS_TABLES = Object.freeze([
   "public.funnel_events",
   "public.funnel_sessions",
   "public.payments",
+  "public.product_case_owners",
+  "public.product_identity_sessions",
+  "public.product_privacy_request_versions",
+  "public.product_private_report_objects",
   "public.questionnaire_responses",
 ] as const);
 
@@ -113,12 +126,23 @@ export const EXPECTED_TENANT_POLICY_TABLES = Object.freeze([
   "public.engine_review_task_versions",
   "public.engine_rule_input_versions",
   "public.engine_topic_result_versions",
+  "public.product_case_owners",
+  "public.product_identity_sessions",
+  "public.product_privacy_request_versions",
+  "public.product_private_report_objects",
 ] as const);
 
 const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
+  "private.append_controlled_import_audit",
   "private.canonical_text_uuid",
+  "private.claim_controlled_import_recovery",
   "private.claim_engine_platform_jobs",
   "private.claim_engine_platform_outbox",
+  "private.controlled_import_forbid_mutation",
+  "private.controlled_import_publish",
+  "private.controlled_import_reject",
+  "private.controlled_import_reserve",
+  "private.controlled_import_stage_exact_bytes",
   "private.enforce_analysis_job_history",
   "private.enforce_case_confirmation_history",
   "private.enforce_case_conversation_history",
@@ -127,6 +151,21 @@ const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.enforce_engine_case_scope",
   "private.finish_engine_platform_job",
   "private.heartbeat_engine_platform_job",
+  "private.open_controlled_import_published_bytes",
+  "private.product_case_owner_bind",
+  "private.product_forbid_delete",
+  "private.product_forbid_privacy_mutation",
+  "private.product_identity_session_read",
+  "private.product_identity_session_register",
+  "private.product_owner_lookup",
+  "private.product_owner_revoke",
+  "private.product_privacy_append",
+  "private.product_private_report_object_bind",
+  "private.product_report_object_approve",
+  "private.product_report_object_approved_read",
+  "private.product_report_object_revoke",
+  "private.product_session_revoke",
+  "private.product_session_rotate",
   "private.reject_engine_append_only_mutation",
   "private.resolve_engine_case_id",
   "public.claim_salary_ga4_purchase",
@@ -141,6 +180,8 @@ const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
 ] as const);
 
 const EXPECTED_CANONICAL_INDEXES = Object.freeze([
+  "private.controlled_import_audit_operation_sequence_idx",
+  "private.controlled_import_requests_recovery_idx",
   "public.analysis_findings_run_status_idx",
   "public.analysis_hypotheses_run_status_idx",
   "public.analysis_jobs_claim_idx",
@@ -184,6 +225,7 @@ const EXPECTED_CANONICAL_INDEXES = Object.freeze([
   "public.engine_outbox_canonical_claim_idx",
   "public.engine_outbox_claim_idx",
   "public.engine_reports_case_revision_idx",
+  "public.engine_reports_canonical_identity_uq",
   "public.engine_reviews_case_kind_idx",
   "public.engine_rule_inputs_run_topic_idx",
   "public.extractions_canonical_id_uq",
@@ -202,6 +244,10 @@ const EXPECTED_CANONICAL_INDEXES = Object.freeze([
   "public.payments_provider_payment_id_unique_idx",
   "public.payments_provider_reference_unique_idx",
   "public.payments_return_token_hash_unique_idx",
+  "public.product_case_owners_subject_idx",
+  "public.product_identity_sessions_active_idx",
+  "public.product_privacy_request_case_idx",
+  "public.product_private_report_object_read_idx",
 ] as const);
 
 const EXPECTED_CANONICAL_TRIGGERS = Object.freeze([
@@ -213,6 +259,8 @@ const EXPECTED_CANONICAL_TRIGGERS = Object.freeze([
   "case_conversations_case_scope_guard",
   "case_conversations_history_guard",
   "case_messages_case_scope_guard",
+  "controlled_import_audit_append_only",
+  "controlled_import_publication_append_only",
   "cases_touch_updated_at",
   "document_extractions_case_scope_guard",
   "document_extractions_history_guard",
@@ -229,6 +277,10 @@ const EXPECTED_CANONICAL_TRIGGERS = Object.freeze([
   "engine_rule_inputs_append_only",
   "engine_topic_results_append_only",
   "engine_traces_append_only",
+  "product_case_owner_no_delete",
+  "product_identity_session_no_delete",
+  "product_privacy_append_only",
+  "product_private_report_no_delete",
 ] as const);
 
 export const POSTGRES_INVENTORY_SQL = String.raw`
@@ -455,9 +507,24 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     "POSTGRES_INVENTORY_TRIGGERS_INVALID");
 
   const metadata = recordArray(inventory.canonical_metadata, "canonical_metadata");
-  if (metadata.length !== 1 || metadata[0]?.component !== "canonical_postgresql_composition"
-    || metadata[0]?.schema_version !== "tivdoc-canonical-postgresql-v0.9.0"
-    || metadata[0]?.migration_id !== "202608310002_canonical_postgresql_composition") {
+  const expectedMetadata = Object.freeze([
+    Object.freeze({
+      component: "canonical_postgresql_composition",
+      schema_version: "tivdoc-canonical-postgresql-v0.9.0",
+      migration_id: "202608310002_canonical_postgresql_composition",
+    }),
+    Object.freeze({
+      component: "controlled_import_ledger",
+      schema_version: "tivdoc-controlled-import-ledger-v0.10.0",
+      migration_id: "202609010001_controlled_import_ledger",
+    }),
+    Object.freeze({
+      component: "durable_product_boundaries",
+      schema_version: "tivdoc-durable-product-postgresql-v0.10.0",
+      migration_id: "202609010002_durable_product_boundaries",
+    }),
+  ]);
+  if (JSON.stringify(metadata) !== JSON.stringify(expectedMetadata)) {
     throw new Error("POSTGRES_INVENTORY_CANONICAL_METADATA_INVALID");
   }
 

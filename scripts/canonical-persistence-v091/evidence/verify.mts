@@ -42,6 +42,8 @@ const MIGRATIONS = Object.freeze([
   ["202608310001_engine_platform_persistence.sql", "74e0615c6375b8cb87da5a09c6a8a29d4e27fe503793b14d767a2199d92c4460"],
   ["202608310002_canonical_postgresql_composition.sql", "27e6163ff8e4caf6512925c96bcb8ead398f47da85e152a52beadcbcaad132a2"],
   ["202608310003_canonical_postgresql_dynamic_hardening.sql", "5a270a03e234794213a4c4fd68706c53b86e9e4501688a77bf628f346e2690da"],
+  ["202609010001_controlled_import_ledger.sql", "3e51b4c1cd06c4f654566937c486856c78c192c1923fc287da29f8c0a1463e34"],
+  ["202609010002_durable_product_boundaries.sql", "455e8789de89bef18fb1041e009ab87d7a7e005a294209df3b83456d42ff3e6f"],
 ] as const);
 const CAPABILITIES = Object.freeze([
   ["cases_and_lifecycle_revisions", "intake.case_lifecycle"],
@@ -81,6 +83,7 @@ const POSTGRES_BINARY_SHA256 = Object.freeze({
 const RLS_TABLES = Object.freeze([
   "analysis_findings", "analysis_hypotheses", "analysis_jobs", "analysis_runs",
   "case_confirmations", "case_conversations", "case_messages", "cases",
+  "controlled_import_publication_markers",
   "document_extractions", "documents", "employment_snapshots", "engine_analysis_stage_versions",
   "engine_calculation_trace_versions", "engine_canonical_fact_versions", "engine_case_identity",
   "engine_case_lifecycle_revisions", "engine_case_state", "engine_durable_jobs",
@@ -88,7 +91,9 @@ const RLS_TABLES = Object.freeze([
   "engine_logical_effect_receipts", "engine_object_write_sagas", "engine_outbox_events",
   "engine_payment_evidence_refs", "engine_platform_audit_events", "engine_report_versions",
   "engine_review_task_versions", "engine_rule_input_versions", "engine_topic_result_versions",
-  "funnel_events", "funnel_sessions", "payments", "questionnaire_responses",
+  "funnel_events", "funnel_sessions", "payments", "product_case_owners",
+  "product_identity_sessions", "product_privacy_request_versions",
+  "product_private_report_objects", "questionnaire_responses",
 ] as const);
 const TENANT_POLICY_TABLES = Object.freeze([
   "public.analysis_findings", "public.analysis_hypotheses", "public.analysis_runs",
@@ -101,6 +106,8 @@ const TENANT_POLICY_TABLES = Object.freeze([
   "public.engine_object_write_sagas", "public.engine_outbox_events", "public.engine_payment_evidence_refs",
   "public.engine_platform_audit_events", "public.engine_report_versions", "public.engine_review_task_versions",
   "public.engine_rule_input_versions", "public.engine_topic_result_versions",
+  "public.product_case_owners", "public.product_identity_sessions",
+  "public.product_privacy_request_versions", "public.product_private_report_objects",
 ] as const);
 const BASE_HEAD = "43f3e63a5cef75b24e95d1bce4383e9249a2d866";
 const BASE_TREE = "16aea86ef3251ec92e52ebf0e4757902459cf987";
@@ -565,26 +572,26 @@ function verifyRls(value: Obj): void {
   assert(value.schema_version === "tivdoc-real-postgresql-rls-matrix-v0.9.1"
     && value.proof_class === "REAL_POSTGRESQL_DYNAMIC_PROOF", "DYNAMIC_RLS_INVALID");
   const tables = values(value.sensitive_tables, "DYNAMIC_RLS_TABLES_INVALID");
-  assert(JSON.stringify(tables) === JSON.stringify(RLS_TABLES) && value.rls_enabled === 34
+  assert(JSON.stringify(tables) === JSON.stringify(RLS_TABLES) && value.rls_enabled === 39
     && value.rls_enabled === tables.length && value.rls_forced === 0, "DYNAMIC_RLS_TABLES_INVALID");
-  assert(value.security_definer_functions === 20 && value.unsafe_security_definer_functions === 0
-    && value.security_definer_acl_mismatches === 0 && value.tenant_policy_tables === 27
+  assert(value.security_definer_functions === 42 && value.unsafe_security_definer_functions === 0
+    && value.security_definer_acl_mismatches === 0 && value.tenant_policy_tables === 31
     && value.cross_tenant_rows_visible === 0
-    && value.cross_tenant_write_rejections === 27
+    && value.cross_tenant_write_rejections === 31
     && value.cross_tenant_write_rejected === true
     && value.distinct_tenant_controls === true
-    && value.synthetic_control_rows_inserted === 4
+    && value.synthetic_control_rows_inserted === 12
     && value.synthetic_findings_inserted === 2 && value.synthetic_findings_removed === 2
     && value.persistent_job_history_controls === 2 && value.real_findings_generated === false
     && value.legal_sources_activated === 0 && value.customer_data_used === false,
   "DYNAMIC_RLS_SECURITY_INVALID");
   const denominators = object(value.tenant_policy_denominators, "DYNAMIC_RLS_DENOMINATORS_INVALID");
-  assert(denominators.expected_tables === 27 && denominators.tested_tables === 27
-    && denominators.tables_with_seeded_own_tenant_rows === 27
-    && denominators.tables_with_seeded_cross_tenant_control_rows === 27
-    && denominators.tables_with_expected_own_tenant_visibility === 27
-    && denominators.tables_with_zero_cross_tenant_visibility === 27
-    && denominators.tables_with_cross_tenant_write_rejection === 27, "DYNAMIC_RLS_DENOMINATORS_INVALID");
+  assert(denominators.expected_tables === 31 && denominators.tested_tables === 31
+    && denominators.tables_with_seeded_own_tenant_rows === 31
+    && denominators.tables_with_seeded_cross_tenant_control_rows === 31
+    && denominators.tables_with_expected_own_tenant_visibility === 31
+    && denominators.tables_with_zero_cross_tenant_visibility === 31
+    && denominators.tables_with_cross_tenant_write_rejection === 31, "DYNAMIC_RLS_DENOMINATORS_INVALID");
   const policyRows = objects(value.tenant_policy_table_results, "DYNAMIC_RLS_POLICY_RESULTS_INVALID");
   assert(JSON.stringify(policyRows.map((row) => row.table)) === JSON.stringify(TENANT_POLICY_TABLES), "DYNAMIC_RLS_POLICY_TABLE_SET_INVALID");
   policyRows.forEach((row) => {
@@ -606,12 +613,12 @@ function verifyRls(value: Obj): void {
       && row.reads_allowed === 0 && row.reads_denied === tables.length && row.writes_allowed === 0
       && row.writes_denied === tables.length * 3, "DYNAMIC_RLS_DENIAL_INVALID");
     else if (row.role === "service_role") assert(row.tables_checked === tables.length
-      && row.reads_allowed === tables.length && row.reads_denied === 0
+      && row.reads_allowed === tables.length - 1 && row.reads_denied === 1
       && integer(row.writes_allowed, 0, "DYNAMIC_RLS_SERVICE_WRITES_INVALID")
         + integer(row.writes_denied, 0, "DYNAMIC_RLS_SERVICE_WRITES_INVALID") === tables.length * 3,
     "DYNAMIC_RLS_SERVICE_INVALID");
-    else assert(row.tables_checked === 27 && row.reads_allowed === 27 && row.reads_denied === 0
-      && row.writes_allowed === 0 && row.writes_denied === 27, "DYNAMIC_RLS_PROBE_INVALID");
+    else assert(row.tables_checked === 31 && row.reads_allowed === 31 && row.reads_denied === 0
+      && row.writes_allowed === 0 && row.writes_denied === 31, "DYNAMIC_RLS_PROBE_INVALID");
   });
   count(value.tenant_b_seed_connection_attempts, "DYNAMIC_TENANT_B_CONNECTIONS_INVALID");
   assert(value.connection_attempts === 5, "DYNAMIC_RLS_CONNECTIONS_INVALID"); safePass(value, "DYNAMIC_RLS_INVALID");

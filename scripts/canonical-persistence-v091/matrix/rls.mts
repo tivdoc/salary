@@ -15,8 +15,15 @@ const EXPECTED_POLICY_TABLE_NAMES = Object.freeze(
 );
 
 const EXPECTED_SECURITY_DEFINERS = Object.freeze(new Map<string, boolean>([
+  ["private.append_controlled_import_audit", false],
+  ["private.claim_controlled_import_recovery", true],
   ["private.claim_engine_platform_jobs", true],
   ["private.claim_engine_platform_outbox", true],
+  ["private.controlled_import_forbid_mutation", false],
+  ["private.controlled_import_publish", true],
+  ["private.controlled_import_reject", true],
+  ["private.controlled_import_reserve", true],
+  ["private.controlled_import_stage_exact_bytes", true],
   ["private.enforce_analysis_job_history", false],
   ["private.enforce_case_confirmation_history", false],
   ["private.enforce_case_conversation_history", false],
@@ -25,6 +32,21 @@ const EXPECTED_SECURITY_DEFINERS = Object.freeze(new Map<string, boolean>([
   ["private.enforce_engine_case_scope", false],
   ["private.finish_engine_platform_job", true],
   ["private.heartbeat_engine_platform_job", true],
+  ["private.open_controlled_import_published_bytes", true],
+  ["private.product_case_owner_bind", true],
+  ["private.product_forbid_delete", false],
+  ["private.product_forbid_privacy_mutation", false],
+  ["private.product_identity_session_read", true],
+  ["private.product_identity_session_register", true],
+  ["private.product_owner_lookup", true],
+  ["private.product_owner_revoke", true],
+  ["private.product_privacy_append", true],
+  ["private.product_private_report_object_bind", true],
+  ["private.product_report_object_approve", true],
+  ["private.product_report_object_approved_read", true],
+  ["private.product_report_object_revoke", true],
+  ["private.product_session_revoke", true],
+  ["private.product_session_rotate", true],
   ["private.reject_engine_append_only_mutation", false],
   ["private.resolve_engine_case_id", true],
   ["public.claim_salary_ga4_purchase", true],
@@ -88,7 +110,7 @@ export type RlsMatrixReceipt = Readonly<{
   cross_tenant_write_rejections: number;
   cross_tenant_write_rejected: boolean;
   distinct_tenant_controls: true;
-  synthetic_control_rows_inserted: 4;
+  synthetic_control_rows_inserted: 12;
   synthetic_findings_inserted: 2;
   synthetic_findings_removed: 2;
   persistent_job_history_controls: 2;
@@ -130,7 +152,7 @@ type CaseConfirmationWriteProbe = Readonly<{
 
 type SyntheticRlsControls = Readonly<{
   finding_ids: readonly string[];
-  synthetic_control_rows_inserted: 4;
+  synthetic_control_rows_inserted: 12;
   synthetic_findings_inserted: 2;
   persistent_job_history_controls: 2;
 }>;
@@ -298,6 +320,7 @@ async function seedSyntheticRlsControls(
   const client = await admin.connect();
   const findingIds: string[] = [];
   let jobHistoryControls = 0;
+  let productBoundaryControls = 0;
   try {
     await client.query("begin");
     for (const tenantId of [tenantA, tenantB]) {
@@ -358,6 +381,74 @@ async function seedSyntheticRlsControls(
         throw new Error("RLS_SYNTHETIC_JOB_HISTORY_CONTROL_FAILED");
       }
       jobHistoryControls += 1;
+
+      const subject = `rls-subject-${uniqueSuffix}`;
+      const session = await client.query(`
+        insert into public.product_identity_sessions (
+          tenant_id, sid, subject, current_jti, rotation_counter, valid_after,
+          expires_at, revoked_at, reviewer_org_id, session_sha256, created_at
+        ) values ($1, $2, $3, $4, 0, now(), now() + interval '1 hour', null, null, $5, now())`, [
+        tenantId,
+        `rls-session-${uniqueSuffix}`,
+        subject,
+        `rls-token-${uniqueSuffix}`,
+        createHash("sha256").update(`rls-session:${tenantId}:${uniqueSuffix}`).digest("hex"),
+      ]);
+      const owner = await client.query(`
+        with target_case as (
+          select canonical_case_id from public.engine_case_state
+          where tenant_id = $1 order by updated_at, case_id limit 1
+        )
+        insert into public.product_case_owners (
+          tenant_id, canonical_case_id, subject, revision, status,
+          binding_sha256, created_at, revoked_at
+        )
+        select $1, canonical_case_id, $2, 1, 'active', $3, now(), null
+        from target_case`, [
+        tenantId,
+        subject,
+        createHash("sha256").update(`rls-owner:${tenantId}:${uniqueSuffix}`).digest("hex"),
+      ]);
+      const privacy = await client.query(`
+        with target_case as (
+          select canonical_case_id from public.engine_case_state
+          where tenant_id = $1 order by updated_at, case_id limit 1
+        )
+        insert into public.product_privacy_request_versions (
+          request_id, revision, tenant_id, canonical_case_id, request_kind, state,
+          idempotency_key, command_sha256, legal_hold_conflict,
+          grant_revocation_receipt_sha256, created_at
+        )
+        select $2, 1, $1, canonical_case_id, 'access', 'requested', $3, $4, false, null, now()
+        from target_case`, [
+        tenantId,
+        `rls-request-${uniqueSuffix}`,
+        `rls-privacy-${uniqueSuffix}`,
+        createHash("sha256").update(`rls-privacy:${tenantId}:${uniqueSuffix}`).digest("hex"),
+      ]);
+      const reportObject = await client.query(`
+        with target_report as (
+          select tenant_id, canonical_case_id, report_id, revision, report_sha256
+          from public.engine_report_versions
+          where tenant_id = $1 order by created_at, report_id, revision limit 1
+        )
+        insert into public.product_private_report_objects (
+          tenant_id, canonical_case_id, report_id, report_revision, report_sha256,
+          object_version_id, provider_locator, byte_length, artifact_sha256,
+          state, grant_epoch, revocation_receipt_sha256, revoked_at, created_at
+        )
+        select tenant_id, canonical_case_id, report_id, revision, report_sha256,
+               $2, $3, 128, $4, 'staged', 0, null, null, now()
+        from target_report`, [
+        tenantId,
+        `rls-object-${uniqueSuffix}`,
+        `synthetic/rls/${uniqueSuffix}`,
+        createHash("sha256").update(`rls-artifact:${tenantId}:${uniqueSuffix}`).digest("hex"),
+      ]);
+      const insertedProductRows = [session, owner, privacy, reportObject]
+        .reduce((sum, result) => sum + (result.rowCount ?? 0), 0);
+      if (insertedProductRows !== 4) throw new Error("RLS_SYNTHETIC_PRODUCT_CONTROL_FAILED");
+      productBoundaryControls += insertedProductRows;
     }
     await client.query("commit");
   } catch (error) {
@@ -366,12 +457,12 @@ async function seedSyntheticRlsControls(
   } finally {
     client.release();
   }
-  if (findingIds.length !== 2 || jobHistoryControls !== 2) {
+  if (findingIds.length !== 2 || jobHistoryControls !== 2 || productBoundaryControls !== 8) {
     throw new Error("RLS_SYNTHETIC_CONTROL_DENOMINATOR_INVALID");
   }
   return Object.freeze({
     finding_ids: Object.freeze(findingIds),
-    synthetic_control_rows_inserted: 4,
+    synthetic_control_rows_inserted: 12,
     synthetic_findings_inserted: 2,
     persistent_job_history_controls: 2,
   });
@@ -435,6 +526,7 @@ async function deniedRole(
 async function serviceRole(connectionUrl: string, tables: readonly TableColumn[]): Promise<RlsRoleResult> {
   const target = pool(connectionUrl, "tivdoc-v091-rls-service");
   let readsAllowed = 0;
+  let readsDenied = 0;
   let writesAllowed = 0;
   let writesDenied = 0;
   let unexpected = 0;
@@ -446,15 +538,21 @@ async function serviceRole(connectionUrl: string, tables: readonly TableColumn[]
       for (const { table_name: tableName, first_column: firstColumn } of tables) {
         const table = identifier(tableName);
         const column = identifier(firstColumn);
-        if (await succeeds(client, `select 1 from public.${table} limit 0`)) readsAllowed += 1;
-        else unexpected += 1;
-        const privileges = await client.query<{ can_insert: boolean; can_update: boolean; can_delete: boolean }>(`
-          select has_table_privilege(current_user, $1, 'INSERT') as can_insert,
+        const privileges = await client.query<{ can_select: boolean; can_insert: boolean; can_update: boolean; can_delete: boolean }>(`
+          select has_table_privilege(current_user, $1, 'SELECT') as can_select,
+                 has_table_privilege(current_user, $1, 'INSERT') as can_insert,
                  has_table_privilege(current_user, $1, 'UPDATE') as can_update,
                  has_table_privilege(current_user, $1, 'DELETE') as can_delete`, [`public.${tableName}`]);
         const acl = privileges.rows[0];
-        if (!acl?.can_insert) unexpected += 1;
-        else writesAllowed += 1;
+        const expectedSelect = tableName !== "controlled_import_publication_markers";
+        const expectedInsert = !["controlled_import_publication_markers", "product_privacy_request_versions"].includes(tableName);
+        const selectAllowed = await succeeds(client, `select 1 from public.${table} limit 0`);
+        if (acl?.can_select !== expectedSelect || selectAllowed !== expectedSelect) unexpected += 1;
+        else if (selectAllowed) readsAllowed += 1;
+        else readsDenied += 1;
+        if (acl?.can_insert !== expectedInsert) unexpected += 1;
+        else if (acl.can_insert) writesAllowed += 1;
+        else writesDenied += 1;
         for (const [sql, expected] of [
           [`update public.${table} set ${column} = ${column} where false`, acl?.can_update === true],
           [`delete from public.${table} where false`, acl?.can_delete === true],
@@ -475,11 +573,11 @@ async function serviceRole(connectionUrl: string, tables: readonly TableColumn[]
     role: "service_role",
     tables_checked: tables.length,
     reads_allowed: readsAllowed,
-    reads_denied: 0,
+    reads_denied: readsDenied,
     writes_allowed: writesAllowed,
     writes_denied: writesDenied,
     unexpected_results: unexpected,
-    status: unexpected === 0 && readsAllowed === tables.length
+    status: unexpected === 0 && readsAllowed + readsDenied === tables.length
       && writesAllowed + writesDenied === tables.length * 3 ? "PASS" : "FAIL",
   });
 }
