@@ -14,7 +14,7 @@
     {
       "id": "MC-01",
       "status": "PASS",
-      "evidence": "The frozen contract binds base 28d18da69108913252736f4b8a39c4ef614984a3/tree 2a9859470003a095521a13e21474a45e1f69620e; final-verification and git/base-final.json independently bind ancestry, final HEAD/tree, branch, allowlists and a clean worktree."
+      "evidence": "The frozen contract binds base 28d18da69108913252736f4b8a39c4ef614984a3/tree 2a9859470003a095521a13e21474a45e1f69620e. The exhausted final verification remains bound to attempt HEAD e469035257b440987862b4f27f52fb2dc468ccca/tree 2f6193d8aa0cfe318898c10efd92741114fad75a; git/base-final.json binds the clean closure HEAD/tree, branch and ancestry, while git/post-verification-closure.json and assessment/pre-closure-assessment.json strictly bind the targeted-repair, evidence-tooling and assessment-only suffix."
     },
     {
       "id": "MC-02",
@@ -65,8 +65,8 @@
     },
     {
       "id": "MC-11",
-      "status": "PASS",
-      "evidence": "The current real PostgreSQL V0.10 matrix proves reserve/idempotent replay, binding rejection, lease fencing, double-reopen TOCTOU rejection, exact-byte staging, atomic publication visibility, exact reopen, genuine stop/start replay and durable row hashes."
+      "status": "FAIL",
+      "evidence": "Attempt 1 failed the real PostgreSQL regression at the RLS report seed and that defect was repaired. Attempt 2 failed with POSTGRES_TRANSACTION_FAILED over PRODUCT_REPORT_CANONICAL_BINDING_MISMATCH. Targeted exact-byte repair 8086a57eb8bf687f12aed3f9ba085dd63e6e7ec5 passed 9 focused tests, scoped ESLint and TypeScript --noEmit, but the 2/2 complete-attempt limit prohibited a third dynamic regression; status remains FAILED_LOCAL_WITH_EVIDENCE."
     },
     {
       "id": "MC-12",
@@ -181,8 +181,8 @@
     },
     {
       "id": "MC-34",
-      "status": "PASS",
-      "evidence": "The final verification ledger binds PASS receipts and exact logs for focused Marathon acceptance, full Vitest, ESLint, TypeScript --noEmit, Next production build, browser E2E and current PostgreSQL matrix-smoke."
+      "status": "FAIL",
+      "evidence": "Complete attempt 1 failed focused Marathon acceptance, full Vitest, browser E2E and PostgreSQL regression. Complete attempt 2 passed focused Marathon acceptance, full Vitest (177 files; 1252 passed and 3 skipped), ESLint, TypeScript --noEmit, Next production build and all audits, but browser E2E failed with BROWSER_E2E_SERVER_EXITED:1 and PostgreSQL failed with POSTGRES_TRANSACTION_FAILED. The 2/2 complete-attempt limit is exhausted; final verification remains FAIL and no third complete run was performed."
     },
     {
       "id": "MC-35",
@@ -211,8 +211,8 @@
     }
   ],
   "acceptance_counts": {
-    "PASS": 22,
-    "FAIL": 14,
+    "PASS": 20,
+    "FAIL": 16,
     "BLOCKED": 3,
     "SKIPPED_DEPENDENCY": 0,
     "NOT_APPLICABLE": 0
@@ -248,8 +248,8 @@
     {
       "wave": "W2",
       "local_status": "PARTIAL",
-      "completed": ["durable PostgreSQL report pipeline", "installed product-boundary schema/adapters", "real V0.10 restart matrix"],
-      "remaining": ["stable rendered portal/operations/private-provider composition not wired"],
+      "completed": ["durable PostgreSQL report pipeline", "installed product-boundary schema/adapters", "V0.10 restart-matrix tooling and targeted exact-byte repair"],
+      "remaining": ["stable rendered portal/operations/private-provider composition not wired", "complete V0.10 dynamic restart regression remains FAILED_LOCAL_WITH_EVIDENCE"],
       "truth": { "memory_fallbacks": 0, "customer_reads": 0 }
     },
     {
@@ -334,6 +334,7 @@
     { "commit_subject": "fix(postgres): align RLS report seed with canonical PDF", "checks": ["FC-010", "FC-011"], "status": "PASS" },
     { "commit_subject": "fix(marathon): serialize final verification workers", "checks": ["FC-011"], "status": "PASS" },
     { "commit_subject": "fix(marathon): authenticate hermetic browser routes", "checks": ["FC-011"], "status": "PASS" },
-    { "commit_subject": "fix(marathon): terminate browser process tree", "checks": ["FC-011"], "status": "PASS" }
+    { "commit_subject": "fix(marathon): terminate browser process tree", "checks": ["FC-011"], "status": "PASS" },
+    { "commit_subject": "fix(postgres): reuse canonical report bytes in matrix", "checks": ["FC-008", "FC-010"], "status": "PASS" }
   ]
 }
