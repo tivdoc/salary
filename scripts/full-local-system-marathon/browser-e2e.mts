@@ -17,6 +17,7 @@ const ROOT = path.resolve(process.cwd());
 const OUTPUT = path.join(ROOT, "output", "playwright", "v010-marathon");
 const BASE_URL = MARATHON_BROWSER_BASE_URL;
 const SESSION = "tivdoc-v010-marathon";
+const STARTUP_SMOKE = process.argv.includes("--startup-smoke");
 const CLI = path.join(ROOT, "node_modules", "@playwright", "cli", "playwright-cli.js");
 const NEXT = path.join(ROOT, "node_modules", "next", "dist", "bin", "next");
 const serverOutput: string[] = [];
@@ -45,8 +46,10 @@ try {
     const session = page.audience ? sessions[page.audience] : null;
     if (session) commands.push(installBrowserSession(`session_${page.id}`, session));
     commands.push(runCli(`goto_${page.id}`, ["goto", `${BASE_URL}${page.path}`]));
-    commands.push(runCli(`snapshot_${page.id}`, ["snapshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.md`)]));
-    commands.push(runCli(`screenshot_${page.id}`, ["screenshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.png`), "--full-page"]));
+    if (!STARTUP_SMOKE) {
+      commands.push(runCli(`snapshot_${page.id}`, ["snapshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.md`)]));
+      commands.push(runCli(`screenshot_${page.id}`, ["screenshot", "--filename", path.join(OUTPUT, `${page.id}-desktop.png`), "--full-page"]));
+    }
     const response = await fetch(`${BASE_URL}${page.path}`, {
       redirect: "manual",
       headers: session ? { cookie: `${MARATHON_BROWSER_SESSION_COOKIE}=${session}` } : undefined,
@@ -57,14 +60,16 @@ try {
       throw new Error(`BROWSER_E2E_SECURITY_HEADERS:${page.id}`);
     }
   }
-  commands.push(runCli("resize_mobile", ["resize", "390", "844"]));
-  commands.push(installBrowserSession("session_portal_mobile", sessions.portal));
-  commands.push(runCli("goto_portal_mobile", ["goto", `${BASE_URL}/portal`]));
-  commands.push(runCli("snapshot_portal_mobile", ["snapshot", "--filename", path.join(OUTPUT, "portal-mobile.md")]));
-  commands.push(runCli("screenshot_portal_mobile", ["screenshot", "--filename", path.join(OUTPUT, "portal-mobile.png"), "--full-page"]));
-  commands.push(runCli("console_errors", ["console", "error"]));
+  if (!STARTUP_SMOKE) {
+    commands.push(runCli("resize_mobile", ["resize", "390", "844"]));
+    commands.push(installBrowserSession("session_portal_mobile", sessions.portal));
+    commands.push(runCli("goto_portal_mobile", ["goto", `${BASE_URL}/portal`]));
+    commands.push(runCli("snapshot_portal_mobile", ["snapshot", "--filename", path.join(OUTPUT, "portal-mobile.md")]));
+    commands.push(runCli("screenshot_portal_mobile", ["screenshot", "--filename", path.join(OUTPUT, "portal-mobile.png"), "--full-page"]));
+    commands.push(runCli("console_errors", ["console", "error"]));
+  }
 
-  const snapshots = await Promise.all(["home-desktop.md", "portal-desktop.md", "operations-desktop.md", "portal-mobile.md"].map(async (name) => {
+  const snapshots = await Promise.all((STARTUP_SMOKE ? [] : ["home-desktop.md", "portal-desktop.md", "operations-desktop.md", "portal-mobile.md"]).map(async (name) => {
     const bytes = await readFile(path.join(OUTPUT, name));
     if (bytes.byteLength < 32) throw new Error(`BROWSER_E2E_SNAPSHOT_EMPTY:${name}`);
     return Object.freeze({ path: `output/playwright/v010-marathon/${name}`, byte_count: bytes.byteLength, sha256: hash(bytes) });
@@ -72,6 +77,7 @@ try {
   const receipt = Object.freeze({
     schema_version: "tivdoc-full-local-system-marathon-browser-e2e-v0.10.0",
     status: "PASS",
+    run_class: STARTUP_SMOKE ? "FOCUSED_STARTUP_LOGIN_NAVIGATION" : "FULL_RENDERED_BROWSER_MATRIX",
     browser: "msedge",
     origin: BASE_URL,
     rendered_routes: ["/", "/portal", "/operations"],
@@ -83,7 +89,7 @@ try {
     command_receipts: commands,
     server_output_sha256: hash(serverOutput.join("")),
   });
-  await writeFile(path.join(OUTPUT, "browser-e2e-receipt.json"), `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
+  await writeFile(path.join(OUTPUT, STARTUP_SMOKE ? "browser-startup-smoke-receipt.json" : "browser-e2e-receipt.json"), `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
   process.stdout.write(`${JSON.stringify(receipt)}\n`);
 } finally {
   runCliAllowFailure("close", ["close"]);
@@ -160,7 +166,8 @@ async function waitForServer(): Promise<void> {
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw new Error("BROWSER_E2E_SERVER_START_TIMEOUT");
+  const diagnostic = serverOutput.join("").slice(-8_000).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/gu, "");
+  throw new Error(`BROWSER_E2E_SERVER_START_TIMEOUT:${diagnostic}`);
 }
 
 function safeEnvironment(): NodeJS.ProcessEnv {

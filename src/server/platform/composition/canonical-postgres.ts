@@ -1,12 +1,12 @@
 import type { PostgresTransactionContext } from "../persistence/postgres/contracts.ts";
 import { statement } from "../persistence/postgres/contracts.ts";
+import { CanonicalPostgresError } from "../persistence/postgres/runtime/errors.ts";
+import { PostgresIdempotencyRepository } from "../persistence/postgres/runtime/idempotency.ts";
+import { PostgresJobsOutboxAuditRepository } from "../persistence/postgres/runtime/jobs-outbox-audit.ts";
 import {
-  CanonicalPostgresError,
   CanonicalPostgresTransactionManager,
-  PostgresIdempotencyRepository,
-  PostgresJobsOutboxAuditRepository,
   type PostgresConnectionFactory,
-} from "../persistence/postgres/runtime/index.ts";
+} from "../persistence/postgres/runtime/transaction-manager.ts";
 
 export const CANONICAL_POSTGRES_SCHEMA_VERSION = "tivdoc-canonical-postgresql-v0.9.0" as const;
 export const CANONICAL_POSTGRES_RUNTIME_MODES = ["memory_test_only", "isolated_postgres", "disabled"] as const;

@@ -1,6 +1,6 @@
 import { createPostgresAnalysisRepositories, type PostgresAnalysisRepositories } from "../persistence/postgres/analysis/index.ts";
 import { intake_factory, type PostgresIntakeAdapterBundle } from "../persistence/postgres/intake/index.ts";
-import type { PostgresConnectionFactory } from "../persistence/postgres/runtime/index.ts";
+import type { PostgresConnectionFactory } from "../persistence/postgres/runtime/transaction-manager.ts";
 import {
   startCanonicalPostgresComposition,
   type CanonicalPostgresComposition,
