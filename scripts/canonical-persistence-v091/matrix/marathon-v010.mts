@@ -23,6 +23,17 @@ import {
   PostgresPrivacyRequestRepository,
   PostgresPrivateReportObjectRepository,
 } from "../../../src/server/product/durable-postgres/boundary-repositories.ts";
+import {
+  CANONICAL_REPORT_IDENTITY_SCHEMA_VERSION,
+  CanonicalReportIdentityError,
+  canonicalReportDependencySha256,
+  canonicalReportModelSha256,
+  canonicalReportStorageObjectId,
+  canonicalReportStorageObjectVersionId,
+  createCanonicalReportIdentity,
+  withCanonicalReportGrantRevision,
+  type CanonicalReportIdentity,
+} from "../../../src/server/product/durable-postgres/report-identity.ts";
 import { statement, type PostgresStatement, type PostgresTransactionContext } from "../../../src/server/platform/persistence/postgres/contracts.ts";
 import { CanonicalPostgresError } from "../../../src/server/platform/persistence/postgres/runtime/errors.ts";
 import {
@@ -116,6 +127,7 @@ export type MarathonV010Checkpoint = Readonly<{
     byte_length: number;
     bytes_base64: string;
     grant_epoch: 1;
+    canonical_identity: CanonicalReportIdentity;
   }>;
   revocation: Readonly<{
     revoked_at: string;
@@ -162,6 +174,7 @@ export type MarathonV010BeforeRestartReceipt = Readonly<{
     report_binding_replayed: true;
     report_approval_replayed: true;
     wrong_report_binding_denied: true;
+    report_binding_late_failure_rolled_back: true;
     exact_report_bytes_read: true;
     report_byte_provider: "EXPLICIT_SYNTHETIC_TEST_DOUBLE_NOT_PRODUCT_COMPOSITION";
     managed_storage_proof_claimed: false;
@@ -271,7 +284,6 @@ export function createMarathonV010DeterministicFixture(durableState: DurableCapa
   const reportBytes = Uint8Array.from(capabilityFixture.report_artifacts.pdf);
   const importArtifactSha256 = byteSha256(importBytes);
   const reportArtifactSha256 = byteSha256(reportBytes);
-  const objectVersionId = `object_${canonicalSha256({ suffix, kind: "marathon-v010-report-object" }).slice(0, 48)}`;
   const requestedAt = "2026-09-01T12:01:00.000Z";
   const importCommand = createControlledImportCommand({
     idempotency_key: `import:synthetic:v010:${suffix}`,
@@ -297,6 +309,60 @@ export function createMarathonV010DeterministicFixture(durableState: DurableCapa
     rejected_token_id: `token:synthetic:v010:${suffix}:rejected`,
     reviewer_organization_id: `organization:synthetic:v010:${suffix}`,
   });
+  const reportDecision = Object.freeze({
+    task_id: capabilityFixture.review_task_id,
+    task_kind: "report_approval" as const,
+    reviewer_id: "synthetic-reviewer-v091",
+    reviewer_role: "report_approver",
+    decision: "approved" as const,
+    input_sha256: capabilityFixture.report_artifacts.report_sha256,
+    output_sha256: capabilityFixture.report_artifacts.report_sha256,
+    decided_at: "2026-08-31T10:00:50.000Z",
+    reason: "Synthetic isolated PostgreSQL verification.",
+    schema_version: "tivdoc-case-review-decision-v0.6.0",
+  });
+  const reportCore = Object.freeze({
+    tenant_id: durableState.tenant_id,
+    case_id: durableState.case_id,
+    case_revision: durableState.case_revision,
+    analysis_run_id: durableState.analysis_run_id,
+    analysis_run_revision: durableState.case_revision,
+    rule_input_dependency_sha256: canonicalReportDependencySha256({
+      rule_inputs: capabilityFixture.analysis_bundle.rule_inputs,
+      dependencies: capabilityFixture.dependencies,
+    }),
+    report_model_sha256: canonicalReportModelSha256({
+      analysis_result_sha256: capabilityFixture.report_artifacts.analysis_result_sha256,
+      json_sha256: capabilityFixture.report_artifacts.json_sha256,
+      html_sha256: capabilityFixture.report_artifacts.html_sha256,
+      manifest_sha256: capabilityFixture.report_artifacts.manifest_sha256,
+    }),
+    report_id: durableState.report_id,
+    report_revision: durableState.case_revision,
+    report_sha256: durableState.report_sha256,
+    pdf_sha256: reportArtifactSha256,
+  });
+  const storageObjectId = canonicalReportStorageObjectId(reportCore);
+  const objectVersionId = canonicalReportStorageObjectVersionId(reportCore);
+  const stagedReportIdentity = createCanonicalReportIdentity(Object.freeze({
+    schema_version: CANONICAL_REPORT_IDENTITY_SCHEMA_VERSION,
+    ...reportCore,
+    owner_binding_revision: 1,
+    owner_binding_sha256: canonicalSha256({
+      tenant_id: durableState.tenant_id,
+      canonical_case_id: durableState.case_id,
+      subject: identity.subject,
+      revision: 1,
+      status: "active",
+      created_at: "2026-09-01T12:00:00.000Z",
+    }),
+    storage_object_id: storageObjectId,
+    storage_object_version_id: objectVersionId,
+    approval_task_id: capabilityFixture.review_task_id,
+    approval_revision: 1,
+    approval_decision_sha256: canonicalSha256(reportDecision),
+    download_grant_revision: 0,
+  }));
   const privacyBase = Object.freeze({
     request_id: `privacy:synthetic:v010:${suffix}`,
     tenant_id: durableState.tenant_id,
@@ -311,6 +377,9 @@ export function createMarathonV010DeterministicFixture(durableState: DurableCapa
     provider_locator: `objects/${reportArtifactSha256.slice(0, 2)}/${objectVersionId}`,
     artifact_sha256: reportArtifactSha256,
     byte_length: reportBytes.byteLength,
+    storage_object_id: storageObjectId,
+    staged_identity: stagedReportIdentity,
+    approved_identity: withCanonicalReportGrantRevision(stagedReportIdentity, 1),
   });
   return Object.freeze({
     suffix,
@@ -383,6 +452,7 @@ export async function runMarathonV010BeforeRestart(
   let importResult: Awaited<ReturnType<typeof exerciseControlledImportBeforeRestart>>;
   let boundaryResult: Awaited<ReturnType<typeof exerciseBoundariesBeforeRestart>>;
   try {
+    await exerciseReportBindingRollback(manager, input.build_identity_sha, fixture);
     boundaryResult = await exerciseBoundariesBeforeRestart(manager, input.build_identity_sha, fixture);
     importResult = await exerciseControlledImportBeforeRestart(
       manager,
@@ -420,9 +490,16 @@ export async function runMarathonV010BeforeRestart(
     }),
     privacy_revision_2: fixture.privacy_revision_2,
     report: Object.freeze({
-      ...fixture.report,
+      report_id: fixture.report.report_id,
+      report_revision: fixture.report.report_revision,
+      report_sha256: fixture.report.report_sha256,
+      object_version_id: fixture.report.object_version_id,
+      provider_locator: fixture.report.provider_locator,
+      artifact_sha256: fixture.report.artifact_sha256,
+      byte_length: fixture.report.byte_length,
       bytes_base64: Buffer.from(fixture.report_bytes).toString("base64"),
       grant_epoch: 1 as const,
+      canonical_identity: fixture.report.approved_identity,
     }),
     revocation: Object.freeze({
       revoked_at: fixture.timestamps.revoked_at,
@@ -478,6 +555,7 @@ export async function runMarathonV010BeforeRestart(
       report_binding_replayed: true,
       report_approval_replayed: true,
       wrong_report_binding_denied: true,
+      report_binding_late_failure_rolled_back: true,
       exact_report_bytes_read: boundaryResult!.report_byte_reads === 1,
       report_byte_provider: "EXPLICIT_SYNTHETIC_TEST_DOUBLE_NOT_PRODUCT_COMPOSITION",
       managed_storage_proof_claimed: false,
@@ -625,6 +703,47 @@ export function combineMarathonV010Receipts(
   });
 }
 
+async function exerciseReportBindingRollback(
+  manager: CanonicalPostgresTransactionManager,
+  buildIdentitySha: string,
+  fixture: MarathonV010DeterministicFixture,
+): Promise<void> {
+  try {
+    await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
+      await new PostgresCaseOwnerRepository(context.client).bind({
+        tenant_id: fixture.identity.tenant_id,
+        case_id: fixture.identity.case_id,
+        subject: fixture.identity.subject,
+        created_at: fixture.timestamps.created_at,
+      });
+      await new PostgresPrivateReportObjectRepository(context.client).bind(reportBindInput(fixture));
+      throw new Error("MARATHON_V010_SYNTHETIC_LATE_REPORT_FAILURE");
+    });
+  } catch (error) {
+    if (!(error instanceof CanonicalPostgresError) || error.code !== "POSTGRES_TRANSACTION_FAILED") throw error;
+  }
+  await withTenantTransaction(manager, buildIdentitySha, fixture.identity.tenant_id, async (context) => {
+    const result = await context.client.query(statement(
+      "marathon_v010_report_rollback_probe",
+      `select
+        (select count(*)::text from public.product_case_owners owner
+          where owner.tenant_id = $1 and owner.canonical_case_id = $2) as owner_rows,
+        (select count(*)::text from public.product_private_report_objects object
+          where object.tenant_id = $1 and object.canonical_case_id = $2
+            and object.report_id = $3 and object.report_revision = $4) as report_object_rows`,
+      [
+        fixture.identity.tenant_id,
+        fixture.identity.case_id,
+        fixture.report.report_id,
+        fixture.report.report_revision,
+      ],
+    ));
+    const row = result.rows[0];
+    assert(result.row_count === 1 && row?.owner_rows === "0" && row.report_object_rows === "0",
+      "MARATHON_V010_REPORT_LATE_FAILURE_NOT_ROLLED_BACK");
+  });
+}
+
 async function exerciseBoundariesBeforeRestart(
   manager: CanonicalPostgresTransactionManager,
   buildIdentitySha: string,
@@ -692,18 +811,7 @@ async function exerciseBoundariesBeforeRestart(
       "MARATHON_V010_PRIVACY_REVISION_INVALID");
 
     const reports = new PostgresPrivateReportObjectRepository(context.client);
-    const reportInput = Object.freeze({
-      tenant_id: fixture.identity.tenant_id,
-      case_id: fixture.identity.case_id,
-      report_id: fixture.report.report_id,
-      report_revision: fixture.report.report_revision,
-      report_sha256: fixture.report.report_sha256,
-      object_version_id: fixture.report.object_version_id,
-      provider_locator: fixture.report.provider_locator,
-      byte_length: fixture.report.byte_length,
-      artifact_sha256: fixture.report.artifact_sha256,
-      created_at: fixture.timestamps.created_at,
-    });
+    const reportInput = reportBindInput(fixture);
     const report = await reports.bind(reportInput);
     const reportReplay = await reports.bind(reportInput);
     assert(report.object_version_id === reportReplay.object_version_id,
@@ -713,18 +821,19 @@ async function exerciseBoundariesBeforeRestart(
       case_id: fixture.identity.case_id,
       object_version_id: fixture.report.object_version_id,
       expected_grant_epoch: 0,
+      canonical_identity: fixture.report.staged_identity,
     });
     await reports.approve({
       tenant_id: fixture.identity.tenant_id,
       case_id: fixture.identity.case_id,
       object_version_id: fixture.report.object_version_id,
       expected_grant_epoch: 0,
+      canonical_identity: fixture.report.staged_identity,
     });
-    const denied = await reports.approvedRead({
+    await expectCanonicalReportIdentityError(() => reports.approvedRead({
       ...reportReadInput(fixture),
       report_sha256: canonicalSha256({ suffix: fixture.suffix, kind: "wrong-report" }),
-    });
-    assert(denied === null, "MARATHON_V010_WRONG_REPORT_BINDING_VISIBLE");
+    }), "CANONICAL_REPORT_DIGEST_MISMATCH");
     const downloaded = await new DurableApprovedReportObjectReader(reports, provider.provider)
       .download(reportReadInput(fixture));
     assertBytes(downloaded.bytes, fixture.report_bytes, "MARATHON_V010_REPORT_BYTES_MISMATCH");
@@ -917,6 +1026,7 @@ async function exerciseFailClosedRevocation(
       expected_grant_epoch: 1,
       revocation_receipt_sha256: fixture.privacy_revision_3.grant_revocation_receipt_sha256,
       revoked_at: fixture.timestamps.revoked_at,
+      canonical_identity: fixture.report.approved_identity,
     });
     await new PostgresIdentitySessionRepository(context.client).revoke({
       tenant_id: fixture.identity.tenant_id,
@@ -1174,6 +1284,19 @@ async function expectDurableBoundaryError(
   throw new Error(`MARATHON_V010_EXPECTED_BOUNDARY_ERROR_MISSING:${code}`);
 }
 
+async function expectCanonicalReportIdentityError(
+  operation: () => Promise<unknown>,
+  code: CanonicalReportIdentityError["code"],
+): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    if (error instanceof CanonicalReportIdentityError && error.code === code) return;
+    throw error;
+  }
+  throw new Error(`MARATHON_V010_EXPECTED_REPORT_IDENTITY_ERROR_MISSING:${code}`);
+}
+
 function immutableExactSource(bytes: Uint8Array, identityToken: string): ExactByteReopenSource {
   return Object.freeze({
     reopenExact: async () => Object.freeze({ bytes: Uint8Array.from(bytes), identity_token: identityToken }),
@@ -1220,6 +1343,22 @@ function createSyntheticReadOnlyProvider(locator: string, bytes: Uint8Array): Re
   return Object.freeze({ provider, readCount: () => reads });
 }
 
+function reportBindInput(fixture: MarathonV010DeterministicFixture) {
+  return Object.freeze({
+    tenant_id: fixture.identity.tenant_id,
+    case_id: fixture.identity.case_id,
+    report_id: fixture.report.report_id,
+    report_revision: fixture.report.report_revision,
+    report_sha256: fixture.report.report_sha256,
+    object_version_id: fixture.report.object_version_id,
+    provider_locator: fixture.report.provider_locator,
+    byte_length: fixture.report.byte_length,
+    artifact_sha256: fixture.report.artifact_sha256,
+    created_at: fixture.timestamps.created_at,
+    canonical_identity: fixture.report.staged_identity,
+  });
+}
+
 function reportReadInput(fixture: MarathonV010DeterministicFixture) {
   return Object.freeze({
     tenant_id: fixture.identity.tenant_id,
@@ -1228,6 +1367,7 @@ function reportReadInput(fixture: MarathonV010DeterministicFixture) {
     report_revision: fixture.report.report_revision,
     report_sha256: fixture.report.report_sha256,
     artifact_sha256: fixture.report.artifact_sha256,
+    canonical_identity: fixture.report.approved_identity,
   });
 }
 
@@ -1289,6 +1429,7 @@ function assertCheckpointMatchesFixture(
     && checkpoint.report.report_id === fixture.report.report_id
     && checkpoint.report.report_sha256 === fixture.report.report_sha256
     && checkpoint.report.artifact_sha256 === fixture.report.artifact_sha256
+    && checkpoint.report.canonical_identity.identity_sha256 === fixture.report.approved_identity.identity_sha256
     && checkpoint.report.bytes_base64 === Buffer.from(fixture.report_bytes).toString("base64")
     && checkpoint.before_restart_rows_sha256 === canonicalSha256(checkpoint.before_restart_rows),
   "MARATHON_V010_CHECKPOINT_FIXTURE_MISMATCH");

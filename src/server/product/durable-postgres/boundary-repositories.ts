@@ -6,6 +6,18 @@ import type { PostgresClient, PostgresQueryResult } from "../../platform/persist
 import type { PostgresConnectionFactory } from "../../platform/persistence/postgres/runtime/transaction-manager.ts";
 import type { PrivateBlobProvider } from "../../platform/storage/private-storage-provider.ts";
 import {
+  CANONICAL_REPORT_IDENTITY_SCHEMA_VERSION,
+  CanonicalReportIdentityError,
+  assertCanonicalReportIdentity,
+  assertCanonicalReportIdentityMatches,
+  canonicalReportDependencySha256,
+  canonicalReportModelSha256,
+  canonicalReportStorageObjectId,
+  canonicalReportStorageObjectVersionId,
+  createCanonicalReportIdentity,
+  type CanonicalReportIdentity,
+} from "./report-identity.ts";
+import {
   PRIVACY_REQUEST_KINDS,
   PRIVACY_REQUEST_STATES,
   type ApprovedPrivateReportObject,
@@ -279,8 +291,10 @@ export class PostgresPrivateReportObjectRepository {
     byte_length: number;
     artifact_sha256: string;
     created_at: string;
+    canonical_identity: CanonicalReportIdentity;
   }>): Promise<PrivateReportObjectRecord> {
     assertReportBinding(input);
+    await this.#requireCanonicalIdentity(input.canonical_identity);
     const result = await safeQuery(this.#client, durableBoundaryStatements.reportBind([
       input.tenant_id, input.case_id, input.report_id, input.report_revision, input.report_sha256,
       input.object_version_id, input.provider_locator, input.byte_length, input.artifact_sha256, input.created_at,
@@ -295,11 +309,27 @@ export class PostgresPrivateReportObjectRepository {
     return record;
   }
 
-  async approve(input: Readonly<{ tenant_id: string; case_id: string; object_version_id: string; expected_grant_epoch: number }>): Promise<void> {
+  async approve(input: Readonly<{
+    tenant_id: string;
+    case_id: string;
+    object_version_id: string;
+    expected_grant_epoch: number;
+    canonical_identity: CanonicalReportIdentity;
+  }>): Promise<void> {
     assertOpaque(input.tenant_id);
     assertOpaque(input.case_id);
     assertOpaque(input.object_version_id);
     assertCounter(input.expected_grant_epoch);
+    assertCanonicalReportIdentity(input.canonical_identity);
+    if (input.canonical_identity.tenant_id !== input.tenant_id
+      || input.canonical_identity.case_id !== input.case_id
+      || input.canonical_identity.storage_object_version_id !== input.object_version_id) {
+      throw new CanonicalReportIdentityError("CANONICAL_REPORT_STORAGE_MISMATCH");
+    }
+    if (input.canonical_identity.download_grant_revision !== input.expected_grant_epoch) {
+      throw new CanonicalReportIdentityError("CANONICAL_REPORT_GRANT_MISMATCH");
+    }
+    await this.#requireCanonicalIdentity(input.canonical_identity);
     await requireAccepted(this.#client, durableBoundaryStatements.reportApprove([
       input.tenant_id, input.case_id, input.object_version_id, input.expected_grant_epoch,
     ]));
@@ -312,6 +342,7 @@ export class PostgresPrivateReportObjectRepository {
     report_revision: number;
     report_sha256: string;
     artifact_sha256: string;
+    canonical_identity: CanonicalReportIdentity;
   }>): Promise<ApprovedPrivateReportObject | null> {
     assertOpaque(input.tenant_id);
     assertOpaque(input.case_id);
@@ -319,12 +350,25 @@ export class PostgresPrivateReportObjectRepository {
     assertPositiveRevision(input.report_revision);
     assertHash(input.report_sha256);
     assertHash(input.artifact_sha256);
+    assertReportReadIdentity(input);
+    try {
+      await this.#requireCanonicalIdentity(input.canonical_identity);
+    } catch (error) {
+      if (error instanceof CanonicalReportIdentityError
+        && error.code === "CANONICAL_REPORT_IDENTITY_STALE") return null;
+      throw error;
+    }
     const result = await safeQuery(this.#client, durableBoundaryStatements.reportApprovedRead([
       input.tenant_id, input.case_id, input.report_id, input.report_revision,
       input.report_sha256, input.artifact_sha256,
     ]));
     const object = optionalOne(result, approvedPrivateReportObject);
-    if (object && object.artifact_sha256 !== input.artifact_sha256) mismatch();
+    if (object && (object.artifact_sha256 !== input.artifact_sha256
+      || object.object_version_id !== input.canonical_identity.storage_object_version_id
+      || object.provider_locator !== `objects/${input.artifact_sha256.slice(0, 2)}/${object.object_version_id}`)) mismatch();
+    if (object && object.grant_epoch !== input.canonical_identity.download_grant_revision) {
+      throw new CanonicalReportIdentityError("CANONICAL_REPORT_GRANT_MISMATCH");
+    }
     return object;
   }
 
@@ -335,6 +379,7 @@ export class PostgresPrivateReportObjectRepository {
     expected_grant_epoch: number;
     revocation_receipt_sha256: string;
     revoked_at: string;
+    canonical_identity: CanonicalReportIdentity;
   }>): Promise<void> {
     assertOpaque(input.tenant_id);
     assertOpaque(input.case_id);
@@ -342,10 +387,35 @@ export class PostgresPrivateReportObjectRepository {
     assertCounter(input.expected_grant_epoch);
     assertHash(input.revocation_receipt_sha256);
     assertTimestamp(input.revoked_at);
+    assertCanonicalReportIdentity(input.canonical_identity);
+    if (input.canonical_identity.tenant_id !== input.tenant_id
+      || input.canonical_identity.case_id !== input.case_id
+      || input.canonical_identity.storage_object_version_id !== input.object_version_id) {
+      throw new CanonicalReportIdentityError("CANONICAL_REPORT_STORAGE_MISMATCH");
+    }
+    if (input.canonical_identity.download_grant_revision !== input.expected_grant_epoch) {
+      throw new CanonicalReportIdentityError("CANONICAL_REPORT_GRANT_MISMATCH");
+    }
+    await this.#requireCanonicalIdentity(input.canonical_identity);
     await requireAccepted(this.#client, durableBoundaryStatements.reportRevoke([
       input.tenant_id, input.case_id, input.object_version_id, input.expected_grant_epoch,
       input.revocation_receipt_sha256, input.revoked_at,
     ]));
+  }
+
+  async #requireCanonicalIdentity(expected: CanonicalReportIdentity): Promise<void> {
+    assertCanonicalReportIdentity(expected);
+    const result = await safeQuery(this.#client, durableBoundaryStatements.reportIdentity([
+      expected.tenant_id,
+      expected.case_id,
+      expected.report_id,
+      expected.report_revision,
+    ]));
+    if (result.row_count === 0 && result.rows.length === 0) {
+      throw new CanonicalReportIdentityError("CANONICAL_REPORT_IDENTITY_STALE");
+    }
+    const actual = canonicalReportIdentity(exactlyOne(result), expected.download_grant_revision);
+    assertCanonicalReportIdentityMatches(expected, actual);
   }
 }
 
@@ -529,7 +599,7 @@ function assertIdentityRegistration(input: IdentitySessionRegistration): void {
   if (Date.parse(input.expires_at) <= Date.parse(input.valid_after)) invalid();
 }
 
-function assertReportBinding(input: Readonly<{ tenant_id: string; case_id: string; report_id: string; report_revision: number; report_sha256: string; object_version_id: string; provider_locator: string; byte_length: number; artifact_sha256: string; created_at: string }>): void {
+function assertReportBinding(input: Readonly<{ tenant_id: string; case_id: string; report_id: string; report_revision: number; report_sha256: string; object_version_id: string; provider_locator: string; byte_length: number; artifact_sha256: string; created_at: string; canonical_identity: CanonicalReportIdentity }>): void {
   assertOpaque(input.tenant_id);
   assertOpaque(input.case_id);
   assertOpaque(input.report_id);
@@ -540,6 +610,91 @@ function assertReportBinding(input: Readonly<{ tenant_id: string; case_id: strin
   if (!Number.isSafeInteger(input.byte_length) || input.byte_length < 1 || input.byte_length > 52_428_800) invalid();
   assertHash(input.artifact_sha256);
   assertTimestamp(input.created_at);
+  assertCanonicalReportIdentity(input.canonical_identity);
+  if (input.canonical_identity.tenant_id !== input.tenant_id
+    || input.canonical_identity.case_id !== input.case_id
+    || input.canonical_identity.report_id !== input.report_id
+    || input.canonical_identity.report_revision !== input.report_revision
+    || input.canonical_identity.report_sha256 !== input.report_sha256
+    || input.canonical_identity.pdf_sha256 !== input.artifact_sha256) {
+    throw new CanonicalReportIdentityError("CANONICAL_REPORT_DIGEST_MISMATCH");
+  }
+  if (input.canonical_identity.storage_object_version_id !== input.object_version_id
+    || input.provider_locator !== `objects/${input.artifact_sha256.slice(0, 2)}/${input.object_version_id}`) {
+    throw new CanonicalReportIdentityError("CANONICAL_REPORT_STORAGE_MISMATCH");
+  }
+  if (input.canonical_identity.download_grant_revision !== 0) {
+    throw new CanonicalReportIdentityError("CANONICAL_REPORT_GRANT_MISMATCH");
+  }
+}
+
+function assertReportReadIdentity(input: Readonly<{
+  tenant_id: string;
+  case_id: string;
+  report_id: string;
+  report_revision: number;
+  report_sha256: string;
+  artifact_sha256: string;
+  canonical_identity: CanonicalReportIdentity;
+}>): void {
+  assertCanonicalReportIdentity(input.canonical_identity);
+  if (input.canonical_identity.tenant_id !== input.tenant_id
+    || input.canonical_identity.case_id !== input.case_id
+    || input.canonical_identity.report_id !== input.report_id
+    || input.canonical_identity.report_revision !== input.report_revision
+    || input.canonical_identity.report_sha256 !== input.report_sha256
+    || input.canonical_identity.pdf_sha256 !== input.artifact_sha256) {
+    throw new CanonicalReportIdentityError("CANONICAL_REPORT_DIGEST_MISMATCH");
+  }
+  if (input.canonical_identity.download_grant_revision < 1) {
+    throw new CanonicalReportIdentityError("CANONICAL_REPORT_GRANT_MISMATCH");
+  }
+}
+
+function canonicalReportIdentity(
+  row: Readonly<Record<string, unknown>>,
+  downloadGrantRevision: number,
+): CanonicalReportIdentity {
+  exactKeys(row, [
+    "tenant_id", "canonical_case_id", "case_revision", "canonical_analysis_run_id",
+    "analysis_run_revision", "rule_inputs", "dependencies", "report_id", "report_revision",
+    "analysis_result_sha256", "json_sha256", "html_sha256", "manifest_sha256",
+    "report_sha256", "pdf_sha256", "owner_binding_revision", "owner_binding_sha256",
+    "approval_task_id", "approval_revision", "approval_decision_sha256",
+  ]);
+  const core = Object.freeze({
+    tenant_id: opaque(row, "tenant_id"),
+    case_id: opaque(row, "canonical_case_id"),
+    case_revision: safeInteger(row, "case_revision", 1),
+    analysis_run_id: opaque(row, "canonical_analysis_run_id"),
+    analysis_run_revision: safeInteger(row, "analysis_run_revision", 1),
+    rule_input_dependency_sha256: canonicalReportDependencySha256({
+      rule_inputs: arrayValue(row, "rule_inputs"),
+      dependencies: recordValue(row, "dependencies"),
+    }),
+    report_model_sha256: canonicalReportModelSha256({
+      analysis_result_sha256: hash(row, "analysis_result_sha256"),
+      json_sha256: hash(row, "json_sha256"),
+      html_sha256: hash(row, "html_sha256"),
+      manifest_sha256: hash(row, "manifest_sha256"),
+    }),
+    report_id: opaque(row, "report_id"),
+    report_revision: safeInteger(row, "report_revision", 1),
+    report_sha256: hash(row, "report_sha256"),
+    pdf_sha256: hash(row, "pdf_sha256"),
+  });
+  return createCanonicalReportIdentity(Object.freeze({
+    schema_version: CANONICAL_REPORT_IDENTITY_SCHEMA_VERSION,
+    ...core,
+    owner_binding_revision: safeInteger(row, "owner_binding_revision", 1),
+    owner_binding_sha256: hash(row, "owner_binding_sha256"),
+    storage_object_id: canonicalReportStorageObjectId(core),
+    storage_object_version_id: canonicalReportStorageObjectVersionId(core),
+    approval_task_id: opaque(row, "approval_task_id"),
+    approval_revision: safeInteger(row, "approval_revision", 1),
+    approval_decision_sha256: hash(row, "approval_decision_sha256"),
+    download_grant_revision: downloadGrantRevision,
+  }));
 }
 
 function exactKeys(row: Readonly<Record<string, unknown>>, expected: readonly string[]): void {
@@ -578,6 +733,18 @@ function nullableHash(row: Readonly<Record<string, unknown>>, key: string): stri
   if (value === null) return null;
   if (typeof value !== "string" || !SHA256.test(value)) malformed();
   return value;
+}
+
+function arrayValue(row: Readonly<Record<string, unknown>>, key: string): readonly unknown[] {
+  const value = row[key];
+  if (!Array.isArray(value)) malformed();
+  return value;
+}
+
+function recordValue(row: Readonly<Record<string, unknown>>, key: string): Readonly<Record<string, unknown>> {
+  const value = row[key];
+  if (typeof value !== "object" || value === null || Array.isArray(value)) malformed();
+  return value as Readonly<Record<string, unknown>>;
 }
 
 function safeInteger(row: Readonly<Record<string, unknown>>, key: string, minimum: number, maximum = Number.MAX_SAFE_INTEGER): number {

@@ -30,6 +30,24 @@ describe("V0.10 real PostgreSQL delta-matrix contract", () => {
     expect(Buffer.from(first.report_bytes)).toEqual(Buffer.from(capability.report_artifacts.pdf));
     expect(first.report.artifact_sha256).toBe(capability.report_artifacts.pdf_sha256);
     expect(first.report.artifact_sha256).toBe(sha256(first.report_bytes));
+    expect(first.report.staged_identity).toMatchObject({
+      tenant_id: state.tenant_id,
+      case_id: state.case_id,
+      case_revision: state.case_revision,
+      analysis_run_id: state.analysis_run_id,
+      analysis_run_revision: state.case_revision,
+      report_id: state.report_id,
+      report_revision: state.case_revision,
+      report_sha256: state.report_sha256,
+      pdf_sha256: capability.report_artifacts.pdf_sha256,
+      approval_task_id: state.review_task_id,
+      approval_revision: 1,
+      download_grant_revision: 0,
+    });
+    expect(first.report.approved_identity.download_grant_revision).toBe(1);
+    expect(first.report.approved_identity.identity_sha256).not.toBe(first.report.staged_identity.identity_sha256);
+    expect(first.report.storage_object_id).toBe(first.report.staged_identity.storage_object_id);
+    expect(first.report.object_version_id).toBe(first.report.staged_identity.storage_object_version_id);
     expect(first.privacy_revision_1.state).toBe("requested");
     expect(first.privacy_revision_2.state).toBe("acknowledged");
     expect(first.privacy_revision_3.state).toBe("completed_by_authorized_operations");
