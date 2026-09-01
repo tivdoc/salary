@@ -3,6 +3,7 @@ export * from "./confidence-policy";
 export * from "./contracts";
 export * from "./fixture-extractor";
 export * from "./minimize";
+export * from "./multi-document-intake";
 export * from "./normalization";
 export * from "./payslip";
 export * from "./pipeline";
