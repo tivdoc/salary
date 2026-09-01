@@ -47,6 +47,7 @@ import {
 import { runRealMigrationMatrix } from "./matrix/migrations.mts";
 import { runRealPostgresRlsMatrix } from "./matrix/rls.mts";
 import { runRuntimeSecurityV0102Matrix } from "./matrix/runtime-security-v0102.mts";
+import { runRuntimeProductRepairV0102Matrix } from "./matrix/runtime-product-repair-v0102.mts";
 import {
   assertTrustedGitRepository,
   trustedGitText,
@@ -143,7 +144,7 @@ try {
   const roles = await configureDynamicRoleSessions({ admin_connection_url: adminUrl, secrets: roleSecrets });
   const clean = await applyCleanMigrationChain({ target, paths, binaries, chain });
   const runtimeRoleSecrets = generateRuntimeRoleSecrets();
-  const runtimeRoles = await configureRuntimeRoleSessions({
+  let runtimeRoles = await configureRuntimeRoleSessions({
     admin_connection_url: adminUrl,
     secrets: runtimeRoleSecrets,
   });
@@ -222,8 +223,18 @@ try {
     chain,
     build_identity_sha: git.head,
     run_id: runId,
-    service_role_password: roleSecrets.service_role.reveal(),
   }) : null;
+
+  // Migration rehearsals intentionally reapply the forward chain in sibling
+  // databases. Migration 005 leaves the four runtime roles NOLOGIN by design,
+  // and roles are cluster-global, so restore the ephemeral session credentials
+  // only after every rehearsal has completed.
+  if (migrationMatrix) {
+    runtimeRoles = await configureRuntimeRoleSessions({
+      admin_connection_url: adminUrl,
+      secrets: runtimeRoleSecrets,
+    });
+  }
 
   if (!fullMatrix) {
     const receipt = Object.freeze({
@@ -273,6 +284,21 @@ try {
       && runtimeSecurity.governance_exposed_functions === 21
       && runtimeSecurity.unsafe_or_unexplained_functions === 0,
     "DYNAMIC_RUNTIME_SECURITY_MATRIX_FAILED");
+    const runtimeProductRepair = await runRuntimeProductRepairV0102Matrix({
+      admin_connection_url: adminUrl,
+      runtime_role_connection_urls: {
+        operations: runtimeUrls.tivdoc_operations_runtime,
+        web: runtimeUrls.tivdoc_web_runtime,
+      },
+      build_identity_sha: git.head,
+      fixture_suffix: `r${runId}`,
+    });
+    assert(runtimeProductRepair.status === "PASS"
+      && runtimeProductRepair.operations_resolver_execution === "PASS"
+      && runtimeProductRepair.exact_canonical_report_identity_sql === "PASS"
+      && runtimeProductRepair.epochs_reset === false
+      && runtimeProductRepair.product_reachable_memory_fallbacks === 0,
+    "DYNAMIC_RUNTIME_PRODUCT_REPAIR_MATRIX_FAILED");
     const capabilities = await runCanonicalCapabilityMatrix({
       connection_url: urls.service_role,
       build_identity_sha: git.head,
@@ -405,6 +431,7 @@ try {
     const connectionComponents = Object.freeze({
       capability_matrix: capabilities.driver_metrics.connection_attempts,
       runtime_security: runtimeSecurity.connection_attempts,
+      runtime_product_repair: runtimeProductRepair.connection_attempts,
       tenant_b_seed: tenantB.connection_attempts,
       rls: rls.connection_attempts,
       atomicity: atomicity.connection_attempts,
@@ -466,6 +493,7 @@ try {
         backup_restore: backupRestore.status,
         marathon_v010: "PASS" as const,
         runtime_security: runtimeSecurity.status,
+        runtime_product_repair: runtimeProductRepair.status,
         marathon_v010_receipt_path: MARATHON_V010_DEVELOPMENT_RECEIPT_PATH,
         marathon_v010_receipt_sha256: marathonV010ReceiptSha256,
         marathon_v010_checkpoint_sha256: marathonV010.before_restart.checkpoint.checkpoint_sha256,
@@ -520,6 +548,7 @@ try {
           REAL_POSTGRESQL_FAILURE_ATOMICITY: "PASS",
           REAL_POSTGRESQL_APPROVAL_RACES: "PASS",
           REAL_POSTGRESQL_BACKUP_RESTORE: "PASS",
+          REAL_POSTGRESQL_RUNTIME_PRODUCT_REPAIR: "PASS",
           PRODUCT_REACHABLE_MEMORY_FALLBACKS: 0,
         }),
         final_status_constants: Object.freeze([
@@ -559,11 +588,13 @@ try {
           "migration-chain.json": safeMigrationChain(chain),
           "migration-matrix.json": migrationMatrix,
           "migration-portability-amendment.json": migrationPortabilityAmendment,
+          "marathon-v010-matrix.json": marathonV010,
           "preflight.json": postflight,
           "regressions.json": regressions,
           "restart-replay.json": restart,
           "rls-matrix.json": rls,
           "runtime-security-matrix-v0.10.2.json": runtimeSecurity,
+          "runtime-product-repair-matrix-v0.10.2.json": runtimeProductRepair,
           "role-sessions.json": roles,
           "runtime-role-sessions.json": runtimeRoles,
           "shutdown.json": shutdown,

@@ -26,8 +26,10 @@ const PAYLOADS = Object.freeze([
   "acceptance-receipt.json", "atomicity-matrix.json", "backup-restore.json",
   "capability-matrix.json", "clean-migration.json", "concurrency-matrix.json",
   "connection-breakdown.json", "environment.json", "git.json", "migration-chain.json",
-  "migration-matrix.json", "migration-portability-amendment.json", "preflight.json", "regressions.json", "restart-replay.json",
-  "rls-matrix.json", "role-sessions.json", "shutdown.json", "supabase-compatibility.json",
+  "marathon-v010-matrix.json", "migration-matrix.json", "migration-portability-amendment.json",
+  "preflight.json", "regressions.json", "restart-replay.json", "rls-matrix.json", "role-sessions.json",
+  "runtime-product-repair-matrix-v0.10.2.json", "runtime-role-sessions.json",
+  "runtime-security-matrix-v0.10.2.json", "shutdown.json", "supabase-compatibility.json",
 ] as const);
 const MIGRATIONS = Object.freeze([
   ["202608220001_salary_mvp.sql", "bd8e8a66ccf583a962c5fe28cb23335c16cda6616ca6ef12d258f2e8aed78141"],
@@ -73,8 +75,8 @@ const REGRESSIONS = Object.freeze([
   "nextjs_production_build", "canonical_v09_acceptance",
 ] as const);
 const CONNECTION_COMPONENTS = Object.freeze([
-  "capability_matrix", "tenant_b_seed", "rls", "atomicity", "concurrency",
-  "restart_replay", "backup_restore",
+  "capability_matrix", "runtime_security", "runtime_product_repair", "tenant_b_seed",
+  "rls", "atomicity", "concurrency", "marathon_v010", "restart_replay", "backup_restore",
 ] as const);
 const POSTGRES_BINARY_SHA256 = Object.freeze({
   postgres: "3204f6811b3e1f8bb89ad94ca7dd7bcb38c7f665c50d532bce463650c4e7d2c5",
@@ -251,6 +253,7 @@ const concurrency = await payload("concurrency-matrix.json");
 const connections = await payload("connection-breakdown.json");
 const environment = await payload("environment.json");
 const git = await payload("git.json");
+const marathon = await payload("marathon-v010-matrix.json");
 const chain = await payload("migration-chain.json");
 const migration = await payload("migration-matrix.json");
 const amendment = await payload("migration-portability-amendment.json");
@@ -259,6 +262,9 @@ const regressions = await payload("regressions.json");
 const restart = await payload("restart-replay.json");
 const rls = await payload("rls-matrix.json");
 const roles = await payload("role-sessions.json");
+const runtimeProductRepair = await payload("runtime-product-repair-matrix-v0.10.2.json");
+const runtimeRoles = await payload("runtime-role-sessions.json");
+const runtimeSecurity = await payload("runtime-security-matrix-v0.10.2.json");
 const shutdown = await payload("shutdown.json");
 const supabase = await payload("supabase-compatibility.json");
 
@@ -272,6 +278,10 @@ verifyMigration(migration, chain);
 verifyCapabilities(capability, environment);
 verifyRestart(restart);
 verifyRoles(roles);
+verifyRuntimeRoles(runtimeRoles);
+verifyRuntimeSecurity(runtimeSecurity);
+verifyRuntimeProductRepair(runtimeProductRepair, environment);
+verifyMarathon(marathon);
 verifyRls(rls);
 verifyAtomicity(atomicity);
 verifyConcurrency(concurrency);
@@ -281,10 +291,21 @@ verifyShutdown(shutdown);
 verifySupabase(supabase);
 const observedConnections = verifyConnections(connections, {
   capability_matrix: count(object(capability.driver_metrics, "DYNAMIC_DRIVER_METRICS_INVALID").connection_attempts, "DYNAMIC_CAPABILITY_CONNECTIONS_INVALID"),
+  runtime_security: count(runtimeSecurity.connection_attempts, "DYNAMIC_RUNTIME_SECURITY_CONNECTIONS_INVALID"),
+  runtime_product_repair: count(runtimeProductRepair.connection_attempts, "DYNAMIC_RUNTIME_PRODUCT_CONNECTIONS_INVALID"),
   tenant_b_seed: count(rls.tenant_b_seed_connection_attempts, "DYNAMIC_TENANT_B_CONNECTIONS_INVALID"),
   rls: count(rls.connection_attempts, "DYNAMIC_RLS_CONNECTIONS_INVALID"),
   atomicity: count(atomicity.connection_attempts, "DYNAMIC_ATOMICITY_CONNECTIONS_INVALID"),
   concurrency: count(concurrency.connection_attempts, "DYNAMIC_CONCURRENCY_CONNECTIONS_INVALID"),
+  marathon_v010: count(
+    object(object(marathon.before_restart, "DYNAMIC_MARATHON_BEFORE_INVALID").connection_attempts,
+      "DYNAMIC_MARATHON_BEFORE_CONNECTIONS_INVALID").observed_total,
+    "DYNAMIC_MARATHON_BEFORE_CONNECTIONS_INVALID",
+  ) + count(
+    object(object(marathon.after_restart, "DYNAMIC_MARATHON_AFTER_INVALID").connection_attempts,
+      "DYNAMIC_MARATHON_AFTER_CONNECTIONS_INVALID").observed_total,
+    "DYNAMIC_MARATHON_AFTER_CONNECTIONS_INVALID",
+  ),
   restart_replay: count(restart.connection_attempts, "DYNAMIC_RESTART_CONNECTIONS_INVALID"),
   backup_restore: count(backup.connection_attempts, "DYNAMIC_BACKUP_CONNECTIONS_INVALID"),
 });
@@ -580,6 +601,89 @@ function verifyRoles(value: Obj): void {
   assert(value.status === "PASS", "DYNAMIC_ROLE_SESSIONS_INVALID");
 }
 
+function verifyRuntimeRoles(value: Obj): void {
+  assert(value.schema_version === "tivdoc-least-privilege-runtime-role-sessions-v0.10.2"
+    && value.scram_passwords_configured === 4 && value.credentials_emitted === 0,
+  "DYNAMIC_RUNTIME_ROLE_SESSIONS_INVALID");
+  const rows = objects(value.roles, "DYNAMIC_RUNTIME_ROLE_SESSIONS_INVALID");
+  assert(JSON.stringify(rows.map((row) => row.role)) === JSON.stringify([
+    "tivdoc_identity_runtime", "tivdoc_operations_runtime", "tivdoc_web_runtime", "tivdoc_worker_runtime",
+  ]), "DYNAMIC_RUNTIME_ROLE_SET_INVALID");
+  rows.forEach((row) => assert(row.login === true && row.superuser === false
+    && row.bypass_rls === false && row.owns_governance_objects === false,
+  "DYNAMIC_RUNTIME_ROLE_ATTRIBUTES_INVALID"));
+  const owner = object(value.owner, "DYNAMIC_RUNTIME_OWNER_INVALID");
+  assert(owner.role === "tivdoc_governance_owner" && owner.login === false
+    && owner.superuser === false && owner.bypass_rls === false,
+  "DYNAMIC_RUNTIME_OWNER_INVALID");
+  assert(value.status === "PASS", "DYNAMIC_RUNTIME_ROLE_SESSIONS_INVALID");
+}
+
+function verifyRuntimeSecurity(value: Obj): void {
+  assert(value.schema_version === "tivdoc-governance-runtime-security-matrix-v0.10.2"
+    && value.governance_security_definer_functions === 32
+    && value.governance_exposed_functions === 21 && value.helper_functions === 11
+    && value.unsafe_or_unexplained_functions === 0
+    && value.cross_tenant_read_successes === 0 && value.cross_tenant_write_successes === 0
+    && value.cross_tenant_rpc_successes === 0 && value.revoked_session_acceptances === 0
+    && value.caller_controlled_context_successes === 0 && value.pool_context_leaks === 0
+    && value.owner_login === false && value.owner_bypass_rls === false
+    && value.owner_context_successes === 0 && value.identity_session_reader_rows === 1
+    && value.identity_direct_table_reads === 0 && value.identity_context_install_successes === 0
+    && value.observed_role_connections === 8 && value.administrative_connections === 1
+    && value.connection_attempts === 9,
+  "DYNAMIC_RUNTIME_SECURITY_INVALID");
+  const acl = objects(value.acl_rows, "DYNAMIC_RUNTIME_SECURITY_ACL_INVALID");
+  assert(acl.length === 168 && acl.every((row) => row.status === "PASS"
+    && row.execute === row.expected), "DYNAMIC_RUNTIME_SECURITY_ACL_INVALID");
+  safePass(value, "DYNAMIC_RUNTIME_SECURITY_INVALID");
+}
+
+function verifyRuntimeProductRepair(value: Obj, environment: Obj): void {
+  assert(value.schema_version === "tivdoc-runtime-product-repair-v0.10.2-matrix-v1"
+    && value.proof_class === "REAL_NODE_POSTGRES_PARAMETERIZED_SQL"
+    && value.target_id === object(environment.target, "DYNAMIC_TARGET_INVALID").target_id
+    && value.migration_009_present === true
+    && value.operations_resolver_execution === "PASS"
+    && value.exact_canonical_report_identity_sql === "PASS"
+    && value.active_owner_report_rows === 1 && value.cross_owner_report_rows === 0
+    && value.cross_tenant_report_rows === 0 && value.ordinary_lifecycle_revision === 2
+    && value.dependency_revision_before_synchronization === 1 && value.invalidation_revision === 3,
+  "DYNAMIC_RUNTIME_PRODUCT_REPAIR_INVALID");
+  const before = object(value.epochs_before, "DYNAMIC_RUNTIME_PRODUCT_EPOCHS_INVALID");
+  const after = object(value.epochs_after, "DYNAMIC_RUNTIME_PRODUCT_EPOCHS_INVALID");
+  assert(before.dependency === 5 && before.cache === 7 && before.download_grant === 11
+    && after.dependency === 6 && after.cache === 8 && after.download_grant === 12
+    && value.epochs_reset === false, "DYNAMIC_RUNTIME_PRODUCT_EPOCHS_INVALID");
+  assert(value.approval_versions_preserved === 2 && value.report_versions_preserved === 1
+    && value.grants_revoked === 1 && value.jobs_cancelled === 1
+    && value.outbox_events_superseded === 1 && value.durable_invalidation_rows === 1
+    && value.durable_audit_rows === 1 && value.durable_outbox_rows === 1
+    && value.idempotent_replay === true && value.product_reachable_memory_fallbacks === 0
+    && value.real_legal_content_activated === 0 && value.real_customer_data_reads === 0
+    && value.production_or_shadow_modes === 0 && value.cleanup_completed === true,
+  "DYNAMIC_RUNTIME_PRODUCT_DURABILITY_INVALID");
+  count(value.connection_attempts, "DYNAMIC_RUNTIME_PRODUCT_CONNECTIONS_INVALID");
+  safePass(value, "DYNAMIC_RUNTIME_PRODUCT_REPAIR_INVALID");
+}
+
+function verifyMarathon(value: Obj): void {
+  assert(value.schema_version === "tivdoc-marathon-v010-postgresql-matrix-v1"
+    && value.proof_class === "REAL_NODE_POSTGRES_PARAMETERIZED_SQL"
+    && value.tenant_ordinal === 3 && value.genuine_server_stop_start === true
+    && value.same_cluster_restarted === true && value.pre_restart_pools_closed === true
+    && value.fresh_post_restart_pools === true,
+  "DYNAMIC_MARATHON_INVALID");
+  const truth = object(value.truth_counters, "DYNAMIC_MARATHON_TRUTH_INVALID");
+  assert(truth.REAL_LEGAL_TOPICS_READY === "0/7" && truth.REAL_SOURCES_ACTIVE === 0
+    && truth.REAL_PARAMETERS_ACTIVE === 0 && truth.REAL_RULES_ACTIVE === 0
+    && truth.REAL_CUSTOMER_DATA_READS === 0 && truth.PRODUCT_REACHABLE_MEMORY_FALLBACKS === 0,
+  "DYNAMIC_MARATHON_TRUTH_INVALID");
+  assert(objects(value.final_row_counts, "DYNAMIC_MARATHON_ROWS_INVALID").length === 8,
+    "DYNAMIC_MARATHON_ROWS_INVALID");
+  assert(value.status === "PASS", "DYNAMIC_MARATHON_INVALID");
+}
+
 function verifyRls(value: Obj): void {
   assert(value.schema_version === "tivdoc-real-postgresql-rls-matrix-v0.9.1"
     && value.proof_class === "REAL_POSTGRESQL_DYNAMIC_PROOF", "DYNAMIC_RLS_INVALID");
@@ -791,6 +895,7 @@ function verifyAcceptance(value: Obj, connectionTotal: number): void {
     && truth.REAL_POSTGRESQL_COMPOSITION_ROOT === "PASS" && truth.REAL_POSTGRESQL_RESTART_REPLAY === "PASS"
     && truth.REAL_POSTGRESQL_RLS_MATRIX === "PASS" && truth.REAL_POSTGRESQL_FAILURE_ATOMICITY === "PASS"
     && truth.REAL_POSTGRESQL_APPROVAL_RACES === "PASS" && truth.REAL_POSTGRESQL_BACKUP_RESTORE === "PASS"
+    && truth.REAL_POSTGRESQL_RUNTIME_PRODUCT_REPAIR === "PASS"
     && truth.PRODUCT_REACHABLE_MEMORY_FALLBACKS === 0, "DYNAMIC_TRUTH_COUNTERS_INVALID");
   assert(JSON.stringify(value.final_status_constants) === JSON.stringify([
     "DYNAMIC_POSTGRESQL_VERIFICATION_COMPLETE", "CASE_ANALYSIS_DURABILITY_DYNAMICALLY_PROVEN",
