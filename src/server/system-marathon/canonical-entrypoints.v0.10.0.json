@@ -1,6 +1,6 @@
 {
   "schema_version": "tivdoc-canonical-entrypoint-inventory-v0.10.0",
-  "generated_from_head": "a060e71c271bdc510bef9c8eb64699635dbdec3a",
+  "generated_from_head": "11f8a90c6e88b171fd639a05e60e2d6412de1cce",
   "authority": {
     "reachability_command": "npm run canonical:reachability:verify",
     "reachability_verifier": "scripts/product-integration/reachability/verify.mts",

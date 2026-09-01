@@ -1,6 +1,6 @@
 # Tivdoc V0.10 local-system closure
 
-This document is the W9.1/W9.3 architecture, restart/degraded-mode runbook and human/external action index for the repository at `a060e71c271bdc510bef9c8eb64699635dbdec3a`. It does not replace the frozen Marathon execution contract, inventory or ledger.
+This document is the W9.1/W9.3 architecture, restart/degraded-mode runbook and human/external action index. The canonical entrypoint inventory was reconciled after integration parent `11f8a90c6e88b171fd639a05e60e2d6412de1cce`; final Git identity is carried only by the byte-derived evidence receipt. This document does not replace the frozen Marathon execution contract, inventory or ledger.
 
 ## Canonical authority and inventory
 
@@ -34,7 +34,7 @@ Release-specific verification commands remain evidence entrypoints, not stable p
 ### Operator sequence after a local restart
 
 1. Confirm the expected Git HEAD and a clean tree; do not reuse evidence from another tree.
-2. Detect the persistence environment with `npm run platform:persistence:env:detect`. For the owned disposable local database, use `npm run verify:postgres:dynamic`; do not point it at a remote or production target.
+2. Detect the persistence environment with `npm run platform:persistence:env:detect`. For the owned disposable local database during Marathon closure, use `node scripts/canonical-persistence-v091/bootstrap.mjs --matrix-smoke`; do not invoke the historical full-evidence rebuild and never point the runner at a remote or production target. On a Windows Smart App Control host, the runner verifies the exact cached EnterpriseDB installer, Authenticode chain, extracted tree and required binary hashes, then uses Node PostgreSQL clients for SQL because unsigned client executables are fail-closed by the host policy.
 3. Run `npm run canonical:reachability:verify` and `npm run platform:persistence:wiring:verify`; treat either failure as a closed product boundary.
 4. Verify route/auth denial and synthetic journeys with `npm run product:routes:verify`, `npm run product:auth-boundary:verify`, `npm run product:e2e:synthetic` and `npm run product:e2e:negative`.
 5. Re-run controlled import, human trust, legal, ground-truth, Shadow, custody/privacy and evidence verifiers only against their permitted synthetic or already-authorized bytes. A blocked human/external gate must remain blocked.
