@@ -3,7 +3,7 @@ import "./server-boundary.ts";
 import type { VerifiedProductSession } from "../auth/hermetic-session.ts";
 import type { ProductSessionBoundary } from "../auth/runtime.ts";
 import { PortalError, type PrivacyRequestKind, type ReportAccessGrant } from "../customer-portal/contracts.ts";
-import type { CustomerPortalService, ReportDownload } from "../customer-portal/service.ts";
+import type { CustomerPortalApplicationPort, ReportDownload } from "../customer-portal/repository.ts";
 import { PRODUCT_HTTP_HEADERS, exactObjectKeys, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
 
 export type PortalHttpHandler = Readonly<{
@@ -12,7 +12,7 @@ export type PortalHttpHandler = Readonly<{
 
 export function createPortalHttpHandler(input: Readonly<{
   enabled: boolean;
-  service: CustomerPortalService | null;
+  service: CustomerPortalApplicationPort | null;
   sessions: Pick<ProductSessionBoundary, "verify">;
 }>): PortalHttpHandler {
   return Object.freeze({
@@ -26,7 +26,7 @@ export function createPortalHttpHandler(input: Readonly<{
       if (!session) return productNotFound();
       try {
         return request.method === "GET"
-          ? handleRead(input.service, session, segments)
+          ? await handleRead(input.service, session, segments)
           : await handleMutation(input.service, session, request, segments);
       } catch (error) {
         return portalProblem(error);
@@ -35,22 +35,22 @@ export function createPortalHttpHandler(input: Readonly<{
   });
 }
 
-function handleRead(service: CustomerPortalService, session: VerifiedProductSession, segments: readonly string[]): Response {
+async function handleRead(service: CustomerPortalApplicationPort, session: VerifiedProductSession, segments: readonly string[]): Promise<Response> {
   if (segments.length === 1 && segments[0] === "cases") {
-    const cases = session.actor.assigned_case_ids.map((caseId) => service.getCaseProjection(session.actor, caseId));
+    const cases = await Promise.all(session.actor.assigned_case_ids.map((caseId) => service.getCaseProjection(session.actor, caseId)));
     return productJson({ cases });
   }
   if (segments.length === 2 && segments[0] === "cases") {
-    return productJson({ case: service.getCaseProjection(session.actor, segments[1]) });
+    return productJson({ case: await service.getCaseProjection(session.actor, segments[1]) });
   }
   if (segments.length === 3 && segments[0] === "cases" && segments[2] === "reports") {
-    return productJson({ reports: service.listReports(session.actor, segments[1]) });
+    return productJson({ reports: await service.listReports(session.actor, segments[1]) });
   }
   return productNotFound();
 }
 
 async function handleMutation(
-  service: CustomerPortalService,
+  service: CustomerPortalApplicationPort,
   session: VerifiedProductSession,
   request: Request,
   segments: readonly string[],
@@ -59,10 +59,10 @@ async function handleMutation(
   if (!body) throw new PortalHttpError("INVALID_REQUEST");
   if (segments.length === 5 && segments[0] === "cases" && segments[2] === "clarifications" && segments[4] === "answers") {
     if (!exactObjectKeys(body, ["expected_revision", "question_version", "value", "explicit_confirmation", "consent_version", "terms_version", "idempotency_key"])) throw new PortalHttpError("INVALID_REQUEST");
-    assertCurrentRevision(service, session, segments[1], requiredRevision(body));
     if (body.explicit_confirmation !== true) throw new PortalHttpError("INVALID_REQUEST");
-    const result = service.answerClarification(session.actor, {
+    const result = await service.answerClarification(session.actor, {
       case_id: segments[1],
+      expected_revision: requiredRevision(body),
       task_id: segments[3],
       question_version: requiredPositiveInteger(body, "question_version"),
       value: body.value,
@@ -75,9 +75,9 @@ async function handleMutation(
   }
   if (segments.length === 3 && segments[0] === "cases" && segments[2] === "privacy") {
     if (!exactObjectKeys(body, ["expected_revision", "request_kind", "idempotency_key"])) throw new PortalHttpError("INVALID_REQUEST");
-    assertCurrentRevision(service, session, segments[1], requiredRevision(body));
-    const result = service.createPrivacyRequest(session.actor, {
+    const result = await service.createPrivacyRequest(session.actor, {
       case_id: segments[1],
+      expected_revision: requiredRevision(body),
       request_kind: requiredPrivacyKind(body),
       idempotency_key: requiredIdempotencyKey(body),
     });
@@ -85,18 +85,15 @@ async function handleMutation(
   }
   if (segments.length === 5 && segments[0] === "cases" && segments[2] === "reports" && segments[4] === "grants") {
     if (!exactObjectKeys(body, ["expected_revision"])) throw new PortalHttpError("INVALID_REQUEST");
-    assertCurrentRevision(service, session, segments[1], requiredRevision(body));
-    return productJson({ grant: service.createReportAccessGrant(session.actor, segments[1], segments[3]) });
+    return productJson({
+      grant: await service.createReportAccessGrant(session.actor, segments[1], segments[3], requiredRevision(body)),
+    });
   }
   if (segments.length === 2 && segments[0] === "reports" && segments[1] === "download") {
     if (!exactObjectKeys(body, ["grant_id", "case_id", "report_id", "artifact_sha256", "object_version_id", "expires_at", "grant_sha256"])) throw new PortalHttpError("INVALID_REQUEST");
-    return downloadResponse(service.downloadReport(session.actor, requiredGrant(body)));
+    return downloadResponse(await service.downloadReport(session.actor, requiredGrant(body)));
   }
   return productNotFound();
-}
-
-function assertCurrentRevision(service: CustomerPortalService, session: VerifiedProductSession, caseId: string, expected: number): void {
-  if (service.getCaseProjection(session.actor, caseId).revision !== expected) throw new PortalHttpError("STALE_REVISION");
 }
 
 function downloadResponse(download: ReportDownload): Response {
@@ -114,18 +111,18 @@ function downloadResponse(download: ReportDownload): Response {
 }
 
 class PortalHttpError extends Error {
-  readonly code: "INVALID_REQUEST" | "STALE_REVISION";
-  constructor(code: "INVALID_REQUEST" | "STALE_REVISION") {
+  readonly code: "INVALID_REQUEST";
+  constructor(code: "INVALID_REQUEST") {
     super(code);
     this.code = code;
   }
 }
 
 function portalProblem(error: unknown): Response {
-  if (error instanceof PortalHttpError && error.code === "STALE_REVISION") return productJson({ error: "revision_conflict" }, 409);
   if (error instanceof PortalHttpError) return productJson({ error: "invalid_request" }, 400);
   const code = portalErrorCode(error);
   if (code === "PORTAL_NOT_FOUND") return productNotFound();
+  if (code === "PORTAL_REVISION_CONFLICT") return productJson({ error: "revision_conflict" }, 409);
   if (code === "IDEMPOTENCY_KEY_COMMAND_MISMATCH") return productJson({ error: "idempotency_conflict" }, 409);
   if (code) return productJson({ error: "invalid_request" }, 400);
   return productJson({ error: "request_failed" }, 500);
@@ -138,6 +135,7 @@ const PORTAL_ERROR_CODES = new Set([
   "IDEMPOTENCY_KEY_COMMAND_MISMATCH",
   "INVALID_REQUEST",
   "PORTAL_NOT_FOUND",
+  "PORTAL_REVISION_CONFLICT",
   "REPORT_GRANT_EXPIRY_INVALID",
   "SYNTHETIC_CASE_COLLISION",
   "SYNTHETIC_INVITE_COLLISION",

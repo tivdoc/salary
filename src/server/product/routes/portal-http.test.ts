@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { HermeticSessionManager, PRODUCT_CSRF_HEADER } from "../auth/hermetic-session.ts";
+import type { CustomerPortalApplicationPort } from "../customer-portal/repository.ts";
 import { createHarness, seedEvidenceAndReport } from "../customer-portal/test-fixtures.ts";
 import { createPortalHttpHandler } from "./portal-http.ts";
 
@@ -59,6 +60,26 @@ describe("stable portal HTTP boundary", () => {
     expect((await handler.handle(request("cases/synthetic-case-a", ownerA, undefined, { "x-tivdoc-owner-id": "synthetic-owner-b" }), ["cases", "synthetic-case-a"])).status).toBe(404);
   });
 
+  it("awaits a durable-style asynchronous application port without weakening concealment", async () => {
+    const active = portalHarness();
+    const service = new Proxy(active.service, {
+      get(target, property, receiver) {
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === "function"
+          ? async (...args: unknown[]) => Reflect.apply(value, target, args)
+          : value;
+      },
+    }) as CustomerPortalApplicationPort;
+    const handler = createPortalHttpHandler({ enabled: true, service, sessions: active.sessions });
+    const list = await handler.handle(request("cases", active.ownerA), ["cases"]);
+    expect(list.status).toBe(200);
+    expect((await list.json()).cases).toHaveLength(1);
+    expect((await handler.handle(
+      request("cases/synthetic-case-a", active.ownerB),
+      ["cases", "synthetic-case-a"],
+    )).status).toBe(404);
+  });
+
   it("requires revision, idempotency and CSRF for clarification mutation", async () => {
     const { handler, ownerA, service, operator } = portalHarness();
     service.recordConsent({ actor_id: "synthetic-owner-a", role: "customer_owner", tenant_id: "synthetic-tenant-a", assigned_case_ids: ["synthetic-case-a"], verified_server_side: true, break_glass_reason: null, break_glass_expires_at: null }, { case_id: "synthetic-case-a", consent_version: "consent-1", terms_version: "terms-1", granted: true, idempotency_key: "consent-seed-0001" });
@@ -97,6 +118,33 @@ describe("stable portal HTTP boundary", () => {
     expect(first.status).toBe(200);
     expect((await replay.json()).idempotent_replay).toBe(true);
     expect((await handler.handle(request(path, ownerA, { ...body, expected_revision: 1 }), ["cases", "synthetic-case-a", "privacy"])).status).toBe(409);
+  });
+
+  it("passes the expected revision into the mutation port instead of a separate projection read", async () => {
+    const active = portalHarness();
+    const projection = vi.spyOn(active.service, "getCaseProjection");
+    let receivedRevision: number | undefined;
+    const service = new Proxy(active.service, {
+      get(target, property, receiver) {
+        if (property === "createPrivacyRequest") {
+          return async (...args: Parameters<typeof target.createPrivacyRequest>) => {
+            receivedRevision = args[1].expected_revision;
+            return target.createPrivacyRequest(...args);
+          };
+        }
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) as CustomerPortalApplicationPort;
+    const handler = createPortalHttpHandler({ enabled: true, service, sessions: active.sessions });
+    const response = await handler.handle(request("cases/synthetic-case-a/privacy", active.ownerA, {
+      expected_revision: 2,
+      request_kind: "correction",
+      idempotency_key: "privacy-atomic-0001",
+    }), ["cases", "synthetic-case-a", "privacy"]);
+    expect(response.status).toBe(200);
+    expect(receivedRevision).toBe(2);
+    expect(projection).not.toHaveBeenCalled();
   });
 
   it("maps a narrow structural portal error across a bundled runtime boundary", async () => {

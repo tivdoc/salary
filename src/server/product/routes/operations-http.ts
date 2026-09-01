@@ -2,8 +2,9 @@ import "./server-boundary.ts";
 
 import { randomUUID } from "node:crypto";
 import type { ProductSessionBoundary } from "../auth/runtime.ts";
+import type { InternalOpsApplicationPort } from "../internal-ops/application-port.ts";
 import { INTERNAL_OPS_SCHEMA_VERSION, type InternalOpsAction, type OpsProblemCode } from "../internal-ops/contracts.ts";
-import { InternalOpsError, type InternalOpsReadKind, type InternalOpsService } from "../internal-ops/service.ts";
+import { InternalOpsError, type InternalOpsReadKind } from "../internal-ops/service.ts";
 import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
 
 export const STABLE_OPERATIONS_COMMAND_SCHEMA = "tivdoc-operations-command" as const;
@@ -18,7 +19,7 @@ export type OperationsHttpHandler = Readonly<{
 
 export function createOperationsHttpHandler(input: Readonly<{
   enabled: boolean;
-  service: InternalOpsService | null;
+  service: InternalOpsApplicationPort | null;
   sessions: Pick<ProductSessionBoundary, "verify">;
 }>): OperationsHttpHandler {
   return Object.freeze({

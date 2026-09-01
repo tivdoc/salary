@@ -20,6 +20,7 @@ import type {
   VerifiedProductEvidence,
 } from "./contracts";
 import { PortalError } from "./contracts";
+import type { CustomerPortalRepositoryPort } from "./repository.ts";
 
 type Invite = Readonly<{
   invite_id: string;
@@ -57,7 +58,7 @@ const PROMPTS_HE: Readonly<Record<FactPath, string>> = Object.freeze({
   "documents.period": "לאיזו תקופה מתייחס המסמך?",
 });
 
-export class SyntheticPortalRepository {
+export class SyntheticPortalRepository implements CustomerPortalRepositoryPort {
   private readonly clock: PortalClockPort;
   private readonly cases = new Map<string, PortalCaseRecord>();
   private readonly tasks = new Map<string, CustomerClarificationTask[]>();

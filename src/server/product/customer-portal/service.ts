@@ -12,12 +12,20 @@ import {
   type LegalInputRequirement,
   type PortalCaseProjection,
   type PortalFlagsPort,
-  type PrivacyRequestKind,
   type ReportAccessGrant,
   type ReportEdition,
   type StoredReportEdition,
 } from "./contracts";
-import { SyntheticPortalRepository } from "./synthetic-repository";
+import type {
+  CustomerPortalRepositoryPort,
+  PortalAnswerInput,
+  PortalConsentInput,
+  PortalPrivacyInput,
+  PortalUploadInput,
+  ReportDownload,
+} from "./repository.ts";
+
+export type { ReportDownload } from "./repository.ts";
 
 const PORTAL_FLAG = "TIVDOC_CUSTOMER_PORTAL_ENABLED" as const;
 const SAFE_BLOCKERS = new Set([
@@ -34,21 +42,13 @@ const HUMAN_CLARIFICATION_ROLES = new Set([
   "legal_reviewer",
 ]);
 
-export type ReportDownload = Readonly<{
-  bytes: Uint8Array;
-  artifact_sha256: string;
-  object_version_id: string;
-  content_type: "application/pdf";
-  filename: string;
-}>;
-
 export class CustomerPortalService {
-  private readonly repository: SyntheticPortalRepository;
+  private readonly repository: CustomerPortalRepositoryPort;
   private readonly flags: PortalFlagsPort;
   private readonly now: () => string;
 
   constructor(
-    repository: SyntheticPortalRepository,
+    repository: CustomerPortalRepositoryPort,
     flags: PortalFlagsPort,
     now: () => string,
   ) {
@@ -134,49 +134,24 @@ export class CustomerPortalService {
     return this.repository.createClarifications(caseId, facts, [], "human_operations_request");
   }
 
-  answerClarification(actor: VerifiedActor, input: Readonly<{
-    case_id: string;
-    task_id: string;
-    question_version: number;
-    value: unknown;
-    explicit_confirmation: true;
-    consent_version: string;
-    terms_version: string;
-    idempotency_key: string;
-  }>) {
-    this.ownerCase(actor, input.case_id);
+  answerClarification(actor: VerifiedActor, input: PortalAnswerInput) {
+    const caseRecord = this.ownerCase(actor, input.case_id);
+    this.assertExpectedRevision(caseRecord.revision, input.expected_revision);
     return this.repository.recordAnswer({ actor_id: actor.actor_id, ...input });
   }
 
-  recordConsent(actor: VerifiedActor, input: Readonly<{
-    case_id: string;
-    consent_version: string;
-    terms_version: string;
-    granted: boolean;
-    idempotency_key: string;
-  }>) {
+  recordConsent(actor: VerifiedActor, input: PortalConsentInput) {
     this.ownerCase(actor, input.case_id);
     return this.repository.recordConsent({ actor_id: actor.actor_id, ...input });
   }
 
-  createPrivacyRequest(actor: VerifiedActor, input: Readonly<{
-    case_id: string;
-    request_kind: PrivacyRequestKind;
-    idempotency_key: string;
-  }>) {
-    this.ownerCase(actor, input.case_id);
+  createPrivacyRequest(actor: VerifiedActor, input: PortalPrivacyInput) {
+    const caseRecord = this.ownerCase(actor, input.case_id);
+    this.assertExpectedRevision(caseRecord.revision, input.expected_revision);
     return this.repository.createPrivacyRequest({ actor_id: actor.actor_id, ...input });
   }
 
-  reserveUpload(actor: VerifiedActor, input: Readonly<{
-    case_id: string;
-    document_id: string;
-    expected_sha256: string;
-    expected_length: number;
-    detected_mime: string;
-    expires_at: string;
-    idempotency_key: string;
-  }>) {
+  reserveUpload(actor: VerifiedActor, input: PortalUploadInput) {
     const caseRecord = this.ownerCase(actor, input.case_id);
     if (!caseRecord.document_references.some((document) => document.document_id === input.document_id)) {
       throw new PortalError("PORTAL_NOT_FOUND");
@@ -194,8 +169,9 @@ export class CustomerPortalService {
     return this.releasedReports(actor, caseId);
   }
 
-  createReportAccessGrant(actor: VerifiedActor, caseId: string, reportId: string): ReportAccessGrant {
-    this.ownerCase(actor, caseId);
+  createReportAccessGrant(actor: VerifiedActor, caseId: string, reportId: string, expectedRevision?: number): ReportAccessGrant {
+    const caseRecord = this.ownerCase(actor, caseId);
+    this.assertExpectedRevision(caseRecord.revision, expectedRevision);
     const report = this.exactReleasedReport(actor, caseId, reportId);
     const expiresAt = new Date(new Date(this.now()).getTime() + 5 * 60_000).toISOString();
     return this.repository.createReportGrant({ actor_id: actor.actor_id, case_id: caseId, report, expires_at: expiresAt });
@@ -307,6 +283,10 @@ export class CustomerPortalService {
 
   private assertEnabled(): void {
     if (!this.flags.isEnabled(PORTAL_FLAG)) throw new PortalError("PORTAL_NOT_FOUND");
+  }
+
+  private assertExpectedRevision(actual: number, expected: number | undefined): void {
+    if (expected !== undefined && actual !== expected) throw new PortalError("PORTAL_REVISION_CONFLICT");
   }
 }
 

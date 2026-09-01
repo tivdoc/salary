@@ -1,13 +1,13 @@
 import "./server-boundary.ts";
 
 import { resolveProductSessionBoundary } from "../auth/runtime.ts";
-import type { CustomerPortalService } from "../customer-portal/service.ts";
+import type { CustomerPortalApplicationPort } from "../customer-portal/repository.ts";
+import type { InternalOpsApplicationPort } from "../internal-ops/application-port.ts";
 import { resolveInternalOpsRuntime } from "../internal-ops/runtime.ts";
-import type { InternalOpsService } from "../internal-ops/service.ts";
 
 export type CanonicalProductRouteServices = Readonly<{
-  portal: CustomerPortalService;
-  operations?: InternalOpsService;
+  portal: CustomerPortalApplicationPort;
+  operations?: InternalOpsApplicationPort;
 }>;
 
 /** Structural view keeps route imports version-neutral while the root owns concrete adapters. */
@@ -56,11 +56,11 @@ export function installCanonicalProductApplicationComposition(composition: Canon
   runtimeGlobal().__tivdocCanonicalProductApplicationComposition = Object.freeze({ ...composition, services });
 }
 
-export function resolveCanonicalPortalService(): CustomerPortalService | null {
+export function resolveCanonicalPortalService(): CustomerPortalApplicationPort | null {
   return runtimeGlobal().__tivdocCanonicalProductRouteServices?.portal ?? null;
 }
 
-export function resolveCanonicalOperationsService(): InternalOpsService | null {
+export function resolveCanonicalOperationsService(): InternalOpsApplicationPort | null {
   return runtimeGlobal().__tivdocCanonicalProductRouteServices?.operations ?? resolveInternalOpsRuntime().service;
 }
 
