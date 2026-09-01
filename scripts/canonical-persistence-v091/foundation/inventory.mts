@@ -187,6 +187,17 @@ export const EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES = Object.freeze([
   "private.governance_work_items",
 ] as const);
 
+export const EXPECTED_RUNTIME_OWNER_POLICY_TABLES = Object.freeze([
+  "public.engine_durable_jobs",
+  "public.engine_logical_effect_receipts",
+  "public.engine_outbox_events",
+  "public.engine_report_versions",
+  "public.engine_review_task_versions",
+  "public.product_case_owners",
+  "public.product_privacy_request_versions",
+  "public.product_private_report_objects",
+] as const);
+
 const EXPECTED_CANONICAL_FUNCTIONS = Object.freeze([
   "private.append_controlled_import_audit",
   "private.canonical_text_uuid",
@@ -672,11 +683,15 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   }
 
   const policies = recordArray(inventory.policies, "policies");
-  if (policies.length !== EXPECTED_TENANT_POLICY_TABLES.length
-    + EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES.length) {
+  if (policies.length !== EXPECTED_TENANT_POLICY_TABLES.length * 2
+    + EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES.length
+    + EXPECTED_RUNTIME_OWNER_POLICY_TABLES.length + 1) {
     throw new Error("POSTGRES_INVENTORY_POLICY_COUNT_INVALID");
   }
   const publicPolicyTables: string[] = [];
+  const runtimePolicyTables: string[] = [];
+  const runtimeOwnerPolicyTables: string[] = [];
+  const contextLookupPolicyTables: string[] = [];
   const privateGovernancePolicyTables: string[] = [];
   for (const entry of policies) {
     const schema = stringField(entry, "schema", "policies");
@@ -685,10 +700,30 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     const qualifiedTable = `${schema}.${table}`;
     const publicShapeValid = entry.command === "ALL"
       && rolesValue.length === 1 && rolesValue[0] === "service_role";
+    const runtimeShapeValid = entry.command === "ALL"
+      && rolesValue.join(",") === "tivdoc_operations_runtime,tivdoc_web_runtime,tivdoc_worker_runtime";
+    const runtimeOwnerShapeValid = entry.command === "ALL"
+      && rolesValue.length === 1 && rolesValue[0] === "tivdoc_governance_owner";
     const governanceShapeValid = entry.command === "ALL"
       && rolesValue.length === 1 && rolesValue[0] === "tivdoc_governance_owner";
     if (schema === "public" && entry.name === "tivdoc_service_tenant_scope" && publicShapeValid) {
       publicPolicyTables.push(qualifiedTable);
+      continue;
+    }
+    if (schema === "public" && entry.name === "tivdoc_runtime_verified_tenant" && runtimeShapeValid) {
+      runtimePolicyTables.push(qualifiedTable);
+      continue;
+    }
+    if (schema === "public" && entry.name === "tivdoc_owner_verified_tenant" && runtimeOwnerShapeValid
+      && EXPECTED_RUNTIME_OWNER_POLICY_TABLES.includes(
+        qualifiedTable as (typeof EXPECTED_RUNTIME_OWNER_POLICY_TABLES)[number],
+      )) {
+      runtimeOwnerPolicyTables.push(qualifiedTable);
+      continue;
+    }
+    if (schema === "public" && entry.name === "tivdoc_runtime_context_session_lookup"
+      && runtimeOwnerShapeValid && qualifiedTable === "public.product_identity_sessions") {
+      contextLookupPolicyTables.push(qualifiedTable);
       continue;
     }
     if (schema === "private" && entry.name === `${table}_verified_tenant` && governanceShapeValid
@@ -704,6 +739,12 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
   }
   assertExactStrings(publicPolicyTables, EXPECTED_TENANT_POLICY_TABLES,
     "POSTGRES_INVENTORY_POLICY_TABLES_INVALID");
+  assertExactStrings(runtimePolicyTables, EXPECTED_TENANT_POLICY_TABLES,
+    "POSTGRES_INVENTORY_RUNTIME_POLICY_TABLES_INVALID");
+  assertExactStrings(runtimeOwnerPolicyTables, EXPECTED_RUNTIME_OWNER_POLICY_TABLES,
+    "POSTGRES_INVENTORY_RUNTIME_OWNER_POLICY_TABLES_INVALID");
+  assertExactStrings(contextLookupPolicyTables, ["public.product_identity_sessions"],
+    "POSTGRES_INVENTORY_CONTEXT_LOOKUP_POLICY_TABLE_INVALID");
   assertExactStrings(privateGovernancePolicyTables, EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES,
     "POSTGRES_INVENTORY_PRIVATE_GOVERNANCE_POLICY_TABLES_INVALID");
 

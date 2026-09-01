@@ -450,6 +450,273 @@ $governance_functions$;
 grant select on public.product_identity_sessions to tivdoc_governance_owner;
 grant usage on schema public to tivdoc_governance_owner;
 
+-- Product and worker transactions use the same authoritative session context.
+-- A caller may set arbitrary custom GUC text, so RLS and SECURITY DEFINER
+-- bodies below compare against runtime_verified_tenant(), which revalidates the
+-- sid/jti/actor/role tuple against durable session state on every statement.
+create policy tivdoc_runtime_context_session_lookup
+on public.product_identity_sessions to tivdoc_governance_owner
+using (true);
+
+do $runtime_public_policies$
+declare
+  table_name text;
+begin
+  foreach table_name in array array[
+    'analysis_findings', 'analysis_hypotheses', 'analysis_runs',
+    'case_confirmations', 'case_conversations', 'case_messages',
+    'document_extractions', 'documents', 'engine_analysis_stage_versions',
+    'engine_calculation_trace_versions', 'engine_canonical_fact_versions',
+    'engine_case_identity', 'engine_case_lifecycle_revisions', 'engine_case_state',
+    'engine_durable_jobs', 'engine_idempotency_records', 'engine_job_history',
+    'engine_legal_version_pins', 'engine_logical_effect_receipts',
+    'engine_object_write_sagas', 'engine_outbox_events',
+    'engine_payment_evidence_refs', 'engine_platform_audit_events',
+    'engine_report_versions', 'engine_review_task_versions',
+    'engine_rule_input_versions', 'engine_topic_result_versions',
+    'product_case_owners', 'product_identity_sessions',
+    'product_privacy_request_versions', 'product_private_report_objects'
+  ] loop
+    execute pg_catalog.format(
+      'create policy tivdoc_runtime_verified_tenant on public.%I to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime using (tenant_id = private.runtime_verified_tenant()) with check (tenant_id = private.runtime_verified_tenant())',
+      table_name
+    );
+  end loop;
+end;
+$runtime_public_policies$;
+
+do $runtime_owner_policies$
+declare
+  table_name text;
+begin
+  foreach table_name in array array[
+    'engine_durable_jobs', 'engine_logical_effect_receipts',
+    'engine_outbox_events', 'engine_report_versions',
+    'engine_review_task_versions', 'product_case_owners',
+    'product_privacy_request_versions', 'product_private_report_objects'
+  ] loop
+    execute pg_catalog.format(
+      'create policy tivdoc_owner_verified_tenant on public.%I to tivdoc_governance_owner using (tenant_id = private.runtime_verified_tenant()) with check (tenant_id = private.runtime_verified_tenant())',
+      table_name
+    );
+  end loop;
+end;
+$runtime_owner_policies$;
+
+grant usage on schema public to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
+grant select on public.engine_schema_metadata to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
+grant execute on function private.runtime_verified_tenant() to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
+
+grant select, insert, update on table
+  public.analysis_findings, public.analysis_hypotheses, public.analysis_runs,
+  public.case_confirmations, public.case_conversations, public.case_messages,
+  public.document_extractions, public.documents,
+  public.engine_analysis_stage_versions, public.engine_calculation_trace_versions,
+  public.engine_canonical_fact_versions, public.engine_case_identity,
+  public.engine_case_lifecycle_revisions, public.engine_case_state,
+  public.engine_durable_jobs, public.engine_idempotency_records,
+  public.engine_job_history, public.engine_legal_version_pins,
+  public.engine_logical_effect_receipts, public.engine_object_write_sagas,
+  public.engine_outbox_events, public.engine_payment_evidence_refs,
+  public.engine_platform_audit_events, public.engine_report_versions,
+  public.engine_review_task_versions, public.engine_rule_input_versions,
+  public.engine_topic_result_versions, public.product_case_owners,
+  public.product_privacy_request_versions, public.product_private_report_objects
+to tivdoc_operations_runtime;
+
+grant select, insert, update on table
+  public.engine_analysis_stage_versions, public.engine_calculation_trace_versions,
+  public.engine_case_state, public.engine_durable_jobs, public.engine_job_history,
+  public.engine_legal_version_pins, public.engine_logical_effect_receipts,
+  public.engine_object_write_sagas, public.engine_outbox_events,
+  public.engine_platform_audit_events, public.engine_report_versions,
+  public.engine_review_task_versions, public.engine_rule_input_versions,
+  public.engine_topic_result_versions, public.product_private_report_objects
+to tivdoc_worker_runtime;
+
+grant select on table
+  public.engine_case_lifecycle_revisions, public.engine_case_state,
+  public.engine_report_versions, public.engine_review_task_versions,
+  public.product_case_owners, public.product_privacy_request_versions,
+  public.product_private_report_objects
+to tivdoc_web_runtime;
+
+grant usage, select on sequence public.engine_platform_audit_events_sequence_seq
+to tivdoc_operations_runtime, tivdoc_worker_runtime;
+
+grant select, insert, update on table
+  public.engine_durable_jobs, public.engine_logical_effect_receipts,
+  public.engine_outbox_events, public.engine_report_versions,
+  public.engine_review_task_versions, public.product_case_owners,
+  public.product_privacy_request_versions, public.product_private_report_objects
+to tivdoc_governance_owner;
+
+create or replace function private.claim_engine_platform_jobs(
+  target_worker text,
+  observed_now timestamptz,
+  lease_duration interval,
+  claim_limit integer
+)
+returns setof public.engine_durable_jobs
+language sql security definer set search_path = '' as $$
+  with candidates as (
+    select job.job_id
+    from public.engine_durable_jobs job
+    where job.tenant_id = private.runtime_verified_tenant()
+      and job.attempt_count < job.max_attempts
+      and (
+        (job.state in ('queued', 'retry_wait') and job.available_at <= observed_now)
+        or (job.state in ('leased', 'running') and job.lease_expires_at <= observed_now)
+      )
+    order by job.available_at, job.job_id
+    for update of job skip locked
+    limit greatest(least(coalesce(claim_limit, 0), 100), 0)
+  )
+  update public.engine_durable_jobs job
+  set state = 'leased', revision = job.revision + 1,
+      attempt_count = job.attempt_count + 1, lease_owner = target_worker,
+      lease_expires_at = observed_now + lease_duration,
+      fencing_token = job.fencing_token + 1,
+      cancellation_requested = false, updated_at = observed_now
+  from candidates
+  where job.job_id = candidates.job_id
+    and job.tenant_id = private.runtime_verified_tenant()
+  returning job.*
+$$;
+
+create or replace function private.heartbeat_engine_platform_job(
+  target_job_id text,
+  target_worker text,
+  expected_fencing_token bigint,
+  observed_now timestamptz,
+  lease_duration interval
+)
+returns boolean language plpgsql security definer set search_path = '' as $$
+begin
+  update public.engine_durable_jobs
+  set revision = revision + 1,
+      lease_expires_at = observed_now + lease_duration,
+      updated_at = observed_now
+  where job_id = target_job_id
+    and tenant_id = private.runtime_verified_tenant()
+    and state in ('leased', 'running')
+    and lease_owner = target_worker
+    and fencing_token = expected_fencing_token;
+  return found;
+end;
+$$;
+
+create or replace function private.finish_engine_platform_job(
+  target_job_id text,
+  target_worker text,
+  expected_fencing_token bigint,
+  target_outbox_id text,
+  target_logical_effect_id text,
+  target_logical_effect_sha256 text,
+  observed_now timestamptz
+)
+returns boolean language plpgsql security definer set search_path = '' as $$
+declare
+  locked_job public.engine_durable_jobs%rowtype;
+  prior_effect_sha256 text;
+begin
+  select * into locked_job
+  from public.engine_durable_jobs
+  where job_id = target_job_id and tenant_id = private.runtime_verified_tenant()
+  for update;
+  if locked_job.job_id is null or locked_job.state <> 'running'
+    or locked_job.lease_owner <> target_worker
+    or locked_job.fencing_token <> expected_fencing_token
+    or locked_job.lease_expires_at <= observed_now
+    or not exists (
+      select 1 from public.engine_outbox_events event
+      where event.outbox_id = target_outbox_id and event.tenant_id = locked_job.tenant_id
+    ) then return false; end if;
+  select logical_effect_sha256 into prior_effect_sha256
+  from public.engine_logical_effect_receipts
+  where tenant_id = locked_job.tenant_id and logical_effect_id = target_logical_effect_id;
+  if prior_effect_sha256 is not null and prior_effect_sha256 <> target_logical_effect_sha256 then
+    raise exception using errcode = 'P0001', message = 'LOGICAL_EFFECT_HASH_MISMATCH';
+  end if;
+  insert into public.engine_logical_effect_receipts(
+    tenant_id, logical_effect_id, logical_effect_sha256, outbox_id, committed_at
+  ) values (
+    locked_job.tenant_id, target_logical_effect_id, target_logical_effect_sha256,
+    target_outbox_id, observed_now
+  ) on conflict (tenant_id, logical_effect_id) do nothing;
+  update public.engine_durable_jobs
+  set state = 'succeeded', revision = revision + 1,
+      terminal_effect_sha256 = target_logical_effect_sha256,
+      lease_owner = null, lease_expires_at = null, updated_at = observed_now
+  where job_id = target_job_id and tenant_id = locked_job.tenant_id;
+  return true;
+end;
+$$;
+
+create or replace function private.claim_engine_platform_outbox(
+  target_worker text,
+  observed_now timestamptz,
+  lease_duration interval
+)
+returns setof public.engine_outbox_events
+language sql security definer set search_path = '' as $$
+  with candidate as (
+    select event.outbox_id
+    from public.engine_outbox_events event
+    where event.tenant_id = private.runtime_verified_tenant()
+      and (event.state = 'pending' or (event.state = 'leased' and event.lease_expires_at <= observed_now))
+    order by event.created_at, event.outbox_id
+    for update of event skip locked limit 1
+  )
+  update public.engine_outbox_events event
+  set state = 'leased', fencing_token = event.fencing_token + 1,
+      lease_owner = target_worker, lease_expires_at = observed_now + lease_duration
+  from candidate
+  where event.outbox_id = candidate.outbox_id
+    and event.tenant_id = private.runtime_verified_tenant()
+  returning event.*
+$$;
+
+alter function private.claim_engine_platform_jobs(text,timestamptz,interval,integer) owner to tivdoc_governance_owner;
+alter function private.heartbeat_engine_platform_job(text,text,bigint,timestamptz,interval) owner to tivdoc_governance_owner;
+alter function private.finish_engine_platform_job(text,text,bigint,text,text,text,timestamptz) owner to tivdoc_governance_owner;
+alter function private.claim_engine_platform_outbox(text,timestamptz,interval) owner to tivdoc_governance_owner;
+revoke all on function private.claim_engine_platform_jobs(text,timestamptz,interval,integer) from public, anon, authenticated, service_role;
+revoke all on function private.heartbeat_engine_platform_job(text,text,bigint,timestamptz,interval) from public, anon, authenticated, service_role;
+revoke all on function private.finish_engine_platform_job(text,text,bigint,text,text,text,timestamptz) from public, anon, authenticated, service_role;
+revoke all on function private.claim_engine_platform_outbox(text,timestamptz,interval) from public, anon, authenticated, service_role;
+grant execute on function private.claim_engine_platform_jobs(text,timestamptz,interval,integer) to tivdoc_worker_runtime;
+grant execute on function private.heartbeat_engine_platform_job(text,text,bigint,timestamptz,interval) to tivdoc_worker_runtime;
+grant execute on function private.finish_engine_platform_job(text,text,bigint,text,text,text,timestamptz) to tivdoc_worker_runtime;
+grant execute on function private.claim_engine_platform_outbox(text,timestamptz,interval) to tivdoc_worker_runtime;
+
+alter function private.product_case_owner_bind(text,text,text,text,timestamptz) owner to tivdoc_governance_owner;
+alter function private.product_owner_lookup(text,text,text) owner to tivdoc_governance_owner;
+alter function private.product_owner_revoke(text,text,text,timestamptz) owner to tivdoc_governance_owner;
+alter function private.product_privacy_append(text,text,text,bigint,text,text,text,text,boolean,text,timestamptz) owner to tivdoc_governance_owner;
+alter function private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz) owner to tivdoc_governance_owner;
+alter function private.product_report_object_approve(text,text,text,bigint) owner to tivdoc_governance_owner;
+alter function private.product_report_object_approved_read(text,text,text,bigint,text,text) owner to tivdoc_governance_owner;
+alter function private.product_report_object_revoke(text,text,text,bigint,text,timestamptz) owner to tivdoc_governance_owner;
+
+revoke all on function private.product_case_owner_bind(text,text,text,text,timestamptz) from public, anon, authenticated, service_role;
+revoke all on function private.product_owner_lookup(text,text,text) from public, anon, authenticated, service_role;
+revoke all on function private.product_owner_revoke(text,text,text,timestamptz) from public, anon, authenticated, service_role;
+revoke all on function private.product_privacy_append(text,text,text,bigint,text,text,text,text,boolean,text,timestamptz) from public, anon, authenticated, service_role;
+revoke all on function private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz) from public, anon, authenticated, service_role;
+revoke all on function private.product_report_object_approve(text,text,text,bigint) from public, anon, authenticated, service_role;
+revoke all on function private.product_report_object_approved_read(text,text,text,bigint,text,text) from public, anon, authenticated, service_role;
+revoke all on function private.product_report_object_revoke(text,text,text,bigint,text,timestamptz) from public, anon, authenticated, service_role;
+
+grant execute on function private.product_case_owner_bind(text,text,text,text,timestamptz) to tivdoc_operations_runtime;
+grant execute on function private.product_owner_lookup(text,text,text) to tivdoc_operations_runtime, tivdoc_web_runtime;
+grant execute on function private.product_owner_revoke(text,text,text,timestamptz) to tivdoc_operations_runtime;
+grant execute on function private.product_privacy_append(text,text,text,bigint,text,text,text,text,boolean,text,timestamptz) to tivdoc_operations_runtime, tivdoc_web_runtime;
+grant execute on function private.product_private_report_object_bind(text,text,text,bigint,text,text,text,bigint,text,timestamptz) to tivdoc_worker_runtime;
+grant execute on function private.product_report_object_approve(text,text,text,bigint) to tivdoc_operations_runtime;
+grant execute on function private.product_report_object_approved_read(text,text,text,bigint,text,text) to tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;
+grant execute on function private.product_report_object_revoke(text,text,text,bigint,text,timestamptz) to tivdoc_operations_runtime, tivdoc_worker_runtime;
+
 insert into public.engine_schema_metadata (component, schema_version, migration_id)
 values (
   'governance_runtime_security',

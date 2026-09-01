@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const MIGRATION = "202609010005_governance_runtime_security.sql" as const;
-const EXPECTED_SHA256 = "3a852ef640bf94d9ea7c4d1dab5b0db49b38592306bba8b5910080158dcd4767" as const;
+const EXPECTED_SHA256 = "ceef0ea9c5f4aa0a8f9a2b5b5b57e7a6281ec9f8edc93ef7e54fe0f24105f426" as const;
 const migrationPath = path.resolve(process.cwd(), "supabase", "migrations", MIGRATION);
 
 async function sql(): Promise<string> {
