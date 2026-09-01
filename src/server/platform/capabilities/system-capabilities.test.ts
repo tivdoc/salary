@@ -30,11 +30,16 @@ function safeInput(): CapabilityStartupInput {
       identity: declaration("enabled"),
       storage: declaration("enabled", ["identity"]),
       parser: { ...declaration("blocked"), blocker_codes: ["PARSER_OS_SANDBOX_NOT_VERIFIED"] },
+      controlled_import: declaration("disabled"),
       extraction: declaration("enabled", ["identity", "storage"]),
+      legal_review: declaration("test_only", ["identity"]),
+      parameter_approval: declaration("test_only", ["identity"]),
+      rulespec_approval: declaration("test_only", ["identity"]),
       analysis: declaration("enabled", ["identity", "storage", "extraction"]),
       operations: declaration("enabled", ["identity", "storage"]),
       portal: declaration("enabled", ["identity", "storage"]),
       export: declaration("enabled", ["identity", "storage"]),
+      download: declaration("enabled", ["identity", "storage"]),
       shadow: declaration("disabled"),
       customer_processing: declaration("disabled"),
       delivery: declaration("disabled"),
@@ -47,7 +52,7 @@ describe("typed system capability projection", () => {
     const first = buildSystemCapabilityProjection(safeInput());
     const second = buildSystemCapabilityProjection({ ...safeInput(), declarations: Object.fromEntries(Object.entries(safeInput().declarations).reverse()) });
     expect(second).toEqual(first);
-    expect(first.enabled_capabilities).toEqual(["identity", "storage", "extraction", "analysis", "operations", "portal", "export"]);
+    expect(first.enabled_capabilities).toEqual(["identity", "storage", "extraction", "analysis", "operations", "portal", "export", "download"]);
     expect(first.blocked_capabilities).toEqual(["parser"]);
     expect(first.capabilities.customer_processing.state).toBe("disabled");
     expect(first.capabilities.delivery.state).toBe("disabled");
@@ -75,6 +80,17 @@ describe("typed system capability projection", () => {
       ...safeInput(),
       declarations: { ...safeInput().declarations, customer_processing: declaration("enabled", ["identity"]) },
     })).toThrow("CAPABILITY_CUSTOMER_OR_DELIVERY_FORBIDDEN_LOCAL");
+    expect(() => buildSystemCapabilityProjection({
+      ...safeInput(),
+      fixture_mode: "none",
+    })).toThrow("CAPABILITY_TEST_ONLY_WITHOUT_FIXTURE");
+    expect(() => buildSystemCapabilityProjection({
+      ...safeInput(),
+      declarations: {
+        ...safeInput().declarations,
+        controlled_import: declaration("enabled"),
+      },
+    })).toThrow("CAPABILITY_IMPORT_REQUIRES_PARSER");
   });
 });
 

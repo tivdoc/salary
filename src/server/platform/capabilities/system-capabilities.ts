@@ -9,12 +9,17 @@ export const systemCapabilityNameSchema = z.enum([
   "identity",
   "storage",
   "parser",
+  "controlled_import",
   "extraction",
+  "legal_review",
+  "parameter_approval",
+  "rulespec_approval",
   "analysis",
   "shadow",
   "operations",
   "portal",
   "export",
+  "download",
   "customer_processing",
   "delivery",
 ]);
@@ -76,6 +81,9 @@ export function buildSystemCapabilityProjection(input: CapabilityStartupInput): 
 
   for (const name of CAPABILITY_ORDER) {
     const declaration = capabilities[name];
+    if (declaration.state === "test_only" && input.fixture_mode !== "synthetic_test") {
+      throw new Error(`CAPABILITY_TEST_ONLY_WITHOUT_FIXTURE:${name}`);
+    }
     if (declaration.state === "enabled") {
       for (const dependency of declaration.prerequisite_capabilities) {
         if (capabilities[dependency].state !== "enabled") throw new Error(`CAPABILITY_PREREQUISITE_DISABLED:${name}:${dependency}`);
@@ -87,6 +95,9 @@ export function buildSystemCapabilityProjection(input: CapabilityStartupInput): 
   }
   if (capabilities.parser.state === "enabled" && !capabilities.parser.blocker_codes.includes("PARSER_OS_SANDBOX_VERIFIED")) {
     throw new Error("CAPABILITY_PARSER_SANDBOX_UNVERIFIED");
+  }
+  if (capabilities.controlled_import.state === "enabled" && capabilities.parser.state !== "enabled") {
+    throw new Error("CAPABILITY_IMPORT_REQUIRES_PARSER");
   }
   if (capabilities.shadow.state === "enabled") throw new Error("CAPABILITY_CUSTOMER_SHADOW_FORBIDDEN_LOCAL");
 
