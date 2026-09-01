@@ -126,7 +126,8 @@ function nullableJson(value: unknown): string | null {
   return value === null ? null : JSON.stringify(value);
 }
 
-function validateCanonicalConfirmation(value: CaseConfirmation): CaseConfirmation {
+/** Reuses the canonical confirmation boundary without importing its server-only schema at runtime. */
+export function validateCanonicalConfirmation(value: CaseConfirmation): CaseConfirmation {
   const expectedKeys = [
     "confirmation_id", "case_id", "source_analysis_run_id", "target_fact_path", "question_id",
     "question_version", "proposed_value", "answer", "status", "source_message_id", "idempotency_key",

@@ -175,6 +175,7 @@ export type MultiDocumentIntakeInput = Readonly<{
   mapping_registry: RegisteredRuleInputMappingRegistry;
   scopes: readonly RuleInputScopeRequirement[];
   prepared_at: string;
+  required_period?: DateRange;
   prior_warning_codes?: readonly string[];
 }>;
 
@@ -238,6 +239,7 @@ function validateInput(input: MultiDocumentIntakeInput): Readonly<{
   registry: RegisteredRuleInputMappingRegistry;
   scopes: readonly RuleInputScopeRequirement[];
   preparedAt: string;
+  requiredPeriod: DateRange | null;
 }> {
   const caseId = uuidSchema.parse(input.case_id);
   const documents = input.documents.map((entry) => immutableDocumentSchema.parse(entry));
@@ -251,6 +253,9 @@ function validateInput(input: MultiDocumentIntakeInput): Readonly<{
     return ruleInputScopeRequirementSchema.parse({ ...parsed, input_ids: [...parsed.input_ids].sort(compareStrings) });
   });
   const preparedAt = isoTimestampSchema.parse(input.prepared_at);
+  const requiredPeriod = input.required_period === undefined
+    ? null
+    : dateRangeSchema.parse(input.required_period);
 
   if (documents.some((entry) => entry.case_id !== caseId) || factSnapshot.case_id !== caseId) {
     throw new Error("multi_document_case_boundary_violation");
@@ -267,7 +272,7 @@ function validateInput(input: MultiDocumentIntakeInput): Readonly<{
   if (new Set(scopes.map((entry) => entry.scope_id)).size !== scopes.length) {
     throw new Error("multi_document_scope_id_duplicate");
   }
-  return { documents, extractions, factSnapshot, registry, scopes, preparedAt };
+  return { documents, extractions, factSnapshot, registry, scopes, preparedAt, requiredPeriod };
 }
 
 function supportedType(document: ImmutableDocument): SupportedIntakeDocumentType | "unsupported" {
@@ -447,7 +452,11 @@ function detectFactIssues(
   return issues;
 }
 
-function detectPeriodIssues(documents: readonly ImmutableDocument[], facts: readonly CanonicalFact[]): readonly MultiDocumentTechnicalIssue[] {
+function detectPeriodIssues(
+  documents: readonly ImmutableDocument[],
+  facts: readonly CanonicalFact[],
+  requiredPeriod: DateRange | null,
+): readonly MultiDocumentTechnicalIssue[] {
   const active = documents.filter((candidate) => !documents.some((other) => other.supersedes_document_id === candidate.document_id));
   const dated = active.filter((entry): entry is ImmutableDocument & { document_period: DateRange } => entry.document_period !== null);
   const issues: MultiDocumentTechnicalIssue[] = [];
@@ -466,9 +475,11 @@ function detectPeriodIssues(documents: readonly ImmutableDocument[], facts: read
   const payslipMonths = new Set(
     dated.filter((entry) => entry.document_type === "payslip").flatMap((entry) => monthsInRange(entry.document_period)),
   );
-  if (payslipMonths.size > 1) {
+  if (requiredPeriod !== null || payslipMonths.size > 1) {
     const sorted = [...payslipMonths].sort(compareStrings);
-    const complete = monthsInRange({ start_date: `${sorted[0]}-01`, end_date: `${sorted.at(-1)}-28` });
+    const complete = requiredPeriod === null
+      ? monthsInRange({ start_date: `${sorted[0]}-01`, end_date: `${sorted.at(-1)}-28` })
+      : monthsInRange(requiredPeriod);
     for (const month of complete) {
       if (!payslipMonths.has(month)) issues.push(issue("period.missing_month", "blocker", [], [], [month]));
     }
@@ -501,13 +512,16 @@ function makeTimeline(
   documents: readonly ImmutableDocument[],
   facts: readonly CanonicalFact[],
   issues: readonly MultiDocumentTechnicalIssue[],
+  requiredPeriod: DateRange | null,
 ): readonly EmploymentTimelineMonth[] {
   const active = documents.filter((candidate) => !documents.some((other) => other.supersedes_document_id === candidate.document_id));
   const dated = active.filter((entry): entry is ImmutableDocument & { document_period: DateRange } => entry.document_period !== null);
   const observedMonths = uniqueSorted(dated.flatMap((entry) => monthsInRange(entry.document_period)));
-  const months = observedMonths.length === 0
-    ? []
-    : monthsInRange({ start_date: `${observedMonths[0]}-01`, end_date: `${observedMonths.at(-1)}-28` });
+  const months = requiredPeriod !== null
+    ? monthsInRange(requiredPeriod)
+    : observedMonths.length === 0
+      ? []
+      : monthsInRange({ start_date: `${observedMonths[0]}-01`, end_date: `${observedMonths.at(-1)}-28` });
   return months.map((periodKey) => {
     const monthDocuments = dated.filter((entry) => monthsInRange(entry.document_period).includes(periodKey));
     const monthIds = uniqueSorted(monthDocuments.map((entry) => entry.document_id));
@@ -658,7 +672,7 @@ function makeClarificationDependencies(
  * legal classification and computes no monetary entitlement.
  */
 export function buildMultiDocumentIntake(input: MultiDocumentIntakeInput): MultiDocumentIntakeResult {
-  const { documents, extractions, factSnapshot, registry, scopes, preparedAt } = validateInput(input);
+  const { documents, extractions, factSnapshot, registry, scopes, preparedAt, requiredPeriod } = validateInput(input);
   const manifest = makeManifest(documents, extractions, factSnapshot.facts);
   const manifestSha256 = canonicalSha256(manifest);
   const technicalIssues = sortIssues([
@@ -666,9 +680,9 @@ export function buildMultiDocumentIntake(input: MultiDocumentIntakeInput): Multi
     ...detectExtractionIssues(documents, extractions),
     ...detectIdentityIssues(documents, extractions),
     ...detectFactIssues(documents, factSnapshot.facts),
-    ...detectPeriodIssues(documents, factSnapshot.facts),
+    ...detectPeriodIssues(documents, factSnapshot.facts, requiredPeriod),
   ]);
-  const timeline = makeTimeline(documents, factSnapshot.facts, technicalIssues);
+  const timeline = makeTimeline(documents, factSnapshot.facts, technicalIssues, requiredPeriod);
   const timelineSha256 = canonicalSha256(timeline);
   const clarifications = makeClarificationDependencies(factSnapshot, registry, scopes);
   const ruleInputViews = makeRuleInputViews(scopes, registry, factSnapshot, manifest, manifestSha256, preparedAt);
