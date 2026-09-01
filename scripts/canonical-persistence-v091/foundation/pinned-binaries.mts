@@ -149,7 +149,7 @@ export async function ensurePinnedPostgresBinaries(
   let extraction: ArchiveExtractionReceipt;
   try {
     extraction = await extractPinnedArchive(archive, stagingRoot, paths.repository_root, powershell, runner);
-    await verifyFreshExtractedDistribution(stagingRoot, paths, runner);
+    await verifyFreshExtractedDistribution(stagingRoot, paths);
   } catch (error) {
     // Never traverse an unverified reparse point while cleaning a failed
     // extraction. A suspect staging tree is intentionally left for review.
@@ -534,7 +534,6 @@ async function assertNoReparseTree(candidate: string, approvedParent: string): P
 async function verifyFreshExtractedDistribution(
   distributionRoot: string,
   paths: DynamicPostgresPaths,
-  runner: CommandRunner,
 ): Promise<void> {
   await assertNoReparseTree(distributionRoot, paths.tools_root);
   await verifyPinnedDistributionTree(distributionRoot, paths.tools_root);
@@ -553,16 +552,6 @@ async function verifyFreshExtractedDistribution(
     if (await sha256File(executable) !== PINNED_BINARY_SHA256[name]) {
       throw new Error(`POSTGRES_BINARY_HASH_MISMATCH:${name}`);
     }
-  }
-  const version = await runner({
-    executable: contained(binariesRoot, resolve(binariesRoot, "postgres.exe")),
-    args: Object.freeze(["--version"]),
-    cwd: paths.repository_root,
-    timeout_ms: 5_000,
-  });
-  const versionOutput = `${version.stdout}\n${version.stderr}`.trim().split(/\r?\n/, 1)[0] ?? "";
-  if (!new RegExp(`^postgres \\(PostgreSQL\\) ${PINNED_POSTGRES_VERSION}(?:\\s|$)`).test(versionOutput)) {
-    throw new Error("POSTGRES_BINARY_VERSION_MISMATCH");
   }
 }
 
