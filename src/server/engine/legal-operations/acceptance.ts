@@ -69,7 +69,7 @@ function signedAction(fixture: SyntheticLegalFixture, artifactKind: "source" | "
 }
 
 function activateFixture(fixture: SyntheticLegalFixture) {
-  const service = new LegalOperationsApplicationService();
+  const service = new LegalOperationsApplicationService({ allow_synthetic_mechanics: true });
   const sourceContent = frozen({ schema_version: "tivdoc-synthetic-source-v0.6.0", source_version_id: fixture.source_version_id, synthetic_test_only: true });
   const sourceImport = importCommand(fixture, "source", fixture.source_version_id, sourceContent);
   const firstImport = service.importArtifact(sourceImport);

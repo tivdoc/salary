@@ -44,9 +44,9 @@ describe("legal operations control plane", () => {
   });
 
   it("enforces every review transition and forbids kind crossover and skips", () => {
-    const service = new LegalOperationsApplicationService();
+    const service = new LegalOperationsApplicationService({ allow_synthetic_mechanics: true });
     const blockedPacket = buildReviewPacket("minimum_wage");
-    const blockedService = new LegalOperationsApplicationService();
+    const blockedService = new LegalOperationsApplicationService({ allow_synthetic_mechanics: true });
     blockedService.importArtifact({ artifact_id: blockedPacket.packet_id, artifact_version: blockedPacket.packet_version, artifact_kind: "review_packet", content: blockedPacket, content_sha256: legalOperationsSha256(blockedPacket), bindings: fixture.parameter.bindings, idempotency_key: "syn.packet.blocked.import", imported_at: SYNTHETIC_CATALOG_TIMESTAMP });
     blockedService.transition(lifecycle("review_packet", blockedPacket.packet_id, blockedPacket, "draft", "ready_for_review", "blocked.packet.ready"));
     expect(() => blockedService.transition(lifecycle("review_packet", blockedPacket.packet_id, blockedPacket, "ready_for_review", "approved", "blocked.packet.approved"))).toThrow("REVIEW_PACKET_INCOMPLETE_OR_BLOCKED");
@@ -75,7 +75,7 @@ describe("legal operations control plane", () => {
     service.transition(lifecycle("review_packet", packet.packet_id, packet, "ready_for_review", "approved", "packet.approved"));
     expect(() => service.transition(lifecycle("review_packet", packet.packet_id, packet, "approved", "eligible", "packet.kind.crossover"))).toThrow("LEGAL_LIFECYCLE_TRANSITION_FORBIDDEN");
 
-    const branchService = new LegalOperationsApplicationService();
+    const branchService = new LegalOperationsApplicationService({ allow_synthetic_mechanics: true });
     branchService.importArtifact({ artifact_id: packet.packet_id, artifact_version: packet.packet_version, artifact_kind: "review_packet", content: packet, content_sha256: legalOperationsSha256(packet), bindings: fixture.parameter.bindings, idempotency_key: "syn.packet.branch.import", imported_at: SYNTHETIC_CATALOG_TIMESTAMP });
     branchService.transition(lifecycle("review_packet", packet.packet_id, packet, "draft", "ready_for_review", "branch.ready.1"));
     branchService.transition(lifecycle("review_packet", packet.packet_id, packet, "ready_for_review", "changes_requested", "branch.changes"));
@@ -88,7 +88,7 @@ describe("legal operations control plane", () => {
     const withoutHash = { ...fixture.parameter, support_roles: ["official_implementation" as const] } as Record<string, unknown>;
     delete withoutHash.candidate_sha256;
     const parameter = parameterCandidateSchema.parse({ ...withoutHash, candidate_sha256: legalOperationsSha256(withoutHash) });
-    const service = new LegalOperationsApplicationService();
+    const service = new LegalOperationsApplicationService({ allow_synthetic_mechanics: true });
     service.importArtifact({ artifact_id: parameter.parameter_id, artifact_version: parameter.parameter_version, artifact_kind: "parameter", content: parameter, content_sha256: legalOperationsSha256(parameter), bindings: parameter.bindings, idempotency_key: "syn.secondary.parameter.import", imported_at: SYNTHETIC_CATALOG_TIMESTAMP });
     service.transition(lifecycle("parameter", parameter.parameter_id, parameter, "candidate", "structurally_valid", "secondary.structure"));
     service.transition(lifecycle("parameter", parameter.parameter_id, parameter, "structurally_valid", "awaiting_attestations", "secondary.awaiting"));
@@ -100,7 +100,7 @@ describe("legal operations control plane", () => {
   });
 
   it("keeps imports append-only and idempotent", () => {
-    const service = new LegalOperationsApplicationService();
+    const service = new LegalOperationsApplicationService({ allow_synthetic_mechanics: true });
     const command = { artifact_id: fixture.parameter.parameter_id, artifact_version: fixture.parameter.parameter_version, artifact_kind: "parameter" as const, content: fixture.parameter, content_sha256: legalOperationsSha256(fixture.parameter), bindings: fixture.parameter.bindings, idempotency_key: "syn.parameter.idempotent", imported_at: SYNTHETIC_CATALOG_TIMESTAMP };
     const first = service.importArtifact(command);
     const replay = service.importArtifact(command);
@@ -113,7 +113,7 @@ describe("legal operations control plane", () => {
   });
 
   it("requires the exact immutable golden set before golden approval", () => {
-    const service = new LegalOperationsApplicationService();
+    const service = new LegalOperationsApplicationService({ allow_synthetic_mechanics: true });
     service.importArtifact({ artifact_id: fixture.rule.rule_spec_id, artifact_version: fixture.rule.rule_spec_version, artifact_kind: "rule_package", content: fixture.rule, content_sha256: legalOperationsSha256(fixture.rule), bindings: fixture.parameter.bindings, idempotency_key: "syn.rule.golden.gate.import", imported_at: SYNTHETIC_CATALOG_TIMESTAMP });
     expect(() => service.importRuleOrGoldenApproval(fixture.rule.rule_spec_id, fixture.rule.rule_spec_version, fixture.semantic_approvals[1])).toThrow("GOLDEN_CASE_SET_IMPORT_REQUIRED");
     service.importGoldenCaseSet(fixture.golden_cases, "syn.golden.gate.import");
