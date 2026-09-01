@@ -11,6 +11,7 @@ import {
   type SystemCapabilityProjection,
 } from "../../platform/capabilities/system-capabilities.ts";
 import { deriveNodePostgresTargetDescriptor } from "../../platform/persistence/postgres/runtime/node-pg-driver.ts";
+import type { InternalOpsFlagSnapshot } from "../internal-ops/flags.ts";
 
 export const DURABLE_LOCAL_PRODUCT_RUNTIME_SENTINEL =
   "TIVDOC_DURABLE_LOCAL_PRODUCT_V0102" as const;
@@ -172,6 +173,20 @@ export function buildDurableLocalProductCapabilityProjection(): SystemCapability
     execution_scope: "local_only",
     fixture_mode: "none",
     declarations,
+  });
+}
+
+/** Exact local operations profile; public fixtures, customers, Shadow and delivery stay off. */
+export function buildDurableLocalInternalOpsFlags(): InternalOpsFlagSnapshot {
+  return Object.freeze({
+    TIVDOC_INTERNAL_OPS_UI_ENABLED: true,
+    TIVDOC_INTERNAL_OPS_API_ENABLED: true,
+    TIVDOC_SYNTHETIC_OPS_ENABLED: true,
+    TIVDOC_PUBLIC_FIXTURE_OPS_ENABLED: false,
+    TIVDOC_MANUAL_REPORT_EXPORT_ENABLED: true,
+    TIVDOC_CUSTOMER_PROCESSING_ENABLED: false,
+    TIVDOC_CUSTOMER_SHADOW_ENABLED: false,
+    TIVDOC_PRODUCTION_DELIVERY_ENABLED: false,
   });
 }
 

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createStableEntrypointRuntime, STABLE_PRODUCT_DISPATCHER_ROOTS } from "../../platform/capabilities/stable-entrypoint-runtime.ts";
 import {
   DURABLE_LOCAL_PRODUCT_RUNTIME_SENTINEL,
+  buildDurableLocalInternalOpsFlags,
   buildDurableLocalProductCapabilityProjection,
   durableLocalProductRuntimeEnabled,
   readDurableLocalProductRuntimeConfig,
@@ -80,6 +81,16 @@ describe("durable local product runtime configuration", () => {
     expect(projection.capabilities.customer_processing.state).toBe("disabled");
     expect(projection.capabilities.delivery.state).toBe("disabled");
     expect(projection.capabilities.shadow).toMatchObject({ state: "blocked", blocker_codes: ["CUSTOMER_SHADOW_NOT_AUTHORIZED"] });
+    expect(buildDurableLocalInternalOpsFlags()).toEqual({
+      TIVDOC_INTERNAL_OPS_UI_ENABLED: true,
+      TIVDOC_INTERNAL_OPS_API_ENABLED: true,
+      TIVDOC_SYNTHETIC_OPS_ENABLED: true,
+      TIVDOC_PUBLIC_FIXTURE_OPS_ENABLED: false,
+      TIVDOC_MANUAL_REPORT_EXPORT_ENABLED: true,
+      TIVDOC_CUSTOMER_PROCESSING_ENABLED: false,
+      TIVDOC_CUSTOMER_SHADOW_ENABLED: false,
+      TIVDOC_PRODUCTION_DELIVERY_ENABLED: false,
+    });
   });
 
   it("rejects service-role reuse, cross-target connections, and non-loopback HTTP", () => {
