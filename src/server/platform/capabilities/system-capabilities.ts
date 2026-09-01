@@ -3,10 +3,12 @@ import { z } from "zod";
 
 import { canonicalSha256, deepFreeze } from "../../../engine/rule-runtime/canonical.ts";
 
-export const SYSTEM_CAPABILITY_SCHEMA_VERSION = "tivdoc-system-capabilities-v0.10.0" as const;
+export const SYSTEM_CAPABILITY_SCHEMA_VERSION = "tivdoc-system-capabilities-v0.10.2" as const;
 
 export const systemCapabilityNameSchema = z.enum([
   "identity",
+  "session",
+  "postgresql",
   "storage",
   "parser",
   "controlled_import",
@@ -34,8 +36,11 @@ export type ProviderTarget = z.infer<typeof providerTargetSchema>;
 export type CapabilityDeclaration = Readonly<{
   state: SystemCapabilityState;
   provider_target: ProviderTarget | null;
+  provider_id: string | null;
+  provider_schema_version: string | null;
   prerequisite_capabilities: readonly SystemCapabilityName[];
   blocker_codes: readonly string[];
+  evidence_codes: readonly string[];
 }>;
 
 export type SystemCapabilityProjection = Readonly<{
@@ -50,6 +55,31 @@ export type SystemCapabilityProjection = Readonly<{
 }>;
 
 const CAPABILITY_ORDER = systemCapabilityNameSchema.options;
+
+/**
+ * The only accepted server-side dependency graph. Callers declare state and
+ * provider evidence; they cannot weaken prerequisites at an entrypoint.
+ */
+export const SYSTEM_CAPABILITY_PREREQUISITES: Readonly<Record<SystemCapabilityName, readonly SystemCapabilityName[]>> = deepFreeze({
+  identity: [],
+  session: ["identity"],
+  postgresql: ["identity", "session"],
+  storage: ["identity", "session"],
+  parser: [],
+  controlled_import: ["parser", "postgresql"],
+  extraction: ["storage"],
+  legal_review: ["identity", "session", "postgresql"],
+  parameter_approval: ["identity", "session", "postgresql", "legal_review"],
+  rulespec_approval: ["identity", "session", "postgresql", "legal_review"],
+  analysis: ["postgresql", "storage", "extraction", "legal_review", "parameter_approval", "rulespec_approval"],
+  shadow: ["postgresql", "analysis"],
+  operations: ["identity", "session", "postgresql"],
+  portal: ["identity", "session", "postgresql", "storage"],
+  export: ["identity", "session", "postgresql", "storage"],
+  download: ["identity", "session", "postgresql", "storage"],
+  customer_processing: ["identity", "session", "postgresql", "storage", "parser", "extraction", "legal_review", "parameter_approval", "rulespec_approval", "analysis"],
+  delivery: ["identity", "session", "storage", "export", "download", "customer_processing"],
+});
 
 export type CapabilityStartupInput = Readonly<{
   schema_version: string;
@@ -72,35 +102,49 @@ export function buildSystemCapabilityProjection(input: CapabilityStartupInput): 
     const candidate = input.declarations[name] ?? {
       state: "disabled",
       provider_target: null,
-      prerequisite_capabilities: [],
+      provider_id: null,
+      provider_schema_version: null,
+      prerequisite_capabilities: SYSTEM_CAPABILITY_PREREQUISITES[name],
       blocker_codes: [],
+      evidence_codes: [],
     };
     const declaration = parseDeclaration(name, candidate);
     return [name, declaration];
   })) as Record<SystemCapabilityName, CapabilityDeclaration>;
+
+  if (input.runtime_mode === "development" && CAPABILITY_ORDER.some((name) => {
+    const declaration = capabilities[name];
+    return declaration.state === "enabled" && declaration.provider_id !== null
+      && /(?:^|[._-])(?:test|fixture|synthetic|hermetic)(?:$|[._-])/u.test(declaration.provider_id);
+  })) {
+    throw new Error("CAPABILITY_TEST_PROVIDER_LEAKAGE");
+  }
+
+  if (capabilities.customer_processing.state !== "disabled" || capabilities.delivery.state !== "disabled") {
+    throw new Error("CAPABILITY_CUSTOMER_OR_DELIVERY_FORBIDDEN_LOCAL");
+  }
+  if (capabilities.shadow.state === "enabled") throw new Error("CAPABILITY_CUSTOMER_SHADOW_FORBIDDEN_LOCAL");
+  if (capabilities.parser.state === "enabled" && !capabilities.parser.evidence_codes.includes("PARSER_OS_SANDBOX_VERIFIED")) {
+    throw new Error("CAPABILITY_PARSER_SANDBOX_UNVERIFIED");
+  }
+  if (capabilities.controlled_import.state === "enabled" && capabilities.parser.state !== "enabled") {
+    throw new Error("CAPABILITY_IMPORT_REQUIRES_PARSER");
+  }
 
   for (const name of CAPABILITY_ORDER) {
     const declaration = capabilities[name];
     if (declaration.state === "test_only" && input.fixture_mode !== "synthetic_test") {
       throw new Error(`CAPABILITY_TEST_ONLY_WITHOUT_FIXTURE:${name}`);
     }
-    if (declaration.state === "enabled") {
+    if (declaration.state === "enabled" || declaration.state === "test_only") {
       for (const dependency of declaration.prerequisite_capabilities) {
-        if (capabilities[dependency].state !== "enabled") throw new Error(`CAPABILITY_PREREQUISITE_DISABLED:${name}:${dependency}`);
+        const dependencyState = capabilities[dependency].state;
+        const satisfied = dependencyState === "enabled"
+          || (declaration.state === "test_only" && dependencyState === "test_only");
+        if (!satisfied) throw new Error(`CAPABILITY_PREREQUISITE_DISABLED:${name}:${dependency}`);
       }
     }
   }
-  if (capabilities.customer_processing.state === "enabled" || capabilities.delivery.state === "enabled") {
-    throw new Error("CAPABILITY_CUSTOMER_OR_DELIVERY_FORBIDDEN_LOCAL");
-  }
-  if (capabilities.parser.state === "enabled" && !capabilities.parser.blocker_codes.includes("PARSER_OS_SANDBOX_VERIFIED")) {
-    throw new Error("CAPABILITY_PARSER_SANDBOX_UNVERIFIED");
-  }
-  if (capabilities.controlled_import.state === "enabled" && capabilities.parser.state !== "enabled") {
-    throw new Error("CAPABILITY_IMPORT_REQUIRES_PARSER");
-  }
-  if (capabilities.shadow.state === "enabled") throw new Error("CAPABILITY_CUSTOMER_SHADOW_FORBIDDEN_LOCAL");
-
   const sortedCapabilities = Object.fromEntries(CAPABILITY_ORDER.map((name) => [name, capabilities[name]])) as Record<SystemCapabilityName, CapabilityDeclaration>;
   const unsigned = {
     schema_version: SYSTEM_CAPABILITY_SCHEMA_VERSION,
@@ -117,16 +161,39 @@ export function buildSystemCapabilityProjection(input: CapabilityStartupInput): 
 function parseDeclaration(name: SystemCapabilityName, candidate: CapabilityDeclaration): CapabilityDeclaration {
   const state = systemCapabilityStateSchema.parse(candidate.state);
   const providerTarget = candidate.provider_target === null ? null : providerTargetSchema.parse(candidate.provider_target);
+  const providerId = candidate.provider_id;
+  const providerSchemaVersion = candidate.provider_schema_version;
   const prerequisites = candidate.prerequisite_capabilities.map((entry) => systemCapabilityNameSchema.parse(entry));
-  if (new Set(prerequisites).size !== prerequisites.length || prerequisites.includes(name)) {
+  const canonicalPrerequisites = SYSTEM_CAPABILITY_PREREQUISITES[name];
+  if (new Set(prerequisites).size !== prerequisites.length || prerequisites.includes(name)
+      || !sameStringSet(prerequisites, canonicalPrerequisites)) {
     throw new Error(`CAPABILITY_PREREQUISITE_INVALID:${name}`);
   }
   const blockers = [...new Set(candidate.blocker_codes)].sort(compareStrings);
+  const evidence = [...new Set(candidate.evidence_codes)].sort(compareStrings);
   if (blockers.some((entry) => !/^[A-Z][A-Z0-9_]{2,119}$/.test(entry))) throw new Error(`CAPABILITY_BLOCKER_CODE_INVALID:${name}`);
-  if (state === "enabled" && providerTarget === null) throw new Error(`CAPABILITY_PROVIDER_TARGET_REQUIRED:${name}`);
+  if (evidence.some((entry) => !/^[A-Z][A-Z0-9_]{2,119}$/.test(entry))) throw new Error(`CAPABILITY_EVIDENCE_CODE_INVALID:${name}`);
+  if ((state === "enabled" || state === "test_only") && providerTarget === null) throw new Error(`CAPABILITY_PROVIDER_TARGET_REQUIRED:${name}`);
+  if ((providerTarget === null) !== (providerId === null) || (providerTarget === null) !== (providerSchemaVersion === null)) {
+    throw new Error(`CAPABILITY_PROVIDER_METADATA_MISMATCH:${name}`);
+  }
+  if (providerId !== null && !/^[a-z][a-z0-9._-]{2,79}$/u.test(providerId)) throw new Error(`CAPABILITY_PROVIDER_ID_INVALID:${name}`);
+  if (providerSchemaVersion !== null && !/^v\d+(?:\.\d+){0,2}$/u.test(providerSchemaVersion)) {
+    throw new Error(`CAPABILITY_PROVIDER_SCHEMA_VERSION_INVALID:${name}`);
+  }
   if ((state === "blocked") !== (blockers.length > 0)) throw new Error(`CAPABILITY_BLOCKER_STATE_MISMATCH:${name}`);
-  if (providerTarget === "managed") throw new Error(`CAPABILITY_MANAGED_PROVIDER_FORBIDDEN_LOCAL:${name}`);
-  return deepFreeze({ state, provider_target: providerTarget, prerequisite_capabilities: [...prerequisites].sort(compareStrings), blocker_codes: blockers });
+  if ((providerTarget === "managed" || providerTarget === "isolated_supabase") && state !== "blocked") {
+    throw new Error(`CAPABILITY_REMOTE_PROVIDER_FORBIDDEN_LOCAL:${name}`);
+  }
+  return deepFreeze({
+    state,
+    provider_target: providerTarget,
+    provider_id: providerId,
+    provider_schema_version: providerSchemaVersion,
+    prerequisite_capabilities: [...canonicalPrerequisites],
+    blocker_codes: blockers,
+    evidence_codes: evidence,
+  });
 }
 
 export const systemLimitsSchema = z
@@ -137,6 +204,8 @@ export const systemLimitsSchema = z
     maximum_fields_per_document: z.number().int().positive().max(10_000),
     maximum_jobs_per_batch: z.number().int().positive().max(1_000),
     maximum_report_bytes: z.number().int().positive().max(32 * 1024 * 1024),
+    maximum_operation_milliseconds: z.number().int().positive().max(10 * 60 * 1_000),
+    maximum_queue_wait_milliseconds: z.number().int().positive().max(60 * 1_000),
     maximum_in_flight_per_actor: z.number().int().positive().max(100),
     maximum_in_flight_per_case: z.number().int().positive().max(100),
     maximum_total_in_flight: z.number().int().positive().max(1_000),
@@ -153,6 +222,8 @@ export const LOCAL_SYSTEM_LIMITS: SystemLimits = deepFreeze(systemLimitsSchema.p
   maximum_fields_per_document: 2_000,
   maximum_jobs_per_batch: 100,
   maximum_report_bytes: 16 * 1024 * 1024,
+  maximum_operation_milliseconds: 30_000,
+  maximum_queue_wait_milliseconds: 5_000,
   maximum_in_flight_per_actor: 4,
   maximum_in_flight_per_case: 2,
   maximum_total_in_flight: 32,
@@ -219,16 +290,32 @@ export type AtomicMutationPort<TStaged, TResult> = Readonly<{
 
 export async function runBoundedAtomicMutation<TStaged, TResult>(input: Readonly<{
   controller: BoundedAdmissionController;
+  limits?: SystemLimits;
   actor_id: string;
   case_id: string;
   signal?: AbortSignal;
+  timeout_milliseconds?: number;
   operation: AtomicMutationPort<TStaged, TResult>;
 }>): Promise<TResult> {
+  const limits = systemLimitsSchema.parse(input.limits ?? LOCAL_SYSTEM_LIMITS);
+  const timeoutMilliseconds = input.timeout_milliseconds ?? limits.maximum_operation_milliseconds;
+  if (!Number.isSafeInteger(timeoutMilliseconds) || timeoutMilliseconds <= 0
+      || timeoutMilliseconds > limits.maximum_operation_milliseconds) {
+    throw new Error("CAPABILITY_OPERATION_TIMEOUT_INVALID");
+  }
   const controller = new AbortController();
   const forwardAbort = () => controller.abort(input.signal?.reason);
   input.signal?.addEventListener("abort", forwardAbort, { once: true });
   if (input.signal?.aborted) forwardAbort();
-  const lease = input.controller.admit({ actor_id: input.actor_id, case_id: input.case_id, signal: controller.signal });
+  const timeout = setTimeout(() => controller.abort(new Error("CAPABILITY_OPERATION_TIMEOUT")), timeoutMilliseconds);
+  let lease: AdmissionLease;
+  try {
+    lease = input.controller.admit({ actor_id: input.actor_id, case_id: input.case_id, signal: controller.signal });
+  } catch (error) {
+    clearTimeout(timeout);
+    input.signal?.removeEventListener("abort", forwardAbort);
+    throw error;
+  }
   let staged: TStaged | undefined;
   try {
     staged = await input.operation.stage(controller.signal);
@@ -238,8 +325,14 @@ export async function runBoundedAtomicMutation<TStaged, TResult>(input: Readonly
     return result;
   } catch (error) {
     if (staged !== undefined) await input.operation.rollback(staged);
+    if (controller.signal.aborted && !input.signal?.aborted
+        && controller.signal.reason instanceof Error
+        && controller.signal.reason.message === "CAPABILITY_OPERATION_TIMEOUT") {
+      throw controller.signal.reason;
+    }
     throw error;
   } finally {
+    clearTimeout(timeout);
     lease.release();
     input.signal?.removeEventListener("abort", forwardAbort);
   }
@@ -249,15 +342,17 @@ export function assertRequestWithinSystemLimits(input: Readonly<{
   limits?: SystemLimits;
   content_length: number | null;
   body_bytes: number;
+  body_kind?: "json" | "upload";
   page_count?: number;
   field_count?: number;
   batch_size?: number;
   report_bytes?: number;
 }>): void {
   const limits = systemLimitsSchema.parse(input.limits ?? LOCAL_SYSTEM_LIMITS);
+  const maximumBodyBytes = input.body_kind === "upload" ? limits.maximum_upload_bytes : limits.maximum_json_body_bytes;
   const checks = [
-    [input.content_length, limits.maximum_json_body_bytes, "CAPABILITY_CONTENT_LENGTH_LIMIT"],
-    [input.body_bytes, limits.maximum_json_body_bytes, "CAPABILITY_BODY_LIMIT"],
+    [input.content_length, maximumBodyBytes, "CAPABILITY_CONTENT_LENGTH_LIMIT"],
+    [input.body_bytes, maximumBodyBytes, "CAPABILITY_BODY_LIMIT"],
     [input.page_count, limits.maximum_pages_per_document, "CAPABILITY_PAGE_LIMIT"],
     [input.field_count, limits.maximum_fields_per_document, "CAPABILITY_FIELD_LIMIT"],
     [input.batch_size, limits.maximum_jobs_per_batch, "CAPABILITY_BATCH_LIMIT"],
@@ -283,4 +378,11 @@ function abortError(): Error {
 
 function compareStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  if (left.length !== right.length) return false;
+  const sortedLeft = [...left].sort(compareStrings);
+  const sortedRight = [...right].sort(compareStrings);
+  return sortedLeft.every((value, index) => value === sortedRight[index]);
 }
