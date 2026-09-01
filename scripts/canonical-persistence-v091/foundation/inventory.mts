@@ -642,15 +642,19 @@ export function assertPlainPostgresFoundationInventory(receipt: PostgresInventor
     }
   }
   for (const roleName of [
-    "tivdoc_governance_owner",
     "tivdoc_operations_runtime",
     "tivdoc_web_runtime",
     "tivdoc_worker_runtime",
   ] as const) {
     const role = roles.find((candidate) => candidate.name === roleName);
-    if (!role || role.login !== false || role.superuser !== false || role.bypass_rls !== false) {
+    if (!role || role.login !== true || role.superuser !== false || role.bypass_rls !== false) {
       throw new Error(`POSTGRES_INVENTORY_ROLE_INVALID:${roleName}`);
     }
+  }
+  const governanceOwner = roles.find((candidate) => candidate.name === "tivdoc_governance_owner");
+  if (!governanceOwner || governanceOwner.login !== false || governanceOwner.superuser !== false
+    || governanceOwner.bypass_rls !== false) {
+    throw new Error("POSTGRES_INVENTORY_ROLE_INVALID:tivdoc_governance_owner");
   }
 
   const privateGovernanceRls = recordArray(inventory.private_governance_rls, "private_governance_rls");

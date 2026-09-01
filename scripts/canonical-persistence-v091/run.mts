@@ -52,7 +52,9 @@ import {
 } from "./foundation/trusted-git.mts";
 import {
   configureDynamicRoleSessions,
+  configureRuntimeRoleSessions,
   generateDynamicRoleSecrets,
+  generateRuntimeRoleSecrets,
   roleConnectionUrls,
   targetConnectionUrl,
 } from "./orchestration/roles.mts";
@@ -137,6 +139,11 @@ try {
   const roleSecrets = generateDynamicRoleSecrets();
   const roles = await configureDynamicRoleSessions({ admin_connection_url: adminUrl, secrets: roleSecrets });
   const clean = await applyCleanMigrationChain({ target, paths, binaries, chain });
+  const runtimeRoleSecrets = generateRuntimeRoleSecrets();
+  const runtimeRoles = await configureRuntimeRoleSessions({
+    admin_connection_url: adminUrl,
+    secrets: runtimeRoleSecrets,
+  });
   const inventory = await collectPostgresInventory({ target, paths, binaries });
   if (smokeOnly) await writeJson(path.join(developmentRoot, "inventory-latest.json"), inventory);
   assertPlainPostgresFoundationInventory(inventory);
@@ -204,6 +211,7 @@ try {
       bootstrap,
       clean_migration: clean,
       roles,
+      runtime_roles: runtimeRoles,
       inventory_sha256: inventory.inventory_sha256,
       migration_matrix: migrationMatrix,
       explicit_target_receipt: explicit.receipt,
@@ -510,6 +518,7 @@ try {
           "restart-replay.json": restart,
           "rls-matrix.json": rls,
           "role-sessions.json": roles,
+          "runtime-role-sessions.json": runtimeRoles,
           "shutdown.json": shutdown,
           "supabase-compatibility.json": Object.freeze({
             bootstrap,
