@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { canonicalSha256 } from "../../src/engine/rule-runtime/canonical.ts";
 import { inspectDeterministicStoreZip } from "../canonical-persistence-v091/evidence/deterministic-zip.mts";
 
 export type ManifestEntry = Readonly<{ path: string; sha256: string; byte_count: number }>;
@@ -52,6 +53,31 @@ const NO_TRUTH_COUNTERS = [
   "CUSTOMER_SHADOW_AUTHORIZED",
   "PRODUCTION_DELIVERY_ENABLED",
 ] as const;
+const POSTGRESQL_MARATHON_RECEIPT_PATH =
+  "output/canonical-postgresql-dynamic-v0.9.1/development/marathon-v010-matrix.json";
+const POSTGRESQL_RUNTIME_PROVENANCE = Object.freeze({
+  source_kind: "edb_authenticode_signed_windows_installer",
+  source_sha256: "f104c552d8495a6f20738c2a03f643164bc64b9985363329e314dec24559f0b7",
+  source_integrity: "PINNED_SHA256_AND_VALID_AUTHENTICODE",
+  distribution_file_count: 20_569,
+  distribution_bytes: 948_935_114,
+  distribution_tree_sha256: "bd43ff63eac0a3592b495af1a31da9d532ab553846f9a6cf4fab1d76b98cc7d9",
+  binary_sha256: Object.freeze({
+    postgres: "4125c1e963072d929f6468a449ad184b26d3be7d97cae3181c3d613dace49c8d",
+    initdb: "6978bdb96e1e515285eb7bbf8915c4a254644107b1fcb44917e52f707dbe798a",
+    pg_ctl: "5afdea4f4860b52cd03cee4c51be5d034a51f7ed63312acc3b6abee9006fa0ba",
+    psql: "5bb3fad8a7ff555abff37921a24ee3d9e377c15408b5e7267aa9245596965ca0",
+    createdb: "1e8322a28156e0c33a668a2a9a1cf3c8f24e36951e461c8f3bfa60dfb0a80ef9",
+    dropdb: "10fabb879e3dcef64f23484b35c508a7665c6a00d7feae0c0cf87ffbe9eb0a30",
+    pg_dump: "ff766351cc88b0ea2bc7b6e365777cb51f792b16000688a378f64124810ffa88",
+    pg_restore: "ae002028451e79240eaad9838d9eb0b644436a05decb3888468a529bf881ac6c",
+    pg_isready: "15242279c66680141586747a475090d70f83874cc19dc63709be6b57b0ba411c",
+  }),
+  authenticode_status: "Valid",
+  authenticode_subject: "CN=EnterpriseDB Corporation, O=EnterpriseDB Corporation, L=Wilmington, S=Delaware, C=US",
+  authenticode_issuer: "CN=DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1, O=\"DigiCert, Inc.\", C=US",
+  authenticode_thumbprint: "7BEDD1269FCCF7A5D95F18274750B79893C06C70",
+});
 
 export function sha256(bytes: Uint8Array | string): string {
   return createHash("sha256").update(bytes).digest("hex");
@@ -388,10 +414,7 @@ async function verifyFinalVerification(
   }
   if (attempts.some((attempt) => (attempt.commands as readonly Record<string, unknown>[])
     .some((entry) => entry.command_id === "postgresql_regression" && entry.status === "PASS"))) {
-    verifyPostgresqlReceipt(asObject(
-      await readJsonPayload(root, manifest, "verification/postgresql/acceptance-receipt.json"),
-      "MARATHON_POSTGRESQL_RECEIPT_INVALID",
-    ));
+    await verifyPostgresqlEvidence(root, manifest, attempts, git);
   }
 }
 
@@ -478,15 +501,257 @@ async function verifyBrowserReceipt(root: string, manifest: MarathonManifest): P
   }
 }
 
-function verifyPostgresqlReceipt(value: Record<string, unknown>): void {
-  if (value.schema_version !== "tivdoc-canonical-postgresql-dynamic-acceptance-v0.9.1"
-      || value.status !== "PASS"
-      || value.acceptance_result !== "ACCEPTANCE_24_OF_24_PASS"
-      || value.pc_22 !== "PC-22_PASS") throw new Error("MARATHON_POSTGRESQL_RECEIPT_FAILED");
-  const counts = asObject(value.counts, "MARATHON_POSTGRESQL_COUNTS_INVALID");
-  if (counts.total !== 24 || counts.pass !== 24 || counts.fail !== 0 || counts.skipped !== 0) {
-    throw new Error("MARATHON_POSTGRESQL_COUNTS_INVALID");
+async function verifyPostgresqlEvidence(
+  root: string,
+  manifest: MarathonManifest,
+  attempts: readonly Record<string, unknown>[],
+  git: Record<string, unknown>,
+): Promise<void> {
+  const matrixBytes = await readBytesPayload(root, manifest, "verification/postgresql/matrix-smoke.json");
+  const matrix = asObject(JSON.parse(matrixBytes.toString("utf8")), "MARATHON_POSTGRESQL_MATRIX_RECEIPT_INVALID");
+  const detailedBytes = await readBytesPayload(root, manifest, "verification/postgresql/marathon-v010-matrix.json");
+  const detailed = asObject(JSON.parse(detailedBytes.toString("utf8")), "MARATHON_POSTGRESQL_V010_RECEIPT_INVALID");
+
+  verifyPostgresqlMatrixSmoke(matrix, detailedBytes);
+  verifyMarathonV010PostgresqlReceipt(detailed, String(git.final_head));
+  const before = asObject(detailed.before_restart, "MARATHON_POSTGRESQL_V010_BEFORE_INVALID");
+  const after = asObject(detailed.after_restart, "MARATHON_POSTGRESQL_V010_AFTER_INVALID");
+  const checkpoint = asObject(before.checkpoint, "MARATHON_POSTGRESQL_V010_CHECKPOINT_INVALID");
+  if (matrix.marathon_v010_checkpoint_sha256 !== checkpoint.checkpoint_sha256) {
+    throw new Error("MARATHON_POSTGRESQL_CHECKPOINT_BINDING_MISMATCH");
   }
+  const v010Connections = Number(asObject(before.connection_attempts,
+    "MARATHON_POSTGRESQL_V010_CONNECTIONS_INVALID").observed_total)
+    + Number(asObject(after.connection_attempts, "MARATHON_POSTGRESQL_V010_CONNECTIONS_INVALID").observed_total);
+  if ((matrix.real_connection_attempts as number) < v010Connections) {
+    throw new Error("MARATHON_POSTGRESQL_CONNECTION_BINDING_INVALID");
+  }
+
+  const successfulCommand = [...attempts].reverse().flatMap((attempt) =>
+    [...(attempt.commands as readonly Record<string, unknown>[])].reverse())
+    .find((entry) => entry.command_id === "postgresql_regression" && entry.status === "PASS");
+  if (!successfulCommand || typeof successfulCommand.stdout_log !== "string") {
+    throw new Error("MARATHON_POSTGRESQL_SUCCESSFUL_COMMAND_MISSING");
+  }
+  const stdout = await readTextPayload(root, manifest, `verification/${successfulCommand.stdout_log}`);
+  const lines = stdout.split(/\r?\n/u).filter((line) => line.length > 0);
+  if (lines.length !== 1) throw new Error("MARATHON_POSTGRESQL_STDOUT_RECEIPT_INVALID");
+  const logged = asObject(JSON.parse(lines[0]!), "MARATHON_POSTGRESQL_STDOUT_RECEIPT_INVALID");
+  if (JSON.stringify(logged) !== JSON.stringify(matrix)) {
+    throw new Error("MARATHON_POSTGRESQL_STDOUT_RECEIPT_MISMATCH");
+  }
+}
+
+function verifyPostgresqlMatrixSmoke(value: Record<string, unknown>, detailedBytes: Uint8Array): void {
+  if (value.schema_version !== "tivdoc-real-postgresql-matrix-smoke-v0.9.1"
+      || value.status !== "PASS"
+      || value.postgres_version !== "17.11"
+      || value.migrations !== "PASS"
+      || !Number.isSafeInteger(value.migration_count)
+      || (value.migration_count as number) < 14
+      || value.capabilities !== 14
+      || value.restart !== "PASS"
+      || value.rls !== "PASS"
+      || value.atomicity !== "PASS"
+      || value.concurrency !== "PASS"
+      || !["PASS", "BLOCKED_ENVIRONMENT"].includes(String(value.backup_restore))
+      || !Number.isSafeInteger(value.real_connection_attempts)
+      || (value.real_connection_attempts as number) < 1
+      || value.credentials_recorded !== 0
+      || value.marathon_v010 !== "PASS"
+      || value.marathon_v010_receipt_path !== POSTGRESQL_MARATHON_RECEIPT_PATH
+      || value.marathon_v010_receipt_sha256 !== sha256(detailedBytes)
+      || typeof value.marathon_v010_checkpoint_sha256 !== "string"
+      || !SHA256.test(value.marathon_v010_checkpoint_sha256)
+      || value.marathon_v010_tenant_ordinal !== 3) {
+    throw new Error("MARATHON_POSTGRESQL_MATRIX_RECEIPT_FAILED");
+  }
+  const provenance = asObject(value.runtime_provenance, "MARATHON_POSTGRESQL_RUNTIME_PROVENANCE_INVALID");
+  if (canonicalSha256(provenance) !== canonicalSha256(POSTGRESQL_RUNTIME_PROVENANCE)) {
+    throw new Error("MARATHON_POSTGRESQL_RUNTIME_PROVENANCE_INVALID");
+  }
+}
+
+function verifyMarathonV010PostgresqlReceipt(value: Record<string, unknown>, finalHead: string): void {
+  if (value.schema_version !== "tivdoc-marathon-v010-postgresql-matrix-v1"
+      || value.proof_class !== "REAL_NODE_POSTGRES_PARAMETERIZED_SQL"
+      || value.receipt_path !== POSTGRESQL_MARATHON_RECEIPT_PATH
+      || typeof value.target_id !== "string" || value.target_id.length === 0
+      || value.tenant_ordinal !== 3
+      || value.genuine_server_stop_start !== true
+      || value.same_cluster_restarted !== true
+      || value.pre_restart_pools_closed !== true
+      || value.fresh_post_restart_pools !== true
+      || value.status !== "PASS") {
+    throw new Error("MARATHON_POSTGRESQL_V010_RECEIPT_FAILED");
+  }
+
+  const before = asObject(value.before_restart, "MARATHON_POSTGRESQL_V010_BEFORE_INVALID");
+  const after = asObject(value.after_restart, "MARATHON_POSTGRESQL_V010_AFTER_INVALID");
+  verifyMarathonBeforeRestart(before, finalHead, String(value.target_id));
+  verifyMarathonAfterRestart(after);
+  const checkpoint = asObject(before.checkpoint, "MARATHON_POSTGRESQL_V010_CHECKPOINT_INVALID");
+  if (after.checkpoint_sha256 !== checkpoint.checkpoint_sha256
+      || JSON.stringify(value.final_row_counts) !== JSON.stringify(after.final_row_counts)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_CROSS_PHASE_MISMATCH");
+  }
+  assertMarathonTruthCounters(value.truth_counters, "MARATHON_POSTGRESQL_V010_TRUTH_COUNTER_INVALID");
+  if (JSON.stringify(value.truth_counters) !== JSON.stringify(before.truth_counters)
+      || JSON.stringify(value.truth_counters) !== JSON.stringify(after.truth_counters)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_TRUTH_COUNTER_MISMATCH");
+  }
+}
+
+function verifyMarathonBeforeRestart(value: Record<string, unknown>, finalHead: string, targetId: string): void {
+  if (value.schema_version !== "tivdoc-marathon-v010-postgresql-before-restart-v1"
+      || value.proof_class !== "REAL_NODE_POSTGRES_PARAMETERIZED_SQL" || value.status !== "PASS") {
+    throw new Error("MARATHON_POSTGRESQL_V010_BEFORE_INVALID");
+  }
+  const seed = asObject(value.capability_seed, "MARATHON_POSTGRESQL_V010_CAPABILITY_SEED_INVALID");
+  if (seed.tenant_ordinal !== 3 || seed.capability_count !== 14
+      || typeof seed.tenant_id !== "string" || seed.tenant_id.length === 0
+      || typeof seed.case_id !== "string" || seed.case_id.length === 0
+      || typeof seed.capability_matrix_sha256 !== "string" || !SHA256.test(seed.capability_matrix_sha256)
+      || typeof seed.durable_state_sha256 !== "string" || !SHA256.test(seed.durable_state_sha256)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_CAPABILITY_SEED_INVALID");
+  }
+  assertExactTrueFields(value.controlled_import, [
+    "reserve_idempotency_replay", "idempotency_binding_mismatch_rejected", "unpublished_bytes_denied",
+    "stale_fencing_token_rejected", "toctou_reopen_rejected", "exact_bytes_staged",
+    "publication_idempotency_replay", "published_exact_bytes_reopened",
+  ], "MARATHON_POSTGRESQL_V010_IMPORT_INVALID");
+  const controlledImport = asObject(value.controlled_import, "MARATHON_POSTGRESQL_V010_IMPORT_INVALID");
+  if (controlledImport.audit_event_rows !== 5) throw new Error("MARATHON_POSTGRESQL_V010_IMPORT_INVALID");
+  assertExactTrueFields(value.durable_boundaries, [
+    "identity_registration_replayed", "identity_rotation_persisted", "stale_identity_rotation_rejected",
+    "owner_binding_replayed", "cross_owner_denied", "privacy_revision_replayed", "report_binding_replayed",
+    "report_approval_replayed", "wrong_report_binding_denied", "exact_report_bytes_read",
+  ], "MARATHON_POSTGRESQL_V010_BOUNDARIES_INVALID");
+  const boundaries = asObject(value.durable_boundaries, "MARATHON_POSTGRESQL_V010_BOUNDARIES_INVALID");
+  if (boundaries.privacy_revision_count !== 2
+      || boundaries.report_byte_provider !== "EXPLICIT_SYNTHETIC_TEST_DOUBLE_NOT_PRODUCT_COMPOSITION"
+      || boundaries.managed_storage_proof_claimed !== false) {
+    throw new Error("MARATHON_POSTGRESQL_V010_BOUNDARIES_INVALID");
+  }
+  verifyMarathonRowCounts(value.row_counts, 2, "MARATHON_POSTGRESQL_V010_BEFORE_ROWS_INVALID");
+  verifyConnectionAttempts(value.connection_attempts, ["capability_seed", "service_role", "administrative_count_probe"]);
+  const checkpoint = asObject(value.checkpoint, "MARATHON_POSTGRESQL_V010_CHECKPOINT_INVALID");
+  verifyMarathonCheckpoint(checkpoint, finalHead, targetId, value.row_counts);
+  if (seed.durable_state_sha256 !== asObject(checkpoint.capability_state,
+    "MARATHON_POSTGRESQL_V010_CAPABILITY_STATE_INVALID").durable_state_sha256) {
+    throw new Error("MARATHON_POSTGRESQL_V010_CAPABILITY_STATE_MISMATCH");
+  }
+  assertMarathonTruthCounters(value.truth_counters, "MARATHON_POSTGRESQL_V010_TRUTH_COUNTER_INVALID");
+}
+
+function verifyMarathonAfterRestart(value: Record<string, unknown>): void {
+  if (value.schema_version !== "tivdoc-marathon-v010-postgresql-after-restart-v1"
+      || value.proof_class !== "REAL_NODE_POSTGRES_PARAMETERIZED_SQL" || value.status !== "PASS") {
+    throw new Error("MARATHON_POSTGRESQL_V010_AFTER_INVALID");
+  }
+  assertExactTrueFields(value.restart, [
+    "externally_managed_genuine_stop_start", "same_cluster_restarted", "all_pre_restart_pools_closed",
+    "fresh_capability_replay_pool", "fresh_boundary_pool", "target_id_unchanged",
+  ], "MARATHON_POSTGRESQL_V010_RESTART_INVALID");
+  assertExactTrueFields(value.durable_replay, [
+    "capability_matrix_unchanged", "import_status_reloaded", "import_publication_replayed",
+    "published_exact_bytes_reopened", "pre_revocation_rows_unchanged", "identity_rotation_reloaded",
+    "owner_binding_reloaded", "privacy_revision_replayed", "approved_report_exact_bytes_reloaded",
+  ], "MARATHON_POSTGRESQL_V010_REPLAY_INVALID");
+  const replay = asObject(value.durable_replay, "MARATHON_POSTGRESQL_V010_REPLAY_INVALID");
+  if (replay.capability_count !== 14) throw new Error("MARATHON_POSTGRESQL_V010_REPLAY_INVALID");
+  assertExactTrueFields(value.fail_closed_revocation, [
+    "identity_revoked", "revoked_identity_rotation_denied", "owner_revoked", "owner_read_denied",
+    "report_revoked", "report_read_denied_before_provider_access", "privacy_completion_revision_persisted",
+  ], "MARATHON_POSTGRESQL_V010_REVOCATION_INVALID");
+  verifyMarathonRowCounts(value.pre_revocation_row_counts, 2, "MARATHON_POSTGRESQL_V010_PRE_REVOCATION_ROWS_INVALID");
+  verifyMarathonRowCounts(value.final_row_counts, 3, "MARATHON_POSTGRESQL_V010_FINAL_ROWS_INVALID");
+  verifyConnectionAttempts(value.connection_attempts, ["capability_replay", "service_role", "administrative_count_probe"]);
+  if (typeof value.checkpoint_sha256 !== "string" || !SHA256.test(value.checkpoint_sha256)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_CHECKPOINT_INVALID");
+  }
+  assertMarathonTruthCounters(value.truth_counters, "MARATHON_POSTGRESQL_V010_TRUTH_COUNTER_INVALID");
+}
+
+function verifyMarathonCheckpoint(
+  value: Record<string, unknown>,
+  finalHead: string,
+  targetId: string,
+  beforeRows: unknown,
+): void {
+  if (value.schema_version !== "tivdoc-marathon-v010-postgresql-checkpoint-v1"
+      || value.build_identity_sha !== finalHead || value.target_id !== targetId || value.tenant_ordinal !== 3
+      || typeof value.fixture_suffix !== "string" || !/^[a-z0-9]{8,24}$/u.test(value.fixture_suffix)
+      || typeof value.before_restart_rows_sha256 !== "string" || !SHA256.test(value.before_restart_rows_sha256)
+      || typeof value.checkpoint_sha256 !== "string" || !SHA256.test(value.checkpoint_sha256)
+      || JSON.stringify(value.before_restart_rows) !== JSON.stringify(beforeRows)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_CHECKPOINT_INVALID");
+  }
+  if (value.before_restart_rows_sha256 !== canonicalSha256(value.before_restart_rows)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_ROW_HASH_MISMATCH");
+  }
+  const capabilityState = asObject(value.capability_state, "MARATHON_POSTGRESQL_V010_CAPABILITY_STATE_INVALID");
+  const durableStateHash = capabilityState.durable_state_sha256;
+  const durableStateSeed = { ...capabilityState };
+  delete durableStateSeed.durable_state_sha256;
+  if (capabilityState.schema_version !== "tivdoc-canonical-persistence-v091-durable-state-v1"
+      || typeof durableStateHash !== "string" || !SHA256.test(durableStateHash)
+      || durableStateHash !== canonicalSha256(durableStateSeed)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_CAPABILITY_STATE_INVALID");
+  }
+  const checkpointHash = value.checkpoint_sha256;
+  const checkpointSeed = { ...value };
+  delete checkpointSeed.checkpoint_sha256;
+  if (checkpointHash !== canonicalSha256(checkpointSeed)) {
+    throw new Error("MARATHON_POSTGRESQL_V010_CHECKPOINT_HASH_MISMATCH");
+  }
+}
+
+function verifyMarathonRowCounts(value: unknown, privacyRevisions: 2 | 3, code: string): void {
+  if (!Array.isArray(value)) throw new Error(code);
+  const expected = new Map<string, number>([
+    ["private.controlled_import_requests", 1],
+    ["private.controlled_import_artifacts", 1],
+    ["private.controlled_import_audit_events", 5],
+    ["public.controlled_import_publication_markers", 1],
+    ["public.product_identity_sessions", 1],
+    ["public.product_case_owners", 1],
+    ["public.product_privacy_request_versions", privacyRevisions],
+    ["public.product_private_report_objects", 1],
+  ]);
+  if (value.length !== expected.size) throw new Error(code);
+  const seen = new Set<string>();
+  for (const raw of value) {
+    const row = asObject(raw, code);
+    if (typeof row.table !== "string" || seen.has(row.table) || expected.get(row.table) !== row.row_count
+        || typeof row.state_sha256 !== "string" || !SHA256.test(row.state_sha256)) throw new Error(code);
+    seen.add(row.table);
+  }
+  if (seen.size !== expected.size) throw new Error(code);
+}
+
+function verifyConnectionAttempts(value: unknown, components: readonly string[]): void {
+  const receipt = asObject(value, "MARATHON_POSTGRESQL_V010_CONNECTIONS_INVALID");
+  let total = 0;
+  for (const component of components) {
+    if (!Number.isSafeInteger(receipt[component]) || (receipt[component] as number) < 1) {
+      throw new Error("MARATHON_POSTGRESQL_V010_CONNECTIONS_INVALID");
+    }
+    total += receipt[component] as number;
+  }
+  if (receipt.observed_total !== total) throw new Error("MARATHON_POSTGRESQL_V010_CONNECTIONS_INVALID");
+}
+
+function assertExactTrueFields(value: unknown, fields: readonly string[], code: string): void {
+  const receipt = asObject(value, code);
+  for (const field of fields) if (receipt[field] !== true) throw new Error(code);
+}
+
+function assertMarathonTruthCounters(value: unknown, code: string): void {
+  const truths = asObject(value, code);
+  if (truths.REAL_LEGAL_TOPICS_READY !== "0/7") throw new Error(code);
+  for (const key of ZERO_TRUTH_COUNTERS) if (truths[key] !== 0) throw new Error(code);
+  for (const key of NO_TRUTH_COUNTERS) if (truths[key] !== "NO") throw new Error(code);
 }
 
 function verifyGitReceipt(value: Record<string, unknown>): void {

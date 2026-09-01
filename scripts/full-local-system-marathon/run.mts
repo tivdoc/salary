@@ -40,7 +40,9 @@ const FINAL_ATTEMPTS = path.join(WORKING_ROOT, "final-attempts");
 const FINAL_ATTEMPT_LEDGER = path.join(WORKING_ROOT, "final-attempt-ledger.ndjson");
 const PROHIBITED_AUDIT = path.join(WORKING_ROOT, "security", "prohibited-operation-audit.json");
 const BROWSER_EVIDENCE = path.resolve(ROOT, "output", "playwright", "v010-marathon");
-const POSTGRESQL_EVIDENCE = path.resolve(ROOT, "output", "canonical-postgresql-dynamic-v0.9.1", "final");
+const POSTGRESQL_DEVELOPMENT = path.resolve(ROOT, "output", "canonical-postgresql-dynamic-v0.9.1", "development");
+const POSTGRESQL_MATRIX_SMOKE = path.join(POSTGRESQL_DEVELOPMENT, "matrix-smoke.json");
+const POSTGRESQL_MARATHON_V010 = path.join(POSTGRESQL_DEVELOPMENT, "marathon-v010-matrix.json");
 
 const command = process.argv[2] ?? "verify";
 if (command === "build") await build();
@@ -88,7 +90,8 @@ async function build(): Promise<void> {
   await copyPayload("security/prohibited-operation-audit.json", PROHIBITED_AUDIT);
   if (commandPassed(finalVerification, "browser_e2e")) await copyTreePayload("verification/browser", BROWSER_EVIDENCE);
   if (commandEverPassed(finalVerification, "postgresql_regression")) {
-    await copyTreePayload("verification/postgresql", POSTGRESQL_EVIDENCE);
+    await copyPayload("verification/postgresql/matrix-smoke.json", POSTGRESQL_MATRIX_SMOKE);
+    await copyPayload("verification/postgresql/marathon-v010-matrix.json", POSTGRESQL_MARATHON_V010);
   }
   await copyPayload(
     "reachability/source-import-graph.json",
