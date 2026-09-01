@@ -23,6 +23,7 @@ export const PRODUCT_DURABLE_CSRF_HEADER = "x-tivdoc-csrf" as const;
  */
 export class DurableCryptographicProductSessionBoundary implements ProductSessionBoundary {
   readonly proof_class = "DURABLE_CRYPTOGRAPHIC_SESSION" as const;
+  readonly request_origin: string;
   readonly #verifier: IdentityVerificationPort;
   readonly #allowedOrigin: string;
   readonly #transport: ProductIdentityTransportPolicy;
@@ -41,6 +42,7 @@ export class DurableCryptographicProductSessionBoundary implements ProductSessio
     if (!origin) throw new Error("PRODUCT_SESSION_ALLOWED_ORIGIN_INVALID");
     this.#verifier = input.verifier;
     this.#allowedOrigin = origin;
+    this.request_origin = origin;
     this.#transport = Object.freeze({
       allowed_origin: origin,
       allow_local_loopback_http: input.allow_local_loopback_http === true,

@@ -7,6 +7,8 @@ export type ProductSessionProofClass = "DURABLE_CRYPTOGRAPHIC_SESSION" | "HERMET
 /** One identity/session boundary for pages, APIs, logout and test-only login. */
 export interface ProductSessionBoundary {
   readonly proof_class: ProductSessionProofClass;
+  /** Exact server-owned origin used when a Server Component replays request cookies. */
+  readonly request_origin?: string;
   verify(request: Request, audience: ProductAudience, requireCsrf: boolean): Promise<VerifiedProductSession | null> | VerifiedProductSession | null;
   issue?(request: Request, audience: ProductAudience, ticket: string): Promise<IssuedProductSession | null> | IssuedProductSession | null;
   revoke?(request: Request, audience: ProductAudience): Promise<string | null> | string | null;

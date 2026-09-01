@@ -20,8 +20,8 @@ export async function productPageSession(audience: ProductAudience): Promise<Ver
   }).join("; ");
   const host = headerStore.get("host");
   if (!cookie || !host || !/^[A-Za-z0-9.:-]{1,255}$/.test(host)) return null;
-  const protocol = boundary.proof_class === "DURABLE_CRYPTOGRAPHIC_SESSION" ? "https" : "http";
-  const request = new Request(`${protocol}://${host}/${audience}`, {
+  const requestOrigin = boundary.request_origin ?? `http://${host}`;
+  const request = new Request(`${requestOrigin}/${audience}`, {
     headers: { cookie },
   });
   return boundary.verify(request, audience, false);

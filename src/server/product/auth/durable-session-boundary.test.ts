@@ -98,6 +98,7 @@ describe("durable cryptographic product session boundary", () => {
       url: "http://127.0.0.1:43191/api/portal/cases",
       origin: "http://127.0.0.1:43191",
     }), "portal", true);
+    expect(boundary.request_origin).toBe("http://127.0.0.1:43191");
     expect(session?.actor.actor_id).toBe(IDENTITY.actor.actor_id);
 
     await expect(boundary.verify(request({
