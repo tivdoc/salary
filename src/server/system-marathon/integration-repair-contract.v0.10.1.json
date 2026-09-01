@@ -1,0 +1,115 @@
+{
+  "schema_version": "tivdoc-canonical-integration-durability-repair-contract-v0.10.1",
+  "frozen": true,
+  "base": {
+    "branch": "codex/tivdoc-engine-foundation",
+    "head": "3b1740d63bb6978d990d1a6127730f3cec3574cc",
+    "tree": "fd72158f74130005a7eec781e00e8e41a5157d7b",
+    "ancestry_required": true,
+    "clean_required": true
+  },
+  "reachability_baseline": {
+    "command": "npm run canonical:reachability:verify",
+    "payload_sha256": "7d6672bfb939f816bf9fc3d5b60e125e3cc8356027c8a3e76e5f88cf3ae8df52",
+    "counts": {
+      "files": 753,
+      "nodes": 753,
+      "edges": 3064,
+      "product_entrypoints": 27,
+      "legacy_entrypoints": 2,
+      "evidence_entrypoints": 133,
+      "unknown": 0,
+      "duplicate_canonical_contracts": 0,
+      "stable_version_leaks": 0
+    }
+  },
+  "worker_capacity": 3,
+  "worker_allowlists": {
+    "W1_BROWSER_IDENTITY_PRODUCT_PATH": [
+      "src/instrumentation.ts",
+      "src/server/platform/auth/claims.ts",
+      "src/server/platform/auth/auth.test.ts",
+      "src/server/product/integration/browser-runtime*.ts",
+      "src/server/product/auth/**",
+      "src/server/product/routes/**",
+      "src/server/product/customer-portal/**",
+      "src/server/product/internal-ops/**",
+      "src/app/portal/**",
+      "src/app/operations/**",
+      "src/app/api/portal/**",
+      "src/app/api/operations/**",
+      "src/components/portal/**",
+      "src/components/operations/**",
+      "scripts/full-local-system-marathon/browser-e2e*.mts",
+      "src/server/system-marathon/browser-e2e-runtime.test.ts"
+    ],
+    "W2_POSTGRES_REPORT_TIMELINE": [
+      "scripts/canonical-persistence-v091/**",
+      "src/server/product/durable-postgres/**",
+      "src/server/platform/persistence/postgres/**"
+    ],
+    "W3_DURABLE_HUMAN_LEGAL_WORKFLOWS": [
+      "src/server/platform/trust/**",
+      "src/engine/extraction-ground-truth/**",
+      "src/engine/legal-operations/**",
+      "src/engine/legal-quality/**",
+      "src/server/engine/legal-operations/**"
+    ]
+  },
+  "orchestrator_owned": [
+    ".gitignore",
+    "package.json",
+    "package-lock.json",
+    "supabase/migrations/**",
+    "src/server/platform/composition/**",
+    "src/server/platform/persistence/wiring-map.ts",
+    "scripts/product-integration/routes/**",
+    "scripts/product-integration/reachability/**",
+    "src/server/system-marathon/integration-repair-*.v0.10.1.*",
+    "scripts/canonical-integration-repair-v0101/**",
+    "output/canonical-integration-durability-repair-v0.10.1/**"
+  ],
+  "acceptance_ids": [
+    "MC-01", "MC-02", "MC-03", "MC-04", "MC-05", "MC-06", "MC-07", "MC-08", "MC-09", "MC-10",
+    "MC-11", "MC-12", "MC-13", "MC-14", "MC-15", "MC-16", "MC-17", "MC-18", "MC-19", "MC-20",
+    "MC-21", "MC-22", "MC-23", "MC-24", "MC-25", "MC-26", "MC-27", "MC-28", "MC-29", "MC-30",
+    "MC-31", "MC-32", "MC-33", "MC-34", "MC-35", "MC-36", "MC-37", "MC-38", "MC-39"
+  ],
+  "integration_repair_ids": [
+    "IR-01", "IR-02", "IR-03", "IR-04", "IR-05", "IR-06", "IR-07", "IR-08", "IR-09",
+    "IR-10", "IR-11", "IR-12", "IR-13", "IR-14", "IR-15", "IR-16", "IR-17", "IR-18",
+    "IR-19", "IR-20", "IR-21", "IR-22", "IR-23", "IR-24", "IR-25", "IR-26", "IR-27"
+  ],
+  "truth_baseline": {
+    "REAL_LEGAL_TOPICS_READY": "0/7",
+    "REAL_SOURCES_ACTIVE": 0,
+    "REAL_PARAMETERS_ACTIVE": 0,
+    "REAL_RULES_ACTIVE": 0,
+    "REAL_CALCULATIONS_OR_FINDINGS": 0,
+    "HUMAN_GROUND_TRUTH_LOCKED": 0,
+    "REAL_CUSTOMER_DATA_READS": 0,
+    "CUSTOMER_PROCESSING_ENABLED": "NO",
+    "CUSTOMER_SHADOW_AUTHORIZED": "NO",
+    "PRODUCTION_DELIVERY_ENABLED": "NO",
+    "DEPLOYMENTS": 0,
+    "REMOTE_MIGRATIONS": 0,
+    "LIVE_PROVIDER_CALLS": 0,
+    "OPENAI_CALLS": 0,
+    "PRODUCT_REACHABLE_MEMORY_FALLBACKS": 0
+  },
+  "prohibited": [
+    "production_or_preview",
+    "deployment_or_push",
+    "remote_database_or_migration",
+    "customer_data",
+    "live_provider_or_openai_calls",
+    "real_legal_activation_or_calculation",
+    "manufactured_human_evidence",
+    "product_memory_fallback",
+    "test_identity_guard_weakening",
+    "synthetic_provider_non_test_reachability",
+    "historical_migration_or_evidence_mutation"
+  ],
+  "final_output_root": "output/canonical-integration-durability-repair-v0.10.1/final",
+  "ledger": "src/server/system-marathon/integration-repair-ledger.v0.10.1.ndjson"
+}
