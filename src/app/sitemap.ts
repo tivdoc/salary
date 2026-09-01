@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
+import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await guardStableAppEntrypoint("CEP-011");
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tivdoc.com";
   return ["", "/privacy", "/terms"].map((path) => ({
     url: `${baseUrl}${path}`,

@@ -5,11 +5,13 @@ import { isPaymentVerified } from "@/lib/case-status";
 import { deliverVerifiedMetaPurchase } from "@/lib/meta-purchase";
 import { deliverVerifiedGa4Purchase } from "@/lib/ga4-server";
 import { verifyPendingInvoice4uPayment } from "@/lib/verify-payment";
+import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  await guardStableHttpEntrypoint("CEP-015", request);
   const caseId = await readCaseIdFromCookie();
   if (!caseId) {
     return NextResponse.json({ error: "לא נמצא תיק בדיקה בדפדפן הזה" }, { status: 401 });

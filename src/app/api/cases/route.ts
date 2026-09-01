@@ -4,10 +4,12 @@ import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
 import { metaEventId } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { questionnaireSchema } from "@/lib/validation";
+import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  await guardStableHttpEntrypoint("CEP-013", request);
   let body: unknown;
   try {
     body = await request.json();

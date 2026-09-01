@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PortalWorkspace } from "@/components/portal/portal-workspace";
+import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 import { productPageSession } from "@/server/product/auth/next-session";
 import { readStableProductRouteFlags } from "@/server/product/routes/flags";
 import { resolveCanonicalPortalService } from "@/server/product/routes/runtime";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function PortalPage() {
+  await guardStableAppEntrypoint("CEP-007");
   if (!readStableProductRouteFlags().portalUi || !resolveCanonicalPortalService()) notFound();
   const session = await productPageSession("portal");
   if (!session || session.actor.assigned_case_ids.length !== 1) notFound();

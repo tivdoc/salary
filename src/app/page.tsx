@@ -10,6 +10,7 @@ import { Inspector } from "@/components/landing/inspector";
 import { LandingView } from "@/components/landing/landing-view";
 import { MiniDemo } from "@/components/landing/mini-demo";
 import { SamplePayslip } from "@/components/landing/sample-payslip";
+import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
 const checks = [
   "שעות נוספות",
@@ -23,7 +24,8 @@ const checks = [
   "חוזה מול העבודה בפועל",
 ];
 
-export default function Home() {
+export default async function Home() {
+  await guardStableAppEntrypoint("CEP-001");
   return (
     <>
       <LandingView />

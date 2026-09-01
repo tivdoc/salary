@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { OperationsWorkspace } from "@/components/operations/operations-workspace";
+import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 import { productPageSession } from "@/server/product/auth/next-session";
 import { readStableProductRouteFlags } from "@/server/product/routes/flags";
 import { resolveCanonicalOperationsService } from "@/server/product/routes/runtime";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function OperationsPage() {
+  await guardStableAppEntrypoint("CEP-006");
   if (!readStableProductRouteFlags().operationsUi || !resolveCanonicalOperationsService()) notFound();
   const session = await productPageSession("operations");
   if (!session) notFound();

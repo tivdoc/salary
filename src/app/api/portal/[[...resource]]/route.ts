@@ -2,6 +2,7 @@ import { resolveProductSessionBoundary } from "@/server/product/auth/runtime";
 import { readStableProductRouteFlags } from "@/server/product/routes/flags";
 import { createPortalHttpHandler } from "@/server/product/routes/portal-http";
 import { resolveCanonicalPortalService } from "@/server/product/routes/runtime";
+import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 type Context = Readonly<{ params: Promise<Readonly<{ resource?: string[] }>> }>;
 
 async function handle(request: Request, context: Context): Promise<Response> {
+  await guardStableHttpEntrypoint("CEP-025", request);
   const { resource = [] } = await context.params;
   const sessions = resolveProductSessionBoundary();
   if (!sessions) return new Response(null, { status: 404 });

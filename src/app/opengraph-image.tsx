@@ -1,10 +1,12 @@
 import { ImageResponse } from "next/og";
+import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
 export const alt = "Tivdoc בודק את מה שמאחורי התלוש";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  await guardStableAppEntrypoint("CEP-012");
   return new ImageResponse(
     <div
       dir="rtl"

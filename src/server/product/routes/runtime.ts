@@ -1,5 +1,10 @@
 import "./server-boundary.ts";
 
+import {
+  assertStableEntrypointCapability,
+  installStableEntrypointRuntime,
+  type StableEntrypointRuntime,
+} from "../../platform/capabilities/stable-entrypoint-runtime.ts";
 import { resolveProductSessionBoundary } from "../auth/runtime.ts";
 import type { CustomerPortalApplicationPort } from "../customer-portal/repository.ts";
 import type { InternalOpsApplicationPort } from "../internal-ops/application-port.ts";
@@ -29,6 +34,13 @@ type ProductRouteRuntimeGlobal = typeof globalThis & {
 
 function runtimeGlobal(): ProductRouteRuntimeGlobal {
   return globalThis as ProductRouteRuntimeGlobal;
+}
+
+/** Root-owned startup calls this once before any stable dispatcher is reachable. */
+export function installCanonicalProductEntrypointCapabilities(runtime: StableEntrypointRuntime): void {
+  runtime.assert("CEP-078");
+  installStableEntrypointRuntime(runtime);
+  assertStableEntrypointCapability("CEP-078");
 }
 
 /** Called by the canonical application composition root after repository wiring. */

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { funnelEventSchema } from "@/lib/funnel-validation";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  await guardStableHttpEntrypoint("CEP-018", request);
   let parsed;
   try {
     parsed = funnelEventSchema.safeParse(await request.json());

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
 export const metadata: Metadata = { title: "מדיניות פרטיות | Tivdoc" };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  await guardStableAppEntrypoint("CEP-008");
   return (
     <>
       <SiteHeader />
