@@ -139,7 +139,7 @@ describe("V0.10.2 bounded fresh worker child launcher", () => {
         working_directory: workingDirectory,
         timeout_ms: 2_000,
         termination_grace_ms: 500,
-        child_environment: { TIVDOC_DURABLE_DOWNLOAD_HMAC_KEY: "forbidden" } as never,
+        child_environment: { NODE_ENV: "development", TIVDOC_DURABLE_DOWNLOAD_HMAC_KEY: "forbidden" } as never,
       })).toThrow("FRESH_WORKER_CHILD_RUNTIME_FAILED");
     });
   });
@@ -156,7 +156,7 @@ function createLauncher(
     working_directory: workingDirectory,
     timeout_ms: timeoutMs,
     termination_grace_ms: terminationGraceMs,
-    child_environment: {},
+    child_environment: { NODE_ENV: "development" },
   });
 }
 

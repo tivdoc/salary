@@ -6,7 +6,7 @@ import { dirname } from "node:path";
 import type { DurableLocalProductRuntimeConfig } from "../runtime/durable-local-config.ts";
 import {
   FreshWorkerChildProcessLauncher,
-  type FreshWorkerChildEnvironmentKey,
+  type FreshWorkerChildEnvironment,
 } from "./fresh-child-launcher.ts";
 
 const ENTRYPOINT = fileURLToPath(new URL("./durable-worker-child-entrypoint.mts", import.meta.url));
@@ -15,7 +15,13 @@ export function createDurableFreshWorkerLauncher(
   config: DurableLocalProductRuntimeConfig,
   systemEnvironment: Readonly<Record<string, string | undefined>> = process.env,
 ): FreshWorkerChildProcessLauncher {
-  const environment: Partial<Record<FreshWorkerChildEnvironmentKey, string>> = {
+  const system: Partial<Record<"SYSTEMROOT" | "TEMP" | "TMP" | "WINDIR", string>> = {};
+  for (const key of ["SYSTEMROOT", "TEMP", "TMP", "WINDIR"] as const) {
+    const value = systemEnvironment[key];
+    if (value) system[key] = value;
+  }
+  const environment: FreshWorkerChildEnvironment = {
+    ...system,
     NODE_ENV: "development",
     TIVDOC_WORKER_RUNTIME_SENTINEL: "TIVDOC_FRESH_WORKER_V0102",
     TIVDOC_WORKER_ACTOR_ID: config.worker_identity.actor_id,
@@ -27,9 +33,6 @@ export function createDurableFreshWorkerLauncher(
     TIVDOC_WORKER_POSTGRES_URL: config.connection_urls.worker,
     TIVDOC_WORKER_PRIVATE_STORAGE_ROOT: config.private_storage_root,
   };
-  for (const key of ["SYSTEMROOT", "TEMP", "TMP", "WINDIR"] as const) {
-    if (systemEnvironment[key]) environment[key] = systemEnvironment[key];
-  }
   return new FreshWorkerChildProcessLauncher({
     entrypoint_path: ENTRYPOINT,
     working_directory: dirname(ENTRYPOINT),
