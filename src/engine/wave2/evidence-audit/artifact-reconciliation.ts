@@ -345,26 +345,96 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
     throw new Error("permit_8753_exact_catalog_value_not_preserved");
   }
 
+  // The fetch state is append-only across acquisition runs, so a raw row count
+  // drifts every time a source is legitimately re-acquired. The partition is
+  // derived from the latest observation per source version and compared with a
+  // committed baseline, which is what makes this reproducible rather than
+  // dependent on mutable untracked local state.
+  const observationKey = (entry: { source_id: string; source_version: string }) =>
+    `${entry.source_id}@${entry.source_version}`;
+  const latestObservation = new Map<string, FetchObservation>();
+  for (const observation of fetchState.observations) latestObservation.set(observationKey(observation), observation);
+  const unavailableKeys = [...new Set(fetchState.failures.map((failure) => observationKey(failure as never)))].sort();
+  const unavailable = unavailableKeys.map((sourceVersionId) => ({
+    source_version_id: sourceVersionId,
+    safe_error_codes: [...new Set(fetchState.failures
+      .filter((failure) => observationKey(failure as never) === sourceVersionId)
+      .map((failure) => String((failure as Record<string, unknown>).safe_error_code ?? "unknown")))].sort(),
+  }));
+  // Quarantine is historical evidence: a challenge page stays recorded even
+  // after a later attempt succeeds, so it is counted over every row.
   const challenges = fetchState.observations.filter(isChallengeObservation);
-  const unavailable = fetchState.failures;
+  const derivedPartition = [...latestObservation.entries()]
+    .map(([sourceVersionId, observation]) => ({
+      source_version_id: sourceVersionId,
+      disposition: isChallengeObservation(observation)
+        ? "quarantined"
+        : (observation as unknown as { status?: string }).status === "content_change_review_required"
+          ? "pending_change_review"
+          : "current_valid",
+      artifact_sha256: (observation as unknown as { artifact_sha256?: string }).artifact_sha256 ?? null,
+    }))
+    .sort((left, right) => left.source_version_id.localeCompare(right.source_version_id));
+
+  const partitionBaseline = await readJson<{
+    distinct_source_versions: number;
+    entries: Array<{ source_version_id: string; disposition: string; artifact_sha256: string | null }>;
+    historical_quarantine_observations: Array<{ source_version_id: string }>;
+    unavailable_source_versions: Array<{ source_version_id: string }>;
+    diff_ledger_expectation: {
+      unreviewed_byte_change: number;
+      rejected_challenge_observation: number;
+      detections_total: number;
+    };
+  }>(path.join(repoRoot, "src", "engine", "wave2", "evidence-audit", "wave1-artifact-partition.v0.10.9.json"));
+
+  const baselineKeys = new Set(partitionBaseline.entries.map((entry) => entry.source_version_id));
+  const derivedKeys = new Set(derivedPartition.map((entry) => entry.source_version_id));
+  const unaccounted = [...derivedKeys].filter((key) => !baselineKeys.has(key));
+  const dropped = [...baselineKeys].filter((key) => !derivedKeys.has(key));
+  const doubleCounted = derivedPartition.length !== derivedKeys.size;
+  const dispositionDrift = derivedPartition.filter((entry) => {
+    const expected = partitionBaseline.entries.find((row) => row.source_version_id === entry.source_version_id);
+    return !expected
+      || expected.disposition !== entry.disposition
+      || expected.artifact_sha256 !== entry.artifact_sha256;
+  });
+  const overlap = unavailableKeys.filter((key) => {
+    const observed = latestObservation.get(key);
+    if (observed === undefined || isChallengeObservation(observed)) return false;
+    return (observed as unknown as { status?: string }).status !== "content_change_review_required";
+  });
+
   const diffCandidates = diffReport.records.flatMap((record) => record.candidates);
   const byteChanges = diffCandidates.filter((candidate) => candidate.technical_classification === "unreviewed_byte_change");
   const rejectedChallenges = diffCandidates.filter((candidate) => candidate.technical_classification === "rejected_challenge_observation");
+  const pendingChangeReview = derivedPartition.filter((entry) => entry.disposition === "pending_change_review");
+
   if (
-    challenges.length !== 3
+    unaccounted.length > 0
+    || dropped.length > 0
+    || doubleCounted
+    || dispositionDrift.length > 0
+    || derivedPartition.length !== partitionBaseline.distinct_source_versions
+    || challenges.length !== partitionBaseline.historical_quarantine_observations.length
     || !challenges.every((entry) => entry.byte_count === 505)
-    || unavailable.length !== 1
-    || diffCandidates.length !== 5
-    || byteChanges.length !== 3
-    || rejectedChallenges.length !== 2
+    || unavailable.length !== partitionBaseline.unavailable_source_versions.length
+    || overlap.length > 0
+    // The diff ledger records what changed; the fetch state must agree with it
+    // rather than each side carrying its own hardcoded number.
+    || byteChanges.length !== pendingChangeReview.length
+    || byteChanges.length !== partitionBaseline.diff_ledger_expectation.unreviewed_byte_change
+    || rejectedChallenges.length !== partitionBaseline.diff_ledger_expectation.rejected_challenge_observation
+    || diffCandidates.length !== partitionBaseline.diff_ledger_expectation.detections_total
+    || diffCandidates.length !== byteChanges.length + rejectedChallenges.length
   ) throw new Error("quarantine_or_change_partition_mismatch");
 
-  const validRawArtifacts = fetchState.observations.filter((observation) => !isChallengeObservation(observation));
+  const validRawArtifacts = [...latestObservation.values()].filter((observation) => !isChallengeObservation(observation));
   const currentCounts = {
     registry_records: manifest.sources.length,
-    fetch_observation_records: fetchState.observations.length,
-    fetch_failure_records: fetchState.failures.length,
-    fetch_attempt_records_combined: fetchState.observations.length + fetchState.failures.length,
+    fetch_observation_records: latestObservation.size,
+    fetch_failure_records: unavailable.length,
+    fetch_attempt_records_combined: latestObservation.size + unavailable.length,
     valid_raw_artifact_versions: validRawArtifacts.length,
     quarantined_observations: challenges.length,
     quarantined_or_unavailable: challenges.length + unavailable.length,
@@ -383,9 +453,9 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
   };
   const expectedCurrent = {
     registry_records: 17,
-    fetch_observation_records: 23,
+    fetch_observation_records: 17,
     fetch_failure_records: 1,
-    valid_raw_artifact_versions: 20,
+    valid_raw_artifact_versions: 17,
     quarantined_or_unavailable: 4,
     legal_text_versions: 17,
     parsed_versions: 14,

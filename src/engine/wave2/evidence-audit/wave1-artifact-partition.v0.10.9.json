@@ -1,0 +1,121 @@
+{
+  "schema_version": "tivdoc-wave1-artifact-partition-v0.10.9",
+  "note": "Committed partition baseline. Live fetch-state is append-only across acquisition runs, so the reconciliation derives the latest observation per source version and compares it here. Legal baselines are not encoded and are never replaced by this file.",
+  "distinct_source_versions": 17,
+  "entries": [
+    {
+      "source_version_id": "IL_ANNUAL_VACATION_LAW@discovery-v0",
+      "disposition": "current_valid",
+      "artifact_sha256": "280b2d6c2e4fba81b02263a78cf4fc6ff6c0b22e05218228bea643b32ae0d791"
+    },
+    {
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_1988@discovery-v0",
+      "disposition": "current_valid",
+      "artifact_sha256": "df3f6e2cf2cbb109e70c45ec0311690afb2615adc0e4860a73dbe55421d62f2e"
+    },
+    {
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2016@discovery-v0.1",
+      "disposition": "current_valid",
+      "artifact_sha256": "8d3ef2242b07ae461852874b79c4d08979dd0dffbd0913678b09f82c81202163"
+    },
+    {
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2023@discovery-v0.2",
+      "disposition": "current_valid",
+      "artifact_sha256": "1b7228630a815e00c583377ce3c7eb08f4a52dbfb08b75cb25da1effd44fd9b2"
+    },
+    {
+      "source_version_id": "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2",
+      "disposition": "current_valid",
+      "artifact_sha256": "a6e530b57ffd0f66c27e8f7947d242e73b9baf44ab62e19dfbc9879a8a63dcde"
+    },
+    {
+      "source_version_id": "IL_CONVALESCENCE_KNESSET_RESEARCH_2025@discovery-v0",
+      "disposition": "pending_change_review",
+      "artifact_sha256": "3c0cca8d0db5954a5f9e7dc735879bf6513383b10eefb1e7f126b4c59706d390"
+    },
+    {
+      "source_version_id": "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2024@discovery-v0.2",
+      "disposition": "current_valid",
+      "artifact_sha256": "ad3ad1bcdffa15319bc4fd74f1b98695ab01625eef1d41bd7458a9982af0f3b1"
+    },
+    {
+      "source_version_id": "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2025@discovery-v0.3.1",
+      "disposition": "current_valid",
+      "artifact_sha256": "eba7e1fa570a3ece265d87f379543024da038ee51af3f959d4c74162f5edecfa"
+    },
+    {
+      "source_version_id": "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1",
+      "disposition": "current_valid",
+      "artifact_sha256": "c11623a168aa157331afacbe74e9d64c1c4714755fa02efa5e86affd5c4893f9"
+    },
+    {
+      "source_version_id": "IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0",
+      "disposition": "current_valid",
+      "artifact_sha256": "2f1c4942e0130c55714801cc4a72aba40f77a2391ba72f6bd2d5b2d7094244d9"
+    },
+    {
+      "source_version_id": "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016@discovery-v0.2",
+      "disposition": "current_valid",
+      "artifact_sha256": "f3e7de9d9b36900e18efa33f0286a1eeddbb8e062d8a19e102af94967921dd70"
+    },
+    {
+      "source_version_id": "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016@discovery-v0",
+      "disposition": "current_valid",
+      "artifact_sha256": "a38a52224c50e92fef9dcf920b53d697aca42bd923639ded8cc592d5e0c43142"
+    },
+    {
+      "source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "disposition": "pending_change_review",
+      "artifact_sha256": "ca770f73436663094f546e53bed93aeca867bbed7124991fecfa1a8d750fdcd9"
+    },
+    {
+      "source_version_id": "IL_MIN_WAGE_LAW@discovery-v0",
+      "disposition": "current_valid",
+      "artifact_sha256": "4674f07928a2397b626db362c6c9b98b7c4e77e693e397463fdabd83c7f4f161"
+    },
+    {
+      "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0",
+      "disposition": "pending_change_review",
+      "artifact_sha256": "aa05c64bd964f6a0ed6ef17329d07363dc96bf37027300c0fcfc142d5d81eca7"
+    },
+    {
+      "source_version_id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018@discovery-v0.1",
+      "disposition": "current_valid",
+      "artifact_sha256": "fa27b689656194ef65d207fd6f68ec7c54c2c78d4362b2a5a2a5d3a207831a4b"
+    },
+    {
+      "source_version_id": "IL_SICK_PAY_LAW@discovery-v0",
+      "disposition": "current_valid",
+      "artifact_sha256": "3e35b894541d660114e3ac9e85a60c901d769c5a585f408a38e2109cf66aac7e"
+    }
+  ],
+  "historical_quarantine_observations": [
+    {
+      "source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "artifact_sha256": "1bc716c05aa8ec789163b826f581181648fcaa3614e6dc1fc98ae096ab76834f"
+    },
+    {
+      "source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "artifact_sha256": "287970009ddf112413a035cdd659f235c4ce55655dc9f56282a7a085e55367d3"
+    },
+    {
+      "source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "artifact_sha256": "c90d15ed5e4a15942da5aa198ef60cc351a620b94ac3336456f25d9ac26abaf7"
+    }
+  ],
+  "unavailable_source_versions": [
+    {
+      "source_version_id": "IL_HOURS_WORK_REST_LAW@discovery-v0",
+      "disposition": "unavailable",
+      "safe_error_codes": [
+        "declared_mime_mismatch",
+        "html_challenge_or_error_page"
+      ]
+    }
+  ],
+  "diff_ledger_expectation": {
+    "unreviewed_byte_change": 3,
+    "rejected_challenge_observation": 2,
+    "detections_total": 5
+  }
+}
