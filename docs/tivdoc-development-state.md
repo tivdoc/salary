@@ -82,6 +82,12 @@
   step reads the selected packet's fields out of the queue payload, which is
   what the product panel does; there is no caller for a separate endpoint.
 
+- **One freeze cycle moved three chain-length assertions with the chain.**
+  Appending a forward repair migration is how this chain has always grown —
+  `008`, `009` and `010` did the same — so the pinned count and the pinned last
+  filename move with it. The digest map is unchanged for all 23 existing files
+  and the new one is pinned like the rest; no expectation about content moved.
+
 ## Blockers
 
 | id | blocker | class | evidence |
