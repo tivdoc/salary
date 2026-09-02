@@ -16,6 +16,7 @@ import type {
   DurableProductRouteContext,
   DurableProductRouteServiceAdapter,
 } from "../../routes/durable-registration.ts";
+import type { LegalReviewAction, LegalReviewDurableRow, LegalReviewPacket } from "../../../../engine/legal-review/contracts.ts";
 import type { InternalOpsApplicationPort } from "../application-port.ts";
 import type { InternalOpsCommandResult, OpsReadProjection } from "../contracts.ts";
 import { actorScopePermits } from "../policy.ts";
@@ -37,6 +38,49 @@ import {
 } from "./contracts.ts";
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/u;
+
+/** Who may read the nested Legal Review workspace, mirroring the Legal tab. */
+const LEGAL_REVIEW_READ_ROLES = Object.freeze([
+  "legal_reviewer", "report_approver", "auditor", "break_glass_admin",
+] as const satisfies readonly V07Role[]);
+
+/** An auditor observes; only a reviewer or approver may submit an action. */
+const LEGAL_REVIEW_ACTION_ROLES = Object.freeze([
+  "legal_reviewer", "report_approver", "break_glass_admin",
+] as const satisfies readonly V07Role[]);
+
+export type DurableGovernanceLegalReviewScope = Readonly<{
+  actor: VerifiedActor;
+  correlation_id: string;
+}>;
+
+export type DurableLegalReviewQueueProjection = Readonly<{
+  schema_version: typeof DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION;
+  persistence: "postgresql_required";
+  governance_workflow: "legal_review";
+  entries: readonly LegalReviewDurableRow[];
+  product_reachable_memory_fallback: false;
+  activation_allowed: false;
+}>;
+
+export type DurableLegalReviewActionResult = Readonly<{
+  schema_version: typeof DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION;
+  persistence: "postgresql_required";
+  governance_workflow: "legal_review";
+  receipt: GovernanceMutationReceipt;
+  product_reachable_memory_fallback: false;
+  activation_allowed: false;
+}>;
+
+/** The workspace is not case-scoped, so it enters the canonical transaction
+ * with no case binding and its own correlation id. */
+function legalReviewScope(scope: DurableGovernanceLegalReviewScope): DurableGovernanceOperationsScope {
+  return Object.freeze({
+    actor: scope.actor,
+    case_id: null,
+    correlation_id: scope.correlation_id,
+  }) as unknown as DurableGovernanceOperationsScope;
+}
 
 const INTERNAL_REVIEWER_KEY_ROLES = Object.freeze([
   "extraction_reviewer",
@@ -98,6 +142,17 @@ export interface DurableGovernanceOperationsApplication extends InternalOpsAppli
     scope: DurableGovernanceOperationsScope,
     command: DurableGovernanceCommand,
   ): Promise<DurableGovernanceCommandResult>;
+  readLegalReviewQueue(input: DurableGovernanceLegalReviewScope & Readonly<{
+    limit: number;
+  }>): Promise<DurableLegalReviewQueueProjection>;
+  submitLegalReviewAction(input: DurableGovernanceLegalReviewScope & Readonly<{
+    packet: LegalReviewPacket;
+    action: LegalReviewAction;
+    applied_actions?: readonly LegalReviewAction[];
+    superseded_by_packet_id?: string | null;
+    idempotency_key: string;
+    occurred_at: string;
+  }>): Promise<DurableLegalReviewActionResult>;
 }
 
 export type DurableGovernanceOperationsRouteAdapter = DurableProductRouteServiceAdapter<
@@ -216,6 +271,76 @@ class PostgresDurableGovernanceOperationsApplication implements DurableGovernanc
       product_reachable_memory_fallback: false,
       activation_allowed: false,
     });
+  }
+
+  /**
+   * Nested Legal Review workspace. It hangs off the existing protected
+   * operations surface rather than adding a top-level tab, so the established
+   * navigation contract is untouched. Review packets belong to the internal
+   * governance surface rather than to a case, so the scope carries no case
+   * binding; every other control — verified server-side actor, tenant, role and
+   * the canonical transaction — is the same as every other operation here.
+   */
+  async readLegalReviewQueue(input: DurableGovernanceLegalReviewScope & Readonly<{
+    limit: number;
+  }>): Promise<DurableLegalReviewQueueProjection> {
+    this.#assertLegalReviewScope(input, LEGAL_REVIEW_READ_ROLES);
+    const entries = await this.#withGovernance(
+      legalReviewScope(input),
+      (application) => application.legal_review.listQueue(input.limit),
+    );
+    return Object.freeze({
+      schema_version: DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION,
+      persistence: "postgresql_required",
+      governance_workflow: "legal_review",
+      entries,
+      product_reachable_memory_fallback: false,
+      activation_allowed: false,
+    });
+  }
+
+  /**
+   * Submits one reviewer action. Admissibility, revision compare-and-swap,
+   * attestation and replay conflict are all decided by the canonical adapter
+   * and its pure workflow; nothing is re-decided or relaxed here.
+   */
+  async submitLegalReviewAction(input: DurableGovernanceLegalReviewScope & Readonly<{
+    packet: LegalReviewPacket;
+    action: LegalReviewAction;
+    applied_actions?: readonly LegalReviewAction[];
+    superseded_by_packet_id?: string | null;
+    idempotency_key: string;
+    occurred_at: string;
+  }>): Promise<DurableLegalReviewActionResult> {
+    this.#assertLegalReviewScope(input, LEGAL_REVIEW_ACTION_ROLES);
+    const receipt = await this.#withGovernance(
+      legalReviewScope(input),
+      (application) => application.legal_review.appendAction({
+        packet: input.packet,
+        action: input.action,
+        applied_actions: input.applied_actions ?? [],
+        superseded_by_packet_id: input.superseded_by_packet_id ?? null,
+        metadata: Object.freeze({
+          idempotency_key: input.idempotency_key,
+          occurred_at: input.occurred_at,
+        }),
+      }),
+    );
+    return Object.freeze({
+      schema_version: DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION,
+      persistence: "postgresql_required",
+      governance_workflow: "legal_review",
+      receipt,
+      product_reachable_memory_fallback: false,
+      activation_allowed: false,
+    });
+  }
+
+  #assertLegalReviewScope(scope: DurableGovernanceLegalReviewScope, roles: readonly V07Role[]): void {
+    if (!scope.actor || scope.actor.verified_server_side !== true || scope.actor.tenant_id === null
+        || !ID.test(scope.correlation_id) || !roles.includes(scope.actor.role)) {
+      throw new Error("DURABLE_GOVERNANCE_OPERATIONS_FORBIDDEN");
+    }
   }
 
   async claimPendingWork(input: DurableGovernanceOperationsScope & Readonly<{
