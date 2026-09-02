@@ -155,7 +155,14 @@ function nodeKind(file: string): GraphNode["kind"] {
   if (/\.test\.[cm]?[jt]sx?$/.test(file)) return "test";
   if (file.startsWith("scripts/")) return "evidence_entrypoint";
   if (/^(src\/app\/(?:api\/)?(?:internal-ops-v07|portal-v07)\/|src\/components\/(?:internal-ops-v07|portal-v07)\/)/.test(file)) return "legacy_entrypoint";
-  if (/^src\/app\/.*\/(?:page|layout|route)\.[jt]sx?$/.test(file) || /^src\/app\/(?:page|layout)\.[jt]sx?$/.test(file)) return "product_entrypoint";
+  if (/^src\/app\/.*\/(?:page|layout|route|error|not-found|global-error|template|default)\.[jt]sx?$/.test(file)
+    || /^src\/app\/(?:page|layout|error|not-found|global-error|template|default)\.[jt]sx?$/.test(file)) return "product_entrypoint";
+  // The framework loads these itself and nothing in the tree imports them, so
+  // leaving them as plain modules made everything they reach look unreachable.
+  // `instrumentation.ts` is the server startup hook: it runs on every boot, and
+  // its dynamic import of the durable local runtime is how the product reaches
+  // the dependency-invalidation port at all.
+  if (/^src\/(?:instrumentation|middleware)\.[jt]sx?$/.test(file)) return "product_entrypoint";
   if (["src/server/product/internal-ops/runtime.ts", "src/server/product/customer-portal/api.ts"].includes(file)) return "product_entrypoint";
   return "module";
 }
