@@ -41,8 +41,13 @@
       "canonical_target": "src/app/page.tsx:default",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/components/landing/landing-view.tsx"],
-      "blockers": ["REAL_LEGAL_TOPICS_0_OF_7", "CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/components/landing/landing-view.tsx"
+      ],
+      "blockers": [
+        "REAL_LEGAL_TOPICS_0_OF_7",
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "The public landing route is present; this does not prove legal readiness or enable customer processing."
     },
     {
@@ -54,8 +59,13 @@
       "canonical_target": "src/app/check/page.tsx:default",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/components/check/questionnaire.tsx"],
-      "blockers": ["CUSTOMER_PROCESSING_DISABLED", "MANAGED_PLATFORM_NOT_PROVEN"],
+      "dependencies": [
+        "src/components/check/questionnaire.tsx"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
       "non_claim": "The intake screen exists; it is not authorization to process customer material."
     },
     {
@@ -67,8 +77,13 @@
       "canonical_target": "src/app/check/upload/page.tsx:default",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/components/check/upload-form.tsx"],
-      "blockers": ["MANAGED_PRIVATE_STORAGE_NOT_PROVEN", "CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/components/check/upload-form.tsx"
+      ],
+      "blockers": [
+        "MANAGED_PRIVATE_STORAGE_NOT_PROVEN",
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "The upload UI exists; no customer upload or managed private-storage proof is claimed."
     },
     {
@@ -80,8 +95,13 @@
       "canonical_target": "src/app/check/payment/page.tsx:default",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/components/check/payment-handoff.tsx"],
-      "blockers": ["LIVE_PROVIDER_CALLS_0", "CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/components/check/payment-handoff.tsx"
+      ],
+      "blockers": [
+        "LIVE_PROVIDER_CALLS_0",
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "The payment handoff screen exists; no live provider call or production delivery is claimed."
     },
     {
@@ -93,8 +113,12 @@
       "canonical_target": "src/app/check/received/page.tsx:default",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/components/check/received-status.tsx"],
-      "blockers": ["CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/components/check/received-status.tsx"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "The receipt status UI exists; it does not assert that a real payment or analysis occurred."
     },
     {
@@ -106,8 +130,14 @@
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalOperationsService",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/server/product/internal-ops/service.ts", "src/server/product/auth/next-session.ts"],
-      "blockers": ["MANAGED_IDENTITY_NOT_PROVEN", "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"],
+      "dependencies": [
+        "src/server/product/internal-ops/service.ts",
+        "src/server/product/auth/next-session.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+      ],
       "non_claim": "The stable operations workspace fails closed without an installed service and verified session."
     },
     {
@@ -119,8 +149,14 @@
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalPortalService",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/server/product/customer-portal/service.ts", "src/server/product/auth/next-session.ts"],
-      "blockers": ["MANAGED_IDENTITY_NOT_PROVEN", "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"],
+      "dependencies": [
+        "src/server/product/customer-portal/service.ts",
+        "src/server/product/auth/next-session.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+      ],
       "non_claim": "The stable portal fails closed without an installed service and verified owner session."
     },
     {
@@ -133,7 +169,9 @@
       "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [],
-      "blockers": ["EXTERNAL_POLICY_REVIEW_NOT_RECORDED"],
+      "blockers": [
+        "EXTERNAL_POLICY_REVIEW_NOT_RECORDED"
+      ],
       "non_claim": "The published privacy text is inventoried as code and is not a new legal attestation."
     },
     {
@@ -146,7 +184,9 @@
       "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [],
-      "blockers": ["EXTERNAL_POLICY_REVIEW_NOT_RECORDED"],
+      "blockers": [
+        "EXTERNAL_POLICY_REVIEW_NOT_RECORDED"
+      ],
       "non_claim": "The published terms are inventoried as code and are not a new legal attestation."
     },
     {
@@ -197,8 +237,13 @@
       "canonical_target": "src/server/platform/composition/canonical-postgres-application.ts:startCanonicalApplicationPostgres",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/lib/supabase-admin.ts"],
-      "blockers": ["DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION", "CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/lib/supabase-admin.ts"
+      ],
+      "blockers": [
+        "DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION",
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "The route currently uses the existing Supabase boundary and is not claimed as canonically composed."
     },
     {
@@ -210,8 +255,12 @@
       "canonical_target": "src/server/platform/composition/canonical-postgres-application.ts:startCanonicalApplicationPostgres",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/lib/supabase-admin.ts"],
-      "blockers": ["DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION"],
+      "dependencies": [
+        "src/lib/supabase-admin.ts"
+      ],
+      "blockers": [
+        "DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION"
+      ],
       "non_claim": "The resume lookup is fail-soft legacy persistence, not a canonical durable application binding."
     },
     {
@@ -223,8 +272,14 @@
       "canonical_target": "src/server/platform/composition/canonical-postgres-application.ts:startCanonicalApplicationPostgres",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/lib/supabase-admin.ts", "src/lib/verify-payment.ts"],
-      "blockers": ["DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION", "LIVE_PROVIDER_CALLS_0"],
+      "dependencies": [
+        "src/lib/supabase-admin.ts",
+        "src/lib/verify-payment.ts"
+      ],
+      "blockers": [
+        "DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION",
+        "LIVE_PROVIDER_CALLS_0"
+      ],
       "non_claim": "The status endpoint is not evidence of a live payment provider or canonical persistence binding."
     },
     {
@@ -236,8 +291,13 @@
       "canonical_target": "src/server/platform/storage/private-storage-provider.ts:SupabasePrivateBlobProvider",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/lib/supabase-admin.ts"],
-      "blockers": ["MANAGED_PRIVATE_STORAGE_NOT_PROVEN", "CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/lib/supabase-admin.ts"
+      ],
+      "blockers": [
+        "MANAGED_PRIVATE_STORAGE_NOT_PROVEN",
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "The legacy signed-upload handler is not managed private-storage proof or processing authorization."
     },
     {
@@ -249,8 +309,13 @@
       "canonical_target": "src/server/platform/storage/private-storage-provider.ts:SupabasePrivateBlobProvider",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/lib/supabase-admin.ts"],
-      "blockers": ["MANAGED_PRIVATE_STORAGE_NOT_PROVEN", "CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/lib/supabase-admin.ts"
+      ],
+      "blockers": [
+        "MANAGED_PRIVATE_STORAGE_NOT_PROVEN",
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "The legacy completion handler is not managed private-storage proof or processing authorization."
     },
     {
@@ -262,8 +327,12 @@
       "canonical_target": "src/app/api/funnel/session/route.ts:POST",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/lib/supabase-admin.ts"],
-      "blockers": ["MANAGED_PLATFORM_NOT_PROVEN"],
+      "dependencies": [
+        "src/lib/supabase-admin.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
       "non_claim": "The funnel endpoint is inventoried without claiming a managed-environment run."
     },
     {
@@ -275,8 +344,12 @@
       "canonical_target": "src/app/api/health/route.ts:GET",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/lib/supabase-admin.ts"],
-      "blockers": ["CONFIGURATION_PRESENCE_IS_NOT_RUNTIME_READINESS"],
+      "dependencies": [
+        "src/lib/supabase-admin.ts"
+      ],
+      "blockers": [
+        "CONFIGURATION_PRESENCE_IS_NOT_RUNTIME_READINESS"
+      ],
       "non_claim": "The endpoint reports coarse configuration presence and does not prove dependency readiness."
     },
     {
@@ -288,8 +361,14 @@
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalOperationsService",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/server/product/routes/operations-http.ts", "src/server/product/auth/hermetic-session.ts"],
-      "blockers": ["MANAGED_IDENTITY_NOT_PROVEN", "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"],
+      "dependencies": [
+        "src/server/product/routes/operations-http.ts",
+        "src/server/product/auth/hermetic-session.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+      ],
       "non_claim": "The stable API fails closed when its canonical service or signed session is unavailable."
     },
     {
@@ -301,8 +380,13 @@
       "canonical_target": "src/server/product/auth/session-http.ts:issueProductSession",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/server/product/auth/hermetic-session.ts"],
-      "blockers": ["MANAGED_IDENTITY_NOT_PROVEN", "HERMETIC_SESSION_ONLY"],
+      "dependencies": [
+        "src/server/product/auth/hermetic-session.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "HERMETIC_SESSION_ONLY"
+      ],
       "non_claim": "Hermetic signed sessions are local proof only and do not establish managed identity."
     },
     {
@@ -314,8 +398,13 @@
       "canonical_target": "src/app/api/payments/start/route.ts:POST",
       "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
       "product_stable": true,
-      "dependencies": ["src/lib/invoice4u.ts"],
-      "blockers": ["LIVE_PROVIDER_CALLS_0", "CUSTOMER_PROCESSING_DISABLED"],
+      "dependencies": [
+        "src/lib/invoice4u.ts"
+      ],
+      "blockers": [
+        "LIVE_PROVIDER_CALLS_0",
+        "CUSTOMER_PROCESSING_DISABLED"
+      ],
       "non_claim": "No payment provider call or customer transaction is claimed."
     },
     {
@@ -327,8 +416,12 @@
       "canonical_target": "src/app/api/payments/return/route.ts:GET",
       "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
       "product_stable": true,
-      "dependencies": ["src/lib/verify-payment.ts"],
-      "blockers": ["LIVE_PROVIDER_CALLS_0"],
+      "dependencies": [
+        "src/lib/verify-payment.ts"
+      ],
+      "blockers": [
+        "LIVE_PROVIDER_CALLS_0"
+      ],
       "non_claim": "The callback shape exists; no live provider callback was accepted."
     },
     {
@@ -340,8 +433,12 @@
       "canonical_target": "src/app/api/payments/reconcile/route.ts:POST",
       "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
       "product_stable": true,
-      "dependencies": ["src/lib/verify-payment.ts"],
-      "blockers": ["LIVE_PROVIDER_CALLS_0"],
+      "dependencies": [
+        "src/lib/verify-payment.ts"
+      ],
+      "blockers": [
+        "LIVE_PROVIDER_CALLS_0"
+      ],
       "non_claim": "The reconciliation handler exists; no live reconciliation was run."
     },
     {
@@ -353,8 +450,14 @@
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalPortalService",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/server/product/routes/portal-http.ts", "src/server/product/auth/hermetic-session.ts"],
-      "blockers": ["MANAGED_IDENTITY_NOT_PROVEN", "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"],
+      "dependencies": [
+        "src/server/product/routes/portal-http.ts",
+        "src/server/product/auth/hermetic-session.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+      ],
       "non_claim": "The stable API fails closed when its canonical service or signed owner session is unavailable."
     },
     {
@@ -366,8 +469,13 @@
       "canonical_target": "src/server/product/auth/session-http.ts:issueProductSession",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/server/product/auth/hermetic-session.ts"],
-      "blockers": ["MANAGED_IDENTITY_NOT_PROVEN", "HERMETIC_SESSION_ONLY"],
+      "dependencies": [
+        "src/server/product/auth/hermetic-session.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "HERMETIC_SESSION_ONLY"
+      ],
       "non_claim": "Hermetic signed sessions are local proof only and do not establish managed identity."
     },
     {
@@ -379,8 +487,12 @@
       "canonical_target": "src/server/platform/persistence/postgres/runtime/jobs-outbox-audit.ts:PostgresJobsOutboxAuditRepository",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/server/platform/composition/canonical-postgres-application.ts"],
-      "blockers": ["LONG_RUNNING_WORKER_ENTRYPOINT_NOT_WIRED"],
+      "dependencies": [
+        "src/server/platform/composition/canonical-postgres-application.ts"
+      ],
+      "blockers": [
+        "LONG_RUNNING_WORKER_ENTRYPOINT_NOT_WIRED"
+      ],
       "non_claim": "PostgreSQL claim, fencing and restart recovery are proven locally; no continuously running product worker is claimed."
     },
     {
@@ -392,8 +504,13 @@
       "canonical_target": "src/server/platform/persistence/postgres/runtime/jobs-outbox-audit.ts:PostgresJobsOutboxAuditRepository",
       "classification": "IMPLEMENTED_NOT_WIRED",
       "product_stable": true,
-      "dependencies": ["src/server/platform/composition/canonical-postgres-application.ts"],
-      "blockers": ["EXTERNAL_EFFECT_ADAPTER_NOT_WIRED", "LONG_RUNNING_WORKER_ENTRYPOINT_NOT_WIRED"],
+      "dependencies": [
+        "src/server/platform/composition/canonical-postgres-application.ts"
+      ],
+      "blockers": [
+        "EXTERNAL_EFFECT_ADAPTER_NOT_WIRED",
+        "LONG_RUNNING_WORKER_ENTRYPOINT_NOT_WIRED"
+      ],
       "non_claim": "Exactly-once logical-effect recording is locally proven; no external delivery worker is claimed."
     },
     {
@@ -405,8 +522,13 @@
       "canonical_target": "src/server/engine/legal-knowledge/controlled-import-security.ts:importControlledOfficialArtifact",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/server/engine/legal-knowledge/parser-isolation/index.ts"],
-      "blockers": ["PARSER_SANDBOX_PLATFORM_PROOF_REQUIRED", "OFFICIAL_SOURCE_BYTES_NOT_SUPPLIED"],
+      "dependencies": [
+        "src/server/engine/legal-knowledge/parser-isolation/index.ts"
+      ],
+      "blockers": [
+        "PARSER_SANDBOX_PLATFORM_PROOF_REQUIRED",
+        "OFFICIAL_SOURCE_BYTES_NOT_SUPPLIED"
+      ],
       "non_claim": "The durable ledger and local recovery path do not activate a source or prove a managed parser sandbox."
     },
     {
@@ -418,8 +540,12 @@
       "canonical_target": "src/server/platform/custody/replication.ts:CustodyReplicationOutbox",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/server/platform/custody/privacy-reconciliation.ts"],
-      "blockers": ["MANAGED_OFF_HOST_DESTINATION_REQUIRED"],
+      "dependencies": [
+        "src/server/platform/custody/privacy-reconciliation.ts"
+      ],
+      "blockers": [
+        "MANAGED_OFF_HOST_DESTINATION_REQUIRED"
+      ],
       "non_claim": "Only local synthetic custody is proven; no off-host custody or disaster-recovery readiness is claimed."
     },
     {
@@ -431,456 +557,1095 @@
       "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane",
       "classification": "PARTIAL",
       "product_stable": true,
-      "dependencies": ["src/server/engine/shadow/flags.ts"],
-      "blockers": ["DURABLE_SHADOW_REPOSITORY_NOT_WIRED", "CUSTOMER_SHADOW_NOT_AUTHORIZED"],
+      "dependencies": [
+        "src/server/engine/shadow/flags.ts"
+      ],
+      "blockers": [
+        "DURABLE_SHADOW_REPOSITORY_NOT_WIRED",
+        "CUSTOMER_SHADOW_NOT_AUTHORIZED"
+      ],
       "non_claim": "The runner is offline and synthetic; it does not authorize Customer Shadow or customer-data reads."
     },
     {
-      "entrypoint_id": "CEP-032", "kind": "cli", "stable_entry": "npm run canonical:reachability:verify",
-      "source_path": "scripts/product-integration/reachability/verify.mts", "canonical_contract_id": "cli.reachability.verify",
-      "canonical_target": "scripts/product-integration/reachability/verify.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/persistence/wiring-map.ts"], "blockers": [],
+      "entrypoint_id": "CEP-032",
+      "kind": "cli",
+      "stable_entry": "npm run canonical:reachability:verify",
+      "source_path": "scripts/product-integration/reachability/verify.mts",
+      "canonical_contract_id": "cli.reachability.verify",
+      "canonical_target": "scripts/product-integration/reachability/verify.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/persistence/wiring-map.ts"
+      ],
+      "blockers": [],
       "non_claim": "This is the existing import-graph authority; this inventory does not replace or reinterpret its graph."
     },
     {
-      "entrypoint_id": "CEP-033", "kind": "cli", "stable_entry": "npm run platform:persistence:wiring:verify",
-      "source_path": "scripts/product-integration/persistence/wiring-map.mts", "canonical_contract_id": "cli.persistence.wiring-verify",
-      "canonical_target": "src/server/platform/persistence/wiring-map.ts:CANONICAL_PERSISTENCE_WIRING_MAP", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/composition/canonical-postgres-application.ts"], "blockers": [],
+      "entrypoint_id": "CEP-033",
+      "kind": "cli",
+      "stable_entry": "npm run platform:persistence:wiring:verify",
+      "source_path": "scripts/product-integration/persistence/wiring-map.mts",
+      "canonical_contract_id": "cli.persistence.wiring-verify",
+      "canonical_target": "src/server/platform/persistence/wiring-map.ts:PERSISTENCE_WIRING_MAP",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/composition/canonical-postgres-application.ts"
+      ],
+      "blockers": [],
       "non_claim": "The command verifies the canonical wiring map; it does not prove a managed environment."
     },
     {
-      "entrypoint_id": "CEP-034", "kind": "cli", "stable_entry": "npm run platform:persistence:env:detect",
-      "source_path": "scripts/platform/persistence/env-detect.mts", "canonical_contract_id": "cli.persistence.environment-detect",
-      "canonical_target": "scripts/platform/persistence/env-detect.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": [], "blockers": ["ISOLATED_SUPABASE_EXTERNAL"],
+      "entrypoint_id": "CEP-034",
+      "kind": "cli",
+      "stable_entry": "npm run platform:persistence:env:detect",
+      "source_path": "scripts/platform/persistence/env-detect.mts",
+      "canonical_contract_id": "cli.persistence.environment-detect",
+      "canonical_target": "scripts/platform/persistence/env-detect.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [],
+      "blockers": [
+        "ISOLATED_SUPABASE_EXTERNAL"
+      ],
       "non_claim": "Detection is read-only and does not prove or provision an isolated managed environment."
     },
     {
-      "entrypoint_id": "CEP-035", "kind": "cli", "stable_entry": "npm run platform:persistence:static:verify",
-      "source_path": "scripts/platform/persistence/static-verify.mts", "canonical_contract_id": "cli.persistence.static-verify",
-      "canonical_target": "scripts/platform/persistence/static-verify.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/persistence/wiring-map.ts"], "blockers": [],
+      "entrypoint_id": "CEP-035",
+      "kind": "cli",
+      "stable_entry": "npm run platform:persistence:static:verify",
+      "source_path": "scripts/platform/persistence/static-verify.mts",
+      "canonical_contract_id": "cli.persistence.static-verify",
+      "canonical_target": "scripts/platform/persistence/static-verify.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/persistence/wiring-map.ts"
+      ],
+      "blockers": [],
       "non_claim": "Static verification is not a dynamic PostgreSQL or managed Supabase receipt."
     },
     {
-      "entrypoint_id": "CEP-036", "kind": "cli", "stable_entry": "npm run platform:persistence:isolated:bootstrap",
-      "source_path": "scripts/platform/persistence/isolated-bootstrap.mts", "canonical_contract_id": "cli.persistence.isolated-bootstrap",
-      "canonical_target": "scripts/platform/persistence/isolated-bootstrap.mts:main", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["scripts/platform/persistence/env-detect.mts"], "blockers": ["ISOLATED_SUPABASE_EXTERNAL"],
+      "entrypoint_id": "CEP-036",
+      "kind": "cli",
+      "stable_entry": "npm run platform:persistence:isolated:bootstrap",
+      "source_path": "scripts/platform/persistence/isolated-bootstrap.mts",
+      "canonical_contract_id": "cli.persistence.isolated-bootstrap",
+      "canonical_target": "scripts/platform/persistence/isolated-bootstrap.mts:main",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "scripts/platform/persistence/env-detect.mts"
+      ],
+      "blockers": [
+        "ISOLATED_SUPABASE_EXTERNAL"
+      ],
       "non_claim": "The fail-closed runner does not provision or authorize an external Supabase project."
     },
     {
-      "entrypoint_id": "CEP-037", "kind": "cli", "stable_entry": "npm run platform:persistence:isolated:verify",
-      "source_path": "scripts/platform/persistence/isolated-verify.mts", "canonical_contract_id": "cli.persistence.isolated-verify",
-      "canonical_target": "scripts/platform/persistence/isolated-verify.mts:main", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["scripts/platform/persistence/env-detect.mts"], "blockers": ["ISOLATED_SUPABASE_EXTERNAL"],
+      "entrypoint_id": "CEP-037",
+      "kind": "cli",
+      "stable_entry": "npm run platform:persistence:isolated:verify",
+      "source_path": "scripts/platform/persistence/isolated-verify.mts",
+      "canonical_contract_id": "cli.persistence.isolated-verify",
+      "canonical_target": "scripts/platform/persistence/isolated-verify.mts:main",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "scripts/platform/persistence/env-detect.mts"
+      ],
+      "blockers": [
+        "ISOLATED_SUPABASE_EXTERNAL"
+      ],
       "non_claim": "A blocked verifier is not evidence that an isolated managed environment exists."
     },
     {
-      "entrypoint_id": "CEP-038", "kind": "cli", "stable_entry": "npm run platform:persistence:isolated:teardown",
-      "source_path": "scripts/platform/persistence/isolated-teardown.mts", "canonical_contract_id": "cli.persistence.isolated-teardown",
-      "canonical_target": "scripts/platform/persistence/isolated-teardown.mts:main", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["scripts/platform/persistence/env-detect.mts"], "blockers": ["ISOLATED_SUPABASE_EXTERNAL"],
+      "entrypoint_id": "CEP-038",
+      "kind": "cli",
+      "stable_entry": "npm run platform:persistence:isolated:teardown",
+      "source_path": "scripts/platform/persistence/isolated-teardown.mts",
+      "canonical_contract_id": "cli.persistence.isolated-teardown",
+      "canonical_target": "scripts/platform/persistence/isolated-teardown.mts:main",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "scripts/platform/persistence/env-detect.mts"
+      ],
+      "blockers": [
+        "ISOLATED_SUPABASE_EXTERNAL"
+      ],
       "non_claim": "The scoped teardown runner does not claim an external target was created or changed."
     },
     {
-      "entrypoint_id": "CEP-039", "kind": "cli", "stable_entry": "npm run product:routes:verify",
-      "source_path": "scripts/product-integration/routes/verify.mts", "canonical_contract_id": "cli.product.routes-verify",
-      "canonical_target": "scripts/product-integration/routes/verify.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/product/routes/runtime.ts"], "blockers": [],
+      "entrypoint_id": "CEP-039",
+      "kind": "cli",
+      "stable_entry": "npm run product:routes:verify",
+      "source_path": "scripts/product-integration/routes/verify.mts",
+      "canonical_contract_id": "cli.product.routes-verify",
+      "canonical_target": "scripts/product-integration/routes/verify.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/routes/runtime.ts"
+      ],
+      "blockers": [],
       "non_claim": "Hermetic route verification does not prove a production deployment."
     },
     {
-      "entrypoint_id": "CEP-040", "kind": "cli", "stable_entry": "npm run product:auth-boundary:verify",
-      "source_path": "scripts/product-integration/routes/verify-auth.mts", "canonical_contract_id": "cli.product.auth-verify",
-      "canonical_target": "src/server/product/auth/identity-session.ts:authenticateProductIdentity", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/auth/identity-verification.ts"], "blockers": ["MANAGED_IDENTITY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-040",
+      "kind": "cli",
+      "stable_entry": "npm run product:auth-boundary:verify",
+      "source_path": "scripts/product-integration/routes/verify-auth.mts",
+      "canonical_contract_id": "cli.product.auth-verify",
+      "canonical_target": "src/server/product/auth/identity-session.ts:authenticateProductIdentity",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/auth/identity-verification.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN"
+      ],
       "non_claim": "Local cryptographic boundary proof does not establish a managed identity provider."
     },
     {
-      "entrypoint_id": "CEP-041", "kind": "cli", "stable_entry": "npm run product:pdf:hebrew:verify",
-      "source_path": "scripts/product-integration/report/verify.mts", "canonical_contract_id": "cli.product.pdf-verify",
-      "canonical_target": "scripts/product-integration/report/verify.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": [], "blockers": ["REAL_FINDINGS_0"],
+      "entrypoint_id": "CEP-041",
+      "kind": "cli",
+      "stable_entry": "npm run product:pdf:hebrew:verify",
+      "source_path": "scripts/product-integration/report/verify.mts",
+      "canonical_contract_id": "cli.product.pdf-verify",
+      "canonical_target": "scripts/product-integration/report/verify.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [],
+      "blockers": [
+        "REAL_FINDINGS_0"
+      ],
       "non_claim": "Synthetic PDF rendering proof does not create a real report or finding."
     },
     {
-      "entrypoint_id": "CEP-042", "kind": "cli", "stable_entry": "npm run product:e2e:synthetic",
-      "source_path": "scripts/product-integration/e2e/synthetic.mts", "canonical_contract_id": "cli.product.e2e-synthetic",
-      "canonical_target": "scripts/product-integration/e2e/synthetic.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/product/integration/browser-runtime.ts"], "blockers": [],
+      "entrypoint_id": "CEP-042",
+      "kind": "cli",
+      "stable_entry": "npm run product:e2e:synthetic",
+      "source_path": "scripts/product-integration/e2e/synthetic.mts",
+      "canonical_contract_id": "cli.product.e2e-synthetic",
+      "canonical_target": "scripts/product-integration/e2e/synthetic.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/integration/browser-runtime.ts"
+      ],
+      "blockers": [],
       "non_claim": "The run is hermetic synthetic proof and does not process customer data."
     },
     {
-      "entrypoint_id": "CEP-043", "kind": "cli", "stable_entry": "npm run product:e2e:negative",
-      "source_path": "scripts/product-integration/e2e/negative.mts", "canonical_contract_id": "cli.product.e2e-negative",
-      "canonical_target": "scripts/product-integration/e2e/negative.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/product/routes/runtime.ts"], "blockers": [],
+      "entrypoint_id": "CEP-043",
+      "kind": "cli",
+      "stable_entry": "npm run product:e2e:negative",
+      "source_path": "scripts/product-integration/e2e/negative.mts",
+      "canonical_contract_id": "cli.product.e2e-negative",
+      "canonical_target": "scripts/product-integration/e2e/negative.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/routes/runtime.ts"
+      ],
+      "blockers": [],
       "non_claim": "Negative-path proof does not authorize a positive customer or production path."
     },
     {
-      "entrypoint_id": "CEP-044", "kind": "cli", "stable_entry": "npm run verify:postgres:dynamic",
-      "source_path": "scripts/canonical-persistence-v091/bootstrap.mjs", "canonical_contract_id": "cli.postgres.dynamic-verify",
-      "canonical_target": "scripts/canonical-persistence-v091/bootstrap.mjs:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/composition/canonical-postgres-application.ts"], "blockers": [],
+      "entrypoint_id": "CEP-044",
+      "kind": "cli",
+      "stable_entry": "npm run verify:postgres:dynamic",
+      "source_path": "scripts/canonical-persistence-v091/bootstrap.mjs",
+      "canonical_contract_id": "cli.postgres.dynamic-verify",
+      "canonical_target": "scripts/canonical-persistence-v091/bootstrap.mjs:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/composition/canonical-postgres-application.ts"
+      ],
+      "blockers": [],
       "non_claim": "The disposable loopback proof is not a remote migration or production database run."
     },
     {
-      "entrypoint_id": "CEP-045", "kind": "cli", "stable_entry": "node --experimental-strip-types scripts/product-integration/durable-postgres/run.mts",
-      "source_path": "scripts/product-integration/durable-postgres/run.mts", "canonical_contract_id": "cli.product.durable-postgres-proof",
-      "canonical_target": "src/server/product/durable-postgres/application.ts:DurableProductPostgresApplication", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/composition/canonical-postgres-application.ts"], "blockers": ["MANAGED_ENVIRONMENT_NOT_PROVEN"],
+      "entrypoint_id": "CEP-045",
+      "kind": "cli",
+      "stable_entry": "node --experimental-strip-types scripts/product-integration/durable-postgres/run.mts",
+      "source_path": "scripts/product-integration/durable-postgres/run.mts",
+      "canonical_contract_id": "cli.product.durable-postgres-proof",
+      "canonical_target": "src/server/product/durable-postgres/application.ts:DurableProductPostgresApplication",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/composition/canonical-postgres-application.ts"
+      ],
+      "blockers": [
+        "MANAGED_ENVIRONMENT_NOT_PROVEN"
+      ],
       "non_claim": "The disposable local restart proof does not establish a managed or production runtime."
     },
     {
-      "entrypoint_id": "CEP-046", "kind": "cli", "stable_entry": "node --experimental-strip-types scripts/controlled-import/verify.mts",
-      "source_path": "scripts/controlled-import/verify.mts", "canonical_contract_id": "cli.controlled-import.verify",
-      "canonical_target": "src/server/engine/legal-knowledge/controlled-import-security.ts:importControlledOfficialArtifact", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/server/engine/legal-knowledge/parser-isolation/index.ts"], "blockers": ["PARSER_SANDBOX_PLATFORM_PROOF_REQUIRED"],
+      "entrypoint_id": "CEP-046",
+      "kind": "cli",
+      "stable_entry": "node --experimental-strip-types scripts/controlled-import/verify.mts",
+      "source_path": "scripts/controlled-import/verify.mts",
+      "canonical_contract_id": "cli.controlled-import.verify",
+      "canonical_target": "src/server/engine/legal-knowledge/controlled-import-security.ts:importControlledOfficialArtifact",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/legal-knowledge/parser-isolation/index.ts"
+      ],
+      "blockers": [
+        "PARSER_SANDBOX_PLATFORM_PROOF_REQUIRED"
+      ],
       "non_claim": "Local controlled-import checks do not activate legal material or prove a platform sandbox."
     },
     {
-      "entrypoint_id": "CEP-047", "kind": "cli", "stable_entry": "node --experimental-strip-types scripts/human-trust/verify.mts",
-      "source_path": "scripts/human-trust/verify.mts", "canonical_contract_id": "cli.human-trust.verify",
-      "canonical_target": "src/server/platform/trust/reviewer-trust-store.ts:InMemoryReviewerTrustStore", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/human-trust.ts"], "blockers": ["GENUINE_REVIEWER_SIGNATURES_REQUIRED", "DURABLE_TRUST_STORE_NOT_WIRED"],
+      "entrypoint_id": "CEP-047",
+      "kind": "cli",
+      "stable_entry": "node --experimental-strip-types scripts/human-trust/verify.mts",
+      "source_path": "scripts/human-trust/verify.mts",
+      "canonical_contract_id": "cli.human-trust.verify",
+      "canonical_target": "src/server/platform/trust/reviewer-trust-store.ts:InMemoryReviewerTrustStore",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/human-trust.ts"
+      ],
+      "blockers": [
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED",
+        "DURABLE_TRUST_STORE_NOT_WIRED"
+      ],
       "non_claim": "Generated test keys prove mechanics only and do not create a human attestation."
     },
     {
-      "entrypoint_id": "CEP-048", "kind": "cli", "stable_entry": "npm run legal:ops:packets",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.packets",
-      "canonical_target": "src/engine/legal-operations/review-packets.ts:buildAllReviewPacketBundles", "classification": "CONTRACT_ONLY", "product_stable": true,
-      "dependencies": [], "blockers": ["HUMAN_LEGAL_SOURCE_REVIEW_REQUIRED"],
+      "entrypoint_id": "CEP-048",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:packets",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.packets",
+      "canonical_target": "src/engine/legal-operations/review-packets.ts:buildAllReviewPacketBundles",
+      "classification": "CONTRACT_ONLY",
+      "product_stable": true,
+      "dependencies": [],
+      "blockers": [
+        "HUMAN_LEGAL_SOURCE_REVIEW_REQUIRED"
+      ],
       "non_claim": "Generated blank packets contain no legal decision and do not activate a source."
     },
     {
-      "entrypoint_id": "CEP-049", "kind": "cli", "stable_entry": "npm run legal:ops:verify",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.verify",
-      "canonical_target": "src/server/engine/legal-operations/acceptance.ts:runLegalOperationsAcceptanceMatrix", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/server/engine/legal-operations/service.ts"], "blockers": ["REAL_LEGAL_TOPICS_0_OF_7"],
+      "entrypoint_id": "CEP-049",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:verify",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.verify",
+      "canonical_target": "src/server/engine/legal-operations/acceptance.ts:runLegalOperationsAcceptanceMatrix",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/legal-operations/service.ts"
+      ],
+      "blockers": [
+        "REAL_LEGAL_TOPICS_0_OF_7"
+      ],
       "non_claim": "Synthetic and fail-closed checks do not prove real legal readiness."
     },
     {
-      "entrypoint_id": "CEP-050", "kind": "cli", "stable_entry": "npm run legal:ops:status",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.status",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/catalog.ts"], "blockers": ["REAL_LEGAL_TOPICS_0_OF_7"],
+      "entrypoint_id": "CEP-050",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:status",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.status",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/catalog.ts"
+      ],
+      "blockers": [
+        "REAL_LEGAL_TOPICS_0_OF_7"
+      ],
       "non_claim": "Status preserves zero active sources, parameters and rules; it does not prove readiness."
     },
     {
-      "entrypoint_id": "CEP-051", "kind": "cli", "stable_entry": "npm run legal:ops:strict-readiness",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.strict-readiness",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/server/platform/trust/reviewer-trust-store.ts"], "blockers": ["REAL_LEGAL_TOPICS_0_OF_7", "GENUINE_REVIEWER_SIGNATURES_REQUIRED"],
+      "entrypoint_id": "CEP-051",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:strict-readiness",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.strict-readiness",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/trust/reviewer-trust-store.ts"
+      ],
+      "blockers": [
+        "REAL_LEGAL_TOPICS_0_OF_7",
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED"
+      ],
       "non_claim": "The command must remain blocked and does not assert legal readiness."
     },
     {
-      "entrypoint_id": "CEP-052", "kind": "cli", "stable_entry": "npm run legal:ops:import",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.import",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/human-trust.ts"], "blockers": ["GENUINE_REVIEWER_SIGNATURES_REQUIRED"],
+      "entrypoint_id": "CEP-052",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:import",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.import",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/human-trust.ts"
+      ],
+      "blockers": [
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED"
+      ],
       "non_claim": "The import path rejects unsigned artifacts and does not invent or activate human decisions."
     },
     {
-      "entrypoint_id": "CEP-053", "kind": "cli", "stable_entry": "npm run legal:ops:propose-activation",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.propose-activation",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/state-machine.ts"], "blockers": ["GENUINE_REVIEWER_SIGNATURES_REQUIRED", "REAL_PARAMETERS_ACTIVE_0"],
+      "entrypoint_id": "CEP-053",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:propose-activation",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.propose-activation",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/state-machine.ts"
+      ],
+      "blockers": [
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED",
+        "REAL_PARAMETERS_ACTIVE_0"
+      ],
       "non_claim": "A proposal is not approval and does not activate a RuleSpec."
     },
     {
-      "entrypoint_id": "CEP-054", "kind": "cli", "stable_entry": "npm run legal:ops:activate",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.activate",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/state-machine.ts"], "blockers": ["REAL_SOURCES_ACTIVE_0", "REAL_PARAMETERS_ACTIVE_0", "REAL_RULES_ACTIVE_0"],
+      "entrypoint_id": "CEP-054",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:activate",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.activate",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/state-machine.ts"
+      ],
+      "blockers": [
+        "REAL_SOURCES_ACTIVE_0",
+        "REAL_PARAMETERS_ACTIVE_0",
+        "REAL_RULES_ACTIVE_0"
+      ],
       "non_claim": "The fail-closed command does not activate any real artifact without genuine signed prerequisites."
     },
     {
-      "entrypoint_id": "CEP-055", "kind": "cli", "stable_entry": "npm run legal:ops:revoke",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.revoke",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/state-machine.ts"], "blockers": ["GENUINE_REVIEWER_SIGNATURES_REQUIRED"],
+      "entrypoint_id": "CEP-055",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:revoke",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.revoke",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/state-machine.ts"
+      ],
+      "blockers": [
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED"
+      ],
       "non_claim": "The lifecycle command requires a genuine signed decision and does not fabricate revocation."
     },
     {
-      "entrypoint_id": "CEP-056", "kind": "cli", "stable_entry": "npm run legal:ops:supersede",
-      "source_path": "scripts/legal-operations/run.mts", "canonical_contract_id": "cli.legal-ops.supersede",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/state-machine.ts"], "blockers": ["GENUINE_REVIEWER_SIGNATURES_REQUIRED"],
+      "entrypoint_id": "CEP-056",
+      "kind": "cli",
+      "stable_entry": "npm run legal:ops:supersede",
+      "source_path": "scripts/legal-operations/run.mts",
+      "canonical_contract_id": "cli.legal-ops.supersede",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/state-machine.ts"
+      ],
+      "blockers": [
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED"
+      ],
       "non_claim": "The lifecycle command requires a genuine signed decision and does not fabricate supersession."
     },
     {
-      "entrypoint_id": "CEP-057", "kind": "cli", "stable_entry": "npm run legal:review-workspace:build",
-      "source_path": "scripts/legal-v07/run.mts", "canonical_contract_id": "cli.legal.review-workspace",
-      "canonical_target": "src/engine/legal-operations/review-packets.ts:buildOwnerHandoffIndex", "classification": "CONTRACT_ONLY", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/review-packets.ts"], "blockers": ["HUMAN_LEGAL_SOURCE_REVIEW_REQUIRED"],
+      "entrypoint_id": "CEP-057",
+      "kind": "cli",
+      "stable_entry": "npm run legal:review-workspace:build",
+      "source_path": "scripts/legal-v07/run.mts",
+      "canonical_contract_id": "cli.legal.review-workspace",
+      "canonical_target": "src/engine/legal-operations/review-packets.ts:buildOwnerHandoffIndex",
+      "classification": "CONTRACT_ONLY",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/review-packets.ts"
+      ],
+      "blockers": [
+        "HUMAN_LEGAL_SOURCE_REVIEW_REQUIRED"
+      ],
       "non_claim": "The workspace is a blank handoff artifact and does not record a human decision."
     },
     {
-      "entrypoint_id": "CEP-058", "kind": "cli", "stable_entry": "npm run legal:rulespec-skeletons:verify",
-      "source_path": "scripts/legal-quality/run.mts", "canonical_contract_id": "cli.legal.rulespec-skeletons",
-      "canonical_target": "src/engine/legal-quality/rulespec-authoring.ts:buildSevenRuleSpecAuthoringSkeletons", "classification": "CONTRACT_ONLY", "product_stable": true,
-      "dependencies": ["src/engine/legal-quality/authoring-queue.ts"], "blockers": ["RULESPEC_HUMAN_AUTHORING_REQUIRED", "REAL_RULES_ACTIVE_0"],
+      "entrypoint_id": "CEP-058",
+      "kind": "cli",
+      "stable_entry": "npm run legal:rulespec-skeletons:verify",
+      "source_path": "scripts/legal-quality/run.mts",
+      "canonical_contract_id": "cli.legal.rulespec-skeletons",
+      "canonical_target": "src/engine/legal-quality/rulespec-authoring.ts:buildSevenRuleSpecAuthoringSkeletons",
+      "classification": "CONTRACT_ONLY",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-quality/authoring-queue.ts"
+      ],
+      "blockers": [
+        "RULESPEC_HUMAN_AUTHORING_REQUIRED",
+        "REAL_RULES_ACTIVE_0"
+      ],
       "non_claim": "Blank skeleton verification does not author, approve or activate a legal rule."
     },
     {
-      "entrypoint_id": "CEP-059", "kind": "cli", "stable_entry": "npm run legal:golden-workflow:verify",
-      "source_path": "scripts/legal-quality/run.mts", "canonical_contract_id": "cli.legal.golden-workflow",
-      "canonical_target": "src/engine/legal-quality/golden-case-templates.ts:BlankGoldenImportLedger", "classification": "CONTRACT_ONLY", "product_stable": true,
-      "dependencies": ["src/engine/legal-quality/mutation-runner.ts"], "blockers": ["HUMAN_GOLDEN_CASES_REQUIRED"],
+      "entrypoint_id": "CEP-059",
+      "kind": "cli",
+      "stable_entry": "npm run legal:golden-workflow:verify",
+      "source_path": "scripts/legal-quality/run.mts",
+      "canonical_contract_id": "cli.legal.golden-workflow",
+      "canonical_target": "src/engine/legal-quality/golden-case-templates.ts:BlankGoldenImportLedger",
+      "classification": "CONTRACT_ONLY",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-quality/mutation-runner.ts"
+      ],
+      "blockers": [
+        "HUMAN_GOLDEN_CASES_REQUIRED"
+      ],
       "non_claim": "Blank golden templates and mutation mechanics do not supply expected legal results."
     },
     {
-      "entrypoint_id": "CEP-060", "kind": "cli", "stable_entry": "npm run extraction:gt:workspace:verify",
-      "source_path": "scripts/extraction-ground-truth-v07/run.mts", "canonical_contract_id": "cli.extraction.gt-workspace",
-      "canonical_target": "src/engine/extraction-ground-truth/trusted-workflow.ts:TrustedGroundTruthWorkflow", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/engine/extraction-ground-truth/trusted-workflow.ts"], "blockers": ["HUMAN_GROUND_TRUTH_LOCKED_0", "LICENSE_AND_PII_REVIEW_REQUIRED"],
+      "entrypoint_id": "CEP-060",
+      "kind": "cli",
+      "stable_entry": "npm run extraction:gt:workspace:verify",
+      "source_path": "scripts/extraction-ground-truth-v07/run.mts",
+      "canonical_contract_id": "cli.extraction.gt-workspace",
+      "canonical_target": "src/engine/extraction-ground-truth/trusted-workflow.ts:TrustedGroundTruthWorkflow",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/extraction-ground-truth/trusted-workflow.ts"
+      ],
+      "blockers": [
+        "HUMAN_GROUND_TRUTH_LOCKED_0",
+        "LICENSE_AND_PII_REVIEW_REQUIRED"
+      ],
       "non_claim": "Workspace checks do not visually review a payslip or create locked human ground truth."
     },
     {
-      "entrypoint_id": "CEP-061", "kind": "cli", "stable_entry": "npm run shadow:offline:verify",
-      "source_path": "scripts/shadow/run.mts", "canonical_contract_id": "cli.shadow.verify",
-      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/server/engine/shadow/flags.ts"], "blockers": ["DURABLE_SHADOW_REPOSITORY_NOT_WIRED"],
+      "entrypoint_id": "CEP-061",
+      "kind": "cli",
+      "stable_entry": "npm run shadow:offline:verify",
+      "source_path": "scripts/shadow/run.mts",
+      "canonical_contract_id": "cli.shadow.verify",
+      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/shadow/flags.ts"
+      ],
+      "blockers": [
+        "DURABLE_SHADOW_REPOSITORY_NOT_WIRED"
+      ],
       "non_claim": "The check is offline and does not authorize Customer Shadow."
     },
     {
-      "entrypoint_id": "CEP-062", "kind": "cli", "stable_entry": "npm run shadow:offline:synthetic",
-      "source_path": "scripts/shadow/run.mts", "canonical_contract_id": "cli.shadow.synthetic",
-      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/engine/shadow/synthetic-fixtures.ts"], "blockers": [],
+      "entrypoint_id": "CEP-062",
+      "kind": "cli",
+      "stable_entry": "npm run shadow:offline:synthetic",
+      "source_path": "scripts/shadow/run.mts",
+      "canonical_contract_id": "cli.shadow.synthetic",
+      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/shadow/synthetic-fixtures.ts"
+      ],
+      "blockers": [],
       "non_claim": "This command is synthetic-only and does not read customer data or promote a result."
     },
     {
-      "entrypoint_id": "CEP-063", "kind": "cli", "stable_entry": "npm run shadow:offline:real-blocked",
-      "source_path": "scripts/shadow/run.mts", "canonical_contract_id": "cli.shadow.real-blocked",
-      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/server/engine/shadow/flags.ts"], "blockers": ["CUSTOMER_SHADOW_NOT_AUTHORIZED", "REAL_LEGAL_TOPICS_0_OF_7"],
+      "entrypoint_id": "CEP-063",
+      "kind": "cli",
+      "stable_entry": "npm run shadow:offline:real-blocked",
+      "source_path": "scripts/shadow/run.mts",
+      "canonical_contract_id": "cli.shadow.real-blocked",
+      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/shadow/flags.ts"
+      ],
+      "blockers": [
+        "CUSTOMER_SHADOW_NOT_AUTHORIZED",
+        "REAL_LEGAL_TOPICS_0_OF_7"
+      ],
       "non_claim": "The command proves denial and does not authorize or execute Customer Shadow."
     },
     {
-      "entrypoint_id": "CEP-064", "kind": "cli", "stable_entry": "npm run tivdoc:ops:contract",
-      "source_path": "scripts/tivdoc-ops/run.mts", "canonical_contract_id": "cli.operations.contract",
-      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/product/internal-ops/contracts.ts"], "blockers": [],
+      "entrypoint_id": "CEP-064",
+      "kind": "cli",
+      "stable_entry": "npm run tivdoc:ops:contract",
+      "source_path": "scripts/tivdoc-ops/run.mts",
+      "canonical_contract_id": "cli.operations.contract",
+      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/internal-ops/contracts.ts"
+      ],
+      "blockers": [],
       "non_claim": "Contract verification does not establish a managed identity or production service."
     },
     {
-      "entrypoint_id": "CEP-065", "kind": "cli", "stable_entry": "npm run tivdoc:ops:api:verify",
-      "source_path": "scripts/tivdoc-ops/run.mts", "canonical_contract_id": "cli.operations.api-verify",
-      "canonical_target": "src/server/product/routes/operations-http.ts:createOperationsHttpHandler", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/product/routes/runtime.ts"], "blockers": ["MANAGED_IDENTITY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-065",
+      "kind": "cli",
+      "stable_entry": "npm run tivdoc:ops:api:verify",
+      "source_path": "scripts/tivdoc-ops/run.mts",
+      "canonical_contract_id": "cli.operations.api-verify",
+      "canonical_target": "src/server/product/routes/operations-http.ts:createOperationsHttpHandler",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/routes/runtime.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN"
+      ],
       "non_claim": "Hermetic API proof does not establish a managed operations deployment."
     },
     {
-      "entrypoint_id": "CEP-066", "kind": "cli", "stable_entry": "npm run tivdoc:ops:ui:verify",
-      "source_path": "scripts/tivdoc-ops/run.mts", "canonical_contract_id": "cli.operations.ui-verify",
-      "canonical_target": "src/app/operations/page.tsx:default", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/components/operations/operations-workspace.tsx"], "blockers": ["MANAGED_IDENTITY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-066",
+      "kind": "cli",
+      "stable_entry": "npm run tivdoc:ops:ui:verify",
+      "source_path": "scripts/tivdoc-ops/run.mts",
+      "canonical_contract_id": "cli.operations.ui-verify",
+      "canonical_target": "src/app/operations/page.tsx:default",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/components/operations/operations-workspace.tsx"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN"
+      ],
       "non_claim": "UI checks are local and do not establish a managed operations deployment."
     },
     {
-      "entrypoint_id": "CEP-067", "kind": "cli", "stable_entry": "npm run tivdoc:ops:e2e:synthetic",
-      "source_path": "scripts/tivdoc-ops/run.mts", "canonical_contract_id": "cli.operations.e2e-synthetic",
-      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/product/integration/ready-harness.ts"], "blockers": [],
+      "entrypoint_id": "CEP-067",
+      "kind": "cli",
+      "stable_entry": "npm run tivdoc:ops:e2e:synthetic",
+      "source_path": "scripts/tivdoc-ops/run.mts",
+      "canonical_contract_id": "cli.operations.e2e-synthetic",
+      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/integration/ready-harness.ts"
+      ],
+      "blockers": [],
       "non_claim": "The journey is synthetic and does not produce a real finding or report."
     },
     {
-      "entrypoint_id": "CEP-068", "kind": "cli", "stable_entry": "npm run tivdoc:ops:e2e:blocked",
-      "source_path": "scripts/tivdoc-ops/run.mts", "canonical_contract_id": "cli.operations.e2e-blocked",
-      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/server/product/internal-ops/flags.ts"], "blockers": ["CUSTOMER_PROCESSING_DISABLED", "REAL_LEGAL_TOPICS_0_OF_7"],
+      "entrypoint_id": "CEP-068",
+      "kind": "cli",
+      "stable_entry": "npm run tivdoc:ops:e2e:blocked",
+      "source_path": "scripts/tivdoc-ops/run.mts",
+      "canonical_contract_id": "cli.operations.e2e-blocked",
+      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/internal-ops/flags.ts"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "REAL_LEGAL_TOPICS_0_OF_7"
+      ],
       "non_claim": "The journey proves denial and does not enable customer analysis."
     },
     {
-      "entrypoint_id": "CEP-069", "kind": "cli", "stable_entry": "npm run tivdoc:portal:verify",
-      "source_path": "scripts/tivdoc-portal/verify.mts", "canonical_contract_id": "cli.portal.verify",
-      "canonical_target": "src/server/product/customer-portal/service.ts:CustomerPortalService", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/product/routes/portal-http.ts"], "blockers": ["MANAGED_IDENTITY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-069",
+      "kind": "cli",
+      "stable_entry": "npm run tivdoc:portal:verify",
+      "source_path": "scripts/tivdoc-portal/verify.mts",
+      "canonical_contract_id": "cli.portal.verify",
+      "canonical_target": "src/server/product/customer-portal/service.ts:CustomerPortalService",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/routes/portal-http.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN"
+      ],
       "non_claim": "Hermetic portal proof does not establish managed identity, storage or customer processing."
     },
     {
-      "entrypoint_id": "CEP-070", "kind": "cli", "stable_entry": "npm run platform:security:verify",
-      "source_path": "scripts/platform/security/verify.mts", "canonical_contract_id": "cli.platform.security-verify",
-      "canonical_target": "scripts/platform/security/verify.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/security/request-guards.ts"], "blockers": [],
+      "entrypoint_id": "CEP-070",
+      "kind": "cli",
+      "stable_entry": "npm run platform:security:verify",
+      "source_path": "scripts/platform/security/verify.mts",
+      "canonical_contract_id": "cli.platform.security-verify",
+      "canonical_target": "scripts/platform/security/verify.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/security/request-guards.ts"
+      ],
+      "blockers": [],
       "non_claim": "Local security checks are evidence, not a certification or production authorization."
     },
     {
-      "entrypoint_id": "CEP-071", "kind": "cli", "stable_entry": "npm run platform:backup-restore:verify",
-      "source_path": "scripts/platform/reliability/verify.mts", "canonical_contract_id": "cli.platform.backup-restore-verify",
-      "canonical_target": "src/server/platform/backup/backup-service.ts:createLocalBackup", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/server/platform/custody/replication.ts"], "blockers": ["OFF_HOST_CUSTODY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-071",
+      "kind": "cli",
+      "stable_entry": "npm run platform:backup-restore:verify",
+      "source_path": "scripts/platform/reliability/verify.mts",
+      "canonical_contract_id": "cli.platform.backup-restore-verify",
+      "canonical_target": "src/server/platform/backup/backup-service.ts:createLocalBackup",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/custody/replication.ts"
+      ],
+      "blockers": [
+        "OFF_HOST_CUSTODY_NOT_PROVEN"
+      ],
       "non_claim": "Local backup and restore exercises do not prove off-host recovery targets or achieved RPO/RTO."
     },
     {
-      "entrypoint_id": "CEP-072", "kind": "cli", "stable_entry": "npm run marathon:v010:focused",
-      "source_path": "scripts/full-local-system-marathon/focused.mts", "canonical_contract_id": "cli.marathon.focused",
-      "canonical_target": "scripts/full-local-system-marathon/focused.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": false,
-      "dependencies": ["src/server/system-marathon/execution-contract.v0.10.0.json"], "blockers": [],
+      "entrypoint_id": "CEP-072",
+      "kind": "cli",
+      "stable_entry": "npm run marathon:v010:focused",
+      "source_path": "scripts/full-local-system-marathon/focused.mts",
+      "canonical_contract_id": "cli.marathon.focused",
+      "canonical_target": "scripts/full-local-system-marathon/focused.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": false,
+      "dependencies": [
+        "src/server/system-marathon/execution-contract.v0.10.0.json"
+      ],
+      "blockers": [],
       "non_claim": "This release-specific evidence command is not a stable product route or service."
     },
     {
-      "entrypoint_id": "CEP-073", "kind": "cli", "stable_entry": "npm run marathon:v010:finalize",
-      "source_path": "scripts/full-local-system-marathon/finalize.mts", "canonical_contract_id": "cli.marathon.finalize",
-      "canonical_target": "scripts/full-local-system-marathon/finalize.mts:main", "classification": "PARTIAL", "product_stable": false,
-      "dependencies": ["scripts/full-local-system-marathon/evidence-core.mts"], "blockers": ["EXTERNAL_AUDIT_DELIVERY_REQUIRED"],
+      "entrypoint_id": "CEP-073",
+      "kind": "cli",
+      "stable_entry": "npm run marathon:v010:finalize",
+      "source_path": "scripts/full-local-system-marathon/finalize.mts",
+      "canonical_contract_id": "cli.marathon.finalize",
+      "canonical_target": "scripts/full-local-system-marathon/finalize.mts:main",
+      "classification": "PARTIAL",
+      "product_stable": false,
+      "dependencies": [
+        "scripts/full-local-system-marathon/evidence-core.mts"
+      ],
+      "blockers": [
+        "EXTERNAL_AUDIT_DELIVERY_REQUIRED"
+      ],
       "non_claim": "Local finalization does not deliver package bytes to an auditor or prove independent receipt."
     },
     {
-      "entrypoint_id": "CEP-074", "kind": "cli", "stable_entry": "npm run marathon:v010:security",
-      "source_path": "scripts/full-local-system-marathon/security-scan.mts", "canonical_contract_id": "cli.marathon.security",
-      "canonical_target": "scripts/full-local-system-marathon/security-scan.mts:main", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": false,
-      "dependencies": ["src/server/system-marathon/execution-contract.v0.10.0.json"], "blockers": [],
+      "entrypoint_id": "CEP-074",
+      "kind": "cli",
+      "stable_entry": "npm run marathon:v010:security",
+      "source_path": "scripts/full-local-system-marathon/security-scan.mts",
+      "canonical_contract_id": "cli.marathon.security",
+      "canonical_target": "scripts/full-local-system-marathon/security-scan.mts:main",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": false,
+      "dependencies": [
+        "src/server/system-marathon/execution-contract.v0.10.0.json"
+      ],
+      "blockers": [],
       "non_claim": "The release-specific scan is local evidence and not an external security certification."
     },
     {
-      "entrypoint_id": "CEP-075", "kind": "cli", "stable_entry": "npm run marathon:v010:evidence:build",
-      "source_path": "scripts/full-local-system-marathon/run.mts", "canonical_contract_id": "cli.marathon.evidence-build",
-      "canonical_target": "scripts/full-local-system-marathon/evidence-core.mts:buildEvidencePackage", "classification": "PARTIAL", "product_stable": false,
-      "dependencies": ["scripts/full-local-system-marathon/evidence-core.mts"], "blockers": ["EXTERNAL_AUDIT_DELIVERY_REQUIRED"],
+      "entrypoint_id": "CEP-075",
+      "kind": "cli",
+      "stable_entry": "npm run marathon:v010:evidence:build",
+      "source_path": "scripts/full-local-system-marathon/run.mts",
+      "canonical_contract_id": "cli.marathon.evidence-build",
+      "canonical_target": "scripts/full-local-system-marathon/evidence-core.mts:createEvidenceManifest",
+      "classification": "PARTIAL",
+      "product_stable": false,
+      "dependencies": [
+        "scripts/full-local-system-marathon/evidence-core.mts"
+      ],
+      "blockers": [
+        "EXTERNAL_AUDIT_DELIVERY_REQUIRED"
+      ],
       "non_claim": "A deterministic local package path or hash does not equal external delivery."
     },
     {
-      "entrypoint_id": "CEP-076", "kind": "cli", "stable_entry": "npm run marathon:v010:evidence:verify",
-      "source_path": "scripts/full-local-system-marathon/run.mts", "canonical_contract_id": "cli.marathon.evidence-verify",
-      "canonical_target": "scripts/full-local-system-marathon/evidence-core.mts:verifyEvidencePackage", "classification": "PARTIAL", "product_stable": false,
-      "dependencies": ["scripts/full-local-system-marathon/evidence-core.mts"], "blockers": ["EXTERNAL_AUDITOR_SIGNATURE_REQUIRED"],
+      "entrypoint_id": "CEP-076",
+      "kind": "cli",
+      "stable_entry": "npm run marathon:v010:evidence:verify",
+      "source_path": "scripts/full-local-system-marathon/run.mts",
+      "canonical_contract_id": "cli.marathon.evidence-verify",
+      "canonical_target": "scripts/full-local-system-marathon/evidence-core.mts:verifyEvidenceDirectory",
+      "classification": "PARTIAL",
+      "product_stable": false,
+      "dependencies": [
+        "scripts/full-local-system-marathon/evidence-core.mts"
+      ],
+      "blockers": [
+        "EXTERNAL_AUDITOR_SIGNATURE_REQUIRED"
+      ],
       "non_claim": "Detached local byte verification does not record external auditor identity, receipt or signature."
     },
     {
-      "entrypoint_id": "CEP-077", "kind": "application_service", "stable_entry": "canonical-postgres-composition",
-      "source_path": "src/server/platform/composition/canonical-postgres-application.ts", "canonical_contract_id": "service.persistence.canonical-postgres",
-      "canonical_target": "src/server/platform/composition/canonical-postgres-application.ts:startCanonicalApplicationPostgres", "classification": "ALREADY_CANONICAL_AND_PROVEN", "product_stable": true,
-      "dependencies": ["src/server/platform/persistence/wiring-map.ts"], "blockers": ["MANAGED_POSTGRES_NOT_PROVEN"],
+      "entrypoint_id": "CEP-077",
+      "kind": "application_service",
+      "stable_entry": "canonical-postgres-composition",
+      "source_path": "src/server/platform/composition/canonical-postgres-application.ts",
+      "canonical_contract_id": "service.persistence.canonical-postgres",
+      "canonical_target": "src/server/platform/composition/canonical-postgres-application.ts:startCanonicalApplicationPostgres",
+      "classification": "ALREADY_CANONICAL_AND_PROVEN",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/persistence/wiring-map.ts"
+      ],
+      "blockers": [
+        "MANAGED_POSTGRES_NOT_PROVEN"
+      ],
       "non_claim": "The exact fourteen-adapter local composition does not prove a managed database or production deployment."
     },
     {
-      "entrypoint_id": "CEP-078", "kind": "application_service", "stable_entry": "canonical-route-runtime",
-      "source_path": "src/server/product/routes/runtime.ts", "canonical_contract_id": "service.routes.canonical-runtime",
-      "canonical_target": "src/server/product/routes/runtime.ts:installCanonicalProductApplicationComposition", "classification": "IMPLEMENTED_NOT_WIRED", "product_stable": true,
-      "dependencies": ["src/server/platform/composition/canonical-postgres-application.ts"], "blockers": ["CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"],
+      "entrypoint_id": "CEP-078",
+      "kind": "application_service",
+      "stable_entry": "canonical-route-runtime",
+      "source_path": "src/server/product/routes/runtime.ts",
+      "canonical_contract_id": "service.routes.canonical-runtime",
+      "canonical_target": "src/server/product/routes/runtime.ts:installCanonicalProductApplicationComposition",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/composition/canonical-postgres-application.ts"
+      ],
+      "blockers": [
+        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+      ],
       "non_claim": "The one-shot seam exists and fails closed; no non-test installation is claimed."
     },
     {
-      "entrypoint_id": "CEP-079", "kind": "application_service", "stable_entry": "durable-product-application",
-      "source_path": "src/server/product/durable-postgres/application.ts", "canonical_contract_id": "service.product.durable-postgres",
-      "canonical_target": "src/server/product/durable-postgres/application.ts:DurableProductPostgresApplication", "classification": "IMPLEMENTED_NOT_WIRED", "product_stable": true,
-      "dependencies": ["src/server/platform/composition/canonical-postgres-application.ts"], "blockers": ["STABLE_NEXT_ROUTES_NOT_BOUND_TO_DURABLE_APPLICATION"],
+      "entrypoint_id": "CEP-079",
+      "kind": "application_service",
+      "stable_entry": "durable-product-application",
+      "source_path": "src/server/product/durable-postgres/application.ts",
+      "canonical_contract_id": "service.product.durable-postgres",
+      "canonical_target": "src/server/product/durable-postgres/application.ts:DurableProductPostgresApplication",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/composition/canonical-postgres-application.ts"
+      ],
+      "blockers": [
+        "STABLE_NEXT_ROUTES_NOT_BOUND_TO_DURABLE_APPLICATION"
+      ],
       "non_claim": "Dynamic loopback proof does not mean stable Next routes are wired to this service."
     },
     {
-      "entrypoint_id": "CEP-080", "kind": "application_service", "stable_entry": "internal-reviewer-operations",
-      "source_path": "src/server/product/internal-ops/service.ts", "canonical_contract_id": "service.operations.internal-reviewer",
-      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService", "classification": "IMPLEMENTED_NOT_WIRED", "product_stable": true,
-      "dependencies": ["src/server/product/internal-ops/ports.ts", "src/server/product/routes/runtime.ts"], "blockers": ["DURABLE_PORTS_NOT_INSTALLED", "MANAGED_IDENTITY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-080",
+      "kind": "application_service",
+      "stable_entry": "internal-reviewer-operations",
+      "source_path": "src/server/product/internal-ops/service.ts",
+      "canonical_contract_id": "service.operations.internal-reviewer",
+      "canonical_target": "src/server/product/internal-ops/service.ts:InternalOpsService",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/internal-ops/ports.ts",
+        "src/server/product/internal-ops/runtime.ts",
+        "src/server/product/routes/runtime.ts"
+      ],
+      "blockers": [
+        "DURABLE_PORTS_NOT_INSTALLED",
+        "MANAGED_IDENTITY_NOT_PROVEN"
+      ],
       "non_claim": "RBAC and hash guards exist; durable queue wiring and managed reviewer identity are not claimed."
     },
     {
-      "entrypoint_id": "CEP-081", "kind": "application_service", "stable_entry": "customer-portal-service",
-      "source_path": "src/server/product/customer-portal/service.ts", "canonical_contract_id": "service.portal.customer",
-      "canonical_target": "src/server/product/customer-portal/service.ts:CustomerPortalService", "classification": "IMPLEMENTED_NOT_WIRED", "product_stable": true,
-      "dependencies": ["src/server/product/customer-portal/repository.ts", "src/server/product/routes/runtime.ts"], "blockers": ["DURABLE_PORTS_NOT_INSTALLED", "MANAGED_IDENTITY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-081",
+      "kind": "application_service",
+      "stable_entry": "customer-portal-service",
+      "source_path": "src/server/product/customer-portal/service.ts",
+      "canonical_contract_id": "service.portal.customer",
+      "canonical_target": "src/server/product/customer-portal/service.ts:CustomerPortalService",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/customer-portal/repository.ts",
+        "src/server/product/routes/runtime.ts"
+      ],
+      "blockers": [
+        "DURABLE_PORTS_NOT_INSTALLED",
+        "MANAGED_IDENTITY_NOT_PROVEN"
+      ],
       "non_claim": "Ownership and artifact-hash guards exist; a durable managed customer portal is not claimed."
     },
     {
-      "entrypoint_id": "CEP-082", "kind": "application_service", "stable_entry": "cryptographic-identity-verifier",
-      "source_path": "src/server/platform/auth/identity-verification.ts", "canonical_contract_id": "service.identity.cryptographic-verifier",
-      "canonical_target": "src/server/platform/auth/identity-verification.ts:CryptographicJwtIdentityVerifier", "classification": "IMPLEMENTED_NOT_WIRED", "product_stable": true,
-      "dependencies": ["src/server/product/auth/identity-session.ts"], "blockers": ["MANAGED_KEY_RESOLVER_NOT_WIRED", "DURABLE_SESSION_STATE_NOT_WIRED"],
+      "entrypoint_id": "CEP-082",
+      "kind": "application_service",
+      "stable_entry": "cryptographic-identity-verifier",
+      "source_path": "src/server/platform/auth/identity-verification.ts",
+      "canonical_contract_id": "service.identity.cryptographic-verifier",
+      "canonical_target": "src/server/platform/auth/identity-verification.ts:CryptographicJwtIdentityVerifier",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/auth/identity-session.ts"
+      ],
+      "blockers": [
+        "MANAGED_KEY_RESOLVER_NOT_WIRED",
+        "DURABLE_SESSION_STATE_NOT_WIRED"
+      ],
       "non_claim": "Public-key verification is locally proven; no managed issuer, key set or durable session store is claimed."
     },
     {
-      "entrypoint_id": "CEP-083", "kind": "application_service", "stable_entry": "product-identity-boundary",
-      "source_path": "src/server/product/auth/identity-session.ts", "canonical_contract_id": "service.identity.product-boundary",
-      "canonical_target": "src/server/product/auth/identity-session.ts:authenticateProductIdentity", "classification": "IMPLEMENTED_NOT_WIRED", "product_stable": true,
-      "dependencies": ["src/server/platform/auth/identity-verification.ts"], "blockers": ["MANAGED_IDENTITY_NOT_PROVEN"],
+      "entrypoint_id": "CEP-083",
+      "kind": "application_service",
+      "stable_entry": "product-identity-boundary",
+      "source_path": "src/server/product/auth/identity-session.ts",
+      "canonical_contract_id": "service.identity.product-boundary",
+      "canonical_target": "src/server/product/auth/identity-session.ts:authenticateProductIdentity",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/auth/identity-verification.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN"
+      ],
       "non_claim": "The cookie-only fail-closed boundary does not establish a live identity provider."
     },
     {
-      "entrypoint_id": "CEP-084", "kind": "application_service", "stable_entry": "private-blob-provider",
-      "source_path": "src/server/platform/storage/private-storage-provider.ts", "canonical_contract_id": "service.storage.private-blob",
-      "canonical_target": "src/server/platform/storage/private-storage-provider.ts:SupabasePrivateBlobProvider", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/server/platform/storage/private-object-storage.ts"], "blockers": ["ISOLATED_SUPABASE_STORAGE_REQUIRED"],
+      "entrypoint_id": "CEP-084",
+      "kind": "application_service",
+      "stable_entry": "private-blob-provider",
+      "source_path": "src/server/platform/storage/private-storage-provider.ts",
+      "canonical_contract_id": "service.storage.private-blob",
+      "canonical_target": "src/server/platform/storage/private-storage-provider.ts:SupabasePrivateBlobProvider",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/storage/private-object-storage.ts"
+      ],
+      "blockers": [
+        "ISOLATED_SUPABASE_STORAGE_REQUIRED"
+      ],
       "non_claim": "The adapter contract and hermetic proof do not establish isolated managed storage."
     },
     {
-      "entrypoint_id": "CEP-085", "kind": "application_service", "stable_entry": "controlled-import-repository",
-      "source_path": "src/server/engine/legal-knowledge/controlled-import-ledger/postgres-repository.ts", "canonical_contract_id": "service.import.postgres-ledger",
-      "canonical_target": "src/server/engine/legal-knowledge/controlled-import-ledger/postgres-repository.ts:PostgresControlledImportLedgerRepository", "classification": "IMPLEMENTED_NOT_WIRED", "product_stable": true,
-      "dependencies": ["src/server/engine/legal-knowledge/controlled-import-ledger/contracts.ts"], "blockers": ["CANONICAL_IMPORT_COMPOSITION_NOT_WIRED"],
+      "entrypoint_id": "CEP-085",
+      "kind": "application_service",
+      "stable_entry": "controlled-import-repository",
+      "source_path": "src/server/engine/legal-knowledge/controlled-import-ledger/postgres-repository.ts",
+      "canonical_contract_id": "service.import.postgres-ledger",
+      "canonical_target": "src/server/engine/legal-knowledge/controlled-import-ledger/postgres-repository.ts:PostgresControlledImportLedgerRepository",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/legal-knowledge/controlled-import-ledger/contracts.ts"
+      ],
+      "blockers": [
+        "CANONICAL_IMPORT_COMPOSITION_NOT_WIRED"
+      ],
       "non_claim": "A durable repository exists; no official artifact was supplied or activated."
     },
     {
-      "entrypoint_id": "CEP-086", "kind": "application_service", "stable_entry": "controlled-official-import",
-      "source_path": "src/server/engine/legal-knowledge/controlled-import-security.ts", "canonical_contract_id": "service.import.controlled-official",
-      "canonical_target": "src/server/engine/legal-knowledge/controlled-import-security.ts:importControlledOfficialArtifact", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/server/engine/legal-knowledge/parser-isolation/index.ts"], "blockers": ["PARSER_SANDBOX_PLATFORM_PROOF_REQUIRED", "OFFICIAL_SOURCE_BYTES_NOT_SUPPLIED"],
+      "entrypoint_id": "CEP-086",
+      "kind": "application_service",
+      "stable_entry": "controlled-official-import",
+      "source_path": "src/server/engine/legal-knowledge/controlled-import-security.ts",
+      "canonical_contract_id": "service.import.controlled-official",
+      "canonical_target": "src/server/engine/legal-knowledge/controlled-import-security.ts:importControlledOfficialArtifact",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/legal-knowledge/parser-isolation/index.ts"
+      ],
+      "blockers": [
+        "PARSER_SANDBOX_PLATFORM_PROOF_REQUIRED",
+        "OFFICIAL_SOURCE_BYTES_NOT_SUPPLIED"
+      ],
       "non_claim": "Validated import mechanics do not make imported content legally eligible or active."
     },
     {
-      "entrypoint_id": "CEP-087", "kind": "application_service", "stable_entry": "untrusted-parser-isolation",
-      "source_path": "src/server/engine/legal-knowledge/parser-isolation/index.ts", "canonical_contract_id": "service.parser.isolation",
-      "canonical_target": "src/server/engine/legal-knowledge/parser-isolation/index.ts:screenUntrustedPdfIsolated", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/server/engine/legal-knowledge/parser-isolation/screener-worker.mts"], "blockers": ["SUPPORTED_PLATFORM_SANDBOX_PROOF_REQUIRED"],
+      "entrypoint_id": "CEP-087",
+      "kind": "application_service",
+      "stable_entry": "untrusted-parser-isolation",
+      "source_path": "src/server/engine/legal-knowledge/parser-isolation/index.ts",
+      "canonical_contract_id": "service.parser.isolation",
+      "canonical_target": "src/server/engine/legal-knowledge/parser-isolation/index.ts:screenUntrustedPdfIsolated",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/engine/legal-knowledge/parser-isolation/screener-worker.mts"
+      ],
+      "blockers": [
+        "SUPPORTED_PLATFORM_SANDBOX_PROOF_REQUIRED"
+      ],
       "non_claim": "A child-process boundary is not proof of OS-level sandbox containment on a supported platform."
     },
     {
-      "entrypoint_id": "CEP-088", "kind": "application_service", "stable_entry": "legal-operations-governance",
-      "source_path": "src/server/engine/legal-operations/service.ts", "canonical_contract_id": "service.legal.governance",
-      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": true,
-      "dependencies": ["src/engine/legal-operations/state-machine.ts", "src/engine/legal-operations/human-trust.ts"], "blockers": ["GENUINE_REVIEWER_SIGNATURES_REQUIRED", "REAL_LEGAL_TOPICS_0_OF_7"],
+      "entrypoint_id": "CEP-088",
+      "kind": "application_service",
+      "stable_entry": "legal-operations-governance",
+      "source_path": "src/server/engine/legal-operations/service.ts",
+      "canonical_contract_id": "service.legal.governance",
+      "canonical_target": "src/server/engine/legal-operations/service.ts:LegalOperationsApplicationService",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": true,
+      "dependencies": [
+        "src/engine/legal-operations/state-machine.ts",
+        "src/engine/legal-operations/human-trust.ts"
+      ],
+      "blockers": [
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED",
+        "REAL_LEGAL_TOPICS_0_OF_7"
+      ],
       "non_claim": "The append-only fail-closed workflow does not invent or activate legal decisions."
     },
     {
-      "entrypoint_id": "CEP-089", "kind": "application_service", "stable_entry": "rulespec-executor",
-      "source_path": "src/server/engine/legal-operations/rulespec-executor.ts", "canonical_contract_id": "service.legal.rulespec-executor",
-      "canonical_target": "src/server/engine/legal-operations/rulespec-executor.ts:LegalOperationsRuleSpecExecutor", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": false,
-      "dependencies": ["src/engine/legal-operations/rulespec.ts"], "blockers": ["REAL_RULES_ACTIVE_0", "GOLDEN_CASE_APPROVAL_REQUIRED"],
+      "entrypoint_id": "CEP-089",
+      "kind": "application_service",
+      "stable_entry": "rulespec-executor",
+      "source_path": "src/server/engine/legal-operations/rulespec-executor.ts",
+      "canonical_contract_id": "service.legal.rulespec-executor",
+      "canonical_target": "src/server/engine/legal-operations/rulespec-executor.ts:LegalOperationsRuleSpecExecutor",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": false,
+      "dependencies": [
+        "src/engine/legal-operations/rulespec.ts"
+      ],
+      "blockers": [
+        "REAL_RULES_ACTIVE_0",
+        "GOLDEN_CASE_APPROVAL_REQUIRED"
+      ],
       "non_claim": "Execution mechanics exist but do not authorize any real RuleSpec or finding."
     },
     {
-      "entrypoint_id": "CEP-090", "kind": "application_service", "stable_entry": "reviewer-trust-store",
-      "source_path": "src/server/platform/trust/reviewer-trust-store.ts", "canonical_contract_id": "service.trust.reviewer-store",
-      "canonical_target": "src/server/platform/trust/reviewer-trust-store.ts:InMemoryReviewerTrustStore", "classification": "PARTIAL", "product_stable": false,
-      "dependencies": ["src/engine/legal-operations/human-trust.ts"], "blockers": ["DURABLE_TRUST_STORE_NOT_WIRED", "GENUINE_REVIEWER_SIGNATURES_REQUIRED"],
+      "entrypoint_id": "CEP-090",
+      "kind": "application_service",
+      "stable_entry": "reviewer-trust-store",
+      "source_path": "src/server/platform/trust/reviewer-trust-store.ts",
+      "canonical_contract_id": "service.trust.reviewer-store",
+      "canonical_target": "src/server/platform/trust/reviewer-trust-store.ts:InMemoryReviewerTrustStore",
+      "classification": "PARTIAL",
+      "product_stable": false,
+      "dependencies": [
+        "src/engine/legal-operations/human-trust.ts"
+      ],
+      "blockers": [
+        "DURABLE_TRUST_STORE_NOT_WIRED",
+        "GENUINE_REVIEWER_SIGNATURES_REQUIRED"
+      ],
       "non_claim": "Generated-key verification proves mechanics only and does not establish persistent human trust."
     },
     {
-      "entrypoint_id": "CEP-091", "kind": "application_service", "stable_entry": "trusted-ground-truth-workflow",
-      "source_path": "src/engine/extraction-ground-truth/trusted-workflow.ts", "canonical_contract_id": "service.extraction.trusted-ground-truth",
-      "canonical_target": "src/engine/extraction-ground-truth/trusted-workflow.ts:TrustedGroundTruthWorkflow", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": false,
-      "dependencies": ["src/engine/legal-operations/human-trust.ts"], "blockers": ["HUMAN_GROUND_TRUTH_LOCKED_0", "LICENSE_AND_PII_REVIEW_REQUIRED"],
+      "entrypoint_id": "CEP-091",
+      "kind": "application_service",
+      "stable_entry": "trusted-ground-truth-workflow",
+      "source_path": "src/engine/extraction-ground-truth/trusted-workflow.ts",
+      "canonical_contract_id": "service.extraction.trusted-ground-truth",
+      "canonical_target": "src/engine/extraction-ground-truth/trusted-workflow.ts:TrustedGroundTruthWorkflow",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": false,
+      "dependencies": [
+        "src/engine/legal-operations/human-trust.ts"
+      ],
+      "blockers": [
+        "HUMAN_GROUND_TRUTH_LOCKED_0",
+        "LICENSE_AND_PII_REVIEW_REQUIRED"
+      ],
       "non_claim": "The workflow cannot replace visual review, blind dual annotation or genuine adjudicator signatures."
     },
     {
-      "entrypoint_id": "CEP-092", "kind": "application_service", "stable_entry": "rulespec-authoring-queue",
-      "source_path": "src/engine/legal-quality/authoring-queue.ts", "canonical_contract_id": "service.legal.rulespec-authoring-queue",
-      "canonical_target": "src/engine/legal-quality/authoring-queue.ts:RuleSpecAuthoringQueue", "classification": "CONTRACT_ONLY", "product_stable": false,
-      "dependencies": ["src/engine/legal-quality/rulespec-authoring.ts", "src/engine/legal-quality/mutation-runner.ts"], "blockers": ["RULESPEC_HUMAN_AUTHORING_REQUIRED", "HUMAN_GOLDEN_CASES_REQUIRED"],
+      "entrypoint_id": "CEP-092",
+      "kind": "application_service",
+      "stable_entry": "rulespec-authoring-queue",
+      "source_path": "src/engine/legal-quality/authoring-queue.ts",
+      "canonical_contract_id": "service.legal.rulespec-authoring-queue",
+      "canonical_target": "src/engine/legal-quality/authoring-queue.ts:RuleSpecAuthoringQueue",
+      "classification": "CONTRACT_ONLY",
+      "product_stable": false,
+      "dependencies": [
+        "src/engine/legal-quality/rulespec-authoring.ts",
+        "src/engine/legal-quality/mutation-runner.ts"
+      ],
+      "blockers": [
+        "RULESPEC_HUMAN_AUTHORING_REQUIRED",
+        "HUMAN_GOLDEN_CASES_REQUIRED"
+      ],
       "non_claim": "Blank authoring and mutation contracts do not supply legal values, approval or expected results."
     },
     {
-      "entrypoint_id": "CEP-093", "kind": "application_service", "stable_entry": "external-evidence-handoff",
-      "source_path": "src/engine/legal-operations/evidence-handoff.ts", "canonical_contract_id": "service.evidence.external-handoff",
-      "canonical_target": "src/engine/legal-operations/evidence-handoff.ts:ExternalEvidenceHandoffLedger", "classification": "EXTERNAL_OR_HUMAN_BLOCKED", "product_stable": false,
-      "dependencies": ["scripts/full-local-system-marathon/evidence-core.mts"], "blockers": ["ACTUAL_PACKAGE_BYTES_NOT_DELIVERED", "EXTERNAL_AUDITOR_SIGNATURE_REQUIRED"],
+      "entrypoint_id": "CEP-093",
+      "kind": "application_service",
+      "stable_entry": "external-evidence-handoff",
+      "source_path": "src/engine/legal-operations/evidence-handoff.ts",
+      "canonical_contract_id": "service.evidence.external-handoff",
+      "canonical_target": "src/engine/legal-operations/evidence-handoff.ts:ExternalEvidenceHandoffLedger",
+      "classification": "EXTERNAL_OR_HUMAN_BLOCKED",
+      "product_stable": false,
+      "dependencies": [
+        "scripts/full-local-system-marathon/evidence-core.mts"
+      ],
+      "blockers": [
+        "ACTUAL_PACKAGE_BYTES_NOT_DELIVERED",
+        "EXTERNAL_AUDITOR_SIGNATURE_REQUIRED"
+      ],
       "non_claim": "A prepared path or hash does not prove delivery, receipt or independent verification."
     },
     {
-      "entrypoint_id": "CEP-094", "kind": "application_service", "stable_entry": "offline-shadow-control-plane",
-      "source_path": "src/server/engine/shadow/control-plane.ts", "canonical_contract_id": "service.shadow.offline-control-plane",
-      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane", "classification": "PARTIAL", "product_stable": false,
-      "dependencies": ["src/server/engine/shadow/contracts.ts"], "blockers": ["DURABLE_SHADOW_REPOSITORY_NOT_WIRED", "CUSTOMER_SHADOW_NOT_AUTHORIZED"],
+      "entrypoint_id": "CEP-094",
+      "kind": "application_service",
+      "stable_entry": "offline-shadow-control-plane",
+      "source_path": "src/server/engine/shadow/control-plane.ts",
+      "canonical_contract_id": "service.shadow.offline-control-plane",
+      "canonical_target": "src/server/engine/shadow/control-plane.ts:OfflineShadowControlPlane",
+      "classification": "PARTIAL",
+      "product_stable": false,
+      "dependencies": [
+        "src/server/engine/shadow/contracts.ts"
+      ],
+      "blockers": [
+        "DURABLE_SHADOW_REPOSITORY_NOT_WIRED",
+        "CUSTOMER_SHADOW_NOT_AUTHORIZED"
+      ],
       "non_claim": "The in-process control plane is synthetic-only and does not authorize Customer Shadow."
     },
     {
-      "entrypoint_id": "CEP-095", "kind": "application_service", "stable_entry": "privacy-storage-reconciliation",
-      "source_path": "src/server/platform/custody/privacy-reconciliation.ts", "canonical_contract_id": "service.privacy.storage-reconciliation",
-      "canonical_target": "src/server/platform/custody/privacy-reconciliation.ts:reconcilePrivacyStorage", "classification": "PARTIAL", "product_stable": true,
-      "dependencies": ["src/server/platform/custody/replication.ts"], "blockers": ["OFF_HOST_CUSTODY_NOT_PROVEN", "MANAGED_STORAGE_NOT_PROVEN"],
+      "entrypoint_id": "CEP-095",
+      "kind": "application_service",
+      "stable_entry": "privacy-storage-reconciliation",
+      "source_path": "src/server/platform/custody/privacy-reconciliation.ts",
+      "canonical_contract_id": "service.privacy.storage-reconciliation",
+      "canonical_target": "src/server/platform/custody/privacy-reconciliation.ts:reconcilePrivacyStorage",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/platform/custody/replication.ts"
+      ],
+      "blockers": [
+        "OFF_HOST_CUSTODY_NOT_PROVEN",
+        "MANAGED_STORAGE_NOT_PROVEN"
+      ],
       "non_claim": "A deterministic reconciliation plan does not execute deletion or prove off-host recovery."
     }
   ]
