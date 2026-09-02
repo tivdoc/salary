@@ -40,6 +40,9 @@ export type ChainReplayReceipt = Readonly<{
   reapply_detail: string | null;
   status: "PASS" | "FAIL" | "BLOCKED_NO_CREDENTIAL";
   blocked_reason: string | null;
+  /** The first file that would not apply, and why. Null on a full replay. */
+  failed_file: string | null;
+  failure_reason: string | null;
 }>;
 
 /** Migration files in filename order, with the exact bytes hashed. */
@@ -96,11 +99,15 @@ export async function replayMigrationChain(input: Readonly<{
       reapply_detail: null,
       status: "BLOCKED_NO_CREDENTIAL" as const,
       blocked_reason: "TIVDOC_DEV_DATABASE_URL_ABSENT",
+      failed_file: null,
+      failure_reason: null,
     });
   }
 
   const pool = new Pool({ connectionString, max: 1, allowExitOnIdle: true, application_name: "tivdoc-chain-replay" });
   let applied = 0;
+  let failedFile: string | null = null;
+  let failureReason: string | null = null;
   try {
     for (const file of files) {
       const sql = (await readFile(path.join(input.migrations_root, file.name))).toString("utf8");
@@ -112,10 +119,26 @@ export async function replayMigrationChain(input: Readonly<{
         applied += 1;
       } catch (error) {
         await client.query("rollback").catch(() => undefined);
-        throw new Error(`CHAIN_REPLAY_FAILED:${file.name}:${error instanceof Error ? error.message.slice(0, 160) : "unknown"}`);
+        // A refusal is evidence, not an exception: the receipt has to record
+        // which pinned file stopped and why, or the replay proves nothing.
+        failedFile = file.name;
+        failureReason = error instanceof Error ? error.message.slice(0, 200) : "unknown";
+        break;
       } finally {
         client.release();
       }
+    }
+    if (failedFile !== null) {
+      return Object.freeze({
+        ...base,
+        files_applied: applied,
+        idempotent_reapply: "not_attempted" as const,
+        reapply_detail: null,
+        status: "FAIL" as const,
+        blocked_reason: null,
+        failed_file: failedFile,
+        failure_reason: failureReason,
+      });
     }
     // Re-applying must either be idempotent or fail with an explicit conflict;
     // a silent partial success would not be a replay proof.
@@ -141,6 +164,8 @@ export async function replayMigrationChain(input: Readonly<{
       reapply_detail: detail,
       status: applied === files.length ? "PASS" as const : "FAIL" as const,
       blocked_reason: null,
+      failed_file: null,
+      failure_reason: null,
     });
   } finally {
     await pool.end();
