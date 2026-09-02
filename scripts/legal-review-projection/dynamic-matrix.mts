@@ -52,6 +52,7 @@ async function main(): Promise<void> {
     // The runtime context resolves against a live session row. Refreshing its
     // validity window is fixture upkeep, not part of any check.
     const issuedAt = Math.floor(Date.now() / 1_000);
+    await admin.query("select set_config('tivdoc.tenant_id', $1, false)", [TENANT]);
     await admin.query(
       `insert into public.product_identity_sessions(
          tenant_id, sid, subject, current_jti, rotation_counter, valid_after,

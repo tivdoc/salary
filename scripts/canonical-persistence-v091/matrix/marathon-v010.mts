@@ -873,14 +873,12 @@ async function exerciseBoundariesBeforeRestart(
     assert(registered.session_sha256 === replayedRegistration.session_sha256,
       "MARATHON_V010_IDENTITY_REGISTRATION_REPLAY_MISMATCH");
     await sessions.rotate({
-      tenant_id: fixture.identity.tenant_id,
       session_id: fixture.identity.session_id,
       next_token_id: fixture.identity.current_token_id,
       expected_rotation_counter: 0,
       rotated_at: fixture.timestamps.rotated_at,
     });
     await expectDurableBoundaryError(() => sessions.rotate({
-      tenant_id: fixture.identity.tenant_id,
       session_id: fixture.identity.session_id,
       next_token_id: fixture.identity.rejected_token_id,
       expected_rotation_counter: 0,
@@ -1219,12 +1217,10 @@ async function exerciseFailClosedRevocation(
     async (context) => {
       const sessions = new PostgresIdentitySessionRepository(context.client);
       await sessions.revoke({
-        tenant_id: fixture.identity.tenant_id,
         session_id: fixture.identity.session_id,
         revoked_at: fixture.timestamps.revoked_at,
       });
       await expectDurableBoundaryError(() => sessions.rotate({
-        tenant_id: fixture.identity.tenant_id,
         session_id: fixture.identity.session_id,
         next_token_id: fixture.identity.rejected_token_id,
         expected_rotation_counter: 1,

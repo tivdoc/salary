@@ -64,8 +64,9 @@ export class PostgresIdentitySessionRepository {
 
   async register(input: IdentitySessionRegistration): Promise<IdentitySessionRecord> {
     assertIdentityRegistration(input);
+    // The tenant is resolved by the database from the installed session
+    // context. A caller that could name it would not be gated at all.
     const result = await safeQuery(this.#client, durableBoundaryStatements.identityRegister([
-      input.tenant_id,
       input.session_id,
       input.subject,
       input.current_token_id,
@@ -95,19 +96,16 @@ export class PostgresIdentitySessionRepository {
   }
 
   async rotate(input: Readonly<{
-    tenant_id: string;
     session_id: string;
     next_token_id: string;
     expected_rotation_counter: number;
     rotated_at: string;
   }>): Promise<void> {
-    assertOpaque(input.tenant_id);
     assertOpaque(input.session_id);
     assertOpaque(input.next_token_id);
     assertCounter(input.expected_rotation_counter);
     assertTimestamp(input.rotated_at);
     await requireAccepted(this.#client, durableBoundaryStatements.identityRotate([
-      input.tenant_id,
       input.session_id,
       input.next_token_id,
       input.expected_rotation_counter,
@@ -115,12 +113,10 @@ export class PostgresIdentitySessionRepository {
     ]));
   }
 
-  async revoke(input: Readonly<{ tenant_id: string; session_id: string; revoked_at: string }>): Promise<void> {
-    assertOpaque(input.tenant_id);
+  async revoke(input: Readonly<{ session_id: string; revoked_at: string }>): Promise<void> {
     assertOpaque(input.session_id);
     assertTimestamp(input.revoked_at);
     await requireAccepted(this.#client, durableBoundaryStatements.identityRevoke([
-      input.tenant_id,
       input.session_id,
       input.revoked_at,
     ]));

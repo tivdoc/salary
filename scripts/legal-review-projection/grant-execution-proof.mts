@@ -17,6 +17,7 @@ const RECEIPT_ROOT = path.join("output", WAVE, "audit");
 const TENANT = "tenant.synthetic.001";
 const SESSION_ID = "session.projection.wave1";
 const TOKEN_ID = "token.projection.wave1";
+const IDENTITY_SID = "session.grantproof.identity.wave3";
 
 /** Command, executing role, and a call with the right arity. */
 const COMMANDS = Object.freeze([
@@ -35,12 +36,30 @@ const COMMANDS = Object.freeze([
   ["worker", "governance_legal_review_observation_block_append", "select * from private.governance_legal_review_observation_block_append($1,$2,$3,$4::jsonb,$5,$6::timestamptz)", [TENANT, "PROBE:ONLY", "BYTES_PRESENT_NOT_PARSED", "{}", "0".repeat(64), new Date().toISOString()]],
   ["worker", "claim_engine_platform_jobs", "select * from private.claim_engine_platform_jobs($1,$2::timestamptz,$3::interval,$4)", [TENANT, new Date().toISOString(), "1 minute", 1]],
   ["worker", "claim_engine_platform_outbox", "select * from private.claim_engine_platform_outbox($1,$2::timestamptz,$3::interval)", [TENANT, new Date().toISOString(), "1 minute"]],
+  // Wave 3 (C1 item 5). The identity boundary lost its tenant parameter, so
+  // every one of these calls also proves the new arity is the granted one.
+  ["identity", "product_identity_session_read", "select * from private.product_identity_session_read($1)", [IDENTITY_SID]],
+  ["identity", "product_identity_session_register", "select * from private.product_identity_session_register($1,$2,$3,$4,$5::timestamptz,$6::timestamptz,$7,$8::timestamptz)", [IDENTITY_SID, "actor.grantproof", "token.grantproof.wave3", 0, new Date(Date.now() - 60_000).toISOString(), new Date(Date.now() + 3_600_000).toISOString(), "review_org_00001", new Date().toISOString()]],
+  ["identity", "product_session_rotate", "select private.product_session_rotate($1,$2,$3,$4::timestamptz)", [IDENTITY_SID, "token.grantproof.rotated", 0, new Date().toISOString()]],
+  ["identity", "product_session_revoke", "select private.product_session_revoke($1,$2::timestamptz)", [IDENTITY_SID, new Date().toISOString()]],
 ] as const);
 
 const URL_FOR: Readonly<Record<string, string>> = Object.freeze({
   operations: "TIVDOC_OPERATIONS_POSTGRES_URL",
   worker: "TIVDOC_WORKER_POSTGRES_URL",
+  identity: "TIVDOC_IDENTITY_POSTGRES_URL",
 });
+
+// The identity boundary is the one path that runs *before* a runtime context
+// exists — that is what it is for — so it establishes the tenant the way the
+// runtime does at that point, through the session setting the definer functions
+// resolve. Installing a runtime context here would prove the wrong thing.
+const ESTABLISH_CONTEXT: Readonly<Record<string, Readonly<{ sql: string; params: readonly unknown[] }>>> =
+  Object.freeze({
+    operations: { sql: "select * from private.runtime_context_install($1,$2,$3)", params: [SESSION_ID, TOKEN_ID, "grantproof"] },
+    worker: { sql: "select * from private.runtime_context_install($1,$2,$3)", params: [SESSION_ID, TOKEN_ID, "grantproof"] },
+    identity: { sql: "select set_config('tivdoc.tenant_id', $1, true)", params: [TENANT] },
+  });
 
 async function main(): Promise<void> {
   mkdirSync(RECEIPT_ROOT, { recursive: true });
@@ -58,9 +77,9 @@ async function main(): Promise<void> {
         if (commandRole !== role) continue;
         let sqlstate = "none";
         try {
+          const context = ESTABLISH_CONTEXT[role] as Readonly<{ sql: string; params: readonly unknown[] }>;
           await client.query("begin");
-          await client.query("select * from private.runtime_context_install($1,$2,$3)",
-            [SESSION_ID, TOKEN_ID, `grantproof:${name}`]);
+          await client.query(context.sql, [...context.params]);
           await client.query(sql, [...params] as unknown[]);
           await client.query("rollback");
         } catch (error) {

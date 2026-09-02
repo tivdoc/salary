@@ -2,9 +2,9 @@ import { statement, type PostgresParameter, type PostgresStatement } from "../..
 
 const SQL = Object.freeze({
   identityRead: "select * from private.product_identity_session_read($1)",
-  identityRegister: "select * from private.product_identity_session_register($1,$2,$3,$4,$5,$6::timestamptz,$7::timestamptz,$8,$9::timestamptz)",
-  identityRotate: "select private.product_session_rotate($1,$2,$3,$4,$5::timestamptz) as accepted",
-  identityRevoke: "select private.product_session_revoke($1,$2,$3::timestamptz) as accepted",
+  identityRegister: "select * from private.product_identity_session_register($1,$2,$3,$4,$5::timestamptz,$6::timestamptz,$7,$8::timestamptz)",
+  identityRotate: "select private.product_session_rotate($1,$2,$3,$4::timestamptz) as accepted",
+  identityRevoke: "select private.product_session_revoke($1,$2::timestamptz) as accepted",
   ownerBind: "select * from private.product_case_owner_bind($1,$2,$3,$4,$5::timestamptz)",
   ownerLookup: "select * from private.product_owner_lookup($1,$2,$3)",
   ownerRevoke: "select private.product_owner_revoke($1,$2,$3,$4::timestamptz) as accepted",

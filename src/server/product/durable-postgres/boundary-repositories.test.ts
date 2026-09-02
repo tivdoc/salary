@@ -69,8 +69,14 @@ describe("durable PostgreSQL product boundaries", () => {
       expect(text).not.toContain("${");
     }
     expect(durableBoundaryStatements.identityRegister([
-      TENANT, SID, SUBJECT, JTI, 0, VALID_AFTER, EXPIRES, null, CREATED,
-    ])).toMatchObject({ name: "product_identity_register", values: expect.arrayContaining([TENANT, SID]) });
+      SID, SUBJECT, JTI, 0, VALID_AFTER, EXPIRES, null, CREATED,
+    ])).toMatchObject({ name: "product_identity_register", values: expect.arrayContaining([SID, SUBJECT]) });
+    // The tenant is never an argument: the database resolves it from the
+    // installed session context, so no caller can name another tenant.
+    for (const text of [DURABLE_BOUNDARY_SQL_TEXT.identityRegister,
+      DURABLE_BOUNDARY_SQL_TEXT.identityRotate, DURABLE_BOUNDARY_SQL_TEXT.identityRevoke]) {
+      expect(text).not.toContain("$9");
+    }
     expect(DURABLE_BOUNDARY_CAPABILITIES.memory_fallback_count).toBe(0);
     expect(DURABLE_BOUNDARY_CAPABILITIES.installed_contract_path).toBe("supabase/migrations/202609010003_durable_product_integrity_hardening.sql");
     expect(DURABLE_REPORT_IDENTITY_SQL_TEXT).toContain("report.revision = state.revision");
@@ -100,7 +106,6 @@ describe("durable PostgreSQL product boundaries", () => {
     await expect(first.read(SID)).resolves.toMatchObject({ tenant_id: TENANT, current_token_id: JTI, rotation_counter: 0, status: "active" });
 
     await repository.rotate({
-      tenant_id: TENANT,
       session_id: SID,
       next_token_id: NEXT_JTI,
       expected_rotation_counter: 0,
@@ -109,7 +114,7 @@ describe("durable PostgreSQL product boundaries", () => {
     const afterRestart = new PostgresIdentitySessionStateReader(store.factory());
     await expect(afterRestart.read(SID)).resolves.toMatchObject({ current_token_id: NEXT_JTI, rotation_counter: 1, status: "active" });
 
-    await repository.revoke({ tenant_id: TENANT, session_id: SID, revoked_at: "2026-09-01T06:10:00.000Z" });
+    await repository.revoke({ session_id: SID, revoked_at: "2026-09-01T06:10:00.000Z" });
     const afterSecondRestart = new PostgresIdentitySessionStateReader(store.factory());
     await expect(afterSecondRestart.read(SID)).resolves.toMatchObject({ status: "revoked" });
     expect(store.acquisitions).toBe(3);
@@ -507,17 +512,17 @@ class SessionStore {
   query(query: PostgresStatement): PostgresQueryResult {
     if (query.name === "product_identity_register") {
       this.row = Object.freeze({
-        tenant_id: query.values[0],
-        sid: query.values[1],
-        subject: query.values[2],
-        current_jti: query.values[3],
-        rotation_counter: String(query.values[4]),
-        valid_after: query.values[5],
-        expires_at: query.values[6],
+        tenant_id: TENANT,
+        sid: query.values[0],
+        subject: query.values[1],
+        current_jti: query.values[2],
+        rotation_counter: String(query.values[3]),
+        valid_after: query.values[4],
+        expires_at: query.values[5],
         revoked_at: null,
-        reviewer_org_id: query.values[7],
+        reviewer_org_id: query.values[6],
         session_sha256: HASH_A,
-        created_at: query.values[8],
+        created_at: query.values[7],
       });
       return result([this.row]);
     }
@@ -533,15 +538,15 @@ class SessionStore {
       if (!this.row) return result([{ accepted: false }]);
       this.row = Object.freeze({
         ...this.row,
-        current_jti: query.values[2],
+        current_jti: query.values[1],
         rotation_counter: String(Number(this.row.rotation_counter) + 1),
-        valid_after: query.values[4],
+        valid_after: query.values[3],
       });
       return result([{ accepted: true }]);
     }
     if (query.name === "product_identity_revoke") {
       if (!this.row) return result([{ accepted: false }]);
-      this.row = Object.freeze({ ...this.row, revoked_at: query.values[2] });
+      this.row = Object.freeze({ ...this.row, revoked_at: query.values[1] });
       return result([{ accepted: true }]);
     }
     throw new DurableBoundaryError("DURABLE_BOUNDARY_DATABASE_REJECTED");

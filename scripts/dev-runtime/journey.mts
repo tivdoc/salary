@@ -64,6 +64,10 @@ async function seedFixture(
   }));
   try {
     await client.query("begin");
+    // Row level security on the identity table is forced: an update without a
+    // declared tenant is refused, fixture or not. The fixture declares it the
+    // same way the runtime does.
+    await client.query("select set_config('tivdoc.tenant_id', $1, true)", [fixture.tenant_id]);
     await client.query(
       `insert into public.engine_case_identity(internal_case_id, tenant_id, canonical_case_id)
        values ($1::uuid, $2, $3) on conflict do nothing`,

@@ -80,6 +80,7 @@ async function main(): Promise<void> {
   await admin.connect();
   const issuedAt = Math.floor(Date.now() / 1_000);
   try {
+    await admin.query("select set_config('tivdoc.tenant_id', $1, false)", [TENANT]);
     await admin.query(
       `insert into public.product_identity_sessions(
          tenant_id, sid, subject, current_jti, rotation_counter, valid_after,
