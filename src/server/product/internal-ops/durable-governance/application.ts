@@ -17,6 +17,7 @@ import type {
   DurableProductRouteServiceAdapter,
 } from "../../routes/durable-registration.ts";
 import type { LegalReviewAction, LegalReviewDurableRow, LegalReviewPacket } from "../../../../engine/legal-review/contracts.ts";
+import { buildLegalTopicReadiness, type LegalTopicEvidence, type LegalTopicReadiness } from "../../../../engine/legal-review/topic-readiness.ts";
 import type { InternalOpsApplicationPort } from "../application-port.ts";
 import type { InternalOpsCommandResult, OpsReadProjection } from "../contracts.ts";
 import { actorScopePermits } from "../policy.ts";
@@ -60,6 +61,14 @@ export type DurableLegalReviewQueueProjection = Readonly<{
   governance_workflow: "legal_review";
   entries: readonly LegalReviewDurableRow[];
   product_reachable_memory_fallback: false;
+  activation_allowed: false;
+}>;
+
+export type DurableLegalTopicProjection = Readonly<{
+  schema_version: typeof DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION;
+  persistence: "postgresql_required";
+  governance_workflow: "legal_review";
+  readiness: LegalTopicReadiness;
   activation_allowed: false;
 }>;
 
@@ -145,6 +154,7 @@ export interface DurableGovernanceOperationsApplication extends InternalOpsAppli
   readLegalReviewQueue(input: DurableGovernanceLegalReviewScope & Readonly<{
     limit: number;
   }>): Promise<DurableLegalReviewQueueProjection>;
+  readLegalReviewTopics(input: DurableGovernanceLegalReviewScope): Promise<DurableLegalTopicProjection>;
   submitLegalReviewAction(input: DurableGovernanceLegalReviewScope & Readonly<{
     packet: LegalReviewPacket;
     action: LegalReviewAction;
@@ -333,6 +343,42 @@ class PostgresDurableGovernanceOperationsApplication implements DurableGovernanc
       receipt,
       product_reachable_memory_fallback: false,
       activation_allowed: false,
+    });
+  }
+
+  /**
+   * Seven-topic readiness derived from the durable queue. Gate evidence comes
+   * only from stored packets; every other gate stays blocked because no
+   * attestation, rule approval or locked ground truth exists.
+   */
+  async readLegalReviewTopics(input: DurableGovernanceLegalReviewScope): Promise<DurableLegalTopicProjection> {
+    this.#assertLegalReviewScope(input, LEGAL_REVIEW_READ_ROLES);
+    const entries = await this.#withGovernance(
+      legalReviewScope(input),
+      (application) => application.legal_review.listQueue(500),
+    );
+    const byTopic = new Map<string, { approved: number; period: number; scope: number }>();
+    for (const entry of entries) {
+      if (entry.topic === null) continue;
+      const observed = byTopic.get(entry.topic) ?? { approved: 0, period: 0, scope: 0 };
+      if (entry.state === "approved") observed.approved += 1;
+      byTopic.set(entry.topic, observed);
+    }
+    const evidence: LegalTopicEvidence[] = [...byTopic.entries()].map(([topic, observed]) => ({
+      topic: topic as LegalTopicEvidence["topic"],
+      approved_packets: observed.approved,
+      packets_with_known_period: observed.period,
+      packets_with_declared_scope: observed.scope,
+      dual_attested_parameters: 0,
+      approved_not_activated_rulespecs: 0,
+      locked_ground_truth_cases: 0,
+    }));
+    return Object.freeze({
+      schema_version: DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION,
+      persistence: "postgresql_required" as const,
+      governance_workflow: "legal_review" as const,
+      readiness: buildLegalTopicReadiness(evidence),
+      activation_allowed: false as const,
     });
   }
 

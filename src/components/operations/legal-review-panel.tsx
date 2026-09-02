@@ -10,6 +10,13 @@ import styles from "./operations-workspace.module.css";
 
 type LegalReviewPanelProps = Readonly<{ csrfToken: string }>;
 
+type TopicRow = Readonly<{
+  topic: string;
+  ready: boolean;
+  blocked_gates: readonly string[];
+  cleared_gates: readonly string[];
+}>;
+
 type QueueRow = Readonly<{
   packet_id: string;
   packet_sha256: string;
@@ -53,6 +60,7 @@ export function LegalReviewPanel({ csrfToken }: LegalReviewPanelProps) {
   const [actorId, setActorId] = useState("");
   const [signature, setSignature] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [topics, setTopics] = useState<readonly TopicRow[]>([]);
   const [notice, setNotice] = useState("תור הבדיקה המשפטית לא נטען.");
   const [busy, setBusy] = useState(false);
 
@@ -76,6 +84,29 @@ export function LegalReviewPanel({ csrfToken }: LegalReviewPanelProps) {
     } catch {
       setRows([]);
       setNotice("לא ניתן לטעון את תור הבדיקה המשפטית.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function loadTopics() {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/operations/legal-review/topics", {
+        cache: "no-store", credentials: "same-origin",
+      });
+      if (!response.ok) {
+        setTopics([]);
+        setNotice("לוח שבעת התחומים אינו זמין.");
+        return;
+      }
+      const body = await response.json() as { data?: { readiness?: { topics?: unknown } } };
+      const rows = Array.isArray(body.data?.readiness?.topics) ? body.data.readiness.topics as readonly TopicRow[] : [];
+      setTopics(rows);
+      setNotice(`נטענו ${rows.length} תחומים. אף תחום אינו מוכן להפעלה.`);
+    } catch {
+      setTopics([]);
+      setNotice("לא ניתן לטעון את לוח התחומים.");
     } finally {
       setBusy(false);
     }
@@ -133,6 +164,25 @@ export function LegalReviewPanel({ csrfToken }: LegalReviewPanelProps) {
         מצב הפעלה: לא מופעל. אישור מנה אינו מפעיל מקור, פרמטר או כלל, ואינו מחשב זכאות.
       </p>
       <button type="button" onClick={loadQueue} disabled={busy}>טען תור בדיקה</button>
+      <button type="button" onClick={loadTopics} disabled={busy}>טען לוח שבעת התחומים</button>
+
+      {topics.length > 0 ? (
+        <table>
+          <caption>מוכנות שבעת התחומים המשפטיים</caption>
+          <thead>
+            <tr><th scope="col">תחום</th><th scope="col">מוכן</th><th scope="col">שערים חסומים</th></tr>
+          </thead>
+          <tbody>
+            {topics.map((row) => (
+              <tr key={row.topic}>
+                <td>{row.topic}</td>
+                <td>{row.ready ? "כן" : "לא"}</td>
+                <td>{row.blocked_gates.length === 0 ? "—" : row.blocked_gates.join(", ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
 
       <table>
         <caption>תור מנות בדיקה</caption>

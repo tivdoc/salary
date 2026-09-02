@@ -15,6 +15,11 @@ function baseService(): InternalOpsApplicationPort {
 function legalReviewService(calls: unknown[], failure?: { code: string }): InternalOpsApplicationPort {
   return Object.freeze({
     ...baseService(),
+    readLegalReviewTopics: async (input: unknown) => {
+      calls.push({ kind: "topics", input });
+      if (failure) throw Object.assign(new Error(failure.code), { code: failure.code });
+      return Object.freeze({ readiness: Object.freeze({ topics: Object.freeze([]) }), activation_allowed: false });
+    },
     readLegalReviewQueue: async (input: unknown) => {
       calls.push({ kind: "queue", input });
       if (failure) throw Object.assign(new Error(failure.code), { code: failure.code });
@@ -161,5 +166,17 @@ describe("V0.10.5 nested legal review operations endpoints", () => {
     await instance.handle(request, ["legal-review", "queue"]);
     expect(calls[0]?.input.actor).toEqual(ACTOR);
     expect(calls[0]?.input.correlation_id).toBe("ops:legal-review-001");
+  });
+  it("serves the seven-topic readiness dashboard without CSRF", async () => {
+    const calls: { kind: string }[] = [];
+    const seen: unknown[] = [];
+    const instance = handler({ service: legalReviewService(calls as never), sessions: sessions(true, seen) });
+    const request = new Request("https://internal.invalid/api/operations/legal-review/topics");
+    const response = await instance.handle(request, ["legal-review", "topics"]);
+    expect(response.status).toBe(200);
+    const body = await response.json() as { data?: { activation_allowed?: boolean } };
+    expect(body.data?.activation_allowed).toBe(false);
+    expect(calls[0]?.kind).toBe("topics");
+    expect(seen).toEqual([{ audience: "operations", csrf: false }]);
   });
 });

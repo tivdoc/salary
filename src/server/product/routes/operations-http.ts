@@ -35,11 +35,18 @@ export function createOperationsHttpHandler(input: Readonly<{
         const isPost = request.method === "POST";
         const joined = segments.join("/");
         if (!(joined === "legal-review/queue" && request.method === "GET")
+          && !(joined === "legal-review/topics" && request.method === "GET")
           && !(joined === "legal-review/actions" && isPost)) return productNotFound();
         const session = await input.sessions.verify(request, "operations", isPost);
         if (!session) return productNotFound();
         const correlationId = correlationIdFor(request);
         try {
+          if (joined === "legal-review/topics") {
+            const data = await legalReview.readLegalReviewTopics({
+              actor: session.actor, correlation_id: correlationId,
+            });
+            return productJson({ correlation_id: correlationId, data });
+          }
           if (!isPost) {
             const limit = legalReviewLimit(request);
             const data = await legalReview.readLegalReviewQueue({
@@ -109,6 +116,7 @@ export function createOperationsHttpHandler(input: Readonly<{
 
 type LegalReviewCapability = Readonly<{
   readLegalReviewQueue(input: Readonly<{ actor: unknown; correlation_id: string; limit: number }>): Promise<unknown>;
+  readLegalReviewTopics(input: Readonly<{ actor: unknown; correlation_id: string }>): Promise<unknown>;
   submitLegalReviewAction(input: Readonly<Record<string, unknown>>): Promise<unknown>;
 }>;
 
@@ -116,6 +124,7 @@ type LegalReviewCapability = Readonly<{
 function legalReviewCapability(service: InternalOpsApplicationPort | null): LegalReviewCapability | null {
   const candidate = service as unknown as Partial<LegalReviewCapability> | null;
   return candidate && typeof candidate.readLegalReviewQueue === "function"
+    && typeof candidate.readLegalReviewTopics === "function"
     && typeof candidate.submitLegalReviewAction === "function"
     ? candidate as LegalReviewCapability : null;
 }
