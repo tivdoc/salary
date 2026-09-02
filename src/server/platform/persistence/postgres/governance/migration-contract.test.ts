@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES } from "../../../../../../scripts/canonical-persistence-v091/foundation/inventory.mts";
+import { EXPECTED_DURABLE_GOVERNANCE_V0101_POLICY_TABLES } from "../../../../../../scripts/canonical-persistence-v091/foundation/inventory.mts";
 import { EXPECTED_MIGRATION_SHA256 } from "../../../../../../scripts/canonical-persistence-v091/foundation/migrations.mts";
 
 const MIGRATION_NAME = "202609010004_durable_governance_workflows.sql" as const;
@@ -20,7 +20,7 @@ describe("durable governance forward migration contract", () => {
     const tables = [...sql.matchAll(/^create table (private\.governance_[a-z0-9_]+) \(/gmu)]
       .map((match) => match[1])
       .sort();
-    expect(tables).toEqual([...EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES].sort());
+    expect(tables).toEqual([...EXPECTED_DURABLE_GOVERNANCE_V0101_POLICY_TABLES].sort());
   });
 
   it("keeps every governance table forced-RLS and directly inaccessible", async () => {

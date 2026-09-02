@@ -14,8 +14,9 @@ const source = bytes.toString("utf8");
 
 describe("V0.10.2 governance function-owner schema repair", () => {
   it("is an append-only pinned migration after the runtime product repair", () => {
-    expect(EXPECTED_MIGRATION_CHAIN.at(-3)).toBe("202609010008_runtime_product_forward_repair.sql");
-    expect(EXPECTED_MIGRATION_CHAIN.at(-2)).toBe(NAME);
+    const index = EXPECTED_MIGRATION_CHAIN.indexOf(NAME);
+    expect(index).toBeGreaterThan(0);
+    expect(EXPECTED_MIGRATION_CHAIN[index - 1]).toBe("202609010008_runtime_product_forward_repair.sql");
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(EXPECTED_MIGRATION_SHA256[NAME]);
   });
 

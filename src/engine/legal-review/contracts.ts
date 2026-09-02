@@ -124,6 +124,31 @@ export const legalReviewQueueEntrySchema = z.object({
   enqueued_at: z.iso.datetime({ offset: true }),
 }).strict().readonly();
 
+/**
+ * One durable queue row as returned by the canonical persistence layer. Decoded
+ * strictly at the SQL boundary so a malformed or widened row is a failure
+ * rather than a silently normalized value.
+ */
+export const legalReviewDurableRowSchema = z.object({
+  ordinal: nonEmptyTextSchema,
+  packet_id: legalOperationsIdSchema,
+  packet_sha256: legalOperationsSha256Schema,
+  revision: z.number().int().positive(),
+  state: legalReviewStateSchema,
+  topic: z.string().nullable(),
+  source_version_id: legalOperationsIdSchema,
+  parser_version: nonEmptyTextSchema,
+  normalizer_version: nonEmptyTextSchema,
+  queue_priority: z.number().int().min(0).max(999),
+  blocked_reason_codes: z.array(nonEmptyTextSchema).max(32).readonly(),
+  superseded_by_packet_id: legalOperationsIdSchema.nullable(),
+  activation_allowed: z.literal(false),
+  enqueued_at: z.string().min(1),
+  updated_at: z.string().min(1),
+}).strict().readonly();
+
+export type LegalReviewDurableRow = z.infer<typeof legalReviewDurableRowSchema>;
+
 export type LegalReviewState = z.infer<typeof legalReviewStateSchema>;
 export type LegalReviewerRole = z.infer<typeof legalReviewerRoleSchema>;
 export type LegalReviewDecision = z.infer<typeof legalReviewDecisionSchema>;

@@ -18,6 +18,7 @@ export const governanceWorkflowKindSchema = z.enum([
   "legal_reconciliation",
   "parameter_approval",
   "rulespec_approval",
+  "legal_review",
 ]);
 
 export const governanceWorkKindSchema = z.enum([
@@ -61,6 +62,12 @@ export const governanceMutationStateSchema = z.enum([
   "dual_attested_inactive",
   "awaiting_complementary_approval",
   "dual_approved_inactive",
+  "pending_review",
+  "in_review",
+  "changes_requested",
+  "approved",
+  "rejected",
+  "superseded",
 ]);
 
 export const legalObservationCandidateSchema = z.object({
@@ -290,7 +297,9 @@ export type GovernanceRepositoryErrorCode =
   | "GOVERNANCE_CLAIM_FENCE_INVALID"
   | "GOVERNANCE_ROW_MALFORMED"
   | "GOVERNANCE_RECORD_NOT_FOUND"
-  | "GOVERNANCE_QUERY_FAILED";
+  | "GOVERNANCE_QUERY_FAILED"
+  | "GOVERNANCE_DECODE_FAILED"
+  | "GOVERNANCE_IDEMPOTENT_REPLAY_CONFLICT";
 
 /** Driver and database details do not cross the governance boundary. */
 export class GovernanceRepositoryError extends Error {

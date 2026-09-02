@@ -422,6 +422,7 @@ function repositoryForWorkflow(application: DurableGovernanceApplication, workfl
     case "legal_reconciliation": return application.legal_reconciliation;
     case "parameter_approval": return application.parameters;
     case "rulespec_approval": return application.rulespec;
+    case "legal_review": return application.legal_review;
   }
 }
 

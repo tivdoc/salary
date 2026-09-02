@@ -241,3 +241,31 @@ export function aggregateReadStatement(input: Readonly<{
     $1::text, $2::text, $3::text, $4::text
   )`, [input.tenant_id, input.workflow_kind, input.aggregate_id, input.aggregate_version]);
 }
+
+export function legalReviewPacketEnqueueStatement(input: Readonly<{
+  tenant_id: string; packet: JsonRecord; queue_priority: number; blocked_reason_codes: readonly string[];
+  idempotency_key: string; command_sha256: string; enqueued_at: string;
+}>): PostgresStatement {
+  return statement("governance_legal_review_packet_enqueue", `select * from private.governance_legal_review_packet_enqueue(
+    $1::text, $2::jsonb, $3::integer, $4::jsonb, $5::text, $6::text, $7::timestamptz
+  )`, [input.tenant_id, json(input.packet), input.queue_priority, json([...input.blocked_reason_codes]),
+    input.idempotency_key, input.command_sha256, input.enqueued_at]);
+}
+
+export function legalReviewActionAppendStatement(input: Readonly<{
+  tenant_id: string; action: JsonRecord; next_state: string; superseded_by_packet_id: string | null;
+  idempotency_key: string; command_sha256: string; occurred_at: string;
+}>): PostgresStatement {
+  return statement("governance_legal_review_action_append", `select * from private.governance_legal_review_action_append(
+    $1::text, $2::jsonb, $3::text, $4::text, $5::text, $6::text, $7::timestamptz
+  )`, [input.tenant_id, json(input.action), input.next_state, input.superseded_by_packet_id,
+    input.idempotency_key, input.command_sha256, input.occurred_at]);
+}
+
+export function legalReviewQueueListStatement(input: Readonly<{
+  tenant_id: string; limit: number;
+}>): PostgresStatement {
+  return statement("governance_legal_review_queue_list", `select private.governance_legal_review_queue_list(
+    $1::text, $2::integer
+  ) as entries`, [input.tenant_id, input.limit]);
+}

@@ -41,6 +41,18 @@ import {
   type TrustOrganization,
 } from "../../../trust/reviewer-trust-contracts.ts";
 import {
+  legalReviewDurableRowSchema,
+  legalReviewPacketSchema,
+  LegalReviewError,
+  type LegalReviewAction,
+  type LegalReviewDurableRow,
+  type LegalReviewPacket,
+} from "../../../../../engine/legal-review/contracts.ts";
+import {
+  applyLegalReviewAction,
+  deriveLegalReviewPacketIdentity,
+} from "../../../../../engine/legal-review/workflow.ts";
+import {
   validateGoldenCaseSet,
   validateRuleSpecPackage,
   type GoldenCaseSet,
@@ -87,6 +99,9 @@ import {
   keyChallengeAppendStatement,
   legalObservationDecideStatement,
   legalObservationImportStatement,
+  legalReviewActionAppendStatement,
+  legalReviewPacketEnqueueStatement,
+  legalReviewQueueListStatement,
   parameterAttestationAppendStatement,
   parameterImportStatement,
   reviewerAppendStatement,
@@ -1035,3 +1050,103 @@ export type {
   TrustedReviewer,
   TrustOrganization,
 };
+
+/**
+ * Canonical durable adapter for the internal legal review workflow.
+ *
+ * Domain rules are not restated here: the pure workflow decides whether an
+ * action is admissible and what state it produces, and this adapter persists
+ * that decision under compare-and-swap. There is no memory substitute and no
+ * path by which a packet becomes operative.
+ */
+export class PostgresLegalReviewRepository extends GovernanceRepositoryBase {
+  async enqueuePacket(input: Readonly<{
+    packet: LegalReviewPacket;
+    queue_priority: number;
+    blocked_reason_codes: readonly string[];
+    metadata: GovernanceCommandMetadata;
+  }>): Promise<GovernanceMutationReceipt> {
+    const operation = "legal_review_packet_enqueue";
+    const packet = parse(legalReviewPacketSchema, input.packet, operation);
+    if (!Number.isSafeInteger(input.queue_priority) || input.queue_priority < 0 || input.queue_priority > 999) {
+      throw new GovernanceRepositoryError("GOVERNANCE_INPUT_INVALID", operation);
+    }
+    if (packet.state !== "pending_review" || packet.revision !== 1) {
+      throw new GovernanceRepositoryError("GOVERNANCE_INPUT_INVALID", operation);
+    }
+    const identity = deriveLegalReviewPacketIdentity(packet.binding, packet.scope);
+    if (identity.packet_id !== packet.packet_id || identity.packet_sha256 !== packet.packet_sha256) {
+      throw new GovernanceRepositoryError("GOVERNANCE_HASH_MISMATCH", operation);
+    }
+    const meta = metadata(input.metadata, operation);
+    const command = { packet, queue_priority: input.queue_priority, blocked_reason_codes: input.blocked_reason_codes };
+    return this.mutation(legalReviewPacketEnqueueStatement({
+      tenant_id: this.tenantId,
+      packet: asRecord(packet),
+      queue_priority: input.queue_priority,
+      blocked_reason_codes: [...input.blocked_reason_codes],
+      idempotency_key: meta.idempotency_key,
+      command_sha256: commandSha256(operation, this.tenantId, command),
+      enqueued_at: meta.occurred_at,
+    }), { tenant_id: this.tenantId, workflow_kind: "legal_review", aggregate_id: packet.packet_id,
+      aggregate_version: packet.packet_sha256 }, operation);
+  }
+
+  async appendAction(input: Readonly<{
+    packet: LegalReviewPacket;
+    action: LegalReviewAction;
+    applied_actions?: readonly LegalReviewAction[];
+    superseded_by_packet_id?: string | null;
+    metadata: GovernanceCommandMetadata;
+  }>): Promise<GovernanceMutationReceipt> {
+    const operation = "legal_review_action_append";
+    const packet = parse(legalReviewPacketSchema, input.packet, operation);
+    let transition;
+    try {
+      transition = applyLegalReviewAction(packet, input.action, input.applied_actions ?? []);
+    } catch (error) {
+      // Domain refusals stay domain refusals; they never reach SQL.
+      if (error instanceof LegalReviewError) throw error;
+      throw new GovernanceRepositoryError("GOVERNANCE_INPUT_INVALID", operation);
+    }
+    if (!transition.applied) {
+      throw new GovernanceRepositoryError("GOVERNANCE_IDEMPOTENT_REPLAY_CONFLICT", operation);
+    }
+    const supersededBy = transition.packet.state === "superseded"
+      ? (input.superseded_by_packet_id ?? null) : null;
+    if (transition.packet.state === "superseded" && supersededBy === null) {
+      throw new GovernanceRepositoryError("GOVERNANCE_INPUT_INVALID", operation);
+    }
+    const meta = metadata(input.metadata, operation);
+    const command = { action: input.action, next_state: transition.packet.state, superseded_by: supersededBy };
+    return this.mutation(legalReviewActionAppendStatement({
+      tenant_id: this.tenantId,
+      action: asRecord(input.action as unknown as object),
+      next_state: transition.packet.state,
+      superseded_by_packet_id: supersededBy,
+      idempotency_key: meta.idempotency_key,
+      command_sha256: commandSha256(operation, this.tenantId, command),
+      occurred_at: meta.occurred_at,
+    }), { tenant_id: this.tenantId, workflow_kind: "legal_review", aggregate_id: packet.packet_id,
+      aggregate_version: packet.packet_sha256 }, operation);
+  }
+
+  async listQueue(limit: number): Promise<readonly LegalReviewDurableRow[]> {
+    const operation = "legal_review_queue_list";
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) {
+      throw new GovernanceRepositoryError("GOVERNANCE_INPUT_INVALID", operation);
+    }
+    const row = await queryExactlyOne(this.context, legalReviewQueueListStatement({
+      tenant_id: this.tenantId, limit,
+    }), operation);
+    const entries = (row as { entries?: unknown }).entries;
+    if (!Array.isArray(entries)) throw new GovernanceRepositoryError("GOVERNANCE_DECODE_FAILED", operation);
+    return Object.freeze(entries.map((entry) => {
+      try {
+        return legalReviewDurableRowSchema.parse(entry);
+      } catch {
+        throw new GovernanceRepositoryError("GOVERNANCE_DECODE_FAILED", operation);
+      }
+    }));
+  }
+}

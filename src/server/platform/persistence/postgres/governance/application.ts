@@ -10,6 +10,7 @@ import {
   PostgresGovernanceWorkRepository,
   PostgresGroundTruthRepository,
   PostgresLegalReconciliationRepository,
+  PostgresLegalReviewRepository,
   PostgresParameterApprovalRepository,
   PostgresReviewerTrustRepository,
   PostgresRuleSpecApprovalRepository,
@@ -29,6 +30,7 @@ export type DurableGovernanceApplication = Readonly<{
   legal_reconciliation: PostgresLegalReconciliationRepository;
   parameters: PostgresParameterApprovalRepository;
   rulespec: PostgresRuleSpecApprovalRepository;
+  legal_review: PostgresLegalReviewRepository;
   historical_observations: PostgresHistoricalObservationImportService;
 }>;
 
@@ -52,6 +54,7 @@ export function createDurableGovernanceApplication(
   const legalReconciliation = new PostgresLegalReconciliationRepository(context, tenantId);
   const parameters = new PostgresParameterApprovalRepository(context, tenantId);
   const rulespec = new PostgresRuleSpecApprovalRepository(context, tenantId);
+  const legalReview = new PostgresLegalReviewRepository(context, tenantId);
   return frozen({
     schema_version: GOVERNANCE_SCHEMA_VERSION,
     persistence: "postgresql_required",
@@ -66,6 +69,7 @@ export function createDurableGovernanceApplication(
     legal_reconciliation: legalReconciliation,
     parameters,
     rulespec,
+    legal_review: legalReview,
     historical_observations: new PostgresHistoricalObservationImportService(legalReconciliation, workQueue),
   });
 }

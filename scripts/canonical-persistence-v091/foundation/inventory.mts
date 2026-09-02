@@ -170,7 +170,12 @@ const EXPECTED_FORCED_RLS_TABLES = new Set<string>([
   "public.engine_global_dependency_state",
 ]);
 
-export const EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES = Object.freeze([
+/**
+ * Tables owned by the sealed durable-governance migration 202609010004. Kept
+ * separate from the union below so each migration's contract test pins exactly
+ * the relations that migration creates.
+ */
+export const EXPECTED_DURABLE_GOVERNANCE_V0101_POLICY_TABLES = Object.freeze([
   "private.governance_aggregate_snapshots",
   "private.governance_audit_events",
   "private.governance_golden_case_sets",
@@ -197,6 +202,22 @@ export const EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES = Object.freeze([
   "private.governance_rulespec_versions",
   "private.governance_work_items",
 ] as const);
+
+/** Tables added by the additive legal-review migration 202609010011. */
+export const EXPECTED_LEGAL_REVIEW_POLICY_TABLES = Object.freeze([
+  "private.governance_legal_review_actions",
+  "private.governance_legal_review_packets",
+] as const);
+
+/**
+ * Every private governance relation a live database must expose, derived from
+ * the per-migration sets rather than restated, so adding a migration cannot
+ * drift from the inventory it is checked against.
+ */
+export const EXPECTED_PRIVATE_GOVERNANCE_POLICY_TABLES = Object.freeze([
+  ...EXPECTED_DURABLE_GOVERNANCE_V0101_POLICY_TABLES,
+  ...EXPECTED_LEGAL_REVIEW_POLICY_TABLES,
+].sort() as readonly string[]);
 
 export const EXPECTED_RUNTIME_OWNER_POLICY_TABLES = Object.freeze([
   "public.engine_durable_jobs",
