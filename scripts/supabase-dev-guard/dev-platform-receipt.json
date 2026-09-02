@@ -1,0 +1,55 @@
+{
+  "schema_version": "tivdoc-supabase-dev-platform-receipt-v0.10.8",
+  "project_label": "DEV / SYNTHETIC ONLY / NO CUSTOMER DATA",
+  "project_name": "tivdoc-engine-dev-20260902-a7f3c1",
+  "region": "eu-central-1",
+  "plan_cost_monthly_usd": 0,
+  "server_version": "17.6",
+  "denied_refs_recorded_before_any_command": 2,
+  "applied": {
+    "note": "Applied through the Supabase management API, not a byte-pinned replay of the repository chain. The pinned-bytes guarantee remains the local SHA test; this proves execution semantics on real PostgreSQL.",
+    "repository_migration": "202609010011_durable_legal_review",
+    "prerequisite_scaffolding": "labelled DEV scaffolding for the 0004/0005 objects 0011 references"
+  },
+  "schema_inventory": {
+    "legal_review_tables": 2,
+    "rls_enabled_and_forced": 2,
+    "owner_verified_policies": 2,
+    "security_definer_functions": 3,
+    "indexes": 7,
+    "anon_authenticated_service_role_grants": 0,
+    "objects_owned_by_governance_owner": 9
+  },
+  "proof_matrix": {
+    "unverified_tenant_rejected": "PASS",
+    "cross_tenant_rejected": "PASS",
+    "enqueue": "PASS",
+    "idempotent_replay": "PASS",
+    "divergent_payload_conflict": "PASS",
+    "stale_revision_conflict": "PASS",
+    "identity_changed_rejected": "PASS",
+    "unattested_rejected": "PASS",
+    "claim_advances_revision": "PASS",
+    "actions_append_only": "PASS",
+    "observer_role_constraint": "PASS",
+    "queue_list_scoped_to_verified_tenant": "PASS"
+  },
+  "teardown": {
+    "transient_synthetic_rows_removed": true,
+    "residual_packets": 0,
+    "residual_actions": 0,
+    "residual_synthetic_sessions": 0,
+    "project_and_schema_retained_for_future_development": true
+  },
+  "truth_counters": {
+    "customer_reads": 0,
+    "customer_documents": 0,
+    "real_identities": 0,
+    "active_sources": 0,
+    "active_parameters": 0,
+    "active_rules": 0,
+    "openai_calls": 0,
+    "deployments": 0,
+    "production_or_preview_changes": 0
+  }
+}
