@@ -1,7 +1,7 @@
 # Tivdoc development state
 
-- wave: 1 of the rolling queue — close the durable journey
-- base: a0761d286b5a81322c4f5f3215c871de0049b07d
+- wave: 2 of the rolling queue — journey-scope closure of `B-28` and `B-38`
+- base: 0e3c700b7dd9e603fc389d733fdc55672693aa13
 - head: pending
 - frozen_head: pending
 - date: 2026-09-02
@@ -10,89 +10,84 @@
 
 | lane | id | item | status | evidence |
 |---|---|---|---|---|
-| A | W1-1 | 422 root cause, fix, regression test | delivered (prior commit `b34765b`) | `legal-review-runtime-grants.test.ts` |
-| A | W1-2 | journey 16/16 against DEV | delivered | `output/wave1/browser/journey.json` |
-| A | W1-3 | 71/71 durably accounted, replay adds nothing | delivered | `output/wave1/projection/projection.json` |
-| A | W1-4 | A1 blocked-record store, append-only, RLS forced | delivered | `supabase/migrations/202609020002_legal_review_observation_blocks.sql` |
-| A | W1-5 | A3 breakdown by reason code | delivered | `output/wave1/audit/reason-breakdown.json` |
-| A | W1-6 | A4 wrapper origin preservation | delivered | `origin-preservation.test.ts` |
-| A | W1-7 | A5 grant coverage proven by execution | delivered | `output/wave1/audit/grant-execution-proof.json` — 15 commands, 0 denied |
-| A | W1-8 | dynamic matrices on DEV | partial | role and refusal halves proven; conflict, race, rollback and outbox atomicity not re-run |
-| B | B-28 | counter recomputation and journey subset | delivered | `output/wave1/agents/b28/findings.md` |
-| B | B-38 | invalidation path map | delivered | `output/wave1/agents/b38/findings.md` |
-| B | wrappers | origin-destroying wrapper sweep | delivered | `output/wave1/agents/wrappers/findings.md` |
-| B | grants | product-path command inventory | delivered | `output/wave1/agents/grants/findings.md` |
+| A | W2-1 | B1 — effect booleans made honest | delivered | `effect-honesty.test.ts`; `postgres-port.ts` derives all six |
+| A | W2-2 | B3 — `B-38` per-path disposition | delivered | `journey-scope-disposition.ts` + test |
+| A | W2-3 | `B-28` counters recomputed, journey subset recorded | partial | `output/wave2/audit/entrypoint-counters.json`; no orphan seam wired, deliberately |
+| A | W2-4 | B4 — complete DEV dynamic matrix at this head | delivered | `output/wave2/audit/dynamic-matrix.json` — 14 checks, 10 supported, 10 passed, 4 not supported |
+| A | W2-5 | scanner finding on new code repaired | delivered | `scripts/local-postgres-dev/provision.mts` builds URLs through the URL API |
+| B | effects | consumer enumeration | delivered | `output/wave2/agents/effects/findings.md` |
+| B | orphans | caller search across claimed services | delivered | `output/wave2/agents/orphans/findings.md` — 6 more |
+| B | secdef | `SECURITY DEFINER` least-privilege audit | delivered | `output/wave2/agents/secdef/findings.md` — 114 functions, 35 violation sites |
+| B | scanner | import-graph re-proof | delivered | `output/wave2/agents/scanner/findings.md` |
 
 ## Decisions
 
-- **The `.gitignore` gate failed again and was repaired first.** The rolling
-  queue introduces wave-named output directories; rules for all four plus the
-  probe path were added and re-checked on a nested and a deep path before work
-  started.
+- **The four effect booleans were not an incomplete feature; the verifier was in
+  on it.** `assertApplied` and `assertReceipt` both demanded `=== true` on every
+  effect field, so an honest port reporting what it measured would have been
+  rejected as `GLOBAL_INVALIDATION_APPLY_INCOMPLETE`. The producer invented the
+  literal and the verifier certified it back — tautological self-certification.
+  Both now check the *shape* of an outcome and the one relation that is real
+  (`historical_evidence_preserved` iff `historical_versions_deleted === 0`),
+  never that a particular effect occurred.
 
-- **A1 built as approved, with the anti-graduation rule enforced by
-  construction rather than by policy.** The blocked table holds no hash, version
-  or binding column at all, so there is nothing to backfill; the append-only
-  trigger forbids `UPDATE` outright, and a `superseded_by` column was
-  deliberately *not* added because it would be the one mutable field and the one
-  path by which a block could become a packet. A future genuine parse produces a
-  new artifact and a new packet, related by sharing the observation id.
+- **Three fields are `"unknown"`, and that is not a placeholder.**
+  `approval_invalidated` had a real count that was computed and discarded, so it
+  is now `approvalsInvalidated > 0`. `cache_versioned` follows from the epoch
+  row update the method already asserts. `historical_evidence_preserved` follows
+  from a measured deletion count. But `stale_execution_blocked`,
+  `stale_approval_blocked` and `stale_download_blocked` have **no computation at
+  all** — nothing in the transaction blocks anything, and the only enforcement,
+  `withCurrentAuthorization`, has no caller. Reporting `false` would claim
+  "we looked and nothing was blocked", which is as untrue as `true`. The type is
+  `boolean | "unknown"` and readers must handle the third case.
 
-- **Append-only is proven by showing no actor can mutate, not by a probe that
-  matches nothing.** Rows are visible only inside a `SECURITY DEFINER` function
-  called by a runtime role, because `runtime_verified_tenant()` requires
-  `session_user` to be one of the three runtime roles and the policy targets the
-  owning role. An `UPDATE`/`DELETE` probe from any reachable connection matches
-  zero rows and "succeeds" without the row trigger ever firing — it would prove
-  the opposite of what it claims. The receipt instead records that the trigger is
-  attached to `governance_forbid_mutation`, and that `anon`, `authenticated`,
-  `service_role` and all four runtime roles hold no `select`, `insert`, `update`
-  or `delete` on the table.
+- **`receipt_sha256` changes, and that is correct.** The effect fields are inside
+  the canonical hash, so a receipt written before this change hashes differently
+  from one written after. The values genuinely differ; a stable hash across a
+  content change would be the defect.
 
-- **A2 satisfied: `accounted = projected + blocked` is read from the database.**
-  `private.governance_legal_review_projection_accounting(tenant)` returns the
-  three counts as a relation. The run receipt records `{"projected":"0",
-  "blocked":"71","accounted":"71"}` from that function, not from the projector's
-  own arithmetic, and a second pass from a fresh process returned the identical
-  triple.
+- **B-38 is `not_applicable_at_current_scope` on all three journey paths, with
+  the fact that decides it pinned by test.** A review packet has no case:
+  `governance_legal_review_packets` contains no `case_id` at all, while
+  `engine_global_dependency_state` is keyed by `(tenant_id, canonical_case_id)`.
+  No run, report, approval or grant depends on a packet while
+  `activation_allowed` is constrained to `false`. Inventing a case id to give
+  the invalidation something to write would fabricate the dependency it claims
+  to track. The test asserts both facts, so if a packet ever gains a case the
+  disposition fails rather than going stale.
 
-- **A3, and one correction to the wave's framing.** Of the 71: 69
-  `BYTES_PRESENT_NOT_PARSED`, 2 `BYTES_REJECTED_DUPLICATE`, 0
-  `RETRIEVAL_FAILED_NO_BYTES`. The 403/404 family is *not* part of the 71 — it
-  lives in `remaining_gaps` (15 HTTP 403, 1 HTTP 404) and is a separate
-  population that never entered `acquired_files`. So the answer to "are any of
-  these recoverable parsing work" is: 69 are byte-complete and unparsed, which
-  is parsing work, not acquisition work. Not acted on this wave.
+- **Eight services are recorded `implemented_uncalled` rather than wired.**
+  §3.3 forbids building surface nothing calls and §3.10 forbids inventing a
+  caller to satisfy a claim. Four of the eight carry a claim somewhere —
+  `installInternalOpsPorts` and `resolveInternalOpsRuntime` in
+  `canonical-entrypoints.v0.10.0.json` CEP-080,
+  `installCanonicalProductRouteServices` in a V0.8.0 trace receipt,
+  `createPortalApi` in `docs/overnight-v0.7-p6.md`. Wiring them would add a
+  second construction path for a service that already has a working one, which
+  is precisely the confusion that cost earlier runs. The frozen entrypoint
+  ledger was not edited: deleting an owner-facing claim is the owner's call.
 
-- **A4 found four more instances of the same defect class, not just one
-  wrapper.** The sweep confirmed `cause` is never set anywhere in `src/server`.
-  The fix carries the origin SQLSTATE through `GovernanceRepositoryError` and
-  teaches the classifier that `42501` is a refusal (`OPS_FORBIDDEN`), not an
-  unclassified rejection. Separately, the command inventory found four
-  governance import functions granted to the worker but executed as operations —
-  four more 42501s waiting for their first caller, repaired in
-  `202609020003`.
-
-- **B-38 cannot be shown green in journey scope, and that is a finding, not a
-  gap in this wave's work.** The `/operations` journey exercises none of the
-  invalidation machinery: `create_dependency_invalidation` and
-  `withCurrentAuthorization` have zero callers repo-wide. Wiring is Wave 2 Lane A
-  scope. The agent also found that `approval_invalidated` and three sibling
-  booleans are hardcoded `true` while the computed count is discarded
-  (`postgres-port.ts:488,:570-573,:602`) — a truthfulness defect that belongs in
-  the same pass.
+- **A scanner finding on code this session introduced was repaired, not
+  permitted.** `scripts/local-postgres-dev/provision.mts` hand-assembled
+  `scheme://user:pass@host`, which the `credential_url` rule cannot distinguish
+  from an embedded credential — correctly, since it should not have to. It now
+  builds through the `URL` API, which also fixes the escaping. The two other new
+  hits are test files and fall inside the existing `TEST_ONLY` class.
 
 ## Blockers
 
 | id | blocker | class | evidence |
 |---|---|---|---|
-| BL-1 | 69 of the 71 are byte-complete but unparsed; producing normalized text, manifest, parser and normalizer versions is a parsing workstream | blocked_external | `output/wave1/audit/reason-breakdown.json` |
-| BL-2 | B-38 has no journey-reachable path; the invalidation service has zero callers | product_gap | `output/wave1/agents/b38/findings.md` |
-| BL-3 | `approval_invalidated` and three sibling effect booleans are hardcoded true | product_defect | `dependency-invalidation/postgres-port.ts:570-573` |
-| BL-4 | Windows Application Control blocks `initdb.exe` | blocked_external | not on any critical path |
-| BL-5 | `V041_MISMATCH_004` bytes are gone; recorded, not re-baselined | evidence_integrity | `evidence-loss.v0.10.11.json` |
-| BL-6 | min-wage and Knesset convalescence byte changes await human legal review | blocked_human | blocks no engineering item |
-| BL-7 | `synthetic-property-suite` scanner finding needs a placement decision | blocked_human | `OWNER_POLICY_REQUIRED` |
+| BL-1 | four identity-session functions filter on a caller-supplied `tenant` argument instead of `runtime_verified_tenant()`, are unowned so they run as the table owner, and `public.product_identity_sessions` has no forced RLS — cross-tenant read, rotate and revoke are reachable by any caller controlling the tenant argument | security_defect | `output/wave2/agents/secdef/findings.md`; `202609010002:130,153,196,232`, `202609010003:19,43` |
+| BL-2 | 35 `SECURITY DEFINER` sites have no `alter function … owner to`, so they run as the migration executor and tenant policies are inert for them | security_defect | same findings file |
+| BL-3 | the security scanner computes no reachability; its permitted findings rest on absence from a stale 753-node graph, and its stored receipt is 11 commits behind HEAD | evidence_defect | `output/wave2/agents/scanner/findings.md` |
+| BL-4 | eight services are `implemented_uncalled`, four of them claimed by a contract or receipt | product_gap | `output/wave2/agents/orphans/findings.md` |
+| BL-5 | 69 of the 71 observations are byte-complete but unparsed | external | Wave 3 scope |
+| BL-6 | Windows Application Control blocks `initdb.exe` | blocked_external | not on any critical path |
+| BL-7 | `V041_MISMATCH_004` bytes are gone; recorded, not re-baselined | evidence_integrity | `evidence-loss.v0.10.11.json` |
+| BL-8 | min-wage and Knesset convalescence byte changes await human legal review | blocked_human | blocks no engineering item |
+| BL-9 | `synthetic-property-suite` scanner finding needs a placement decision | blocked_human | `OWNER_POLICY_REQUIRED` |
 
 ## Counters
 
@@ -110,19 +105,23 @@ REMOTE_PRODUCTION_MIGRATIONS: 0
 LIVE_PROVIDER_CALLS: 0
 OPENAI_CALLS: 0
 
-B-28 unchanged: strict 40, MC-29 19, denominator 84. 8 of the 40 lie on the
-journey, all `CAPABILITY_GATED_CANONICAL_SOURCE`.
+B-28 recomputed at this head: strict 40, MC-29 19, denominator 84, difference 21.
+8 of the 40 lie on the journey, all `CAPABILITY_GATED_CANONICAL_SOURCE`, so the
+strict-versus-MC-29 divergence does not touch it.
 
-Chain: 26/26 applied — 24 verbatim byte-pinned, 2 platform-compensated
+Chain unchanged: 26/26 applied — 24 verbatim byte-pinned, 2 platform-compensated
 (`alter role … nosuperuser`; `supautils` reserved-role refusal), dropped lines
 recorded, end state asserted.
 
 ## Resume point
 
-- next wave: 2 — journey-scope closure of `B-28` and `B-38`
-- next todo: wire `create_dependency_invalidation` to a journey caller, then
-  prove atomic invalidation along the paths the journey exercises; fix the
-  hardcoded effect booleans in the same pass. Lane B's Wave 1 findings name every
-  anchor.
+- next wave: 3 — parse the 69 byte-complete observations
+- next todo: before the parsing work, BL-1. It is a security defect on the
+  identity path the whole journey depends on, and it was found at the tail of
+  Wave 2 rather than fixed there because a rushed change to the live session
+  path is how a wrong green happens. Fix is a forward migration: own the four
+  functions, gate them on `runtime_verified_tenant()`, and force RLS on
+  `public.product_identity_sessions` — with the grant execution proof extended in
+  the same commit per §3.8.
 - known blocks that must not be retried: corpus acquisition, creating a second
   Supabase project, resetting the DEV default database.

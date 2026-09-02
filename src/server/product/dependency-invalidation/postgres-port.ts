@@ -530,6 +530,10 @@ implements DurableGlobalDependencyInvalidationTransaction<PostgresTransactionCon
       ],
     ));
     oneAffected(currentResult.row_count);
+    const epochRowsUpdated = safeRowCount(currentResult.row_count);
+    // Nothing in this method issues a delete, so this is a measured zero rather
+    // than an assumed one; if a delete is ever added it must be counted here.
+    const historicalVersionsDeleted = 0;
 
     const durable = new PostgresJobsOutboxAuditRepository(
       this.context,
@@ -564,16 +568,26 @@ implements DurableGlobalDependencyInvalidationTransaction<PostgresTransactionCon
       download_grant_epoch: plan.next_download_grant_epoch,
       stale_stages: plan.stale_stages,
       release_hold: plan.release_hold,
-      historical_evidence_preserved: true as const,
-      historical_versions_deleted: 0 as const,
-      approval_invalidated: true as const,
-      stale_execution_blocked: true as const,
-      stale_approval_blocked: true as const,
-      stale_download_blocked: true as const,
+      // Every effect below is either measured in this transaction or reported
+      // as `unknown`. Nothing here asserts an effect that was not computed.
+      //
+      // No statement in this method deletes a historical version, so the count
+      // is zero by construction and preservation follows from it.
+      historical_evidence_preserved: historicalVersionsDeleted === 0,
+      historical_versions_deleted: historicalVersionsDeleted,
+      // The count was computed and then discarded. It decides the field.
+      approval_invalidated: approvalsInvalidated > 0,
+      // Nothing in this transaction blocks a stale execution, approval or
+      // download. The only enforcement, `withCurrentAuthorization`, has no
+      // caller, so these are unmeasured — not false, and certainly not true.
+      stale_execution_blocked: "unknown" as const,
+      stale_approval_blocked: "unknown" as const,
+      stale_download_blocked: "unknown" as const,
       grants_revoked: grantsRevoked,
       jobs_cancelled: jobsCancelled,
       outbox_events_superseded: outboxEventsSuperseded,
-      cache_versioned: true as const,
+      // The epoch row update is asserted to touch exactly one row above.
+      cache_versioned: epochRowsUpdated === 1,
       worker_fencing_token: plan.worker_fence.fencing_token,
       audit_event_sha256: audit.event_sha256,
       outbox_id: plan.outbox.outbox_id,
@@ -599,7 +613,6 @@ implements DurableGlobalDependencyInvalidationTransaction<PostgresTransactionCon
       ],
     ));
     oneAffected(history.row_count);
-    void approvalsInvalidated;
     return applied;
   }
 

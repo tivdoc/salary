@@ -131,6 +131,22 @@ export type GlobalDependencyInvalidationPlan = Readonly<{
   }>;
 }>;
 
+/**
+ * Whether an effect happened, did not, or was never computed.
+ *
+ * These fields used to be typed as the literal `true`, so the type system
+ * itself encoded a claim the code never checked: `approval_invalidated` was
+ * reported as `true` while the count that would have decided it was discarded,
+ * and three siblings had no computation behind them at all. A receipt that
+ * asserts an approval was revoked when nothing looked is worse than one that
+ * says it does not know.
+ *
+ * `"unknown"` is the honest value for an effect nothing computed. It is not a
+ * placeholder for a future `true`: a reader must handle it, and cannot mistake
+ * it for a result.
+ */
+export type EffectOutcome = boolean | "unknown";
+
 export type AppliedGlobalDependencyInvalidation = Readonly<{
   invalidation_sha256: string;
   case_revision: number;
@@ -139,16 +155,16 @@ export type AppliedGlobalDependencyInvalidation = Readonly<{
   download_grant_epoch: number;
   stale_stages: readonly GlobalDependencyStage[];
   release_hold: boolean;
-  historical_evidence_preserved: true;
-  historical_versions_deleted: 0;
-  approval_invalidated: true;
-  stale_execution_blocked: true;
-  stale_approval_blocked: true;
-  stale_download_blocked: true;
+  historical_evidence_preserved: EffectOutcome;
+  historical_versions_deleted: number;
+  approval_invalidated: EffectOutcome;
+  stale_execution_blocked: EffectOutcome;
+  stale_approval_blocked: EffectOutcome;
+  stale_download_blocked: EffectOutcome;
   grants_revoked: number;
   jobs_cancelled: number;
   outbox_events_superseded: number;
-  cache_versioned: true;
+  cache_versioned: EffectOutcome;
   worker_fencing_token: number;
   audit_event_sha256: string;
   outbox_id: string;
@@ -166,16 +182,16 @@ export type GlobalDependencyInvalidationReceipt = Readonly<{
   download_grant_epoch: number;
   stale_stages: readonly GlobalDependencyStage[];
   release_hold: boolean;
-  historical_evidence_preserved: true;
-  historical_versions_deleted: 0;
-  approval_invalidated: true;
-  stale_execution_blocked: true;
-  stale_approval_blocked: true;
-  stale_download_blocked: true;
+  historical_evidence_preserved: EffectOutcome;
+  historical_versions_deleted: number;
+  approval_invalidated: EffectOutcome;
+  stale_execution_blocked: EffectOutcome;
+  stale_approval_blocked: EffectOutcome;
+  stale_download_blocked: EffectOutcome;
   grants_revoked: number;
   jobs_cancelled: number;
   outbox_events_superseded: number;
-  cache_versioned: true;
+  cache_versioned: EffectOutcome;
   audit_event_sha256: string;
   outbox_id: string;
   outbox_payload_sha256: string;
@@ -392,16 +408,19 @@ function receiptFor(
     download_grant_epoch: applied.download_grant_epoch,
     stale_stages: orderedStages(applied.stale_stages),
     release_hold: applied.release_hold,
-    historical_evidence_preserved: true as const,
-    historical_versions_deleted: 0 as const,
-    approval_invalidated: true as const,
-    stale_execution_blocked: true as const,
-    stale_approval_blocked: true as const,
-    stale_download_blocked: true as const,
+    // Carried from what the transaction actually observed. The receipt used to
+    // re-assert these as literals here, which meant a caller could not tell a
+    // measured effect from an assumed one even if the port had measured it.
+    historical_evidence_preserved: applied.historical_evidence_preserved,
+    historical_versions_deleted: applied.historical_versions_deleted,
+    approval_invalidated: applied.approval_invalidated,
+    stale_execution_blocked: applied.stale_execution_blocked,
+    stale_approval_blocked: applied.stale_approval_blocked,
+    stale_download_blocked: applied.stale_download_blocked,
     grants_revoked: applied.grants_revoked,
     jobs_cancelled: applied.jobs_cancelled,
     outbox_events_superseded: applied.outbox_events_superseded,
-    cache_versioned: true as const,
+    cache_versioned: applied.cache_versioned,
     audit_event_sha256: applied.audit_event_sha256,
     outbox_id: applied.outbox_id,
     outbox_payload_sha256: applied.outbox_payload_sha256,
@@ -424,13 +443,20 @@ function assertApplied(
       || applied.download_grant_epoch !== plan.next_download_grant_epoch
       || !sameStages(applied.stale_stages, plan.stale_stages)
       || applied.release_hold !== plan.release_hold
-      || applied.historical_evidence_preserved !== true
-      || applied.historical_versions_deleted !== 0
-      || applied.approval_invalidated !== true
-      || applied.stale_execution_blocked !== true
-      || applied.stale_approval_blocked !== true
-      || applied.stale_download_blocked !== true
-      || applied.cache_versioned !== true
+      // This assertion used to demand `=== true` on every effect field, which
+      // made the validator itself enforce the fiction: an honest port reporting
+      // what it measured would have been rejected as incomplete. What it can
+      // legitimately require is that each field is a well-formed outcome, that
+      // preservation agrees with the deletion count, and that the counts are
+      // safe — never that a particular effect occurred.
+      || !isEffectOutcome(applied.historical_evidence_preserved)
+      || !safeCount(applied.historical_versions_deleted)
+      || applied.historical_evidence_preserved !== (applied.historical_versions_deleted === 0)
+      || !isEffectOutcome(applied.approval_invalidated)
+      || !isEffectOutcome(applied.stale_execution_blocked)
+      || !isEffectOutcome(applied.stale_approval_blocked)
+      || !isEffectOutcome(applied.stale_download_blocked)
+      || !isEffectOutcome(applied.cache_versioned)
       || applied.worker_fencing_token !== plan.worker_fence.fencing_token
       || applied.outbox_id !== plan.outbox.outbox_id
       || applied.outbox_payload_sha256 !== plan.outbox.payload_sha256
@@ -450,13 +476,17 @@ function assertReceipt(receipt: GlobalDependencyInvalidationReceipt, commandSha2
   assertHash(receipt.outbox_payload_sha256);
   if (receipt.schema_version !== GLOBAL_DEPENDENCY_INVALIDATION_SCHEMA_VERSION
       || receipt.command_sha256 !== commandSha256
-      || receipt.historical_evidence_preserved !== true
-      || receipt.historical_versions_deleted !== 0
-      || receipt.approval_invalidated !== true
-      || receipt.stale_execution_blocked !== true
-      || receipt.stale_approval_blocked !== true
-      || receipt.stale_download_blocked !== true
-      || receipt.cache_versioned !== true
+      // Same correction as `assertApplied`: verify the shape of each outcome,
+      // never that a particular effect occurred. A verifier that demanded
+      // `true` was certifying the producer's own literal back to it.
+      || !isEffectOutcome(receipt.historical_evidence_preserved)
+      || !safeCount(receipt.historical_versions_deleted)
+      || receipt.historical_evidence_preserved !== (receipt.historical_versions_deleted === 0)
+      || !isEffectOutcome(receipt.approval_invalidated)
+      || !isEffectOutcome(receipt.stale_execution_blocked)
+      || !isEffectOutcome(receipt.stale_approval_blocked)
+      || !isEffectOutcome(receipt.stale_download_blocked)
+      || !isEffectOutcome(receipt.cache_versioned)
       || !safeCount(receipt.grants_revoked)
       || !safeCount(receipt.jobs_cancelled)
       || !safeCount(receipt.outbox_events_superseded)) {
@@ -569,6 +599,11 @@ function orderedStages(values: readonly GlobalDependencyStage[]): readonly Globa
 
 function sameStages(left: readonly GlobalDependencyStage[], right: readonly GlobalDependencyStage[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+/** An effect field must be a measured boolean or an explicit `"unknown"`. */
+export function isEffectOutcome(value: unknown): value is EffectOutcome {
+  return value === true || value === false || value === "unknown";
 }
 
 function safeCount(value: number): boolean {
