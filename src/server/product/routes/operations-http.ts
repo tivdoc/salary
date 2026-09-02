@@ -27,6 +27,49 @@ export function createOperationsHttpHandler(input: Readonly<{
       if (!input.enabled || !input.service) return productNotFound();
       const segments = safeSegments(rawSegments);
       if (!segments) return productNotFound();
+      // Nested Legal Review workspace. It shares this route's session, CSRF and
+      // correlation handling exactly; only the service capability differs.
+      if (segments[0] === "legal-review") {
+        const legalReview = legalReviewCapability(input.service);
+        if (!legalReview) return productNotFound();
+        const isPost = request.method === "POST";
+        const joined = segments.join("/");
+        if (!(joined === "legal-review/queue" && request.method === "GET")
+          && !(joined === "legal-review/actions" && isPost)) return productNotFound();
+        const session = await input.sessions.verify(request, "operations", isPost);
+        if (!session) return productNotFound();
+        const correlationId = correlationIdFor(request);
+        try {
+          if (!isPost) {
+            const limit = legalReviewLimit(request);
+            const data = await legalReview.readLegalReviewQueue({
+              actor: session.actor, correlation_id: correlationId, limit,
+            });
+            return productJson({ correlation_id: correlationId, data });
+          }
+          const body = await strictJsonObject(request);
+          if (!body || body.schema_version !== STABLE_OPERATIONS_COMMAND_SCHEMA
+            || !isRecord(body.packet) || !isRecord(body.action)
+            || typeof body.idempotency_key !== "string" || typeof body.occurred_at !== "string") {
+            throw new InternalOpsError("OPS_INVALID_REQUEST");
+          }
+          const data = await legalReview.submitLegalReviewAction({
+            actor: session.actor,
+            correlation_id: correlationId,
+            packet: body.packet as never,
+            action: body.action as never,
+            applied_actions: Array.isArray(body.applied_actions) ? body.applied_actions as never : [],
+            superseded_by_packet_id: typeof body.superseded_by_packet_id === "string"
+              ? body.superseded_by_packet_id : null,
+            idempotency_key: body.idempotency_key,
+            occurred_at: body.occurred_at,
+          });
+          return productJson({ correlation_id: correlationId, data });
+        } catch (error) {
+          const code = problemCode(error);
+          return productJson({ code, correlation_id: correlationId, retryable: false }, statusFor(code));
+        }
+      }
       const route = matchOperationsRoute(request.method, segments);
       if (!route) return productNotFound();
       const session = await input.sessions.verify(request, "operations", route.method === "POST");
@@ -62,6 +105,33 @@ export function createOperationsHttpHandler(input: Readonly<{
       }
     },
   });
+}
+
+type LegalReviewCapability = Readonly<{
+  readLegalReviewQueue(input: Readonly<{ actor: unknown; correlation_id: string; limit: number }>): Promise<unknown>;
+  submitLegalReviewAction(input: Readonly<Record<string, unknown>>): Promise<unknown>;
+}>;
+
+/** The panel is served only when the canonical durable service provides it. */
+function legalReviewCapability(service: InternalOpsApplicationPort | null): LegalReviewCapability | null {
+  const candidate = service as unknown as Partial<LegalReviewCapability> | null;
+  return candidate && typeof candidate.readLegalReviewQueue === "function"
+    && typeof candidate.submitLegalReviewAction === "function"
+    ? candidate as LegalReviewCapability : null;
+}
+
+function legalReviewLimit(request: Request): number {
+  const raw = new URL(request.url).searchParams.get("limit");
+  if (raw === null) return 50;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > 500) {
+    throw new InternalOpsError("OPS_INVALID_REQUEST");
+  }
+  return parsed;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function matchOperationsRoute(method: string, segments: readonly string[]): OperationsRoute | null {

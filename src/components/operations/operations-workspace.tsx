@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./operations-workspace.module.css";
+import { LegalReviewPanel } from "./legal-review-panel";
 
 const TOPICS = ["minimum_wage", "working_time", "pension", "travel", "convalescence", "vacation", "sick_leave"] as const;
 const TOPIC_LABELS: Readonly<Record<(typeof TOPICS)[number], string>> = Object.freeze({
@@ -142,6 +143,7 @@ export function OperationsWorkspace({ csrfToken }: OperationsWorkspaceProps) {
               <section className={styles.panel} aria-labelledby="facts-title"><h2 id="facts-title">עובדות והצהרות</h2><pre dir="ltr">{safeSummary(bundle.facts)}</pre></section>
             </>
           )}
+          <LegalReviewPanel csrfToken={csrfToken} />
         </main>
       </div>
     </div>
