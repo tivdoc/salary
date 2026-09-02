@@ -69,6 +69,13 @@
   platform-compensated (`alter role … nosuperuser`; `supautils` reserved-role
   refusal), dropped lines recorded, end state asserted.
 
+- **One freeze cycle was spent on a real flake, not a regression.** The first
+  frozen-head matrix failed on `incident-registry.test.ts` with `status: null`
+  — a killed subprocess, not a failed assertion. The Python diagnostic walks
+  every worktree and takes ~110s alone against a 120s budget, so under a
+  parallel suite it died by signal. Both the spawn budget and the test timeout
+  now reflect the work. No expectation was touched.
+
 ## Blockers
 
 | id | blocker | class | evidence |

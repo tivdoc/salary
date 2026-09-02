@@ -33,7 +33,11 @@ function runIncidentCommand(command: "diagnostic" | "self-test") {
     ...runtime.prefix,
     path.resolve("scripts", "wave23-evidence-incident", "incident_registry.py"),
     command,
-  ], { encoding: "utf8", windowsHide: true, timeout: 120_000 });
+    // The diagnostic walks every worktree and hashes every size candidate; it
+    // takes ~110s alone and longer under a parallel suite. A 120s budget made
+    // it die by signal under load, which surfaces as `status: null` and looks
+    // like a failed assertion rather than a killed subprocess.
+  ], { encoding: "utf8", windowsHide: true, timeout: 600_000 });
 }
 
 describe("Wave 2.3 cross-package incident registry", () => {
@@ -97,7 +101,7 @@ describe("Wave 2.3 cross-package incident registry", () => {
     expect(negatives.passed).toBe(true);
     expect(negatives.case_count).toBe(10);
     expect(negatives.cases.every((item) => item.passed)).toBe(true);
-  }, 120_000);
+  }, 660_000);
 
   it("keeps the pure state-machine self-test independent from historical bytes", () => {
     const result = runIncidentCommand("self-test");
