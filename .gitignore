@@ -72,11 +72,13 @@ Thumbs.db
 /output/wave1/
 /output/wave2/
 /output/wave3/
+/output/wave3-staleprobe/
 /output/wave4/
 /output/probe/
 
 # Wave 3-6 receipts and evidence
 /output/wave3/
+/output/wave3-staleprobe/
 /output/wave4/
 /output/wave5/
 /output/wave6/
