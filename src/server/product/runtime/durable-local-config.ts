@@ -115,6 +115,11 @@ export function readDurableLocalProductRuntimeConfig(
     worker: required(environment, "TIVDOC_WORKER_POSTGRES_URL", 4_096),
   });
   const remoteDevTarget = readRemoteDevTarget(environment);
+  const hostClasses = assertProductConnectionTargets(environment, remoteDevTarget);
+  if (process.env.NODE_ENV !== "test") {
+    process.stderr.write(`product_connection_targets ${PRODUCT_CONNECTION_KEYS
+      .map((key) => `${key}=${hostClasses[key]}`).join(" ")}\n`);
+  }
   validateRoleScopedConnections(connectionUrls, remoteDevTarget);
   const encodedHmac = required(environment, "TIVDOC_DOWNLOAD_GRANT_HMAC_KEY_BASE64URL", 128);
   if (!/^[A-Za-z0-9_-]+$/u.test(encodedHmac)) throw new Error("DURABLE_LOCAL_PRODUCT_DOWNLOAD_KEY_INVALID");
@@ -214,6 +219,68 @@ function requireFixedFlags(environment: Readonly<Record<string, string | undefin
       || environment.TIVDOC_OPENAI_LIVE_TESTS !== "0") {
     throw new Error("DURABLE_LOCAL_PRODUCT_FLAGS_INVALID");
   }
+}
+
+/** Every database URL key this repository defines, product path or not. */
+export const PRODUCT_CONNECTION_KEYS = Object.freeze([
+  "TIVDOC_IDENTITY_POSTGRES_URL",
+  "TIVDOC_WEB_POSTGRES_URL",
+  "TIVDOC_OPERATIONS_POSTGRES_URL",
+  "TIVDOC_WORKER_POSTGRES_URL",
+] as const);
+
+export const ANCILLARY_CONNECTION_KEYS = Object.freeze([
+  "TIVDOC_DYNAMIC_POSTGRES_URL",
+  "TIVDOC_ISOLATED_POSTGRES_URL",
+  "TIVDOC_LOCAL_MIGRATOR_URL",
+  "TIVDOC_DEV_DATABASE_URL",
+] as const);
+
+export type ConnectionHostClass = "declared_target" | "loopback" | "other" | "unset" | "unparseable";
+
+/**
+ * Classifies a connection URL by host class only. The value never leaves this
+ * function; a host, a database name or a credential never reaches a log.
+ */
+export function classifyConnectionHost(
+  raw: string | undefined,
+  remote: NodePostgresRemoteDevTarget | null,
+): ConnectionHostClass {
+  if (raw === undefined || raw.trim() === "") return "unset";
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return "unparseable";
+  }
+  const host = url.hostname.toLowerCase();
+  if (remote !== null && host === remote.host.toLowerCase() && Number(url.port) === remote.port) {
+    return "declared_target";
+  }
+  return ["127.0.0.1", "localhost", "::1", "[::1]"].includes(host) ? "loopback" : "other";
+}
+
+/**
+ * Every key the product path reads must resolve to one target, and none may be
+ * missing. The 404 this run inherited came from a loopback label the server
+ * chose for itself, so a connection key quietly defaulting to loopback while
+ * the rest point at a declared target is a live failure mode, not a theoretical
+ * one. Ancillary keys are classified for the record but never enforced.
+ */
+export function assertProductConnectionTargets(
+  environment: Readonly<Record<string, string | undefined>>,
+  remote: NodePostgresRemoteDevTarget | null,
+): Readonly<Record<string, ConnectionHostClass>> {
+  const classes: Record<string, ConnectionHostClass> = {};
+  for (const key of [...PRODUCT_CONNECTION_KEYS, ...ANCILLARY_CONNECTION_KEYS]) {
+    classes[key] = classifyConnectionHost(environment[key], remote);
+  }
+  const product = PRODUCT_CONNECTION_KEYS.map((key) => classes[key] as ConnectionHostClass);
+  if (product.some((value) => value === "unset" || value === "unparseable" || value === "other")) {
+    throw new Error("DURABLE_LOCAL_PRODUCT_CONNECTION_TARGET_INVALID");
+  }
+  if (new Set(product).size !== 1) throw new Error("DURABLE_LOCAL_PRODUCT_CONNECTION_TARGET_SPLIT");
+  return Object.freeze(classes);
 }
 
 const REMOTE_HOST = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/u;

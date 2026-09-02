@@ -1,7 +1,7 @@
 # Tivdoc development state
 
-- wave: V0.10.12
-- base: bd00b0c4efea29c5ed783c65ece6bf8596fe6394
+- wave: V0.10.13
+- base: e539019938c3addbff790e3c150119b6d323cc33
 - head: pending
 - frozen_head: pending
 - date: 2026-09-02
@@ -10,82 +10,89 @@
 
 | id | item | status | evidence |
 |---|---|---|---|
-| W1 | close the legal-review API 404 | delivered | the API now reaches the durable service; `output/v0.10.12/browser/journey.json` |
-| W2 | browser journey to 16/16 | partial (14/16) | two GETs answer 422 `OPS_COMMAND_REJECTED` from the durable transaction |
-| W3 | `71/71` durable projection | blocked_external | the queue read is the surface it projects into, and that read is the open 422 |
-| W4 | dynamic matrices on DEV, database half | partial | HTTP-boundary role and refusal matrix green; database-level matrix not re-run |
-| W5 | `B-28` and `B-38` | partial | counters carried forward unchanged; `B-38` not re-proven |
-| W6 | state file and freeze | delivered | this file |
-| W7 | frozen-head matrix | see report | `output/v0.10.12/matrix/` |
-| W8 | tracker delta | delivered | `output/v0.10.12/tracker-delta.md` |
+| W1 | make the failure name itself | delivered | `output/v0.10.13/audit/` server log `postgres_failure … stage=operation`; `failure-descriptor.test.ts` |
+| W2 | identify and fix the 422 | delivered | `supabase/migrations/202609020001_legal_review_runtime_execute_grants.sql`; `legal-review-runtime-grants.test.ts`; `connection-targets.test.ts` |
+| W3 | journey to 16/16 | delivered | `output/v0.10.13/browser/journey.json` — 16/16 |
+| W4 | `71/71` durable projection | partial | `output/v0.10.13/projection/projection.json` — 71/71 accounted, 0 projectable, 71 blocked with reason codes |
+| W5 | dynamic matrices on DEV | partial | role and refusal matrix green at the HTTP boundary; database-level matrix not re-run |
+| W6 | `B-28` and `B-38` | partial | `output/v0.10.13/audit/entrypoint-counters.json`; `B-38` not re-proven |
+| W7 | state file and freeze | delivered | this file |
+| W8 | frozen-head matrix | see report | `output/v0.10.13/matrix/` |
+| W9 | tracker delta | delivered | `output/v0.10.13/tracker-delta.md` |
 
 ## Decisions
 
 - **The §1 ignore gate failed again and was repaired first.** Every wave adds
-  its own `/output/<version>/` rule and none existed for this one. Added, then
-  a nested and a deep path were both re-checked before any work started.
+  its own `/output/<version>/` rule and none existed for this one. Added, then a
+  nested and a deep path were both re-checked before any work started.
 
-- **The 404 root cause was none of the four §9 candidates.** Routing was fine,
-  the flag was set, the governance adapter *was* the installed service, and the
-  session boundary was present. The cause was the fifth possibility the analysis
-  did not list: `authenticateProductIdentity` requires the request origin to
-  equal the configured origin exactly, and a route handler's request URL is
-  reconstructed with the server's own loopback label while the configuration
-  used the other one. The page route never hit it because `productPageSession`
-  builds its own `Request` from the configured origin, so it always matched.
-  Every API route was therefore unreachable to a session the page accepted.
+- **The null SQLSTATE was an artefact of an intermediate wrapper, not of the
+  original error.** §9 deduced correctly that a null rules out a Postgres server
+  error *at the classification site*, and that deduction pointed at Branch A. It
+  was right about the shape and wrong about the origin: the thrown thing at the
+  boundary was a plain application error carrying `code=GOVERNANCE_QUERY_FAILED`,
+  and *behind it* was a genuine `DatabaseError`, SQLSTATE `42501`,
+  `routine=aclcheck_error`. The intermediate wrapper erased the SQLSTATE before
+  the classifier saw it. One instrumented reproduction settled in minutes what
+  three runs of deduction could not.
 
-- **Origin equality was not relaxed.** `identity-session.test.ts` deliberately
-  asserts that `http://localhost:PORT` is refused against a configured
-  `http://127.0.0.1:PORT`, and that assertion stands untouched. What changed is
-  configuration: `strictLocalOrigin` and the internal-ops runtime class now
-  accept the exact loopback set (`127.0.0.1`, `localhost`, `[::1]`) as a
-  *configured* origin — the same set `canonicalProductIdentityOrigin` already
-  accepted — so a deployment can declare the label its own server uses. The
-  request origin still has to equal it exactly.
+- **Root cause: a whole function family reachable only by its owning role.**
+  Migration `202609010011` created the three legal review entry points as
+  SECURITY DEFINER functions owned by `tivdoc_governance_owner`, revoked them
+  from `public`, `anon`, `authenticated` and `service_role`, and granted execute
+  to the owning role only. It never granted them to the runtime principals that
+  call them. Every other governance family in migration `005` carries those
+  grants; this one was omitted. Verified on DEV before the fix:
+  `ops=false worker=false` on all three, against a control of `ops=true` on
+  `governance_work_enqueue`.
 
-- **§3.2 applied, and then twice more.** A bare 404 that hides its own cause is
-  a defect: the external response stays byte-identical and bodyless for every
-  cause, while five distinct internal reason codes are recorded through a
-  code-only path. The same treatment was extended to identity refusals
-  (thirteen codes, including which side of an origin mismatch was loopback) and
-  to `OPS_COMMAND_REJECTED`, whose catch-all now records the failure class and
-  any SQLSTATE. Those three traces are what turned a two-run mystery into a
-  located defect inside one run; nothing recorded is ever more than a code and a
-  timestamp.
+- **The repair is the missing half of least privilege, not a widening.**
+  `202609020001` grants execute on exactly the signatures each principal
+  invokes — queue_list and action_append to operations, packet_enqueue to
+  operations and worker. Ownership stays with the governance owner, the
+  functions stay SECURITY DEFINER, and the revocations from `public` and the
+  reserved Supabase roles are re-asserted. Verified after: `anon`,
+  `authenticated` and `service_role` remain false on all three.
 
-- **§3.4 route matrix.** `LEGAL_REVIEW_ROUTES` is now the single declaration the
-  handler routes from, and the matrix test asserts against that same list:
-  non-404 on every declared endpoint for an authorized reviewer, 404 without a
-  session, 404 on the wrong method. A hand-maintained copy could drift; this
-  cannot.
+- **§3.1 error fidelity is now structural.** The classifier records stage,
+  constructor name, a token-shaped `code`, `errno`, `severity`, `routine` and
+  SQLSTATE — never a message, a parameter, an identifier or a connection string
+  fragment. `stage` distinguishes `acquire` / `begin` / `operation` / `commit` /
+  `rollback` / `release`, which converts "fails before any statement" from an
+  inference into a fact. The external contract is byte-identical and tested.
 
-- **§3.3 did not apply.** The journey never calls a packet detail endpoint — it
-  walks queue, topics and actions, all three of which are routed. The detail
-  endpoint was not built, because building an endpoint nothing calls would widen
-  the surface for nothing.
+- **§3.2 connection targets are asserted at startup.** All eight database URL
+  keys are classified by host class alone. The four product keys must resolve to
+  one target; a single key falling back to loopback while the rest point at a
+  declared target now fails at startup with
+  `DURABLE_LOCAL_PRODUCT_CONNECTION_TARGET_SPLIT` rather than surfacing as a 422.
+  The hypothesis it forecloses did not fire this run, and the assertion stays.
 
-- **Chain result, stated per §3.1:** 23/23 applied — 21 verbatim byte-pinned, 2
-  platform-compensated (`alter role … nosuperuser`; `supautils` reserved-role
-  refusal), dropped lines recorded, end state asserted.
+- **W4 is honestly 0 projected, not silently deferred.** The canonical 71 are
+  the staged, unregistered acquisitions from the V0.4.1 crosswalk — 72 acquired
+  URL results, 71 unique byte objects, 1 registered overlap. Every one of the 71
+  is accounted for with a stable observation id and a distinct idempotency key,
+  and every one is blocked on the same four fields: no normalized-text hash, no
+  manifest hash, no parser version, no normalizer version. `packet_enqueue`
+  requires all four. Supplying them would mean fabricating binding evidence, so
+  none were projected. What is still owed is a durable, immutable home for the
+  71 blocked records; they exist today only as a run receipt.
 
-- **One freeze cycle was spent on a real flake, not a regression.** The first
-  frozen-head matrix failed on `incident-registry.test.ts` with `status: null`
-  — a killed subprocess, not a failed assertion. The Python diagnostic walks
-  every worktree and takes ~110s alone against a 120s budget, so under a
-  parallel suite it died by signal. Both the spawn budget and the test timeout
-  now reflect the work. No expectation was touched.
+- **§3.3 honoured again.** No detail endpoint was built. The journey's detail
+  step reads the selected packet's fields out of the queue payload, which is
+  what the product panel does; there is no caller for a separate endpoint.
 
 ## Blockers
 
 | id | blocker | class | evidence |
 |---|---|---|---|
-| BL-1 | `legal-review/queue` and `legal-review/topics` answer 422 `OPS_COMMAND_REJECTED`; the recorded class is `POSTGRES_TRANSACTION_FAILED` with no SQLSTATE, so the durable transaction fails before reaching a statement. `private.runtime_context_install` refuses a hand-made call with `42501 RUNTIME_CONTEXT_SESSION_NOT_CURRENT`, which is the next thing to check against the real verified actor's `sid`/`jti`. | product_defect | `output/v0.10.12/audit/ops-role-probe.txt`; server log `ops_command_rejected POSTGRES_TRANSACTION_FAILED` |
-| BL-2 | Windows Application Control blocks `initdb.exe` | blocked_external | not on any critical path |
-| BL-3 | `V041_MISMATCH_004` bytes are gone; recorded, not re-baselined | evidence_integrity | `evidence-loss.v0.10.11.json` |
-| BL-4 | hours/overtime official artifact unavailable | blocked_external | carried forward |
-| BL-5 | min-wage and Knesset convalescence byte changes await human legal review | blocked_human | blocks no engineering item |
-| BL-6 | `synthetic-property-suite` scanner finding needs a placement decision | blocked_human | `OWNER_POLICY_REQUIRED` |
+| BL-1 | the 71 blocked projection records have no durable immutable store; the packets table cannot hold them because `packet_enqueue` requires binding fields the observations do not have | product_gap | `output/v0.10.13/projection/projection.json` |
+| BL-2 | the 71 observations lack normalized text, manifest hash, parser and normalizer versions; producing them means parsing the corpus, which is a separate acquisition-side workstream | blocked_external | blocked reason histogram, 71 on each of four fields |
+| BL-3 | Windows Application Control blocks `initdb.exe` | blocked_external | not on any critical path |
+| BL-4 | `V041_MISMATCH_004` bytes are gone; recorded, not re-baselined | evidence_integrity | `evidence-loss.v0.10.11.json` |
+| BL-5 | hours/overtime official artifact unavailable | blocked_external | carried forward |
+| BL-6 | min-wage and Knesset convalescence byte changes await human legal review | blocked_human | blocks no engineering item |
+| BL-7 | `synthetic-property-suite` scanner finding needs a placement decision | blocked_human | `OWNER_POLICY_REQUIRED` |
 
 ## Counters
 
@@ -103,21 +110,25 @@ REMOTE_PRODUCTION_MIGRATIONS: 0
 LIVE_PROVIDER_CALLS: 0
 OPENAI_CALLS: 0
 
-B-28 unchanged and not re-derived this run: strict 40, MC-29 19, denominator 84.
+B-28 recomputed at this head: strict 40, MC-29 19, denominator 84, difference 21
+— unchanged, and per the standing ruling neither number is ever adjusted.
+
+Chain: 24/24 applied — 22 verbatim byte-pinned, 2 platform-compensated
+(`alter role … nosuperuser`; `supautils` reserved-role refusal), dropped lines
+recorded, end state asserted. The chain grew by one forward repair migration,
+appended and digest-pinned.
 
 ## Resume point
 
-- next todo: BL-1. The request now reaches the durable service, so the remaining
-  work is inside the transaction, not the route. Start from
-  `private.runtime_context_install` — it selects `public.product_identity_sessions`
-  by `sid` + `current_jti`, unrevoked and within validity, and raises
-  `RUNTIME_CONTEXT_SESSION_NOT_CURRENT` otherwise. The journey seeds those rows
-  and upserts their validity window, so compare what the verified actor carries
-  against what the seeded row holds. `POSTGRES_TRANSACTION_FAILED` with a null
-  SQLSTATE points earlier still: at the transaction wrapper, before any
-  statement runs.
-- the DEV runtime database is `tivdoc_v09_devruntime01` with the full chain and
-  four least-privilege login roles; credentials are in `~/.tivdoc-dev/credentials.env`.
+- next todo: BL-1. Decide where the 71 blocked projection records live durably.
+  The packets table is the wrong home — its enqueue validates a binding these
+  observations cannot supply. A sibling append-only table keyed by observation
+  id, holding the reason codes and the idempotency key, is the shape the ledger
+  item implies; it is a new table, so it needs a forward migration, runtime
+  grants alongside it, and the same replay-adds-nothing proof.
+- the DEV runtime database is `tivdoc_v09_devruntime01` with the full chain plus
+  the grant repair, and four least-privilege login roles; credentials are in
+  `~/.tivdoc-dev/credentials.env`.
 - known blocks that must not be retried: corpus acquisition, creating a second
   Supabase project, resetting the DEV default database.
 - do not reopen §3 or `B-55`.

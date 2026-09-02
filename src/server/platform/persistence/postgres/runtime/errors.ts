@@ -36,8 +36,98 @@ export class CanonicalPostgresError extends Error {
   }
 }
 
-export function mapPostgresFailure(error: unknown, fallback: CanonicalPostgresErrorCode): CanonicalPostgresError {
-  if (error instanceof CanonicalPostgresError) return error;
+/** Where a persistence failure was classified. */
+export const POSTGRES_FAILURE_STAGES = Object.freeze([
+  "acquire", "begin", "operation", "commit", "rollback", "release", "unspecified",
+] as const);
+
+export type PostgresFailureStage = (typeof POSTGRES_FAILURE_STAGES)[number];
+
+/**
+ * A failure described well enough to act on, and no further.
+ *
+ * The low-cardinality code that crosses the boundary is correct and unchanged,
+ * but on its own it erased everything about what threw. Three runs were spent
+ * on failures that concealed their own cause, so the classifier now keeps an
+ * internal descriptor: the stage, the thrown constructor, and the small set of
+ * fields that are themselves classifications. Never a message, a parameter, an
+ * identifier or any part of a connection string.
+ */
+export type PostgresFailureDescriptor = Readonly<{
+  stage: PostgresFailureStage;
+  code: CanonicalPostgresErrorCode;
+  constructor_name: string;
+  error_code: string | null;
+  errno: number | null;
+  severity: string | null;
+  routine: string | null;
+  sqlstate: string | null;
+  at: string;
+}>;
+
+const FAILURE_LOG_LIMIT = 64;
+const failureLog: PostgresFailureDescriptor[] = [];
+
+export function readPostgresFailureLog(): readonly PostgresFailureDescriptor[] {
+  return Object.freeze([...failureLog]);
+}
+
+export function clearPostgresFailureLog(): void {
+  failureLog.length = 0;
+}
+
+const SAFE_TOKEN = /^[A-Za-z0-9_]{1,32}$/u;
+
+function safeToken(value: unknown): string | null {
+  return typeof value === "string" && SAFE_TOKEN.test(value) ? value : null;
+}
+
+function describeFailure(
+  error: unknown,
+  code: CanonicalPostgresErrorCode,
+  stage: PostgresFailureStage,
+): PostgresFailureDescriptor {
+  const candidate = (typeof error === "object" && error !== null ? error : {}) as Record<string, unknown>;
+  return Object.freeze({
+    stage,
+    code,
+    constructor_name: error instanceof Error ? error.constructor.name : typeof error,
+    error_code: safeToken(candidate.code),
+    errno: typeof candidate.errno === "number" ? candidate.errno : null,
+    severity: safeToken(candidate.severity),
+    routine: safeToken(candidate.routine),
+    sqlstate: postgresSqlstate(error),
+    at: new Date().toISOString(),
+  });
+}
+
+/** Records a descriptor internally. Nothing here reaches a response body. */
+export function recordPostgresFailure(
+  error: unknown,
+  code: CanonicalPostgresErrorCode,
+  stage: PostgresFailureStage,
+): void {
+  const descriptor = describeFailure(error, code, stage);
+  failureLog.push(descriptor);
+  if (failureLog.length > FAILURE_LOG_LIMIT) failureLog.shift();
+  if (process.env.NODE_ENV !== "test") {
+    process.stderr.write(`postgres_failure ${descriptor.code} stage=${descriptor.stage}`
+      + ` ctor=${descriptor.constructor_name} code=${descriptor.error_code ?? "-"}`
+      + ` errno=${descriptor.errno ?? "-"} sqlstate=${descriptor.sqlstate ?? "-"}`
+      + ` severity=${descriptor.severity ?? "-"} routine=${descriptor.routine ?? "-"}\n`);
+  }
+}
+
+export function mapPostgresFailure(
+  error: unknown,
+  fallback: CanonicalPostgresErrorCode,
+  stage: PostgresFailureStage = "unspecified",
+): CanonicalPostgresError {
+  if (error instanceof CanonicalPostgresError) {
+    recordPostgresFailure(error, error.code, stage);
+    return error;
+  }
+  recordPostgresFailure(error, fallback, stage);
   return new CanonicalPostgresError(fallback, {
     sqlstate: postgresSqlstate(error),
     domain_code: trustedDomainCode(error),
