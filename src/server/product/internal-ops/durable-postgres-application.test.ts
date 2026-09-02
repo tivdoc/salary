@@ -523,6 +523,7 @@ function localConfig(): DurableLocalProductRuntimeConfig {
       operations: postgresTestUrl("tivdoc_operations_runtime", "secret", "127.0.0.1", database),
       worker: postgresTestUrl("tivdoc_worker_runtime", "secret", "127.0.0.1", database),
     }),
+    remote_dev_target: null,
     private_storage_root: "C:\\ignored\\durable-ops-private",
     download_grant_hmac_key: new Uint8Array(32).fill(7),
     worker_identity: Object.freeze({

@@ -187,11 +187,20 @@ export function createDurableInternalOpsLocalRuntimeClass(input: Readonly<{
       || origin.pathname !== "/" || origin.search || origin.hash || origin.username || origin.password) {
     throw new Error("DURABLE_INTERNAL_OPS_LOCAL_RUNTIME_CLASS_INVALID");
   }
+  const remote = input.config.remote_dev_target ?? null;
   const urls = RUNTIME_CONNECTION_ROLES.map((role) => {
     const raw = input.config.connection_urls[role];
     const url = new URL(raw);
-    if (url.username !== EXPECTED_RUNTIME_USERS[role]
-        || !["127.0.0.1", "::1", "[::1]", "localhost"].includes(url.hostname)
+    // A managed pooler routes on `<role>.<project ref>` and lives off loopback.
+    // Both are accepted only against the target the configuration declared, so
+    // the role identity and the reachable host are still exact matches.
+    const [name, ...suffix] = decodeURIComponent(url.username).split(".");
+    const usernameMatches = name === EXPECTED_RUNTIME_USERS[role]
+      && (suffix.length === 0 || (suffix.length === 1 && remote !== null && suffix[0] === remote.project_ref));
+    const hostMatches = ["127.0.0.1", "::1", "[::1]", "localhost"].includes(url.hostname)
+      || (remote !== null && url.hostname.toLowerCase() === remote.host.toLowerCase()
+        && Number(url.port) === remote.port);
+    if (!usernameMatches || !hostMatches
         || !url.port || !url.pathname || url.pathname === "/") {
       throw new Error("DURABLE_INTERNAL_OPS_LOCAL_RUNTIME_CLASS_INVALID");
     }

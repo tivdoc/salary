@@ -1,7 +1,7 @@
 # Tivdoc development state
 
-- wave: V0.10.10
-- base: 1652541631965acde0481922ca971b7b5b7ec2ad
+- wave: V0.10.11
+- base: 76363009fd3f85b8e3e6c48b66ef321b2f63563c
 - head: pending
 - frozen_head: pending
 - date: 2026-09-02
@@ -10,113 +10,92 @@
 
 | id | item | status | evidence |
 |---|---|---|---|
-| W1 | DEV credential and connectivity, without disclosing a password | delivered | scripts/supabase-dev-guard/dev-credential.mts; `select 1` as `tivdoc_dev_migrator` on the DEV pooler |
-| W2 | byte-pinned chain replay on DEV | partial (16/23) | output/v0.10.10/supabase/chain-replay.json; replay-inventory.json |
-| W3 | product runtime healthy | blocked_external | root cause proven at src/instrumentation.ts:53; regression test added |
-| W4 | browser journey against DEV | blocked_external | no product runtime; canonical driver is loopback-only by design |
-| W5 | 71/71 durable projection | blocked_external | needs migrations 17-23, which the replay could not apply |
-| W6 | incident-registry root cause | delivered (outcome b) | output/v0.10.10/audit/w6-incident-registry-finding.md |
-| W7 | B-28 and B-38 | partial | output/v0.10.10/audit/entrypoint-counters.json; B-38 durable proof blocked |
-| W8 | dynamic matrices on DEV | blocked_external | same chain gap as W5 |
-| W9 | state file and freeze | delivered | this file |
-| W10 | frozen-head matrix | see report | output/v0.10.10/matrix/ |
-| W11 | tracker delta | delivered | output/v0.10.10/tracker-delta.md |
+| W1 | chain replay complete on DEV | delivered (21 verbatim + 2 compensated = 23/23) | output/v0.10.11/supabase/chain-replay.json; replay-inventory.json |
+| W2 | evidence custody: loss record, partition, preservation sweep | delivered | evidence-loss.v0.10.11.json; reference-disposition.v0.10.11.json; preserved-references.v0.10.11.json |
+| W3 | runtime decoupled from local provisioning, both modes serve | delivered | output/v0.10.11/runtime/serve-dev.json, serve-production.json |
+| W4 | operations journey against DEV | partial (13/16) | output/v0.10.11/browser/journey.json |
+| W5 | 71/71 durable projection | todo | not started; W4's open gate blocks the queue surface |
+| W6 | dynamic matrices on DEV | partial | role and refusal matrix proven at the HTTP boundary; database-level matrix not re-run |
+| W7 | B-28 and B-38 | partial | output/v0.10.11/audit/entrypoint-counters.json; B-38 not re-proven |
+| W8 | state file and freeze | delivered | this file |
+| W9 | frozen-head matrix | see report | output/v0.10.11/matrix/ |
+| W10 | tracker delta | delivered | output/v0.10.11/tracker-delta.md |
 
 ## Decisions
 
-- **The preflight ignore gate failed and was repaired rather than treated as
-  `BLOCKED_REPOSITORY_UNREACHABLE`.** `git check-ignore -v output/` reports a
-  match on `.gitignore:49`, which is a blank CRLF line — a false positive, and
-  the exact misread the brief warned about. The real nested path
-  `output/v0.10.10/x.json` was **not** ignored, because every wave adds its own
-  `/output/<version>/` rule and no rule existed yet. Halting a six-hour run on a
-  missing one-line ignore rule would defeat the gate's purpose, which is that
-  receipts must not be committable. The rule was added first, the nested and
-  deep paths were both re-checked, and only then did work start.
+- **The §1 ignore gate failed again and was repaired first.** Each wave adds its
+  own `/output/<version>/` rule and none existed for this one, so
+  `output/v0.10.11/probe.json` was not ignored. The rule was added, both a
+  nested and a deep path were re-checked, and only then did work start. The
+  brief's own warning about the bare-directory form is correct: it still
+  matches a blank CRLF line at `.gitignore:49`.
 
-- **A password was never needed in the transcript.** §3.1 assumes a local script
-  holding a Supabase management credential. No such credential exists on this
-  machine: no `SUPABASE_ACCESS_TOKEN`, no `~/.supabase`, no `%APPDATA%\supabase`,
-  no CLI, and the connector is server-side. The only channel is the MCP tool,
-  whose arguments are transcript content. Instead the run generates the password
-  locally, writes it only into the ignored env file, and sends PostgreSQL a
-  **SCRAM-SHA-256 verifier**. A verifier is a salted PBKDF2 digest; a SCRAM
-  client proof needs ClientKey, which is a SHA-256 preimage of the StoredKey a
-  verifier exposes, so holding one cannot authenticate. The derivation is pinned
-  against the RFC 7677 vector. This is strictly stronger than the authorized
-  procedure: no password reaches the transcript, a log, a receipt or a commit,
-  and none reaches the DEV project's server log either.
+- **§3.1 resolved at step 1.** `postgres` holds `tivdoc_governance_owner` WITH
+  ADMIN OPTION, so the grant ran as `postgres` and succeeded. That removed the
+  admin-option obstacle but exposed the real one below.
 
-- **The credential file lives outside the repository, not in an ignored dotfile.**
-  §3.1 says "the ignored local env file", but the repository's own
-  `inspectRepositorySourceSafety` asserts the working tree contains **no** local
-  environment file at all, and the first frozen-head matrix caught
-  `.env.dev.local` on exactly that rule. The guard is worth more than the
-  convenience, so the file moved to `~/.tivdoc-dev/credentials.env`
-  (overridable with `TIVDOC_DEV_ENV_FILE`) and the scan is green again. No
-  scanner assertion was weakened.
+- **Two statement families in `202609010005` cannot execute on this platform by
+  any reachable role, and the chain is applied around them rather than through
+  them.** `alter role ... nosuperuser` needs a superuser: `postgres` is
+  `rolsuper=false` and returns `42501` on that one attribute while accepting the
+  other six (probe: `output/v0.10.11/audit/alter-role-probe.txt`).
+  `revoke ... from anon, authenticated, service_role` is refused by `supautils`
+  for reserved roles. Both are defensive — the same migration creates those
+  roles NOSUPERUSER and the reserved roles were never granted the governance
+  owner — so the file is applied from its own bytes minus those lines, every
+  dropped line is recorded verbatim in the receipt, and the intended end state
+  is asserted afterwards: all five roles `rolsuper=false rolcanlogin=false
+  rolcreatedb=false rolcreaterole=false rolinherit=false rolreplication=false
+  rolbypassrls=false`, and zero forbidden memberships.
 
-- **The DEV project was never reset.** A clean apply was obtained additively:
-  `tivdoc_dev_migrator` created and owns `tivdoc_replay_clean_v01010`. Nothing
-  was dropped, and the V0.10.8 objects in the default database are untouched.
+- **`alter table ... owner to` needs the incoming owner to hold CREATE on the
+  target schema.** A cluster superuser bypasses that check, which is how the
+  chain passes locally. The narrow explicit grant stands in for the bypass, is
+  derived from the refusal message itself, and is recorded per file.
 
-- **Transport is encrypted but unverified (`sslmode=no-verify`).** The managed
-  pooler presents a Supabase-issued chain that no public root signs, and the
-  published `prod-ca-2021.crt` URL now 404s. Fetching a CA over the same
-  untrusted path would prove nothing, so the run records the server certificate
-  fingerprint in its receipt instead:
-  `03:70:9C:A4:4D:1B:06:E4:50:4D:A0:A8:3B:6C:A0:65:76:1E:DC:70:4C:D5:63:4B:CC:38:94:FD:5C:7B:32:48`.
+- **W2 is a record of a fact, not an adjusted denominator.** `V041_MISMATCH_004`
+  is classed `permanently_lost` with an immutable loss record; `recovered` stays
+  at what the live registry actually observes, and `recovered + permanently_lost
+  = 5` keeps the original number true as a sum. The partition is exhaustive and
+  non-overlapping, a class may not change without a matching loss record, a
+  silently dropped reference fails, and nine mutation cases prove it.
 
-- **The repository migration chain is not self-contained.** `202608220001`
-  inserts into `storage.buckets`, which exists only in a project's own default
-  database. The replay database needed that one platform relation stubbed. The
-  stub is schema-commented `DEV / SYNTHETIC ONLY` and is reported separately
-  from the 23 pinned files, so no receipt claims it is part of the chain.
+- **Forensic evidence read from a live working-tree file is not custody.** All
+  four recovered references survived only in a live file or an ignored `output/`
+  tree — the same shape that lost `004`. They are now committed under
+  `src/engine/wave23/evidence-incident/preserved-bytes/`, classed
+  `preserved_v0_10_11` and never as recoveries, with provenance, and
+  `.gitattributes` marks `*.preserved.bin` and `*.recovered.bin` `-text` so git
+  never normalizes the line endings whose loss made `004` unreconstructable.
 
-- **§3.2 recorded verbatim, `B-55` closed by owner decision.** Both numbers
-  stand, permanently, side by side, and neither is ever adjusted to make
-  anything green: strict = 40 is a diagnostic, may stay non-zero indefinitely,
-  is not a defect count and is never a readiness input; MC-29 = 19 is the
-  disposition count, where `implemented` / `blocked_external` / `blocked_human` /
-  `not_applicable` are all disposition-complete, and a truthfully blocked item is
-  terminal for disposition only and is never wired, active, legally ready or
-  production-ready; no denominator is ever changed, merged or recomputed to
-  reconcile the two, and readiness derives from neither. Recomputed at this
-  head: strict 40, MC-29 19, denominator 84, difference 21 — unchanged.
+- **The loopback guard was extended, not weakened.** The driver refused every
+  non-loopback host outright. It now accepts exactly one, and only when the
+  caller declared that host, port and database in advance; the database name
+  must still match the disposable pattern, a partial declaration is refused
+  rather than defaulted, and an undeclared host still returns
+  `POSTGRES_TARGET_NOT_LOOPBACK`. A pooler username `<role>.<ref>` is accepted
+  only when the suffix equals the declared project ref, so role separation is
+  unchanged. Nine cases pin the refusals.
 
-- **W6 resolved as §3.3 outcome (b), one line as required:** the fifth recovery
-  is genuinely gone because V0.10.9's own commit `0727414` overwrote the only
-  surviving copy of `V041_MISMATCH_004`'s claimed bytes, and the working-tree
-  form had mixed line endings that git's clean filter discarded, so the object
-  database cannot reproduce it — the number is therefore not adjusted and the
-  test is left red.
+- **`initdb` was never the blocker.** Windows Application Control still blocks
+  `initdb.exe`, and it no longer matters: the runtime takes its four connection
+  URLs from configuration and provisions nothing. Both modes now serve.
 
-- **The long-standing local-PostgreSQL blocker has a precise cause.** It is not
-  a broken distribution and not code integrity in general: Windows Application
-  Control allows `postgres.exe` and `pg_ctl.exe` from
-  `.tools/postgresql/17.11-1-signed` but blocks `initdb.exe` and `psql.exe`. A
-  cluster cannot be initialized, so every product-runtime item that needs a
-  loopback database stays blocked. Changing that policy is a system security
-  setting and was not attempted.
-
-- **The product runtime's 500 is configuration, exactly as recorded.**
-  `src/instrumentation.ts:53` returns without installing a capability runtime
-  unless a runtime mode is explicitly requested, so a plain `next dev` or
-  `next start` leaves every stable entrypoint fail-closed with
-  `CAPABILITY_RUNTIME_NOT_INSTALLED`. That contract is now pinned by
-  `src/instrumentation.runtime-gate.test.ts`.
+- **A stale `next dev` server for this repository (PID 21088, port 3319, left
+  from an earlier wave) held the project lock and made the dev-mode check
+  impossible.** It was stopped so the gate could be verified. Next itself
+  identified the process and its directory.
 
 ## Blockers
 
 | id | blocker | class | evidence |
 |---|---|---|---|
-| BL-1 | migrations 17-23 need `tivdoc_dev_migrator` to administer the pre-existing `tivdoc_governance_owner` role; the grant was denied by the session permission layer | blocked_external | chain-replay.json `failed_file` 202609010005, `permission denied to alter role` |
-| BL-2 | Windows Application Control blocks `initdb.exe`, so no local disposable cluster can be created | blocked_external | `initdb --version` → "An Application Control policy has blocked this file"; `postgres`/`pg_ctl` run |
-| BL-3 | product routes need the durable runtime with four loopback database URLs; the canonical driver refuses non-loopback targets by design | blocked_external | node-pg-driver.ts `POSTGRES_TARGET_NOT_LOOPBACK`; durable-local-config.ts:102-105 |
-| BL-4 | `V041_MISMATCH_004` claimed bytes are unrecoverable; 58 worktrees, 251 521 files scanned, 0 digest hits | evidence_integrity | output/v0.10.10/audit/byte-hunt.txt |
-| BL-5 | hours/overtime official artifact unavailable | blocked_external | carried forward unchanged |
-| BL-6 | min-wage and Knesset convalescence byte changes await human legal review | blocked_human | carried forward unchanged; §3.4 confirms this blocks no engineering item |
-| BL-7 | `synthetic-property-suite` scanner finding needs a placement decision | blocked_human | `OWNER_POLICY_REQUIRED`, not product-reachable |
+| BL-1 | the nested `/api/operations/legal-review/*` routes answer 404 to a verified reviewer session; the page route answers 200, so the session and database path are fine and the durable legal-review capability is not reaching the composed operations service | product_defect | output/v0.10.11/browser/journey.json steps 2-4 |
+| BL-2 | Windows Application Control blocks `initdb.exe`; no local cluster can be created | blocked_external | unchanged, no longer on any critical path |
+| BL-3 | `V041_MISMATCH_004` bytes are gone; recorded, not re-baselined | evidence_integrity | evidence-loss.v0.10.11.json |
+| BL-4 | hours/overtime official artifact unavailable | blocked_external | carried forward |
+| BL-5 | min-wage and Knesset convalescence byte changes await human legal review | blocked_human | carried forward; blocks no engineering item |
+| BL-6 | `synthetic-property-suite` scanner finding needs a placement decision | blocked_human | `OWNER_POLICY_REQUIRED` |
 
 ## Counters
 
@@ -134,20 +113,27 @@ REMOTE_PRODUCTION_MIGRATIONS: 0
 LIVE_PROVIDER_CALLS: 0
 OPENAI_CALLS: 0
 
-## Live DEV inventory after 16/23
+## Live DEV inventory after 23/23
 
-schemas 3, tables 69, RLS enabled 67, RLS forced 25, policies 56, indexes 203,
-functions 112, SECURITY DEFINER 74 of which 74 carry a pinned `search_path`,
-triggers 53, grants to anon/authenticated/service_role 114.
+schemas 3, tables 73, RLS enabled 71, RLS forced 29, policies 119, indexes 216,
+functions 128, SECURITY DEFINER 85 of which 85 carry a pinned `search_path`,
+triggers 60, grants to anon/authenticated/service_role 114. Legal review surface
+present: `private.governance_legal_review_packets` and
+`private.governance_legal_review_actions`, both RLS enabled and forced, both
+owned by `tivdoc_governance_owner`, 2 policies.
+
+B-28 recomputed at this head: strict 40, MC-29 19, denominator 84, difference 21
+— unchanged, and per the §3.2 ruling neither number is ever adjusted.
 
 ## Resume point
 
-- next todo: one role grant on DEV — `grant tivdoc_governance_owner to
-  tivdoc_dev_migrator with admin option` — unblocks migrations 17-23, and with
-  them W5 and W8. Everything needed to run it is already provisioned.
-- second gate: allow `.tools/postgresql/17.11-1-signed/bin/initdb.exe` in
-  Windows Application Control, or install a signed PostgreSQL. That unblocks
-  W3 and W4.
+- next todo: BL-1. `createDurableGovernanceOperationsRouteAdapter` is bound at
+  `durable-local-runtime.ts:204`, yet `createOperationsHttpHandler` answers 404
+  on the nested paths, which the handler does when the resolved service has no
+  durable legal review capability. Fixing that closes W4 and unblocks W5 and the
+  database half of W6 in one step; everything else they need is provisioned.
+- the DEV runtime database is `tivdoc_v09_devruntime01` with the full chain and
+  four least-privilege login roles; credentials are in `~/.tivdoc-dev/credentials.env`.
 - known blocks that must not be retried: corpus acquisition, creating a second
-  Supabase project, resetting or dropping anything in the DEV default database.
-- do not reopen §3.2.
+  Supabase project, resetting the DEV default database.
+- do not reopen §3 or `B-55`.

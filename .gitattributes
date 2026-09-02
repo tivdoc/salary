@@ -1,0 +1,6 @@
+# Preserved forensic evidence is byte-exact by definition. `V041_MISMATCH_004`
+# was lost because git's clean filter normalized the mixed line endings of the
+# only surviving copy, and those bytes cannot be reconstructed from the blob.
+# These files must never be normalized, diffed as text, or merged.
+*.preserved.bin -text -diff -merge
+*.recovered.bin -text -diff -merge

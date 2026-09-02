@@ -10,7 +10,10 @@ import {
   type SystemCapabilityName,
   type SystemCapabilityProjection,
 } from "../../platform/capabilities/system-capabilities.ts";
-import { deriveNodePostgresTargetDescriptor } from "../../platform/persistence/postgres/runtime/node-pg-driver.ts";
+import {
+  deriveNodePostgresTargetDescriptor,
+  type NodePostgresRemoteDevTarget,
+} from "../../platform/persistence/postgres/runtime/node-pg-driver.ts";
 import type { InternalOpsFlagSnapshot } from "../internal-ops/flags.ts";
 
 export const DURABLE_LOCAL_PRODUCT_RUNTIME_SENTINEL =
@@ -46,6 +49,13 @@ export type DurableLocalProductRuntimeConfig = Readonly<{
     operations: string;
     worker: string;
   }>;
+  /**
+   * Declared non-loopback target, or null. The driver refuses any host that is
+   * not loopback unless the caller names it here first, so this is the only way
+   * an isolated development project becomes reachable and a typo cannot make
+   * one up.
+   */
+  remote_dev_target: NodePostgresRemoteDevTarget | null;
   private_storage_root: string;
   download_grant_hmac_key: Uint8Array;
   worker_identity: Readonly<{
@@ -104,7 +114,8 @@ export function readDurableLocalProductRuntimeConfig(
     operations: required(environment, "TIVDOC_OPERATIONS_POSTGRES_URL", 4_096),
     worker: required(environment, "TIVDOC_WORKER_POSTGRES_URL", 4_096),
   });
-  validateRoleScopedConnections(connectionUrls);
+  const remoteDevTarget = readRemoteDevTarget(environment);
+  validateRoleScopedConnections(connectionUrls, remoteDevTarget);
   const encodedHmac = required(environment, "TIVDOC_DOWNLOAD_GRANT_HMAC_KEY_BASE64URL", 128);
   if (!/^[A-Za-z0-9_-]+$/u.test(encodedHmac)) throw new Error("DURABLE_LOCAL_PRODUCT_DOWNLOAD_KEY_INVALID");
   const hmac = Buffer.from(encodedHmac, "base64url");
@@ -133,6 +144,7 @@ export function readDurableLocalProductRuntimeConfig(
       max_token_lifetime_seconds: maxTokenLifetimeSeconds,
     }),
     connection_urls: connectionUrls,
+    remote_dev_target: remoteDevTarget,
     private_storage_root: required(environment, "TIVDOC_PRIVATE_STORAGE_ROOT", 4_096),
     download_grant_hmac_key: Uint8Array.from(hmac),
     worker_identity: workerIdentity,
@@ -204,13 +216,50 @@ function requireFixedFlags(environment: Readonly<Record<string, string | undefin
   }
 }
 
-function validateRoleScopedConnections(urls: DurableLocalProductRuntimeConfig["connection_urls"]): void {
+const REMOTE_HOST = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/u;
+const PROJECT_REF = /^[a-z]{20}$/u;
+
+/**
+ * Reads the declared remote development target. All four parts must be present
+ * and well formed together; a partial declaration is refused rather than
+ * completed with a default, so a half-configured environment cannot open a
+ * non-loopback path by accident.
+ */
+function readRemoteDevTarget(
+  environment: Readonly<Record<string, string | undefined>>,
+): NodePostgresRemoteDevTarget | null {
+  const ref = environment.TIVDOC_REMOTE_DEV_PROJECT_REF;
+  const host = environment.TIVDOC_REMOTE_DEV_HOST;
+  const port = environment.TIVDOC_REMOTE_DEV_PORT;
+  const database = environment.TIVDOC_REMOTE_DEV_DATABASE;
+  if (ref === undefined && host === undefined && port === undefined && database === undefined) return null;
+  const parsedPort = Number(port);
+  if (typeof ref !== "string" || !PROJECT_REF.test(ref)
+      || typeof host !== "string" || !REMOTE_HOST.test(host) || host.length > 253
+      || !Number.isSafeInteger(parsedPort) || parsedPort < 1 || parsedPort > 65_535
+      || typeof database !== "string" || !/^tivdoc_v09_[a-z0-9_]{8,48}$/u.test(database)) {
+    throw new Error("DURABLE_LOCAL_PRODUCT_REMOTE_TARGET_INVALID");
+  }
+  return Object.freeze({ host, port: parsedPort, database, project_ref: ref });
+}
+
+function validateRoleScopedConnections(
+  urls: DurableLocalProductRuntimeConfig["connection_urls"],
+  remote: NodePostgresRemoteDevTarget | null,
+): void {
   const targets = Object.entries(urls).map(([role, raw]) => {
     const url = new URL(raw);
-    if (url.username !== EXPECTED_DATABASE_USERS[role as keyof typeof EXPECTED_DATABASE_USERS]) {
+    const expected = EXPECTED_DATABASE_USERS[role as keyof typeof EXPECTED_DATABASE_USERS];
+    // A managed connection pooler routes on `<role>.<project ref>`. The role
+    // identity that matters is the part before the dot, and the suffix must be
+    // the declared project ref, so role separation is unchanged.
+    const [name, ...suffix] = decodeURIComponent(url.username).split(".");
+    const suffixValid = suffix.length === 0
+      || (suffix.length === 1 && remote !== null && suffix[0] === remote.project_ref);
+    if (name !== expected || !suffixValid) {
       throw new Error("DURABLE_LOCAL_PRODUCT_DATABASE_ROLE_INVALID");
     }
-    return deriveNodePostgresTargetDescriptor(raw);
+    return deriveNodePostgresTargetDescriptor(raw, remote);
   });
   const first = targets[0];
   if (!first || targets.some((target) => target.target_id !== first.target_id

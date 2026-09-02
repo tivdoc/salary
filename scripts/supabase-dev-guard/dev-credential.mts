@@ -221,13 +221,46 @@ async function commandVerify(key: string): Promise<void> {
   }
 }
 
+/**
+ * Gives the four runtime roles a login credential and writes their connection
+ * URLs. The chain creates them NOLOGIN, which is correct for the chain; a
+ * runtime that connects as them needs LOGIN, and that is a deployment step, not
+ * a migration. Passwords are generated and interpolated inside this process and
+ * never appear in a command line, a log or the transcript.
+ */
+async function commandRuntimeRoles(host: string, port: string, database: string): Promise<void> {
+  const ref = requireDevGuard();
+  const entries = readDevEnvFile();
+  const admin = entries.get("TIVDOC_DEV_DATABASE_URL");
+  if (!admin) throw new Error("DEV_CREDENTIAL_ADMIN_URL_MISSING");
+  const { default: pg } = await import("pg");
+  const client = new pg.Client({ connectionString: admin, connectionTimeoutMillis: 20_000 });
+  await client.connect();
+  const roles = DEV_LOGIN_ROLES.filter((role) => role !== "tivdoc_dev_migrator");
+  try {
+    for (const role of roles) {
+      const password = generateDevPassword();
+      const literal = `'${password.replaceAll("'", "''")}'`;
+      await client.query(`alter role ${role} with login password ${literal}`);
+      entries.set(`TIVDOC_DEV_PASSWORD__${role}`, password);
+    }
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+  writeDevEnvFile(entries);
+  commandUrls(host, port, "pooler", database);
+  process.stdout.write(`runtime_roles ${roles.length} database=${database} ref=${ref.slice(0, 4)}...\n`);
+}
+
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
   if (command === "issue") commandIssue(rest.length > 0 ? rest : DEV_LOGIN_ROLES);
   else if (command === "urls") {
     commandUrls(rest[0] as string, rest[1] as string, rest[2] ?? "pooler", rest[3] ?? "postgres");
   }
-  else if (command === "verify") await commandVerify(rest[0] ?? "TIVDOC_DEV_DATABASE_URL");
+  else if (command === "runtime-roles") {
+    await commandRuntimeRoles(rest[0] as string, rest[1] as string, rest[2] as string);
+  } else if (command === "verify") await commandVerify(rest[0] ?? "TIVDOC_DEV_DATABASE_URL");
   else throw new Error("DEV_CREDENTIAL_COMMAND_UNKNOWN");
 }
 

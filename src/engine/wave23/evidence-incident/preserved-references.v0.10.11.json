@@ -1,0 +1,68 @@
+{
+  "schema_version": "tivdoc-evidence-preservation-v0.10.11",
+  "note": "Preserved copies. These were never recovered at Wave 2.2 and are never counted as recoveries.",
+  "preserved_count": 4,
+  "skipped": [
+    "FORENSIC_REF_001:not_recovered",
+    "FORENSIC_REF_002:not_recovered",
+    "FORENSIC_REF_003:not_recovered",
+    "FORENSIC_REF_004:not_recovered",
+    "FORENSIC_REF_006:not_recovered",
+    "FORENSIC_REF_008:not_recovered",
+    "FORENSIC_REF_009:not_recovered",
+    "FORENSIC_REF_011:not_recovered",
+    "V041_MISMATCH_001:not_recovered",
+    "V041_MISMATCH_002:not_recovered",
+    "V041_MISMATCH_004:not_recovered"
+  ],
+  "entries": [
+    {
+      "reference_id": "FORENSIC_REF_005",
+      "class": "preserved_v0_10_11",
+      "repository_path": "src/server/engine/legal-knowledge/controlled-import-recovery/protocol.test.ts",
+      "preserved_path": "src/engine/wave23/evidence-incident/preserved-bytes/FORENSIC_REF_005/src__server__engine__legal-knowledge__controlled-import-recovery__protocol.test.ts.preserved.bin",
+      "sha256": "e95992313cbf11f2e5e4263101c20acd94cd5f85997652ef2eaede4a8bf0be26",
+      "byte_count": 4942,
+      "source_kind": "untracked_output_tree",
+      "source_path": "output/parallel-wave-2.2/workers/w1-evidence-forensics/recovered-bytes/FORENSIC_REF_005/src/server/engine/legal-knowledge/controlled-import-recovery/protocol.test.ts.recovered.bin",
+      "source_state": "ignored output tree",
+      "preserved_at": "2026-09-02"
+    },
+    {
+      "reference_id": "FORENSIC_REF_007",
+      "class": "preserved_v0_10_11",
+      "repository_path": "src/server/engine/legal-knowledge/manifest-and-changes.test.ts",
+      "preserved_path": "src/engine/wave23/evidence-incident/preserved-bytes/FORENSIC_REF_007/src__server__engine__legal-knowledge__manifest-and-changes.test.ts.preserved.bin",
+      "sha256": "8116ff0323ab83d5f3f0f5abd1c8f5b47a63dafcc33e93d9f5c607340f0f424f",
+      "byte_count": 7349,
+      "source_kind": "live_working_tree",
+      "source_path": "C:/dev/tivdoc/salary/src/server/engine/legal-knowledge/manifest-and-changes.test.ts",
+      "source_state": "HEAD 76363009fd3f85b8e3e6c48b66ef321b2f63563c",
+      "preserved_at": "2026-09-02"
+    },
+    {
+      "reference_id": "FORENSIC_REF_010",
+      "class": "preserved_v0_10_11",
+      "repository_path": "src/server/engine/legal-knowledge/controlled-import-recovery/protocol.test.ts",
+      "preserved_path": "src/engine/wave23/evidence-incident/preserved-bytes/FORENSIC_REF_010/src__server__engine__legal-knowledge__controlled-import-recovery__protocol.test.ts.preserved.bin",
+      "sha256": "e95992313cbf11f2e5e4263101c20acd94cd5f85997652ef2eaede4a8bf0be26",
+      "byte_count": 4942,
+      "source_kind": "untracked_output_tree",
+      "source_path": "output/parallel-wave-2.2/workers/w1-evidence-forensics/recovered-bytes/FORENSIC_REF_005/src/server/engine/legal-knowledge/controlled-import-recovery/protocol.test.ts.recovered.bin",
+      "source_state": "ignored output tree",
+      "preserved_at": "2026-09-02"
+    },
+    {
+      "reference_id": "V041_MISMATCH_003",
+      "class": "preserved_v0_10_11",
+      "repository_path": "scripts/wave21-controlled-import/verify.mts",
+      "preserved_path": "src/engine/wave23/evidence-incident/preserved-bytes/V041_MISMATCH_003/scripts__wave21-controlled-import__verify.mts.preserved.bin",
+      "sha256": "db417e5611b4e4d3155717e9d46392553e29c3e3a029f3a89a0489891ed48367",
+      "byte_count": 8622,
+      "source_kind": "live_working_tree",
+      "source_path": "C:/dev/tivdoc/salary/scripts/wave21-controlled-import/verify.mts",
+      "source_state": "HEAD 76363009fd3f85b8e3e6c48b66ef321b2f63563c",
+      "preserved_at": "2026-09-02"
+    }
+  ]
+}

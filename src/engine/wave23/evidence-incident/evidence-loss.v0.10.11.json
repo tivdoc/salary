@@ -1,0 +1,35 @@
+{
+  "schema_version": "tivdoc-evidence-loss-v0.10.11",
+  "append_only": true,
+  "note": "Immutable record of forensic evidence that no longer exists. Entries are never edited or removed. A loss is recorded, not absorbed into a counter.",
+  "records": [
+    {
+      "reference_id": "V041_MISMATCH_004",
+      "package_id": "V0.4.1",
+      "repository_path": "src/engine/wave2/evidence-audit/artifact-reconciliation.ts",
+      "referenced": "The V0.4.1 evidence package claimed this artifact at a specific working-tree byte form; the claim and the repository's own history disagreed, and that disagreement is the incident.",
+      "last_known_sha256": "6273a1d72ba66625f0b78327d5f84856055836129e43faabe91237771e567e36",
+      "last_known_sha256_verified": false,
+      "last_known_sha256_source": "claimed_sha256 recorded in the V0.4.1 package; the bytes themselves are gone, so the digest cannot be re-derived",
+      "last_known_byte_count": 23694,
+      "historical_canonical_git_blob": "685c5eb3c46dacc3e6d2511131a09fc3afbf25b7",
+      "historical_canonical_byte_count": 23223,
+      "lost_at": "2026-09-02",
+      "cause": "The only surviving copy of the claimed bytes was the live working-tree file in the main checkout. Commit 0727414 (V0.10.9 W1) rewrote it. The working-tree form carried 471 CRLF and 22 bare LF; git's clean filter normalized every line ending when the blob was written, so the object database holds the content but not the byte form, and the 22 LF positions are recorded nowhere.",
+      "incident_id": "HIST_INCIDENT_B2AB992403821397",
+      "attributable_commit": "0727414",
+      "search_that_established_the_loss": {
+        "worktrees_scanned": 58,
+        "files_scanned": 251521,
+        "size_candidates": 1,
+        "digest_hits": 0,
+        "object_database_reconstruction_attempted": true,
+        "object_database_reconstruction_result": "git text conversion of blob 685c5eb3 yields 23716 bytes against a claim of 23694; no non-speculative transform reproduces the claim",
+        "evidence_path": "output/v0.10.10/audit/byte-hunt.txt"
+      },
+      "authority_when_present": "exact_bytes_recovered_for_forensic_crosswalk_only",
+      "authority_now": "none",
+      "material_effect": "None. Reference count 15, unique path-hash incidents 11 and status HISTORICAL_EVIDENCE_ROOTS_QUARANTINED_FAILED are unchanged. What was lost is one forensic crosswalk recovery, which never carried admission, activation or shadow authority."
+    }
+  ]
+}

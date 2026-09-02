@@ -32,10 +32,16 @@ export type CanonicalVerifiedTransactionInput = Readonly<{
 
 export type CanonicalPostgresTarget = Readonly<{
   target_id: string;
-  host: "127.0.0.1" | "::1" | "localhost";
+  host: string;
   database: string;
   disposable: true;
-  validation: "LOOPBACK_DISPOSABLE_VALIDATED";
+  /**
+   * `REMOTE_DEV_ALLOWLISTED` is produced only by the driver, and only when the
+   * caller declared that exact host, port and database in advance. The database
+   * name still has to be disposable, so the guarantee this root enforces is
+   * unchanged: it never reaches a database nobody declared throwaway.
+   */
+  validation: "LOOPBACK_DISPOSABLE_VALIDATED" | "REMOTE_DEV_ALLOWLISTED";
 }>;
 
 export type CanonicalPostgresConfig =
@@ -228,9 +234,19 @@ export function requireIsolatedCanonicalPostgres<TIntake, TAnalysis, TMemoryTest
 
 function validateTarget(target: CanonicalPostgresTarget | undefined): void {
   if (!target || !target.target_id || !target.database) throw new CanonicalPostgresError("POSTGRES_TARGET_REQUIRED");
-  if (!["127.0.0.1", "::1", "localhost"].includes(target.host)) throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_LOOPBACK");
-  if (!target.disposable || target.validation !== "LOOPBACK_DISPOSABLE_VALIDATED" || !/^tivdoc_v09_[a-z0-9_]{8,48}$/u.test(target.database)) {
+  const remoteAllowlisted = target.validation === "REMOTE_DEV_ALLOWLISTED";
+  if (!remoteAllowlisted && !["127.0.0.1", "::1", "localhost"].includes(target.host)) {
+    throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_LOOPBACK");
+  }
+  if (!target.disposable
+      || (target.validation !== "LOOPBACK_DISPOSABLE_VALIDATED" && !remoteAllowlisted)
+      || !/^tivdoc_v09_[a-z0-9_]{8,48}$/u.test(target.database)) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
+  }
+  // A remote target still has to name a host; an empty one would slip past the
+  // loopback check above.
+  if (remoteAllowlisted && target.host.trim() === "") {
+    throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_LOOPBACK");
   }
 }
 

@@ -7,6 +7,7 @@ import { startCanonicalApplicationPostgres } from "../../platform/composition/ca
 import {
   NodePostgresConnectionFactory,
   deriveNodePostgresTargetDescriptor,
+  type NodePostgresRemoteDevTarget,
 } from "../../platform/persistence/postgres/runtime/node-pg-driver.ts";
 import { LocalRuntimePrivateBlobProvider } from "../../platform/storage/local-runtime/private-blob-provider.ts";
 import type { VerifiedActor } from "../../../engine/wave4/contracts.ts";
@@ -115,10 +116,11 @@ DurableLocalProductWorkflowRegistration | null {
 
 async function buildDurableLocalProductRuntime(): Promise<DurableLocalProductStartupProof> {
   const config = readDurableLocalProductRuntimeConfig();
-  const target = deriveNodePostgresTargetDescriptor(config.connection_urls.web);
-  const identityFactory = runtimeFactory(config.connection_urls.identity, "tivdoc_identity_runtime_v0102", 8);
-  const webFactory = runtimeFactory(config.connection_urls.web, "tivdoc_web_runtime_v0102", 12);
-  const operationsFactory = runtimeFactory(config.connection_urls.operations, "tivdoc_operations_runtime_v0102", 12);
+  const remote = config.remote_dev_target;
+  const target = deriveNodePostgresTargetDescriptor(config.connection_urls.web, remote);
+  const identityFactory = runtimeFactory(config.connection_urls.identity, "tivdoc_identity_runtime_v0102", 8, remote);
+  const webFactory = runtimeFactory(config.connection_urls.web, "tivdoc_web_runtime_v0102", 12, remote);
+  const operationsFactory = runtimeFactory(config.connection_urls.operations, "tivdoc_operations_runtime_v0102", 12, remote);
   const factories = Object.freeze([identityFactory, webFactory, operationsFactory] as const);
   let installed = false;
 
@@ -273,12 +275,14 @@ function runtimeFactory(
   connectionUrl: string,
   applicationName: string,
   maxConnections: number,
+  remoteDevTarget: NodePostgresRemoteDevTarget | null,
 ): NodePostgresConnectionFactory {
   return NodePostgresConnectionFactory.fromConnectionUrl({
     connection_url: connectionUrl,
     max_connections: maxConnections,
     connection_timeout_ms: 5_000,
     application_name: applicationName,
+    remote_dev_target: remoteDevTarget,
   });
 }
 

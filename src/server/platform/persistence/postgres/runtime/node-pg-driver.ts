@@ -16,14 +16,33 @@ const LOOPBACK_HOSTS = new Map([
 ] as const);
 const DISPOSABLE_DATABASE = /^tivdoc_v09_[a-z0-9_]{8,48}$/u;
 const VALIDATED_TARGET = "NODE_POSTGRES_LOOPBACK_DISPOSABLE_VALIDATED" as const;
+const ALLOWED_SSL_MODES = new Set(["require", "no-verify", "verify-full"]);
+
+/**
+ * The one non-loopback target a caller may declare.
+ *
+ * The driver refuses every host that is not loopback, which is what keeps a
+ * development runtime from ever reaching a real database. An isolated
+ * development project still has to be reachable, so instead of relaxing the
+ * host rule the caller must hand over the exact host, port and database it is
+ * allowed to use. Anything that does not match that declaration exactly is
+ * refused as before, the database name still has to be disposable, and a
+ * caller that declares nothing keeps the original loopback-only behaviour.
+ */
+export type NodePostgresRemoteDevTarget = Readonly<{
+  host: string;
+  port: number;
+  database: string;
+  project_ref: string;
+}>;
 
 export type NodePostgresTargetDescriptor = Readonly<{
   target_id: string;
-  host: "127.0.0.1" | "localhost" | "::1";
+  host: string;
   port: number;
   database: string;
   disposable: true;
-  validation: "LOOPBACK_DISPOSABLE_VALIDATED";
+  validation: "LOOPBACK_DISPOSABLE_VALIDATED" | "REMOTE_DEV_ALLOWLISTED";
 }>;
 
 export type NodePostgresConnectionInput = Readonly<{
@@ -31,12 +50,14 @@ export type NodePostgresConnectionInput = Readonly<{
   max_connections?: number;
   connection_timeout_ms?: number;
   application_name?: string;
+  remote_dev_target?: NodePostgresRemoteDevTarget | null;
 }>;
 
 export type ValidatedNodePostgresConnectionConfig = Readonly<{
   validation: typeof VALIDATED_TARGET;
   connection_url: string;
   target: NodePostgresTargetDescriptor;
+  remote_dev_target: NodePostgresRemoteDevTarget | null;
   pool_config: Readonly<{
     max: number;
     connectionTimeoutMillis: number;
@@ -86,8 +107,9 @@ export type NodePostgresPoolFactory = (config: PoolConfig) => NodePostgresPool;
 export function validateNodePostgresConnection(
   input: NodePostgresConnectionInput,
 ): ValidatedNodePostgresConnectionConfig {
-  const parsed = parseConnectionUrl(input.connection_url);
-  const target = targetFromUrl(parsed);
+  const remote = input.remote_dev_target ?? null;
+  const parsed = parseConnectionUrl(input.connection_url, remote);
+  const target = targetFromUrl(parsed, remote);
   const max = boundedInteger(input.max_connections ?? 8, 1, 32, "POSTGRES_TARGET_REQUIRED");
   const connectionTimeoutMillis = boundedInteger(
     input.connection_timeout_ms ?? 5_000,
@@ -103,12 +125,16 @@ export function validateNodePostgresConnection(
     validation: VALIDATED_TARGET,
     connection_url: input.connection_url,
     target,
+    remote_dev_target: remote,
     pool_config: Object.freeze({ max, connectionTimeoutMillis, application_name: applicationName }),
   });
 }
 
-export function deriveNodePostgresTargetDescriptor(connectionUrl: string): NodePostgresTargetDescriptor {
-  return targetFromUrl(parseConnectionUrl(connectionUrl));
+export function deriveNodePostgresTargetDescriptor(
+  connectionUrl: string,
+  remoteDevTarget: NodePostgresRemoteDevTarget | null = null,
+): NodePostgresTargetDescriptor {
+  return targetFromUrl(parseConnectionUrl(connectionUrl, remoteDevTarget), remoteDevTarget);
 }
 
 /** A Pool-backed implementation of the project-owned PostgreSQL boundary. */
@@ -132,6 +158,7 @@ export class NodePostgresConnectionFactory implements PostgresConnectionFactory 
       max_connections: config.pool_config.max,
       connection_timeout_ms: config.pool_config.connectionTimeoutMillis,
       application_name: config.pool_config.application_name,
+      remote_dev_target: config.remote_dev_target ?? null,
     });
     if (config.validation !== VALIDATED_TARGET || !sameTarget(config.target, revalidated.target)) {
       throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
@@ -143,7 +170,13 @@ export class NodePostgresConnectionFactory implements PostgresConnectionFactory 
         max: revalidated.pool_config.max,
         connectionTimeoutMillis: revalidated.pool_config.connectionTimeoutMillis,
         application_name: revalidated.pool_config.application_name,
-        ssl: false,
+        // Loopback stays plaintext. A declared remote target is always
+        // encrypted; `no-verify` is honoured only because the managed pooler
+        // presents a chain no public root signs, and the run pins that
+        // certificate's fingerprint in its own receipt instead.
+        ssl: revalidated.target.validation === "REMOTE_DEV_ALLOWLISTED"
+          ? { rejectUnauthorized: !revalidated.connection_url.includes("sslmode=no-verify") }
+          : false,
         allowExitOnIdle: true,
       });
     } catch (error) {
@@ -267,24 +300,31 @@ function normalizePostgresValue(value: unknown): unknown {
   return value;
 }
 
-function parseConnectionUrl(connectionUrl: string): URL {
+function parseConnectionUrl(connectionUrl: string, remote: NodePostgresRemoteDevTarget | null): URL {
   let parsed: URL;
   try {
     parsed = new URL(connectionUrl);
   } catch {
     throw new CanonicalPostgresError("POSTGRES_TARGET_REQUIRED");
   }
+  // A loopback URL still carries no query string at all. A declared remote
+  // target may carry `sslmode` and nothing else, because the transport to it
+  // has to be encrypted and that is how the setting travels.
+  const loopback = LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase() as "127.0.0.1");
+  const searchAllowed = !loopback && remote !== null && parsed.search !== ""
+    && [...new URLSearchParams(parsed.search).entries()]
+      .every(([key, value]) => key === "sslmode" && ALLOWED_SSL_MODES.has(value));
   if (!new Set(["postgres:", "postgresql:"]).has(parsed.protocol)
       || parsed.username === "" || parsed.password === ""
-      || parsed.hash !== "" || parsed.search !== "") {
+      || parsed.hash !== "" || (parsed.search !== "" && !searchAllowed)) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_REQUIRED");
   }
   return parsed;
 }
 
-function targetFromUrl(parsed: URL): NodePostgresTargetDescriptor {
+function targetFromUrl(parsed: URL, remote: NodePostgresRemoteDevTarget | null): NodePostgresTargetDescriptor {
   const normalizedHost = LOOPBACK_HOSTS.get(parsed.hostname.toLowerCase() as "127.0.0.1" | "localhost" | "::1" | "[::1]");
-  if (!normalizedHost) throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_LOOPBACK");
+  if (!normalizedHost) return remoteTargetFromUrl(parsed, remote);
   let database: string;
   try {
     database = decodeURIComponent(parsed.pathname.replace(/^\//u, ""));
@@ -306,6 +346,42 @@ function targetFromUrl(parsed: URL): NodePostgresTargetDescriptor {
     database,
     disposable: true,
     validation: "LOOPBACK_DISPOSABLE_VALIDATED",
+  });
+}
+
+/**
+ * Non-loopback is refused unless the caller declared exactly this target. The
+ * host, port and database must all match the declaration, and the database name
+ * must still be disposable, so an undeclared or mistyped host cannot resolve.
+ */
+function remoteTargetFromUrl(
+  parsed: URL,
+  remote: NodePostgresRemoteDevTarget | null,
+): NodePostgresTargetDescriptor {
+  if (remote === null) throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_LOOPBACK");
+  const port = parsed.port === "" ? 5432 : Number(parsed.port);
+  let database: string;
+  try {
+    database = decodeURIComponent(parsed.pathname.replace(/^\//u, ""));
+  } catch {
+    throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
+  }
+  if (!DISPOSABLE_DATABASE.test(database)) {
+    throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
+  }
+  if (parsed.hostname.toLowerCase() !== remote.host.toLowerCase()
+      || port !== remote.port
+      || database !== remote.database
+      || remote.project_ref === "") {
+    throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_LOOPBACK");
+  }
+  return Object.freeze({
+    target_id: `tivdoc-remote-dev-${remote.project_ref}-${database}`,
+    host: parsed.hostname.toLowerCase(),
+    port,
+    database,
+    disposable: true,
+    validation: "REMOTE_DEV_ALLOWLISTED",
   });
 }
 

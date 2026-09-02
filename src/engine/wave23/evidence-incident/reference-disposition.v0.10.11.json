@@ -1,0 +1,29 @@
+{
+  "schema_version": "tivdoc-reference-disposition-v0.10.11",
+  "note": "Every V0.4 / V0.4.1 reference lands in exactly one class. `recovered` + `permanently_lost` preserves the original five as a sum while stating what actually happened to the fifth. Totals are invariants, not outputs: 15 references, 11 unique path-hash incidents.",
+  "reference_total": 15,
+  "unique_incident_total": 11,
+  "class_totals": {
+    "recovered": 4,
+    "permanently_lost": 1,
+    "unresolved": 10
+  },
+  "recovered_plus_permanently_lost": 5,
+  "entries": [
+    { "reference_id": "FORENSIC_REF_001", "class": "unresolved" },
+    { "reference_id": "FORENSIC_REF_002", "class": "unresolved" },
+    { "reference_id": "FORENSIC_REF_003", "class": "unresolved" },
+    { "reference_id": "FORENSIC_REF_004", "class": "unresolved" },
+    { "reference_id": "FORENSIC_REF_005", "class": "recovered" },
+    { "reference_id": "FORENSIC_REF_006", "class": "unresolved" },
+    { "reference_id": "FORENSIC_REF_007", "class": "recovered" },
+    { "reference_id": "FORENSIC_REF_008", "class": "unresolved" },
+    { "reference_id": "FORENSIC_REF_009", "class": "unresolved" },
+    { "reference_id": "FORENSIC_REF_010", "class": "recovered" },
+    { "reference_id": "FORENSIC_REF_011", "class": "unresolved" },
+    { "reference_id": "V041_MISMATCH_001", "class": "unresolved" },
+    { "reference_id": "V041_MISMATCH_002", "class": "unresolved" },
+    { "reference_id": "V041_MISMATCH_003", "class": "recovered" },
+    { "reference_id": "V041_MISMATCH_004", "class": "permanently_lost" }
+  ]
+}
