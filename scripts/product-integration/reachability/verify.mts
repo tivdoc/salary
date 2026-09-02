@@ -87,6 +87,20 @@ const symbolClassifications: ReadonlyArray<Readonly<{
   });
 });
 
+// Two defects of the same shape cost this graph 188 product-reachable files
+// between them: `src/instrumentation.ts` was not an entrypoint, so everything
+// only it reaches looked dead; and `@/*` resolved to the bare remainder instead
+// of `src/*`, so all 232 aliased edges pointed at nothing and were dropped.
+// Both were silent — the graph reported `pass: true` throughout. These two
+// counts make that class loud.
+const FRAMEWORK_ENTRY = /^src\/(?:instrumentation|middleware)\.[jt]sx?$|^src\/app\/(?:.*\/)?(?:page|layout|route|error|not-found|global-error|template|default)\.[jt]sx?$/;
+const frameworkEntriesNotClassified = files
+  .filter((file) => FRAMEWORK_ENTRY.test(file))
+  .filter((file) => nodes.find((node) => node.path === file)?.kind !== "product_entrypoint");
+// An alias specifier always names a file in this tree; one that resolves to
+// nothing is a resolver bug, never a legitimate external dependency.
+const unresolvedAliasImports = edges.filter((edge) => edge.to === null && edge.specifier.startsWith("@/"));
+
 const duplicateCanonicalContracts = classifications.filter((item) => item.classification === "DUPLICATE_CANONICAL_CONTRACT");
 const unknown = classifications.filter((item) => !item.classification);
 const stableProductFiles = files.filter((file) => /^(src\/app\/(?:api\/)?(?:portal|operations)\/|src\/components\/(?:portal|operations)\/)/.test(file));
@@ -111,6 +125,8 @@ const counts = Object.freeze({
   unknown: unknown.length,
   duplicate_canonical_contracts: duplicateCanonicalContracts.length,
   stable_version_leaks: stableVersionLeaks.length,
+  framework_entries_not_classified: frameworkEntriesNotClassified.length,
+  unresolved_alias_imports: unresolvedAliasImports.length,
 });
 const payload = {
   schema_version: "tivdoc-canonical-reachability-v0.8.0",
@@ -123,12 +139,15 @@ const payload = {
   symbol_classifications: symbolClassifications,
   stable_version_leaks: stableVersionLeaks,
   duplicate_canonical_contracts: duplicateCanonicalContracts,
+  framework_entries_not_classified: frameworkEntriesNotClassified,
+  unresolved_alias_imports: unresolvedAliasImports.map((edge) => `${edge.from} -> ${edge.specifier}`),
 };
 const canonical = `${JSON.stringify(payload, null, 2)}\n`;
 const manifest = Object.freeze({
   schema_version: "tivdoc-canonical-reachability-manifest-v0.8.0",
   payload_sha256: sha256(canonical),
-  pass: counts.unknown === 0 && counts.duplicate_canonical_contracts === 0 && counts.stable_version_leaks === 0,
+  pass: counts.unknown === 0 && counts.duplicate_canonical_contracts === 0 && counts.stable_version_leaks === 0
+    && counts.framework_entries_not_classified === 0 && counts.unresolved_alias_imports === 0,
   counts,
 });
 await mkdir(outputRoot, { recursive: true });
@@ -169,7 +188,12 @@ function nodeKind(file: string): GraphNode["kind"] {
 
 function resolveImport(from: string, specifier: string, candidates: ReadonlySet<string>): string | null {
   let base: string;
-  if (specifier.startsWith("@/")) base = specifier.slice(2);
+  // `@/*` maps to `./src/*` (tsconfig.json paths). Resolving it to the bare
+  // remainder produced 232 edges that matched no file and were silently dropped
+  // — every aliased import in the tree — so anything imported only through the
+  // alias looked unreachable. `src/app/operations/page.tsx` reached nothing at
+  // all, which is why the journey subset computed as 0 against a recorded 8.
+  if (specifier.startsWith("@/")) base = `src/${specifier.slice(2)}`;
   else if (specifier.startsWith(".")) base = path.posix.normalize(path.posix.join(path.posix.dirname(from), specifier));
   else return null;
   const withoutExtension = base.replace(/\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|json)$/, "");

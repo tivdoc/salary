@@ -302,7 +302,15 @@ export async function withControlledImportLock<T>(input: Readonly<{
         }
         continue;
       }
-      if (Date.now() - started >= (input.timeoutMs ?? 5_000)) throw new Error("controlled_import_concurrency_lock_timeout");
+      // A crashed holder does not wait for this: the stale-takeover branch
+      // above already reclaims a lock whose owner is dead, whose pid identity
+      // does not match, or whose lease has aged out. What is left for this
+      // budget to bound is a live holder that is merely slow, and a queue of
+      // them — eight concurrent identical imports leave the last waiter behind
+      // seven predecessors, which on a loaded machine passed five seconds and
+      // failed the concurrency test. Thirty seconds separates "busy queue"
+      // from "wedged holder" without lengthening any crash outage.
+      if (Date.now() - started >= (input.timeoutMs ?? 30_000)) throw new Error("controlled_import_concurrency_lock_timeout");
       await delay(10);
     }
   }

@@ -112,16 +112,57 @@ strict-versus-MC-29 divergence does not touch it.
 Chain unchanged: 26/26 applied — 24 verbatim byte-pinned, 2 platform-compensated
 (`alter role … nosuperuser`; `supautils` reserved-role refusal), dropped lines
 recorded, end state asserted.
+## Units
+
+Wave 4 runs one unit per commit. `blocked_*` is a result, not a failure: a unit
+recorded with evidence is done for the purpose of moving on, and is not retried.
+
+| id | item | status | evidence | blocked_reason |
+|---|---|---|---|---|
+| 4A-1 | scanner reachability at head | done | 4 findings, 0 product-reachable, 0 unpermitted, on the 237-file graph | — |
+| 4A-2 | recompute B-28 | done | 40 / 19 / 84, delta 0/0/0; journey subset recomputes to 8, matching the recorded 8 | — |
+| 4A-3 | re-run graph-derived inventories | done | effect asserters 9 ON_JOURNEY shape-only, unchanged | — |
+| 4A-4 | graph entrypoint + alias guard | done | both proven by mutation: pass=false, reachable 237→180 and 237→114 | — |
+| 4A-5 | controlled-import lock flake | done | `controlled_import_concurrency_lock_timeout` under parallel load; budget 5s→30s, stale takeover unaffected | — |
+| 5E-0 | name the last 2 of the 71 | done | `ACQOBS:WAVE1:1f87feb13c8c6778758e52f9235461dc` and `:3247017fdd24d0b9c86ed8f3916f7578`, both `BYTES_REJECTED_DUPLICATE`, one shared sha256 | — |
+| 5E-1..69 | parse the 69 observations | blocked_dependency | all 71 are `application/pdf`; the only PDF dependency is `pdf-lib`, whose API writes text and cannot read it; no OCR dependency; no `extractPdfText` producer anywhere in `src/` or `scripts/` | needs a CID-aware PDF text extractor plus an OCR fallback — a new capability, and `npm install` is forbidden |
+
+### Pools
+
+- A — force RLS, 0/30 resolved. All 30 are `public.*`, all owned by `tivdoc_dev_migrator`, all carrying `tivdoc_service_tenant_scope` granted `to service_role`.
+- B — owner reassignment, 0/25 resolved. 9 are trigger functions (no arity, no grant); 16 need re-execution with their exact argument lists.
+- E — parse observations, 0/69, pool blocked as above; the separate unit naming the last 2 of the 71 is done.
+
+### What the graph correction changed
+
+`@/*` resolved to the bare remainder rather than `src/*`, so all 232 aliased
+edges pointed at nothing and were silently dropped. Product-reachable files went
+180 → 237. Together with the `instrumentation.ts` gap fixed in 7389f04 that is
+188 files the canonical graph could not see, across runs that all reported
+`pass: true`. Both classes are now counted and both fail the gate.
+
+Two conclusions move as a result, and are open units rather than facts: Lane B
+reports 28 records claiming NOT wired whose target is now reachable, and 5 of
+the 8 `IMPLEMENTED_UNCALLED_SERVICES` entries in `journey-scope-disposition.ts`
+naming symbols that are now product-reachable. Reachable is not called, so each
+needs checking individually before anything is restated.
 
 ## Resume point
 
-- next wave: 3 — parse the 69 byte-complete observations
-- next todo: before the parsing work, BL-1. It is a security defect on the
-  identity path the whole journey depends on, and it was found at the tail of
-  Wave 2 rather than fixed there because a rushed change to the live session
-  path is how a wrong green happens. Fix is a forward migration: own the four
-  functions, gate them on `runtime_verified_tenant()`, and force RLS on
-  `public.product_identity_sessions` — with the grant execution proof extended in
-  the same commit per §3.8.
+- next unit: **4B-1** — build the DEV invalidation fixture (verified actor,
+  locked case, idempotency record, created and torn down inside the proof) and
+  convert all 9 ON_JOURNEY effect assertions to observe state. Authorized by
+  §3.4; it is one unit, fixture and conversion together or neither.
+- then 4B-2, 4B-3, then pool A (A-0 first, since the owner-access policy is the
+  only dependency the pool has), then pool B, then Wave 4C.
 - known blocks that must not be retried: corpus acquisition, creating a second
-  Supabase project, resetting the DEV default database.
+  Supabase project, resetting the DEV default database, and parsing the 69
+  observations without a PDF text extractor.
+- correction owed to my own Wave 3 work: migration `202609020005` revoked
+  `service_role` EXECUTE from six controlled-import functions on the stated
+  reasoning that every caller goes through a connection authenticated as a
+  runtime role. Verified on DEV: no runtime role holds EXECUTE, and
+  `tivdoc_dev_migrator` is a *member* of the runtime roles rather than their
+  parent, so nothing on the runtime path can execute them. Nothing broke,
+  because the ledger has no caller at all — but the reasoning was wrong, and the
+  claim gets corrected in unit 4C-1 rather than in the applied migration.
