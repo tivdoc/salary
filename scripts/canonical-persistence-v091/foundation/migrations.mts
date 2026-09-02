@@ -45,6 +45,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609020002_legal_review_observation_blocks.sql",
   "202609020003_governance_import_operations_grants.sql",
   "202609020004_identity_session_tenant_enforcement.sql",
+  "202609020005_controlled_import_reserved_execute_revoke.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -79,6 +80,8 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "f27e3fce0e5b98374428ddb6125df6812901e37540eef59ee38fa82d4ccc35af",
   "202609020004_identity_session_tenant_enforcement.sql":
     "5c05212bf6e57faafaf81aa57cbc5348628fe90158410150085c80469ccd640e",
+  "202609020005_controlled_import_reserved_execute_revoke.sql":
+    "2a771010004a5c856ef29b57724e1120bcca97284075ac12a7696ceb09c12a8b",
 });
 
 export type MigrationFile = Readonly<{
