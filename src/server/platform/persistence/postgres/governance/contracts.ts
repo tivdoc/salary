@@ -301,15 +301,37 @@ export type GovernanceRepositoryErrorCode =
   | "GOVERNANCE_DECODE_FAILED"
   | "GOVERNANCE_IDEMPOTENT_REPLAY_CONFLICT";
 
-/** Driver and database details do not cross the governance boundary. */
+/**
+ * Driver and database details do not cross the governance boundary — but they
+ * must not be destroyed on the way out either. A real `DatabaseError` carrying
+ * SQLSTATE `42501` and `routine=aclcheck_error` was replaced here by a bare
+ * `GOVERNANCE_QUERY_FAILED`, and the classifier three layers up could then only
+ * say `OPS_COMMAND_REJECTED`. That cost a run.
+ *
+ * `origin_sqlstate` carries the one field that makes such a failure actionable.
+ * It is a five-character classification, never a message, parameter or
+ * identifier, and it is never serialised into a response.
+ */
 export class GovernanceRepositoryError extends Error {
   readonly code: GovernanceRepositoryErrorCode;
   readonly operation: string;
+  readonly origin_sqlstate: string | null;
 
-  constructor(code: GovernanceRepositoryErrorCode, operation: string) {
+  constructor(code: GovernanceRepositoryErrorCode, operation: string, origin?: unknown) {
     super(`${code}:${operation}`);
     this.name = "GovernanceRepositoryError";
     this.code = code;
     this.operation = operation;
+    this.origin_sqlstate = governanceOriginSqlstate(origin);
+    if (origin !== undefined) this.cause = origin;
   }
+}
+
+/** The SQLSTATE of a caught origin, when it has one. */
+export function governanceOriginSqlstate(origin: unknown): string | null {
+  if (typeof origin !== "object" || origin === null) return null;
+  const direct = (origin as { sqlstate?: unknown }).sqlstate;
+  if (typeof direct === "string" && /^[0-9A-Z]{5}$/u.test(direct)) return direct;
+  const code = (origin as { code?: unknown }).code;
+  return typeof code === "string" && /^[0-9A-Z]{5}$/u.test(code) ? code : null;
 }

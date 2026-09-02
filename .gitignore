@@ -67,3 +67,10 @@ Thumbs.db
 
 # V0.10.13 run receipts and evidence
 /output/v0.10.13/
+
+# Rolling wave receipts and evidence
+/output/wave1/
+/output/wave2/
+/output/wave3/
+/output/wave4/
+/output/probe/

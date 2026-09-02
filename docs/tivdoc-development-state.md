@@ -1,102 +1,96 @@
 # Tivdoc development state
 
-- wave: V0.10.13
-- base: e539019938c3addbff790e3c150119b6d323cc33
+- wave: 1 of the rolling queue — close the durable journey
+- base: a0761d286b5a81322c4f5f3215c871de0049b07d
 - head: pending
 - frozen_head: pending
 - date: 2026-09-02
 
 ## Ledger
 
-| id | item | status | evidence |
-|---|---|---|---|
-| W1 | make the failure name itself | delivered | `output/v0.10.13/audit/` server log `postgres_failure … stage=operation`; `failure-descriptor.test.ts` |
-| W2 | identify and fix the 422 | delivered | `supabase/migrations/202609020001_legal_review_runtime_execute_grants.sql`; `legal-review-runtime-grants.test.ts`; `connection-targets.test.ts` |
-| W3 | journey to 16/16 | delivered | `output/v0.10.13/browser/journey.json` — 16/16 |
-| W4 | `71/71` durable projection | partial | `output/v0.10.13/projection/projection.json` — 71/71 accounted, 0 projectable, 71 blocked with reason codes |
-| W5 | dynamic matrices on DEV | partial | role and refusal matrix green at the HTTP boundary; database-level matrix not re-run |
-| W6 | `B-28` and `B-38` | partial | `output/v0.10.13/audit/entrypoint-counters.json`; `B-38` not re-proven |
-| W7 | state file and freeze | delivered | this file |
-| W8 | frozen-head matrix | see report | `output/v0.10.13/matrix/` |
-| W9 | tracker delta | delivered | `output/v0.10.13/tracker-delta.md` |
+| lane | id | item | status | evidence |
+|---|---|---|---|---|
+| A | W1-1 | 422 root cause, fix, regression test | delivered (prior commit `b34765b`) | `legal-review-runtime-grants.test.ts` |
+| A | W1-2 | journey 16/16 against DEV | delivered | `output/wave1/browser/journey.json` |
+| A | W1-3 | 71/71 durably accounted, replay adds nothing | delivered | `output/wave1/projection/projection.json` |
+| A | W1-4 | A1 blocked-record store, append-only, RLS forced | delivered | `supabase/migrations/202609020002_legal_review_observation_blocks.sql` |
+| A | W1-5 | A3 breakdown by reason code | delivered | `output/wave1/audit/reason-breakdown.json` |
+| A | W1-6 | A4 wrapper origin preservation | delivered | `origin-preservation.test.ts` |
+| A | W1-7 | A5 grant coverage proven by execution | delivered | `output/wave1/audit/grant-execution-proof.json` — 15 commands, 0 denied |
+| A | W1-8 | dynamic matrices on DEV | partial | role and refusal halves proven; conflict, race, rollback and outbox atomicity not re-run |
+| B | B-28 | counter recomputation and journey subset | delivered | `output/wave1/agents/b28/findings.md` |
+| B | B-38 | invalidation path map | delivered | `output/wave1/agents/b38/findings.md` |
+| B | wrappers | origin-destroying wrapper sweep | delivered | `output/wave1/agents/wrappers/findings.md` |
+| B | grants | product-path command inventory | delivered | `output/wave1/agents/grants/findings.md` |
 
 ## Decisions
 
-- **The §1 ignore gate failed again and was repaired first.** Every wave adds
-  its own `/output/<version>/` rule and none existed for this one. Added, then a
-  nested and a deep path were both re-checked before any work started.
+- **The `.gitignore` gate failed again and was repaired first.** The rolling
+  queue introduces wave-named output directories; rules for all four plus the
+  probe path were added and re-checked on a nested and a deep path before work
+  started.
 
-- **The null SQLSTATE was an artefact of an intermediate wrapper, not of the
-  original error.** §9 deduced correctly that a null rules out a Postgres server
-  error *at the classification site*, and that deduction pointed at Branch A. It
-  was right about the shape and wrong about the origin: the thrown thing at the
-  boundary was a plain application error carrying `code=GOVERNANCE_QUERY_FAILED`,
-  and *behind it* was a genuine `DatabaseError`, SQLSTATE `42501`,
-  `routine=aclcheck_error`. The intermediate wrapper erased the SQLSTATE before
-  the classifier saw it. One instrumented reproduction settled in minutes what
-  three runs of deduction could not.
+- **A1 built as approved, with the anti-graduation rule enforced by
+  construction rather than by policy.** The blocked table holds no hash, version
+  or binding column at all, so there is nothing to backfill; the append-only
+  trigger forbids `UPDATE` outright, and a `superseded_by` column was
+  deliberately *not* added because it would be the one mutable field and the one
+  path by which a block could become a packet. A future genuine parse produces a
+  new artifact and a new packet, related by sharing the observation id.
 
-- **Root cause: a whole function family reachable only by its owning role.**
-  Migration `202609010011` created the three legal review entry points as
-  SECURITY DEFINER functions owned by `tivdoc_governance_owner`, revoked them
-  from `public`, `anon`, `authenticated` and `service_role`, and granted execute
-  to the owning role only. It never granted them to the runtime principals that
-  call them. Every other governance family in migration `005` carries those
-  grants; this one was omitted. Verified on DEV before the fix:
-  `ops=false worker=false` on all three, against a control of `ops=true` on
-  `governance_work_enqueue`.
+- **Append-only is proven by showing no actor can mutate, not by a probe that
+  matches nothing.** Rows are visible only inside a `SECURITY DEFINER` function
+  called by a runtime role, because `runtime_verified_tenant()` requires
+  `session_user` to be one of the three runtime roles and the policy targets the
+  owning role. An `UPDATE`/`DELETE` probe from any reachable connection matches
+  zero rows and "succeeds" without the row trigger ever firing — it would prove
+  the opposite of what it claims. The receipt instead records that the trigger is
+  attached to `governance_forbid_mutation`, and that `anon`, `authenticated`,
+  `service_role` and all four runtime roles hold no `select`, `insert`, `update`
+  or `delete` on the table.
 
-- **The repair is the missing half of least privilege, not a widening.**
-  `202609020001` grants execute on exactly the signatures each principal
-  invokes — queue_list and action_append to operations, packet_enqueue to
-  operations and worker. Ownership stays with the governance owner, the
-  functions stay SECURITY DEFINER, and the revocations from `public` and the
-  reserved Supabase roles are re-asserted. Verified after: `anon`,
-  `authenticated` and `service_role` remain false on all three.
+- **A2 satisfied: `accounted = projected + blocked` is read from the database.**
+  `private.governance_legal_review_projection_accounting(tenant)` returns the
+  three counts as a relation. The run receipt records `{"projected":"0",
+  "blocked":"71","accounted":"71"}` from that function, not from the projector's
+  own arithmetic, and a second pass from a fresh process returned the identical
+  triple.
 
-- **§3.1 error fidelity is now structural.** The classifier records stage,
-  constructor name, a token-shaped `code`, `errno`, `severity`, `routine` and
-  SQLSTATE — never a message, a parameter, an identifier or a connection string
-  fragment. `stage` distinguishes `acquire` / `begin` / `operation` / `commit` /
-  `rollback` / `release`, which converts "fails before any statement" from an
-  inference into a fact. The external contract is byte-identical and tested.
+- **A3, and one correction to the wave's framing.** Of the 71: 69
+  `BYTES_PRESENT_NOT_PARSED`, 2 `BYTES_REJECTED_DUPLICATE`, 0
+  `RETRIEVAL_FAILED_NO_BYTES`. The 403/404 family is *not* part of the 71 — it
+  lives in `remaining_gaps` (15 HTTP 403, 1 HTTP 404) and is a separate
+  population that never entered `acquired_files`. So the answer to "are any of
+  these recoverable parsing work" is: 69 are byte-complete and unparsed, which
+  is parsing work, not acquisition work. Not acted on this wave.
 
-- **§3.2 connection targets are asserted at startup.** All eight database URL
-  keys are classified by host class alone. The four product keys must resolve to
-  one target; a single key falling back to loopback while the rest point at a
-  declared target now fails at startup with
-  `DURABLE_LOCAL_PRODUCT_CONNECTION_TARGET_SPLIT` rather than surfacing as a 422.
-  The hypothesis it forecloses did not fire this run, and the assertion stays.
+- **A4 found four more instances of the same defect class, not just one
+  wrapper.** The sweep confirmed `cause` is never set anywhere in `src/server`.
+  The fix carries the origin SQLSTATE through `GovernanceRepositoryError` and
+  teaches the classifier that `42501` is a refusal (`OPS_FORBIDDEN`), not an
+  unclassified rejection. Separately, the command inventory found four
+  governance import functions granted to the worker but executed as operations —
+  four more 42501s waiting for their first caller, repaired in
+  `202609020003`.
 
-- **W4 is honestly 0 projected, not silently deferred.** The canonical 71 are
-  the staged, unregistered acquisitions from the V0.4.1 crosswalk — 72 acquired
-  URL results, 71 unique byte objects, 1 registered overlap. Every one of the 71
-  is accounted for with a stable observation id and a distinct idempotency key,
-  and every one is blocked on the same four fields: no normalized-text hash, no
-  manifest hash, no parser version, no normalizer version. `packet_enqueue`
-  requires all four. Supplying them would mean fabricating binding evidence, so
-  none were projected. What is still owed is a durable, immutable home for the
-  71 blocked records; they exist today only as a run receipt.
-
-- **§3.3 honoured again.** No detail endpoint was built. The journey's detail
-  step reads the selected packet's fields out of the queue payload, which is
-  what the product panel does; there is no caller for a separate endpoint.
-
-- **One freeze cycle moved three chain-length assertions with the chain.**
-  Appending a forward repair migration is how this chain has always grown —
-  `008`, `009` and `010` did the same — so the pinned count and the pinned last
-  filename move with it. The digest map is unchanged for all 23 existing files
-  and the new one is pinned like the rest; no expectation about content moved.
+- **B-38 cannot be shown green in journey scope, and that is a finding, not a
+  gap in this wave's work.** The `/operations` journey exercises none of the
+  invalidation machinery: `create_dependency_invalidation` and
+  `withCurrentAuthorization` have zero callers repo-wide. Wiring is Wave 2 Lane A
+  scope. The agent also found that `approval_invalidated` and three sibling
+  booleans are hardcoded `true` while the computed count is discarded
+  (`postgres-port.ts:488,:570-573,:602`) — a truthfulness defect that belongs in
+  the same pass.
 
 ## Blockers
 
 | id | blocker | class | evidence |
 |---|---|---|---|
-| BL-1 | the 71 blocked projection records have no durable immutable store; the packets table cannot hold them because `packet_enqueue` requires binding fields the observations do not have | product_gap | `output/v0.10.13/projection/projection.json` |
-| BL-2 | the 71 observations lack normalized text, manifest hash, parser and normalizer versions; producing them means parsing the corpus, which is a separate acquisition-side workstream | blocked_external | blocked reason histogram, 71 on each of four fields |
-| BL-3 | Windows Application Control blocks `initdb.exe` | blocked_external | not on any critical path |
-| BL-4 | `V041_MISMATCH_004` bytes are gone; recorded, not re-baselined | evidence_integrity | `evidence-loss.v0.10.11.json` |
-| BL-5 | hours/overtime official artifact unavailable | blocked_external | carried forward |
+| BL-1 | 69 of the 71 are byte-complete but unparsed; producing normalized text, manifest, parser and normalizer versions is a parsing workstream | blocked_external | `output/wave1/audit/reason-breakdown.json` |
+| BL-2 | B-38 has no journey-reachable path; the invalidation service has zero callers | product_gap | `output/wave1/agents/b38/findings.md` |
+| BL-3 | `approval_invalidated` and three sibling effect booleans are hardcoded true | product_defect | `dependency-invalidation/postgres-port.ts:570-573` |
+| BL-4 | Windows Application Control blocks `initdb.exe` | blocked_external | not on any critical path |
+| BL-5 | `V041_MISMATCH_004` bytes are gone; recorded, not re-baselined | evidence_integrity | `evidence-loss.v0.10.11.json` |
 | BL-6 | min-wage and Knesset convalescence byte changes await human legal review | blocked_human | blocks no engineering item |
 | BL-7 | `synthetic-property-suite` scanner finding needs a placement decision | blocked_human | `OWNER_POLICY_REQUIRED` |
 
@@ -116,25 +110,19 @@ REMOTE_PRODUCTION_MIGRATIONS: 0
 LIVE_PROVIDER_CALLS: 0
 OPENAI_CALLS: 0
 
-B-28 recomputed at this head: strict 40, MC-29 19, denominator 84, difference 21
-— unchanged, and per the standing ruling neither number is ever adjusted.
+B-28 unchanged: strict 40, MC-29 19, denominator 84. 8 of the 40 lie on the
+journey, all `CAPABILITY_GATED_CANONICAL_SOURCE`.
 
-Chain: 24/24 applied — 22 verbatim byte-pinned, 2 platform-compensated
+Chain: 26/26 applied — 24 verbatim byte-pinned, 2 platform-compensated
 (`alter role … nosuperuser`; `supautils` reserved-role refusal), dropped lines
-recorded, end state asserted. The chain grew by one forward repair migration,
-appended and digest-pinned.
+recorded, end state asserted.
 
 ## Resume point
 
-- next todo: BL-1. Decide where the 71 blocked projection records live durably.
-  The packets table is the wrong home — its enqueue validates a binding these
-  observations cannot supply. A sibling append-only table keyed by observation
-  id, holding the reason codes and the idempotency key, is the shape the ledger
-  item implies; it is a new table, so it needs a forward migration, runtime
-  grants alongside it, and the same replay-adds-nothing proof.
-- the DEV runtime database is `tivdoc_v09_devruntime01` with the full chain plus
-  the grant repair, and four least-privilege login roles; credentials are in
-  `~/.tivdoc-dev/credentials.env`.
+- next wave: 2 — journey-scope closure of `B-28` and `B-38`
+- next todo: wire `create_dependency_invalidation` to a journey caller, then
+  prove atomic invalidation along the paths the journey exercises; fix the
+  hardcoded effect booleans in the same pass. Lane B's Wave 1 findings name every
+  anchor.
 - known blocks that must not be retried: corpus acquisition, creating a second
   Supabase project, resetting the DEV default database.
-- do not reopen §3 or `B-55`.

@@ -193,7 +193,7 @@ async function queryExactlyOne(
     return result.rows[0];
   } catch (error) {
     if (error instanceof GovernanceRepositoryError) throw error;
-    throw new GovernanceRepositoryError("GOVERNANCE_QUERY_FAILED", operation);
+    throw new GovernanceRepositoryError("GOVERNANCE_QUERY_FAILED", operation, error);
   }
 }
 
@@ -621,7 +621,7 @@ export class PostgresGovernanceWorkRepository extends GovernanceRepositoryBase {
       return claim;
     } catch (error) {
       if (error instanceof GovernanceRepositoryError) throw error;
-      throw new GovernanceRepositoryError("GOVERNANCE_QUERY_FAILED", operation);
+      throw new GovernanceRepositoryError("GOVERNANCE_QUERY_FAILED", operation, error);
     }
   }
 

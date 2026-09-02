@@ -42,8 +42,8 @@ function migrationText(name: string): string {
 const chainText = EXPECTED_MIGRATION_CHAIN.map((name) => migrationText(name)).join("\n");
 
 describe("V0.10.13 legal review runtime execute grants", () => {
-  it("keeps the repair in the pinned chain, last and digest-pinned", () => {
-    expect(EXPECTED_MIGRATION_CHAIN.at(-1)).toBe(REPAIR);
+  it("keeps the repair in the pinned chain, immediately after 011 and digest-pinned", () => {
+    expect(EXPECTED_MIGRATION_CHAIN).toContain(REPAIR);
     expect(EXPECTED_MIGRATION_CHAIN.indexOf(REPAIR as never))
       .toBe(EXPECTED_MIGRATION_CHAIN.indexOf("202609010011_durable_legal_review.sql") + 1);
     expect(EXPECTED_MIGRATION_SHA256[REPAIR as never]).toMatch(/^[a-f0-9]{64}$/u);

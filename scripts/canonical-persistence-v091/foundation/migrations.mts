@@ -42,6 +42,8 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609010010_runtime_canonical_helper_acl_repair.sql",
   "202609010011_durable_legal_review.sql",
   "202609020001_legal_review_runtime_execute_grants.sql",
+  "202609020002_legal_review_observation_blocks.sql",
+  "202609020003_governance_import_operations_grants.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -70,6 +72,10 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
   "202609010011_durable_legal_review.sql": "4cf07944e87cd2ae8da631167610d39abdfc6b252db2d595434e9485ff7df882",
   "202609020001_legal_review_runtime_execute_grants.sql":
     "642c9b72fcd6471eb821158f756550e832d9dfd653ecfad986f6af5a8ddb0450",
+  "202609020002_legal_review_observation_blocks.sql":
+    "339b574e18d50d8a93f62c282c9becc2e64388cc0b29e6098a382e26b7a85c11",
+  "202609020003_governance_import_operations_grants.sql":
+    "f27e3fce0e5b98374428ddb6125df6812901e37540eef59ee38fa82d4ccc35af",
 });
 
 export type MigrationFile = Readonly<{

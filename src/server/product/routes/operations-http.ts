@@ -216,6 +216,12 @@ function problemCode(error: unknown): OpsProblemCode {
       legal_readiness_blocked: "OPS_LEGAL_READINESS_BLOCKED",
     });
     if (typeof code === "string" && mapped[code]) return mapped[code];
+    // A wrapper that substituted its own code may still carry the origin's
+    // SQLSTATE. A missing GRANT is a refusal, not an unclassified rejection.
+    const origin = (error as { origin_sqlstate?: unknown; sqlstate?: unknown });
+    for (const candidate of [origin.origin_sqlstate, origin.sqlstate]) {
+      if (candidate === "42501") return "OPS_FORBIDDEN";
+    }
   }
   // `OPS_COMMAND_REJECTED` is the catch-all, and an unrecognised failure that
   // says nothing about itself is the same defect as a bare 404. The class of
@@ -245,7 +251,7 @@ function recordOpsRejection(error: unknown): void {
   // A canonical persistence failure carries its SQLSTATE and domain code; both
   // are classifications, not content, and both are what makes the failure
   // actionable without opening the database.
-  const detail = ["sqlstate", "domain_code"]
+  const detail = ["sqlstate", "origin_sqlstate", "domain_code"]
     .map((field) => (error as Record<string, unknown> | null)?.[field])
     .filter((value): value is string => typeof value === "string" && /^[A-Za-z0-9_]{1,32}$/u.test(value));
   const kind = detail.length > 0 ? `${base}:${detail.join(":")}` : base;
