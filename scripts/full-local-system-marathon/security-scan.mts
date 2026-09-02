@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { trustedGitBuffer, trustedGitText } from "../canonical-persistence-v091/foundation/trusted-git.mts";
+import { addedSourceByPath, findStaticImports } from "./static-imports.mts";
 
 const ROOT = path.resolve(process.cwd());
 const BASE = "28d18da69108913252736f4b8a39c4ef614984a3";
@@ -70,12 +71,13 @@ const patterns = [
     pattern: /\bconsole\.(?:debug|error|info|log|warn)\s*\(/u,
     applies: (file: string) => /^src\//u.test(file) && !/\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(file),
   },
-  {
-    kind: "production_fixture_import",
-    pattern: /^\+\s*import\b[^\r\n]*(?:fixture|test-data|customer-eval)/iu,
-    applies: (file: string) => /^src\//u.test(file) && !/\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(file),
-  },
 ] as const;
+
+// Fixture imports are recognized lexically rather than line by line, so a
+// static import split across lines is seen exactly like a single-line one.
+const PRODUCTION_FIXTURE_SPECIFIER = /(?:fixture|test-data|customer-eval)/iu;
+const productionSource = (file: string) => /^src\//u.test(file)
+  && !/\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(file);
 
 let currentPath = "";
 const authorizedHermeticImports = new Set<string>();
@@ -87,12 +89,20 @@ for (const line of diff.split(/\r?\n/u)) {
   if (!currentPath || !line.startsWith("+") || line.startsWith("+++")) continue;
   for (const rule of patterns) {
     if (!rule.applies(currentPath) || !rule.pattern.test(line)) continue;
-    if (rule.kind === "production_fixture_import"
-        && authorizedHermeticSyntheticImport(currentPath, line, hermeticCoordinatorProof)) {
-      authorizedHermeticImports.add(line.slice(1).trim());
+    findings.push({ kind: rule.kind, path: currentPath });
+  }
+}
+
+for (const [file, source] of addedSourceByPath(diff)) {
+  if (!productionSource(file)) continue;
+  for (const found of findStaticImports(source)) {
+    if (!PRODUCTION_FIXTURE_SPECIFIER.test(found.specifier)
+        && !PRODUCTION_FIXTURE_SPECIFIER.test(found.statement)) continue;
+    if (authorizedHermeticSyntheticImport(file, found.specifier, hermeticCoordinatorProof)) {
+      authorizedHermeticImports.add(found.specifier);
       continue;
     }
-    findings.push({ kind: rule.kind, path: currentPath });
+    findings.push({ kind: "production_fixture_import", path: file });
   }
 }
 
@@ -122,10 +132,16 @@ await writeFile(path.join(OUTPUT, "prohibited-operation-audit.json"), `${JSON.st
 process.stdout.write(`${JSON.stringify(receipt)}\n`);
 if (receipt.status !== "PASS") process.exitCode = 1;
 
-function authorizedHermeticSyntheticImport(file: string, addedLine: string, proof: boolean): boolean {
+/**
+ * The hermetic coordinator is the one production module allowed to import the
+ * synthetic fixture ports, and only while its own fail-closed proof holds. The
+ * allowlist is by exact module specifier so it cannot be widened by reformatting
+ * the import, and it remains scoped to that single file.
+ */
+function authorizedHermeticSyntheticImport(file: string, specifier: string, proof: boolean): boolean {
   if (!proof || file !== HERMETIC_SYNTHETIC_COORDINATOR) return false;
   return [
-    'import { buildSyntheticCaseFixture } from "../../../engine/case-analysis/synthetic-fixtures.ts";',
-    '} from "../../../engine/case-analysis/fixture-ports.ts";',
-  ].includes(addedLine.slice(1).trim());
+    "../../../engine/case-analysis/synthetic-fixtures.ts",
+    "../../../engine/case-analysis/fixture-ports.ts",
+  ].includes(specifier);
 }
