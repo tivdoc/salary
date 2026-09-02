@@ -52,3 +52,6 @@ next-env.d.ts
 Thumbs.db
 *.pem
 *.log
+
+# V0.10.9 run receipts and evidence
+/output/v0.10.9/
