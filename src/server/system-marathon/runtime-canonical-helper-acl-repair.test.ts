@@ -15,7 +15,9 @@ describe("V0.10.2 runtime canonical helper ACL repair", () => {
   it("pins the forward-only migration and grants only the two exact helpers", async () => {
     const bytes = await readFile(resolve("supabase/migrations", NAME));
     const sql = bytes.toString("utf8");
-    expect(EXPECTED_MIGRATION_CHAIN.at(-1)).toBe(NAME);
+    const index = EXPECTED_MIGRATION_CHAIN.indexOf(NAME);
+    expect(index).toBeGreaterThan(0);
+    expect(EXPECTED_MIGRATION_CHAIN[index - 1]).toBe("202609010009_governance_owner_schema_usage_repair.sql");
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(EXPECTED_MIGRATION_SHA256[NAME]);
     for (const signature of [
       "private.resolve_engine_case_id(text,text)",
