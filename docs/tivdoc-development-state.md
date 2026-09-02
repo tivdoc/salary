@@ -47,6 +47,15 @@
   procedure: no password reaches the transcript, a log, a receipt or a commit,
   and none reaches the DEV project's server log either.
 
+- **The credential file lives outside the repository, not in an ignored dotfile.**
+  §3.1 says "the ignored local env file", but the repository's own
+  `inspectRepositorySourceSafety` asserts the working tree contains **no** local
+  environment file at all, and the first frozen-head matrix caught
+  `.env.dev.local` on exactly that rule. The guard is worth more than the
+  convenience, so the file moved to `~/.tivdoc-dev/credentials.env`
+  (overridable with `TIVDOC_DEV_ENV_FILE`) and the scan is green again. No
+  scanner assertion was weakened.
+
 - **The DEV project was never reset.** A clean apply was obtained additively:
   `tivdoc_dev_migrator` created and owns `tivdoc_replay_clean_v01010`. Nothing
   was dropped, and the V0.10.8 objects in the default database are untouched.

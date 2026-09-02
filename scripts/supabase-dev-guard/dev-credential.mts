@@ -18,8 +18,9 @@
 // that is not the isolated Tivdoc DEV project.
 
 import { createHash, createHmac, pbkdf2Sync, randomBytes } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
 
 import { evaluateSupabaseDevGuard, TIVDOC_DEV_PROJECT_REF } from "./guard.mts";
 
@@ -36,7 +37,6 @@ export const DEV_LOGIN_ROLES = Object.freeze([
 
 export type DevLoginRole = (typeof DEV_LOGIN_ROLES)[number];
 
-const ENV_FILE = ".env.dev.local";
 const SCRAM_ITERATIONS = 4096;
 
 /**
@@ -84,15 +84,23 @@ export function generateDevPassword(): string {
   return randomBytes(24).toString("base64url");
 }
 
-function envPath(): string {
-  return resolve(process.cwd(), ENV_FILE);
+/**
+ * The credential file lives **outside** the repository. `inspectRepositorySourceSafety`
+ * asserts the working tree contains no local environment file at all, and that
+ * guard is worth more than the convenience of a dotfile next to the code, so an
+ * ignored path in the checkout is not good enough.
+ */
+export function envPath(): string {
+  const override = process.env.TIVDOC_DEV_ENV_FILE;
+  if (override && override.trim() !== "") return path.resolve(override);
+  return path.join(homedir(), ".tivdoc-dev", "credentials.env");
 }
 
 /** Reads the ignored env file into a map. Never logs a value. */
-export function readDevEnvFile(path: string = envPath()): Map<string, string> {
+export function readDevEnvFile(file: string = envPath()): Map<string, string> {
   const entries = new Map<string, string>();
-  if (!existsSync(path)) return entries;
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/u)) {
+  if (!existsSync(file)) return entries;
+  for (const line of readFileSync(file, "utf8").split(/\r?\n/u)) {
     if (line === "" || line.startsWith("#")) continue;
     const index = line.indexOf("=");
     if (index <= 0) continue;
@@ -101,12 +109,13 @@ export function readDevEnvFile(path: string = envPath()): Map<string, string> {
   return entries;
 }
 
-export function writeDevEnvFile(entries: Map<string, string>, path: string = envPath()): void {
+export function writeDevEnvFile(entries: Map<string, string>, file: string = envPath()): void {
   const body = [...entries.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([key, value]) => `${key}=${value}`)
     .join("\n");
-  writeFileSync(path, `# ${DEV_CREDENTIAL_SCHEMA} - ignored, never committed\n${body}\n`, "utf8");
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, `# ${DEV_CREDENTIAL_SCHEMA} - outside the repository, never committed\n${body}\n`, "utf8");
 }
 
 function requireDevGuard(): string {
