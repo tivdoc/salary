@@ -93,7 +93,11 @@ async function seedFixture(
            tenant_id, sid, subject, current_jti, rotation_counter, valid_after,
            expires_at, revoked_at, reviewer_org_id, session_sha256, created_at
          ) values ($1, $2, $3, $4, 1, to_timestamp($5), to_timestamp($6), null, $7, $8, to_timestamp($5))
-         on conflict do nothing`,
+         on conflict (tenant_id, sid) do update set
+           current_jti = excluded.current_jti,
+           valid_after = excluded.valid_after,
+           expires_at = excluded.expires_at,
+           session_sha256 = excluded.session_sha256`,
         [fixture.tenant_id, identity.session_id, identity.actor_id, identity.token_id,
           issuedAt - 5, expiresAt, identity.reviewer_organization_id,
           sha256(JSON.stringify({
@@ -166,7 +170,10 @@ async function main(): Promise<void> {
     const up = await waitForServer(port, 180_000);
     if (!up) throw new Error("JOURNEY_SERVER_DID_NOT_START");
 
-    const authed = { headers: { cookie: cookieHeader(reviewer, csrf) } };
+    // A browser at the allowed origin sends this on every same-origin request;
+    // CSRF validation requires it verbatim and is not relaxed here.
+    const origin = environment.TIVDOC_LOCAL_PRODUCT_ALLOWED_ORIGIN as string;
+    const authed = { headers: { cookie: cookieHeader(reviewer, csrf), origin } };
     const page = await probe(port, "/operations", authed);
     record("operations_page", page, "200", page.status === 200);
 
@@ -195,7 +202,7 @@ async function main(): Promise<void> {
     });
     const post = (body: string, headers: Record<string, string>) => probe(
       port, "/api/operations/legal-review/actions",
-      { method: "POST", body, headers: { "content-type": "application/json", ...headers } },
+      { method: "POST", body, headers: { "content-type": "application/json", origin, ...headers } },
     );
     // The action reaches the durable service through the operations session
     // transaction. An empty queue answers with a conflict or a not-found, which
@@ -204,20 +211,20 @@ async function main(): Promise<void> {
     record("legal_review_action", action, "reaches the durable service", action.status !== 500 && action.status !== 404);
 
     const negatives: readonly Readonly<{ name: string; run: () => Promise<{ status: number; body: string }> }>[] = [
-      { name: "wrong_role", run: () => probe(port, "/api/operations/legal-review/queue", { headers: { cookie: cookieHeader(owner, csrf) } }) },
+      { name: "wrong_role", run: () => probe(port, "/api/operations/legal-review/queue", { headers: { cookie: cookieHeader(owner, csrf), origin } }) },
       { name: "missing_csrf", run: () => post(actionBody, { cookie: cookieHeader(reviewer, csrf) }) },
-      { name: "expired_session", run: () => probe(port, "/api/operations/legal-review/queue", { headers: { cookie: cookieHeader(expired, csrf) } }) },
+      { name: "expired_session", run: () => probe(port, "/api/operations/legal-review/queue", { headers: { cookie: cookieHeader(expired, csrf), origin } }) },
       { name: "no_session", run: () => probe(port, "/api/operations/legal-review/queue") },
       { name: "malformed_input", run: () => post("{not json", { cookie: cookieHeader(reviewer, csrf), "x-tivdoc-csrf": csrf }) },
       { name: "wrong_schema_version", run: () => post(actionBody.replace("tivdoc-operations-command", "wrong"), { cookie: cookieHeader(reviewer, csrf), "x-tivdoc-csrf": csrf }) },
-      { name: "out_of_range_limit", run: () => probe(port, "/api/operations/legal-review/queue?limit=501", { headers: { cookie: cookieHeader(reviewer, csrf) } }) },
-      { name: "public_route_non_exposure", run: () => probe(port, "/api/operations/legal-review/queue", { headers: { cookie: `${DURABLE_BROWSER_CSRF_COOKIE}=${csrf}` } }) },
+      { name: "out_of_range_limit", run: () => probe(port, "/api/operations/legal-review/queue?limit=501", { headers: { cookie: cookieHeader(reviewer, csrf), origin } }) },
+      { name: "public_route_non_exposure", run: () => probe(port, "/api/operations/legal-review/queue", { headers: { cookie: `${DURABLE_BROWSER_CSRF_COOKIE}=${csrf}`, origin } }) },
       // The page route answers 200 for the valid reviewer session, so these
       // three discriminate a real refusal from an unavailable route.
-      { name: "page_wrong_role", run: () => probe(port, "/operations", { headers: { cookie: cookieHeader(owner, csrf) } }) },
-      { name: "page_expired_session", run: () => probe(port, "/operations", { headers: { cookie: cookieHeader(expired, csrf) } }) },
+      { name: "page_wrong_role", run: () => probe(port, "/operations", { headers: { cookie: cookieHeader(owner, csrf), origin } }) },
+      { name: "page_expired_session", run: () => probe(port, "/operations", { headers: { cookie: cookieHeader(expired, csrf), origin } }) },
       { name: "page_no_session", run: () => probe(port, "/operations") },
-      { name: "page_portal_cross_audience", run: () => probe(port, "/portal", { headers: { cookie: cookieHeader(reviewer, csrf) } }) },
+      { name: "page_portal_cross_audience", run: () => probe(port, "/portal", { headers: { cookie: cookieHeader(reviewer, csrf), origin } }) },
     ];
     for (const negative of negatives) {
       const result = await negative.run();

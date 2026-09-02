@@ -270,8 +270,11 @@ function validateRoleScopedConnections(
 
 function strictLocalOrigin(raw: string): URL {
   const url = new URL(raw);
+  // The exact loopback set, not one spelling of it. Identity still requires the
+  // request origin to equal this value exactly; what this allows is configuring
+  // the label the server itself uses, which is the only way the two can agree.
   const localTransport = (url.protocol === "http:" || url.protocol === "https:")
-    && url.hostname === "127.0.0.1";
+    && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname);
   if (!localTransport || url.username || url.password
       || url.pathname !== "/" || url.search || url.hash || !url.port) {
     throw new Error("DURABLE_LOCAL_PRODUCT_ORIGIN_INVALID");

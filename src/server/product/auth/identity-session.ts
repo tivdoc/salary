@@ -130,43 +130,113 @@ export function durableProductIdentityFromActor(
  * signed host cookie; identity headers, query values, duplicates and loose actor
  * cookies fail closed before the cryptographic verifier is invoked.
  */
+/**
+ * Why an identity was refused. Codes only, never a header, cookie, origin or
+ * any part of a request. The caller still receives an identical bare refusal;
+ * this exists so an operator can tell three unrelated causes apart from the
+ * inside, which is what a bare 404 costs when it hides its own reason.
+ */
+export const PRODUCT_IDENTITY_REFUSALS = Object.freeze([
+  "SPOOF_HEADER_PRESENT",
+  "REQUEST_URL_INVALID",
+  "TRANSPORT_ORIGIN_INVALID",
+  "URL_CREDENTIALS_PRESENT",
+  "HTTPS_ORIGIN_MISMATCH",
+  "LOOPBACK_HTTP_NOT_ALLOWED",
+  "LOOPBACK_ORIGIN_MISMATCH",
+  "LOOPBACK_ORIGIN_PROTOCOL_MISMATCH",
+  "LOOPBACK_ORIGIN_PORT_MISMATCH",
+  "LOOPBACK_ORIGIN_REQUEST_NOT_LOOPBACK",
+  "LOOPBACK_ORIGIN_CONFIG_NOT_LOOPBACK",
+  "LOOPBACK_ORIGIN_LABEL_DIFFERS",
+  "LOOPBACK_HOSTNAME_INVALID",
+  "PROTOCOL_UNSUPPORTED",
+  "QUERY_KEY_FORBIDDEN",
+  "IDENTITY_COOKIE_ABSENT",
+  "VERIFIER_THREW",
+  "VERIFIER_REJECTED",
+] as const);
+
+export type ProductIdentityRefusal = (typeof PRODUCT_IDENTITY_REFUSALS)[number];
+
+const identityRefusalLog: { reason: ProductIdentityRefusal; at: string }[] = [];
+
+export function readProductIdentityRefusalLog(): readonly Readonly<{
+  reason: ProductIdentityRefusal; at: string;
+}>[] {
+  return Object.freeze(identityRefusalLog.map((entry) => Object.freeze({ ...entry })));
+}
+
+export function clearProductIdentityRefusalLog(): void {
+  identityRefusalLog.length = 0;
+}
+
+function refuseIdentity(reason: ProductIdentityRefusal): null {
+  identityRefusalLog.push({ reason, at: new Date().toISOString() });
+  if (identityRefusalLog.length > 64) identityRefusalLog.shift();
+  if (process.env.NODE_ENV !== "test") process.stderr.write(`product_identity_refused ${reason}
+`);
+  return null;
+}
+
 export async function authenticateProductIdentity(
   request: Request,
   audience: ProductAudience,
   verifier: IdentityVerificationPort,
   transport: ProductIdentityTransportPolicy = Object.freeze({}),
 ): Promise<VerifiedProductIdentity | null> {
-  if (IDENTITY_SPOOF_HEADERS.some((header) => request.headers.has(header))) return null;
+  if (IDENTITY_SPOOF_HEADERS.some((header) => request.headers.has(header))) return refuseIdentity("SPOOF_HEADER_PRESENT");
   let url: URL;
   try {
     url = new URL(request.url);
   } catch {
-    return null;
+    return refuseIdentity("REQUEST_URL_INVALID");
   }
   const allowedOrigin = transport.allowed_origin === undefined
     ? null
     : canonicalProductIdentityOrigin(transport.allowed_origin, transport);
-  if (transport.allowed_origin !== undefined && !allowedOrigin) return null;
-  if (url.username !== "" || url.password !== "") return null;
+  if (transport.allowed_origin !== undefined && !allowedOrigin) return refuseIdentity("TRANSPORT_ORIGIN_INVALID");
+  if (url.username !== "" || url.password !== "") return refuseIdentity("URL_CREDENTIALS_PRESENT");
   if (url.protocol === "https:") {
-    if (allowedOrigin !== null && url.origin !== allowedOrigin) return null;
+    if (allowedOrigin !== null && url.origin !== allowedOrigin) return refuseIdentity("HTTPS_ORIGIN_MISMATCH");
   } else if (url.protocol === "http:") {
-    if (!transport.allow_local_loopback_http || !allowedOrigin || url.origin !== allowedOrigin) return null;
-    if (!isExactLoopbackHostname(url.hostname) || vercelEnvironmentPresent(transport.environment)) return null;
+    if (!transport.allow_local_loopback_http || !allowedOrigin) return refuseIdentity("LOOPBACK_HTTP_NOT_ALLOWED");
+    if (url.origin !== allowedOrigin) {
+      // Origin equality stays exact — two spellings of loopback are still two
+      // different origins here, and that assertion is deliberate. The codes
+      // only say which field diverged, and for a hostname divergence, which
+      // side was loopback: that is the difference between a misconfiguration
+      // and an attempt, and it is not derivable from outside.
+      const expected = new URL(allowedOrigin);
+      if (url.protocol !== expected.protocol) return refuseIdentity("LOOPBACK_ORIGIN_PROTOCOL_MISMATCH");
+      if (url.port !== expected.port) return refuseIdentity("LOOPBACK_ORIGIN_PORT_MISMATCH");
+      if (url.hostname !== expected.hostname) {
+        if (!isExactLoopbackHostname(url.hostname)) return refuseIdentity("LOOPBACK_ORIGIN_REQUEST_NOT_LOOPBACK");
+        if (!isExactLoopbackHostname(expected.hostname)) return refuseIdentity("LOOPBACK_ORIGIN_CONFIG_NOT_LOOPBACK");
+        return refuseIdentity("LOOPBACK_ORIGIN_LABEL_DIFFERS");
+      }
+      return refuseIdentity("LOOPBACK_ORIGIN_MISMATCH");
+    }
+    if (!isExactLoopbackHostname(url.hostname) || vercelEnvironmentPresent(transport.environment)) {
+      return refuseIdentity("LOOPBACK_HOSTNAME_INVALID");
+    }
   } else {
-    return null;
+    return refuseIdentity("PROTOCOL_UNSUPPORTED");
   }
-  if (IDENTITY_QUERY_KEYS.some((key) => url.searchParams.has(key))) return null;
+  if (IDENTITY_QUERY_KEYS.some((key) => url.searchParams.has(key))) return refuseIdentity("QUERY_KEY_FORBIDDEN");
   const compactJwt = singleCookie(request.headers.get("cookie"), PRODUCT_IDENTITY_COOKIE);
-  if (!compactJwt) return null;
+  if (!compactJwt) return refuseIdentity("IDENTITY_COOKIE_ABSENT");
 
   let verified: VerifiedIdentity | null;
   try {
     verified = await verifier.verify({ compact_jwt: compactJwt, expected_audience: audience });
   } catch {
-    return null;
+    return refuseIdentity("VERIFIER_THREW");
   }
-  if (!verified || verified.audience !== audience || verified.actor.verified_server_side !== true || !roleAllowedForAudience(verified.actor.role, audience)) return null;
+  if (!verified || verified.audience !== audience || verified.actor.verified_server_side !== true
+      || !roleAllowedForAudience(verified.actor.role, audience)) {
+    return refuseIdentity("VERIFIER_REJECTED");
+  }
   return Object.freeze({ ...verified, product_audience: audience });
 }
 

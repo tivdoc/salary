@@ -23,6 +23,9 @@ import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 export const DEV_RUNTIME_RECEIPT_SCHEMA = "tivdoc-dev-runtime-serve-v0.10.11" as const;
 
 const ROUTES = Object.freeze(["/", "/portal", "/operations"] as const);
+// The label the server itself uses when it reconstructs a request URL. Identity
+// compares origins exactly, so the configured origin has to use the same one.
+const LOOPBACK_LABEL = process.env.TIVDOC_LOOPBACK_LABEL ?? "localhost";
 const WAVE = process.env.TIVDOC_WAVE_OUTPUT ?? "v0.10.11";
 const RECEIPT_ROOT = path.join("output", WAVE, "runtime");
 
@@ -84,7 +87,7 @@ export function buildRuntimeEnvironment(input: Readonly<{
     TIVDOC_PRODUCTION_DELIVERY_ENABLED: "0",
     TIVDOC_OPENAI_LIVE_TESTS: "0",
     TIVDOC_RUNTIME_BUILD_IDENTITY_SHA: "0".repeat(40),
-    TIVDOC_LOCAL_PRODUCT_ALLOWED_ORIGIN: `http://127.0.0.1:${input.port}`,
+    TIVDOC_LOCAL_PRODUCT_ALLOWED_ORIGIN: `http://${LOOPBACK_LABEL}:${input.port}`,
     TIVDOC_IDENTITY_ISSUER: "https://identity.dev.invalid",
     TIVDOC_IDENTITY_KEY_ID: input.identity?.key_id ?? "dev-runtime-key-0001",
     TIVDOC_IDENTITY_ALGORITHM: "RS256",
@@ -119,7 +122,7 @@ export async function probe(
   init: RequestInit = {},
 ): Promise<Readonly<{ route: string; status: number; body: string }>> {
   try {
-    const response = await fetch(`http://127.0.0.1:${port}${route}`, {
+    const response = await fetch(`http://${LOOPBACK_LABEL}:${port}${route}`, {
       redirect: "manual", signal: AbortSignal.timeout(30_000), ...init,
     });
     const body = (await response.text()).slice(0, 400);
@@ -136,8 +139,8 @@ export function startServer(mode: "dev" | "production", environment: NodeJS.Proc
   server: ChildProcessWithoutNullStreams; log: string[];
 }> {
   const command = mode === "dev"
-    ? ["node_modules/next/dist/bin/next", "dev", "--port", String(port), "--hostname", "127.0.0.1"]
-    : ["node_modules/next/dist/bin/next", "start", "--port", String(port), "--hostname", "127.0.0.1"];
+    ? ["node_modules/next/dist/bin/next", "dev", "--port", String(port), "--hostname", LOOPBACK_LABEL]
+    : ["node_modules/next/dist/bin/next", "start", "--port", String(port), "--hostname", LOOPBACK_LABEL];
   const server = spawn(process.execPath, command, {
     env: environment, windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
   });

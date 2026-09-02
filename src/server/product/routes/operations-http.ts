@@ -9,6 +9,17 @@ import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, stric
 
 export const STABLE_OPERATIONS_COMMAND_SCHEMA = "tivdoc-operations-command" as const;
 
+/**
+ * Every nested Legal Review endpoint this handler routes. The handler matches
+ * against this list and the route matrix test asserts against it, so the two
+ * can never drift.
+ */
+export const LEGAL_REVIEW_ROUTES = Object.freeze([
+  Object.freeze({ path: "legal-review/queue", method: "GET" as const }),
+  Object.freeze({ path: "legal-review/topics", method: "GET" as const }),
+  Object.freeze({ path: "legal-review/actions", method: "POST" as const }),
+]);
+
 type OperationsRoute =
   | Readonly<{ method: "GET"; kind: InternalOpsReadKind; caseId: string | null }>
   | Readonly<{ method: "POST"; action: InternalOpsAction; caseId: string | null }>;
@@ -24,21 +35,25 @@ export function createOperationsHttpHandler(input: Readonly<{
 }>): OperationsHttpHandler {
   return Object.freeze({
     async handle(request, rawSegments) {
-      if (!input.enabled || !input.service) return productNotFound();
+      if (!input.enabled) return productNotFound("SURFACE_DISABLED");
+      if (!input.service) return productNotFound("SERVICE_ABSENT");
       const segments = safeSegments(rawSegments);
-      if (!segments) return productNotFound();
+      if (!segments) return productNotFound("SEGMENTS_UNSAFE");
       // Nested Legal Review workspace. It shares this route's session, CSRF and
       // correlation handling exactly; only the service capability differs.
       if (segments[0] === "legal-review") {
         const legalReview = legalReviewCapability(input.service);
-        if (!legalReview) return productNotFound();
+        if (!legalReview) return productNotFound("CAPABILITY_ABSENT");
         const isPost = request.method === "POST";
         const joined = segments.join("/");
-        if (!(joined === "legal-review/queue" && request.method === "GET")
-          && !(joined === "legal-review/topics" && request.method === "GET")
-          && !(joined === "legal-review/actions" && isPost)) return productNotFound();
+        // Routed from the declaration, never from a second copy of it: the
+        // route matrix test asserts against this same list, so an endpoint that
+        // stops being routed fails at commit time rather than in a journey.
+        if (!LEGAL_REVIEW_ROUTES.some((route) => route.path === joined && route.method === request.method)) {
+          return productNotFound("PATH_NOT_ROUTED");
+        }
         const session = await input.sessions.verify(request, "operations", isPost);
-        if (!session) return productNotFound();
+        if (!session) return productNotFound("SESSION_UNVERIFIED");
         const correlationId = correlationIdFor(request);
         try {
           if (joined === "legal-review/topics") {
@@ -78,7 +93,7 @@ export function createOperationsHttpHandler(input: Readonly<{
         }
       }
       const route = matchOperationsRoute(request.method, segments);
-      if (!route) return productNotFound();
+      if (!route) return productNotFound("PATH_NOT_ROUTED");
       const session = await input.sessions.verify(request, "operations", route.method === "POST");
       if (!session) return productNotFound();
       const correlationId = correlationIdFor(request);
@@ -202,7 +217,41 @@ function problemCode(error: unknown): OpsProblemCode {
     });
     if (typeof code === "string" && mapped[code]) return mapped[code];
   }
+  // `OPS_COMMAND_REJECTED` is the catch-all, and an unrecognised failure that
+  // says nothing about itself is the same defect as a bare 404. The class of
+  // the error is recorded server-side — a SQLSTATE or a constructor name, never
+  // a message, parameter or identifier.
+  recordOpsRejection(error);
   return "OPS_COMMAND_REJECTED";
+}
+
+const OPS_REJECTION_LIMIT = 64;
+const opsRejectionLog: { kind: string; at: string }[] = [];
+
+/** Recent unrecognised failure classes. Codes only. */
+export function readOpsRejectionLog(): readonly Readonly<{ kind: string; at: string }>[] {
+  return Object.freeze(opsRejectionLog.map((entry) => Object.freeze({ ...entry })));
+}
+
+export function clearOpsRejectionLog(): void {
+  opsRejectionLog.length = 0;
+}
+
+function recordOpsRejection(error: unknown): void {
+  const raw = error && typeof error === "object" && typeof (error as { code?: unknown }).code === "string"
+    ? (error as { code: string }).code
+    : error instanceof Error ? error.constructor.name : typeof error;
+  const base = /^[A-Za-z0-9_]{1,64}$/u.test(raw) ? raw : "UNCLASSIFIED";
+  // A canonical persistence failure carries its SQLSTATE and domain code; both
+  // are classifications, not content, and both are what makes the failure
+  // actionable without opening the database.
+  const detail = ["sqlstate", "domain_code"]
+    .map((field) => (error as Record<string, unknown> | null)?.[field])
+    .filter((value): value is string => typeof value === "string" && /^[A-Za-z0-9_]{1,32}$/u.test(value));
+  const kind = detail.length > 0 ? `${base}:${detail.join(":")}` : base;
+  opsRejectionLog.push({ kind, at: new Date().toISOString() });
+  if (opsRejectionLog.length > OPS_REJECTION_LIMIT) opsRejectionLog.shift();
+  if (process.env.NODE_ENV !== "test") process.stderr.write(`ops_command_rejected ${kind}\n`);
 }
 
 const OPS_PROBLEM_CODES = new Set<OpsProblemCode>([

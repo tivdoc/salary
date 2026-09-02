@@ -183,7 +183,10 @@ export function createDurableInternalOpsLocalRuntimeClass(input: Readonly<{
   const transportMatches = origin.protocol === "https:"
     ? input.config.allow_loopback_http === false
     : origin.protocol === "http:" && input.config.allow_loopback_http === true;
-  if (!transportMatches || origin.hostname !== "127.0.0.1" || !origin.port
+  // The exact loopback set, matching the runtime configuration validator. The
+  // origin still has to be loopback; which label names it is a deployment
+  // detail the server itself decides.
+  if (!transportMatches || !["127.0.0.1", "localhost", "[::1]"].includes(origin.hostname) || !origin.port
       || origin.pathname !== "/" || origin.search || origin.hash || origin.username || origin.password) {
     throw new Error("DURABLE_INTERNAL_OPS_LOCAL_RUNTIME_CLASS_INVALID");
   }

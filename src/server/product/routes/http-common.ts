@@ -10,7 +10,47 @@ export const PRODUCT_HTTP_HEADERS = Object.freeze({
   "x-robots-tag": "noindex, nofollow, noarchive",
 });
 
-export function productNotFound(): Response {
+/**
+ * Why a bare 404 was returned.
+ *
+ * The response body stays empty and identical for every cause: a refusal must
+ * not disclose whether a path, a capability or a session was the problem. But
+ * three unrelated conditions producing one indistinguishable 404 cost a whole
+ * run to localise, so the cause is recorded internally. Codes only — never a
+ * path, an identifier, an actor or any part of a request.
+ */
+export const PRODUCT_NOT_FOUND_REASONS = Object.freeze([
+  "SURFACE_DISABLED",
+  "SERVICE_ABSENT",
+  "SESSION_BOUNDARY_ABSENT",
+  "SESSION_UNVERIFIED",
+  "PATH_NOT_ROUTED",
+  "SEGMENTS_UNSAFE",
+  "CAPABILITY_ABSENT",
+  "RESOURCE_ABSENT",
+  "UNSPECIFIED",
+] as const);
+
+export type ProductNotFoundReason = (typeof PRODUCT_NOT_FOUND_REASONS)[number];
+
+const NOT_FOUND_LOG_LIMIT = 64;
+const notFoundLog: { reason: ProductNotFoundReason; at: string }[] = [];
+
+/** The recent refusal reasons, newest last. Codes and timestamps only. */
+export function readProductNotFoundLog(): readonly Readonly<{ reason: ProductNotFoundReason; at: string }>[] {
+  return Object.freeze(notFoundLog.map((entry) => Object.freeze({ ...entry })));
+}
+
+export function clearProductNotFoundLog(): void {
+  notFoundLog.length = 0;
+}
+
+export function productNotFound(reason: ProductNotFoundReason = "UNSPECIFIED"): Response {
+  notFoundLog.push({ reason, at: new Date().toISOString() });
+  if (notFoundLog.length > NOT_FOUND_LOG_LIMIT) notFoundLog.shift();
+  // Server-side only, and only the code. There is no diagnostic endpoint: the
+  // cause must never become observable to the caller being refused.
+  if (process.env.NODE_ENV !== "test") process.stderr.write(`product_not_found ${reason}\n`);
   return new Response(null, { status: 404, headers: PRODUCT_HTTP_HEADERS });
 }
 
