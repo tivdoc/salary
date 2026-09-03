@@ -578,6 +578,167 @@ it. Single sanctioned copy from the OneDrive folder into the repository.
   hash `f5c68bb2eaeac42d` as the last freeze, unaffected, as expected, by
   entrypoint-claim work in an unrelated domain.
 
+### P-0 — `draft` state and durable open decisions (Addendum 6 §A6-2)
+
+`d8497ed`, migrations `202609020018`–`202609020020`. Before any Pool P
+parameter unit: `governance_parameter_versions_state_check` gains `draft`
+and `rejected_by_decision`, drops the never-used `candidate_inactive`;
+`decision_id`/`branch` columns are added with paired/format `CHECK`s so a
+draft parameter can name which owner decision it is a candidate branch of,
+and which named branch (e.g. `47.5pct`, `50pct`) it is. A new
+`private.legal_open_decisions` table (RLS-forced, one
+`governance_legal_open_decision_guard()` trigger) and
+`private.governance_legal_open_decision_register(...)` function let a
+decision be registered once and referenced by every candidate branch under
+it — never picked silently, per Addendum 5's "every open decision is
+carried as separate draft candidates on both branches" rule.
+`governance_parameter_attestation_append` gained a decision-resolution
+cascade: when one branch reaches `dual_attested_inactive`, every sibling
+branch under the same `decision_id` is rejected (`rejected_by_decision`)
+and the decision itself marked resolved, all through
+`governance_finish_mutation` (not a hand-rolled insert) so the rejection is
+visible to `governance_aggregate_read`/`readCurrent`, not only to a direct
+table read no runtime role has.
+
+Two genuine bugs, both caught only by writing and running
+`scripts/legal-review-projection/parameter-decision-matrix.mts` end to end
+against DEV, not by inspection:
+
+- The new trigger guard function kept Postgres's default `PUBLIC EXECUTE`
+  grant — caught by the `reserved_executable_secdef` count moving 14→15
+  after applying `018`. Fixed by `019` (explicit revoke, matching the
+  convention every other definer in this schema already follows).
+- The cascade wrote the sibling's rejected revision straight into
+  `governance_parameter_versions` but never into
+  `governance_aggregate_snapshots` — the table `readCurrent` actually
+  reads — so the version-history row existed and nothing could see it.
+  Fixed by `020`, routing the cascade through `governance_finish_mutation`.
+
+Contract and count updates that had to move together with the schema:
+`governanceMutationStateSchema` (`contracts.ts`) renamed
+`candidate_inactive`→`draft`, added `rejected_by_decision`;
+`parameterCandidateSchema` gained `decision_id`/`branch` with a
+`superRefine` pairing check; `EXPECTED_SECURITY_DEFINER_DEFINITIONS`
+128→133; the migration-chain sha list, `foundation.test.mjs`'s counts
+(40→43 migrations, 41→44 commands), and the chain-replay tail-filename pin
+all moved together. Final proof script: 13 named cases, all passing,
+reproducible across two independent runs.
+
+### Pool D — acquire the official artifacts (Addendum 5, 12 units + D-1b)
+
+Every unit below is a real network fetch through
+`scripts/legal-sources.mts fetch` (not `legal-acquisition.mts`, which is
+the separate owner-manual-import path) against the existing
+`fetchLegalSourceBytes` allowlist/media-validation boundary, writing to
+git-ignored `eval/legal-knowledge/`. Only the manifest registration
+(`legal-sources.v0.json`) and any supporting code are tracked.
+
+- **D-1** BTL minimum-wage table (`IL_MIN_WAGE_OFFICIAL_RATES`, HTML) —
+  already registered and fetched pre-session; verified still fetched this
+  session. Its Excel companion is D-1b, below.
+- **D-2** (`8d3019e`) BTL average-wage table, Sections 1 and 2
+  (`IL_AVERAGE_WAGE_OFFICIAL_RATES`, HTML,
+  `btl.gov.il/.../שכר ממוצע.aspx`). Fetched. The 47.5%-of-average-wage
+  minimum-wage derivation (P-1..P-4) cites Section 1 only, recorded in the
+  entry's own notes so a later unit can't reach for Section 2 by mistake.
+- **D-3** (`6c73202`) BTL Minimum Wage Law PDF
+  (`IL_MIN_WAGE_LAW`) — already registered and fetched pre-session;
+  annotated this session as `consolidated_through_2015` per the dossier,
+  with an explicit note that Sefer HaChukim 3072 (D-4) is not folded into
+  this consolidated text.
+- **D-4** (`1f6c709`) Knesset ספר החוקים 3072, 1.8.2023
+  (`IL_SEFER_HACHUKIM_3072_2023`, PDF,
+  `fs.knesset.gov.il/25/law/25_lsr_3020007.pdf`). The dossier records this
+  target as having returned HTTP 474 to a prior automated fetch; retried
+  once with the repository's own fetch tool per Addendum 6 §A6-3 and it
+  succeeded outright (608521 bytes, `application/pdf`) — no retry needed
+  in practice, recorded `fetched`.
+- **D-5** gov.il convalescence extension order 2016 PDF
+  (`IL_CONVALESCENCE_EXTENSION_ORDER_2016`) — already registered and
+  fetched pre-session; confirmed. The dossier's second half, "the 1998
+  agreement PDF," is a different, real document (the 13.7.1998 general
+  collective agreement on convalescence pay, agreement no. 19987038) whose
+  only located copy is on `workagreements.labor.gov.il` — a Ministry of
+  Labor subdomain genuinely official but **not** in
+  `LEGAL_SOURCE_ALLOWED_HOSTS`. Not registered: widening the allowlist to a
+  new host is an infrastructure/trust-boundary change this session does not
+  make unilaterally. Recorded `blocked_dependency: host_not_allowlisted`
+  (distinct from `blocked_external` — an official host exists, it is simply
+  not one this manifest may fetch from yet). This resolves the "1988 vs
+  1998" ambiguity flagged mid-session: `IL_CONVALESCENCE_EXTENSION_ORDER_1988`
+  (Yalkut HaPirsumim 3596, confirmed from the extracted PDF text itself) and
+  the 1998 general agreement are two different, correctly-distinguished
+  instruments — not a naming error — and the 1998 one is the piece still
+  outstanding.
+- **D-6** convalescence freeze law 2025
+  (`IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2025`) — already registered and
+  fetched pre-session via `fs.knesset.gov.il` (not nevo, which stays
+  outside the allowlist per Addendum 6 §A6-3); confirmed.
+- **D-7** (`370f4c9`) youth minimum-wage regulations
+  (`IL_MIN_WAGE_YOUTH_APPRENTICES_REGULATIONS_1987`, PDF,
+  `btl.gov.il/Laws1/02_0021_100000.pdf` — the same host and URL family as
+  D-3's `00_0021_000000.pdf`). Fetched (56769 bytes, `application/pdf`, no
+  challenge-page rejection) — **not** `blocked_external`; P-7..P-10 bind to
+  this artifact rather than staying unbound.
+- **D-8** working-hours general permit 19.3.2018 and the 42-hour extension
+  order (`IL_GENERAL_OVERTIME_PERMIT_2018`,
+  `IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018`) — already registered and
+  fetched pre-session via `www.gov.il`; confirmed both.
+- **D-9** pension extension order consolidated 2011 and the 2016 increase
+  order (`IL_GENERAL_PENSION_EXTENSION_ORDER_2011`,
+  `IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016`) — already registered
+  and fetched pre-session via `www.gov.il`; confirmed both.
+- **D-10** travel extension order 2016
+  (`IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016`) — already registered and
+  fetched pre-session via `www.gov.il`; confirmed.
+- **D-11** Annual Vacation Law and Sick Pay Law (`IL_ANNUAL_VACATION_LAW`,
+  `IL_SICK_PAY_LAW`) — already registered and fetched pre-session via
+  `www.btl.gov.il` (not nevo, which is robots-blocked); confirmed both.
+- **D-12** ילקוט הפרסומים notice of 4.3.2026 (minimum wage, issue 14324,
+  ט"ו באדר התשפ"ו) — searched `main.knesset.gov.il`/`fs.knesset.gov.il` and
+  the `www.gov.il` official Reshumot archive; no direct official-host PDF
+  URL for this specific issue could be confirmed (only non-official mirrors
+  — a payroll vendor, an industry association — surfaced, none registrable
+  under the allowlist). Not registered — a manifest entry requires a
+  `canonical_url`, and fabricating one from a memo is exactly what this
+  manifest exists to prevent. Recorded `failed_retrieval:
+  official_host_unavailable` per Addendum 6 §A6-3's own fallback: the
+  minimum-wage-update parameter this notice would have supported binds
+  instead to the next official source up the hierarchy (the Minimum Wage
+  Law text / the average-wage official table, D-2), or stays unbound.
+- **D-1b** (`9b27863`) — Addendum 6 §A6-4's BTL-only spreadsheet exception.
+  Registers `IL_MIN_WAGE_OFFICIAL_RATES_HISTORY_XLSX`
+  (`btl.gov.il/.../sharminimum.xlsx`), the historical rate-table Excel
+  linked directly from D-1's HTML page. Required real implementation, not
+  just registration: extended the media allowlist to
+  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` /
+  `application/vnd.ms-excel` scoped to the BTL host only
+  (`isBtlSpreadsheetEnvelope` in `security.ts` — every other allowlisted
+  host still refuses these content-types for any format, and a BTL "table"
+  source still refuses any other content-type), added ZIP/OLE magic-byte
+  validation at the same rigor as the PDF check, and added a deterministic
+  xlsx reader (`scripts/legal-xlsx-extract.py`, pinned `openpyxl` 3.1.5 in
+  the existing Python venv, one CSV page per worksheet) wired into both the
+  build pipeline and the reproducibility clean-room path, recording its own
+  `legal-xlsx-extractor-v0` parser version. Verified end to end: fetched
+  (25828 bytes), envelope-validated, parsed into 118 chunks of genuine
+  Hebrew historical minimum-wage rate data including the youth/apprentice
+  columns D-7's regulations govern. Six new tests in `security.test.ts`
+  cover the BTL-only gate specifically (accepts real .xlsx/.xls from BTL,
+  rejects bad magic bytes, rejects truncation, rejects the same
+  content-type from a non-BTL host or a non-`table` format on BTL itself).
+  Two pre-existing hardcoded manifest-size canaries
+  (`canonical-inventory.ts`'s `loadCanonicalRoleInventory`, and
+  `manifest-and-changes.test.ts`) moved 17→21 alongside D-2/D-4/D-7/D-1b,
+  each verified by running the test rather than only computing the new
+  count.
+
+Pool D is closed: 12/12 units accounted for (10 resolved and bound to a
+fetched official artifact, D-5's second half and D-12 correctly recorded
+as blocked with evidence, not silently dropped), plus D-1b. Nothing in
+Pool D widened `LEGAL_SOURCE_ALLOWED_HOSTS`, bypassed robots.txt, or bound
+a draft parameter to a URL in a memo instead of a fetched hash.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
@@ -586,11 +747,16 @@ it. Single sanctioned copy from the OneDrive folder into the repository.
   (`b3550b4`), H-8 (`092aef0`) — 10 commits, 10 units, all resolved (X-4/H-5
   and the storage key/H-7 resolved to a correctly-recorded
   `blocked_dependency`, not left silent). Pool H is complete: 8/8.
-- **Next unit: P-0** (Addendum 6 §A6-2) — the `draft` state and
-  `legal_open_decisions` migration, before any Pool P unit. Then
-  D-1…D-12 + D-1b, then P-1…P-37, then S-1…S-8, then R-1…R-7 + R-9…R-14
-  (R-8 deferred to Session B), then Q-1…Q-7 (Q-8 deferred to Session B),
-  per the revised order in Addendum 6 / `tivdoc-next-run.md`.
+- **Checkpoint at unit 16.** P-0 (`d8497ed`), D-2 (`8d3019e`), D-4
+  (`1f6c709`), D-7 (`370f4c9`), D-1b (`9b27863`), D-3 (`6c73202`) — 6 more
+  commits, 6 more units. Pool D is complete: 12/12 + D-1b (10 resolved and
+  bound to a fetched artifact, D-5's second half and D-12 correctly
+  recorded blocked with evidence rather than dropped or fabricated).
+- **Next unit: P-1** (Addendum 5 Pool P) — draft parameters bound to Pool
+  D artifact hashes, using the now-proven P-0 machinery
+  (`parameter-decision-matrix.mts`'s pattern). Then S-1…S-8, then R-1…R-7 +
+  R-9…R-14 (R-8 deferred to Session B), then Q-1…Q-7 (Q-8 deferred to
+  Session B), per the revised order in Addendum 6 / `tivdoc-next-run.md`.
 - carried from before this session: K-3's managed-bucket half (needs the
   Storage key — H-7 re-confirmed absent this session), K-5 (needs a
   provisioned off-host destination), the owner's visual review of the five
