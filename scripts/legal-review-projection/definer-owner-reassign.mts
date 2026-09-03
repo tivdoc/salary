@@ -25,11 +25,33 @@ const RECEIPT_ROOT = path.join("output", WAVE, "audit");
 const TARGET_OWNER = "tivdoc_governance_owner";
 
 /**
- * Each entry: the trigger function, and a mutation it must refuse. The probe
- * runs inside a savepoint that is always released back, so nothing is written
- * even when the refusal does not fire.
+ * The shared fixture prefix for the history guards: a synthetic case identity,
+ * and a queued analysis run on it. Deterministic UUIDs, a fixture tenant, and
+ * nothing that references the customer `cases` table.
  */
-const PROBES = Object.freeze([
+const SEED_IDENTITY: readonly string[] = Object.freeze([
+  `insert into public.engine_case_identity (internal_case_id, tenant_id, canonical_case_id)
+   values ('00000000-0000-4000-8000-00000000000a','tenant:fixture:hg','case:fixture:hg:a')`,
+]);
+const SEED_RUN: readonly string[] = Object.freeze([...SEED_IDENTITY,
+  `insert into public.analysis_runs (id, case_id, run_type, status, trigger_reason, engine_version,
+     engine_git_sha, contract_version, ontology_version, input_snapshot, input_snapshot_hash,
+     idempotency_key, tenant_id, canonical_case_id, canonical_analysis_run_id, command_sha256,
+     command_payload, case_revision)
+   values ('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-00000000000a','initial_scan',
+     'queued','fixture','0.0.0',repeat('0',40),'0','0','{}',repeat('0',64),'run-fixture',
+     'tenant:fixture:hg','case:fixture:hg:a','run:fixture:hg:1',repeat('0',64),'{}',0)`,
+]);
+
+/**
+ * Each entry: the trigger function, an optional seed that makes the guard
+ * reachable, and a mutation it must refuse. Seed and probe run inside one
+ * savepoint that is always rolled back, so nothing is written even when the
+ * refusal does not fire.
+ */
+const PROBES: readonly Readonly<{
+  fn: string; name: string; sql: string; expect: string; seed?: readonly string[];
+}>[] = Object.freeze([
   Object.freeze({
     fn: "private.reject_engine_append_only_mutation()",
     name: "reject_engine_append_only_mutation",
@@ -54,45 +76,72 @@ const PROBES = Object.freeze([
     sql: "update private.controlled_import_audit_events set event_kind = event_kind",
     expect: "",
   }),
-  // The history guards compare rows rather than refusing outright, so their
-  // bodies are not unconditional raises and a probe that does not fire is not
-  // evidence of anything. They are listed so the harness says so out loud: on an
-  // empty table each comes back `reverted_probe_vacuous` and its owner is left
-  // alone, which is the correct outcome and not a failure to make green.
+  // The history guards compare rows rather than refusing outright, so a probe
+  // on an empty table never fires and proves nothing. Each of these now seeds
+  // the minimal row chain that makes the guard fire, inside the same savepoint
+  // the probe rolls back, and mutates something the guard actually refuses —
+  // a no-op `set x = x` is not refused by a guard that only checks references.
+  // None of the chains needs a row in the customer `cases` table: every case_id
+  // here references engine_case_identity.
   Object.freeze({
     fn: "private.enforce_engine_analysis_run_history()",
     name: "enforce_engine_analysis_run_history",
-    sql: "update public.analysis_runs set status = status",
+    seed: SEED_RUN,
+    sql: "update public.analysis_runs set status = status where id = '00000000-0000-4000-8000-0000000000a1'",
     expect: "",
   }),
   Object.freeze({
     fn: "private.enforce_analysis_job_history()",
     name: "enforce_analysis_job_history",
-    sql: "update public.analysis_jobs set status = status",
+    seed: [...SEED_RUN,
+      `insert into public.analysis_jobs (id, analysis_run_id, stage, status, idempotency_key)
+       values ('00000000-0000-4000-8000-0000000000b1','00000000-0000-4000-8000-0000000000a1','classify_document','queued','job-fixture')`],
+    sql: "update public.analysis_jobs set status = status where id = '00000000-0000-4000-8000-0000000000b1'",
     expect: "",
   }),
   Object.freeze({
     fn: "private.enforce_case_confirmation_history()",
     name: "enforce_case_confirmation_history",
-    sql: "update public.case_confirmations set status = status",
+    seed: [...SEED_RUN,
+      `insert into public.case_confirmations (id, case_id, source_analysis_run_id, target_fact_path, question_id, question_version, status, idempotency_key)
+       values ('00000000-0000-4000-8000-0000000000c1','00000000-0000-4000-8000-00000000000a','00000000-0000-4000-8000-0000000000a1','facts.fixture','q.fixture',1,'pending','conf-fixture')`],
+    sql: "update public.case_confirmations set status = status where id = '00000000-0000-4000-8000-0000000000c1'",
     expect: "",
   }),
   Object.freeze({
     fn: "private.enforce_case_conversation_history()",
     name: "enforce_case_conversation_history",
-    sql: "update public.case_conversations set tenant_id = tenant_id",
+    seed: [...SEED_IDENTITY,
+      `insert into public.case_conversations (id, case_id, status, idempotency_key)
+       values ('00000000-0000-4000-8000-0000000000d1','00000000-0000-4000-8000-00000000000a','open','conv-fixture')`],
+    sql: "update public.case_conversations set tenant_id = tenant_id where id = '00000000-0000-4000-8000-0000000000d1'",
     expect: "",
   }),
   Object.freeze({
     fn: "private.enforce_document_extraction_history()",
     name: "enforce_document_extraction_history",
-    sql: "update public.document_extractions set tenant_id = tenant_id",
+    // This guard has no transition table; only a terminal row refuses.
+    seed: [...SEED_IDENTITY,
+      `insert into public.documents (id, case_id, document_type, storage_path, original_filename, mime_type, size)
+       values ('00000000-0000-4000-8000-0000000000e1','00000000-0000-4000-8000-00000000000a','payslip','fixture/hg/e1.pdf','e1.pdf','application/pdf',1)`,
+      `insert into public.document_extractions (id, document_id, extractor_id, extractor_version, source_content_sha256, status, idempotency_key, completed_at, error_code)
+       values ('00000000-0000-4000-8000-0000000000f1','00000000-0000-4000-8000-0000000000e1','fixture','1',repeat('0',64),'failed','ext-fixture',now(),'fixture')`],
+    sql: "update public.document_extractions set tenant_id = tenant_id where id = '00000000-0000-4000-8000-0000000000f1'",
     expect: "",
   }),
   Object.freeze({
     fn: "private.enforce_engine_case_scope()",
     name: "enforce_engine_case_scope",
-    sql: "update public.case_messages set tenant_id = tenant_id",
+    // A scope guard re-checks references, so the probe has to change one. It
+    // also SELECTs analysis_runs as its owner; governance_owner holds no
+    // privilege there, so after reassignment the lookup itself is refused and
+    // the verdict is reverted_behaviour_changed — correct, not a fixture gap.
+    seed: [...SEED_RUN,
+      `insert into public.case_conversations (id, case_id, status, idempotency_key)
+       values ('00000000-0000-4000-8000-0000000000d1','00000000-0000-4000-8000-00000000000a','open','conv-fixture')`,
+      `insert into public.case_messages (id, case_id, conversation_id, analysis_run_id, role, content, idempotency_key)
+       values ('00000000-0000-4000-8000-0000000000a9','00000000-0000-4000-8000-00000000000a','00000000-0000-4000-8000-0000000000d1','00000000-0000-4000-8000-0000000000a1','system','fixture','msg-fixture')`],
+    sql: "update public.case_messages set analysis_run_id = '00000000-0000-4000-8000-00000000dead' where id = '00000000-0000-4000-8000-0000000000a9'",
     expect: "",
   }),
 ]);
@@ -130,10 +179,21 @@ const NOT_REASSIGNED: Readonly<Record<string, string>> = Object.freeze({
 
 type Client = Readonly<{ query(text: string, values?: readonly unknown[]): Promise<{ rows: Record<string, unknown>[] }> }>;
 
-async function refusal(client: Client, sql: string): Promise<string> {
+async function refusal(client: Client, probe: (typeof PROBES)[number]): Promise<string> {
   await client.query("savepoint probe");
   try {
-    await client.query(sql);
+    // The seed is part of the probe, not of the database: it lives and dies
+    // inside this savepoint. A seed that itself fails is reported as such,
+    // because a refusal raised while seeding is not the guard firing.
+    for (const statement of probe.seed ?? []) {
+      try {
+        await client.query(statement);
+      } catch (error) {
+        const code = (error as { code?: string }).code ?? "unknown";
+        return `seed_failed:${code}:${String((error as Error).message).slice(0, 80)}`;
+      }
+    }
+    await client.query(probe.sql);
     return "no_refusal";
   } catch (error) {
     const code = (error as { code?: string }).code ?? "unknown";
@@ -178,12 +238,12 @@ async function main(): Promise<void> {
         // the wrong reason: what is being measured is the trigger, not RLS.
         await client.query("select set_config('tivdoc.tenant_id', $1, true)",
           ["tenant:synthetic:definer-probe"]);
-        before = await refusal(client, probe.sql);
+        before = await refusal(client, probe);
         if (ownerBefore === TARGET_OWNER) {
           outcome = "already_owned";
         } else {
           await client.query(`alter function ${probe.fn} owner to ${TARGET_OWNER}`);
-          after = await refusal(client, probe.sql);
+          after = await refusal(client, probe);
           outcome = before !== after ? "reverted_behaviour_changed"
             : before === "no_refusal"
               ? (unconditionalRaise ? "reassigned_probe_vacuous_body_only_raises" : "reverted_probe_vacuous")
