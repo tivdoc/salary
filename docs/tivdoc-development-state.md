@@ -363,9 +363,89 @@ over HTTP against a production server on DEV.
 Counters unchanged: HUMAN_GROUND_TRUTH_LOCKED 0, REAL_* 0, DEPLOYMENTS 0,
 REMOTE_PRODUCTION_MIGRATIONS 0, LIVE_PROVIDER_CALLS 0.
 
+## Addendum 5 — draft parameters and offline shadow: surveyed, not started
+
+The owner's statement that the research dossier is "approved until proven
+otherwise" maps to one owner action recorded with the dossier's hash and to
+nothing else; no source, parameter, RuleSpec or topic changes state, and the
+database's two-distinct-identities rule for a parameter stands. Counters
+unchanged. The survey found what each pool needs and where it is blocked;
+no D, P or Q unit was executed, and nothing was fetched or drafted.
+
+**Blocked before any unit can start**
+
+- `blocked_dependency` — Addendum 4 (H/R/S) is not in this session and not
+  in the repository (`tivdoc-continuous-mode.md`,
+  `tivdoc-continuous-addendum-4.md` absent). R-14 (durable executor), S-1
+  (shadow envelope), R-2 and R-9 as Addendum 4 defines them are unknown here.
+  The nearest existing pieces: `DurableOfflineShadowScheduler` over
+  `LocalFileDurableShadowStateStore` with the
+  `tivdoc-durable-offline-shadow-envelope-v0.10.0` envelope (its pins assert
+  `active_real_parameter_count: 0`, `mode: synthetic_placeholder_only`),
+  the in-process `executeRuleSpec` / `executeRuleSpecAtomic` and
+  `runRuleSpecMutationSuite`, and the R-2-shaped
+  `buildRuleSpecAuthoringSkeleton` (`non_operative_human_authoring_template`).
+  Q-8 is blocked on R-14/S-1 by the addendum's own rule.
+- `blocked_dependency` — the research dossier
+  (`tivdoc-legal-research-dossier.md`, 2026-09-03) is not in the repository;
+  the only dossier here is `docs/wave2-minimum-wage-dossier-v0.4.md`. The
+  owner action needs the dossier's hash and every P-pool draft needs
+  `dossier_sha256`; neither can be computed until the file is added.
+
+**Pool D — feasibility per target, from the fetch tool as it exists**
+(`fetchLegalSourceBytes`: allowlist gov.il, main/fs.knesset.gov.il,
+btl.gov.il; media pdf/html/text; 20 MiB; redirect chain recorded)
+
+- D-1 btl minimum-wage page: fetchable (html; already registered as
+  `IL_MIN_WAGE_OFFICIAL_RATES`); its Excel is outside the media allowlist —
+  would record `failed_retrieval: media_format_unsupported` unless the
+  allowlist is extended first.
+- D-2 btl average-wage page: fetchable (html), not yet registered.
+- D-3 btl Minimum Wage Law PDF: fetchable; registered as `IL_MIN_WAGE_LAW`.
+- D-4 Knesset ספר החוקים 3072: fetchable host; the 474 is recorded per the
+  addendum after one retry.
+- D-5 gov.il convalescence 2016 order: registered
+  (`IL_CONVALESCENCE_EXTENSION_ORDER_2016`, target
+  `ACQ-V02-CONVALESCENCE-2016`); the 1998 agreement has no registered target.
+- D-6 nevo 2025 law: `failed_retrieval: domain_not_allowlisted` (nevo is not
+  on the allowlist; robots per the addendum); not bypassed.
+- D-7 youth regulations: no official target registered — resolve first.
+- D-8 2018 permit and 42-hour order: registered
+  (`IL_GENERAL_OVERTIME_PERMIT_2018`, `IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018`).
+- D-9 pension 2011 and 2016 orders: registered.
+- D-10 travel 2016 order: registered.
+- D-11 vacation and sick-pay laws: registered as btl PDFs
+  (`IL_ANNUAL_VACATION_LAW`, `IL_SICK_PAY_LAW`); nevo not needed.
+- D-12 ילקוט הפרסומים 4.3.2026: no official target registered — resolve first.
+
+The observation classification vocabulary the addendum names (`unchanged`,
+`pending_diff_review`, `failed_retrieval`, `candidate_successor`) exists in
+no file here; the durable import (`governance_legal_observation_import`,
+`legalObservationCandidateSchema`, kind `source_bytes`) can carry it in
+provenance once Addendum 4's rules are in hand.
+
+**Pool P — what the schemas allow today.** The durable candidate
+(`tivdoc-parameter-candidate-v0.6.0`) has no `draft` state and no
+`alternatives_of`; the database states are `candidate_inactive` →
+`awaiting_second_attestation` → `dual_attested_inactive`, activation never
+allowed. The engine's `numericParameterDraftSchema` has `draft` with
+`dossier_sha256` and `source_set_sha256` and no alternatives link either.
+Pairing alternatives needs a schema decision (Addendum 4 R-9 territory) before
+P-5a/b, P-24a/b, P-33a/b, P-34a/b and the convalescence period can be drafted
+as the addendum requires. Every value in the addendum stays a value in a memo
+until it is bound to a fetched artifact's hash.
+
+**Pool Q** — seven skeletons exist (R-2 shape); executable drafts use
+`tivdoc-rulespec-v0.6.0` with `catalog_boundary: real_inactive`; the
+sensitivity run (Q-8) waits on R-14/S-1.
+
 ## Resume point
 
-- the freeze is recorded above; the run ends here.
+- the run stopped at the owner's instruction after the Addendum 5 survey, with
+  no Addendum 5 unit started. Resume with Addendum 4 (its text is required),
+  then: add the research dossier to the repository, resolve D-7/D-12 targets,
+  decide the alternatives link for P, extend the media allowlist for the
+  D-1 Excel, and only then start D-1.
 - after the freeze, still open: X-4 (the eight `public.*_salary_*` grants),
   the managed-bucket half of K-3 (needs a Storage key), K-5 (needs a
   provisioned destination), `correction_started` over a committed lock, and
