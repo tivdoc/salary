@@ -163,10 +163,10 @@ version; the review package v4 holds all sixty-nine, builds twice to one hash,
 and every item is not_reviewed, not_signed, not_activated, not_delivered.
 Counters unchanged.
 
-### Wave 5 — durable Ground Truth workflow: G-3, G-4, G-5, G-6, G-8 proven on DEV
+### Wave 5 — durable Ground Truth workflow: G-3..G-9 proven on DEV
 
 `scripts/legal-review-projection/ground-truth-matrix.mts` runs the durable
-workflow as the operations runtime role and records fourteen observations,
+workflow as the operations runtime role and records twenty-three observations,
 every one a refusal or an acceptance read back from DEV: trust stack durable
 (organisation, policy, four reviewers, four keys proven by their reviewers);
 annotation_1 accepted; the same identity refused for annotation_2 by the port
@@ -177,9 +177,20 @@ refused as adjudicator by the port and by the definer
 tampered lock refused; the annotation_1 command replayed as an idempotent
 no-op; current aggregate and full revision chain read back as the runtime role
 (`1:annotation_1 2:annotation_2 3:disagreement 4:human_adjudication`); the
-chain unreadable without a verified tenant. Zero content: synthetic fixture
-manifests re-attributed to run-scoped reviewers, run-scoped document digest,
-no manifest reaches `locked_ground_truth`. HUMAN_GROUND_TRUTH_LOCKED 0.
+chain unreadable without a verified tenant. G-7: a lock by an annotator
+refused by the definer; the lock by the lock reviewer appended through the
+port inside a transaction that is then discarded — revision 5,
+`locked_ground_truth`, a second lock refused while one is active
+(`GOVERNANCE_GT_LOCK_TRANSITION_INVALID`) — and the committed chain still
+ends at revision 4. G-9: two concurrent claims on one item yield one winner
+(`for update skip locked`), a reclaim advances the fencing token 1 -> 2, the
+stale token is fenced (`GOVERNANCE_WORK_RELEASE_FENCED`), and after every
+connection is closed and reopened the durable claim still acts. G-3 is now a
+real chain break: a lock manifest with a valid digest over changed sections,
+refused by the definer (`GOVERNANCE_GT_IMMUTABLE_CHAIN_MISMATCH`) through the
+port and called directly. Zero content: synthetic fixture manifests
+re-attributed to run-scoped reviewers, run-scoped document digest, no lock
+committed. HUMAN_GROUND_TRUTH_LOCKED 0.
 
 Running it settled the actor model the definers impose: work items are
 `governance.queue`'s, claims and key registrations the reviewer's, the unsigned
@@ -188,13 +199,17 @@ reviewer's — one session per subject, each command under the session it names.
 Each run is its own synthetic tenant because the queue hands a claimant the
 oldest eligible item tenant-wide and a released item returns to the same queue.
 
-Two defects surfaced on first real call and are fixed: `governance_trust_policy_append`
-raised 42702 (variable shadowed a column; `202609020014`), and the governance
+Three defects surfaced on first real call and are fixed: `governance_trust_policy_append`
+raised 42702 (variable shadowed a column; `202609020014`); the governance
 port parsed aggregate version "1" with the id schema (three characters
-minimum), so no manifest below revision 100 could be admitted. A history-read
-definer (`202609020015`, owner `tivdoc_governance_owner`, verified-tenant
-gated, runtime roles only) was added because no runtime role could read a
-manifest's revision chain. Chain 38/38 applied; definer definitions 126.
+minimum), so no manifest below revision 100 could be admitted; and the lock
+and correction branches of `governance_gt_manifest_append` raised the same
+42702 — `document_sha256` shadowed the lock tables' column
+(`202609020016`), invisible until the lock branch ran because the annotation
+branches never read those tables. A history-read definer (`202609020015`,
+owner `tivdoc_governance_owner`, verified-tenant gated, runtime roles only)
+was added because no runtime role could read a manifest's revision chain.
+Chain 39/39 applied; definer definitions 127.
 
 The engine's relative imports carry explicit extensions now (52 rewritten,
 checked against the filesystem, directory targets to `/index.ts`): the matrix
@@ -203,9 +218,9 @@ which resolves nothing implicitly. tsc, eslint and the engine and governance
 suites (82 files, 564 tests) are clean on the rewrite.
 
 Still open in Wave 5: G-1 (enumeration of process-local stores), G-2 (queue
-already durable — disposition to record), G-7 lock semantics, G-9 restart/race,
-G-10 the 42 golden templates, G-11 the 5 payslip composites, G-12 the
-`/operations` panel. The database does not verify Ed25519 signatures (no
+already durable — disposition to record), G-10 the 42 golden templates, G-11
+the 5 payslip composites, G-12 the `/operations` panel. Not exercised:
+`correction_started` superseding an active lock, which needs a committed lock. The database does not verify Ed25519 signatures (no
 pgcrypto Ed25519); that check stays in the TypeScript port and is stated, not
 proven, by the matrix.
 
@@ -233,8 +248,7 @@ statement is corrected in place in the definer surface matrix.
 
 ## Resume point
 
-- next: Wave 5 G-7 (lock semantics) and G-9 (restart/race) on the matrix; then
-  G-1/G-2 dispositions, G-10, G-11, G-12; then Wave 6.
+- next: Wave 5 G-1/G-2 dispositions, G-10, G-11, G-12; then Wave 6.
 - B-3..B-7 once a fixture exists per history guard.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
   project, resetting the DEV default database, `initdb.exe` under Windows

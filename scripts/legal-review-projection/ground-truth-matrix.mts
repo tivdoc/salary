@@ -1,5 +1,6 @@
-// Wave 5 (G-3, G-4, G-5, G-6, G-8). The durable ground-truth workflow, proven on
-// DEV as the operations runtime role, with zero ground-truth content produced.
+// Wave 5 (G-3, G-4, G-5, G-6, G-7, G-8, G-9). The durable ground-truth workflow,
+// proven on DEV as the operations runtime role, with zero ground-truth content
+// produced and no lock left behind.
 //
 // The durable schema already existed (202609010004) and is product-reachable
 // through PostgresGroundTruthRepository. What had never been done is to run it
@@ -26,13 +27,26 @@
 // take too. Each run is its own synthetic tenant because the work queue hands
 // a claimant the oldest eligible item tenant-wide.
 //
-// The first real calls also surfaced two defects, both fixed in the tree:
+// The first real calls also surfaced three defects, all fixed in the tree:
 // governance_trust_policy_append raised 42702 on its first invocation (a
-// PL/pgSQL variable shadowed a column; 202609020014), and the port parsed a
+// PL/pgSQL variable shadowed a column; 202609020014); the port parsed a
 // ground-truth aggregate version "1" with the id schema, which requires three
-// characters, so no manifest below revision 100 could be admitted. A history
-// read definer (202609020015) was added because no runtime role could read a
+// characters, so no manifest below revision 100 could be admitted; and the
+// lock and correction branches of governance_gt_manifest_append raised the
+// same 42702 (`document_sha256` shadowed the lock tables' column;
+// 202609020016) — the annotation branches never read those tables, which is
+// why the first ten observations passed over the defect. A history read
+// definer (202609020015) was added because no runtime role could read a
 // manifest's revision chain.
+//
+// The lock is observed inside a transaction that is then discarded: revision
+// 5, status locked, a second lock refused while one is active — and the
+// committed chain still ends at revision 4. The one lock path not exercised is
+// correction_started superseding an active lock, which needs a committed lock.
+// Race and restart are proven on the queue: two concurrent claims yield one
+// winner, a reclaim advances the fencing token, the stale token is fenced
+// out, and after every connection is closed and reopened the durable claim
+// still acts.
 //
 // One boundary is stated rather than proven. The database checks that every
 // identity is trusted for its role at signing time and that annotators and
@@ -51,6 +65,7 @@ import {
   TRUSTED_GT_SCHEMA, trustedGroundTruthActionPayload,
 } from "../../src/engine/extraction-ground-truth/trusted-contracts.ts";
 import type { GroundTruthAction } from "../../src/engine/extraction-ground-truth/trusted-contracts.ts";
+import { calculateLockedGroundTruthSha256 } from "../../src/engine/extraction-ground-truth/validation.ts";
 import {
   humanDecisionEnvelopeSha256, humanDecisionSignatureSha256, type VerifiedHumanDecision,
 } from "../../src/engine/legal-operations/human-trust.ts";
@@ -158,11 +173,16 @@ const QUEUE_ACTOR = "governance.queue";
 const subjectFor = (slot: SessionSlot): string =>
   slot === "system" ? TRUST_ADMIN : slot === "queue" ? QUEUE_ACTOR : reviewers[slot].id;
 
-/** Runs one governance transaction as the operations role under the named subject's session. */
+/**
+ * Runs one governance transaction as the operations role under the named
+ * subject's session. `"rollback"` runs the operation to completion and then
+ * discards it — used to observe what a lock does without leaving one behind.
+ */
 async function transaction<T>(
   factory: NodePostgresConnectionFactory,
   slot: SessionSlot,
   operation: (context: PostgresTransactionContext) => Promise<T>,
+  mode: "commit" | "rollback" = "commit",
 ): Promise<T> {
   const client = await factory.acquire();
   const session = sessionFor(slot);
@@ -171,7 +191,7 @@ async function transaction<T>(
     await client.query(statement("gt_context",
       "select * from private.runtime_context_install($1,$2,$3)", [session.sid, session.jti, `gt:${RUN}:${slot}`]));
     const value = await operation({ client, transaction_id: `gt:${RUN}:${randomUUID().slice(0, 8)}` });
-    await client.query(statement("gt_commit", "commit", []));
+    await client.query(statement(mode === "commit" ? "gt_commit" : "gt_discard", mode, []));
     return value;
   } catch (error) {
     await client.query(statement("gt_rollback", "rollback", [])).catch(() => undefined);
@@ -263,12 +283,13 @@ async function main(): Promise<void> {
   }
 
   const parsed = new URL(operationsUrl);
-  const factory = NodePostgresConnectionFactory.fromConnectionUrl({
+  const openFactory = () => NodePostgresConnectionFactory.fromConnectionUrl({
     connection_url: operationsUrl, max_connections: 4, connection_timeout_ms: 20_000,
     application_name: "tivdoc_ground_truth_matrix",
     remote_dev_target: { host: parsed.hostname, port: Number(parsed.port),
       database: parsed.pathname.replace(/^\//u, ""), project_ref: projectRef },
   });
+  let factory = openFactory();
 
   let failure: string | null = null;
   try {
@@ -481,22 +502,39 @@ async function main(): Promise<void> {
     })();
     record("G6_third_identity_adjudicates", true, "adjudicator C, workflow revision 3 -> 4");
 
-    // G-3: a manifest whose chain is broken — sections changed — is refused.
-    const brokenChain = await refusal(async () => {
-      const claim = await claimFor(reviewers.l, "ground_truth_lock", "lockbroken");
-      await transaction(factory, reviewers.l.slot, async (context) => {
-        const gt = new PostgresGroundTruthRepository(context, TENANT);
-      const tampered = rename(workflow.locked_ground_truth, {
-        sections: [{ section_id: "synthetic.section.tampered", page_from: 1, page_to: 1 }],
-        annotations: workflow.locked_ground_truth.annotations.map((entry) => ({ ...entry, section: "synthetic.section.tampered" })),
-      });
-      await gt.appendManifest({
+    // A lock manifest is the adjudicated manifest with its status and locked
+    // digest set; the digest is computed by the engine's own function.
+    const lockOf = (source: GroundTruthManifest): GroundTruthManifest => {
+      const unlocked = Object.freeze({ ...source, status: "locked_ground_truth", locked_sha256: null }) as GroundTruthManifest;
+      return Object.freeze({ ...unlocked, locked_sha256: calculateLockedGroundTruthSha256(unlocked) }) as GroundTruthManifest;
+    };
+    const locked = lockOf(adj);
+
+    // G-3: a manifest whose chain is broken — sections changed against the
+    // adjudicated prior — is refused. Its locked digest is valid for what it
+    // carries, so the port's validator passes it and the refusal is the
+    // database's chain guard (GOVERNANCE_GT_IMMUTABLE_CHAIN_MISMATCH), observed
+    // through the port and then again with the definer called directly.
+    const tampered = lockOf(Object.freeze({
+      ...adj,
+      sections: [{ section_id: "synthetic.section.tampered", page_from: 1, page_to: 1 }],
+      annotations: adj.annotations.map((entry) => Object.freeze({ ...entry, section: "synthetic.section.tampered" })),
+    }) as GroundTruthManifest);
+    const lockBrokenClaim = await claimFor(reviewers.l, "ground_truth_lock", "lockbroken");
+    const brokenChain = await refusal(() => transaction(factory, reviewers.l.slot, async (context) => {
+      await new PostgresGroundTruthRepository(context, TENANT).appendManifest({
         event_kind: "ground_truth_locked", prior_manifest: adj, manifest: tampered, expected_workflow_revision: 4,
-        claim, verification: sign(reviewers.l, "lock", adj, tampered, "lockbroken"), metadata: meta("append.lockbroken"),
+        claim: lockBrokenClaim, verification: sign(reviewers.l, "lock", adj, tampered, "lockbroken"), metadata: meta("append.lockbroken"),
       });
-      });
-    });
+    }));
     record("G3_broken_chain_refused", brokenChain !== "accepted", brokenChain);
+    const brokenChainAtDatabase = await refusal(() => transaction(factory, reviewers.l.slot, async (context) => {
+      await context.client.query(statement("gt_append_broken_chain_direct",
+        "select * from private.governance_gt_manifest_append($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,$10,$11)",
+        [TENANT, "ground_truth_locked", JSON.stringify(tampered), 4, lockBrokenClaim.work_item_id, reviewers.l.id,
+          lockBrokenClaim.fencing_token, `env.none.${RUN}`, `direct.lockbroken.${RUN}`, sha256(`direct:lockbroken:${RUN}`), iso(0)]));
+    }));
+    record("G3_database_guard_broken_chain", brokenChainAtDatabase.startsWith("P0001"), brokenChainAtDatabase);
 
     // G-8: replaying the annotation_1 command — same claim, same envelope, same
     // idempotency key — is answered from the idempotency ledger and adds nothing.
@@ -512,6 +550,100 @@ async function main(): Promise<void> {
       });
     });
     record("G8_replay_is_idempotent", replay === "accepted", replay === "accepted" ? "same key, idempotent_replay true, revision unchanged" : replay);
+
+    // --- G-7: lock semantics, proven without leaving a lock behind.
+    // The definer refuses a lock whose claimant is an annotator or the
+    // adjudicator before it looks at any claim or envelope.
+    const lockByAnnotator = await refusal(() => transaction(factory, reviewers.a.slot, async (context) => {
+      await context.client.query(statement("gt_append_lock_by_annotator_direct",
+        "select * from private.governance_gt_manifest_append($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,$10,$11)",
+        [TENANT, "ground_truth_locked", JSON.stringify(locked), 4, `gt.work.none.${RUN}`, reviewers.a.id, 1,
+          `env.none.${RUN}`, `direct.locka.${RUN}`, sha256(`direct:locka:${RUN}`), iso(0)]));
+    }));
+    record("G7_lock_by_annotator_refused_at_database", lockByAnnotator.startsWith("P0001"), lockByAnnotator);
+
+    // The lock itself: claimed and signed by L, appended through the port, and
+    // observed inside the transaction — revision 5, status locked, a second
+    // lock on the same document refused — before the transaction is discarded.
+    // Nothing is committed; HUMAN_GROUND_TRUTH_LOCKED cannot move.
+    const lockClaim = await claimFor(reviewers.l, "ground_truth_lock", "lock");
+    const lockProbe = await transaction(factory, reviewers.l.slot, async (context) => {
+      const receipt = await new PostgresGroundTruthRepository(context, TENANT).appendManifest({
+        event_kind: "ground_truth_locked", prior_manifest: adj, manifest: locked, expected_workflow_revision: 4,
+        claim: lockClaim, verification: sign(reviewers.l, "lock", adj, locked, "lock"), metadata: meta("append.lock"),
+      });
+      const inside = await context.client.query(statement("gt_history_inside_lock",
+        "select workflow_revision::text as workflow_revision, status from private.governance_gt_manifest_history_read($1, $2)",
+        [TENANT, manifestId]));
+      const chainInside = inside.rows.map((row) => `${String(row.workflow_revision)}:${String(row.status)}`).join(" ");
+      await context.client.query(statement("gt_savepoint", "savepoint second_lock", []));
+      const secondLock = await refusal(() => context.client.query(statement("gt_append_second_lock_direct",
+        "select * from private.governance_gt_manifest_append($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,$10,$11)",
+        [TENANT, "ground_truth_locked", JSON.stringify(locked), 5, lockClaim.work_item_id, reviewers.l.id,
+          lockClaim.fencing_token, `env.none.${RUN}`, `direct.lock2.${RUN}`, sha256(`direct:lock2:${RUN}`), iso(0)])));
+      await context.client.query(statement("gt_savepoint_undo", "rollback to savepoint second_lock", []));
+      return { revision: receipt.revision, state: receipt.state, chainInside, secondLock };
+    }, "rollback");
+    record("G7_lock_by_third_identity_accepted_in_discarded_probe",
+      lockProbe.revision === 5 && lockProbe.state === "locked_ground_truth"
+        && lockProbe.chainInside.endsWith(" 5:locked_ground_truth"),
+      `revision ${lockProbe.revision} ${lockProbe.state}; chain inside: ${lockProbe.chainInside}`);
+    record("G7_second_lock_while_active_refused", lockProbe.secondLock.startsWith("P0001"), lockProbe.secondLock);
+    const afterProbe = await transaction(factory, "system", async (context) => {
+      const rows = await context.client.query(statement("gt_history_after_probe",
+        "select workflow_revision::text as workflow_revision, status from private.governance_gt_manifest_history_read($1, $2)",
+        [TENANT, manifestId]));
+      return rows.rows.map((row) => `${String(row.workflow_revision)}:${String(row.status)}`).join(" ");
+    });
+    record("G7_lock_probe_discarded_nothing_locked",
+      afterProbe === "1:annotation_1 2:annotation_2 3:disagreement 4:human_adjudication", afterProbe);
+
+    // --- G-9: race and restart on the durable queue.
+    // One item on an otherwise empty lane; two annotators claim it at once.
+    const raceItem = `gt.work.race.${RUN}`;
+    await transaction(factory, "queue", async (context) => {
+      await new PostgresGovernanceWorkRepository(context, TENANT).enqueue({
+        work_item_id: raceItem, workflow_kind: "ground_truth", aggregate_id: manifestId, aggregate_version: "1",
+        work_kind: "ground_truth_visual_eligibility", required_role: reviewers.a.role, document_sha256: DOCUMENT_SHA256,
+        object_version_id: `synthetic.object.${RUN}`, input_sha256: sha256(`input:${raceItem}`), payload: { synthetic: true },
+        idempotency_key: `enqueue.${raceItem}`, created_at: iso(0),
+      });
+    });
+    const claimRace = (reviewer: Reviewer) => transaction(factory, reviewer.slot, async (context) =>
+      new PostgresGovernanceWorkRepository(context, TENANT).claim({
+        workflow_kind: "ground_truth", work_kind: "ground_truth_visual_eligibility", claimant_id: reviewer.id,
+        reviewer_role: reviewer.role, now: iso(0), lease_seconds: 600,
+      }));
+    const [raceA, raceB] = await Promise.all([claimRace(reviewers.a), claimRace(reviewers.b)]);
+    const winners = [raceA, raceB].filter((claim) => claim !== null);
+    record("G9_concurrent_claims_single_winner",
+      winners.length === 1 && winners[0]!.work_item_id === raceItem,
+      `A:${raceA?.fencing_token ?? "null"} B:${raceB?.fencing_token ?? "null"}`);
+    const first = winners[0]!;
+    const holder = raceA !== null ? reviewers.a : reviewers.b;
+    const other = raceA !== null ? reviewers.b : reviewers.a;
+    const release = (reviewer: Reviewer, token: number, next: "pending" | "released", key: string) =>
+      transaction(factory, reviewer.slot, async (context) => {
+        await new PostgresGovernanceWorkRepository(context, TENANT).release({
+          work_item_id: raceItem, claimant_id: reviewer.id, fencing_token: token, next_state: next,
+          reason_code: "GT_MATRIX_RACE_RELEASE", occurred_at: iso(0), idempotency_key: `release.${key}.${RUN}`,
+        });
+      });
+    // The holder gives the item back; the other claims it and the fence advances.
+    await release(holder, first.fencing_token, "pending", "race.1");
+    const second = await claimRace(other);
+    record("G9_reclaim_advances_fencing_token", second !== null && second.fencing_token === first.fencing_token + 1,
+      `first ${first.fencing_token} -> second ${second?.fencing_token ?? "null"}`);
+    // A release with the stale token by the previous holder is fenced out.
+    const stale = await refusal(() => release(holder, first.fencing_token, "pending", "race.stale"));
+    record("G9_stale_fencing_token_refused", stale.startsWith("P0001"), stale);
+    // Restart: every connection is closed and a new pool opened; the claim and
+    // its token live in the database, so the current holder can still act.
+    await factory.close();
+    factory = openFactory();
+    const afterRestart = await refusal(() => release(other, second!.fencing_token, "released", "race.2"));
+    record("G9_claim_survives_process_restart", afterRestart === "accepted",
+      afterRestart === "accepted" ? `released with token ${second!.fencing_token} after reconnect` : afterRestart);
 
     // Observed state, read back rather than inferred, both as the runtime role:
     // the current aggregate through the port, the full revision chain through
@@ -560,6 +692,9 @@ async function main(): Promise<void> {
     schema_version: "tivdoc-ground-truth-matrix-wave5", run_id: RUN, tenant: TENANT,
     human_ground_truth_locked: 0, content_created: "none: synthetic fixture manifests only",
     signature_verification_in_database: false,
+    not_exercised: [
+      "G-7 correction_started supersession of an active lock: requires a committed lock; HUMAN_GROUND_TRUTH_LOCKED stays 0",
+    ],
     cases: results.length, passed: results.length - failed.length, failed: failed.length, failure, results,
   }, null, 2)}\n`, "utf8");
   process.stdout.write(`cases=${results.length} passed=${results.length - failed.length} failed=${failed.length}`
