@@ -217,9 +217,34 @@ loads the engine's fixture and validator under `--experimental-strip-types`,
 which resolves nothing implicitly. tsc, eslint and the engine and governance
 suites (82 files, 564 tests) are clean on the rewrite.
 
-Still open in Wave 5: G-1 (enumeration of process-local stores), G-2 (queue
-already durable — disposition to record), G-10 the 42 golden templates, G-11
-the 5 payslip composites, G-12 the `/operations` panel. Not exercised:
+G-1, G-2, G-10, G-11 — `scripts/legal-review-projection/ground-truth-queue-map.mts`,
+eleven observations. G-1: five process-local stores on the ground-truth path,
+anchored at run time — `TrustedGroundTruthWorkflow` (trusted-workflow.ts:23),
+`InMemoryReviewerTrustStore` (reviewer-trust-store.ts:117, constructed only by
+the CLI `scripts/human-trust/verify.mts`), `AppendOnlyLegalOperationsStore`
+(state-machine.ts:121, constructed once by `LegalOperationsService`),
+`ExternalEvidenceHandoffLedger` (evidence-handoff.ts:114), and
+`LegalOperationsService`'s own golden-case and trusted-decision maps
+(service.ts:31–39) — none reachable from a product constructor:
+`implemented_uncalled`, all five. G-2: the queue was already durable; its
+properties are now asserted from the catalog — RLS on and forced, owner
+`tivdoc_governance_owner`, one owner-bound `runtime_verified_tenant()` policy,
+no table grant outside the owner, execute on enqueue to owner + operations +
+worker, on claim and release to owner + operations, on complete_claim and
+claim_assert to owner only, nothing to anon, authenticated, service_role or
+public, no immutability trigger (work items move by definer only) — and
+proven by execution: 47 enqueues as the operations runtime role, every
+receipt read back, and a second run replaying all 47 from the idempotency
+ledger. G-10: the engine's 42 blank templates (7 topics × 6 scenarios) sit on
+the queue as `golden_case_outputs` work for `human_golden_case_reviewer`,
+carrying template id, version, topic, scenario and the template's content
+digest — no answers, no bindings. G-11: the 5 customer-derived payslip
+composites sit on the queue as `ground_truth_visual_eligibility` work for
+`human_ground_truth_eligibility_reviewer`, carrying only the review
+manifest's neutral ids and digests; the composite images were never opened,
+and the owner's visual review is human and stays open.
+
+Still open in Wave 5: G-12 the `/operations` panel. Not exercised:
 `correction_started` superseding an active lock, which needs a committed lock. The database does not verify Ed25519 signatures (no
 pgcrypto Ed25519); that check stays in the TypeScript port and is stated, not
 proven, by the matrix.
@@ -248,7 +273,8 @@ statement is corrected in place in the definer surface matrix.
 
 ## Resume point
 
-- next: Wave 5 G-1/G-2 dispositions, G-10, G-11, G-12; then Wave 6.
+- next: Wave 5 G-12 (queue panel under `/operations`: list definer, port,
+  application method, route, panel, negative matrix); then Wave 6 K-1..K-5.
 - B-3..B-7 once a fixture exists per history guard.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
   project, resetting the DEV default database, `initdb.exe` under Windows
