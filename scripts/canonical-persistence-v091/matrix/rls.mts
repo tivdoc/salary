@@ -384,6 +384,12 @@ async function seedSyntheticRlsControls(
   try {
     await client.query("begin");
     for (const tenantId of [tenantA, tenantB]) {
+      // The owner connection bypasses these tables only while they are not
+      // FORCE-protected. Declaring the tenant is what keeps this seed working
+      // once they are: `tivdoc_dev_migrator` inherits `service_role`, so
+      // `tivdoc_service_tenant_scope` admits it, and that policy tests exactly
+      // this setting. Without it the seed reads and writes nothing at all.
+      await client.query("select set_config('tivdoc.tenant_id', $1, true)", [tenantId]);
       const findingId = randomUUID();
       const factReference = randomUUID();
       const uniqueSuffix = randomUUID();
@@ -768,17 +774,34 @@ async function readCaseConfirmationWriteProbe(
   admin: Pool,
   tenantId: string,
 ): Promise<CaseConfirmationWriteProbe> {
-  const result = await admin.query<CaseConfirmationWriteProbe>(`
-    select case_id::text as case_id,
-           id::text as analysis_run_id,
-           canonical_case_id,
-           canonical_analysis_run_id
-    from public.analysis_runs
-    where tenant_id = $1
-      and canonical_case_id is not null
-      and canonical_analysis_run_id is not null
-    order by created_at, id
-    limit 1`, [tenantId]);
+  // A pooled `query` may land on a different connection each time, so the
+  // tenant declaration and the read have to share one client inside one
+  // transaction. Once `analysis_runs` forces row level security this read
+  // returns nothing without it, and the probe fails as UNAVAILABLE rather than
+  // as the cross-tenant refusal it is actually testing.
+  const client = await admin.connect();
+  let result;
+  try {
+    await client.query("begin");
+    await client.query("select set_config('tivdoc.tenant_id', $1, true)", [tenantId]);
+    result = await client.query<CaseConfirmationWriteProbe>(`
+      select case_id::text as case_id,
+             id::text as analysis_run_id,
+             canonical_case_id,
+             canonical_analysis_run_id
+      from public.analysis_runs
+      where tenant_id = $1
+        and canonical_case_id is not null
+        and canonical_analysis_run_id is not null
+      order by created_at, id
+      limit 1`, [tenantId]);
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
   const row = result.rows[0];
   if (result.rowCount !== 1 || !row?.case_id || !row.analysis_run_id
     || !row.canonical_case_id || !row.canonical_analysis_run_id) {
