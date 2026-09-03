@@ -44,7 +44,8 @@ const REJECTIONS = Object.freeze({
   DUPLICATE_BYTES: "another observation already claims these exact bytes",
   EXTRACTOR_FAILED: "the parser exited non-zero or produced no JSON",
   ENCRYPTED_PDF_UNSUPPORTED: "the document is encrypted and the parser cannot open it",
-  TEXT_LAYER_ABSENT: "no page carries an embedded text layer; OCR is unavailable on this host",
+  TEXT_LAYER_ABSENT_SCANNED: "every page is a scanned image with no font resources; this needs OCR, and this host has Tesseract without Hebrew language data",
+  GLYPHS_UNMAPPABLE: "fonts are present but carry no /ToUnicode, so glyph codes cannot be decoded to characters; a parser change would fix this, OCR would not",
   EMPTY_NORMALIZED_TEXT: "the text layer normalized to nothing",
 });
 
@@ -83,6 +84,7 @@ type Extraction = Readonly<{
   status?: string;
   pages?: readonly Readonly<{ page: number; text: string }>[];
   page_count?: number;
+  font_count?: number;
 }>;
 
 function extract(file: string): Extraction {
@@ -138,7 +140,16 @@ function main(): void {
     if (extraction.status === "encrypted_pdf_unsupported") { reject("ENCRYPTED_PDF_UNSUPPORTED"); continue; }
     const pages = extraction.pages ?? [];
     const withText = pages.filter((page) => page.text.trim().length > 0);
-    if (withText.length === 0) { reject("TEXT_LAYER_ABSENT", `pages=${pages.length}`); continue; }
+    if (withText.length === 0) {
+      // Two different problems with two different fixes, and one code for both
+      // makes the OCR backlog uncountable. A page with no font resources at all
+      // is a scan; a page with fonts whose glyphs will not map is a parser
+      // problem. The extractor reports the font census, so the code says which.
+      const fonts = extraction.font_count ?? 0;
+      reject(fonts === 0 ? "TEXT_LAYER_ABSENT_SCANNED" : "GLYPHS_UNMAPPABLE",
+        `pages=${pages.length} fonts=${fonts}`);
+      continue;
+    }
 
     const trimmed = removeRepeatedPdfMargins(pages);
     const normalized = normalizeLegalText(trimmed.map((page) => page.text).join("\n"));
@@ -173,6 +184,15 @@ function main(): void {
       whitespace_separator: separator,
       page_count: pages.length,
       pages_with_text: withText.length,
+      // A document can parse and still hold a page the parser could not read.
+      // Four of the sixty-two do. Naming the count keeps a partial extraction
+      // from reading as a whole one.
+      pages_without_text: pages.length - withText.length,
+      // The reversal is not only alphabetic: digit runs come out reversed too,
+      // so 1951 extracts as 1591 and a section number reads backwards. Anything
+      // citing an amendment number, section or date from this text has to undo
+      // that first, and saying so here is cheaper than a silent mis-citation.
+      digits_visually_reversed: true,
       normalized_characters: normalized.length,
       normalized_text_sha256: sha256(normalized),
       chunk_count: chunks.length,

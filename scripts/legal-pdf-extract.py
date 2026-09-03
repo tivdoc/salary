@@ -34,6 +34,19 @@ def contains_active_content(value, depth=0, seen=None) -> bool:
     return False
 
 
+def page_font_count(page) -> int:
+    try:
+        resources = page.get("/Resources")
+        if hasattr(resources, "get_object"):
+            resources = resources.get_object()
+        fonts = resources.get("/Font") if isinstance(resources, dict) else None
+        if hasattr(fonts, "get_object"):
+            fonts = fonts.get_object()
+        return len(fonts) if isinstance(fonts, dict) else 0
+    except Exception:
+        return 0
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(json.dumps({"safe_error_code": "pdf_path_required"}))
@@ -54,14 +67,20 @@ def main() -> int:
                 return 3
         pages = []
         total_characters = 0
+        font_count = 0
         for index, page in enumerate(reader.pages):
             text = page.extract_text(extraction_mode="layout") or ""
             total_characters += len(text)
             if total_characters > MAX_TEXT_CHARACTERS:
                 print(json.dumps({"safe_error_code": "pdf_text_limit_exceeded"}))
                 return 7
+            # A page with no font resources is a scan; a page with fonts that
+            # yields no text has glyphs that will not map. Those are different
+            # problems with different fixes, and only the census distinguishes
+            # them, so the caller gets it rather than having to guess.
+            font_count += page_font_count(page)
             pages.append({"page": index + 1, "text": text})
-        print(json.dumps({"pages": pages}, ensure_ascii=False))
+        print(json.dumps({"pages": pages, "font_count": font_count}, ensure_ascii=False))
         return 0
     except Exception:
         print(json.dumps({"safe_error_code": "pdf_parse_failed"}))
