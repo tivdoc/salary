@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { confidenceSchema, domainCodeSchema } from "../domain/primitives";
-import { payslipFieldKeySchema, type PayslipFieldKey } from "./contracts";
-import { normalizedPayslipExtractionSchema, type NormalizedPayslipExtraction } from "./payslip";
-import { gate0ValidationSchema, type Gate0Validation } from "./validation";
+import { confidenceSchema, domainCodeSchema } from "../domain/primitives.ts";
+import { payslipFieldKeySchema, type PayslipFieldKey } from "./contracts.ts";
+import { normalizedPayslipExtractionSchema, type NormalizedPayslipExtraction } from "./payslip.ts";
+import { gate0ValidationSchema, type Gate0Validation } from "./validation.ts";
 
 export const criticalFieldThresholds = {
   salary_period: 0.9,

@@ -9,8 +9,8 @@ import {
   nonNegativeDecimalStringSchema,
   nonNegativeMoneySchema,
   uuidSchema,
-} from "../domain/primitives";
-import { factPathSchema } from "./fact-paths";
+} from "../domain/primitives.ts";
+import { factPathSchema } from "./fact-paths.ts";
 
 export const factSourceTypeSchema = z.enum(["documented", "declared", "derived", "inferred"]);
 export const factStatusSchema = z.enum([

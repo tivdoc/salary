@@ -1,9 +1,9 @@
-import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts";
-import type { ImmutableDocument } from "../domain/documents";
-import type { NormalizedCandidateField, NormalizedPayslipExtraction } from "../extraction/payslip";
-import { canonicalSha256 } from "../rule-runtime/canonical";
-import type { CaseAnalysisCommand, Wave3Topic } from "../wave3/contracts";
-import type { StoredCaseInputSnapshot } from "./contracts";
+import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts.ts";
+import type { ImmutableDocument } from "../domain/documents.ts";
+import type { NormalizedCandidateField, NormalizedPayslipExtraction } from "../extraction/payslip.ts";
+import { canonicalSha256 } from "../rule-runtime/canonical.ts";
+import type { CaseAnalysisCommand, Wave3Topic } from "../wave3/contracts.ts";
+import type { StoredCaseInputSnapshot } from "./contracts.ts";
 
 const TOPIC_FACT_PATH: Readonly<Record<Wave3Topic, CanonicalFact["path"]>> = Object.freeze({
   minimum_wage: "compensation.base_monthly_salary",

@@ -1,5 +1,5 @@
 import { createHash, createPublicKey, verify as verifySignature } from "node:crypto";
-import { ZodError, type ZodType } from "zod";
+import { ZodError, type ZodType, z } from "zod";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical.ts";
 import {
   groundTruthVisualEligibilitySchema,
@@ -69,6 +69,7 @@ import {
 import {
   GovernanceRepositoryError,
   governanceIdSchema,
+  governanceVersionSchema,
   governanceTimestampSchema,
   governanceWorkClaimRequestSchema,
   governanceWorkEnqueueSchema,
@@ -122,6 +123,13 @@ type UnknownRecord = Readonly<Record<string, unknown>>;
 function asRecord(value: object): UnknownRecord {
   return value as UnknownRecord;
 }
+
+// Aggregate versions are either version-shaped (a ground-truth manifest at
+// revision 1 is admitted as "1") or id-shaped (an observation, parameter or
+// rule-spec version). The id schema alone refused "1" — three characters
+// minimum — so no manifest under revision 100 could ever be admitted, which
+// the first real call of the ground-truth path surfaced.
+const aggregateVersionSchema = z.union([governanceVersionSchema, governanceIdSchema]);
 
 function parse<T>(schema: ZodType<T>, value: unknown, operation: string): T {
   try {
@@ -274,7 +282,7 @@ abstract class GovernanceRepositoryBase {
     aggregateVersion: string,
   ): Promise<GovernanceAggregateSnapshot> {
     const aggregate_id = parse(governanceIdSchema, aggregateId, "aggregate_read");
-    const aggregate_version = parse(governanceIdSchema, aggregateVersion, "aggregate_read");
+    const aggregate_version = parse(aggregateVersionSchema, aggregateVersion, "aggregate_read");
     const snapshot = decodeGovernanceAggregateSnapshot(await queryExactlyOne(this.context, aggregateReadStatement({
       tenant_id: this.tenantId,
       workflow_kind: workflowKind,
@@ -513,7 +521,7 @@ export class PostgresReviewerTrustRepository extends GovernanceRepositoryBase {
     const operation = "human_decision_admit";
     assertPositiveRevision(input.aggregate_revision, operation);
     const aggregateId = parse(governanceIdSchema, input.aggregate_id, operation);
-    const aggregateVersion = parse(governanceIdSchema, input.aggregate_version, operation);
+    const aggregateVersion = parse(aggregateVersionSchema, input.aggregate_version, operation);
     const meta = metadata(input.metadata, operation);
     const verification = input.evidence.verification;
     const envelope = parse(signedHumanDecisionEnvelopeSchema, verification.envelope, operation);

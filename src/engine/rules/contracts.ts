@@ -4,8 +4,8 @@ import {
   isoDateSchema,
   isoTimestampSchema,
   versionSchema,
-} from "../domain/primitives";
-import { factPathSchema } from "../facts/fact-paths";
+} from "../domain/primitives.ts";
+import { factPathSchema } from "../facts/fact-paths.ts";
 
 export const ruleReferenceSchema = z
   .object({

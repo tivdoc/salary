@@ -1,11 +1,11 @@
-import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts";
-import { employmentSnapshotSchema, type EmploymentSnapshot } from "../facts/snapshot";
-import { resolvedPayslipFactPaths, resolvePayslipSnapshot } from "../extraction/resolver";
-import { validatePayslipGate0 } from "../extraction/validation";
-import { canonicalSha256, canonicalStringify, deepFreeze } from "../rule-runtime/canonical";
-import { ruleInputSnapshotSchema, type RuleInputSnapshot } from "../wave1/contracts";
-import { createCanonicalRuleInputSnapshot } from "../rule-input/snapshot";
-import { evaluateLegalReadiness, type LegalReadinessCandidate, type LegalReadinessCase } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness";
+import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts.ts";
+import { employmentSnapshotSchema, type EmploymentSnapshot } from "../facts/snapshot.ts";
+import { resolvedPayslipFactPaths, resolvePayslipSnapshot } from "../extraction/resolver.ts";
+import { validatePayslipGate0 } from "../extraction/validation.ts";
+import { canonicalSha256, canonicalStringify, deepFreeze } from "../rule-runtime/canonical.ts";
+import { ruleInputSnapshotSchema, type RuleInputSnapshot } from "../wave1/contracts.ts";
+import { createCanonicalRuleInputSnapshot } from "../rule-input/snapshot.ts";
+import { evaluateLegalReadiness, type LegalReadinessCandidate, type LegalReadinessCase } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
 import type {
   AnalysisResultBundle,
   CanonicalHashPort,
@@ -19,8 +19,8 @@ import type {
   RuleSpecExecutorPort,
   TopicAnalysisResult,
   Wave3Topic,
-} from "../wave3/contracts";
-import { WAVE3_TOPICS } from "../wave3/contracts";
+} from "../wave3/contracts.ts";
+import { WAVE3_TOPICS } from "../wave3/contracts.ts";
 import {
   CaseAnalysisError,
   type CaseAnalysisLogPort,
@@ -30,7 +30,7 @@ import {
   type ReportRegistrationPort,
   type StoredCaseInputSnapshot,
   type StoredCaseSnapshotPort,
-} from "./contracts";
+} from "./contracts.ts";
 
 const criticalFactPath: Readonly<Record<Wave3Topic, CanonicalFact["path"]>> = Object.freeze({
   minimum_wage: "compensation.base_monthly_salary",

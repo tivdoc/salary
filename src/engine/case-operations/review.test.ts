@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { DeterministicClockPort } from "../wave3/contracts";
-import { ContentAddressedIdPort, Sha256CanonicalHashPort } from "./canonical";
-import { CaseReviewError, InMemoryCaseReviewService } from "./review";
+import type { DeterministicClockPort } from "../wave3/contracts.ts";
+import { ContentAddressedIdPort, Sha256CanonicalHashPort } from "./canonical.ts";
+import { CaseReviewError, InMemoryCaseReviewService } from "./review.ts";
 
 const clock: DeterministicClockPort = { now: () => "2026-08-30T12:00:00.000Z" };
 const hash = new Sha256CanonicalHashPort();

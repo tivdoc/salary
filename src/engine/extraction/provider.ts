@@ -1,5 +1,5 @@
-import type { ImmutableDocument } from "../domain/documents";
-import type { ExtractionRequest, ExtractionResult } from "./contracts";
+import type { ImmutableDocument } from "../domain/documents.ts";
+import type { ExtractionRequest, ExtractionResult } from "./contracts.ts";
 
 /** Reads bytes through trusted server code. Implementations must never expose private object URLs to clients. */
 export interface PrivateDocumentSource {

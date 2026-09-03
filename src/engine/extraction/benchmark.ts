@@ -1,10 +1,10 @@
 import { z } from "zod";
-import type { PayslipFieldKey } from "./contracts";
-import type { SyntheticGroundTruth } from "./fixtures/ground-truth";
-import type { SyntheticPayslipFixture } from "./fixtures/source-fixtures";
-import { runPayslipExtractionPipeline } from "./pipeline";
-import type { DocumentExtractor, PrivateDocumentSource } from "./provider";
-import { resolvedPayslipFactPaths } from "./resolver";
+import type { PayslipFieldKey } from "./contracts.ts";
+import type { SyntheticGroundTruth } from "./fixtures/ground-truth.ts";
+import type { SyntheticPayslipFixture } from "./fixtures/source-fixtures.ts";
+import { runPayslipExtractionPipeline } from "./pipeline.ts";
+import type { DocumentExtractor, PrivateDocumentSource } from "./provider.ts";
+import { resolvedPayslipFactPaths } from "./resolver.ts";
 
 const metricSchema = z
   .object({ expected: z.number().int().nonnegative(), correct: z.number().int().nonnegative() })

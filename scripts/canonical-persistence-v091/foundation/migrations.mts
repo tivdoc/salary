@@ -54,6 +54,8 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609020011_projection_accounting_v2_projected_excludes_superseded.sql",
   "202609020012_projection_accounting_v1_delegates_to_v2.sql",
   "202609020013_gt_appends_gate_on_verified_tenant.sql",
+  "202609020014_trust_policy_append_unambiguous_organization_version.sql",
+  "202609020015_gt_manifest_history_read.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -106,6 +108,10 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "a1f691627b3700951788d0e9de9b63f01ebb80940ff20674ceec42e4180c2763",
   "202609020013_gt_appends_gate_on_verified_tenant.sql":
     "1c081c3ce6c25c4a2fdd35c0e2a871096ed2aa28e2f8fb0bf4ec9c0205cf26c7",
+  "202609020014_trust_policy_append_unambiguous_organization_version.sql":
+    "be243f22b164bc2d4560511b4effffdc72c07f57e9d1e4d4c430cf7849d19c0b",
+  "202609020015_gt_manifest_history_read.sql":
+    "76e3e9b8addf479e5bd40f53f211803403b8c45d5b3df2b2eabd30e836c9dd28",
 });
 
 export type MigrationFile = Readonly<{

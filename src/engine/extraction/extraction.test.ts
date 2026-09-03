@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { safeEngineLogSchema } from "@/server/engine/safe-logging";
-import { extractionResultSchema, rawCandidateFieldSchema, sensitiveMetadataCandidateSchema } from "./contracts";
-import { FixtureDocumentExtractor, SyntheticDocumentSource } from "./fixture-extractor";
-import { syntheticPayslipFixtures } from "./fixtures/source-fixtures";
-import { minimizePayslipForSemanticProcessing } from "./minimize";
+import { extractionResultSchema, rawCandidateFieldSchema, sensitiveMetadataCandidateSchema } from "./contracts.ts";
+import { FixtureDocumentExtractor, SyntheticDocumentSource } from "./fixture-extractor.ts";
+import { syntheticPayslipFixtures } from "./fixtures/source-fixtures.ts";
+import { minimizePayslipForSemanticProcessing } from "./minimize.ts";
 import {
   normalizeDecimal,
   normalizeExplicitDate,
@@ -15,10 +15,10 @@ import {
   normalizePayslipExtraction,
   normalizePercentage,
   normalizeSalaryPeriod,
-} from "./normalization";
-import { runPayslipExtractionPipeline } from "./pipeline";
-import { resolvePayslipSnapshot, resolvedPayslipFactPaths } from "./resolver";
-import { validatePayslipGate0 } from "./validation";
+} from "./normalization.ts";
+import { runPayslipExtractionPipeline } from "./pipeline.ts";
+import { resolvePayslipSnapshot, resolvedPayslipFactPaths } from "./resolver.ts";
+import { validatePayslipGate0 } from "./validation.ts";
 
 function uuid(value: number) {
   return `00000000-0000-4000-8000-${value.toString().padStart(12, "0")}`;

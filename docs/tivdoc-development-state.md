@@ -163,6 +163,52 @@ version; the review package v4 holds all sixty-nine, builds twice to one hash,
 and every item is not_reviewed, not_signed, not_activated, not_delivered.
 Counters unchanged.
 
+### Wave 5 — durable Ground Truth workflow: G-3, G-4, G-5, G-6, G-8 proven on DEV
+
+`scripts/legal-review-projection/ground-truth-matrix.mts` runs the durable
+workflow as the operations runtime role and records fourteen observations,
+every one a refusal or an acceptance read back from DEV: trust stack durable
+(organisation, policy, four reviewers, four keys proven by their reviewers);
+annotation_1 accepted; the same identity refused for annotation_2 by the port
+and, called past the port, by the definer (`GOVERNANCE_GT_ANNOTATION_2_TRANSITION_INVALID`);
+a second identity accepted; disagreement recorded unsigned; an annotator
+refused as adjudicator by the port and by the definer
+(`GOVERNANCE_GT_ADJUDICATION_TRANSITION_INVALID`); a third identity accepted; a
+tampered lock refused; the annotation_1 command replayed as an idempotent
+no-op; current aggregate and full revision chain read back as the runtime role
+(`1:annotation_1 2:annotation_2 3:disagreement 4:human_adjudication`); the
+chain unreadable without a verified tenant. Zero content: synthetic fixture
+manifests re-attributed to run-scoped reviewers, run-scoped document digest,
+no manifest reaches `locked_ground_truth`. HUMAN_GROUND_TRUTH_LOCKED 0.
+
+Running it settled the actor model the definers impose: work items are
+`governance.queue`'s, claims and key registrations the reviewer's, the unsigned
+disagreement `ground.truth.system`'s, and a signed manifest the admitted
+reviewer's — one session per subject, each command under the session it names.
+Each run is its own synthetic tenant because the queue hands a claimant the
+oldest eligible item tenant-wide and a released item returns to the same queue.
+
+Two defects surfaced on first real call and are fixed: `governance_trust_policy_append`
+raised 42702 (variable shadowed a column; `202609020014`), and the governance
+port parsed aggregate version "1" with the id schema (three characters
+minimum), so no manifest below revision 100 could be admitted. A history-read
+definer (`202609020015`, owner `tivdoc_governance_owner`, verified-tenant
+gated, runtime roles only) was added because no runtime role could read a
+manifest's revision chain. Chain 38/38 applied; definer definitions 126.
+
+The engine's relative imports carry explicit extensions now (52 rewritten,
+checked against the filesystem, directory targets to `/index.ts`): the matrix
+loads the engine's fixture and validator under `--experimental-strip-types`,
+which resolves nothing implicitly. tsc, eslint and the engine and governance
+suites (82 files, 564 tests) are clean on the rewrite.
+
+Still open in Wave 5: G-1 (enumeration of process-local stores), G-2 (queue
+already durable — disposition to record), G-7 lock semantics, G-9 restart/race,
+G-10 the 42 golden templates, G-11 the 5 payslip composites, G-12 the
+`/operations` panel. The database does not verify Ed25519 signatures (no
+pgcrypto Ed25519); that check stays in the TypeScript port and is stated, not
+proven, by the matrix.
+
 ### Security finding — closed
 
 `tivdoc_service_tenant_scope` bound `tivdoc_dev_migrator` on all 33 tables it
@@ -187,7 +233,8 @@ statement is corrected in place in the definer surface matrix.
 
 ## Resume point
 
-- next: Wave 5 G-2 once G-1's enumeration lands; then G-3..G-12; then Wave 6.
+- next: Wave 5 G-7 (lock semantics) and G-9 (restart/race) on the matrix; then
+  G-1/G-2 dispositions, G-10, G-11, G-12; then Wave 6.
 - B-3..B-7 once a fixture exists per history guard.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
   project, resetting the DEV default database, `initdb.exe` under Windows

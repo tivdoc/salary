@@ -1,4 +1,4 @@
-import type { PayslipFieldKey } from "../contracts";
+import type { PayslipFieldKey } from "../contracts.ts";
 
 export type SyntheticGroundTruth = Readonly<{
   fixture_id: string;

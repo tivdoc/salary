@@ -33,7 +33,7 @@ import {
   analysisRunSchema,
   analysisRunTransitionSchema,
   investigationHypothesisSchema,
-} from "./index";
+} from "./index.ts";
 
 const ids = {
   case: "11111111-1111-4111-8111-111111111111",

@@ -1,13 +1,13 @@
-import type { ImmutableDocument } from "../domain/documents";
-import type { CanonicalFact } from "../facts/contracts";
-import type { NormalizedPayslipExtraction } from "../extraction/payslip";
+import type { ImmutableDocument } from "../domain/documents.ts";
+import type { CanonicalFact } from "../facts/contracts.ts";
+import type { NormalizedPayslipExtraction } from "../extraction/payslip.ts";
 import type {
   AnalysisResultBundle,
   CaseAnalysisCommand,
   DeterministicReportArtifacts,
   LegalCatalogSelection,
   Wave3Topic,
-} from "../wave3/contracts";
+} from "../wave3/contracts.ts";
 
 export const CASE_ANALYSIS_STAGES = [
   "input_snapshot",

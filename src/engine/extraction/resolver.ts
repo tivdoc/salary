@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { immutableDocumentSchema } from "../domain/documents";
-import { isoTimestampSchema, uuidSchema, versionSchema } from "../domain/primitives";
-import { canonicalFactSchema, type CanonicalFact, type EvidenceReference } from "../facts/contracts";
-import { employmentSnapshotSchema } from "../facts/snapshot";
-import { factPathSchema, type FactPath } from "../facts/fact-paths";
-import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip";
-import { gate0ValidationSchema, type Gate0Validation } from "./validation";
+import { immutableDocumentSchema } from "../domain/documents.ts";
+import { isoTimestampSchema, uuidSchema, versionSchema } from "../domain/primitives.ts";
+import { canonicalFactSchema, type CanonicalFact, type EvidenceReference } from "../facts/contracts.ts";
+import { employmentSnapshotSchema } from "../facts/snapshot.ts";
+import { factPathSchema, type FactPath } from "../facts/fact-paths.ts";
+import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip.ts";
+import { gate0ValidationSchema, type Gate0Validation } from "./validation.ts";
 
 export const snapshotResolutionContextSchema = z
   .object({

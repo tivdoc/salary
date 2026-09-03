@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { immutableDocumentSchema } from "../domain/documents";
+import { immutableDocumentSchema } from "../domain/documents.ts";
 import {
   confidenceSchema,
   domainCodeSchema,
   isoTimestampSchema,
   uuidSchema,
   versionSchema,
-} from "../domain/primitives";
+} from "../domain/primitives.ts";
 
 export const extractionMethodSchema = z.enum(["text_native", "ocr", "template", "fixture", "ai_vision"]);
 export const extractionStatusSchema = z.enum(["completed", "partial", "failed"]);

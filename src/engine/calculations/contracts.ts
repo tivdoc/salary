@@ -7,9 +7,9 @@ import {
   moneySchema,
   uuidSchema,
   versionSchema,
-} from "../domain/primitives";
-import { factPathSchema } from "../facts/fact-paths";
-import { ruleReferenceSchema } from "../rules/contracts";
+} from "../domain/primitives.ts";
+import { factPathSchema } from "../facts/fact-paths.ts";
+import { ruleReferenceSchema } from "../rules/contracts.ts";
 
 export const calculationValueSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("money"), value: moneySchema }).strict(),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isoTimestampSchema, uuidSchema, versionSchema } from "../domain/primitives";
+import { isoTimestampSchema, uuidSchema, versionSchema } from "../domain/primitives.ts";
 
 export const analysisRunTypeSchema = z.enum(["initial_scan", "full_investigation", "shadow"]);
 export const analysisRunStateSchema = z.enum([

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateRangeSchema, domainCodeSchema, isoTimestampSchema, uuidSchema } from "./primitives";
+import { dateRangeSchema, domainCodeSchema, isoTimestampSchema, uuidSchema } from "./primitives.ts";
 
 export const immutableDocumentSchema = z
   .object({

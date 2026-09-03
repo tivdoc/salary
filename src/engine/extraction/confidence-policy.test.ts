@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { assessExtractionConfidence, criticalFieldThresholds } from "./confidence-policy";
-import { extractionResultSchema } from "./contracts";
-import { syntheticPayslipFixtures } from "./fixtures/source-fixtures";
-import { normalizePayslipExtraction } from "./normalization";
-import { validatePayslipGate0 } from "./validation";
+import { assessExtractionConfidence, criticalFieldThresholds } from "./confidence-policy.ts";
+import { extractionResultSchema } from "./contracts.ts";
+import { syntheticPayslipFixtures } from "./fixtures/source-fixtures.ts";
+import { normalizePayslipExtraction } from "./normalization.ts";
+import { validatePayslipGate0 } from "./validation.ts";
 
 function assess(fixtureId: string) {
   const fixture = syntheticPayslipFixtures.find((candidate) => candidate.fixture_id === fixtureId);

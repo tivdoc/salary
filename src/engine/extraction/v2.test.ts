@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ExtractionResult, PayslipFieldKey } from "./contracts";
+import type { ExtractionResult, PayslipFieldKey } from "./contracts.ts";
 import {
   buildPassEvaluation,
   resolvePayslipExtractionPasses,
   selectTargetedRecovery,
   type PayslipExtractionPass,
-} from "./v2";
-import { syntheticPayslipFixtures } from "./fixtures/source-fixtures";
+} from "./v2.ts";
+import { syntheticPayslipFixtures } from "./fixtures/source-fixtures.ts";
 
 function uuid(number: number) {
   return `00000000-0000-4000-8000-${number.toString().padStart(12, "0")}`;

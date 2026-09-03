@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { calculationTraceSchema } from "../calculations/contracts";
-import { canonicalSha256, canonicalStringify } from "../rule-runtime/canonical";
-import { evaluateLegalReadiness, type LegalReadinessCandidate } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness";
+import { calculationTraceSchema } from "../calculations/contracts.ts";
+import { canonicalSha256, canonicalStringify } from "../rule-runtime/canonical.ts";
+import { evaluateLegalReadiness, type LegalReadinessCandidate } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
 import type {
   AnalysisResultBundle,
   CanonicalHashPort,
@@ -17,15 +17,15 @@ import type {
   RuleSpecExecutionResult,
   RuleSpecExecutorPort,
   Wave3Topic,
-} from "../wave3/contracts";
+} from "../wave3/contracts.ts";
 import type {
   CaseAnalysisLogPort,
   CaseAnalysisSafeLog,
   ReportRegistrationPort,
   StoredCaseInputSnapshot,
   StoredCaseSnapshotPort,
-} from "./contracts";
-import { CaseAnalysisError } from "./contracts";
+} from "./contracts.ts";
+import { CaseAnalysisError } from "./contracts.ts";
 
 export function deterministicUuid(seed: string) {
   const hash = canonicalSha256(seed);

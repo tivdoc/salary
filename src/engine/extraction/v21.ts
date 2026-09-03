@@ -1,30 +1,30 @@
 import { z } from "zod";
-import { domainCodeSchema, uuidSchema } from "../domain/primitives";
+import { domainCodeSchema, uuidSchema } from "../domain/primitives.ts";
 import {
   extractionResultSchema,
   payslipFieldKeySchema,
   type PayslipFieldKey,
   type RawCandidateField,
-} from "./contracts";
+} from "./contracts.ts";
 import {
   assessExtractionConfidence,
   criticalFieldThresholds,
   extractionConfidenceAssessmentSchema,
-} from "./confidence-policy";
-import { normalizePayslipExtraction } from "./normalization";
-import { normalizedPayslipExtractionSchema, type NormalizedCandidateField } from "./payslip";
+} from "./confidence-policy.ts";
+import { normalizePayslipExtraction } from "./normalization.ts";
+import { normalizedPayslipExtractionSchema, type NormalizedCandidateField } from "./payslip.ts";
 import {
   gate0ValidationSchema,
   validatePayslipGate0,
   type Gate0CriticalContext,
   type Gate0Validation,
-} from "./validation";
+} from "./validation.ts";
 import {
   extractionRegionSchema,
   payslipExtractionPassSchema,
   type ExtractionRegion,
   type PayslipExtractionPass,
-} from "./v2";
+} from "./v2.ts";
 
 export const PAYSLIP_EXTRACTION_V21_VERSION = "2.1";
 export const PAYSLIP_V21_RESOLUTION_POLICY_VERSION = "payslip-v2.1-non-degrading-resolution-1";

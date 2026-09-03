@@ -1,4 +1,4 @@
-import type { CaseAnalysisPort, CaseOperationsPort, ReportBuilderPort } from "../wave3/contracts";
+import type { CaseAnalysisPort, CaseOperationsPort, ReportBuilderPort } from "../wave3/contracts.ts";
 
 /**
  * V0.7 freezes platform and product adapter ports around canonical Wave 3

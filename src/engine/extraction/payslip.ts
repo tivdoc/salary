@@ -6,7 +6,7 @@ import {
   isoDateSchema,
   moneySchema,
   uuidSchema,
-} from "../domain/primitives";
+} from "../domain/primitives.ts";
 import {
   candidateSourceSchema,
   candidateWarningSchema,
@@ -18,7 +18,7 @@ import {
   extractionStatusSchema,
   payrollRowSemanticSchema,
   sensitiveMetadataCandidateSchema,
-} from "./contracts";
+} from "./contracts.ts";
 
 export const salaryPeriodSchema = z
   .object({

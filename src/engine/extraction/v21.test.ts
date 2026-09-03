@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { ExtractionResult, PayslipFieldKey } from "./contracts";
-import { syntheticPayslipFixtures } from "./fixtures/source-fixtures";
-import { buildPassEvaluation, type ExtractionRegion, type PayslipExtractionPass } from "./v2";
+import type { ExtractionResult, PayslipFieldKey } from "./contracts.ts";
+import { syntheticPayslipFixtures } from "./fixtures/source-fixtures.ts";
+import { buildPassEvaluation, type ExtractionRegion, type PayslipExtractionPass } from "./v2.ts";
 import {
   factResolutionStateSchema,
   recoveryDecisionForV21,
   recoveryDecisionSchema,
   resolvePayslipExtractionPassesV21,
   selectTargetedRecoveryV21,
-} from "./v21";
+} from "./v21.ts";
 
 function uuid(number: number) {
   return `00000000-0000-4000-8000-${number.toString().padStart(12, "0")}`;

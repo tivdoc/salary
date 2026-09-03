@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { CanonicalHashPort, DeterministicIdPort } from "../wave3/contracts";
+import type { CanonicalHashPort, DeterministicIdPort } from "../wave3/contracts.ts";
 
 function canonicalize(value: unknown): string {
   if (value === null || typeof value === "boolean" || typeof value === "string") return JSON.stringify(value);

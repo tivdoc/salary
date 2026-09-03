@@ -4,9 +4,9 @@ import type {
   CaseReviewPort,
   DeterministicClockPort,
   DeterministicIdPort,
-} from "../wave3/contracts";
+} from "../wave3/contracts.ts";
 import { immutable } from "./canonical.ts";
-import type { ReviewInvalidator } from "./lifecycle";
+import type { ReviewInvalidator } from "./lifecycle.ts";
 
 export const CASE_REVIEW_TASK_SCHEMA = "tivdoc-case-review-task-v0.6.0" as const;
 export const CASE_REVIEW_DECISION_SCHEMA = "tivdoc-case-review-decision-v0.6.0" as const;

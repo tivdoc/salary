@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { domainCodeSchema } from "../domain/primitives";
-import { factPathSchema } from "../facts/fact-paths";
+import { domainCodeSchema } from "../domain/primitives.ts";
+import { factPathSchema } from "../facts/fact-paths.ts";
 
 export const questionTypeSchema = z.enum([
   "single_choice",

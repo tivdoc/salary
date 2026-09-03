@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { domainCodeSchema, uuidSchema } from "../domain/primitives";
-import { payslipFieldKeySchema } from "./contracts";
-import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip";
+import { domainCodeSchema, uuidSchema } from "../domain/primitives.ts";
+import { payslipFieldKeySchema } from "./contracts.ts";
+import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip.ts";
 
 export const gate0StatusSchema = z.enum(["valid", "suspicious", "invalid", "requires_confirmation"]);
 export const validationSeveritySchema = z.enum(["warning", "error", "confirmation"]);

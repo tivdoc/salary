@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { benchmarkPayslipExtractor } from "./benchmark";
-import { FixtureDocumentExtractor, SyntheticDocumentSource } from "./fixture-extractor";
-import { syntheticPayslipGroundTruth } from "./fixtures/ground-truth";
-import { syntheticPayslipFixtures } from "./fixtures/source-fixtures";
+import { benchmarkPayslipExtractor } from "./benchmark.ts";
+import { FixtureDocumentExtractor, SyntheticDocumentSource } from "./fixture-extractor.ts";
+import { syntheticPayslipGroundTruth } from "./fixtures/ground-truth.ts";
+import { syntheticPayslipFixtures } from "./fixtures/source-fixtures.ts";
 
 describe("synthetic payslip extraction benchmark", () => {
   it("reports field-level accuracy and expected validation catches", async () => {

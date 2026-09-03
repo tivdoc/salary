@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { agentNameSchema, domainCodeSchema, isoTimestampSchema, uuidSchema } from "../domain/primitives";
-import { questionReferenceSchema } from "./contracts";
+import { agentNameSchema, domainCodeSchema, isoTimestampSchema, uuidSchema } from "../domain/primitives.ts";
+import { questionReferenceSchema } from "./contracts.ts";
 
 export const conversationSchema = z
   .object({

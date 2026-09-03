@@ -1,15 +1,15 @@
 import { z } from "zod";
-import { agentNameSchema, domainCodeSchema, isoTimestampSchema, uuidSchema } from "../domain/primitives";
-import { immutableDocumentSchema } from "../domain/documents";
-import { canonicalFactSchema } from "../facts/contracts";
-import { factPathSchema } from "../facts/fact-paths";
-import { findingSchema } from "../findings/contracts";
+import { agentNameSchema, domainCodeSchema, isoTimestampSchema, uuidSchema } from "../domain/primitives.ts";
+import { immutableDocumentSchema } from "../domain/documents.ts";
+import { canonicalFactSchema } from "../facts/contracts.ts";
+import { factPathSchema } from "../facts/fact-paths.ts";
+import { findingSchema } from "../findings/contracts.ts";
 import {
   investigationHypothesisSchema,
   requestedFactSchema,
-} from "../investigation/hypothesis";
-import { interviewQuestionSchema, questionReferenceSchema } from "../interview/contracts";
-import { ruleCatalogEntrySchema, ruleReferenceSchema } from "../rules/contracts";
+} from "../investigation/hypothesis.ts";
+import { interviewQuestionSchema, questionReferenceSchema } from "../interview/contracts.ts";
+import { ruleCatalogEntrySchema, ruleReferenceSchema } from "../rules/contracts.ts";
 
 const agentResourceSchema = z.enum([
   "document_extraction",

@@ -1,11 +1,11 @@
-import { moneySchema, type Money } from "../domain/primitives";
-import { extractionResultSchema, type ExtractionResult, type RawCandidateField } from "./contracts";
+import { moneySchema, type Money } from "../domain/primitives.ts";
+import { extractionResultSchema, type ExtractionResult, type RawCandidateField } from "./contracts.ts";
 import {
   normalizedCandidateFieldSchema,
   normalizedPayslipExtractionSchema,
   type NormalizedPayslipExtraction,
   type SalaryPeriod,
-} from "./payslip";
+} from "./payslip.ts";
 
 const hebrewMonths: Readonly<Record<string, number>> = {
   ינואר: 1,

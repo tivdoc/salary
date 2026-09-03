@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { calculationTraceSchema } from "../calculations/contracts";
+import { calculationTraceSchema } from "../calculations/contracts.ts";
 import {
   confidenceSchema,
   dateRangeSchema,
@@ -7,9 +7,9 @@ import {
   isoTimestampSchema,
   nonNegativeMoneySchema,
   uuidSchema,
-} from "../domain/primitives";
-import { evidenceReferenceSchema } from "../facts/contracts";
-import { ruleReferenceSchema } from "../rules/contracts";
+} from "../domain/primitives.ts";
+import { evidenceReferenceSchema } from "../facts/contracts.ts";
+import { ruleReferenceSchema } from "../rules/contracts.ts";
 
 export const findingStatusSchema = z.enum([
   "candidate",

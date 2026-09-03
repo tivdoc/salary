@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { isoTimestampSchema, uuidSchema, versionSchema } from "../domain/primitives";
-import { canonicalFactSchema } from "./contracts";
+import { isoTimestampSchema, uuidSchema, versionSchema } from "../domain/primitives.ts";
+import { canonicalFactSchema } from "./contracts.ts";
 
 export const employmentSnapshotSchema = z
   .object({

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { confidenceSchema, domainCodeSchema, moneySchema, uuidSchema } from "../domain/primitives";
-import { boundingBoxSchema, detectedDocumentTypeSchema, payslipFieldKeySchema } from "./contracts";
-import { normalizedPayslipExtractionSchema, normalizedPercentageSchema } from "./payslip";
+import { confidenceSchema, domainCodeSchema, moneySchema, uuidSchema } from "../domain/primitives.ts";
+import { boundingBoxSchema, detectedDocumentTypeSchema, payslipFieldKeySchema } from "./contracts.ts";
+import { normalizedPayslipExtractionSchema, normalizedPercentageSchema } from "./payslip.ts";
 
 const minimizedSourceSchema = z
   .object({

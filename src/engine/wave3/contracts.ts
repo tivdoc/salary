@@ -1,8 +1,8 @@
-import type { CalculationTrace } from "../calculations/contracts";
-import type { Money } from "../domain/primitives";
-import type { CanonicalFact } from "../facts/contracts";
-import type { LegalReadinessDecision } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness";
-import type { RuleInputSnapshot } from "../wave2/contracts";
+import type { CalculationTrace } from "../calculations/contracts.ts";
+import type { Money } from "../domain/primitives.ts";
+import type { CanonicalFact } from "../facts/contracts.ts";
+import type { LegalReadinessDecision } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
+import type { RuleInputSnapshot } from "../wave2/contracts.ts";
 
 /**
  * Wave 3 freezes application ports around the existing canonical domain types.

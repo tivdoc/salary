@@ -5,7 +5,7 @@ import {
   type EvidenceDispositionRecord,
   type HistoricalPackageIdentity,
   validateDispositionChain,
-} from "./disposition";
+} from "./disposition.ts";
 
 const denied = {
   current_audit_admission: false,

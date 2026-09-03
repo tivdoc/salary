@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { CaseLifecycleState, DeterministicClockPort, PaymentEvidenceSnapshot } from "../wave3/contracts";
-import { WAVE3_TOPICS } from "../wave3/contracts";
-import { ContentAddressedIdPort, Sha256CanonicalHashPort } from "./canonical";
+import type { CaseLifecycleState, DeterministicClockPort, PaymentEvidenceSnapshot } from "../wave3/contracts.ts";
+import { WAVE3_TOPICS } from "../wave3/contracts.ts";
+import { ContentAddressedIdPort, Sha256CanonicalHashPort } from "./canonical.ts";
 import {
   allowedLifecycleTransitions,
   InMemoryCaseOperationsService,
   isLifecycleTransitionAllowed,
   reconcilePaymentEvidence,
-} from "./lifecycle";
-import { InMemoryCaseReviewService, ManualExportEligibilityService } from "./review";
-import { InMemoryVerifiedPaymentEvidenceStore } from "../../server/engine/case-operations/verified-payment-evidence";
+} from "./lifecycle.ts";
+import { InMemoryCaseReviewService, ManualExportEligibilityService } from "./review.ts";
+import { InMemoryVerifiedPaymentEvidenceStore } from "../../server/engine/case-operations/verified-payment-evidence.ts";
 
 const hash = new Sha256CanonicalHashPort();
 const ids = new ContentAddressedIdPort();

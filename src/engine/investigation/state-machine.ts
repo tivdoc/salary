@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { isoTimestampSchema, uuidSchema } from "../domain/primitives";
-import { analysisRunStateSchema } from "./analysis-run";
+import { isoTimestampSchema, uuidSchema } from "../domain/primitives.ts";
+import { analysisRunStateSchema } from "./analysis-run.ts";
 
 type AnalysisRunState = z.infer<typeof analysisRunStateSchema>;
 

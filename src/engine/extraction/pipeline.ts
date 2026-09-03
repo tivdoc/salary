@@ -1,11 +1,11 @@
-import type { EmploymentSnapshot } from "../facts/snapshot";
-import { extractionRequestSchema, extractionResultSchema, type ExtractionRequest, type ExtractionResult } from "./contracts";
-import { assessExtractionConfidence } from "./confidence-policy";
-import { minimizePayslipForSemanticProcessing } from "./minimize";
-import { normalizePayslipExtraction } from "./normalization";
-import type { DocumentExtractor, PrivateDocumentSource } from "./provider";
-import { resolvePayslipSnapshot, type SnapshotResolutionContext } from "./resolver";
-import { validatePayslipGate0 } from "./validation";
+import type { EmploymentSnapshot } from "../facts/snapshot.ts";
+import { extractionRequestSchema, extractionResultSchema, type ExtractionRequest, type ExtractionResult } from "./contracts.ts";
+import { assessExtractionConfidence } from "./confidence-policy.ts";
+import { minimizePayslipForSemanticProcessing } from "./minimize.ts";
+import { normalizePayslipExtraction } from "./normalization.ts";
+import type { DocumentExtractor, PrivateDocumentSource } from "./provider.ts";
+import { resolvePayslipSnapshot, type SnapshotResolutionContext } from "./resolver.ts";
+import { validatePayslipGate0 } from "./validation.ts";
 
 export type PayslipPipelineResult = Readonly<{
   raw_extraction: ExtractionResult;

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { domainCodeSchema, uuidSchema } from "../domain/primitives";
-import { factPathSchema } from "../facts/fact-paths";
-import { ruleReferenceSchema } from "../rules/contracts";
+import { domainCodeSchema, uuidSchema } from "../domain/primitives.ts";
+import { factPathSchema } from "../facts/fact-paths.ts";
+import { ruleReferenceSchema } from "../rules/contracts.ts";
 
 export const hypothesisStatusSchema = z.enum([
   "open",

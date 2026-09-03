@@ -1,4 +1,4 @@
-import type { ExtractionRequest, ExtractionResult, PayslipFieldKey } from "../contracts";
+import type { ExtractionRequest, ExtractionResult, PayslipFieldKey } from "../contracts.ts";
 
 export type SyntheticPayslipFixture = Readonly<{
   fixture_id: string;

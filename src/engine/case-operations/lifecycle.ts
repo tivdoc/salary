@@ -1,4 +1,4 @@
-import type { Money } from "../domain/primitives";
+import type { Money } from "../domain/primitives.ts";
 import type {
   CanonicalHashPort,
   CaseLifecycleState,
@@ -9,7 +9,7 @@ import type {
   DeterministicIdPort,
   PaymentEvidencePort,
   PaymentEvidenceSnapshot,
-} from "../wave3/contracts";
+} from "../wave3/contracts.ts";
 import { immutable } from "./canonical.ts";
 import { assertOpaqueIdentifier, PrivacySafeCaseLogger } from "./privacy.ts";
 

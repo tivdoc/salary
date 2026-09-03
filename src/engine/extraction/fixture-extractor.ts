@@ -1,6 +1,6 @@
-import { extractionRequestSchema, extractionResultSchema } from "./contracts";
-import type { DocumentExtractor, PrivateDocumentSource } from "./provider";
-import type { SyntheticPayslipFixture } from "./fixtures/source-fixtures";
+import { extractionRequestSchema, extractionResultSchema } from "./contracts.ts";
+import type { DocumentExtractor, PrivateDocumentSource } from "./provider.ts";
+import type { SyntheticPayslipFixture } from "./fixtures/source-fixtures.ts";
 
 export class FixtureDocumentExtractor implements DocumentExtractor {
   readonly providerId = "synthetic_fixture";
