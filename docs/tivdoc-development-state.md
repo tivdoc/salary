@@ -335,9 +335,37 @@ statement is corrected in place in the definer surface matrix.
 | X-5 | name the last 2 of the 71 | done, from DEV |
 | X-6 | supersession table and three-state invariant | done, asserted from DEV |
 
+## Freeze — the full matrix at this head
+
+Local: vitest 257/258 files, 1785/1789 tests (3 skipped) — the one failure,
+`hermetic-session.test.ts`, is order-dependent under full-suite parallelism
+and passes 7/7 alone; `git-audit.test.ts` timed out under load on one run
+and passes 3/3 alone; no file either test covers was touched by this run.
+tsc clean. eslint 0 errors, 10 pre-existing unused-variable warnings in two
+test files untouched here. `next build` clean.
+
+DEV, as the runtime roles: RLS force 62/62 tenant-scoped, unforced 0.
+Definer surface 92 (two new: history read and queue list, both gated in
+body), ungated 2 (the known pair), unexpected 0, reserved-execute 14.
+Service-role closure: policy tables 0, exposure 0, widening 0. Identity
+negative matrix 8/8. Invalidation effects 10/10. Grant execution: 22
+executed, 0 denied, 18 context failures (lapsed-session setup, not denial).
+Dynamic matrix 14 checks, 10 supported, 10 passed, 4 not supported. Claims
+95, mismatched 9 (`claims_unwired_target_reachable`), 9 open ids named.
+Supersession: `projected 0 + blocked_active 2 + blocked_superseded 69 = 71`,
+`packets_from_supersession = 69`, replay adds nothing. Review package v4:
+69 items, 7 OCR, zip `f5c68bb2…`, second build matches. Ground truth matrix
+23/23; queue map 12/12; parser isolation `PARSER_OS_SANDBOX_NOT_VERIFIED`,
+5/5 pins observed; evidence custody 6/6, walk valid. Owner reassignment:
+25 accounted, 0 newly reassigned, 16 not owned by the target. Journey 16/16
+over HTTP against a production server on DEV.
+
+Counters unchanged: HUMAN_GROUND_TRUTH_LOCKED 0, REAL_* 0, DEPLOYMENTS 0,
+REMOTE_PRODUCTION_MIGRATIONS 0, LIVE_PROVIDER_CALLS 0.
+
 ## Resume point
 
-- next: the freeze — one full matrix at this head, then the ten-line report.
+- the freeze is recorded above; the run ends here.
 - after the freeze, still open: X-4 (the eight `public.*_salary_*` grants),
   the managed-bucket half of K-3 (needs a Storage key), K-5 (needs a
   provisioned destination), `correction_started` over a committed lock, and
