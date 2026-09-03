@@ -580,15 +580,24 @@ it. Single sanctioned copy from the OneDrive folder into the repository.
 
 ## Resume point
 
-- the run stopped at the owner's instruction after the Addendum 5 survey, with
-  no Addendum 5 unit started. Resume with Addendum 4 (its text is required),
-  then: add the research dossier to the repository, resolve D-7/D-12 targets,
-  decide the alternatives link for P, extend the media allowlist for the
-  D-1 Excel, and only then start D-1.
-- after the freeze, still open: X-4 (the eight `public.*_salary_*` grants),
-  the managed-bucket half of K-3 (needs a Storage key), K-5 (needs a
-  provisioned destination), `correction_started` over a committed lock, and
-  the owner's visual review of the five composites (human, open).
+- **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
+  `ba80cc2`).** D-00 (`e920066`), D-0 (`011c3a6`), H-1 (`a6d40c5`), H-2
+  (`d77781e`), H-3 (`e6e1a68`), H-4 (`aab075d`), H-5 (`33091c3`), H-6/H-7
+  (`b3550b4`), H-8 (`092aef0`) — 10 commits, 10 units, all resolved (X-4/H-5
+  and the storage key/H-7 resolved to a correctly-recorded
+  `blocked_dependency`, not left silent). Pool H is complete: 8/8.
+- **Next unit: P-0** (Addendum 6 §A6-2) — the `draft` state and
+  `legal_open_decisions` migration, before any Pool P unit. Then
+  D-1…D-12 + D-1b, then P-1…P-37, then S-1…S-8, then R-1…R-7 + R-9…R-14
+  (R-8 deferred to Session B), then Q-1…Q-7 (Q-8 deferred to Session B),
+  per the revised order in Addendum 6 / `tivdoc-next-run.md`.
+- carried from before this session: K-3's managed-bucket half (needs the
+  Storage key — H-7 re-confirmed absent this session), K-5 (needs a
+  provisioned off-host destination), the owner's visual review of the five
+  payslip composites (human, open), and the eight `public.*_salary_*`
+  grants (H-5: needs a PostgREST-selectable narrow runtime role that does
+  not exist, not a per-function grant move — do not retry as a plain grant
+  change).
 - B-3..B-7 once a fixture exists per history guard.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
   project, resetting the DEV default database, `initdb.exe` under Windows
