@@ -268,6 +268,51 @@ superseding an active lock, which needs a committed lock. The database does not 
 pgcrypto Ed25519); that check stays in the TypeScript port and is stated, not
 proven, by the matrix.
 
+### Wave 6 — custody and parser isolation: K-1, K-2, K-3 executed; K-4 contracted; K-5 blocked_external
+
+K-1/K-2 — `src/server/platform/custody/evidence-store.ts`: an immutable
+local evidence store whose every file is named in an append-only,
+hash-chained index and whose every append, read and walk is named in an
+append-only, hash-chained access log with actor and purpose. The walk
+verifies both chains and the tree against each other and fails on any
+break; the store refuses to append or read while either chain is broken.
+Seven tests produce each break by hand — a changed byte, a missing file, an
+unindexed file, an edited index line, an edited log line, an overwrite.
+`evidence-custody.mts` seals this run's 31 audit receipts (242,559 bytes)
+into `output/v4/evidence/store`, append-only across runs (a changed receipt
+is sealed again under a digest suffix, never over its predecessor); the walk
+is valid and the log names 63 accesses on the first run and every one since.
+
+K-3 — the restore drill ran against the local immutable private provider,
+the non-managed lane's real storage adapter: 31 objects quarantined,
+promoted, restored to a clean location and compared byte-for-byte, both
+digests per object in the receipt, 31 equal. The managed half — the DEV
+project's private `salary-documents` bucket — is `blocked_dependency`: this
+host holds Postgres role passwords only, and a Storage write needs a Storage
+API key; the receipt names the key (`TIVDOC_DEV_STORAGE_SERVICE_KEY` in the
+credentials file, never committed) and the transport that would run the same
+drill against the bucket.
+
+K-4 — the fail-closed detector already existed and still says
+`PARSER_OS_SANDBOX_NOT_VERIFIED` on this host; no OS sandbox primitive is
+claimed. Added on the same module: the closing environment as a typed
+contract — pinned image, kernel isolation, demonstrated no-network, pinned
+toolchain, each NOT_VERIFIED with its artefact, runtime check and acceptable
+implementations, plus hard resource limits and the receipt binding.
+`parser-isolation-contract.mts` records how Pool E actually ran (pypdf and
+Tesseract as plain child processes: a process boundary, acceptable for
+public documents whose output is derived and for nothing else) and pins the
+toolchain observed here: Python 3.13.5 (sha256 9350167…), pypdf 6.16.2,
+PyMuPDF 1.26.4, tesseract v5.4.0.20240606 (sha256 babb405…), heb.traineddata
+(sha256 7da6ea6…).
+
+K-5 — off-host replicated custody stays `blocked_external`
+(`OFF_HOST_AUDIT_CUSTODY_PENDING`, `DURABLE_REPLICATED_CUSTODY_NOT_IMPLEMENTED`).
+`docs/off-host-custody-requirements.md` writes the destination, replication,
+signed-receipt and witnessed-restore requirements against the existing
+`CustodyDestinationPort` contract, precisely enough to hand to whoever
+provisions it, and names the four pieces of evidence that would close it.
+
 ### Security finding — closed
 
 `tivdoc_service_tenant_scope` bound `tivdoc_dev_migrator` on all 33 tables it
@@ -292,9 +337,11 @@ statement is corrected in place in the definer surface matrix.
 
 ## Resume point
 
-- next: Wave 6 K-1 (immutable evidence store contract), K-2 (access log), K-3
-  (restore drill against DEV private storage), K-4 (parser isolation contract,
-  `PARSER_OS_SANDBOX_NOT_VERIFIED`), K-5 (off-host custody, `blocked_external`).
+- next: the freeze — one full matrix at this head, then the ten-line report.
+- after the freeze, still open: X-4 (the eight `public.*_salary_*` grants),
+  the managed-bucket half of K-3 (needs a Storage key), K-5 (needs a
+  provisioned destination), `correction_started` over a committed lock, and
+  the owner's visual review of the five composites (human, open).
 - B-3..B-7 once a fixture exists per history guard.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
   project, resetting the DEV default database, `initdb.exe` under Windows
