@@ -439,6 +439,81 @@ until it is bound to a fetched artifact's hash.
 `tivdoc-rulespec-v0.6.0` with `catalog_boundary: real_inactive`; the
 sensitivity run (Q-8) waits on R-14/S-1.
 
+## Addendum 4 — Session A (Sonnet), continuous grind, base `ba80cc2`
+
+D-00 (`e920066`): `/output/next/` added to `.gitignore`, the receipt directory
+for this session, resolved and committed alone before any other unit.
+
+D-0 (`011c3a6`): the owner's research dossier copied byte-for-byte into
+`docs/legal/research-dossier-2026-09-03.md`. `dossier_sha256 =`
+`6ad2caa0995b67e42dc85bc6bb8690b0901f8679ffeb2440713964813c806422`. This is
+the hash every Pool P draft candidate binds to and the hash the owner
+action (Addendum 5) references; nothing is reviewed or attested by copying
+it. Single sanctioned copy from the OneDrive folder into the repository.
+
+### Pool H — hygiene
+
+- **H-1** (`a6d40c5`) — `hermetic-session.test.ts`'s reported order-dependent
+  failure was not order-dependent and was not shared state: a genuine
+  ~1-in-16 random flake, reproduced in complete isolation with no other file
+  involved. The token's HMAC signature is 32 bytes; 32 mod 3 is 2, so the
+  final base64url character of any such digest carries two bits nothing
+  decodes, and "w"/"x"/"y"/"z" share the same meaningful top four bits at
+  that position — the test tampered the token by swapping its last
+  character between exactly two of those four. Fixed by tampering the
+  middle character instead (inside the payload segment, hashed as opaque
+  UTF-8, no such ambiguity). 25/25 runs pass with the fix. The two ambient
+  `process.env` reads the manager makes outside its injectable seam
+  (`NODE_ENV`, `VERCEL_ENV`) are pinned in a `beforeEach` as defense in
+  depth; no leak into them was found.
+- **H-2** (`d77781e`) — `git-audit.test.ts`'s reported load-timeout measured:
+  13.5s isolated, 33.5s under full-suite parallelism (real contention from
+  ~90 synchronous `git` subprocess spawns racing dozens of other vitest
+  workers for the same cores), exceeding the prior 30s budget. Raised to
+  90s, comfortably over 2x both measurements. `git-audit.ts` itself is
+  unchanged.
+- **H-3** (`e6e1a68`) — `correction_started` over a committed lock, exercised
+  for the first time. The semantics were already implemented
+  (`governance_gt_manifest_append`, since 202609010004): a correction opens
+  a brand new manifest chain naming the locked one via
+  `supersedes_manifest_id`, never touching the locked manifest's own rows.
+  `ground-truth-matrix.mts` now commits a second, independent manifest
+  chain for real (not rolled back — `HUMAN_GROUND_TRUTH_LOCKED` is a
+  declared policy constant asserted across receipts, not a live count, so a
+  synthetic lock in a run-scoped tenant does not move it), corrects it, and
+  proves the locked manifest's content digests are byte-identical across
+  the full five-revision chain before and after. The mutation test: the
+  operations runtime role holds no grant at all on
+  `governance_gt_manifest_versions`, so a raw `UPDATE` against the locked
+  row is refused with permission denied before any trigger runs — no path
+  to that table exists but the one just exercised. 27/27 observations pass.
+- **H-4** — the 9 open sweep ids from the claim-reachability matrix
+  (`claims_unwired_target_reachable`), reclassified with fresh evidence
+  against this head. No frozen receipt is edited: `canonical-entrypoints.v0.10.0.json`
+  and its siblings are the owner-facing ledger a prior decision already
+  declined to touch, and wiring any of these services would add a second
+  construction path for one that already has a working path — precisely
+  the confusion an earlier run flagged as a cost, not a fix. So every one
+  below is `record the rest by id`; none was code-resolved this unit.
+
+  | id | class | finding |
+  |---|---|---|
+  | CEP-013 | checker wrong | `startCanonicalApplicationPostgres` is called from the startup root (`durable-local-runtime.ts:128`); the matrix's reachability check cannot distinguish "called from *something*" from "called from the specific route the blocker names," so it flags a mismatch on a claim that is still true — the route itself never calls it. |
+  | CEP-014 | checker wrong | Same mechanism as CEP-013, a different target. |
+  | CEP-015 | checker wrong | Same mechanism as CEP-013; the claim also references `LIVE_PROVIDER_CALLS: 0`, a runtime invariant no static reachability check can speak to either way. |
+  | CEP-027 | checker wrong | `PostgresJobsOutboxAuditRepository` is constructed at `canonical-postgres.ts:273`, which the matrix counts as reachable; the claim is that no resident worker process runs continuously to drain it, a deployment fact construction alone doesn't establish. |
+  | CEP-028 | both | Same checker imprecision as CEP-027 on its primary claim, plus a second, real, already-known gap it also names: an external effect adapter that is not wired (the `implemented_uncalled` class BL-4 already tracks). |
+  | CEP-080 | checker wrong (root cause confirmed) | The reachability graph hardcodes `src/server/product/internal-ops/runtime.ts` as a `product_entrypoint` at `scripts/product-integration/reachability/verify.mts:191`, in the same rule as genuinely framework-loaded files (`instrumentation.ts`, `middleware.ts`). Checked directly: no non-test file in `src/` imports `internal-ops/runtime.ts` at all (the one hit outside tests, `journey-scope-disposition.ts`, is a string-literal anchor in disposition metadata, not an `import`), and the file matches no Next.js loading convention. The hardcoding is unjustified for this specific file and produces a false "reachable." The underlying claim (BL-4: `InternalOpsService`'s ports are not installed) is true. Not fixed this unit — the same script's counts are asserted against three frozen receipts (`canonical-entrypoints.v0.10.0.json`, `inventory.v0.10.0.json`, `integration-repair-audit.v0.10.1.json`); changing the classification rule needs its own unit to re-verify all three deliberately, not as a side effect of a sweep classification pass. |
+  | CEP-081 | checker wrong (same root cause) | Same hardcoded-entrypoint rule, same file, covering `src/server/product/customer-portal/api.ts` instead. Checked directly: no non-test import exists for this file either. `CustomerPortalService` is genuinely constructed only by the harness and fixtures, matching the claim; not fixed this unit, for the same frozen-receipt reason as CEP-080. |
+  | CEP-082 | checker wrong | `authenticateProductIdentity`-adjacent key resolution is reachable (`configured-verification-key.ts` exists and is wired); the claim is that it resolves one configured PEM rather than backing onto a managed key service — a claim about *which kind* of implementation exists, an axis reachability doesn't measure. Spot-checked: no managed-key-service implementation exists in `src/server/platform/auth/`. Claim stands. |
+  | CEP-083 | claim wrong | Filed as a wiring/reachability claim, but its substance — `MANAGED_IDENTITY_NOT_PROVEN` — is about the trustworthiness of an external identity provider, not about whether anything is called. Confirmed reachable: `authenticateProductIdentity` is called at `durable-session-boundary.ts:54`, real product code. As a *wiring* claim this one is simply wrong; the provider-proof concern is real but was never a wiring question. |
+
+  Net for H-4: 7 `checker wrong` (2 with a confirmed, named, unfixed root
+  cause), 1 `both`, 1 `claim wrong`, 0 `code wrong`, 0 newly resolved. All 9
+  recorded by id above; none needed re-litigating beyond what the matrix's
+  own prior notes already said, which this pass independently confirmed
+  against the current tree rather than took on faith.
+
 ## Resume point
 
 - the run stopped at the owner's instruction after the Addendum 5 survey, with
