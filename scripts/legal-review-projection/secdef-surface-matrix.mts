@@ -39,12 +39,19 @@ const BOOTSTRAP_SITES = Object.freeze([
 /** The surface may not grow silently; a new definer function updates this. */
 const EXPECTED_TOTAL = 88;
 
-// Definer functions a Supabase reserved role may still execute. These eight are
-// reached exactly that way today — `supabase.rpc` from src/app/api/cases/status
-// /route.ts, src/lib/ga4-server.ts and src/lib/verify-payment.ts — so the grant
-// is load-bearing and removing it would break the running product. Narrowing
-// that path means moving those callers first. Everything else was revoked by
-// 202609020005; a ninth name appearing here is a new hole, not a new feature.
+// Definer functions a Supabase reserved role may still execute, each because
+// something real reaches it that way.
+//
+// The eight `public.*_salary_*` functions are called through `supabase.rpc`
+// from src/app/api/cases/status/route.ts, src/lib/ga4-server.ts and
+// src/lib/verify-payment.ts. Narrowing that path means moving those callers.
+//
+// The six `private.controlled_import_*` functions are called by the dynamic
+// verification harness, which authenticates as `service_role` — the maintenance
+// connection at scripts/canonical-persistence-v091/run.mts:375. 202609020005
+// revoked them on the belief that a runtime role reached them; no runtime role
+// ever held EXECUTE, and 202609020006 restored the grant. A fifteenth name
+// appearing here is a new hole, not a new feature.
 const RESERVED_EXECUTE_ALLOWED = Object.freeze([
   "public.claim_salary_ga4_purchase",
   "public.claim_salary_meta_purchase",
@@ -54,6 +61,12 @@ const RESERVED_EXECUTE_ALLOWED = Object.freeze([
   "public.release_salary_ga4_purchase",
   "public.release_salary_meta_purchase",
   "public.verify_salary_payment",
+  "private.controlled_import_reserve",
+  "private.claim_controlled_import_recovery",
+  "private.controlled_import_stage_exact_bytes",
+  "private.controlled_import_reject",
+  "private.controlled_import_publish",
+  "private.open_controlled_import_published_bytes",
 ]);
 
 type PolicyRow = Readonly<{
