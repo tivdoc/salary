@@ -93,7 +93,7 @@ const symbolClassifications: ReadonlyArray<Readonly<{
 // of `src/*`, so all 232 aliased edges pointed at nothing and were dropped.
 // Both were silent — the graph reported `pass: true` throughout. These two
 // counts make that class loud.
-const FRAMEWORK_ENTRY = /^src\/(?:instrumentation|middleware)\.[jt]sx?$|^src\/app\/(?:.*\/)?(?:page|layout|route|error|not-found|global-error|template|default)\.[jt]sx?$/;
+const FRAMEWORK_ENTRY = /^src\/(?:instrumentation|middleware)\.[jt]sx?$|^src\/app\/(?:.*\/)?(?:page|layout|route|error|not-found|global-error|template|default|robots|sitemap|manifest|opengraph-image|twitter-image|icon|apple-icon)\.[jt]sx?$/;
 const frameworkEntriesNotClassified = files
   .filter((file) => FRAMEWORK_ENTRY.test(file))
   .filter((file) => nodes.find((node) => node.path === file)?.kind !== "product_entrypoint");
@@ -182,6 +182,12 @@ function nodeKind(file: string): GraphNode["kind"] {
   // its dynamic import of the durable local runtime is how the product reaches
   // the dependency-invalidation port at all.
   if (/^src\/(?:instrumentation|middleware)\.[jt]sx?$/.test(file)) return "product_entrypoint";
+  // Next.js metadata file conventions, the same class as instrumentation.ts:
+  // the framework loads them by filename, nothing imports them, and leaving
+  // them as ordinary modules makes anything they reach look dead.
+  if (/^src\/app\/(?:.*\/)?(?:robots|sitemap|manifest|opengraph-image|twitter-image|icon|apple-icon)\.[jt]sx?$/.test(file)) {
+    return "product_entrypoint";
+  }
   if (["src/server/product/internal-ops/runtime.ts", "src/server/product/customer-portal/api.ts"].includes(file)) return "product_entrypoint";
   return "module";
 }
