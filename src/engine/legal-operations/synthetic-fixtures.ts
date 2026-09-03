@@ -104,6 +104,8 @@ export function buildSyntheticLegalFixture(topic: Wave3Topic, ordinal = WAVE3_TO
     operative_source_version_ids: [sourceVersionId],
     support_roles: ["primary_binding" as const],
     bindings,
+    decision_id: null,
+    branch: null,
   });
   const parameter = parameterCandidateSchema.parse({ ...parameterSeed, candidate_sha256: legalOperationsSha256(parameterSeed) });
   const sourceReviewDefinitions = Object.freeze([

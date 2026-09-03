@@ -58,6 +58,9 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609020015_gt_manifest_history_read.sql",
   "202609020016_gt_manifest_append_unambiguous_document_sha256.sql",
   "202609020017_governance_work_queue_list.sql",
+  "202609020018_parameter_draft_state_and_open_decisions.sql",
+  "202609020019_legal_open_decision_guard_revoke_default_grant.sql",
+  "202609020020_parameter_attestation_decision_cascade_writes_snapshot.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -118,6 +121,12 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "284637487c269ef5adb5e3f3ea5104d63c30dcbafa5ed8ef2bd93dbbba946244",
   "202609020017_governance_work_queue_list.sql":
     "49d324e4a831a71c622aa059dffae671c0ac3dc1f15ae20fcadc4f9977d0b339",
+  "202609020018_parameter_draft_state_and_open_decisions.sql":
+    "7ab87704989fd62a8bb144e4131439a1a7cd81326da3599713965f0f95e85cd9",
+  "202609020019_legal_open_decision_guard_revoke_default_grant.sql":
+    "85f75a34d7047abd2430a4b8a9012169a05b0cc0803acfc35daa16c9627de01a",
+  "202609020020_parameter_attestation_decision_cascade_writes_snapshot.sql":
+    "caf3c8df51ba23f8429dbc4198b3ce6d151f40f32874da25183d914270496000",
 });
 
 export type MigrationFile = Readonly<{

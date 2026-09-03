@@ -209,10 +209,16 @@ export const parameterCandidateSchema = z.object({
   support_roles: z.array(sourceAuthorityRoleSchema).min(1).readonly(),
   bindings: dependencyBindingsSchema,
   candidate_sha256: legalOperationsSha256Schema,
+  // P-0 (Addendum 6 A6-2). Every alternative of one open legal decision is
+  // its own candidate row sharing decision_id, each with its own distinct
+  // branch; paired so a candidate cannot silently drop one half of the link.
+  decision_id: legalOperationsIdSchema.nullable(),
+  branch: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,63}$/).nullable(),
 }).strict().superRefine((candidate, context) => {
   if (candidate.effective_to !== null && candidate.effective_to < candidate.effective_from) context.addIssue({ code: "custom", message: "parameter_interval_inverted", path: ["effective_to"] });
   if (candidate.value.kind === "money" && candidate.unit !== `currency.${candidate.value.value.currency.toLowerCase()}`) context.addIssue({ code: "custom", message: "parameter_money_unit_mismatch", path: ["unit"] });
   if (candidate.value.kind !== "money" && candidate.value.unit !== candidate.unit) context.addIssue({ code: "custom", message: "parameter_value_unit_mismatch", path: ["unit"] });
+  if ((candidate.decision_id === null) !== (candidate.branch === null)) context.addIssue({ code: "custom", message: "parameter_decision_branch_unpaired", path: ["branch"] });
 }).readonly();
 
 export const parameterAttestationSchema = z.object({

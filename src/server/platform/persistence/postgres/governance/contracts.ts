@@ -57,9 +57,15 @@ export const governanceMutationStateSchema = z.enum([
   "reconciliation_needs_more_evidence",
   "reconciliation_superseded",
   "reconciliation_reviewed_inactive",
-  "candidate_inactive",
+  // P-0 (Addendum 6 A6-2). "draft" replaces "candidate_inactive" as the
+  // initial durable parameter-candidate state, matching the engine's own
+  // state machine; "rejected_by_decision" is where a sibling branch lands
+  // when its open decision resolves to a different branch. Zero rows
+  // existed under the old name when this changed, so nothing decodes it.
+  "draft",
   "awaiting_second_attestation",
   "dual_attested_inactive",
+  "rejected_by_decision",
   "awaiting_complementary_approval",
   "dual_approved_inactive",
   "pending_review",
