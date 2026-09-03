@@ -128,17 +128,16 @@
       "source_path": "src/app/operations/page.tsx",
       "canonical_contract_id": "route.operations.workspace",
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalOperationsService",
-      "classification": "IMPLEMENTED_NOT_WIRED",
+      "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [
         "src/server/product/internal-ops/service.ts",
         "src/server/product/auth/next-session.ts"
       ],
       "blockers": [
-        "MANAGED_IDENTITY_NOT_PROVEN",
-        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+        "MANAGED_IDENTITY_NOT_PROVEN"
       ],
-      "non_claim": "The stable operations workspace fails closed without an installed service and verified session."
+      "non_claim": "src/app/operations/page.tsx:18 resolves the installed operations service and calls notFound() when it is absent; what is unproven is a managed identity provider, not the wiring."
     },
     {
       "entrypoint_id": "CEP-007",
@@ -147,17 +146,16 @@
       "source_path": "src/app/portal/page.tsx",
       "canonical_contract_id": "route.portal.workspace",
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalPortalService",
-      "classification": "IMPLEMENTED_NOT_WIRED",
+      "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [
         "src/server/product/customer-portal/service.ts",
         "src/server/product/auth/next-session.ts"
       ],
       "blockers": [
-        "MANAGED_IDENTITY_NOT_PROVEN",
-        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+        "MANAGED_IDENTITY_NOT_PROVEN"
       ],
-      "non_claim": "The stable portal fails closed without an installed service and verified owner session."
+      "non_claim": "src/app/portal/page.tsx:18 resolves the installed portal service and calls notFound() when it is absent; what is unproven is a managed identity provider, not the wiring."
     },
     {
       "entrypoint_id": "CEP-008",
@@ -359,17 +357,16 @@
       "source_path": "src/app/api/operations/[...segments]/route.ts",
       "canonical_contract_id": "api.operations.canonical",
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalOperationsService",
-      "classification": "IMPLEMENTED_NOT_WIRED",
+      "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [
         "src/server/product/routes/operations-http.ts",
         "src/server/product/auth/hermetic-session.ts"
       ],
       "blockers": [
-        "MANAGED_IDENTITY_NOT_PROVEN",
-        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+        "MANAGED_IDENTITY_NOT_PROVEN"
       ],
-      "non_claim": "The stable API fails closed when its canonical service or signed session is unavailable."
+      "non_claim": "src/app/api/operations/[...segments]/route.ts:20 resolves the installed operations service; what is unproven is a managed identity provider, not the wiring."
     },
     {
       "entrypoint_id": "CEP-021",
@@ -448,17 +445,16 @@
       "source_path": "src/app/api/portal/[[...resource]]/route.ts",
       "canonical_contract_id": "api.portal.canonical",
       "canonical_target": "src/server/product/routes/runtime.ts:resolveCanonicalPortalService",
-      "classification": "IMPLEMENTED_NOT_WIRED",
+      "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [
         "src/server/product/routes/portal-http.ts",
         "src/server/product/auth/hermetic-session.ts"
       ],
       "blockers": [
-        "MANAGED_IDENTITY_NOT_PROVEN",
-        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+        "MANAGED_IDENTITY_NOT_PROVEN"
       ],
-      "non_claim": "The stable API fails closed when its canonical service or signed owner session is unavailable."
+      "non_claim": "src/app/api/portal/[[...resource]]/route.ts:19 resolves the installed portal service; what is unproven is a managed identity provider, not the wiring."
     },
     {
       "entrypoint_id": "CEP-026",

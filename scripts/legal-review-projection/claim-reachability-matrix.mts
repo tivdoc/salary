@@ -57,13 +57,9 @@ const WIRING_BLOCKERS = Object.freeze([
  * examined is the defect this matrix exists to catch.
  */
 const EXAMINED_OPEN: Readonly<Record<string, string>> = Object.freeze({
-  "CEP-006": "unexamined",
-  "CEP-007": "unexamined",
   "CEP-013": "unexamined",
   "CEP-014": "unexamined",
   "CEP-015": "unexamined",
-  "CEP-020": "unexamined",
-  "CEP-025": "unexamined",
   "CEP-027": "unexamined",
   "CEP-028": "unexamined",
   "CEP-080": "unexamined",
