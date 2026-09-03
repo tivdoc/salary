@@ -1332,15 +1332,15 @@
       "source_path": "src/server/product/routes/runtime.ts",
       "canonical_contract_id": "service.routes.canonical-runtime",
       "canonical_target": "src/server/product/routes/runtime.ts:installCanonicalProductApplicationComposition",
-      "classification": "IMPLEMENTED_NOT_WIRED",
+      "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [
         "src/server/platform/composition/canonical-postgres-application.ts"
       ],
       "blockers": [
-        "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED"
+        "MANAGED_ENVIRONMENT_NOT_PROVEN"
       ],
-      "non_claim": "The one-shot seam exists and fails closed; no non-test installation is claimed."
+      "non_claim": "The non-test composition root installs this at durable-local-runtime.ts:230; a local durable runtime is not a managed environment, and nothing here proves one."
     },
     {
       "entrypoint_id": "CEP-079",
@@ -1349,15 +1349,15 @@
       "source_path": "src/server/product/durable-postgres/application.ts",
       "canonical_contract_id": "service.product.durable-postgres",
       "canonical_target": "src/server/product/durable-postgres/application.ts:DurableProductPostgresApplication",
-      "classification": "IMPLEMENTED_NOT_WIRED",
+      "classification": "PARTIAL",
       "product_stable": true,
       "dependencies": [
         "src/server/platform/composition/canonical-postgres-application.ts"
       ],
       "blockers": [
-        "STABLE_NEXT_ROUTES_NOT_BOUND_TO_DURABLE_APPLICATION"
+        "MANAGED_ENVIRONMENT_NOT_PROVEN"
       ],
-      "non_claim": "Dynamic loopback proof does not mean stable Next routes are wired to this service."
+      "non_claim": "Stable routes resolve the durable application at durable-registration.ts:89 and refuse anything but isolated_postgres; a local durable runtime is not a managed environment."
     },
     {
       "entrypoint_id": "CEP-080",

@@ -66,8 +66,6 @@ const EXAMINED_OPEN: Readonly<Record<string, string>> = Object.freeze({
   "CEP-025": "unexamined",
   "CEP-027": "unexamined",
   "CEP-028": "unexamined",
-  "CEP-078": "unexamined",
-  "CEP-079": "unexamined",
   "CEP-080": "unexamined",
   "CEP-081": "unexamined",
   "CEP-082": "unexamined",
