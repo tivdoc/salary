@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./operations-workspace.module.css";
+import { GroundTruthQueuePanel } from "./ground-truth-queue-panel";
 import { LegalReviewPanel } from "./legal-review-panel";
 
 const TOPICS = ["minimum_wage", "working_time", "pension", "travel", "convalescence", "vacation", "sick_leave"] as const;
@@ -144,6 +145,7 @@ export function OperationsWorkspace({ csrfToken }: OperationsWorkspaceProps) {
             </>
           )}
           <LegalReviewPanel csrfToken={csrfToken} />
+          <GroundTruthQueuePanel />
         </main>
       </div>
     </div>

@@ -20,6 +20,14 @@ export const LEGAL_REVIEW_ROUTES = Object.freeze([
   Object.freeze({ path: "legal-review/actions", method: "POST" as const }),
 ]);
 
+/**
+ * The nested Ground Truth queue panel. Read-only by construction: one GET, no
+ * action route, so there is nothing here that a CSRF token would protect.
+ */
+export const GROUND_TRUTH_ROUTES = Object.freeze([
+  Object.freeze({ path: "ground-truth/queue", method: "GET" as const }),
+]);
+
 type OperationsRoute =
   | Readonly<{ method: "GET"; kind: InternalOpsReadKind; caseId: string | null }>
   | Readonly<{ method: "POST"; action: InternalOpsAction; caseId: string | null }>;
@@ -39,6 +47,29 @@ export function createOperationsHttpHandler(input: Readonly<{
       if (!input.service) return productNotFound("SERVICE_ABSENT");
       const segments = safeSegments(rawSegments);
       if (!segments) return productNotFound("SEGMENTS_UNSAFE");
+      // Nested Ground Truth queue panel. Same session and correlation handling
+      // as every other operations route; only the capability differs.
+      if (segments[0] === "ground-truth") {
+        const groundTruth = groundTruthCapability(input.service);
+        if (!groundTruth) return productNotFound("CAPABILITY_ABSENT");
+        const joined = segments.join("/");
+        if (!GROUND_TRUTH_ROUTES.some((route) => route.path === joined && route.method === request.method)) {
+          return productNotFound("PATH_NOT_ROUTED");
+        }
+        const session = await input.sessions.verify(request, "operations", false);
+        if (!session) return productNotFound("SESSION_UNVERIFIED");
+        const correlationId = correlationIdFor(request);
+        try {
+          const limit = queueLimit(request);
+          const data = await groundTruth.readGroundTruthQueue({
+            actor: session.actor, correlation_id: correlationId, limit,
+          });
+          return productJson({ correlation_id: correlationId, data });
+        } catch (error) {
+          const code = problemCode(error);
+          return productJson({ code, correlation_id: correlationId, retryable: false }, statusFor(code));
+        }
+      }
       // Nested Legal Review workspace. It shares this route's session, CSRF and
       // correlation handling exactly; only the service capability differs.
       if (segments[0] === "legal-review") {
@@ -63,7 +94,7 @@ export function createOperationsHttpHandler(input: Readonly<{
             return productJson({ correlation_id: correlationId, data });
           }
           if (!isPost) {
-            const limit = legalReviewLimit(request);
+            const limit = queueLimit(request);
             const data = await legalReview.readLegalReviewQueue({
               actor: session.actor, correlation_id: correlationId, limit,
             });
@@ -135,6 +166,17 @@ type LegalReviewCapability = Readonly<{
   submitLegalReviewAction(input: Readonly<Record<string, unknown>>): Promise<unknown>;
 }>;
 
+type GroundTruthCapability = Readonly<{
+  readGroundTruthQueue(input: Readonly<{ actor: unknown; correlation_id: string; limit: number }>): Promise<unknown>;
+}>;
+
+/** The queue panel is served only when the canonical durable service provides it. */
+function groundTruthCapability(service: InternalOpsApplicationPort | null): GroundTruthCapability | null {
+  const candidate = service as unknown as Partial<GroundTruthCapability> | null;
+  return candidate && typeof candidate.readGroundTruthQueue === "function"
+    ? candidate as GroundTruthCapability : null;
+}
+
 /** The panel is served only when the canonical durable service provides it. */
 function legalReviewCapability(service: InternalOpsApplicationPort | null): LegalReviewCapability | null {
   const candidate = service as unknown as Partial<LegalReviewCapability> | null;
@@ -144,7 +186,7 @@ function legalReviewCapability(service: InternalOpsApplicationPort | null): Lega
     ? candidate as LegalReviewCapability : null;
 }
 
-function legalReviewLimit(request: Request): number {
+function queueLimit(request: Request): number {
   const raw = new URL(request.url).searchParams.get("limit");
   if (raw === null) return 50;
   const parsed = Number.parseInt(raw, 10);

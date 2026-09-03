@@ -244,8 +244,27 @@ composites sit on the queue as `ground_truth_visual_eligibility` work for
 manifest's neutral ids and digests; the composite images were never opened,
 and the owner's visual review is human and stays open.
 
-Still open in Wave 5: G-12 the `/operations` panel. Not exercised:
-`correction_started` superseding an active lock, which needs a committed lock. The database does not verify Ed25519 signatures (no
+G-12 — the queue panel, nested under `/operations` inside the existing 11-tab
+contract, read-only by declaration. `202609020017` adds
+`private.governance_work_queue_list(tenant, workflow_kind, limit)`: owner
+`tivdoc_governance_owner`, verified-tenant gated, executable by the operations
+principal only, returning identity, state, claimant and lease and never
+`payload_json`. The port (`PostgresGovernanceWorkRepository.listQueue`, strict
+row schema — a payload field is a decode failure), the application
+(`readGroundTruthQueue`, readers `extraction_reviewer`, `legal_reviewer`,
+`report_approver`, `auditor`, `break_glass_admin`; every other role, an
+unverified actor, a missing tenant, a malformed correlation id and an
+out-of-range limit refused before any statement), the route
+(`GET /api/operations/ground-truth/queue`, session-verified, no CSRF because
+there is no action, the five distinguishable 404 causes recorded with one
+identical external response) and the panel
+(`ground-truth-queue-panel.tsx`, mounted beside the legal-review panel) each
+carry their negative matrix: 13 tests. From DEV as the runtime role the list
+returns the 42 golden templates and 5 composites with no payload field on any
+entry. Chain 40/40 applied; definer definitions 128.
+
+Wave 5 is complete except for one path not exercised: `correction_started`
+superseding an active lock, which needs a committed lock. The database does not verify Ed25519 signatures (no
 pgcrypto Ed25519); that check stays in the TypeScript port and is stated, not
 proven, by the matrix.
 
@@ -273,8 +292,9 @@ statement is corrected in place in the definer surface matrix.
 
 ## Resume point
 
-- next: Wave 5 G-12 (queue panel under `/operations`: list definer, port,
-  application method, route, panel, negative matrix); then Wave 6 K-1..K-5.
+- next: Wave 6 K-1 (immutable evidence store contract), K-2 (access log), K-3
+  (restore drill against DEV private storage), K-4 (parser isolation contract,
+  `PARSER_OS_SANDBOX_NOT_VERIFIED`), K-5 (off-host custody, `blocked_external`).
 - B-3..B-7 once a fixture exists per history guard.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
   project, resetting the DEV default database, `initdb.exe` under Windows

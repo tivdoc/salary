@@ -172,6 +172,27 @@ export const governanceWorkReleaseSchema = z.object({
   idempotency_key: governanceIdSchema,
 }).strict().readonly();
 
+export const governanceWorkQueueEntrySchema = z.object({
+  ordinal: z.string().min(1),
+  work_item_id: governanceIdSchema,
+  workflow_kind: governanceWorkflowKindSchema,
+  aggregate_id: governanceIdSchema,
+  aggregate_version: governanceVersionSchema,
+  work_kind: governanceWorkKindSchema,
+  required_role: governanceIdSchema,
+  document_sha256: governanceSha256Schema.nullable(),
+  object_version_id: governanceIdSchema.nullable(),
+  input_sha256: governanceSha256Schema,
+  state: z.enum(["pending", "claimed", "released", "completed"]),
+  claimant_id: governanceIdSchema.nullable(),
+  fencing_token: z.number().int().min(0),
+  lease_expires_at: z.string().nullable(),
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1),
+}).strict().readonly();
+
+export type GovernanceWorkQueueEntry = z.infer<typeof governanceWorkQueueEntrySchema>;
+
 export type GovernanceWorkflowKind = z.infer<typeof governanceWorkflowKindSchema>;
 export type GovernanceWorkKind = z.infer<typeof governanceWorkKindSchema>;
 export type GovernanceMutationState = z.infer<typeof governanceMutationStateSchema>;

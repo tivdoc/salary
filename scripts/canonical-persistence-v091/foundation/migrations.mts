@@ -57,6 +57,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609020014_trust_policy_append_unambiguous_organization_version.sql",
   "202609020015_gt_manifest_history_read.sql",
   "202609020016_gt_manifest_append_unambiguous_document_sha256.sql",
+  "202609020017_governance_work_queue_list.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -115,6 +116,8 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "76e3e9b8addf479e5bd40f53f211803403b8c45d5b3df2b2eabd30e836c9dd28",
   "202609020016_gt_manifest_append_unambiguous_document_sha256.sql":
     "284637487c269ef5adb5e3f3ea5104d63c30dcbafa5ed8ef2bd93dbbba946244",
+  "202609020017_governance_work_queue_list.sql":
+    "49d324e4a831a71c622aa059dffae671c0ac3dc1f15ae20fcadc4f9977d0b339",
 });
 
 export type MigrationFile = Readonly<{

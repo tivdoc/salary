@@ -9,6 +9,7 @@ import {
   type DurableGovernanceApplication,
   type GovernanceAggregateSnapshot,
   type GovernanceMutationReceipt,
+  type GovernanceWorkQueueEntry,
   type GovernanceWorkflowKind,
   type HistoricalObservationImportReceipt,
 } from "../../../platform/persistence/postgres/governance/index.ts";
@@ -50,9 +51,29 @@ const LEGAL_REVIEW_ACTION_ROLES = Object.freeze([
   "legal_reviewer", "report_approver", "break_glass_admin",
 ] as const satisfies readonly V07Role[]);
 
+/**
+ * Who may read the nested Ground Truth queue panel: the Extraction tab's
+ * readers who review, approve or audit, and the legal reviewer who owns the
+ * golden-case lane. Reading is all the panel does; every claim and append
+ * stays on the lane-scoped commands with their own role checks.
+ */
+const GROUND_TRUTH_QUEUE_READ_ROLES = Object.freeze([
+  "extraction_reviewer", "legal_reviewer", "report_approver", "auditor", "break_glass_admin",
+] as const satisfies readonly V07Role[]);
+
 export type DurableGovernanceLegalReviewScope = Readonly<{
   actor: VerifiedActor;
   correlation_id: string;
+}>;
+
+export type DurableGroundTruthQueueProjection = Readonly<{
+  schema_version: typeof DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION;
+  persistence: "postgresql_required";
+  governance_workflow: "ground_truth";
+  entries: readonly GovernanceWorkQueueEntry[];
+  content_included: false;
+  product_reachable_memory_fallback: false;
+  activation_allowed: false;
 }>;
 
 export type DurableLegalReviewQueueProjection = Readonly<{
@@ -155,6 +176,9 @@ export interface DurableGovernanceOperationsApplication extends InternalOpsAppli
     limit: number;
   }>): Promise<DurableLegalReviewQueueProjection>;
   readLegalReviewTopics(input: DurableGovernanceLegalReviewScope): Promise<DurableLegalTopicProjection>;
+  readGroundTruthQueue(input: DurableGovernanceLegalReviewScope & Readonly<{
+    limit: number;
+  }>): Promise<DurableGroundTruthQueueProjection>;
   submitLegalReviewAction(input: DurableGovernanceLegalReviewScope & Readonly<{
     packet: LegalReviewPacket;
     action: LegalReviewAction;
@@ -387,6 +411,31 @@ class PostgresDurableGovernanceOperationsApplication implements DurableGovernanc
         || !ID.test(scope.correlation_id) || !roles.includes(scope.actor.role)) {
       throw new Error("DURABLE_GOVERNANCE_OPERATIONS_FORBIDDEN");
     }
+  }
+
+  /**
+   * Nested Ground Truth queue panel: the durable annotation queue as a
+   * projection, read through the list definer as the runtime role. Identity,
+   * state, claimant and lease only — the definer never returns a payload and
+   * the row schema is strict — so the panel is not a content path.
+   */
+  async readGroundTruthQueue(input: DurableGovernanceLegalReviewScope & Readonly<{
+    limit: number;
+  }>): Promise<DurableGroundTruthQueueProjection> {
+    this.#assertLegalReviewScope(input, GROUND_TRUTH_QUEUE_READ_ROLES);
+    const entries = await this.#withGovernance(
+      legalReviewScope(input),
+      (application) => application.work_queue.listQueue("ground_truth", input.limit),
+    );
+    return Object.freeze({
+      schema_version: DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION,
+      persistence: "postgresql_required",
+      governance_workflow: "ground_truth",
+      entries,
+      content_included: false,
+      product_reachable_memory_fallback: false,
+      activation_allowed: false,
+    });
   }
 
   async claimPendingWork(input: DurableGovernanceOperationsScope & Readonly<{

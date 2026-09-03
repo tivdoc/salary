@@ -74,6 +74,9 @@ import {
   governanceWorkClaimRequestSchema,
   governanceWorkEnqueueSchema,
   governanceWorkReleaseSchema,
+  governanceWorkQueueEntrySchema,
+  governanceWorkflowKindSchema,
+  type GovernanceWorkQueueEntry,
   legalObservationCandidateSchema,
   legalObservationDecisionSchema,
   type GovernanceAggregateSnapshot,
@@ -116,6 +119,7 @@ import {
   workClaimStatement,
   workEnqueueStatement,
   workReleaseStatement,
+  workQueueListStatement,
 } from "./statements.ts";
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
@@ -642,6 +646,27 @@ export class PostgresGovernanceWorkRepository extends GovernanceRepositoryBase {
       ...input,
       command_sha256: commandSha256(operation, this.tenantId, command),
     }), { tenant_id: this.tenantId }, operation);
+  }
+
+  /** The queue as a projection: identity, state, claimant and lease, never payload. */
+  async listQueue(workflowKind: GovernanceWorkflowKind, limit: number): Promise<readonly GovernanceWorkQueueEntry[]> {
+    const operation = "work_queue_list";
+    const workflow_kind = parse(governanceWorkflowKindSchema, workflowKind, operation);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) {
+      throw new GovernanceRepositoryError("GOVERNANCE_INPUT_INVALID", operation);
+    }
+    const row = await queryExactlyOne(this.context, workQueueListStatement({
+      tenant_id: this.tenantId, workflow_kind, limit,
+    }), operation);
+    const entries = (row as { entries?: unknown }).entries;
+    if (!Array.isArray(entries)) throw new GovernanceRepositoryError("GOVERNANCE_DECODE_FAILED", operation);
+    return Object.freeze(entries.map((entry) => {
+      try {
+        return governanceWorkQueueEntrySchema.parse(entry);
+      } catch {
+        throw new GovernanceRepositoryError("GOVERNANCE_DECODE_FAILED", operation);
+      }
+    }));
   }
 }
 

@@ -269,3 +269,11 @@ export function legalReviewQueueListStatement(input: Readonly<{
     $1::text, $2::integer
   ) as entries`, [input.tenant_id, input.limit]);
 }
+
+export function workQueueListStatement(input: Readonly<{
+  tenant_id: string; workflow_kind: string; limit: number;
+}>): PostgresStatement {
+  return statement("governance_work_queue_list", `select private.governance_work_queue_list(
+    $1::text, $2::text, $3::integer
+  ) as entries`, [input.tenant_id, input.workflow_kind, input.limit]);
+}

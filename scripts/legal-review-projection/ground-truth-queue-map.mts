@@ -24,6 +24,10 @@
 // with file:line anchors located at run time, and counts the product
 // constructors each has: none, which is the disposition.
 //
+// G-12 reads the queue back through the list definer as the runtime role:
+// the 47 items, identity only, with no payload field on any entry — which is
+// what the /operations panel shows.
+//
 // Zero ground-truth content is produced. HUMAN_GROUND_TRUTH_LOCKED stays 0.
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
@@ -372,6 +376,22 @@ async function main(): Promise<void> {
         compositesEnqueued.length === 5 && compositesEnqueued.every((entry) => entry.revision === 1 && entry.state === "pending"),
         `${compositesEnqueued.length} receipts, revision 1 pending; replayed ${compositesEnqueued.filter((e) => e.idempotent_replay).length}; images never opened`);
     }
+
+    // --- G-12: the queue as the panel sees it, read back as the runtime role.
+    const listed = await transaction(factory, async (context) => {
+      const work = new PostgresGovernanceWorkRepository(context, TENANT);
+      return {
+        ground_truth: await work.listQueue("ground_truth", 500),
+        rulespec_approval: await work.listQueue("rulespec_approval", 500),
+      };
+    });
+    const visual = listed.ground_truth.filter((entry) => entry.work_kind === "ground_truth_visual_eligibility");
+    const golden = listed.rulespec_approval.filter((entry) => entry.work_kind === "golden_case_outputs");
+    const noPayload = [...listed.ground_truth, ...listed.rulespec_approval]
+      .every((entry) => !("payload" in entry) && !("payload_json" in entry));
+    record("G12_queue_read_back_identity_only_as_runtime_role",
+      visual.length >= 5 && golden.length >= 42 && noPayload,
+      `ground_truth entries ${listed.ground_truth.length} (visual_eligibility ${visual.length}); rulespec_approval entries ${listed.rulespec_approval.length} (golden_case_outputs ${golden.length}); payload field on any entry: ${!noPayload}`);
   } catch (error) {
     failure = `${(error as { code?: string }).code ?? (error as Error).name}: ${String((error as Error).message).slice(0, 240)}`;
     record("map_completed", false, failure);
