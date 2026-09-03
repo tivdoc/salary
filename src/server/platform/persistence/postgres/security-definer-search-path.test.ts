@@ -19,10 +19,14 @@ import { describe, expect, it } from "vitest";
 const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 
 /** Definition count, not distinct names: `create or replace` redefines. */
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 122;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 124;
 
-const DEFINITION = /create\s+(?:or\s+replace\s+)?function\s+((?:public|private)\.[a-z0-9_]+)\s*\(([\s\S]*?)\)\s*returns([\s\S]*?)\bas\s+\$\$/gu;
-const PINNED_EMPTY_SEARCH_PATH = /set\s+search_path\s*=\s*(?:''|"")/u;
+// Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
+// FUNCTION and SET search_path TO '' in upper case, and a migration written
+// from a verbatim DEV body was invisible to both the count and the search_path
+// check until this was noticed — two definer definitions arrived uncounted.
+const DEFINITION = /create\s+(?:or\s+replace\s+)?function\s+((?:public|private)\.[a-z0-9_]+)\s*\(([\s\S]*?)\)\s*returns([\s\S]*?)\bas\s+\$\$/giu;
+const PINNED_EMPTY_SEARCH_PATH = /set\s+search_path\s*(?:=|\bto\b)\s*(?:''|"")/iu;
 
 type Definition = Readonly<{ file: string; name: string; header: string }>;
 
@@ -33,7 +37,7 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
     const sql = (await readFile(path.join(MIGRATION_ROOT, file), "utf8")).replaceAll("\r\n", "\n");
     for (const match of sql.matchAll(DEFINITION)) {
       const header = match[3] as string;
-      if (!/security\s+definer/u.test(header)) continue;
+      if (!/security\s+definer/iu.test(header)) continue;
       found.push({ file, name: match[1] as string, header });
     }
   }
