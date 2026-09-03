@@ -111,121 +111,84 @@ strict-versus-MC-29 divergence does not touch it.
 
 Chain unchanged: 26/26 applied — 24 verbatim byte-pinned, 2 platform-compensated
 (`alter role … nosuperuser`; `supautils` reserved-role refusal), dropped lines
-recorded, end state asserted.
-## Units
+recorded, end state asserted.## Units
 
-One unit, one commit. `blocked_*` is a result, not a failure. The class matters:
-`blocked_external` means something outside this repository and outside DEV
-refuses the work; `blocked_dependency` means it becomes workable the moment
-something inside reach lands. Two entries were carrying the wrong class and are
-corrected below.
+One unit, one commit. `blocked_*` is a result, not a failure, and the class
+matters: `blocked_external` means something outside the repository and outside
+DEV refuses the work; `blocked_dependency` names the thing inside reach that
+unblocks it.
 
-### Pool C — canonical entrypoint claims: 21/21 decided, all 60 accounted
+### Pool A — RLS forcing: 30/30, `rls_forced` 62/75 (every tenant-scoped table)
 
-The pool said 63. That figure is not reproducible: the sweep that produced it did
-not record its predicate, and three defensible readings of its own prose give 34,
-49 and 88. Its named list holds 49 ids, plus 11 cli records it described but did
-not name — 60, reported as 63. Every one of those 60 is accounted for by id in
-`claim-pool-reconciliation.mts`, which re-evaluates each under the original rule
-and then under each correction in the order it landed.
+F1 was right that the pool had one dependency and it had not landed. The run
+had gone round it — measuring that the migrator reaches these tables through
+`tivdoc_service_tenant_scope` by inheriting service_role — and left sixteen
+tables stalled on a fixture proof this host cannot execute. A-0 landed the
+owner-access policy on all 33 tables the migrator writes as owner; the sixteen
+were forced in the same migration and verified by every DEV matrix. The writer
+corrections stay as hygiene.
 
-| resolved by | count |
-|---|---:|
-| never disagreed once the record's own claim is read (12 EXTERNAL_OR_HUMAN_BLOCKED, 6 CONTRACT_ONLY/PARTIAL) | 18 |
-| a cli record names a script, and scripts are evidence entrypoints | 13 |
-| PARTIAL is not a claim that nothing is wired | 9 |
-| the record was restated because its blocker had gone stale | 6 |
-| Next.js metadata files were entrypoints the graph did not know | 3 |
-| the symbol the record names is used by nothing, so the record was right | 2 |
-| still open, each with its reason recorded in the claim matrix | 9 |
+### Pool B — definer owner reassignment: 25/25 accounted
 
-### Pool A — RLS forcing: 14/30 forced, `rls_forced` 45/74
+| outcome | count | detail |
+|---|---:|---|
+| reassigned, proven twice | 5 | two refusal triggers matched their exact SQLSTATE and message before and after; two have bodies that are a single unconditional raise; `enforce_engine_analysis_run_history` matched P0001 "Terminal analysis runs are immutable" both ways |
+| `blocked_dependency` on a fixture | 5 | the history guards read rows, their tables are empty, and the harness declines to reassign on a probe that never fired |
+| `not_reassigned` with reason | 15 | `tivdoc_governance_owner` holds no privilege on any table these bodies write; the grant step D4 requires first would widen a governance role into the customer `payments` and `cases` tables for a benefit the definer surface matrix measures as nil |
 
-A-0 through A-7 are done: the mechanism proven on DEV in a rolled-back
-transaction, fourteen tables forced and verified by every DEV matrix, and every
-owner-connection writer and reader corrected — the RLS matrix seed, the browser
-seed and its two blind reads, the repair cleanup and its inspection, and the
-terminal-history proof.
+### Pool C — canonical entrypoint claims: 21/21 decided, 60 sweep ids accounted
 
-A-8..A-23, the remaining sixteen tables: **`blocked_dependency`**, corrected from
-`blocked_external`. Their writers are fixed; what is missing is the execution
-that proves them. That execution needs the marathon harness against a local
-Postgres cluster, and `initdb.exe` is refused on this host by Windows
-Application Control — the pre-existing BL-6, which is the genuinely external
-block. The tables themselves depend on that run, not on anything outside the
-repository.
+The 63 is not reproducible. The sweep's named list holds 49 ids plus 13 cli
+records it described but did not name; of those 13, eleven resolve by the cli
+question, CEP-065 by the alias fix and CEP-068 because PARTIAL is not a
+not-wired claim. 49 + 13 = 62; the sweep's own subtotal said 35 where its list
+held 34. So the three between 63 and 60: two are CEP-065 and CEP-068, which the
+sweep filed under the cli group and which resolved for other reasons, and one is
+the sweep's arithmetic.
 
-### Pool B — definer owner reassignment: 5/25
+### Pool E — parse the 69: 69/69, superseded on DEV
 
-B-1 and B-2 reassigned five with the proof each earns: two refusal triggers
-matched their exact SQLSTATE and message before and after, two more have bodies
-that are a single unconditional raise and so cannot behave differently under
-another owner, and `enforce_engine_analysis_run_history` matched P0001
-"Terminal analysis runs are immutable" both ways.
+From the database, as the operations runtime role:
 
-B-3..B-7, five history guards: `blocked_dependency`. Their tables are empty so
-the probe never fires, and unlike the refusal triggers their bodies read rows —
-the harness declines to reassign on a vacuous probe rather than count a silent
-no-op as a pass. A fixture per trigger unblocks them.
+    projected 0 + blocked_active 2 + blocked_superseded 69 = 71
+    packets_from_supersession = 69
 
-B-8..B-20, the salary and controlled-import definers: open, with the reason
-recorded. Each needs its owner granted the table privileges its body uses before
-reassignment, which is the shape that broke identity registration in Wave 3, and
-the measured benefit is nil — the definer surface matrix reports no site ungated
-by ownership, and `tivdoc_dev_migrator` is neither superuser nor BYPASSRLS.
+The two `blocked_active` are `ACQOBS:WAVE1:1f87feb13c8c6778758e52f9235461dc`
+and `ACQOBS:WAVE1:3247017fdd24d0b9c86ed8f3916f7578`, both
+`BYTES_REJECTED_DUPLICATE`, one shared sha256 `f56c47027a69ea6b…`, 88,142
+bytes — two gov.il collector URLs for one document.
 
-### Pool E — parse the 69: 69/69
+Seven of the sixty-nine packets carry `ocr_derived: true` with the recognizer
+version; the review package v4 holds all sixty-nine, builds twice to one hash,
+and every item is not_reviewed, not_signed, not_activated, not_delivered.
+Counters unchanged.
 
-| id | item | status | evidence |
-|---|---|---|---|
-| E-0 | pinned Python extraction path | done | `output/pdf-venv`, Python 3.13.5, pypdf 6.16.2, PyMuPDF 1.26.4, pip freeze recorded; nothing under `node_modules` touched |
-| E-1 | parse the text-layer documents | done | 62 parsed, parser `pypdf-6.16.2-layout`, normalizer `legal-normalizer-v0` |
-| E-2 | say which problem each failure has | done | the extractor reports the font census, separating a scan from unmappable glyphs |
-| E-3 | OCR the seven scans | done | Tesseract 5.4.0 with Hebrew data at 300 DPI; 7 parsed, `ocr_derived`, logical order |
+### Security finding — closed
 
-1,242 chunks across 69 artifacts, 68 distinct normalized hashes. Two paths, kept
-distinct because they are not the same evidence: 62 from an embedded text layer,
-in visual order with digit runs reversed; 7 derived by a recognizer, in logical
-order, carrying `ocr_derived` with the recognizer version, language and DPI.
-Derived text never satisfies a citation needing exact bytes and needs human
-attestation. Nothing written to a database, nothing activated, nothing marked
-reviewed, no blocked record touched.
-
-### Security finding — the service_role premise
-
-Wave 3 concluded `tivdoc_service_tenant_scope` "widens nothing, because it is
-granted to service_role and service_role holds no privilege on those 33 tables".
-The premise is false: RLS matching uses `has_privs_of_role`, and
-`tivdoc_dev_migrator` inherits `service_role` and holds full DML on all 33 — 33
-widening rows on a role that can log in and does not bypass RLS.
-
-The conclusion survives for a different reason, and the difference matters. That
-role *owns* those tables: on the 16 unforced it bypasses every policy anyway, and
-on the 17 forced it could turn FORCE off. The only other inheriting role is
-`postgres`, which has BYPASSRLS. No principal reaches a table through that policy
-that it could not reach otherwise — a statement about ownership, not about the
-policy being unbound. The closure is computed by `service-role-closure-matrix.mts`
-and the definer matrix now consults membership instead of comparing role names,
-which surfaced four caller-settable tables on `enforce_engine_case_scope` that
-name equality could not see.
+`tivdoc_service_tenant_scope` bound `tivdoc_dev_migrator` on all 33 tables it
+sat on: the migrator inherits service_role, RLS matches with
+`has_privs_of_role`, and the policy's test was a caller-settable GUC. The
+closure of service_role is five roles; two inherit; postgres bypasses RLS and
+the migrator owns the tables — so nothing reached a table through the policy it
+could not reach otherwise, which is a fact about ownership and not the claim the
+Wave 3 ledger made. The policy is dropped on all 33 behind the owner-access
+path; the closure matrix reads policy_tables 0, widening_rows 0. The Wave 3
+statement is corrected in place in the definer surface matrix.
 
 ### Carried items
 
 | id | item | status |
 |---|---|---|
-| X-1 | controlled-import grant restored | done — 202609020005 revoked the grant its own header said nothing used |
-| X-2 | permission denial names itself | done — 42501 was reported as `IMPORT_ROW_MALFORMED` |
-| X-3 | ignore `output/agents/` and `output/pdf-venv/` | done |
-| X-4 | narrow the eight `public.*_salary_*` grants | open — §3.6 requires moving three `supabase.rpc` callers first, and they are payment and attribution paths. An unattended run should not refactor money-adjacent callers |
-| X-5 | name the last 2 of the 71 | done — `ACQOBS:WAVE1:1f87feb13c8c6778758e52f9235461dc` and `:3247017fdd24d0b9c86ed8f3916f7578`, both `BYTES_REJECTED_DUPLICATE`, one shared sha256 |
-| X-6 | supersession table and three-state invariant | done — `accounted = projected + blocked_active + blocked_superseded = 71`, with `packets_from_supersession = blocked_superseded` asserted alongside |
+| X-1 | controlled-import grant | done |
+| X-2 | permission denial names itself | done |
+| X-4 | narrow the eight `public.*_salary_*` grants | open — moving three payment-path `supabase.rpc` callers is not for an unattended run |
+| X-5 | name the last 2 of the 71 | done, from DEV |
+| X-6 | supersession table and three-state invariant | done, asserted from DEV |
 
 ## Resume point
 
-- next unit: **A-8**, on a host where `initdb.exe` is permitted. The sixteen
-  writers are corrected; only the marathon execution is missing.
-- then B-3..B-7 once a fixture exists per history guard, then X-4 when moving the
-  payment callers is in scope for a supervised run.
+- next: Wave 5 G-2 once G-1's enumeration lands; then G-3..G-12; then Wave 6.
+- B-3..B-7 once a fixture exists per history guard.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
-  project, resetting the DEV default database, and forcing the remaining sixteen
-  tables without a marathon run.
+  project, resetting the DEV default database, `initdb.exe` under Windows
+  Application Control (BL-6).
