@@ -1,9 +1,24 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HermeticSessionManager, PRODUCT_CSRF_HEADER, PRODUCT_SESSION_COOKIE } from "./hermetic-session.ts";
 
 const SECRET = "local-hermetic-session-secret-32-bytes-minimum";
 const OWNER_TICKET = "ticket-owner-a-00000001";
 const OPERATOR_TICKET = "ticket-operator-0000001";
+
+// H-1. This was reported as an order-dependent failure under full-suite load.
+// It is not order-dependent, and there is no shared state: it was a ~1-in-16
+// random flake, present in complete isolation, reproducible without touching
+// any other file. See the comment at the tamper site below for the actual
+// mechanism. `#configurationFor` also re-reads the real `process.env.NODE_ENV`
+// / `VERCEL_ENV` as a second, non-injectable check on top of the constructor's
+// `environment` seam; no leak into those two was found (every `vi.stubEnv`
+// call in the codebase runs under an `afterEach` that always fires), but they
+// are pinned here anyway so this file's outcome can never depend on ambient
+// process state, checked or not.
+beforeEach(() => {
+  vi.stubEnv("NODE_ENV", "test");
+  vi.stubEnv("VERCEL_ENV", "");
+});
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -54,8 +69,28 @@ describe("hermetic product sessions", () => {
     expect(manager.verify(request("/api/portal/cases?role=customer_owner", { headers: { cookie: `${PRODUCT_SESSION_COOKIE}=${token}` } }), "portal", false)).toBeNull();
     expect(manager.verify(request("/api/portal/cases", { headers: { "x-tivdoc-role": "customer_owner", cookie: `${PRODUCT_SESSION_COOKIE}=${token}` } }), "portal", false)).toBeNull();
     expect(manager.verify(request("/api/portal/cases", { headers: { cookie: "actor=owner-a; role=customer_owner" } }), "portal", false)).toBeNull();
-    const replacement = token.endsWith("x") ? "y" : "x";
-    expect(manager.verify(request("/api/portal/cases", { headers: { cookie: `${PRODUCT_SESSION_COOKIE}=${token.slice(0, -1)}${replacement}` } }), "portal", false)).toBeNull();
+    // Tamper a character strictly before the token's last one. The signature
+    // is a 32-byte HMAC, and 32 mod 3 is 2, so the final base64url character
+    // of any such digest carries two bits nothing decodes: `Buffer.from`
+    // reconstructs only the meaningful 16 bits of that trailing group and
+    // discards the low two bits of the character actually written. Four
+    // characters — "w", "x", "y", "z" — share the same meaningful bits at
+    // that position, so if the digest's real last character happened to be
+    // one of the four and this test swapped it for another one of the four,
+    // the decoded signature bytes were identical to the original and
+    // verification passed the "tampered" cookie. That is a real signature
+    // every run in 16 produces (four picks out of the 64-character alphabet),
+    // which read as exactly the "order-dependent under load" symptom this
+    // file was flagged for: no shared state, a coin landing wrong often
+    // enough to look systemic. Every other position of the token is fully
+    // significant — mutating it always changes the decoded bytes — so this
+    // tampers the middle character instead, which for tokens of any realistic
+    // length lands inside the base64url payload segment, itself hashed as an
+    // opaque UTF-8 string rather than decoded, so no such ambiguity exists.
+    const tamperIndex = Math.floor(token.length / 2);
+    const replacement = token[tamperIndex] === "x" ? "y" : "x";
+    const tampered = `${token.slice(0, tamperIndex)}${replacement}${token.slice(tamperIndex + 1)}`;
+    expect(manager.verify(request("/api/portal/cases", { headers: { cookie: `${PRODUCT_SESSION_COOKIE}=${tampered}` } }), "portal", false)).toBeNull();
   });
 
   it("requires same-origin CSRF for mutations and makes logout revoke the session", () => {
