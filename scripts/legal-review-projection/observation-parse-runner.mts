@@ -148,8 +148,7 @@ function main(): void {
       source_id: row.observation_id,
       source_version: row.raw_artifact_sha256.slice(0, 16),
     });
-    const chunks = chunkLegalPages(trimmed, source, {
-      artifactSha256: row.raw_artifact_sha256,
+    const chunks = chunkLegalPages(source, row.raw_artifact_sha256, trimmed, {
       normalizedTextSha256: sha256(normalized),
       parserVersion: version,
     });

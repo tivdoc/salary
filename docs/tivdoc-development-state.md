@@ -111,61 +111,68 @@ strict-versus-MC-29 divergence does not touch it.
 
 Chain unchanged: 26/26 applied — 24 verbatim byte-pinned, 2 platform-compensated
 (`alter role … nosuperuser`; `supautils` reserved-role refusal), dropped lines
-recorded, end state asserted.
-## Units
+recorded, end state asserted.## Units
 
-Wave 4 runs one unit per commit. `blocked_*` is a result, not a failure: a unit
-recorded with evidence is done for the purpose of moving on, and is not retried.
+One unit, one commit. `blocked_*` is a result, not a failure: a unit recorded
+with evidence is done for the purpose of moving on, and is not retried.
 
-| id | item | status | evidence | blocked_reason |
-|---|---|---|---|---|
-| 4A-1 | scanner reachability at head | done | 4 findings, 0 product-reachable, 0 unpermitted, on the 237-file graph | — |
-| 4A-2 | recompute B-28 | done | 40 / 19 / 84, delta 0/0/0; journey subset recomputes to 8, matching the recorded 8 | — |
-| 4A-3 | re-run graph-derived inventories | done | effect asserters 9 ON_JOURNEY shape-only, unchanged | — |
-| 4A-4 | graph entrypoint + alias guard | done | both proven by mutation: pass=false, reachable 237→180 and 237→114 | — |
-| 4A-5 | controlled-import lock flake | done | `controlled_import_concurrency_lock_timeout` under parallel load; budget 5s→30s, stale takeover unaffected | — |
-| 4B-1 | DEV invalidation fixture + convert the 9 assertions | done | 10/10 observed against DEV through the real port, driver and operations role | — |
-| 4B-2 | decide `withCurrentAuthorization` | done | zero production callers at the corrected graph — only tests and the disposition record; stays uncalled, the three effects stay `unknown` | — |
-| 4B-3 | guard: a shape-only assertion on a claimed effect fails | done | the guard now requires the matrix to reach a database, run the real port, and compare a before and an after reading per effect | — |
-| 5E-0 | name the last 2 of the 71 | done | `ACQOBS:WAVE1:1f87feb13c8c6778758e52f9235461dc` and `:3247017fdd24d0b9c86ed8f3916f7578`, both `BYTES_REJECTED_DUPLICATE`, one shared sha256 | — |
-| 5E-1..69 | parse the 69 observations | blocked_dependency | all 71 are `application/pdf`; the only PDF dependency is `pdf-lib`, whose API writes text and cannot read it; no OCR dependency; no `extractPdfText` producer anywhere in `src/` or `scripts/` | needs a CID-aware PDF text extractor plus an OCR fallback — a new capability, and `npm install` is forbidden |
+### Pool C — canonical entrypoint claims: 21/21 decided
 
-### Pools
+| id | item | status | evidence |
+|---|---|---|---|
+| C-1 | Next.js metadata files as entrypoints | done | `robots.ts`, `sitemap.ts`, `opengraph-image.tsx`; CEP-010/011/012 were right and the graph was wrong |
+| C-2 | ask each record the question its kind answers | done | 45 of 95 are `cli` records naming scripts, which are never product-reachable; 16 false mismatches collapsed to 0 |
+| C-3 | CONTRACT_ONLY is not a wiring claim | done | all five are blocked on human content gates; CEP-048/057/058/059 retired |
+| C-4 | judge the symbol, not the module | done | `SupabasePrivateBlobProvider` is constructed by nothing; CEP-016/017 retired |
+| C-7 | CEP-078, CEP-079 restated | done | composition root installs at durable-local-runtime.ts:230; routes resolve at durable-registration.ts:89 |
+| C-8 | CEP-006/007/020/025 restated | done | all four routes resolve the installed service; MANAGED_IDENTITY_NOT_PROVEN stands |
+| C-9 | CEP-082 restated | done | `PostgresIdentitySessionStateReader` wired at :160 and exercised by the identity negative matrix |
+| C-10 | the nine that stand | done | each carries its reason in the matrix open set; a tenth arrival fails the check |
 
-- A — force RLS, 0/30 resolved. All 30 are `public.*`, all owned by `tivdoc_dev_migrator`, all carrying `tivdoc_service_tenant_scope` granted `to service_role`.
-- B — owner reassignment, 0/25 resolved. 9 are trigger functions (no arity, no grant); 16 need re-execution with their exact argument lists.
-- E — parse observations, 0/69, pool blocked as above; the separate unit naming the last 2 of the 71 is done.
+### Pool A — RLS forcing: 14/30 forced, `rls_forced` 45/74
 
-### What the graph correction changed
+| id | item | status | evidence |
+|---|---|---|---|
+| A-0 | prove the force mechanism | done | on DEV in a rolled-back transaction: forced without the GUC gives 42501 on insert and zero rows; with it, the insert reaches the domain constraint |
+| A-1 | RLS matrix seed declares the tenant | done | admin seed pool per tenant; case-confirmation probe on one checked-out client |
+| A-2 | force the 14 writer-clean tables | done | journey 16/16, dynamic 10/10, identity 8/8, invalidation 10/10, grants 19/0, projection balanced |
+| A-3 | browser-e2e audit read | done | forced `engine_platform_audit_events` broke a pooled owner read; fixed with a declared tenant on one client |
+| A-4..A-19 | the other 16 tables | open | each has an owner writer that does not declare the tenant; insertion points enumerated, two hazards recorded: pooled writes in `migrations.mts` 314/320, and two-tenant single statements in `runtime-product-repair-v0102.mts` 557/563/584/834 |
 
-`@/*` resolved to the bare remainder rather than `src/*`, so all 232 aliased
-edges pointed at nothing and were silently dropped. Product-reachable files went
-180 → 237. Together with the `instrumentation.ts` gap fixed in 7389f04 that is
-188 files the canonical graph could not see, across runs that all reported
-`pass: true`. Both classes are now counted and both fail the gate.
+### Pool E — parse the 69: 62 parsed, 7 blocked
 
-Two conclusions move as a result, and are open units rather than facts: Lane B
-reports 28 records claiming NOT wired whose target is now reachable, and 5 of
-the 8 `IMPLEMENTED_UNCALLED_SERVICES` entries in `journey-scope-disposition.ts`
-naming symbols that are now product-reachable. Reachable is not called, so each
-needs checking individually before anything is restated.
+| id | item | status | evidence |
+|---|---|---|---|
+| E-0 | pinned Python extraction path | done | `output/pdf-venv`, Python 3.13.5, pypdf 6.16.2, `pip freeze` recorded; nothing touched under `node_modules` |
+| E-1 | parse all 69 | done | 62 parsed, 642 chunks, 859,905 normalized characters, parser `pypdf-6.16.2-layout`, normalizer `legal-normalizer-v0` |
+| E-2..E-8 | the 7 with no text layer | blocked_external | no page carries an embedded text layer; Tesseract 5.4.0 is present but has no Hebrew traineddata, so OCR is unavailable on this host |
+
+Two properties of the parsed set are recorded rather than corrected. The text
+comes out in **visual order** — pypdf's layout mode emits glyphs as they appear,
+so Hebrew reads reversed with U+FEFF or U+00A0 as the separator — and
+reordering a legal text is a semantic decision this run is not entitled to make.
+And 62 artifacts carry 61 distinct normalized hashes: two observations with
+different bytes normalize identically, which under the standing rule leaves them
+two artifacts, not one.
+
+Nothing was written to any database, nothing was activated, nothing was marked
+reviewed, and no blocked record was touched.
+
+### Carried items
+
+| id | item | status | evidence |
+|---|---|---|---|
+| X-1 | controlled-import grant | done | 202609020005 revoked the grant its own header said nothing used; the dynamic harness authenticates as `service_role` (run.mts:375). Restored by 202609020006 |
+| X-2 | permission denial names itself | done | `mapDatabaseError` had no case for 42501 and reported it as `IMPORT_ROW_MALFORMED` |
+| X-3 | `output/agents/` and `output/pdf-venv/` ignored | done | three agent files had reached a commit before this was noticed; untracked, not deleted |
 
 ## Resume point
 
-- next unit: **pool C** (the 63 mismatched ledger claims), which D6 makes the dependency-free fallback as well as the next queue item. Previous next unit was 4B-1 — build the DEV invalidation fixture (verified actor,
-  locked case, idempotency record, created and torn down inside the proof) and
-  convert all 9 ON_JOURNEY effect assertions to observe state. Authorized by
-  §3.4; it is one unit, fixture and conversion together or neither.
-- then 4B-2, 4B-3, then pool A (A-0 first, since the owner-access policy is the
-  only dependency the pool has), then pool B, then Wave 4C.
-- known blocks that must not be retried: corpus acquisition, creating a second
-  Supabase project, resetting the DEV default database, and parsing the 69
-  observations without a PDF text extractor.
-- correction owed to my own Wave 3 work: migration `202609020005` revoked
-  `service_role` EXECUTE from six controlled-import functions on the stated
-  reasoning that every caller goes through a connection authenticated as a
-  runtime role. Verified on DEV: no runtime role holds EXECUTE, and
-  `tivdoc_dev_migrator` is a *member* of the runtime roles rather than their
-  parent, so nothing on the runtime path can execute them. Nothing broke,
-  because the ledger has no caller at all — but the reasoning was wrong, and the
-  claim gets corrected in unit 4C-1 rather than in the applied migration.
+- next unit: **A-4** — `runtime-product-repair-v0102.mts:547`, declaring the
+  tenant per tenant inside the seed transaction. Its two hazards are known: a
+  pooled write in `migrations.mts` 314/320 needs a checked-out client, and four
+  statements write two tenants at once, which one declaration cannot cover.
+- then A-5..A-19, then the remaining `public.*_salary_*` narrowing, then pool B.
+- known blocks that must not be retried: corpus acquisition, a second Supabase
+  project, resetting the DEV default database, and OCR for the seven
+  observations with no text layer.
