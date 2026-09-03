@@ -85,3 +85,6 @@ Thumbs.db
 /output/v4/
 /output/agents/
 /output/pdf-venv/
+
+# Next run receipts and evidence
+/output/next/
