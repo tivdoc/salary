@@ -11,10 +11,19 @@
 //
 // Both halves of that second clause matter. FORCE row level security only
 // changes anything where the function's owner is also the table's owner. And a
-// policy binds only the roles it names: `tivdoc_service_tenant_scope` is keyed
-// to a caller-settable GUC and sits on 33 tables, but it is granted `to
-// service_role`, a role holding no privilege on any of them, so it widens
-// nothing for a function owned by `tivdoc_governance_owner`.
+// policy binds a role when that role HAS THE PRIVILEGES OF the role the policy
+// names, not when the names match — RLS matching uses `has_privs_of_role`.
+//
+// An earlier pass said `tivdoc_service_tenant_scope` "widens nothing, because
+// it is granted to service_role and service_role holds no privilege on those 33
+// tables". The reasoning was wrong: `tivdoc_dev_migrator` inherits
+// `service_role` and holds DML on all 33, so the policy does bind a role with
+// privilege, and its test is a caller-settable GUC. The conclusion survives for
+// a different reason — the migrator OWNS those tables, so it already reaches
+// them without the policy, and the only other inheriting role is `postgres`,
+// which has BYPASSRLS. No principal reaches a table through that policy that it
+// could not reach otherwise. The membership closure is computed by
+// `service-role-closure-matrix.mts` rather than asserted here.
 //
 // Two sites are ungated and are meant to be. `runtime_context_install` and
 // `product_identity_session_read` both have to reach a session row *before* any
@@ -115,6 +124,21 @@ const TABLE_SQL = `
     join pg_roles r on r.oid = c.relowner
    where c.relkind = 'r' and n.nspname in ('public','private')`;
 
+/** Every role, with the transitive set of roles whose privileges it holds. */
+const MEMBERSHIP_SQL = `
+  with recursive closure as (
+    select m.member as member, m.roleid as held, m.inherit_option as inherits
+      from pg_auth_members m
+    union all
+    select closure.member, m.roleid, m.inherit_option and closure.inherits
+      from pg_auth_members m join closure on closure.held = m.member
+  )
+  select r.rolname as member, h.rolname as held
+    from closure
+    join pg_roles r on r.oid = closure.member
+    join pg_roles h on h.oid = closure.held
+   where closure.inherits`;
+
 async function main(): Promise<void> {
   mkdirSync(RECEIPT_ROOT, { recursive: true });
   const connectionString = readDevEnvFile().get("TIVDOC_DEV_DATABASE_URL");
@@ -124,9 +148,14 @@ async function main(): Promise<void> {
   await client.connect();
   let functions: readonly Record<string, never>[];
   let tableRows: readonly TableRow[];
+  const memberOf = new Map<string, Set<string>>();
   try {
     functions = (await client.query(FUNCTION_SQL)).rows;
     tableRows = (await client.query(TABLE_SQL)).rows as TableRow[];
+    for (const row of (await client.query(MEMBERSHIP_SQL)).rows as { member: string; held: string }[]) {
+      if (!memberOf.has(row.member)) memberOf.set(row.member, new Set());
+      (memberOf.get(row.member) as Set<string>).add(row.held);
+    }
   } finally {
     await client.end().catch(() => undefined);
   }
@@ -141,8 +170,12 @@ async function main(): Promise<void> {
     const referenced = [...new Set([...fn.body.matchAll(/\b(public|private)\.([a-z0-9_]+)/gu)]
       .map((match) => `${match[1]}.${match[2]}`))].filter((qname) => tables.has(qname));
     const tenantTables = referenced.filter((qname) => (tables.get(qname) as TableRow).tenant_scoped);
+    // Membership, not name equality: a policy granted to a role binds every
+    // role that inherits it. `memberOf` is the transitive closure computed from
+    // pg_auth_members with the inherit option honoured.
     const applies = (policy: PolicyRow) =>
-      policy.roles.includes("public") || policy.roles.includes(fn.owner);
+      policy.roles.includes("public")
+      || policy.roles.some((role) => role === fn.owner || (memberOf.get(fn.owner)?.has(role) ?? false));
     const ownerBypass = tenantTables.filter((qname) => {
       const table = tables.get(qname) as TableRow;
       return fn.owner_escapes_rls || (table.owner === fn.owner && !table.forced);
