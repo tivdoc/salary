@@ -97,6 +97,37 @@ const PROBES = Object.freeze([
   }),
 ]);
 
+/**
+ * Non-trigger definers the harness will not touch, each with the reason. A
+ * SECURITY DEFINER function runs with its OWNER's table privileges, and
+ * `tivdoc_governance_owner` holds none — not SELECT, not INSERT, not UPDATE,
+ * not DELETE — on any table these bodies write. Reassigning any of them would
+ * fail exactly as identity registration failed in Wave 3, and the "correct the
+ * grant" step that D4 asks for first would mean granting governance_owner DML
+ * on the customer `payments` and `cases` tables, or on the controlled-import
+ * ledger. The definer surface matrix measures the benefit of the reassignment
+ * as nil: no site is ungated by ownership, and the migrator is neither
+ * superuser nor BYPASSRLS. A widening of a governance role into customer
+ * payment tables for no measured gain is recorded, not done.
+ */
+const NOT_REASSIGNED: Readonly<Record<string, string>> = Object.freeze({
+  "private.append_controlled_import_audit": "internally_called_only: PERFORMed by the five controlled-import definers; governance_owner holds no privilege on controlled_import_audit_events",
+  "private.claim_controlled_import_recovery": "open_grant_would_widen: governance_owner holds nothing on controlled_import_requests",
+  "private.controlled_import_publish": "open_grant_would_widen: governance_owner holds nothing on controlled_import_requests, controlled_import_publication_markers, controlled_import_artifacts",
+  "private.controlled_import_reject": "open_grant_would_widen: governance_owner holds nothing on controlled_import_requests",
+  "private.controlled_import_reserve": "open_grant_would_widen: governance_owner holds nothing on controlled_import_requests",
+  "private.controlled_import_stage_exact_bytes": "open_grant_would_widen: governance_owner holds nothing on controlled_import_requests, controlled_import_artifacts",
+  "private.open_controlled_import_published_bytes": "open_grant_would_widen: governance_owner holds nothing on the three controlled-import tables",
+  "public.claim_salary_ga4_purchase": "open_grant_would_widen: governance_owner holds nothing on payments, cases",
+  "public.claim_salary_meta_purchase": "open_grant_would_widen: governance_owner holds nothing on payments",
+  "public.claim_salary_payment_completed": "open_grant_would_widen: governance_owner holds nothing on payments",
+  "public.complete_salary_ga4_purchase": "open_grant_would_widen: governance_owner holds nothing on payments",
+  "public.complete_salary_meta_purchase": "open_grant_would_widen: governance_owner holds nothing on payments",
+  "public.release_salary_ga4_purchase": "open_grant_would_widen: governance_owner holds nothing on payments",
+  "public.release_salary_meta_purchase": "open_grant_would_widen: governance_owner holds nothing on payments",
+  "public.verify_salary_payment": "open_grant_would_widen: governance_owner holds nothing on payments, cases",
+});
+
 type Client = Readonly<{ query(text: string, values?: readonly unknown[]): Promise<{ rows: Record<string, unknown>[] }> }>;
 
 async function refusal(client: Client, sql: string): Promise<string> {
@@ -182,9 +213,13 @@ async function main(): Promise<void> {
           and r.rolname <> $1`, [TARGET_OWNER]);
     const remaining = owners.rows[0].n as number;
 
+    const notReassigned = Object.entries(NOT_REASSIGNED).map(([fn, reason]) => ({ function: fn, outcome: "not_reassigned", reason }));
     writeFileSync(path.join(RECEIPT_ROOT, "definer-owner-reassign.json"), `${JSON.stringify({
       schema_version: "tivdoc-definer-owner-reassign-poolb",
       target_owner: TARGET_OWNER, attempted: results.length,
+      not_reassigned_with_reason: notReassigned.length,
+      pool_accounted: results.length + notReassigned.length,
+      not_reassigned: notReassigned,
       reassigned: results.filter((row) => String(row.outcome).startsWith("reassigned")).length,
       definer_functions_not_owned_by_target: remaining,
       results,
