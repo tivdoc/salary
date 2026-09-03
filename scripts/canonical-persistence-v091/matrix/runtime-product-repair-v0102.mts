@@ -743,6 +743,16 @@ async function inspectDurableResult(
   receipt: GlobalDependencyInvalidationReceipt,
 ) {
   return manager.transaction(async (context) => {
+    // `engine_platform_audit_events` and `engine_idempotency_records` force row
+    // level security, so on the owner connection every count below reads zero
+    // without a declared tenant — and a zero count here fails as a missing
+    // effect rather than as a visibility problem. One declaration covers the
+    // whole statement, which reads a single tenant throughout.
+    await context.client.query(statement(
+      "repair_v0102_inspect_tenant_scope",
+      "select set_config('tivdoc.tenant_id', $1, true)",
+      [fixture.tenants.a],
+    ));
     const result = await context.client.query(statement("repair_v0102_inspect_result", `
       select
         (select count(*)::text from public.engine_report_versions

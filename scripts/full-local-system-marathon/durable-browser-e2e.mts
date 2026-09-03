@@ -796,11 +796,29 @@ async function collectDurableEvidence(
   assert(outbox.state === "published" && outbox.logical_effect_id === pipeline.logical_effect_id
     && outbox.payload_sha256 === job.payload_sha256 && typeof outbox.published_at === "string",
   "DURABLE_BROWSER_OUTBOX_NOT_PUBLISHED");
-  const effect = await exactlyOneQuery(connection, `
-    select logical_effect_sha256, outbox_id, committed_at::text
-    from public.engine_logical_effect_receipts
-    where tenant_id = $1 and logical_effect_id = $2`, [ids.tenant_id, pipeline.logical_effect_id],
-  "DURABLE_BROWSER_LOGICAL_EFFECT_MISSING");
+  // `engine_logical_effect_receipts` forces row level security, so this read
+  // needs the tenant declared on the same client — a pooled query would send
+  // the declaration to one backend and the select to another, and the miss
+  // would surface as a missing receipt rather than as a visibility problem.
+  const effectClient = await connection.connect();
+  let effect: Readonly<Record<string, unknown>>;
+  try {
+    await effectClient.query("begin");
+    await effectClient.query("select set_config('tivdoc.tenant_id', $1, true)", [ids.tenant_id]);
+    const effectResult = await effectClient.query(`
+      select logical_effect_sha256, outbox_id, committed_at::text
+      from public.engine_logical_effect_receipts
+      where tenant_id = $1 and logical_effect_id = $2`, [ids.tenant_id, pipeline.logical_effect_id]);
+    assert(effectResult.rowCount === 1 && effectResult.rows[0] !== undefined,
+      "DURABLE_BROWSER_LOGICAL_EFFECT_MISSING");
+    effect = effectResult.rows[0] as Readonly<Record<string, unknown>>;
+    await effectClient.query("commit");
+  } catch (error) {
+    await effectClient.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    effectClient.release();
+  }
   assert(effect.logical_effect_sha256 === pipeline.logical_effect_sha256
     && effect.outbox_id === pipeline.outbox_id, "DURABLE_BROWSER_LOGICAL_EFFECT_INVALID");
 
