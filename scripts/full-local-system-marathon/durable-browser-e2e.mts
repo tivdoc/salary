@@ -834,12 +834,32 @@ async function collectDurableEvidence(
     && !object.provider_locator.includes("://"),
   "DURABLE_BROWSER_PRIVATE_OBJECT_INVALID");
 
-  const auditResult = await connection.query(`
-    select actor_id, action, resource_revision::text, resource_sha256,
-           reason_code, event_sha256, case_sequence::text
-    from public.engine_platform_audit_events
-    where tenant_id = $1 and canonical_case_id = $2
-    order by case_sequence`, [ids.tenant_id, ids.case_id]);
+  // `engine_platform_audit_events` forces row level security, so the owner
+  // connection sees nothing on it without a declared tenant, and this read
+  // would return zero rows and fail as a missing timeline action rather than
+  // as a permission problem. The declaration is transaction-local, so it has to
+  // share one checked-out client with the read — a pooled query can land on a
+  // different backend and lose it. The other reads in this function are still
+  // pooled; they touch tables that are not forced yet, and each will need the
+  // same treatment when it is.
+  const auditClient = await connection.connect();
+  let auditResult;
+  try {
+    await auditClient.query("begin");
+    await auditClient.query("select set_config('tivdoc.tenant_id', $1, true)", [ids.tenant_id]);
+    auditResult = await auditClient.query(`
+      select actor_id, action, resource_revision::text, resource_sha256,
+             reason_code, event_sha256, case_sequence::text
+      from public.engine_platform_audit_events
+      where tenant_id = $1 and canonical_case_id = $2
+      order by case_sequence`, [ids.tenant_id, ids.case_id]);
+    await auditClient.query("commit");
+  } catch (error) {
+    await auditClient.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    auditClient.release();
+  }
   const actions = new Set(auditResult.rows.map((row) => String(row.action)));
   for (const action of REQUIRED_TIMELINE_ACTIONS) {
     assert(actions.has(action), `DURABLE_BROWSER_TIMELINE_ACTION_MISSING:${action}`);
