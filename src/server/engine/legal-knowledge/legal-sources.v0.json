@@ -33,7 +33,10 @@
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Consolidated text requires amendment/effective-period review before activation."],
+      "notes": [
+        "Consolidated text requires amendment/effective-period review before activation.",
+        "Addendum 5 D-3: per the research dossier, record this artifact as consolidated_through_2015 — later amendments (e.g. Sefer HaChukim 3072, 1.8.2023 / IL_SEFER_HACHUKIM_3072_2023) are not reflected in this consolidated text and must be layered on separately, not assumed already merged."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
