@@ -830,12 +830,24 @@ async function cleanup(manager: CanonicalPostgresTransactionManager, fixture: Fi
       "engine_case_state",
       "engine_case_identity",
     ] as const;
-    for (const [index, table] of tenantTables.entries()) {
+    // One declaration cannot cover two tenants, and `tivdoc_service_tenant_scope`
+    // tests a single value — so the delete runs once per tenant with that
+    // tenant declared, rather than once for both. Several of these tables force
+    // row level security now; without this the delete matches nothing and the
+    // cleanup fails silently, leaving fixture rows behind rather than raising.
+    for (const tenantId of tenantValues) {
       await context.client.query(statement(
-        `repair_v0102_cleanup_${String(index).padStart(2, "0")}`,
-        `delete from public.${table} where tenant_id in ($1,$2)`,
-        tenantValues,
+        "repair_v0102_cleanup_tenant_scope",
+        "select set_config('tivdoc.tenant_id', $1, true)",
+        [tenantId],
       ));
+      for (const [index, table] of tenantTables.entries()) {
+        await context.client.query(statement(
+          `repair_v0102_cleanup_${String(index).padStart(2, "0")}`,
+          `delete from public.${table} where tenant_id = $1`,
+          [tenantId],
+        ));
+      }
     }
     await context.client.query(statement(
       "repair_v0102_cleanup_cases",

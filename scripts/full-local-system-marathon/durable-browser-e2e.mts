@@ -417,6 +417,13 @@ async function seedSyntheticFixture(
   const ownerBindingSha256 = sha256(`synthetic-owner-binding:${ids.owner.actor_id}:${ids.case_id}`);
   try {
     await client.query("begin");
+    // Every write below goes to a tenant-scoped table over the owner
+    // connection. While those tables do not force row level security the owner
+    // bypasses their policies; once they do, `tivdoc_service_tenant_scope` is
+    // the only policy that admits it, and its whole test is this setting.
+    // Declaring it here covers the rest of the transaction, including the
+    // identity session insert, which shares this client.
+    await client.query("select set_config('tivdoc.tenant_id', $1, true)", [ids.tenant_id]);
     await client.query(`
       insert into public.engine_case_identity(internal_case_id, tenant_id, canonical_case_id)
       values ($1::uuid, $2, $3)`, [ids.internal_case_id, ids.tenant_id, ids.case_id]);
