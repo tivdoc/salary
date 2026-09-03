@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
 const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 
 /** Definition count, not distinct names: `create or replace` redefines. */
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 121;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 122;
 
 const DEFINITION = /create\s+(?:or\s+replace\s+)?function\s+((?:public|private)\.[a-z0-9_]+)\s*\(([\s\S]*?)\)\s*returns([\s\S]*?)\bas\s+\$\$/gu;
 const PINNED_EMPTY_SEARCH_PATH = /set\s+search_path\s*=\s*(?:''|"")/u;
