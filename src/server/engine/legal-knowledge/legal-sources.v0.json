@@ -976,6 +976,59 @@
         "found_at": "2026-09-03",
         "included_reason": "Addendum 5 D-4: the 1.8.2023 amending law the research dossier cites, from the exact official Knesset file URL."
       }
+    },
+    {
+      "source_id": "IL_MIN_WAGE_YOUTH_APPRENTICES_REGULATIONS_1987",
+      "source_version": "discovery-v0",
+      "source_type": "regulation",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Minimum Wage Regulations (Working Youth and Apprentices), 1987",
+      "canonical_url": "https://www.btl.gov.il/Laws1/02_0021_100000.pdf",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["minimum_wage"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 6 A6-3 D-7. Official copy found on the same btl.gov.il host and URL family already carrying IL_MIN_WAGE_LAW (00_0021_000000.pdf vs 02_0021_100000.pdf), not nevo. If the repository's own fetch tool cannot retrieve it (challenge/error page or non-2xx), this source is recorded blocked_external and P-7..P-10 stay unbound rather than bound to an explanatory source, per the addendum."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_at": "2026-09-03T00:00:00Z",
+        "notes": ["No rate is activated by this manifest."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_domain_search",
+        "found_at": "2026-09-03",
+        "included_reason": "Addendum 6 A6-3 D-7: bind the youth minimum-wage percentages (P-7..P-10) to an official regulation artifact rather than nevo or a memo."
+      }
     }
   ]
 }
