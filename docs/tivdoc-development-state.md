@@ -124,6 +124,9 @@ recorded with evidence is done for the purpose of moving on, and is not retried.
 | 4A-3 | re-run graph-derived inventories | done | effect asserters 9 ON_JOURNEY shape-only, unchanged | — |
 | 4A-4 | graph entrypoint + alias guard | done | both proven by mutation: pass=false, reachable 237→180 and 237→114 | — |
 | 4A-5 | controlled-import lock flake | done | `controlled_import_concurrency_lock_timeout` under parallel load; budget 5s→30s, stale takeover unaffected | — |
+| 4B-1 | DEV invalidation fixture + convert the 9 assertions | done | 10/10 observed against DEV through the real port, driver and operations role | — |
+| 4B-2 | decide `withCurrentAuthorization` | done | zero production callers at the corrected graph — only tests and the disposition record; stays uncalled, the three effects stay `unknown` | — |
+| 4B-3 | guard: a shape-only assertion on a claimed effect fails | done | the guard now requires the matrix to reach a database, run the real port, and compare a before and an after reading per effect | — |
 | 5E-0 | name the last 2 of the 71 | done | `ACQOBS:WAVE1:1f87feb13c8c6778758e52f9235461dc` and `:3247017fdd24d0b9c86ed8f3916f7578`, both `BYTES_REJECTED_DUPLICATE`, one shared sha256 | — |
 | 5E-1..69 | parse the 69 observations | blocked_dependency | all 71 are `application/pdf`; the only PDF dependency is `pdf-lib`, whose API writes text and cannot read it; no OCR dependency; no `extractPdfText` producer anywhere in `src/` or `scripts/` | needs a CID-aware PDF text extractor plus an OCR fallback — a new capability, and `npm install` is forbidden |
 
@@ -149,7 +152,7 @@ needs checking individually before anything is restated.
 
 ## Resume point
 
-- next unit: **4B-1** — build the DEV invalidation fixture (verified actor,
+- next unit: **pool C** (the 63 mismatched ledger claims), which D6 makes the dependency-free fallback as well as the next queue item. Previous next unit was 4B-1 — build the DEV invalidation fixture (verified actor,
   locked case, idempotency record, created and torn down inside the proof) and
   convert all 9 ON_JOURNEY effect assertions to observe state. Authorized by
   §3.4; it is one unit, fixture and conversion together or neither.
