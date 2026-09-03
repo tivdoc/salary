@@ -120,8 +120,24 @@ async function main(): Promise<void> {
       const totals = await client.query(
         "select * from private.governance_legal_review_projection_accounting($1)", [TENANT],
       );
+      // Three states over one denominator. 71 is the population of observations
+      // and does not move because one was parsed; what moves is which state an
+      // observation is in. Packets are a different population, linked to
+      // `blocked_superseded` rather than summed into the denominator, and a run
+      // where those two disagree is a failure — which is the whole reason the
+      // supersession lives in its own table instead of a column on the block.
+      const stateTotals = await client.query(
+        "select * from private.governance_legal_review_projection_accounting_v2($1)", [TENANT],
+      );
+      const three = stateTotals.rows[0] as Record<string, string>;
+      const partitionHolds = Number(three.blocked_active) + Number(three.blocked_superseded)
+        === Number(totals.rows[0].blocked);
+      const packetLinkHolds = Number(three.packets_from_supersession) === Number(three.blocked_superseded);
       await client.query("commit");
-      return { written: written.length, totals: totals.rows[0] as Record<string, string> };
+      return {
+        written: written.length, totals: totals.rows[0] as Record<string, string>,
+        three_state: three, partition_holds: partitionHolds, packet_link_holds: packetLinkHolds,
+      };
     } catch (error) {
       await client.query("rollback").catch(() => undefined);
       throw new Error(`PROJECTION_${label.toUpperCase()}_FAILED:${
@@ -186,6 +202,9 @@ async function main(): Promise<void> {
     duplicate_ids: accounting.duplicate_ids,
     reason_histogram: accounting.reason_histogram,
     database_accounting: first.totals,
+    three_state_accounting: first.three_state,
+    blocked_partition_holds: first.partition_holds,
+    packet_link_holds: first.packet_link_holds,
     replay_database_accounting: replay.totals,
     rows_written_first_pass: first.written,
     rows_written_replay: replay.written,

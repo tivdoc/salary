@@ -46,7 +46,7 @@ const BOOTSTRAP_SITES = Object.freeze([
 ]);
 
 /** The surface may not grow silently; a new definer function updates this. */
-const EXPECTED_TOTAL = 88;
+const EXPECTED_TOTAL = 90;
 
 // Definer functions a Supabase reserved role may still execute, each because
 // something real reaches it that way.

@@ -26,6 +26,9 @@ const COMMANDS = Object.freeze([
   ["operations", "governance_legal_review_packet_enqueue", "select * from private.governance_legal_review_packet_enqueue($1,$2::jsonb,$3,$4::jsonb,$5,$6,$7::timestamptz)", [TENANT, "{}", 1, "[]", "k", "0".repeat(64), new Date().toISOString()]],
   ["operations", "governance_legal_review_observation_block_append", "select * from private.governance_legal_review_observation_block_append($1,$2,$3,$4::jsonb,$5,$6::timestamptz)", [TENANT, "PROBE:ONLY", "BYTES_PRESENT_NOT_PARSED", "{}", "0".repeat(64), new Date().toISOString()]],
   ["operations", "governance_legal_review_projection_accounting", "select * from private.governance_legal_review_projection_accounting($1)", [TENANT]],
+  ["operations", "governance_legal_review_projection_accounting_v2", "select * from private.governance_legal_review_projection_accounting_v2($1)", [TENANT]],
+  ["operations", "governance_legal_review_observation_supersession_append", "select private.governance_legal_review_observation_supersession_append($1,$2,$3,$4,$5,$6,$7,$8,$9::timestamptz)", [TENANT, "PROBE:ONLY", "PROBE:PACKET", "0".repeat(64), "0".repeat(64), "probe-parser", "probe-normalizer", false, new Date().toISOString()]],
+  ["worker", "governance_legal_review_projection_accounting_v2", "select * from private.governance_legal_review_projection_accounting_v2($1)", [TENANT]],
   ["operations", "governance_legal_observation_import", "select * from private.governance_legal_observation_import($1,$2::jsonb,$3,$4,$5::timestamptz)", [TENANT, "{}", "k", "0".repeat(64), new Date().toISOString()]],
   ["operations", "governance_parameter_import", "select * from private.governance_parameter_import($1,$2::jsonb,$3,$4,$5::timestamptz)", [TENANT, "{}", "k", "0".repeat(64), new Date().toISOString()]],
   ["operations", "governance_golden_case_set_import", "select * from private.governance_golden_case_set_import($1,$2::jsonb,$3,$4,$5::timestamptz)", [TENANT, "{}", "k", "0".repeat(64), new Date().toISOString()]],
@@ -76,17 +79,31 @@ async function main(): Promise<void> {
       for (const [commandRole, name, sql, params] of COMMANDS) {
         if (commandRole !== role) continue;
         let sqlstate = "none";
+        let contextFailure: string | null = null;
         try {
           const context = ESTABLISH_CONTEXT[role] as Readonly<{ sql: string; params: readonly unknown[] }>;
           await client.query("begin");
-          await client.query(context.sql, [...context.params]);
+          // Establishing the context is setup, not the thing under test. It
+          // raises 42501 of its own when the fixture session has lapsed, and
+          // counting that as the command being denied turned one stale session
+          // into eighteen false permission failures.
+          try {
+            await client.query(context.sql, [...context.params]);
+          } catch (error) {
+            contextFailure = `${(error as { code?: string }).code ?? "unknown"}:`
+              + `${String((error as Error).message).slice(0, 60)}`;
+            throw error;
+          }
           await client.query(sql, [...params] as unknown[]);
           await client.query("rollback");
         } catch (error) {
           await client.query("rollback").catch(() => undefined);
           sqlstate = String((error as { code?: string }).code ?? "unknown");
         }
-        results.push({ role, command: name, sqlstate, permission_denied: sqlstate === "42501" });
+        results.push({
+          role, command: name, sqlstate, context_failure: contextFailure,
+          permission_denied: sqlstate === "42501" && contextFailure === null,
+        });
       }
     } finally {
       await client.end().catch(() => undefined);
@@ -94,18 +111,22 @@ async function main(): Promise<void> {
   }
 
   const denied = results.filter((row) => row.permission_denied === true);
+  const contextFailures = results.filter((row) => row.context_failure !== null);
   const receipt = Object.freeze({
     schema_version: "tivdoc-grant-execution-proof-wave1",
     commands_executed: results.length,
     permission_denied: denied.length,
+    context_failures: contextFailures.length,
+    context_failure_detail: [...new Set(contextFailures.map((row) => String(row.context_failure)))],
     denied,
     results,
   });
   writeFileSync(path.join(RECEIPT_ROOT, "grant-execution-proof.json"),
     `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
   process.stdout.write(`executed=${results.length} permission_denied=${denied.length}`
+    + ` context_failures=${contextFailures.length}`
     + `${denied.length > 0 ? ` ${denied.map((d) => `${d.role}:${d.command}`).join(",")}` : ""}\n`);
-  if (denied.length > 0) process.exitCode = 1;
+  if (denied.length > 0 || contextFailures.length > 0) process.exitCode = 1;
 }
 
 await main();
