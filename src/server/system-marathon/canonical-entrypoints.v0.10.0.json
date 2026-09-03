@@ -1407,10 +1407,9 @@
         "src/server/product/auth/identity-session.ts"
       ],
       "blockers": [
-        "MANAGED_KEY_RESOLVER_NOT_WIRED",
-        "DURABLE_SESSION_STATE_NOT_WIRED"
+        "MANAGED_KEY_RESOLVER_NOT_WIRED"
       ],
-      "non_claim": "Public-key verification is locally proven; no managed issuer, key set or durable session store is claimed."
+      "non_claim": "Durable session state is wired: PostgresIdentitySessionStateReader at durable-local-runtime.ts:160, and the identity negative matrix executes that read as the runtime role against DEV. A key resolver is wired too, but it resolves one configured PEM rather than a managed key service, which is what the remaining blocker names."
     },
     {
       "entrypoint_id": "CEP-083",
