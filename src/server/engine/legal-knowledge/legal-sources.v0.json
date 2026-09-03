@@ -923,6 +923,59 @@
         "found_at": "2026-09-03",
         "included_reason": "Addendum 5 D-2: official implementation table needed to bind the 47.5%-of-average-wage minimum-wage derivation (P-1..P-4) to a fetched artifact hash rather than a value in a memo."
       }
+    },
+    {
+      "source_id": "IL_SEFER_HACHUKIM_3072_2023",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": false,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Sefer HaChukim 3072 (1.8.2023)",
+      "canonical_url": "https://fs.knesset.gov.il/25/law/25_lsr_3020007.pdf",
+      "publication_reference": "Sefer HaChukim 3072",
+      "published_at": "2023-08-01",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["minimum_wage"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 5 D-4. The research dossier records this target as having returned HTTP 474 to a prior automated fetch attempt; retried once with the repository's own fetch tool per the addendum, result recorded whichever way it lands."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_at": "2026-09-03T00:00:00Z",
+        "notes": ["No rate is activated by this manifest."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-03",
+        "included_reason": "Addendum 5 D-4: the 1.8.2023 amending law the research dossier cites, from the exact official Knesset file URL."
+      }
     }
   ]
 }
