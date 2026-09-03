@@ -62,8 +62,6 @@ const EXAMINED_OPEN: Readonly<Record<string, string>> = Object.freeze({
   "CEP-013": "unexamined",
   "CEP-014": "unexamined",
   "CEP-015": "unexamined",
-  "CEP-016": "unexamined",
-  "CEP-017": "unexamined",
   "CEP-020": "unexamined",
   "CEP-025": "unexamined",
   "CEP-027": "unexamined",
@@ -103,6 +101,41 @@ function walk(nodes: readonly GraphNode[], edges: readonly GraphEdge[], kind: st
   return seen;
 }
 
+/**
+ * Whether the symbol a record names is referenced from somewhere the product
+ * reaches, as opposed to merely living in a file the product reaches.
+ *
+ * This is the distinction the whole pool turns on. `SupabasePrivateBlobProvider`
+ * sits in a reachable module and is instantiated by nothing — the runtime uses
+ * `LocalRuntimePrivateBlobProvider` instead — so CEP-016 and CEP-017 were right
+ * and the file-level test was wrong about them. A textual reference from a
+ * reachable file is a weaker signal than a call graph, but it is the signal
+ * that separates "the module is reachable" from "this thing is used", and it
+ * only ever moves a record out of the disagreement set, never into it.
+ */
+function symbolReferenced(
+  symbol: string, definedIn: string, reachable: ReadonlySet<string>,
+): readonly string[] {
+  if (!/^[A-Za-z_$][\w$]*$/u.test(symbol)) return [];
+  const pattern = new RegExp(`\\b${symbol}\\b`, "u");
+  const referrers: string[] = [];
+  for (const file of reachable) {
+    if (file === definedIn) continue;
+    if (!/\.[cm]?[jt]sx?$/u.test(file) || /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(file)) continue;
+    let text: string;
+    try { text = readFileSync(file, "utf8"); } catch { continue; }
+    if (pattern.test(text)) referrers.push(file);
+  }
+  return referrers;
+}
+
+function symbolOf(entry: Entry): string | null {
+  const target = entry.canonical_target;
+  if (typeof target !== "string" || !target.includes(":")) return null;
+  const symbol = target.slice(target.lastIndexOf(":") + 1);
+  return /^[A-Za-z_$][\w$]*$/u.test(symbol) ? symbol : null;
+}
+
 function targetOf(entry: Entry): string {
   const target = typeof entry.canonical_target === "string" && entry.canonical_target.includes(":")
     ? entry.canonical_target.slice(0, entry.canonical_target.lastIndexOf(":"))
@@ -128,13 +161,21 @@ function main(): void {
 
   const rows = entries.map((entry) => {
     const file = targetOf(entry);
-    const reachable = entry.kind === "cli" ? product.has(file) || evidence.has(file) : product.has(file);
+    const fileReachable = entry.kind === "cli" ? product.has(file) || evidence.has(file) : product.has(file);
+    const symbol = symbolOf(entry);
+    const referrers = symbol === null || !fileReachable
+      ? []
+      : symbolReferenced(symbol, file, entry.kind === "cli" ? new Set([...product, ...evidence]) : product);
+    // A record is only contradicted when the thing it names is used, not when
+    // its module happens to be reachable.
+    const reachable = fileReachable && (symbol === null || referrers.length > 0);
     let mismatch = "none";
     if (ASSERTS_WIRED.has(entry.classification) && !reachable) mismatch = "claims_wired_target_unreachable";
     else if (ASSERTS_NOT_WIRED.has(entry.classification) && reachable) mismatch = "claims_unwired_target_reachable";
     return {
       id: entry.entrypoint_id, kind: entry.kind, classification: entry.classification,
-      target: file, reachable, mismatch,
+      target: file, symbol, file_reachable: fileReachable, reachable, mismatch,
+      referrers: referrers.slice(0, 4),
       wiring_blockers: (entry.blockers ?? []).filter((blocker) => WIRING_BLOCKERS.includes(blocker)),
       disposition: EXAMINED_OPEN[entry.entrypoint_id] ?? null,
     };
