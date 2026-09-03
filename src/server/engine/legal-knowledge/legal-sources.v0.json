@@ -869,6 +869,60 @@
         "found_at": "2026-08-29",
         "included_reason": "Required Wave 1 official 2025 law artifact acquired from the exact Knesset file URL without asserting legal relations or effectivity."
       }
+    },
+    {
+      "source_id": "IL_AVERAGE_WAGE_OFFICIAL_RATES",
+      "source_version": "discovery-v0",
+      "source_type": "official_rate_table",
+      "authority": {
+        "kind": "national_insurance_institute",
+        "issuing_body": "National Insurance Institute",
+        "binding_level": "official_implementation",
+        "court_level": null,
+        "scope": "general",
+        "operative": false,
+        "explanatory": true,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": false
+      },
+      "jurisdiction": "IL",
+      "title": "Average wage - official general data and rate history (Sections 1 and 2)",
+      "canonical_url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%9E%D7%95%D7%A6%D7%A2.aspx",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["minimum_wage"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "html",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 5 D-2. Section 1 (general) and Section 2 (self-employed/other) average wage rows must be independently mapped to explicit effective periods before any parameter binds to either.",
+        "The 47.5%-of-average-wage minimum-wage derivation (P-1..P-4) cites this table's Section 1 row, never Section 2, per the research dossier."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_at": "2026-09-03T00:00:00Z",
+        "notes": ["No rate is activated by this manifest."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "explanatory_as_of"
+      },
+      "discovery": {
+        "method": "official_cross_reference",
+        "found_at": "2026-09-03",
+        "included_reason": "Addendum 5 D-2: official implementation table needed to bind the 47.5%-of-average-wage minimum-wage derivation (P-1..P-4) to a fetched artifact hash rather than a value in a memo."
+      }
     }
   ]
 }
