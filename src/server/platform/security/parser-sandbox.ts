@@ -373,3 +373,103 @@ export function buildNodePermissionParserLaunchProfile(input: Readonly<{
     ]),
   });
 }
+
+// Wave 6 (K-4). What would close PARSER_OS_SANDBOX_NOT_VERIFIED, written as a
+// contract rather than a wish: the four proofs a launch adapter must present —
+// a pinned image, a kernel isolation boundary, a demonstrated absence of
+// network, and a pinned toolchain — each with the artefact that proves it and
+// the check the runtime performs before a parser is allowed to run. Nothing
+// below is claimed to exist; the detector above keeps saying so until every
+// proof is presented and verified.
+
+export type ParserIsolationPinnedTool = Readonly<{
+  tool: string;
+  version: string;
+  sha256: string | null;
+  byte_count: number | null;
+  locator_class: "interpreter" | "python_package" | "native_binary" | "model_data";
+  observed_on_host: boolean;
+}>;
+
+export type ParserIsolationProof = Readonly<{
+  proof: "pinned_image" | "kernel_isolation" | "no_network" | "pinned_toolchain";
+  requirement: string;
+  artefact: string;
+  runtime_check: string;
+  acceptable_implementations: readonly string[];
+  status: "NOT_VERIFIED";
+}>;
+
+export type ParserIsolationClosingEnvironment = Readonly<{
+  schema_version: "tivdoc-parser-isolation-closing-environment-v0.10.0";
+  blocker_code: "PARSER_OS_SANDBOX_NOT_VERIFIED";
+  closes_when: "every proof below is presented, verified by the runtime check, and bound into the parse receipt";
+  proofs: readonly [ParserIsolationProof, ParserIsolationProof, ParserIsolationProof, ParserIsolationProof];
+  resource_limits: Readonly<{
+    cpu: "hard limit by cgroup or job object, not cooperative";
+    memory: "hard RSS limit; the parser is killed, not warned";
+    wall_time: "hard timeout; the whole process tree is killed";
+    processes: "pid limit of one parser process and its interpreter";
+    files: "read-only rootfs; one input file; one scratch root; one output root; file-count and output-size caps";
+    user: "non-root, no capabilities";
+    syscalls: "seccomp or equivalent allowlist profile, pinned by digest";
+  }>;
+  toolchain_pins: readonly ParserIsolationPinnedTool[];
+  receipt_binding: "input sha256, tool digests, image digest, profile digest and limits are hashed into the parse receipt";
+}>;
+
+export function parserIsolationClosingEnvironment(
+  toolchain: readonly ParserIsolationPinnedTool[],
+): ParserIsolationClosingEnvironment {
+  const proofs = [
+    Object.freeze({
+      proof: "pinned_image" as const,
+      requirement: "The parser runs from an OCI image addressed by digest, never by tag, built from a pinned base with the toolchain below and nothing else.",
+      artefact: "image digest (sha256) and the SBOM of the image, both recorded in the launch profile",
+      runtime_check: "the launcher refuses any image reference that is not a digest and any digest not in the pinned launch profile",
+      acceptable_implementations: Object.freeze(["distroless or scratch image with a pinned Python 3.13 runtime", "reproducible build with recorded provenance"]),
+      status: "NOT_VERIFIED" as const,
+    }),
+    Object.freeze({
+      proof: "kernel_isolation" as const,
+      requirement: "A kernel or hypervisor boundary between the parser and the host, so a parser escape is a VM or sandboxed-kernel escape and not a process escape.",
+      artefact: "the runtime's own attestation of the boundary (gVisor runsc version and platform, Kata/Firecracker VM config, or Hyper-V isolated container config) recorded in the launch profile",
+      runtime_check: "the launcher reads the boundary attestation before launch and refuses when it is absent or not one of the accepted implementations",
+      acceptable_implementations: Object.freeze(["gVisor (runsc) with the ptrace or KVM platform", "Kata Containers or Firecracker microVM", "Hyper-V isolated container on Windows Server"]),
+      status: "NOT_VERIFIED" as const,
+    }),
+    Object.freeze({
+      proof: "no_network" as const,
+      requirement: "No network reachable from inside the boundary: no interfaces except loopback, no DNS, no egress, proven, not configured.",
+      artefact: "an egress probe run inside the boundary before the parser, recording that every outbound attempt (TCP, UDP, DNS) failed, and the interface list showing loopback only",
+      runtime_check: "the probe's receipt is required in the launch profile and re-run on every launch; a single successful outbound attempt aborts the launch",
+      acceptable_implementations: Object.freeze(["network namespace with no veth (--network none)", "microVM with no network device"]),
+      status: "NOT_VERIFIED" as const,
+    }),
+    Object.freeze({
+      proof: "pinned_toolchain" as const,
+      requirement: "Every tool the parser executes is pinned by digest, and the digests observed inside the boundary equal the pinned ones.",
+      artefact: "the toolchain pin list below, with sha256 and byte count for the interpreter, each Python package wheel, the OCR binary, and the model data",
+      runtime_check: "the launcher hashes the interpreter, the installed package files, the OCR binary and the model data inside the boundary and refuses on any mismatch",
+      acceptable_implementations: Object.freeze(["pip install --require-hashes from a locked requirements file", "tesseract and traineddata copied into the image and hashed at build"]),
+      status: "NOT_VERIFIED" as const,
+    }),
+  ] as const;
+  return Object.freeze({
+    schema_version: "tivdoc-parser-isolation-closing-environment-v0.10.0",
+    blocker_code: "PARSER_OS_SANDBOX_NOT_VERIFIED",
+    closes_when: "every proof below is presented, verified by the runtime check, and bound into the parse receipt",
+    proofs,
+    resource_limits: Object.freeze({
+      cpu: "hard limit by cgroup or job object, not cooperative",
+      memory: "hard RSS limit; the parser is killed, not warned",
+      wall_time: "hard timeout; the whole process tree is killed",
+      processes: "pid limit of one parser process and its interpreter",
+      files: "read-only rootfs; one input file; one scratch root; one output root; file-count and output-size caps",
+      user: "non-root, no capabilities",
+      syscalls: "seccomp or equivalent allowlist profile, pinned by digest",
+    }),
+    toolchain_pins: Object.freeze(toolchain.map((tool) => Object.freeze({ ...tool }))),
+    receipt_binding: "input sha256, tool digests, image digest, profile digest and limits are hashed into the parse receipt",
+  });
+}
