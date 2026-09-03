@@ -564,6 +564,20 @@ it. Single sanctioned copy from the OneDrive folder into the repository.
   unrun until the owner places that key; the local-provider half of K-3
   already ran and passed (31/31 objects byte-equal, prior run).
 
+- **H-8** — no rebuild needed; recorded rather than fabricated. "Rebuild
+  the review package (v5) so it reflects H-4's resolutions" presupposes an
+  H-4 that changed the 69 legal observations `review-package-v4.mts`
+  packages — a prior addendum's H-4 apparently did. This session's H-4 (the
+  9 open sweep ids under Addendum 4 §Pool H, `claims_unwired_target_reachable`)
+  is entrypoint-wiring classification, not legal-observation review, and
+  resolved 0 of 9. There is nothing new for a "v5" to carry, and cutting one
+  anyway — a version bump with no underlying change — would be exactly the
+  fabricated-effect class the standing rules forbid. Re-ran the existing
+  build instead, as the real available verification: `review-package-v4.mts`
+  under wave `v4` (where its inputs live) still builds twice to the same
+  hash `f5c68bb2eaeac42d` as the last freeze, unaffected, as expected, by
+  entrypoint-claim work in an unrelated domain.
+
 ## Resume point
 
 - the run stopped at the owner's instruction after the Addendum 5 survey, with
