@@ -549,6 +549,21 @@ it. Single sanctioned copy from the OneDrive folder into the repository.
   (or an agreed non-PostgREST calling convention for these eight) has to
   exist before any of the eight can move; none was attempted unattended.
 
+- **H-6** (`c88cfb6`) — a walk over every `.ts`/`.tsx`/`.mts`/`.cts` file
+  under `src/engine` fails the suite on the first relative import specifier
+  without a recognized extension. `eslint-plugin-import` would be the
+  conventional fix but needs an `npm install`, forbidden standing. Verified
+  both ways: clean on the current tree, fails with the file and specifier
+  named when a bare import is injected by hand (then reverted, confirmed by
+  an empty `git diff`).
+
+- **H-7** — checked `~/.tivdoc-dev/credentials.env` for
+  `TIVDOC_DEV_STORAGE_SERVICE_KEY` at preflight: absent. `blocked_dependency:
+  storage key`, recorded once, nothing printed. The managed-bucket restore
+  drill (against the DEV project's private `salary-documents` bucket) stays
+  unrun until the owner places that key; the local-provider half of K-3
+  already ran and passed (31/31 objects byte-equal, prior run).
+
 ## Resume point
 
 - the run stopped at the owner's instruction after the Addendum 5 survey, with
