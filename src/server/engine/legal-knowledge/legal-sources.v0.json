@@ -1029,6 +1029,59 @@
         "found_at": "2026-09-03",
         "included_reason": "Addendum 6 A6-3 D-7: bind the youth minimum-wage percentages (P-7..P-10) to an official regulation artifact rather than nevo or a memo."
       }
+    },
+    {
+      "source_id": "IL_MIN_WAGE_OFFICIAL_RATES_HISTORY_XLSX",
+      "source_version": "discovery-v0",
+      "source_type": "official_rate_table",
+      "authority": {
+        "kind": "national_insurance_institute",
+        "issuing_body": "National Insurance Institute",
+        "binding_level": "official_implementation",
+        "court_level": null,
+        "scope": "general",
+        "operative": false,
+        "explanatory": true,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": false
+      },
+      "jurisdiction": "IL",
+      "title": "Minimum wage - historical rate table (spreadsheet corroboration of IL_MIN_WAGE_OFFICIAL_RATES)",
+      "canonical_url": "https://www.btl.gov.il/Mediniyut/GeneralData/Documents/sharminimum.xlsx",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["minimum_wage"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "table",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 6 A6-4 D-1b. Linked directly from the D-1 HTML page (IL_MIN_WAGE_OFFICIAL_RATES) at the same host; never outranks the HTML page or the law for activation. Historical corroboration only."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_at": "2026-09-03T00:00:00Z",
+        "notes": ["No rate is activated by this manifest."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "explanatory_as_of"
+      },
+      "discovery": {
+        "method": "official_cross_reference",
+        "found_at": "2026-09-03",
+        "included_reason": "Addendum 6 A6-4 D-1b: historical spreadsheet corroboration for the minimum-wage rate history, discovered as a direct download link on the D-1 HTML page."
+      }
     }
   ]
 }

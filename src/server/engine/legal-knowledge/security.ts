@@ -15,6 +15,18 @@ export const LEGAL_FETCH_MAX_BYTES = 20 * 1024 * 1024;
 export const LEGAL_FETCH_TIMEOUT_MS = 15_000;
 export const LEGAL_FETCH_USER_AGENT = "Tivdoc-LegalKnowledge/0.1 (public-official-sources-only)";
 
+// A6-4: one bounded extension to the "table" artifact_format's media
+// allowlist, scoped to the BTL host only. The Excel is historical
+// corroboration and never outranks the HTML page (D-1) or the law itself —
+// this narrows *what content-type is accepted*, it does not add a host to
+// LEGAL_SOURCE_ALLOWED_HOSTS above (btl.gov.il/www.btl.gov.il are already
+// there).
+export const LEGAL_SOURCE_SPREADSHEET_CONTENT_TYPES = new Set([
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+]);
+export const LEGAL_SOURCE_SPREADSHEET_ALLOWED_HOSTS = new Set(["www.btl.gov.il", "btl.gov.il"]);
+
 export function validateLegalSourceUrl(value: string) {
   let url: URL;
   try {
@@ -74,9 +86,25 @@ export class SafeLegalFetchError extends Error {
 
 type FetchableLegalDocument = Pick<LegalSource, "canonical_url" | "artifact_format">;
 
-function contentTypeMatches(format: FetchableLegalDocument["artifact_format"], contentType: string) {
-  if (format === "pdf") return contentType === "application/pdf" || contentType === "application/octet-stream";
-  if (format === "html") return contentType === "text/html" || contentType === "application/xhtml+xml";
+function sourceHostname(source: FetchableLegalDocument): string | null {
+  try {
+    return new URL(source.canonical_url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isBtlSpreadsheetEnvelope(source: FetchableLegalDocument, contentType: string, hostname: string | null) {
+  return source.artifact_format === "table"
+    && hostname !== null
+    && LEGAL_SOURCE_SPREADSHEET_ALLOWED_HOSTS.has(hostname)
+    && LEGAL_SOURCE_SPREADSHEET_CONTENT_TYPES.has(contentType);
+}
+
+function contentTypeMatches(source: FetchableLegalDocument, contentType: string, hostname: string | null) {
+  if (source.artifact_format === "pdf") return contentType === "application/pdf" || contentType === "application/octet-stream";
+  if (source.artifact_format === "html") return contentType === "text/html" || contentType === "application/xhtml+xml";
+  if (isBtlSpreadsheetEnvelope(source, contentType, hostname)) return true;
   return contentType.startsWith("text/") || contentType === "application/json" || contentType === "text/html";
 }
 
@@ -85,11 +113,25 @@ export function validateLegalContentEnvelope(
   bytes: Uint8Array,
   contentType: string,
 ) {
-  if (!contentTypeMatches(source.artifact_format, contentType)) return { passed: false as const, code: "declared_mime_mismatch" };
+  const hostname = sourceHostname(source);
+  if (!contentTypeMatches(source, contentType, hostname)) return { passed: false as const, code: "declared_mime_mismatch" };
   if (source.artifact_format === "pdf") {
     const signature = new TextDecoder("ascii").decode(bytes.slice(0, 5));
     if (signature !== "%PDF-") return { passed: false as const, code: "pdf_magic_mismatch" };
     if (bytes.byteLength < 512) return { passed: false as const, code: "document_truncated" };
+    return { passed: true as const };
+  }
+  if (isBtlSpreadsheetEnvelope(source, contentType, hostname)) {
+    if (bytes.byteLength < 512) return { passed: false as const, code: "document_truncated" };
+    if (contentType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+      // .xlsx is a ZIP container; a real one always opens with a local file
+      // header ("PK\x03\x04"), same rigor tier as the PDF magic-byte check.
+      if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) return { passed: false as const, code: "xlsx_magic_mismatch" };
+      return { passed: true as const };
+    }
+    // application/vnd.ms-excel: legacy binary .xls, an OLE compound file.
+    const oleSignature = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+    if (!oleSignature.every((byte, index) => bytes[index] === byte)) return { passed: false as const, code: "xls_magic_mismatch" };
     return { passed: true as const };
   }
   const prefix = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, Math.min(bytes.byteLength, 32_768)));

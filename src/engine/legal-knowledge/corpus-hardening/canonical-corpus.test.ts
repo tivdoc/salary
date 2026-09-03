@@ -45,11 +45,23 @@ describe("canonical corpus boundary v0.4.1", () => {
 
   it("keeps research, implementation and permit roles out of canonical operative resolution", () => {
     const inventory = loadCanonicalRoleInventory();
-    expect(inventory.source_count).toBe(17);
+    // 17 pre-existing + Addendum 5/6 Pool D discovery: D-2, D-4, D-7, D-1b.
+    expect(inventory.source_count).toBe(21);
     const byId = new Map(inventory.rows.map((row) => [row.source_version_id.split("@")[0], row]));
     expect(byId.get("IL_CONVALESCENCE_KNESSET_RESEARCH_2025")?.role).toBe("secondary_explanatory");
     expect(byId.get("IL_MIN_WAGE_OFFICIAL_RATES")?.role).toBe("official_implementation_or_corroboration");
     expect(byId.get("IL_GENERAL_OVERTIME_PERMIT_2018")?.role).toBe("role_pending_human_legal_review");
+    // D-2 and D-1b are official-implementation corroboration only, same as
+    // their respective HTML counterparts, never independently operative.
+    expect(byId.get("IL_AVERAGE_WAGE_OFFICIAL_RATES")?.role).toBe("official_implementation_or_corroboration");
+    expect(byId.get("IL_MIN_WAGE_OFFICIAL_RATES_HISTORY_XLSX")?.role).toBe("official_implementation_or_corroboration");
+    // D-4 and D-7 are primary-binding operative instruments capable of
+    // independently supporting a monetary rule (the law text and the
+    // regulation text, respectively).
+    expect(byId.get("IL_SEFER_HACHUKIM_3072_2023")?.role).toBe("binding_operative_instrument_version");
+    expect(byId.get("IL_SEFER_HACHUKIM_3072_2023")?.eligible_to_independently_support_monetary_parameter).toBe(true);
+    expect(byId.get("IL_MIN_WAGE_YOUTH_APPRENTICES_REGULATIONS_1987")?.role).toBe("binding_operative_instrument_version");
+    expect(byId.get("IL_MIN_WAGE_YOUTH_APPRENTICES_REGULATIONS_1987")?.eligible_to_independently_support_monetary_parameter).toBe(true);
     expect([...byId.values()].filter((row) => !row.eligible_for_operative_resolution).every((row) => !row.eligible_to_independently_support_monetary_parameter)).toBe(true);
   });
 

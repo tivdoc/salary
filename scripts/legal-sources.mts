@@ -28,6 +28,8 @@ import {
 } from "../src/server/engine/legal-knowledge/normalization.ts";
 import {
   fetchLegalSourceBytes,
+  LEGAL_SOURCE_SPREADSHEET_ALLOWED_HOSTS,
+  LEGAL_SOURCE_SPREADSHEET_CONTENT_TYPES,
   safeLegalLogEvent,
   SafeLegalFetchError,
   validateLegalContentEnvelope,
@@ -282,7 +284,13 @@ async function fetchCommand(args: string[] = []) {
       const fetched = await fetchLegalSourceBytes(fetchSource);
       const artifactSha256 = sha256(fetched.bytes);
       const metadataHash = effectiveMetadataHash(source);
-      const extension = fetchSource.artifact_format === "pdf" ? "pdf" : fetchSource.artifact_format === "html" ? "html" : "txt";
+      const extension = fetchSource.artifact_format === "pdf"
+        ? "pdf"
+        : fetchSource.artifact_format === "html"
+        ? "html"
+        : isBtlSpreadsheetObservation(fetchSource, fetched.contentType)
+        ? (fetched.contentType === "application/vnd.ms-excel" ? "xls" : "xlsx")
+        : "txt";
       const artifactPath = path.join(artifactRoot, source.source_id, source.source_version, `${artifactSha256}.${extension}`);
       await writeImmutable(artifactPath, fetched.bytes);
       let previous = selectedObservation(state, source);
@@ -400,6 +408,52 @@ function extractPdfPages(filePath: string) {
   throw new Error("pdf_parser_unavailable");
 }
 
+// A6-4 / D-1b: the BTL-only spreadsheet exception to the artifact_format
+// "table" branch, which is otherwise plain CSV/text decoded directly as
+// UTF-8. Deterministic reader in the pinned Python venv (openpyxl), one page
+// per worksheet, rendered to CSV text — the same shape extractPdfPages
+// returns, so the rest of the build pipeline (chunking, hashing, parser
+// version recording) needs no branch of its own beyond selecting this
+// extractor.
+function extractXlsxPages(filePath: string) {
+  const scriptPath = path.resolve(repoRoot, "scripts", "legal-xlsx-extract.py");
+  for (const candidate of pythonCandidates()) {
+    const result = spawnSync(candidate, [scriptPath, filePath], {
+      encoding: "utf8",
+      env: { ...process.env, PYTHONHASHSEED: "0" },
+      windowsHide: true,
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT") continue;
+    if (result.status !== 0) {
+      try {
+        const parsed = JSON.parse(result.stdout || "{}") as { safe_error_code?: string };
+        throw new Error(parsed.safe_error_code ?? "xlsx_parse_failed");
+      } catch (error) {
+        if (error instanceof Error && error.message !== "Unexpected end of JSON input") throw error;
+        throw new Error("xlsx_parse_failed");
+      }
+    }
+    const parsed = JSON.parse(result.stdout) as { pages?: Array<{ page: number; text: string; sheet_name?: string }>; safe_error_code?: string };
+    if (!parsed.pages) throw new Error(parsed.safe_error_code ?? "xlsx_parse_failed");
+    return parsed.pages.map((page) => ({ page: page.page, text: page.text }));
+  }
+  throw new Error("xlsx_parser_unavailable");
+}
+
+function isBtlSpreadsheetObservation(source: LegalSource, contentType: string) {
+  if (source.artifact_format !== "table") return false;
+  let hostname: string | null = null;
+  try {
+    hostname = new URL(source.canonical_url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return LEGAL_SOURCE_SPREADSHEET_ALLOWED_HOSTS.has(hostname) && LEGAL_SOURCE_SPREADSHEET_CONTENT_TYPES.has(contentType);
+}
+
+const XLSX_EXTRACTOR_VERSION = "legal-xlsx-extractor-v0" as const;
+
 function decodeHtml(bytes: Uint8Array, observation: FetchObservation) {
   const contentType = observation.safe_http_metadata["content-type"] ?? "";
   const charset = contentType.match(/charset=([^;\s]+)/iu)?.[1]?.replaceAll('"', "") ?? "utf-8";
@@ -503,6 +557,9 @@ async function buildCommand() {
       } else if (source.artifact_format === "html") {
         pages = [{ page: null, text: extractHtmlLegalText(decodeHtml(bytes, observation)) }];
         parserVersion = LEGAL_NORMALIZER_VERSION;
+      } else if (isBtlSpreadsheetObservation(source, observation.content_type)) {
+        pages = extractXlsxPages(artifactPath);
+        parserVersion = XLSX_EXTRACTOR_VERSION;
       } else if (["text", "table"].includes(source.artifact_format)) {
         pages = [{ page: null, text: normalizeLegalText(new TextDecoder("utf-8").decode(bytes)) }];
         parserVersion = LEGAL_NORMALIZER_VERSION;
@@ -1255,6 +1312,9 @@ async function createCleanRoomSnapshot(reverseOrder = false) {
       } else if (source.artifact_format === "html") {
         pages = [{ page: null, text: extractHtmlLegalText(decodeHtml(bytes, observation)) }];
         parserVersion = LEGAL_NORMALIZER_VERSION;
+      } else if (isBtlSpreadsheetObservation(source, observation.content_type)) {
+        pages = extractXlsxPages(artifactPath);
+        parserVersion = XLSX_EXTRACTOR_VERSION;
       } else {
         pages = [{ page: null, text: normalizeLegalText(new TextDecoder("utf-8").decode(bytes)) }];
         parserVersion = LEGAL_NORMALIZER_VERSION;

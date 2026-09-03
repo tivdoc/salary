@@ -14,7 +14,10 @@ export function loadCanonicalRoleInventory() {
     status: source.status,
     ...classifyRegisteredSourceRole(source),
   })).sort((a, b) => a.source_version_id.localeCompare(b.source_version_id));
-  if (rows.length !== 17) throw new Error(`canonical_role_inventory_expected_17_received_${rows.length}`);
+  // Bumped 17 -> 21 by Addendum 5/6 Pool D discovery: D-2 (average-wage
+  // official rates), D-4 (Sefer HaChukim 3072), D-7 (youth minimum-wage
+  // regulations), D-1b (BTL historical rate spreadsheet corroboration).
+  if (rows.length !== 21) throw new Error(`canonical_role_inventory_expected_21_received_${rows.length}`);
   return Object.freeze({ schema_version: "canonical-source-role-inventory-v0.4.1" as const, source_count: rows.length, rows });
 }
 

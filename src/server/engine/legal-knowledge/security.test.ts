@@ -134,6 +134,82 @@ describe("official legal-source network boundary", () => {
     const shell = async () => new Response("<html><script>viewer()</script><body></body></html>", { headers: { "content-type": "text/html" } });
     await expect(fetchLegalSourceBytes(syntheticSource(), { fetchImpl: shell })).rejects.toMatchObject({ code: "html_wrapper_empty" });
   });
+
+  // A6-4 / D-1b: the spreadsheet media-type exception is scoped to the BTL
+  // host only, and only for a "table" source — it must not open a path for
+  // any other host or artifact_format to smuggle a binary blob past the
+  // otherwise-text-only "table"/"text" envelope.
+  describe("BTL-only spreadsheet envelope (A6-4)", () => {
+    const xlsxBytes = () => {
+      const bytes = new Uint8Array(600);
+      bytes[0] = 0x50;
+      bytes[1] = 0x4b;
+      bytes[2] = 0x03;
+      bytes[3] = 0x04;
+      return bytes;
+    };
+    const xlsBytes = () => {
+      const bytes = new Uint8Array(600);
+      [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1].forEach((byte, index) => { bytes[index] = byte; });
+      return bytes;
+    };
+    const btlTable = () => syntheticSource({
+      canonical_url: "https://www.btl.gov.il/Mediniyut/GeneralData/Documents/synthetic.xlsx",
+      artifact_format: "table",
+    });
+
+    it("accepts a real .xlsx from the BTL host", async () => {
+      const fetchImpl = async () => new Response(xlsxBytes(), {
+        status: 200,
+        headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+      });
+      const result = await fetchLegalSourceBytes(btlTable(), { fetchImpl });
+      expect(result.contentType).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    });
+
+    it("accepts a real legacy .xls from the BTL host", async () => {
+      const fetchImpl = async () => new Response(xlsBytes(), {
+        status: 200,
+        headers: { "content-type": "application/vnd.ms-excel" },
+      });
+      const result = await fetchLegalSourceBytes(btlTable(), { fetchImpl });
+      expect(result.contentType).toBe("application/vnd.ms-excel");
+    });
+
+    it("rejects spreadsheet bytes failing the magic-byte check even with the right content-type", async () => {
+      const fetchImpl = async () => new Response("not actually a zip".repeat(40), {
+        status: 200,
+        headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+      });
+      await expect(fetchLegalSourceBytes(btlTable(), { fetchImpl })).rejects.toMatchObject({ code: "xlsx_magic_mismatch" });
+    });
+
+    it("rejects a truncated spreadsheet under the byte floor", async () => {
+      const fetchImpl = async () => new Response(new Uint8Array([0x50, 0x4b, 0x03, 0x04]), {
+        status: 200,
+        headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+      });
+      await expect(fetchLegalSourceBytes(btlTable(), { fetchImpl })).rejects.toMatchObject({ code: "document_truncated" });
+    });
+
+    it("rejects a spreadsheet content-type from a non-BTL official host", async () => {
+      const nonBtlTable = syntheticSource({ canonical_url: "https://www.gov.il/synthetic.xlsx", artifact_format: "table" });
+      const fetchImpl = async () => new Response(xlsxBytes(), {
+        status: 200,
+        headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+      });
+      await expect(fetchLegalSourceBytes(nonBtlTable, { fetchImpl })).rejects.toMatchObject({ code: "declared_mime_mismatch" });
+    });
+
+    it("rejects a spreadsheet content-type on a non-table artifact_format even from the BTL host", async () => {
+      const btlHtml = syntheticSource({ canonical_url: "https://www.btl.gov.il/synthetic.xlsx", artifact_format: "html" });
+      const fetchImpl = async () => new Response(xlsxBytes(), {
+        status: 200,
+        headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+      });
+      await expect(fetchLegalSourceBytes(btlHtml, { fetchImpl })).rejects.toMatchObject({ code: "declared_mime_mismatch" });
+    });
+  });
 });
 
 describe("immutable artifacts and safe logging", () => {
