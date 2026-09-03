@@ -111,17 +111,24 @@ strict-versus-MC-29 divergence does not touch it.
 
 Chain unchanged: 26/26 applied — 24 verbatim byte-pinned, 2 platform-compensated
 (`alter role … nosuperuser`; `supautils` reserved-role refusal), dropped lines
-recorded, end state asserted.## Units
+recorded, end state asserted.
+
+## Units
 
 One unit, one commit. `blocked_*` is a result, not a failure: a unit recorded
 with evidence is done for the purpose of moving on, and is not retried.
 
 ### Pool C — canonical entrypoint claims: 21/21 decided
 
+The backlog said 63. That count came from a graph missing 188 files, and from
+asking every record a question only some of them answer. Recomputed at this head
+the disagreement is 21 records, all in one direction, and all of them are now
+decided.
+
 | id | item | status | evidence |
 |---|---|---|---|
-| C-1 | Next.js metadata files as entrypoints | done | `robots.ts`, `sitemap.ts`, `opengraph-image.tsx`; CEP-010/011/012 were right and the graph was wrong |
-| C-2 | ask each record the question its kind answers | done | 45 of 95 are `cli` records naming scripts, which are never product-reachable; 16 false mismatches collapsed to 0 |
+| C-1 | Next.js metadata files as entrypoints | done | `robots.ts`, `sitemap.ts`, `opengraph-image.tsx` — CEP-010/011/012 were right, the graph was wrong |
+| C-2 | ask each record the question its kind answers | done | 45 of 95 are `cli` records naming scripts, never product-reachable; 16 false mismatches went to 0 |
 | C-3 | CONTRACT_ONLY is not a wiring claim | done | all five are blocked on human content gates; CEP-048/057/058/059 retired |
 | C-4 | judge the symbol, not the module | done | `SupabasePrivateBlobProvider` is constructed by nothing; CEP-016/017 retired |
 | C-7 | CEP-078, CEP-079 restated | done | composition root installs at durable-local-runtime.ts:230; routes resolve at durable-registration.ts:89 |
@@ -133,46 +140,70 @@ with evidence is done for the purpose of moving on, and is not retried.
 
 | id | item | status | evidence |
 |---|---|---|---|
-| A-0 | prove the force mechanism | done | on DEV in a rolled-back transaction: forced without the GUC gives 42501 on insert and zero rows; with it, the insert reaches the domain constraint |
+| A-0 | prove the force mechanism | done | on DEV in a rolled-back transaction: forced without the GUC gives 42501 on insert and zero rows; with it the insert reaches the domain constraint |
 | A-1 | RLS matrix seed declares the tenant | done | admin seed pool per tenant; case-confirmation probe on one checked-out client |
 | A-2 | force the 14 writer-clean tables | done | journey 16/16, dynamic 10/10, identity 8/8, invalidation 10/10, grants 19/0, projection balanced |
-| A-3 | browser-e2e audit read | done | forced `engine_platform_audit_events` broke a pooled owner read; fixed with a declared tenant on one client |
-| A-4..A-19 | the other 16 tables | open | each has an owner writer that does not declare the tenant; insertion points enumerated, two hazards recorded: pooled writes in `migrations.mts` 314/320, and two-tenant single statements in `runtime-product-repair-v0102.mts` 557/563/584/834 |
+| A-3 | browser-e2e audit read | done | a pooled owner read of a now-forced table would have failed as a missing timeline action |
+| A-5 | browser seed, repair cleanup | done | the cleanup deleted `tenant_id in ($1,$2)` under a policy that tests one value — it would have matched nothing and raised nothing |
+| A-6 | the reads that go blind | done | `inspectDurableResult` counts two forced tables; the browser logical-effect read went through the pool |
+| A-7..A-22 | the other 16 tables | blocked_external | their writers are corrected but unproven: both harnesses need a local Postgres cluster this host does not have, and forcing on a reading rather than an execution is what the per-table rule forbids |
+
+### Pool B — definer owner reassignment: 5/25, 20 remain
+
+| id | item | status | evidence |
+|---|---|---|---|
+| B-1 | the four pure refusal triggers | done | two probes fired and matched exactly before and after; two could not fire and are recorded `reassigned_probe_vacuous_body_only_raises`, because a body that is a single unconditional raise cannot behave differently under another owner |
+| B-2 | `enforce_engine_analysis_run_history` | done | P0001 "Terminal analysis runs are immutable", identical before and after |
+| B-3..B-7 | the other five history guards | blocked_dependency | their tables are empty so the probe never fires, and unlike the refusal triggers their bodies read rows — the harness declines to reassign on a vacuous probe |
+| B-8..B-20 | the salary and controlled-import definers | open | each needs its owner granted the table privileges its body uses before reassignment, which is the shape that broke identity registration in Wave 3. Measured benefit is nil: the definer surface matrix reports no site ungated by ownership, and `tivdoc_dev_migrator` is neither superuser nor BYPASSRLS |
 
 ### Pool E — parse the 69: 62 parsed, 7 blocked
 
 | id | item | status | evidence |
 |---|---|---|---|
-| E-0 | pinned Python extraction path | done | `output/pdf-venv`, Python 3.13.5, pypdf 6.16.2, `pip freeze` recorded; nothing touched under `node_modules` |
+| E-0 | pinned Python extraction path | done | `output/pdf-venv`, Python 3.13.5, pypdf 6.16.2, `pip freeze` recorded; nothing under `node_modules` touched |
 | E-1 | parse all 69 | done | 62 parsed, 642 chunks, 859,905 normalized characters, parser `pypdf-6.16.2-layout`, normalizer `legal-normalizer-v0` |
-| E-2..E-8 | the 7 with no text layer | blocked_external | no page carries an embedded text layer; Tesseract 5.4.0 is present but has no Hebrew traineddata, so OCR is unavailable on this host |
+| E-2 | say which problem each failure has | done | the extractor reports the font census; all seven resolve to `TEXT_LAYER_ABSENT_SCANNED`, zero to `GLYPHS_UNMAPPABLE` |
+| E-3..E-9 | the seven scans | blocked_external | every page carries zero font resources and one full-page image — 191 scanned pages needing OCR, and this host has Tesseract 5.4.0 with no Hebrew traineddata |
 
-Two properties of the parsed set are recorded rather than corrected. The text
-comes out in **visual order** — pypdf's layout mode emits glyphs as they appear,
-so Hebrew reads reversed with U+FEFF or U+00A0 as the separator — and
-reordering a legal text is a semantic decision this run is not entitled to make.
-And 62 artifacts carry 61 distinct normalized hashes: two observations with
-different bytes normalize identically, which under the standing rule leaves them
-two artifacts, not one.
+Four properties are recorded rather than corrected. The text comes out in
+**visual order**, and the reversal covers digit runs as well as letters — 1951
+extracts as 1591 — so anything citing an amendment number or a date has to undo
+it first. Four of the 62 hold a page the parser could not read, now counted in
+`pages_without_text`. And 62 artifacts carry 61 distinct normalized hashes: two
+observations with different bytes normalize identically, which leaves them two
+artifacts, not one.
 
-Nothing was written to any database, nothing was activated, nothing was marked
-reviewed, and no blocked record was touched.
+Nothing was written to a database, nothing activated, nothing marked reviewed,
+and no blocked record was touched.
 
 ### Carried items
 
 | id | item | status | evidence |
 |---|---|---|---|
-| X-1 | controlled-import grant | done | 202609020005 revoked the grant its own header said nothing used; the dynamic harness authenticates as `service_role` (run.mts:375). Restored by 202609020006 |
+| X-1 | controlled-import grant | done | 202609020005 revoked the grant its own header said nothing used; the dynamic harness authenticates as `service_role` (run.mts:375), restored by 202609020006 |
 | X-2 | permission denial names itself | done | `mapDatabaseError` had no case for 42501 and reported it as `IMPORT_ROW_MALFORMED` |
-| X-3 | `output/agents/` and `output/pdf-venv/` ignored | done | three agent files had reached a commit before this was noticed; untracked, not deleted |
+| X-3 | ignore `output/agents/` and `output/pdf-venv/` | done | three agent files had reached a commit; untracked, not deleted |
+| X-4 | narrow the eight `public.*_salary_*` grants | open | §3.6 requires moving the three `supabase.rpc` callers first, and they are payment and attribution paths in `src/lib/ga4-server.ts`, `src/lib/meta-purchase.ts`, `src/lib/verify-payment.ts` and `src/app/api/cases/status/route.ts`. An unattended run should not refactor money-adjacent callers |
+
+## Owner decision required
+
+A parsed observation is supposed to yield a new packet, with the blocked record
+left immutable and linked by `superseded_by`. Two things make that a decision
+rather than a task. The durable blocked-record table was deliberately built with
+no `superseded_by` column so that graduation is impossible by construction, so
+the link needs a new append-only table beside it. And the projection asserts
+`accounted = projected + blocked` against a denominator of 71; 62 packets
+alongside 71 immutable blocked records does not satisfy that invariant under any
+reading, so the model has to distinguish an observation from an artifact derived
+from it. Changing an asserted invariant is not something this run will do on its
+own initiative.
 
 ## Resume point
 
-- next unit: **A-4** — `runtime-product-repair-v0102.mts:547`, declaring the
-  tenant per tenant inside the seed transaction. Its two hazards are known: a
-  pooled write in `migrations.mts` 314/320 needs a checked-out client, and four
-  statements write two tenants at once, which one declaration cannot cover.
-- then A-5..A-19, then the remaining `public.*_salary_*` narrowing, then pool B.
+- next unit: **A-7** — but only on a host that can run the marathon harness
+  against a local Postgres cluster. The sixteen writers are corrected; what is
+  missing is the execution that proves them.
 - known blocks that must not be retried: corpus acquisition, a second Supabase
-  project, resetting the DEV default database, and OCR for the seven
-  observations with no text layer.
+  project, resetting the DEV default database, OCR for the seven scanned
+  observations, and forcing the remaining sixteen tables without a harness run.
