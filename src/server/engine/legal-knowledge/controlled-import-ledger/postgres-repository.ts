@@ -64,6 +64,11 @@ function mapDatabaseError(error: unknown): never {
   if (code === "CI002") throw new ControlledImportLedgerError("IMPORT_LEASE_FENCED");
   if (code === "CI003") throw new ControlledImportLedgerError("IMPORT_INVALID_STATE");
   if (code === "42P01" || code === "42883") throw new ControlledImportLedgerError("IMPORT_DATABASE_CONTRACT_MISSING");
+  // A revoked EXECUTE grant used to fall through and be reported as a malformed
+  // row, which sends the reader looking at the wrong layer entirely. It nearly
+  // did: 202609020005 removed the grant the verification harness runs on, and
+  // the failure it would have produced named the data, not the privilege.
+  if (code === "42501") throw new ControlledImportLedgerError("IMPORT_EXECUTE_PERMISSION_DENIED");
   throw new ControlledImportLedgerError("IMPORT_ROW_MALFORMED");
 }
 
