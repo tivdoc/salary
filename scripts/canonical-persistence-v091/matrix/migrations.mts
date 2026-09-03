@@ -97,6 +97,7 @@ export async function runRealMigrationMatrix(input: Readonly<{
   const terminalHistoryImmutability = await proveTerminalHistoryImmutability(
     targetConnectionUrl(upgrade),
     seeded.analysis_run_id,
+    seeded.tenant_id,
   );
   const upgradeRuntimeSecrets = generateRuntimeRoleSecrets();
   await configureRuntimeRoleSessions({
@@ -308,43 +309,59 @@ async function verifyUpgradeEnrichment(
   }
 }
 
-async function proveTerminalHistoryImmutability(connectionUrl: string, analysisRunId: string): Promise<boolean> {
+async function proveTerminalHistoryImmutability(
+  connectionUrl: string,
+  analysisRunId: string,
+  tenantId: string,
+): Promise<boolean> {
   const pool = postgresPool(connectionUrl, "tivdoc-v091-terminal-history");
   try {
-    const transitioned = await pool.query(`
-      update public.analysis_runs
-         set status = 'running', started_at = transaction_timestamp()
-       where id = $1::uuid and status = 'queued'
-       returning id`, [analysisRunId]);
-    if (transitioned.rowCount !== 1) throw new Error("POSTGRES_UPGRADE_HISTORY_TRANSITION_FAILED");
-    const terminal = await pool.query(`
-      update public.analysis_runs
-         set status = 'failed', completed_at = transaction_timestamp(),
-             error_code = 'synthetic.dynamic_proof', error_stage = 'upgrade_verification'
-       where id = $1::uuid and status = 'running'
-       returning id`, [analysisRunId]);
-    if (terminal.rowCount !== 1) throw new Error("POSTGRES_UPGRADE_HISTORY_TRANSITION_FAILED");
-
-    let rejected = false;
-    const client = await pool.connect();
+    // Everything here runs on one checked-out client with the tenant declared.
+    // The table is tenant-scoped, a transaction-local setting cannot follow a
+    // pooled query to the next backend, and once the table forces row level
+    // security the owner connection sees nothing without it — at which point
+    // the transitions would match no rows and this would fail as a transition
+    // failure rather than as the visibility problem it actually is.
+    const scoped = await pool.connect();
     try {
-      await client.query("begin");
+      await scoped.query("begin");
+      await scoped.query("select set_config($1, $2, true)", ["tivdoc.tenant_id", tenantId]);
+      const transitioned = await scoped.query(`
+        update public.analysis_runs
+           set status = 'running', started_at = transaction_timestamp()
+         where id = $1::uuid and status = 'queued'
+         returning id`, [analysisRunId]);
+      if (transitioned.rowCount !== 1) throw new Error("POSTGRES_UPGRADE_HISTORY_TRANSITION_FAILED");
+      const terminal = await scoped.query(`
+        update public.analysis_runs
+           set status = 'failed', completed_at = transaction_timestamp(),
+               error_code = 'synthetic.dynamic_proof', error_stage = 'upgrade_verification'
+         where id = $1::uuid and status = 'running'
+         returning id`, [analysisRunId]);
+      if (terminal.rowCount !== 1) throw new Error("POSTGRES_UPGRADE_HISTORY_TRANSITION_FAILED");
+
+      let rejected = false;
+      await scoped.query("savepoint immutability_probe");
       try {
-        await client.query(`
+        await scoped.query(`
           update public.analysis_runs
              set completion_payload = '{}'::jsonb
            where id = $1::uuid`, [analysisRunId]);
       } catch (error) {
         rejected = isPostgresError(error) && error.code === "P0001";
       }
-      await client.query("rollback");
+      await scoped.query("rollback to savepoint immutability_probe");
+      const preserved = await scoped.query<{ immutable: boolean }>(`
+        select status = 'failed' and completion_payload is null as immutable
+        from public.analysis_runs where id = $1::uuid`, [analysisRunId]);
+      await scoped.query("commit");
+      return rejected && preserved.rows[0]?.immutable === true;
+    } catch (error) {
+      await scoped.query("rollback").catch(() => undefined);
+      throw error;
     } finally {
-      client.release();
+      scoped.release();
     }
-    const preserved = await pool.query<{ immutable: boolean }>(`
-      select status = 'failed' and completion_payload is null as immutable
-      from public.analysis_runs where id = $1::uuid`, [analysisRunId]);
-    return rejected && preserved.rows[0]?.immutable === true;
   } finally {
     await pool.end();
   }
