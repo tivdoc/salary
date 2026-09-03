@@ -25,7 +25,9 @@ const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 124;
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
 // from a verbatim DEV body was invisible to both the count and the search_path
 // check until this was noticed — two definer definitions arrived uncounted.
-const DEFINITION = /create\s+(?:or\s+replace\s+)?function\s+((?:public|private)\.[a-z0-9_]+)\s*\(([\s\S]*?)\)\s*returns([\s\S]*?)\bas\s+\$\$/giu;
+// The body delimiter is `$$` in hand-written migrations and `$function$` in
+// pg_get_functiondef output; either is a dollar-quoted body.
+const DEFINITION = /create\s+(?:or\s+replace\s+)?function\s+((?:public|private)\.[a-z0-9_]+)\s*\(([\s\S]*?)\)\s*returns([\s\S]*?)\bas\s+\$[a-z_]*\$/giu;
 const PINNED_EMPTY_SEARCH_PATH = /set\s+search_path\s*(?:=|\bto\b)\s*(?:''|"")/iu;
 
 type Definition = Readonly<{ file: string; name: string; header: string }>;
