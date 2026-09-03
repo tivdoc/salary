@@ -54,6 +54,47 @@ const PROBES = Object.freeze([
     sql: "update private.controlled_import_audit_events set event_kind = event_kind",
     expect: "",
   }),
+  // The history guards compare rows rather than refusing outright, so their
+  // bodies are not unconditional raises and a probe that does not fire is not
+  // evidence of anything. They are listed so the harness says so out loud: on an
+  // empty table each comes back `reverted_probe_vacuous` and its owner is left
+  // alone, which is the correct outcome and not a failure to make green.
+  Object.freeze({
+    fn: "private.enforce_engine_analysis_run_history()",
+    name: "enforce_engine_analysis_run_history",
+    sql: "update public.analysis_runs set status = status",
+    expect: "",
+  }),
+  Object.freeze({
+    fn: "private.enforce_analysis_job_history()",
+    name: "enforce_analysis_job_history",
+    sql: "update public.analysis_jobs set status = status",
+    expect: "",
+  }),
+  Object.freeze({
+    fn: "private.enforce_case_confirmation_history()",
+    name: "enforce_case_confirmation_history",
+    sql: "update public.case_confirmations set status = status",
+    expect: "",
+  }),
+  Object.freeze({
+    fn: "private.enforce_case_conversation_history()",
+    name: "enforce_case_conversation_history",
+    sql: "update public.case_conversations set tenant_id = tenant_id",
+    expect: "",
+  }),
+  Object.freeze({
+    fn: "private.enforce_document_extraction_history()",
+    name: "enforce_document_extraction_history",
+    sql: "update public.document_extractions set tenant_id = tenant_id",
+    expect: "",
+  }),
+  Object.freeze({
+    fn: "private.enforce_engine_case_scope()",
+    name: "enforce_engine_case_scope",
+    sql: "update public.case_messages set tenant_id = tenant_id",
+    expect: "",
+  }),
 ]);
 
 type Client = Readonly<{ query(text: string, values?: readonly unknown[]): Promise<{ rows: Record<string, unknown>[] }> }>;
