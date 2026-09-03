@@ -739,6 +739,169 @@ as blocked with evidence, not silently dropped), plus D-1b. Nothing in
 Pool D widened `LEGAL_SOURCE_ALLOWED_HOSTS`, bypassed robots.txt, or bound
 a draft parameter to a URL in a memo instead of a fetched hash.
 
+### Pool P — draft parameters bound to Pool D artifacts (Addendum 5)
+
+Framework: `scripts/legal-review-projection/pool-p-parameter-import.mts`
+(`5ba732e`). Draft-only import through
+`private.governance_parameter_import` (no attestation, no trust stack —
+Pool P's own "zero attestations" requirement made P-0's full reviewer
+flow unnecessary). Every candidate's citation is checked at run time
+against the actual built chunk text of the cited Pool D artifact
+(`citation()`'s `must_contain`) — not typed from memory or the research
+dossier's own summary tables. This caught several real problems before
+anything was written to DEV, documented in each batch commit; the
+recurring shape is "the fetched/built text does not actually say what the
+dossier's prose implies," which is a citation-integrity check working
+exactly as intended, not a false alarm.
+
+Two conventions this session established, not specified by any addendum,
+flagged for the owner to confirm or override (both are cheap to change —
+nothing here is attested or activated):
+- **Tenant**: `legal.reference.il`, fixed rather than random-per-run, so
+  the draft catalog persists and Session B can find it. Needed a
+  `reviewer_org_id` placeholder value on the session (a label, not a
+  verified trust organization — no FK ties it to
+  `governance_reviewer_organizations`) purely because
+  `runtime_context_install` requires a non-null one for every session
+  under the operations role, attestation or not.
+- **DependencyBindings computation for a real (non-synthetic) source**:
+  `source_bytes_sha256`/`citations_sha256` hash real fetched-artifact
+  hashes and real chunk citations; `rule_spec_sha256`/`golden_cases_sha256`/
+  `reviewer_decisions_sha256` are deterministic "unassigned" sentinels
+  (same pattern `synthetic-fixtures.ts`'s `syntheticBindings` already
+  uses) since Pool Q hasn't produced a RuleSpec or GoldenCaseSet yet, and
+  zero attestations exist by design. R-8 (semantic invalidation) stays
+  deferred to Session B — this only fixes how bindings are populated at
+  draft-creation time, not how they get compared later.
+
+**Registered (18 draft candidates, 22 database rows counting decision
+records, 5 commits):**
+
+- **Batch 1** (`5ba732e`) — **P-1..P-4**: minimum wage monthly 2023-2026
+  (5,571.75 / 5,880.02 / 6,247.67 / 6,443.85 ILS), each bound to the
+  Minimum Wage Law §6 47.5% derivation (D-3) + the average-wage table's
+  §1 row for that year (D-2) + BTL's own published monthly figure (D-1)
+  as corroboration. **P-5a/P-5b**: the ÷182 (35.40 ILS) vs ÷186 (34.64
+  ILS) hourly alternatives, registered as true alternatives via a real
+  `legal_open_decisions` row. **P-6**: daily rates, 6-day (257.75) and
+  5-day (297.40). Two real mistakes caught before import: D-3's
+  consolidated-through-2015 text does not contain the ÷186 divisor clause
+  the dossier's prose implies (a later amendment, consistent with D-3's
+  own annotation), and D-8's own PDF text is corrupted at exactly the
+  "182" figure (extracts as "122") — P-5a cites D-8 for the 42-hour-week
+  clause it states cleanly instead.
+- **Batch 2** (`845d83b`) — **P-7..P-10**: youth/apprentice minimum wage,
+  monthly and hourly, all four categories (70%/75%/83%/60% of D-7). The
+  per-agora amounts are BTL's own historical-rate-spreadsheet figures
+  (D-1b), not computed here by multiplying — independently deriving them
+  would have landed one agora off BTL's own number on three of the four
+  monthly figures, and the dossier's own summary table disagrees with
+  BTL's table on three of the four hourly figures by the same kind of
+  rounding drift. 8/8 clean on the first real attempt.
+- **Batch 3** (`026804b`) — **P-17**: the 42-hour weekly threshold (D-8).
+- **Batch 4** (`e1d86a2`) — **P-24a/P-24b**: the pension mandatory-wage-cap
+  alternatives (§1: 13,566 ILS vs §2: 13,769 ILS), true alternatives via a
+  second `legal_open_decisions` row. **P-25**: the travel daily
+  reimbursement cap (22.60 ILS, effective 1.2.2016, D-10).
+- **Batch 5** (`44da0cb`) — **P-30**: the 2024 convalescence
+  partial-reduction wage threshold (6,000 ILS). **P-34** (both halves,
+  registered as two plain parameters, not alternatives — see below):
+  vacation full-year/partial-year employment-relationship day thresholds,
+  200 and 240. **P-35** (both halves): sick-pay accrual (1.5 days/month)
+  and cap (90 days).
+
+**A real ambiguity resolved, not just an artifact gap.** The research
+dossier flags "200 or 240 days — the explanatory source is confused about
+which applies to whom" as an open decision for the vacation topic. Reading
+Annual Vacation Law §3(b)/(c) directly (chunk
+`IL_ANNUAL_VACATION_LAW@discovery-v0#0001-838721e06653`) shows they are
+not competing figures at all: §3(b)'s 200-day threshold governs an
+employment relationship spanning the full work-year, §3(c)'s 240-day
+threshold governs one spanning only part of it. Registered as two plain
+parameters rather than `decision_id`-linked alternatives, because there is
+no genuine disagreement left to carry forward once the primary text is
+read directly.
+
+**Not registered — recorded `blocked_dependency`, each with a one-line,
+corpus-anchored reason (never a fabricated citation to close the gap):**
+
+- **P-11..P-14** (overtime 125%/150%, rest-day 150%, overtime-on-rest-day
+  175%/200%): no built chunk anywhere in the corpus contains "125%",
+  "150%", "175%", or "200%" (grepped every built `chunks.json`). The
+  Hours of Work and Rest Law artifact in the corpus is pinned to the
+  original 1951 promulgation (its own registered note says so); the
+  consolidated/amended text carrying §16/§17's actual pay-rate clauses is
+  the exact gap the dossier's own "מה עורך הדין מכריע" #1 for this topic
+  (tracker 6.24) already flags as open.
+- **P-15/P-16** (daily thresholds 8.6/8 hours): not present in the
+  42-hour extension order's extracted text in any form checked (`8.6`,
+  `7.6`, `8,6`, `7,6`).
+- **P-18..P-20** (permit caps 12/day, 16 OT/week, 58 night): source
+  `IL_GENERAL_OVERTIME_PERMIT_2018` failed to build
+  (`instrument_selector_pending_human_review`), pre-existing.
+- **P-21..P-23** (current pension contribution 6%/6.5%/6%, effective
+  1.1.2017): the 2011 base order's own escalation table is built and
+  readable but only reaches 17.5% total / 6% / 5.5% / 6% at 1.1.2014; the
+  1.1.2017 increase to 18.5%/6.5% is in the 2016 increase order, which
+  failed to build (`document_sanity_minimum_content_failed`),
+  pre-existing.
+- **P-26** (2023 convalescence rate, 418): source parse_failed
+  (`instrument_selector_pending_human_review`), pre-existing.
+- **P-27/P-28** (2026 convalescence order rate + effective period, public
+  511.6): a new finding, not a pre-existing one — the registered source
+  `IL_CONVALESCENCE_EXTENSION_ORDER_2026`
+  (`gov.il/BlobFolder/dynamiccollectorresultitem/order14863/...`) fetches
+  successfully and parses into 14 chunks, but **none of the 14 chunks
+  contain the word "convalescence" (הבראה) in either letter order** — the
+  actual content is a set of unrelated government-appointment notices
+  (a deputy minister's cessation of office). `gov.il`'s
+  `dynamiccollectorresultitem` numeric-id URLs are not stable permalinks;
+  this is most plausibly the id being reassigned to different content
+  since the source was first registered, not a wrong URL from the start.
+  Not re-fetched or re-diagnosed this session — recorded as a content
+  mismatch on an already-registered source, for Session B or the owner to
+  re-source.
+- **P-29** (seniority bands 5/6/7/8/9/10 days): not found in the 1988
+  order's 4 built chunks; the dossier's own tracker 6.17 already flags
+  this exact instrument's page-boundary segmentation as unreliable.
+- **P-31** (2025 half-day threshold, 6,150): the sibling 2024 law's 6,000
+  threshold (registered as P-30) is clean in its own text, but the 2025
+  law's PDF text layer is materially more garbled — several multi-digit
+  numbers extract as fragments that are clearly wrong (`5219`, `5319`, and
+  similar) — and no clean `6,150`/`6150` occurrence exists to cite. The
+  2025 law's own frozen rates (418 private / 471.4 public) ARE clean in
+  this same document, but that is a different figure than P-31 asks for.
+- **P-25's "superseded_2014" sibling** (26.40 ILS): every source found for
+  26.40 is an explanatory secondary source (a services blog, an academic
+  staff association), not an official one, and no 2014 travel-order
+  artifact is in the D-pool to bind it to instead.
+- **P-32, P-33a/P-33b** (vacation calendar-days table; 5-day workday
+  conversion 11 vs 12): a new finding — the fetched
+  `IL_ANNUAL_VACATION_LAW` gives 14 days for years 1-4 in its own
+  §3(a)(1), the pre-amendment-15 (2017) figure, not the current 16 the
+  dossier and addendum both expect (this artifact's own amendment
+  footnote list stops at 2013, confirming it predates 2017's amendment
+  15). Binding a "current" parameter to a stale law text would be wrong
+  regardless of citation rigor — not registered. P-33's own working-day
+  conversion has no official source at all per the dossier's own account
+  (only an explanatory site is cited for it anywhere) — a genuine absence,
+  not a corpus gap to close.
+- **P-36/P-37** (sick-pay payment tiers 0%/50%/100%): not found anywhere
+  in `IL_SICK_PAY_LAW`'s 5 built chunks — the same "primary clause not in
+  the fetched text" pattern as the overtime-rate and pension-increase
+  gaps above.
+
+**Net**: 18 of 37 addendum-listed parameters registered as draft
+candidates (counting each half of an a/b or monthly/hourly pair
+separately), all DEV-verified and citation-checked; the remainder blocked
+with a specific, corpus-anchored reason each, not attempted with a
+fabricated or memory-sourced citation. Closing the blocked half of Pool P
+needs new acquisition work outside this session's scope: a current
+consolidated Hours of Work and Rest Law text, the 2016 pension increase
+order (re-fetch or a different official copy), a correct 2026
+convalescence-order artifact (current one is mismatched content), and a
+current (post-2017) Annual Vacation Law consolidation.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
@@ -752,11 +915,31 @@ a draft parameter to a URL in a memo instead of a fetched hash.
   commits, 6 more units. Pool D is complete: 12/12 + D-1b (10 resolved and
   bound to a fetched artifact, D-5's second half and D-12 correctly
   recorded blocked with evidence rather than dropped or fabricated).
-- **Next unit: P-1** (Addendum 5 Pool P) — draft parameters bound to Pool
-  D artifact hashes, using the now-proven P-0 machinery
-  (`parameter-decision-matrix.mts`'s pattern). Then S-1…S-8, then R-1…R-7 +
-  R-9…R-14 (R-8 deferred to Session B), then Q-1…Q-7 (Q-8 deferred to
-  Session B), per the revised order in Addendum 6 / `tivdoc-next-run.md`.
+- **Checkpoint at unit 22.** Pool P batches 1-5 (`5ba732e`, `845d83b`,
+  `026804b`, `e1d86a2`, `44da0cb`) — 5 commits, 5 units, 18 of 37
+  addendum-listed parameters registered as DEV-verified draft candidates
+  (tenant `legal.reference.il`, flagged for owner confirmation — see the
+  Pool P write-up above), the rest recorded `blocked_dependency` with a
+  specific corpus-anchored reason each. Two new findings surfaced along
+  the way, both documented above: the registered
+  `IL_CONVALESCENCE_EXTENSION_ORDER_2026` source's fetched content does
+  not match its own title at all (content mismatch, not a wrong citation),
+  and the fetched `IL_ANNUAL_VACATION_LAW` predates 2017's amendment 15
+  (stale primary text, not safe to bind a "current" parameter to).
+- **Next unit: P-2 onward has nothing left to register cleanly without
+  new acquisition work** — the remaining unregistered Pool P units all
+  depend on artifacts this session could not fetch, could not get to
+  parse, or found to be mismatched/stale (see the Pool P write-up's
+  blocked list for the exact source and reason per unit). The next
+  productive Pool P action is a fresh acquisition pass for: a current
+  consolidated Hours of Work and Rest Law text (needed for P-11..P-16),
+  the 2016 pension increase order (P-21..P-23), a correct
+  2026-convalescence-order artifact (P-27/P-28), and a current
+  (post-2017) Annual Vacation Law consolidation (P-32/P-33). Absent that,
+  proceed to **S-1…S-8** (offline synthetic shadow — does not depend on
+  Pool P's blocked units, only its registered ones), then **R-1…R-7 +
+  R-9…R-14** (R-8 deferred to Session B), then **Q-1…Q-7** (Q-8 deferred
+  to Session B), per the revised order in Addendum 6 / `tivdoc-next-run.md`.
 - carried from before this session: K-3's managed-bucket half (needs the
   Storage key — H-7 re-confirmed absent this session), K-5 (needs a
   provisioned off-host destination), the owner's visual review of the five
