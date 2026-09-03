@@ -23,8 +23,30 @@ const LEDGER = path.join("src", "server", "system-marathon", "canonical-entrypoi
 
 /** Classifications asserting the entrypoint is wired and working. */
 const ASSERTS_WIRED = new Set(["ALREADY_CANONICAL_AND_PROVEN", "WIRED_DURABLE", "PROVEN"]);
-/** Classifications asserting it is not. */
-const ASSERTS_NOT_WIRED = new Set(["IMPLEMENTED_NOT_WIRED", "CONTRACT_ONLY", "NOT_IMPLEMENTED"]);
+/**
+ * Classifications asserting it is not wired.
+ *
+ * `CONTRACT_ONLY` is deliberately absent. All five records carrying it are
+ * blocked on a human content gate — HUMAN_LEGAL_SOURCE_REVIEW_REQUIRED,
+ * RULESPEC_HUMAN_AUTHORING_REQUIRED, HUMAN_GOLDEN_CASES_REQUIRED,
+ * REAL_RULES_ACTIVE_0 — and not one of them says anything about wiring. The
+ * contract exists and is called; what is missing is content a person has to
+ * write. Reachability cannot contradict that, so counting those four as
+ * disagreements was the checker being wrong, not the records.
+ */
+const ASSERTS_NOT_WIRED = new Set(["IMPLEMENTED_NOT_WIRED", "NOT_IMPLEMENTED"]);
+
+/** Blockers that are about wiring, and so are the ones reachability can speak to. */
+const WIRING_BLOCKERS = Object.freeze([
+  "CANONICAL_NON_TEST_COMPOSITION_NOT_INSTALLED",
+  "DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION",
+  "STABLE_NEXT_ROUTES_NOT_BOUND_TO_DURABLE_APPLICATION",
+  "DURABLE_PORTS_NOT_INSTALLED",
+  "LONG_RUNNING_WORKER_ENTRYPOINT_NOT_WIRED",
+  "EXTERNAL_EFFECT_ADAPTER_NOT_WIRED",
+  "MANAGED_KEY_RESOLVER_NOT_WIRED",
+  "DURABLE_SESSION_STATE_NOT_WIRED",
+]);
 
 /**
  * Records whose target is reachable while the record says it is not wired, and
@@ -46,10 +68,6 @@ const EXAMINED_OPEN: Readonly<Record<string, string>> = Object.freeze({
   "CEP-025": "unexamined",
   "CEP-027": "unexamined",
   "CEP-028": "unexamined",
-  "CEP-048": "unexamined",
-  "CEP-057": "unexamined",
-  "CEP-058": "unexamined",
-  "CEP-059": "unexamined",
   "CEP-078": "unexamined",
   "CEP-079": "unexamined",
   "CEP-080": "unexamined",
@@ -62,7 +80,7 @@ type GraphNode = Readonly<{ path: string; kind: string }>;
 type GraphEdge = Readonly<{ from: string; to: string | null }>;
 type Entry = Readonly<{
   entrypoint_id: string; kind: string; classification: string;
-  source_path?: string; canonical_target?: string;
+  source_path?: string; canonical_target?: string; blockers?: readonly string[];
 }>;
 
 function walk(nodes: readonly GraphNode[], edges: readonly GraphEdge[], kind: string): ReadonlySet<string> {
@@ -117,6 +135,7 @@ function main(): void {
     return {
       id: entry.entrypoint_id, kind: entry.kind, classification: entry.classification,
       target: file, reachable, mismatch,
+      wiring_blockers: (entry.blockers ?? []).filter((blocker) => WIRING_BLOCKERS.includes(blocker)),
       disposition: EXAMINED_OPEN[entry.entrypoint_id] ?? null,
     };
   });
