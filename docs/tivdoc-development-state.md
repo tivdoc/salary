@@ -514,6 +514,41 @@ it. Single sanctioned copy from the OneDrive folder into the repository.
   own prior notes already said, which this pass independently confirmed
   against the current tree rather than took on faith.
 
+- **H-5** — investigated, none moved; all eight grants `blocked_dependency`
+  on a role-plumbing gap that does not exist yet, recorded with the exact
+  reason rather than attempted. The eight are `claim_salary_ga4_purchase`,
+  `claim_salary_meta_purchase`, `claim_salary_payment_completed`,
+  `complete_salary_ga4_purchase`, `complete_salary_meta_purchase`,
+  `release_salary_ga4_purchase`, `release_salary_meta_purchase`,
+  `verify_salary_payment` — all `SECURITY DEFINER`, owned by
+  `tivdoc_dev_migrator`, `EXECUTE` granted to `service_role`. All eight are
+  live, not dead: `claim`/`complete`/`release_salary_ga4_purchase` from
+  `src/lib/ga4-server.ts`, the `_meta_` triplet from
+  `src/lib/meta-purchase.ts`, `claim_salary_payment_completed` from
+  `src/app/api/cases/status/route.ts`, `verify_salary_payment` from
+  `src/lib/verify-payment.ts` — every one of the "three payment-path
+  `supabase.rpc` callers" the prior run named, plus the GA4/Meta analytics
+  pair each has, all reached the same way.
+
+  Every one of those four files calls `supabase.rpc(...)` through the one
+  shared admin client `getSupabaseAdmin()` (`src/lib/supabase-admin.ts`),
+  authenticated with `SUPABASE_SERVICE_ROLE_KEY` over PostgREST. PostgREST
+  selects a Postgres role from the JWT's `role` claim, and Supabase issues
+  that claim only as `anon`, `authenticated` or `service_role` — there is no
+  JWT that selects an arbitrary narrower Postgres role over PostgREST.
+  "Move the caller to the runtime path" therefore is not a grant change or
+  a connection-string swap: it needs a runtime role that PostgREST can
+  actually select (which does not exist for this purpose), or it needs
+  these four call sites rewritten off `supabase.rpc` entirely onto a direct
+  Postgres connection carrying that role's own credentials — a real
+  architecture change to four live files on the payment-completion and
+  ad-conversion-tracking paths, not a per-function grant move. That is a
+  materially bigger and riskier unit than "prove the payment path completes
+  end to end after each," and it is exactly what the prior run's caution
+  named. `blocked_dependency`: a PostgREST-selectable narrow runtime role
+  (or an agreed non-PostgREST calling convention for these eight) has to
+  exist before any of the eight can move; none was attempted unattended.
+
 ## Resume point
 
 - the run stopped at the owner's instruction after the Addendum 5 survey, with
