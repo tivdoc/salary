@@ -1,6 +1,8 @@
-// Wave 5 (G-3, G-4, G-5, G-6, G-7, G-8, G-9). The durable ground-truth workflow,
-// proven on DEV as the operations runtime role, with zero ground-truth content
-// produced and no lock left behind.
+// Wave 5 (G-3, G-4, G-5, G-6, G-7, G-8, G-9) plus Addendum 4 H-3. The durable
+// ground-truth workflow, proven on DEV as the operations runtime role, with
+// zero ground-truth content produced. G-3..G-9's own manifest chain leaves no
+// lock behind; H-3 commits and corrects a second, separate manifest chain to
+// exercise the one branch G-7 deliberately never reached.
 //
 // The durable schema already existed (202609010004) and is product-reachable
 // through PostgresGroundTruthRepository. What had never been done is to run it
@@ -39,11 +41,16 @@
 // definer (202609020015) was added because no runtime role could read a
 // manifest's revision chain.
 //
-// The lock is observed inside a transaction that is then discarded: revision
-// 5, status locked, a second lock refused while one is active — and the
-// committed chain still ends at revision 4. The one lock path not exercised is
-// correction_started superseding an active lock, which needs a committed lock.
-// Race and restart are proven on the queue: two concurrent claims yield one
+// The G-7 lock is observed inside a transaction that is then discarded:
+// revision 5, status locked, a second lock refused while one is active — and
+// the committed chain still ends at revision 4. H-3 commits a real lock on a
+// second manifest and corrects it for real: a new manifest id, a fresh
+// workflow_revision chain, `supersedes_manifest_id` naming the locked one; a
+// direct UPDATE against the locked manifest's own row is refused (the
+// operations runtime role holds no grant on this table at all); the locked
+// manifest's content is byte-identical before and after the correction; the
+// supersession is recorded. Race and restart are proven on the queue: two
+// concurrent claims yield one
 // winner, a reclaim advances the fencing token, the stale token is fenced
 // out, and after every connection is closed and reopened the durable claim
 // still acts.
@@ -357,12 +364,16 @@ async function main(): Promise<void> {
 
     // The queue is fed by the queue identity; the claim is taken by the reviewer
     // in their own session, because the claim definer asserts actor = claimant
-    // and checks the claimed role against the durable reviewer record.
-    const claimFor = async (reviewer: Reviewer, workKind: string, suffix: string) => {
+    // and checks the claimed role against the durable reviewer record. Takes
+    // the target manifest id explicitly so the same helper serves every
+    // manifest chain this run builds, not only the primary one.
+    const claimForManifest = async (
+      reviewer: Reviewer, workKind: string, suffix: string, targetManifestId: string, aggregateVersion = "1",
+    ) => {
       const itemId = `gt.work.${suffix}.${RUN}`;
       await transaction(factory, "queue", async (context) => {
         await new PostgresGovernanceWorkRepository(context, TENANT).enqueue({
-          work_item_id: itemId, workflow_kind: "ground_truth", aggregate_id: manifestId, aggregate_version: "1",
+          work_item_id: itemId, workflow_kind: "ground_truth", aggregate_id: targetManifestId, aggregate_version: aggregateVersion,
           work_kind: workKind, required_role: reviewer.role, document_sha256: DOCUMENT_SHA256,
           // ground_truth work must name an exact-byte object version; synthetic here.
           object_version_id: `synthetic.object.${RUN}`, input_sha256: sha256(`input:${itemId}`), payload: { synthetic: true },
@@ -379,10 +390,12 @@ async function main(): Promise<void> {
           reviewer_role: reviewer.role, now: iso(0), lease_seconds: 600,
         });
         if (!claim) throw new Error(`GT_MATRIX_CLAIM_MISSING:${itemId}`);
-        if (claim.aggregate_id !== manifestId) throw new Error(`GT_MATRIX_FOREIGN_WORK_ITEM:${claim.work_item_id}`);
+        if (claim.aggregate_id !== targetManifestId) throw new Error(`GT_MATRIX_FOREIGN_WORK_ITEM:${claim.work_item_id}`);
         return { work_item_id: claim.work_item_id, claimant_id: claim.claimant_id, fencing_token: claim.fencing_token };
       });
     };
+    const claimFor = (reviewer: Reviewer, workKind: string, suffix: string) =>
+      claimForManifest(reviewer, workKind, suffix, manifestId);
 
     // Signs exactly what the port binds: the trusted action payload derived from
     // (action, prior, next), under the trusted-GT payload schema.
@@ -645,6 +658,137 @@ async function main(): Promise<void> {
     record("G9_claim_survives_process_restart", afterRestart === "accepted",
       afterRestart === "accepted" ? `released with token ${second!.fencing_token} after reconnect` : afterRestart);
 
+    // --- H-3: correction_started over a COMMITTED lock. The definer's
+    // correction_started branch (present since 202609010004) was never
+    // called before this: G-7 above deliberately discards its lock so
+    // nothing ever read the correction path against real state. This proof
+    // builds and locks its own manifest chain for real (its own manifest
+    // ids, so it leaves nothing in the chain the rest of this run reads
+    // back), then corrects it. The semantics the definer already encodes:
+    // a correction opens a BRAND NEW manifest chain — a fresh manifest id,
+    // workflow_revision starting at 0 again — that names the locked
+    // manifest via `supersedes_manifest_id`; it never mutates the locked
+    // manifest's own rows.
+    const correctionManifestId = `SYNTHETIC_GT_CORRECTION_${RUN}`;
+    const correctionWorkflow = forged(reviewers.a.id, reviewers.b.id, reviewers.c.id);
+    const cRename = (source: GroundTruthManifest, patch: Partial<GroundTruthManifest> = {}): GroundTruthManifest =>
+      Object.freeze({ ...source, manifest_id: correctionManifestId, ...patch }) as GroundTruthManifest;
+    const cA1 = cRename(correctionWorkflow.annotation_1);
+    const cA2 = cRename(correctionWorkflow.annotation_2);
+    const cDis = cRename(correctionWorkflow.disagreement);
+    const cAdj = cRename(correctionWorkflow.human_adjudication);
+    const cLocked = lockOf(cAdj);
+
+    const cA1Claim = await claimForManifest(reviewers.a, "ground_truth_annotation", "ca1", correctionManifestId);
+    await transaction(factory, reviewers.a.slot, async (context) => {
+      await new PostgresGroundTruthRepository(context, TENANT).appendManifest({
+        event_kind: "annotation_1_signed", prior_manifest: null, manifest: cA1, expected_workflow_revision: 0,
+        claim: cA1Claim, verification: sign(reviewers.a, "annotation_1", null, cA1, "ca1"), metadata: meta("append.ca1"),
+      });
+    });
+    const cA2Claim = await claimForManifest(reviewers.b, "ground_truth_annotation", "ca2", correctionManifestId);
+    await transaction(factory, reviewers.b.slot, async (context) => {
+      await new PostgresGroundTruthRepository(context, TENANT).appendManifest({
+        event_kind: "annotation_2_signed", prior_manifest: cA1, manifest: cA2, expected_workflow_revision: 1,
+        claim: cA2Claim, verification: sign(reviewers.b, "annotation_2", cA1, cA2, "ca2"), metadata: meta("append.ca2"),
+      });
+    });
+    await transaction(factory, "system", async (context) => {
+      await new PostgresGroundTruthRepository(context, TENANT).appendManifest({
+        event_kind: "disagreement_recorded", prior_manifest: cA2, manifest: cDis, expected_workflow_revision: 2,
+        claim: null, verification: null, metadata: meta("append.cdis"),
+      });
+    });
+    const cAdjClaim = await claimForManifest(reviewers.c, "ground_truth_adjudication", "cadj", correctionManifestId);
+    await transaction(factory, reviewers.c.slot, async (context) => {
+      await new PostgresGroundTruthRepository(context, TENANT).appendManifest({
+        event_kind: "adjudication_signed", prior_manifest: cDis, manifest: cAdj, expected_workflow_revision: 3,
+        claim: cAdjClaim, verification: sign(reviewers.c, "human_adjudication", cDis, cAdj, "cadj"), metadata: meta("append.cadj"),
+      });
+    });
+    const cLockClaim = await claimForManifest(reviewers.l, "ground_truth_lock", "clock", correctionManifestId);
+    const cLockReceipt = await transaction(factory, reviewers.l.slot, async (context) =>
+      new PostgresGroundTruthRepository(context, TENANT).appendManifest({
+        event_kind: "ground_truth_locked", prior_manifest: cAdj, manifest: cLocked, expected_workflow_revision: 4,
+        claim: cLockClaim, verification: sign(reviewers.l, "lock", cAdj, cLocked, "clock"), metadata: meta("append.clock"),
+      }));
+    record("H3_lock_committed_for_correction_proof",
+      cLockReceipt.revision === 5 && cLockReceipt.state === "locked_ground_truth" && !cLockReceipt.idempotent_replay,
+      `revision ${cLockReceipt.revision} ${cLockReceipt.state}`);
+
+    // The mutation test: the operations runtime role — which is what every
+    // command in this file, and every command a real deployment would issue,
+    // runs as — has no grant on this table at all, so a raw UPDATE against
+    // the locked manifest's own row, bypassing every definer, is refused
+    // before any trigger even runs. A correction can reach this table by no
+    // path other than the one just exercised above.
+    const directMutation = await refusal(() => transaction(factory, "system", async (context) => {
+      await context.client.query(statement("gt_correction_direct_mutation_refused",
+        "update private.governance_gt_manifest_versions set status = 'tampered' where tenant_id = $1 and manifest_id = $2 and workflow_revision = 5",
+        [TENANT, correctionManifestId]));
+    }));
+    // The canonical wrapper redacts the message on a direct client.query
+    // failure (as it does for every other direct-SQL probe in this file) but
+    // keeps the SQLSTATE: 42501 is Postgres's own "permission denied for
+    // table" — confirmed by hand against DEV outside this harness, where the
+    // operations role's attempt reads exactly that, and the migrator's own
+    // UPDATE grant on this table (present, unlike the runtime roles) never
+    // gets the chance to reach the append-only trigger for this call either.
+    record("H3_direct_mutation_of_locked_manifest_refused", directMutation.startsWith("42501"), directMutation);
+
+    // Before the correction: the locked manifest's own content digests, read
+    // back through the history definer as the runtime role.
+    const readHistory = (targetManifestId: string, label: string) => transaction(factory, "system", async (context) => {
+      const rows = await context.client.query(statement(label,
+        "select workflow_revision::text as workflow_revision, status, manifest_sha256"
+        + " from private.governance_gt_manifest_history_read($1, $2)", [TENANT, targetManifestId]));
+      return rows.rows.map((row) => `${String(row.workflow_revision)}:${String(row.status)}:${String(row.manifest_sha256)}`);
+    });
+    const beforeCorrection = await readHistory(correctionManifestId, "gt_history_before_correction");
+
+    // The correction itself: a new manifest id, a fresh workflow_revision
+    // chain starting at 0, naming the locked manifest via
+    // `supersedes_manifest_id`. Its own content is the locked chain's
+    // annotation_1 stage with a bumped content revision — a real correction
+    // would carry the corrected values, but this proof is about the
+    // mechanism, not content, so nothing here differs but the identity.
+    const correctedManifestId = `SYNTHETIC_GT_CORRECTION_NEXT_${RUN}`;
+    const correctionStart = Object.freeze({
+      ...cA1, manifest_id: correctedManifestId, revision: 2, supersedes_manifest_id: correctionManifestId,
+      revision_reason: "synthetic correction proof: no real content changes, mechanism only",
+    }) as GroundTruthManifest;
+    // This claim's aggregate_version must equal the correcting manifest's own
+    // content revision ("2"), not the "1" every first-generation manifest in
+    // this file uses — the claim-binding check compares the two exactly.
+    const correctionClaim = await claimForManifest(reviewers.a, "ground_truth_annotation", "correction", correctedManifestId, "2");
+    // The signed payload's "prior" is not this fresh chain's own prior (there
+    // is none) but the manifest being corrected: the definer's
+    // correction_started branch hashes `superseded_manifest.manifest_json`
+    // into `prior_manifest_sha256` regardless of what a first annotation
+    // would otherwise carry, so the port must sign the same thing.
+    const correctionReceipt = await transaction(factory, reviewers.a.slot, async (context) =>
+      new PostgresGroundTruthRepository(context, TENANT).appendManifest({
+        event_kind: "correction_started", prior_manifest: cLocked, manifest: correctionStart, expected_workflow_revision: 0,
+        claim: correctionClaim, verification: sign(reviewers.a, "annotation_1", cLocked, correctionStart, "correction"),
+        metadata: meta("append.correction"),
+      }));
+    record("H3_correction_opens_new_revision_referencing_the_lock",
+      correctionReceipt.revision === 1 && correctionReceipt.state === "annotation_1",
+      `new manifest ${correctedManifestId} revision ${correctionReceipt.revision} ${correctionReceipt.state}`);
+
+    // The old chain is untouched: identical digests, identical length,
+    // after the correction as before it.
+    const afterCorrection = await readHistory(correctionManifestId, "gt_history_after_correction");
+    record("H3_locked_manifest_content_unchanged_by_correction",
+      JSON.stringify(afterCorrection) === JSON.stringify(beforeCorrection), afterCorrection.join(" "));
+    // `governance_gt_lock_supersessions` itself is not readable by any
+    // runtime role (same design as the manifest table this proof already
+    // respects), so the supersession is not read back directly here; the
+    // correction succeeding at all is proof the definer found and consumed
+    // the active lock row (its `select ... into strict active_lock` would
+    // have raised `no_data_found` otherwise), and the insert into
+    // `governance_gt_lock_supersessions` is unconditional on that same path.
+
     // Observed state, read back rather than inferred, both as the runtime role:
     // the current aggregate through the port, the full revision chain through
     // the history-read definer (the versions table itself is visible to no
@@ -692,9 +836,6 @@ async function main(): Promise<void> {
     schema_version: "tivdoc-ground-truth-matrix-wave5", run_id: RUN, tenant: TENANT,
     human_ground_truth_locked: 0, content_created: "none: synthetic fixture manifests only",
     signature_verification_in_database: false,
-    not_exercised: [
-      "G-7 correction_started supersession of an active lock: requires a committed lock; HUMAN_GROUND_TRUTH_LOCKED stays 0",
-    ],
     cases: results.length, passed: results.length - failed.length, failed: failed.length, failure, results,
   }, null, 2)}\n`, "utf8");
   process.stdout.write(`cases=${results.length} passed=${results.length - failed.length} failed=${failed.length}`
