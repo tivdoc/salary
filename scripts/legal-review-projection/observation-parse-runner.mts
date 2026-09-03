@@ -9,16 +9,24 @@
 // What this does NOT do is as important. It writes nothing to any database, it
 // activates nothing, it marks nothing reviewed, and it does not touch the
 // blocked record — under the anti-graduation rule that record is immutable and
-// a parse produces a NEW artifact beside it, never an edit to it. It also does
-// not OCR: this host has Tesseract but no Hebrew language data, so an
-// observation with no embedded text layer is rejected `TEXT_LAYER_ABSENT` and
-// left for a host that has one, rather than being quietly downgraded.
+// a parse produces a NEW artifact beside it, never an edit to it.
 //
-// The Hebrew ordering trap is recorded, not silently corrected. pypdf's layout
-// mode emits glyphs in visual order, so the extracted text reads reversed, with
-// U+FEFF or U+00A0 as separators. Reordering is a semantic decision about a
-// legal text and is not one this script is entitled to make, so each artifact
-// carries `visual_order: true` and the separator it saw.
+// Documents with no text layer at all go down a second path,
+// `scripts/legal-pdf-ocr.py`, and that path is never conflated with the first.
+// Text read from an embedded layer is what the document contains; text a
+// recognizer produced from an image of the document is derived and can be
+// wrong. An OCR artifact carries `ocr_derived: true` with the recognizer
+// version and the language data used, never satisfies a citation that needs
+// exact bytes, and needs human attestation before anything downstream treats it
+// as authoritative. Two observations that produce identical text by different
+// paths remain two artifacts.
+//
+// The Hebrew ordering trap is recorded, not silently corrected — and it belongs
+// to one path only. pypdf's layout mode emits glyphs in visual order, so
+// extracted text reads reversed, digit runs included, with U+FEFF or U+00A0
+// between words; the recognizer reads an image and emits logical order.
+// Reordering is a semantic decision about a legal text and is not one this
+// script is entitled to make, so each artifact says which order it is in.
 
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -36,6 +44,7 @@ const CORPUS_ROOT = path.join("output", "parallel-wave-1", "review-package-v0.3"
   "worker-evidence", "batch-a-working-time-permits", "artifacts");
 const VENV_PYTHON = path.join("output", "pdf-venv", "Scripts", "python.exe");
 const EXTRACTOR = path.join("scripts", "legal-pdf-extract.py");
+const OCR = path.join("scripts", "legal-pdf-ocr.py");
 
 /** Rejections, each with a code that says what was actually wrong. */
 const REJECTIONS = Object.freeze({
@@ -44,7 +53,7 @@ const REJECTIONS = Object.freeze({
   DUPLICATE_BYTES: "another observation already claims these exact bytes",
   EXTRACTOR_FAILED: "the parser exited non-zero or produced no JSON",
   ENCRYPTED_PDF_UNSUPPORTED: "the document is encrypted and the parser cannot open it",
-  TEXT_LAYER_ABSENT_SCANNED: "every page is a scanned image with no font resources; this needs OCR, and this host has Tesseract without Hebrew language data",
+  TEXT_LAYER_ABSENT_SCANNED: "every page is a scanned image with no font resources, and the OCR path could not read it either",
   GLYPHS_UNMAPPABLE: "fonts are present but carry no /ToUnicode, so glyph codes cannot be decoded to characters; a parser change would fix this, OCR would not",
   EMPTY_NORMALIZED_TEXT: "the text layer normalized to nothing",
 });
@@ -82,15 +91,41 @@ function parserVersion(): string {
 
 type Extraction = Readonly<{
   status?: string;
+  safe_error_code?: string;
   pages?: readonly Readonly<{ page: number; text: string }>[];
   page_count?: number;
   font_count?: number;
+  ocr_derived?: boolean;
+  recognizer_version?: string;
+  language?: string;
+  render_dpi?: number;
 }>;
 
 function extract(file: string): Extraction {
   const stdout = execFileSync(VENV_PYTHON, [EXTRACTOR, file],
     { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
   return JSON.parse(stdout) as Extraction;
+}
+
+/**
+ * The OCR path, reached only where there is no text layer to read. It is a
+ * different parser with a different trust level: the text is derived from an
+ * image by a recognizer that can be wrong, so it carries `ocr_derived` through
+ * to the artifact, records the recognizer and language data it used, and never
+ * satisfies a citation that needs exact bytes. Its output is also in logical
+ * order rather than the visual order the layout extractor produces, which is a
+ * difference between the two paths and not a property of the documents.
+ */
+function ocr(file: string): Extraction {
+  try {
+    const stdout = execFileSync(VENV_PYTHON, [OCR, file],
+      { encoding: "utf8", maxBuffer: 512 * 1024 * 1024, timeout: 30 * 60 * 1000 });
+    return JSON.parse(stdout) as Extraction;
+  } catch (error) {
+    const stdout = String((error as { stdout?: string }).stdout ?? "").trim();
+    if (stdout.startsWith("{")) return JSON.parse(stdout) as Extraction;
+    return Object.freeze({ safe_error_code: "ocr_invocation_failed" });
+  }
 }
 
 function main(): void {
@@ -140,18 +175,43 @@ function main(): void {
     if (extraction.status === "encrypted_pdf_unsupported") { reject("ENCRYPTED_PDF_UNSUPPORTED"); continue; }
     const pages = extraction.pages ?? [];
     const withText = pages.filter((page) => page.text.trim().length > 0);
+    // Two different problems with two different fixes, and one code for both
+    // makes the OCR backlog uncountable. A page with no font resources at all
+    // is a scan and OCR is the answer; a page with fonts whose glyphs will not
+    // map is a parser problem and OCR would only guess at it.
+    let derived = false;
+    let recognizer: string | null = null;
+    let language: string | null = null;
+    let renderDpi: number | null = null;
+    let effectivePages = pages;
+    let effectiveWithText = withText;
     if (withText.length === 0) {
-      // Two different problems with two different fixes, and one code for both
-      // makes the OCR backlog uncountable. A page with no font resources at all
-      // is a scan; a page with fonts whose glyphs will not map is a parser
-      // problem. The extractor reports the font census, so the code says which.
       const fonts = extraction.font_count ?? 0;
-      reject(fonts === 0 ? "TEXT_LAYER_ABSENT_SCANNED" : "GLYPHS_UNMAPPABLE",
-        `pages=${pages.length} fonts=${fonts}`);
-      continue;
+      if (fonts > 0) {
+        reject("GLYPHS_UNMAPPABLE", `pages=${pages.length} fonts=${fonts}`);
+        continue;
+      }
+      const recognized = ocr(file);
+      if (recognized.safe_error_code !== undefined) {
+        reject("TEXT_LAYER_ABSENT_SCANNED",
+          `pages=${pages.length} fonts=0 ocr=${recognized.safe_error_code}`);
+        continue;
+      }
+      effectivePages = recognized.pages ?? [];
+      effectiveWithText = effectivePages.filter((page) => page.text.trim().length > 0);
+      if (effectiveWithText.length === 0) {
+        reject("TEXT_LAYER_ABSENT_SCANNED", `pages=${pages.length} fonts=0 ocr=empty`);
+        continue;
+      }
+      derived = true;
+      recognizer = recognized.recognizer_version ?? null;
+      language = recognized.language ?? null;
+      renderDpi = recognized.render_dpi ?? null;
     }
+    const pagesForNormalization = effectivePages;
+    const textPageCount = effectiveWithText.length;
 
-    const trimmed = removeRepeatedPdfMargins(pages);
+    const trimmed = removeRepeatedPdfMargins(pagesForNormalization);
     const normalized = normalizeLegalText(trimmed.map((page) => page.text).join("\n"));
     if (normalized.trim().length === 0) { reject("EMPTY_NORMALIZED_TEXT"); continue; }
 
@@ -161,7 +221,7 @@ function main(): void {
     });
     const chunks = chunkLegalPages(source, row.raw_artifact_sha256, trimmed, {
       normalizedTextSha256: sha256(normalized),
-      parserVersion: version,
+      parserVersion: derived ? (recognizer ?? "ocr-unknown") : version,
     });
     // Visual order is a property of the extraction, not a defect to hide. The
     // separator says which convention this document used.
@@ -177,22 +237,28 @@ function main(): void {
       byte_count: bytes.byteLength,
       raw_artifact_sha256: row.raw_artifact_sha256,
       corpus_path: file,
-      parser_version: version,
+      parser_version: derived ? (recognizer ?? "ocr-unknown") : version,
+      recognizer_version: recognizer,
+      ocr_language: language,
+      ocr_render_dpi: renderDpi,
       normalizer_version: LEGAL_NORMALIZER_VERSION,
-      ocr_derived: false,
-      visual_order: true,
+      ocr_derived: derived,
+      // The layout extractor emits glyphs in visual order; the recognizer reads
+      // an image and emits logical order. Which path produced the text decides
+      // whether a reader has to undo the reversal.
+      visual_order: !derived,
       whitespace_separator: separator,
-      page_count: pages.length,
-      pages_with_text: withText.length,
+      page_count: pagesForNormalization.length,
+      pages_with_text: textPageCount,
       // A document can parse and still hold a page the parser could not read.
       // Four of the sixty-two do. Naming the count keeps a partial extraction
       // from reading as a whole one.
-      pages_without_text: pages.length - withText.length,
+      pages_without_text: pagesForNormalization.length - textPageCount,
       // The reversal is not only alphabetic: digit runs come out reversed too,
       // so 1951 extracts as 1591 and a section number reads backwards. Anything
       // citing an amendment number, section or date from this text has to undo
       // that first, and saying so here is cheaper than a silent mis-citation.
-      digits_visually_reversed: true,
+      digits_visually_reversed: !derived,
       normalized_characters: normalized.length,
       normalized_text_sha256: sha256(normalized),
       chunk_count: chunks.length,
