@@ -57,15 +57,15 @@ const WIRING_BLOCKERS = Object.freeze([
  * examined is the defect this matrix exists to catch.
  */
 const EXAMINED_OPEN: Readonly<Record<string, string>> = Object.freeze({
-  "CEP-013": "unexamined",
-  "CEP-014": "unexamined",
-  "CEP-015": "unexamined",
-  "CEP-027": "unexamined",
-  "CEP-028": "unexamined",
-  "CEP-080": "unexamined",
-  "CEP-081": "unexamined",
-  "CEP-082": "unexamined",
-  "CEP-083": "unexamined",
+  "CEP-013": "startCanonicalApplicationPostgres is called by the startup root (durable-local-runtime.ts:128), never by the route; the blocker is about the route binding and stands",
+  "CEP-014": "same as CEP-013: the startup root calls it, the direct Supabase route does not",
+  "CEP-015": "same as CEP-013, plus LIVE_PROVIDER_CALLS_0 which reachability cannot speak to",
+  "CEP-027": "PostgresJobsOutboxAuditRepository is constructed at canonical-postgres.ts:273, but no resident worker entrypoint runs; the blocker is about the worker and stands",
+  "CEP-028": "same as CEP-027, plus an external effect adapter that is not wired",
+  "CEP-080": "InternalOpsService is referenced only from internal-ops/runtime.ts, which the graph treats as an entrypoint by a hardcoded rule at verify.mts:191; nothing imports that file, so the ports are still not installed",
+  "CEP-081": "CustomerPortalService is constructed only by the harness and fixtures; no product path builds one",
+  "CEP-082": "a key resolver is wired but resolves one configured PEM, not a managed key service",
+  "CEP-083": "MANAGED_IDENTITY_NOT_PROVEN is not a wiring blocker: authenticateProductIdentity is called at durable-session-boundary.ts:54, and what is unproven is the identity provider",
 });
 
 type GraphNode = Readonly<{ path: string; kind: string }>;
