@@ -235,10 +235,10 @@ export const TRANSFORMATIONS: readonly Transformation[] = Object.freeze([
   {
     transformation_id: "canonical.leave.days.integer", transformation_version: "1.0.0",
     accepts: ["leave.vacation_balance", "leave.sick_balance", "leave.vacation_days_paid"], produces: ["integer"],
-    description: "A leave balance stated in whole days; hours or fractional days fail.",
+    description: "A leave balance stated in whole days (as days or calendar_days, the mapping's choice); hours or fractional days fail.",
     apply: (fact, mapping) => {
       const value = hoursValue(fact);
-      if (!value || value.unit !== "days" || mapping.expected_output.kind !== "integer" || mapping.expected_output.unit !== "days") return null;
+      if (!value || value.unit !== "days" || mapping.expected_output.kind !== "integer" || (mapping.expected_output.unit !== "days" && mapping.expected_output.unit !== "calendar_days")) return null;
       const whole = wholeNumber(value.amount);
       return whole === null ? null : integer(whole);
     },
