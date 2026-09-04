@@ -38,6 +38,8 @@ const REGISTRY: Readonly<Record<string, Dimension>> = Object.freeze({
   hours_per_month: { numerator: ["hour"], denominator: ["month"] },
   hours_per_day: { numerator: ["hour"], denominator: ["day"] },
   calendar_days_per_year: { numerator: ["calendar_day"], denominator: ["year"] },
+  // L7-2: a count of workdays in a week, for the daily-threshold branch.
+  days_per_week: { numerator: ["day"], denominator: ["week"] },
 });
 
 const sorted = (symbols: readonly string[]): readonly string[] => Object.freeze([...symbols].sort());

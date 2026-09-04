@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  calculationValueSchema,
-  type CalculationValue,
-} from "../calculations/contracts.ts";
+import type { CalculationValue } from "../calculations/contracts.ts";
 import {
   confidenceSchema,
   domainCodeSchema,
@@ -24,6 +21,7 @@ import {
 } from "../wave2/contracts.ts";
 import type { RegisteredRuleInputMappingRegistry, RuleInputMapping } from "./mapping-registry.ts";
 import type { CanonicalRuleInputSnapshot } from "./snapshot.ts";
+import { findTransformation, type TransformationContext } from "./transformations.ts";
 
 export const ruleInputRejectionCodeSchema = z.enum([
   "fact.missing",
@@ -76,45 +74,31 @@ export type RuleInputRejectionCode = z.infer<typeof ruleInputRejectionCodeSchema
 export type RuleInputRejection = z.infer<typeof ruleInputRejectionSchema>;
 export type PreparedRuleInputs = z.infer<typeof preparedRuleInputsSchema>;
 
-const TRANSFORMATION_HOURS_AMOUNT = "canonical.hours.amount@1.0.0";
-const HOUR_FACT_PATHS = new Set([
-  "work.regular_hours",
-  "work.overtime_hours",
-  "work.overtime_125_hours",
-  "work.overtime_150_hours",
-]);
-
-function transformationKey(mapping: RuleInputMapping): string {
-  return `${mapping.transformation.transformation_id}@${mapping.transformation.transformation_version}`;
-}
-
-function transformFactValue(fact: CanonicalFact, mapping: RuleInputMapping): CalculationValue | null {
-  const key = transformationKey(mapping);
-  if (key === TRANSFORMATION_HOURS_AMOUNT) {
-    if (
-      !HOUR_FACT_PATHS.has(fact.path) ||
-      mapping.expected_output.kind !== "decimal" ||
-      fact.value === null ||
-      typeof fact.value !== "object" ||
-      !("amount" in fact.value) ||
-      !("unit" in fact.value) ||
-      typeof fact.value.amount !== "string" ||
-      fact.value.unit !== mapping.expected_output.unit
-    ) {
-      return null;
-    }
-    return calculationValueSchema.parse({
-      kind: "decimal",
-      value: fact.value.amount,
-      unit: fact.value.unit,
-    });
+// L7-2 / D2: transformations live in the versioned registry
+// (`transformations.ts`); preparation only looks them up. An unknown
+// id@version is `transformation.unsupported`; a registered transformation
+// that cannot produce the mapping's expected output from the fact is
+// `transformation.failed`. Transformations that need another fact (the
+// payslip period, for seniority) read it from the snapshot through the
+// context and never from outside it.
+function transformFactValue(
+  fact: CanonicalFact,
+  mapping: RuleInputMapping,
+  context: TransformationContext,
+): CalculationValue | null {
+  const transformation = findTransformation(mapping);
+  if (transformation === null) return null;
+  if (!transformation.accepts.includes(fact.path)) return null;
+  if (!transformation.produces.includes(mapping.expected_output.kind)) return null;
+  try {
+    return transformation.apply(fact, mapping, context);
+  } catch {
+    return null;
   }
-
-  return null;
 }
 
 function isKnownTransformation(mapping: RuleInputMapping): boolean {
-  return transformationKey(mapping) === TRANSFORMATION_HOURS_AMOUNT;
+  return findTransformation(mapping) !== null;
 }
 
 function issue(
@@ -235,7 +219,7 @@ export function prepareRuleInputs(
     if (rejections.some((entry) => entry.input_id === mapping.input_id)) {
       continue;
     }
-    const transformed = transformFactValue(fact, mapping);
+    const transformed = transformFactValue(fact, mapping, { facts });
     if (transformed === null) {
       rejections.push(issue("transformation.failed", mapping, fact, normalizedPreparedAt));
       continue;
