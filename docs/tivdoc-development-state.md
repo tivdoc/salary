@@ -1144,6 +1144,96 @@ what exists before building anything new.
 
 Pool S: 8/8.
 
+## Wave 7 — synthetic rule runtime closure: R-1…R-7, R-9…R-14 survey (`7c650e7`)
+
+Same method as Pool S: run what exists against each unit's exact wording
+before building anything, per R-1's own instruction. Result — most of this
+pool already exists and already passes; two units are genuinely new work
+(R-6, done) or genuinely not attempted this session (R-2, R-14's specific
+trace-replay claim).
+
+- **R-1** (recompute against last recorded failures) — this survey itself.
+- **R-2** (seven blank RuleSpec templates, one per real topic, structure
+  only, `non_operative`) — **not attempted**. `createRuleSpecPackage`
+  exists generically (used for the seven *synthetic* fixtures), but a real,
+  per-topic blank template needs real slot structures referencing this
+  session's actual registered Pool P parameter ids — a design task, not a
+  verification one, and Q-1…Q-7 cannot proceed without it (Addendum 6's
+  own ordering: "Q-1..Q-7 once R-2 exists").
+- **R-3** (golden vectors, changed trace fails) — `runtime.test.ts`'s
+  "round-trips the trace through JSON with the same canonical hash".
+  Confirmed passing.
+- **R-4** (property coverage: fail-closed, own code, no partial output) —
+  `runtime.test.ts`'s "rejects stale, inactive, unreviewed evidence",
+  "cancels atomically and exposes no partial trace". Confirmed passing.
+- **R-5** (determinism: timezone, locale, iteration order, process
+  restart) — `runtime.test.ts`'s "replays identically across input order,
+  host timezone, and locale operations" covers three of the four axes
+  within one process; a literal fresh-*process* restart replay was not
+  additionally proven this session. Confirmed passing for what it covers.
+- **R-6** (money invariants, no floating point) — **new this session**,
+  `money-path-no-floating-point.test.ts`: zero `parseFloat`, exactly one
+  guarded `Number(...)`, exactly one bigint-only division, every rounding
+  path traced explicitly. Verified the test catches a real regression
+  (injected a bare float division, confirmed the failure, reverted to a
+  byte-identical file).
+- **R-7** (lifecycle `draft → shadow_eligible → active`, active
+  unreachable without two attestations and legal approval) —
+  `rulespec-lifecycle.test.ts`. Confirmed passing.
+- **R-9** (parameter governance gate; single or same-identity-twice
+  attestation refused by the definer) — substantiated by this session's
+  own P-0 work: `governance_parameter_attestation_append`'s
+  `GOVERNANCE_PARAMETER_REVIEWER_SEPARATION_REQUIRED` check refuses a
+  second attestation from the same `reviewer_id` on the same
+  (parameter_id, parameter_version) — read directly from
+  `202609020020_parameter_attestation_decision_cascade_writes_snapshot.sql`.
+  The adjacent, *stricter* cross-branch variant of the same guard was
+  proven by execution in `parameter-decision-matrix.mts`
+  (`cross_branch_attestation_by_same_reviewer_refused`); the same-branch
+  case is the identical conditional one branch earlier in the same `if`,
+  not re-executed separately this session (building a fresh trust-stack
+  fixture just for this one branch, when the stricter sibling is already
+  proven, was judged not worth repeating the whole apparatus for).
+  `activation_allowed` reaching `true` is separately impossible at the
+  database level regardless — `governance_aggregate_snapshots` has
+  `check (not activation_allowed)` (found during Addendum 7 A7-1).
+- **R-10** (hash-bound invalidation across the 11 binding dimensions) —
+  already delivered as Addendum 7 A7-2: the same eleven dimensions, the
+  same one-test-per-dimension proof. Nothing further needed.
+- **R-11** (fact-path mapping registry: one registry, no bypass) —
+  `rule-input.test.ts`'s "rejects ambiguous mappings", "fails closed when
+  a required canonical fact path is absent", "permits only registered
+  versioned transformations"; every non-test consumer of
+  `knownFactPaths`/`factPathSchema` (13 files, checked) imports from the
+  one definition in `fact-paths.ts`, no second list found. Confirmed
+  passing.
+- **R-12** (single seven-topic readiness evaluator, shared
+  `decision_sha256`) — `evaluate-legal-readiness.test.ts`'s "passes one
+  isolated synthetic READY case identically through all six delegates",
+  "rejects alternate evaluator definitions and runtime direct imports".
+  Confirmed passing.
+- **R-13** (sector/population applicability: boundary, overlap, gap,
+  ambiguous-lands-conflicted) — `synthetic-matrices.test.ts`'s "covers
+  temporal, sector, population, amendment and knowledge-time boundaries",
+  "selects exactly one instrument without leakage and quarantines
+  ambiguity". Confirmed passing.
+- **R-14** (wire the executor into the durable runtime; a synthetic run
+  persists its trace and replays from the database) — **not specifically
+  confirmed this session**. `durable-local-runtime.test.ts` proves the
+  general durable product composition (role-separated boundaries,
+  capabilities installed only after full construction), but a
+  trace-persists-and-replays-from-DB proof specific to the rule executor
+  was not located or built this session.
+
+R-8 (global invalidation semantic closure) stays `deferred_to_session_b`,
+not attempted, per the standing instruction.
+
+## Pool Q — draft RuleSpecs: not started
+
+Blocked on R-2 (no blank per-topic templates exist to fill), per Addendum
+6's own ordering. Q-8 (the sensitivity run) stays `deferred_to_session_b`
+regardless, per the standing instruction.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
@@ -1180,16 +1270,31 @@ Pool S: 8/8.
   own corrections (A7-6) are in force from here: no stopping at a domain
   boundary, and the chat only gets the ten-line report at the very end —
   this file carries everything else.
-- **Next: the remaining Pool P units (P-11…P-16, P-21…P-23, P-27/P-28,
-  P-33, years 5+ of P-32) stay `blocked_dependency`/`blocked_external`**
-  with the evidence recorded above and in the Pool P write-up — none is
-  cleanly closeable without either new acquisition this session's bounded
-  search did not find, or system tooling (OCR) this session does not
-  install. Per A7-6, that is not a stop condition: proceed to **S-1…S-8**
-  (offline synthetic shadow), then **R-1…R-7 + R-9…R-14** (R-8 deferred to
-  Session B), then **Q-1…Q-7** (Q-8 deferred to Session B), then the one
-  full matrix and the ten-line report, per Addendum 6 / `tivdoc-next-run.md`
-  as corrected by Addendum 7.
+- **Checkpoint at unit 32.** Pool S (`34d4a0f`, `05f5828`) — S-1…S-8, 8/8:
+  most already existed and already passed (envelope replay, kill switch,
+  restart/crash recovery, comparison, zero-customer-exit, audit
+  tamper-detection, redacted observability all confirmed by running what
+  was there), S-2 got one more explicit runtime-mode test, S-8 (product
+  integration) is genuinely new — a protected read-only `/operations`
+  panel following G-12's exact precedent, 8/8 negative-matrix tests
+  passing. Pool R survey (`7c650e7`) — R-1, R-3…R-5, R-7, R-9, R-11…R-13
+  confirmed already passing against existing tests; R-6 newly built and
+  proven; R-10 already satisfied by A7-2. **R-2 and R-14's specific claim
+  are not attempted this session** — R-2 needs real per-topic slot design,
+  not verification, and blocks all of **Pool Q, which is accordingly not
+  started**. R-8 and Q-8 stay `deferred_to_session_b` as instructed.
+- **Next for whoever resumes this**: R-2 (design seven real blank
+  RuleSpec templates against this session's actual registered parameter
+  ids) is the one open prerequisite before Pool Q can start at all;
+  R-14's specific "executor trace persists and replays from the durable
+  DB" claim wants its own targeted proof; the remaining Pool P units
+  (P-11…P-16, P-21…P-23, P-27/P-28, P-33, years 5+ of P-32) need the
+  acquisition or tooling work recorded blocked in the Pool P and A7-5
+  write-ups above. The one full matrix and the ten-line report follow
+  this checkpoint, per Addendum 6 / `tivdoc-next-run.md` as corrected by
+  Addendum 7's A7-6 (no further stopping at a domain boundary was needed
+  to reach this point; the backlog from here is genuinely new-design work
+  each unit's own write-up names precisely).
 - carried from before this session: K-3's managed-bucket half (needs the
   Storage key — H-7 re-confirmed absent this session), K-5 (needs a
   provisioned off-host destination), the owner's visual review of the five
