@@ -17,45 +17,64 @@
 // not building the catalog). A rename later is a plain UPDATE — nothing
 // here is attested or activated, so nothing is hard to move.
 //
-// Binding-hash convention (also this session's call; the addenda specify
-// *that* a candidate binds to a fetched hash, not *how* the 8
-// DependencyBindings dimensions are computed for a real, non-synthetic
-// source — R-8, semantic invalidation, is explicitly deferred to Session
-// B, so this is deliberately simple and legible rather than clever):
-//   - source_bytes_sha256: hash over the sorted {source_id, source_version,
-//     artifact_sha256} of every source this parameter cites — artifact_sha256
-//     read from eval/legal-knowledge/manifests/fetch-state.json via the
-//     same selectLegalSourceObservation the real pipeline uses, so this
-//     chains to fetched bytes, never a URL in a memo.
-//   - citations_sha256: hash over the sorted {source_id, source_version,
-//     chunk_id, locator} of the exact chunks this parameter's value is
-//     read from (real chunk ids from the built corpus, looked up and
-//     spot-checked against the source dossier's own numbers below).
-//   - interval_sha256: hash of {effective_from, effective_to}.
-//   - scope_sha256: hash of {sectors, populations}.
-//   - parameter_set_sha256: hash of {parameter_id, parameter_version, value,
-//     unit, rounding_policy} — the numeric set this one row itself defines.
-//   - rule_spec_sha256 / golden_cases_sha256: deterministic "unassigned"
-//     sentinels, exactly as synthetic-fixtures.ts's syntheticBindings does
-//     for the same real reason — no RuleSpec or GoldenCaseSet exists until
-//     Pool Q runs. Not a placeholder that could be mistaken for a real
-//     hash: it hashes an explicit { pool_p_unassigned: true, kind, topic }
-//     marker object.
-//   - reviewer_decisions_sha256: same sentinel treatment — zero
-//     attestations exist at draft-import time by design.
+// Binding-hash convention (Addendum 7 A7-2). The formula binds all eleven
+// dimensions the tracker's invalidation rule names (§7.3): artifact
+// SHA-256, parsed version hash, parser version, normalizer version, exact
+// citation locator, value, unit, effective interval, sector, population,
+// dossier SHA-256, source-set hash. The existing DependencyBindings shape
+// (8 named fields, used everywhere from synthetic-fixtures.ts to the DB
+// attestation-binding check) is unchanged — changing it would break every
+// existing candidate, including the ones already imported this session —
+// so the eleven dimensions are distributed across the 5 fields that carry
+// real (non-sentinel) data for a Pool P candidate, each field enriched
+// with whatever of the eleven it didn't carry before:
+//   - source_bytes_sha256: per cited source, {source_id, source_version,
+//     artifact_sha256 [dim 1], parsed_version_id [dim 2], parser_version
+//     and normalizer_version [dim 3]} — all four read from
+//     eval/legal-knowledge/manifests/build-state.json (the real build
+//     pipeline's own record, not recomputed), plus the sorted set of
+//     {source_id, source_version} pairs on its own [dim 11: which sources
+//     are cited is a distinct fact from what their bytes hash to — adding
+//     or removing a citation changes this even if no cited source's own
+//     bytes changed].
+//   - citations_sha256: the exact chunk_id + locator per citation [dim 4],
+//     plus the research dossier's own SHA-256 [dim 10] — the dossier is
+//     what a citation's *interpretation* traces back to, even though the
+//     citation's *text* is verified independently by must_contain.
+//   - interval_sha256: {effective_from, effective_to} [dim 7].
+//   - scope_sha256: {sectors, populations} [dims 8, 9].
+//   - parameter_set_sha256: {parameter_id, parameter_version, value, unit,
+//     rounding_policy} [dims 5, 6].
+//   - rule_spec_sha256 / golden_cases_sha256 / reviewer_decisions_sha256:
+//     deterministic "unassigned" sentinels, exactly as
+//     synthetic-fixtures.ts's syntheticBindings does for the same real
+//     reason — no RuleSpec, GoldenCaseSet, or attestation exists at
+//     draft-import time. Not a placeholder that could be mistaken for a
+//     real hash: each hashes an explicit
+//     { pool_p_unassigned: true, kind, topic } marker object.
+// Every one of the eleven is covered by its own test in
+// pool-p-dependency-hash.test.mts: mutating it, and nothing else, changes
+// the resulting bindings_sha256 (the hash of the whole bindings object,
+// which is what the DB actually compares — see
+// governance_parameter_attestation_append's GOVERNANCE_PARAMETER_ATTESTATION_BINDING_MISMATCH
+// check). R-8 (semantic invalidation *closure* — propagating a changed
+// bindings_sha256 across every dependent run, report and grant) stays
+// deferred to Session B; this only makes the hash itself complete.
 import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";
-import { dependencyBindingsSchema, parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
+import { parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
 import type { Wave3Topic } from "../../src/engine/wave3/contracts.ts";
 import { statement } from "../../src/server/platform/persistence/postgres/contracts.ts";
 import type { PostgresTransactionContext } from "../../src/server/platform/persistence/postgres/contracts.ts";
 import { PostgresParameterApprovalRepository } from "../../src/server/platform/persistence/postgres/governance/repositories.ts";
 import { NodePostgresConnectionFactory } from "../../src/server/platform/persistence/postgres/runtime/node-pg-driver.ts";
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
+import { computeElevenDimensionBindings } from "./pool-p-dependency-hash.mts";
 
+const DOSSIER_SHA256 = "6ad2caa0995b67e42dc85bc6bb8690b0901f8679ffeb2440713964813c806422";
 const TENANT = "legal.reference.il";
 const SYSTEM_ACTOR = "system_import";
 const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "token.legal.reference.system-import" };
@@ -76,6 +95,18 @@ const manifest = JSON.parse(readFileSync(
 const fetchState = JSON.parse(readFileSync(
   path.resolve("eval/legal-knowledge/manifests/fetch-state.json"), "utf8",
 )) as { observations: Array<{ source_id: string; source_version: string; artifact_sha256: string; status: string; chunks_path: string | null }> };
+const buildState = JSON.parse(readFileSync(
+  path.resolve("eval/legal-knowledge/manifests/build-state.json"), "utf8",
+)) as { records: Array<{ source_id: string; source_version: string; artifact_sha256: string; parsed_version_id: string | null; parser_version: string | null; normalizer_version: string | null; parse_status: string }> };
+
+function selectBuildRecord(sourceId: string, sourceVersion: string, artifactSha256: string) {
+  const record = buildState.records.find((entry) =>
+    entry.source_id === sourceId && entry.source_version === sourceVersion && entry.artifact_sha256 === artifactSha256);
+  if (!record || record.parse_status !== "parsed" || !record.parsed_version_id || !record.parser_version || !record.normalizer_version) {
+    throw new Error(`POOL_P_BUILD_RECORD_MISSING:${sourceId}@${sourceVersion}`);
+  }
+  return record;
+}
 
 function selectObservation(sourceId: string, sourceVersion: string) {
   const source = manifest.sources.find((entry) => entry.source_id === sourceId && entry.source_version === sourceVersion);
@@ -116,9 +147,6 @@ function citation(source: SourceRef, chunkId: string, locator: string, mustConta
   return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain });
 }
 
-function sentinel(kind: "rule_spec" | "golden_cases" | "reviewer_decisions", topic: Wave3Topic) {
-  return legalOperationsSha256({ pool_p_unassigned: true, kind, topic });
-}
 
 function buildBindings(input: Readonly<{
   topic: Wave3Topic;
@@ -135,21 +163,28 @@ function buildBindings(input: Readonly<{
 }>): DependencyBindings {
   const sourceRefs = [...new Map(input.citations.map((c) => [`${c.source.source_id}@${c.source.source_version}`, c.source])).values()]
     .sort((a, b) => `${a.source_id}@${a.source_version}`.localeCompare(`${b.source_id}@${b.source_version}`));
-  const sourceBytes = sourceRefs.map((ref) => ({ ...ref, artifact_sha256: selectObservation(ref.source_id, ref.source_version).artifact_sha256 }));
+  // dim 11 (source-set hash): the identity of which sources are cited,
+  // independent of their content — distinct from dim 1, which is about
+  // what those same sources' bytes hash to.
+  const sourceSet = sourceRefs.map((ref) => `${ref.source_id}@${ref.source_version}`);
+  const sources = sourceRefs.map((ref) => {
+    const observation = selectObservation(ref.source_id, ref.source_version);
+    const build = selectBuildRecord(ref.source_id, ref.source_version, observation.artifact_sha256);
+    return {
+      ...ref,
+      artifact_sha256: observation.artifact_sha256,
+      parsed_version_id: build.parsed_version_id as string,
+      parser_version: build.parser_version as string,
+      normalizer_version: build.normalizer_version as string,
+    };
+  });
   const citations = [...input.citations].sort((a, b) => (`${a.source.source_id}#${a.chunk_id}`).localeCompare(`${b.source.source_id}#${b.chunk_id}`))
     .map((c) => ({ source_id: c.source.source_id, source_version: c.source.source_version, chunk_id: c.chunk_id, locator: c.locator }));
-  return dependencyBindingsSchema.parse({
-    source_bytes_sha256: legalOperationsSha256({ sources: sourceBytes }),
-    citations_sha256: legalOperationsSha256({ citations }),
-    interval_sha256: legalOperationsSha256({ effective_from: input.effective_from, effective_to: input.effective_to }),
-    scope_sha256: legalOperationsSha256({ sectors: input.sectors, populations: input.populations }),
-    parameter_set_sha256: legalOperationsSha256({
-      parameter_id: input.parameter_id, parameter_version: input.parameter_version,
-      value: input.value, unit: input.unit, rounding_policy: input.rounding_policy,
-    }),
-    rule_spec_sha256: sentinel("rule_spec", input.topic),
-    golden_cases_sha256: sentinel("golden_cases", input.topic),
-    reviewer_decisions_sha256: sentinel("reviewer_decisions", input.topic),
+  return computeElevenDimensionBindings({
+    topic: input.topic, sourceSet, sources, citations, dossierSha256: DOSSIER_SHA256,
+    value: input.value, unit: input.unit, effective_from: input.effective_from, effective_to: input.effective_to,
+    sectors: input.sectors, populations: input.populations,
+    parameter_id: input.parameter_id, parameter_version: input.parameter_version, rounding_policy: input.rounding_policy,
   });
 }
 
@@ -198,7 +233,8 @@ export function buildCandidate(input: DraftParameterInput): ParameterCandidate {
   return parameterCandidateSchema.parse({ ...seed, candidate_sha256: legalOperationsSha256(seed) });
 }
 
-export { citation, TENANT, SYSTEM_ACTOR };
+export { citation, TENANT, SYSTEM_ACTOR, DOSSIER_SHA256, computeElevenDimensionBindings };
+export type { ElevenDimensionInput } from "./pool-p-dependency-hash.mts";
 
 export type OpenDecisionInput = Readonly<{ decision_id: string; topic: Wave3Topic; question: string; dossier_anchor: string }>;
 

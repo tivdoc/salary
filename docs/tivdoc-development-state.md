@@ -902,6 +902,91 @@ order (re-fetch or a different official copy), a correct 2026
 convalescence-order artifact (current one is mismatched content), and a
 current (post-2017) Annual Vacation Law consolidation.
 
+## Addendum 7 — decisions on Session A's findings, corrections, continue into S
+
+### A7-1 — three guards on `legal.reference.il` (`1023455`)
+
+Migration `202609020021`. `private.legal_reference_tenant_id()` is the one
+named SQL-side constant; `product_identity_session_register` refuses
+(`42501`) when the runtime-resolved tenant is the reference tenant, so no
+identity session can ever be issued for it; a new
+`private.governance_parameter_operative_read(tenant, parameter_id,
+parameter_version)` is the only read path granted to `tivdoc_web_runtime`,
+refusing any row that is not `activation_allowed` — which, by a table
+`CHECK` constraint (`check (not activation_allowed)`), is every row in
+this database, today, unconditionally. Proven 6/6 by execution as the
+actual runtime roles (`legal-reference-tenant-guards.mts`).
+
+Caught mid-build and worth repeating for Session B: the migration was
+first applied via the Supabase MCP tool, which targets this project's
+*default* `postgres` database — not `tivdoc_v09_devruntime01`, the actual
+application database. DDL for this project goes through
+`output/next/apply-migration.mjs` (the admin connection string from
+`~/.tivdoc-dev/credentials.env`), never the MCP database tools.
+
+Also discovered by execution, not assumption: `governance_parameter_versions`
+and `governance_parameter_attestations` are not directly `SELECT`-able by
+*any* connectable role — not `tivdoc_operations_runtime`, which writes to
+both. Every read goes through `governance_aggregate_read` (or the new
+operative-read function). There is no login role for
+`tivdoc_governance_owner` at all; its privileges exist only inside
+`SECURITY DEFINER` function bodies.
+
+### A7-2 — the eleven-dimension dependency-hash formula (this commit)
+
+The formula, exactly as implemented in
+`scripts/legal-review-projection/pool-p-dependency-hash.mts`
+(`computeElevenDimensionBindings`): canonical JSON (stable key order, the
+same `legalOperationsSha256` every candidate hash already uses) over each
+of the eleven dimensions, folded into the five `DependencyBindings` fields
+that carry real (non-sentinel) data for a Pool P candidate — the 8-field
+shape itself is unchanged, since every existing candidate (including the
+18 already imported) depends on it:
+
+| Dimension | Field | Source |
+|---|---|---|
+| 1. artifact SHA-256 | `source_bytes_sha256` | `eval/legal-knowledge/manifests/fetch-state.json` |
+| 2. parsed version hash | `source_bytes_sha256` | `build-state.json`'s `parsed_version_id` |
+| 3. parser version | `source_bytes_sha256` | `build-state.json`'s `parser_version` |
+| 3. normalizer version | `source_bytes_sha256` | `build-state.json`'s `normalizer_version` |
+| 4. exact citation locator | `citations_sha256` | each citation's `chunk_id` + locator text |
+| 5. value | `parameter_set_sha256` | the candidate's own value |
+| 6. unit | `parameter_set_sha256` | the candidate's own unit |
+| 7. effective interval | `interval_sha256` | `effective_from`/`effective_to` |
+| 8. sector | `scope_sha256` | `sectors` |
+| 9. population | `scope_sha256` | `populations` |
+| 10. dossier SHA-256 | `citations_sha256` | the D-0 dossier hash, `6ad2caa0…6422` |
+| 11. source-set hash | `source_bytes_sha256` | the sorted `{source_id, source_version}` set, independent of those sources' own bytes |
+
+`rule_spec_sha256`/`golden_cases_sha256`/`reviewer_decisions_sha256` stay
+deterministic "unassigned" sentinels — no RuleSpec, GoldenCaseSet, or
+attestation exists at draft-import time.
+
+Proof: `pool-p-dependency-hash.test.mjs`, one test per dimension (14 tests
+total, pure, no DEV connection — mutating exactly one dimension changes
+`legalOperationsSha256(bindings)`, the same aggregate the DB compares as
+`bindings_sha256`), plus `pool-p-dependency-hash-invalidation-proof.mts`,
+executed against DEV, confirming a fresh import lands
+`state=draft, revision=1` — which this state machine makes definitionally
+equivalent to zero attestations, since the only transition out of `draft`
+is `governance_parameter_attestation_append` and `governance_parameter_import`
+always inserts at revision 1, unconditionally, for a parameter_id/version
+never imported before.
+
+**The 18 already-imported candidates keep their pre-A7-2 bindings.**
+`governance_parameter_versions` is append-only (an update/delete trigger
+forbids it) and `governance_parameter_import` only ever inserts revision
+1 for a given (parameter_id, parameter_version) — confirmed by execution:
+re-running the existing batch scripts under the new formula hit
+`GOVERNANCE_IDEMPOTENCY_COMMAND_MISMATCH` (same idempotency key, new
+command hash) before any insert was attempted, so nothing was
+double-written or corrupted. Retroactively rebinding those 18 would need a
+deliberate new `parameter_version` for each, which is a content decision,
+not a pure accounting fix — left to the owner or a dedicated follow-up
+unit, not done silently here. Every Pool P unit from here forward
+(D-13…D-16's unlocked parameters, and any other new import) uses the
+eleven-dimension formula.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
