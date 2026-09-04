@@ -34,6 +34,7 @@ import {
   SICK_PAY_DAILY_RATE_SPEC,
   TRAVEL_DAILY_CAP_SPEC,
   VACATION_SENIORITY_BAND_SPEC,
+  WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC,
   WORKING_TIME_OVERTIME_SPEC,
   type SensitivityBinding,
   type SensitivitySpec,
@@ -147,6 +148,7 @@ const INPUT_SOURCES: Readonly<Record<string, InputSource>> = Object.freeze({
   "fact.months.employed": { fact_path: "employment.start_date", transformation_id: "canonical.seniority.whole.months" },
   "fact.absence.day.index": { fact_path: "leave.sick_absence", transformation_id: "canonical.absence.day.index" },
   "fact.overtime.hours.day": { fact_path: "work.overtime_hours", transformation_id: "canonical.hours.per.day.integer" },
+  "fact.hours.worked.day": { fact_path: "work.hours_worked_day", transformation_id: "canonical.hours.per.day.integer" },
   "fact.rest.day.overtime.hours.day": { fact_path: "work.rest_day_overtime_hours", transformation_id: "canonical.hours.per.day.integer" },
   "fact.regular.hourly.wage": { fact_path: "compensation.hourly_rate", transformation_id: "canonical.money.identity" },
 });
@@ -212,6 +214,8 @@ export type DraftShadowSpec = Readonly<{
   decision_id: string | null;
   branches: ReadonlyArray<readonly [string, string]>;
   composition_branch: string | null;
+  /** L7-9: branches named on the decision but not bound — never run, always shown. */
+  unbound_branches: ReadonlyArray<Readonly<{ branch: string; reason: string }>>;
   input_mappings: RegisteredRuleInputMappingRegistry;
 }>;
 
@@ -232,6 +236,7 @@ function fromSensitivity(spec: RuleSpecPackage): DraftShadowSpec {
     decision_id: entry.decision_id,
     branches: entry.branches,
     composition_branch: entry.composition_branch ?? null,
+    unbound_branches: entry.unbound_branches ?? [],
     input_mappings: registryFor(spec),
   };
 }
@@ -247,6 +252,7 @@ function shadowForm(spec: RuleSpecPackage, of: RuleSpecPackage, bindings: readon
     decision_id: entry.decision_id,
     branches: entry.branches,
     composition_branch: null,
+    unbound_branches: entry.unbound_branches ?? [],
     input_mappings: registryFor(spec),
   };
 }
@@ -257,13 +263,14 @@ const CONVALESCENCE_PAY_BINDINGS: readonly SensitivityBinding[] = [
 ];
 
 /**
- * The executable set, in the order the report lists topics. Twelve specs over
- * seven topics; nine are the sensitivity specs verbatim, three are shadow
+ * The executable set, in the order the report lists topics. Thirteen specs
+ * over seven topics; ten are the sensitivity specs verbatim, three are shadow
  * forms whose inputs are payslip facts.
  */
 export const DRAFT_SHADOW_SPECS: readonly DraftShadowSpec[] = Object.freeze([
   fromSensitivity(MINIMUM_WAGE_HOURLY_SPEC),
   fromSensitivity(WORKING_TIME_OVERTIME_SPEC),
+  fromSensitivity(WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC),
   { ...fromSensitivity(REST_DAY_OVERTIME_ADDITIVE_SPEC), decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION },
   { ...fromSensitivity(REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC), decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION },
   shadowForm(PENSION_WAGE_CAP_SHADOW_SPEC, PENSION_WAGE_CAP_SPEC, sensitivityOf(PENSION_WAGE_CAP_SPEC).bindings),

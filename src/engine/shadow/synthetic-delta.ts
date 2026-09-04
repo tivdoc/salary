@@ -96,6 +96,7 @@ const MONEY: Pick<PaidComponent, "expected_output" | "unit" | "transformation_id
 export const PAID_COMPONENTS: Readonly<Record<string, PaidSource>> = Object.freeze({
   "minimum.wage.hourly.entitlement": { ...MONEY, input_id: "paid.gross.salary", fact_path: "compensation.gross_salary" },
   "working.time.overtime.pay": { ...MONEY, input_id: "paid.overtime.pay", fact_path: "compensation.overtime_pay" },
+  "working.time.overtime.from.hours.worked": { ...MONEY, input_id: "paid.overtime.pay", fact_path: "compensation.overtime_pay" },
   "working.time.rest.day.overtime.additive": { ...MONEY, input_id: "paid.weekly.rest.pay", fact_path: "compensation.weekly_rest_pay" },
   "working.time.rest.day.overtime.multiplicative": { ...MONEY, input_id: "paid.weekly.rest.pay", fact_path: "compensation.weekly_rest_pay" },
   "pension.wage.cap.on.wage": { not_applicable: "a capped pensionable wage is a base, not a paid line" },

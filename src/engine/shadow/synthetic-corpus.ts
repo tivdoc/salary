@@ -110,10 +110,14 @@ const TOPIC_MONTHS: Readonly<Record<string, TopicMonth>> = Object.freeze({
   working_time: (scenario) => {
     const overtime: Record<GoldenScenario, string> = { current: "4", effective_date_boundary: "3", sector_population: "2", missing_conflicted_facts: "4", precedence_overlap: "5", parameter_rounding_boundary: "1" };
     const rest: Record<GoldenScenario, string> = { current: "3", effective_date_boundary: "2", sector_population: "1", missing_conflicted_facts: "3", precedence_overlap: "4", parameter_rounding_boundary: "1" };
+    // L7-9 / D6: the hours worked in the day — the declared overtime above plus
+    // the statute's eight — so the derived overtime agrees with the declared.
+    const worked: Record<GoldenScenario, string> = { current: "12", effective_date_boundary: "11", sector_population: "10", missing_conflicted_facts: "12", precedence_overlap: "13", parameter_rounding_boundary: "9" };
     const wage = scenario === "parameter_rounding_boundary" ? 3_333 : 4_000;
     if (scenario === "missing_conflicted_facts") {
       return [
         { path: "work.overtime_hours", ...CONFLICTED, source_type: "documented" },
+        { path: "work.hours_worked_day", value: hoursPerDay(worked[scenario]), source_type: "documented" },
         { path: "work.rest_day_overtime_hours", value: hoursPerDay(rest[scenario]), source_type: "declared" },
         // the hourly wage is withheld
         { path: "compensation.overtime_pay", value: ils(20_000), source_type: "documented" },
@@ -122,6 +126,7 @@ const TOPIC_MONTHS: Readonly<Record<string, TopicMonth>> = Object.freeze({
     }
     return [
       { path: "work.overtime_hours", value: hoursPerDay(overtime[scenario]), source_type: "documented" },
+      { path: "work.hours_worked_day", value: hoursPerDay(worked[scenario]), source_type: "documented" },
       { path: "work.rest_day_overtime_hours", value: hoursPerDay(rest[scenario]), source_type: "declared" },
       { path: "compensation.hourly_rate", value: ils(wage), source_type: "documented" },
       { path: "compensation.overtime_pay", value: ils(20_000), source_type: "documented" },
@@ -266,9 +271,13 @@ function edgeCases(): readonly SyntheticCase[] {
     month("stale_workdays", "travel", ["travel.daily.cap.entitlement"],
       [{ path: "work.workdays_in_month", value: { days: 22 }, source_type: "derived", created_at: "2024-01-01T00:00:00.000Z" }],
       { kind: "preparation_refuses", codes: ["fact.stale"] }),
-    month("unconfirmed_wage", "working_time", ["working.time.overtime.pay", "working.time.rest.day.overtime.additive", "working.time.rest.day.overtime.multiplicative"],
-      [{ path: "work.overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "work.rest_day_overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented", status: "needs_confirmation" }],
+    month("unconfirmed_wage", "working_time", ["working.time.overtime.pay", "working.time.overtime.from.hours.worked", "working.time.rest.day.overtime.additive", "working.time.rest.day.overtime.multiplicative"],
+      [{ path: "work.overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "work.hours_worked_day", value: hoursPerDay("10"), source_type: "documented" }, { path: "work.rest_day_overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented", status: "needs_confirmation" }],
       { kind: "preparation_refuses", codes: ["fact.unconfirmed"] }),
+    // L7-9 / D6: a day within the eight-hour threshold has no overtime — zero pay, not a refusal.
+    month("within_daily_threshold", "working_time", ["working.time.overtime.from.hours.worked"],
+      [{ path: "work.hours_worked_day", value: hoursPerDay("7"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented" }, { path: "compensation.overtime_pay", value: ils(0), source_type: "documented" }],
+      { kind: "runs", note: "seven hours worked over an eight-hour threshold: zero overtime hours, zero pay, a zero delta" }),
   ].map((entry) => (entry.scenario === "period_unconfirmed"
     ? { ...entry, snapshot: unconfirmPeriod(entry.snapshot), snapshot_sha256: canonicalSha256(unconfirmPeriod(entry.snapshot)) }
     : entry));

@@ -4,6 +4,7 @@
 // `human_review_required: true` and `automatic_acceptance: false`; nothing
 // here accepts a branch, weights one, or hides a case that did not run.
 import type { ShadowExecutionRecord } from "./draft-shadow-run.ts";
+import { DRAFT_SHADOW_SPECS } from "./draft-shadow-specs.ts";
 
 type Comparable = Readonly<{ amount: bigint; unit: string; kind: string }>;
 
@@ -45,9 +46,13 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
       const difference = high.amount - low.amount;
       return { case_id: caseId, ran: true, comparable: true, differs: difference !== BigInt(0), by_branch: byBranch, difference: { amount: difference.toString(), unit: low.unit, kind: low.kind } };
     });
+    // L7-9: a branch named on the decision but not bound is listed, with its
+    // reason, and counted as not run — never as agreement.
+    const unbound = DRAFT_SHADOW_SPECS.find((spec) => spec.decision_id === decisionId)?.unbound_branches ?? [];
     return {
       decision_id: decisionId,
       branches,
+      unbound_branches: unbound,
       cases_compared: cases.filter((entry) => entry.comparable).length,
       cases_differing: cases.filter((entry) => entry.differs).length,
       cases_not_comparable: cases.filter((entry) => !entry.comparable).length,

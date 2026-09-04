@@ -86,6 +86,7 @@ const WRITERS = Object.freeze({
     "Real draft parameters, the 2016 pension order's shares read from the page image, the 2014 rows re-registered on the precedence decision, and the supersession of the 2014.1.0 rows."],
   "pool-p-batch-14-convalescence-bands.mts": [REFERENCE, "Real draft parameters, the 1988 order's seniority bands."],
   "pool-p-batch-15-threshold-visual.mts": [REFERENCE, "Real draft parameter, the 2025 threshold read from the typeset page (inferred_visual)."],
+  "pool-p-batch-16-daily-threshold.mts": [REFERENCE, "Real draft parameter, §2's eight hours through the lexicon, and the daily-threshold decision (L7-9 / D6)."],
   "pool-p-batch-10-selections.mts": [REFERENCE, "Real draft parameters, the figures inside the three instrument selections."],
   "pool-p-dependency-hash-invalidation-proof.mts": [SYNTHETIC, ""],
   "pool-p-parameter-import.mts": [REFERENCE,

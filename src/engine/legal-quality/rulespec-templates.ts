@@ -133,6 +133,9 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
   ],
   working_time: [
     { name: "weekly_overtime_threshold", parameter_id: "il.working_time.weekly_overtime_threshold_hours", unit: "hours_per_week" },
+    // L7-9 / D6: the day's threshold, §2 of the 1951 law (eight hours). The
+    // administrative 8.6 / 7.6 reading is BL-24 and is not a registered branch.
+    { name: "daily_overtime_threshold", parameter_id: "il.working_time.daily_overtime_threshold_hours", unit: "hours" },
     { name: "overtime_first_tier_rate", parameter_id: "il.working_time.overtime_rate_first_tier", unit: "ratio" },
     // L6-3 / D1: §16(א)'s second tier and §17(א)(1)'s weekly-rest premium.
     { name: "overtime_second_tier_rate", parameter_id: "il.working_time.overtime_rate_second_tier", unit: "ratio" },

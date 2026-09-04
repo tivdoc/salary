@@ -33,7 +33,16 @@ describe("the branch comparison", () => {
       ["pension_2011_2016_precedence", ["order_2011_2014_row", "order_2016_2017_rates"]],
       ["pension_wage_cap_section", ["section1", "section2"]],
       ["rest_day_overtime_composition", ["additive", "multiplicative"]],
+      ["working_time_daily_threshold", ["statute"]],
     ]);
+  });
+
+  it("a decision with an unbound branch names it, with its reason, and runs only the bound one", () => {
+    const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
+    expect(threshold.branches).toEqual(["statute"]);
+    expect(threshold.unbound_branches).toEqual([expect.objectContaining({ branch: "administrative", reason: expect.stringContaining("BL-24") })]);
+    expect(threshold.cases_differing).toBe(0);
+    expect(threshold.cases.every((entry) => entry.by_branch.length === 1)).toBe(true);
   });
 
   it("states a difference per case, exact and in the output's unit, and never accepts a branch", () => {

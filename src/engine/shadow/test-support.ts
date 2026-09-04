@@ -28,6 +28,7 @@ export const TEST_PARAMETER_VALUES: Readonly<Record<string, RuleSpecInputValue["
   "parameter.rate.first": ratio("5", "4"),
   "parameter.rate.second": ratio("3", "2"),
   "parameter.rate.rest": ratio("3", "2"),
+  "parameter.daily.threshold": integer(8, "hours"),
   "parameter.days.year.1": integer(5, "days"),
   "parameter.days.years.2.to.3": integer(6, "days"),
   "parameter.days.years.4.to.10": integer(7, "days"),

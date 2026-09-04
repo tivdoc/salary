@@ -47,6 +47,7 @@ const PARAMETER_VALUES: Readonly<Record<string, RuleSpecInputValue["value"]>> = 
   "parameter.rate.first": ratio("5", "4"),
   "parameter.rate.second": ratio("3", "2"),
   "parameter.rate.rest": ratio("3", "2"),
+  "parameter.daily.threshold": integer(8, "hours"),
   "parameter.days.year.1": integer(5, "days"),
   "parameter.days.years.2.to.3": integer(6, "days"),
   "parameter.days.years.4.to.10": integer(7, "days"),
@@ -63,6 +64,7 @@ const MONTH_FACTS: readonly SyntheticFactSeed[] = [
   { path: "employment.start_date", value: "2023-03-01", source_type: "declared" },
   { path: "work.regular_hours", value: { amount: "182", unit: "hours_per_month" }, source_type: "documented" },
   { path: "work.overtime_hours", value: { amount: "4", unit: "hours_per_day" }, source_type: "documented" },
+  { path: "work.hours_worked_day", value: { amount: "12", unit: "hours_per_day" }, source_type: "documented" },
   { path: "work.rest_day_overtime_hours", value: { amount: "3", unit: "hours_per_day" }, source_type: "declared" },
   { path: "work.workdays_in_month", value: { days: 22 }, source_type: "derived" },
   { path: "compensation.hourly_rate", value: { currency: "ILS", minor_units: 4_000 }, source_type: "documented" },
@@ -94,22 +96,22 @@ function outputOf(outcome: ReturnType<typeof executeRuleSpecAtomic> | null): unk
 }
 
 describe("the draft shadow set", () => {
-  it("covers the seven topics with twelve specs, three of them shadow forms", () => {
+  it("covers the seven topics with thirteen specs, three of them shadow forms", () => {
     expect(DRAFT_SHADOW_TOPICS).toEqual(["minimum_wage", "working_time", "pension", "travel", "convalescence", "vacation", "sick_leave"]);
-    expect(DRAFT_SHADOW_SPECS).toHaveLength(12);
+    expect(DRAFT_SHADOW_SPECS).toHaveLength(13);
     expect(DRAFT_SHADOW_SPECS.filter((entry) => entry.shadow_form_of !== null).map((entry) => entry.shadow_id)).toEqual([
       "pension.wage.cap.on.wage",
       "pension.employee.contribution.on.wage",
       "convalescence.pay.by.seniority",
     ]);
-    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(12);
+    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(13);
   });
 
   it("binds every input slot of every spec through a registry mapping — no slot is typed", () => {
     const slots = boundInputSlots();
     const declared = DRAFT_SHADOW_SPECS.reduce((sum, entry) => sum + entry.spec.facts.length, 0);
     expect(slots).toHaveLength(declared);
-    expect(slots).toHaveLength(15);
+    expect(slots).toHaveLength(17);
     for (const entry of DRAFT_SHADOW_SPECS) {
       expect(entry.input_mappings.registry.mappings.map((mapping) => mapping.input_id).sort()).toEqual(entry.spec.facts.map((fact) => fact.ref_id).sort());
       expect(entry.input_mappings.registry.registry_version).toBe("2.0.0");
@@ -130,7 +132,7 @@ describe("the draft shadow set", () => {
     }
   });
 
-  it("executes all twelve specs on one synthetic month, through preparation and the bridge", () => {
+  it("executes all thirteen specs on one synthetic month, through preparation and the bridge", () => {
     const outputs = new Map<string, unknown>();
     for (const entry of DRAFT_SHADOW_SPECS) {
       const { prepared, outcome } = runShadow(entry);
@@ -142,6 +144,8 @@ describe("the draft shadow set", () => {
     expect(outputs.get("minimum.wage.hourly.entitlement")).toEqual(money(631_176));
     // 4 overtime hours on 40.00: 2 × 1.25 + 2 × 1.5 = 5.5 hours.
     expect(outputs.get("working.time.overtime.pay")).toEqual(money(22_000));
+    // 12 hours worked over an 8-hour threshold: the same 4 overtime hours, derived.
+    expect(outputs.get("working.time.overtime.from.hours.worked")).toEqual(money(22_000));
     // A 15,000 wage capped at 13,788; 6% of it.
     expect(outputs.get("pension.wage.cap.on.wage")).toEqual(money(1_378_800));
     expect(outputs.get("pension.employee.contribution.on.wage")).toEqual(money(82_728));

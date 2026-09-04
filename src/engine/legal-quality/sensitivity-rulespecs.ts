@@ -376,6 +376,61 @@ export const WORKING_TIME_OVERTIME_SPEC: RuleSpecPackage = createRuleSpecPackage
   resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
 });
 
+// --- L7-9 / D6: a day's overtime from hours worked and the daily threshold --
+//
+// §2(א) of the 1951 law: a working day shall not exceed eight hours. The
+// overtime of a day is the hours worked beyond that threshold; the L6-3 spec
+// above prices overtime hours it is GIVEN, this one derives them. The
+// threshold is an open decision with two readings: the statute's eight hours
+// (bound, through the lexicon from the word שמונה on page 1), and the Labour
+// Ministry directive of 10.6.2018 — 8.6 hours on a five-day week, 7.6 on a
+// six-day week — whose official text is not discoverable (BL-24) and which
+// is therefore an UNBOUND branch, named and not run. A copy of the directive
+// on a non-official site is a mirror and is not acceptable as a source.
+export const WORKING_TIME_DAILY_THRESHOLD_DECISION = "legal.reference.il.decision.working_time_daily_threshold";
+
+export const WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.working.time.overtime.from.hours.worked",
+  rule_spec_version: "1.0.0",
+  topic: "working_time",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_HOURS_WORK_REST_LAW@discovery-v0"],
+  effective_period: { from: "1951-09-27", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [
+    { ref_id: "fact.hours.worked.day", value_kind: "integer", unit: "hours" },
+    { ref_id: "fact.regular.hourly.wage", value_kind: "money", unit: "currency.ils" },
+  ],
+  parameters: [
+    { ref_id: "parameter.daily.threshold", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "1951.1.0", value_kind: "integer", unit: "hours" },
+    { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+    { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+  ],
+  nodes: [
+    { node_id: "zero.hours", operation: "constant.integer", value: 0, unit: "hours" },
+    { node_id: "hours.over.threshold", operation: "subtract", left_ref: "fact.hours.worked.day", right_ref: "parameter.daily.threshold" },
+    // A day within the threshold has no overtime — zero, not a refusal and
+    // not a negative count.
+    { node_id: "overtime.hours", operation: "max", refs: ["hours.over.threshold", "zero.hours"] },
+    {
+      node_id: "overtime.pay",
+      operation: "tiered.rate",
+      input_ref: "overtime.hours",
+      base_ref: "fact.regular.hourly.wage",
+      tiers: [
+        { from_inclusive: 0, to_exclusive: 2, rate_ref: "parameter.rate.first" },
+        { from_inclusive: 2, to_exclusive: null, rate_ref: "parameter.rate.second" },
+      ],
+      rounding: "half_up",
+    },
+  ],
+  output_ref: "overtime.pay",
+  golden_case_set_sha256: blankGoldenSetSha256("working_time"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
 // --- L6-4 / D2: overtime on the weekly rest — a composition, not a figure ---
 //
 // §17(א)(1) states 1½ for rest-day hours; §16(א) states 1¼ and 1½ for
@@ -534,6 +589,11 @@ export type SensitivitySpec = Readonly<{
   // spec, named here, and the report compares the two specs' outputs per
   // scenario under the one decision id.
   composition_branch?: string;
+  // L7-9 / D6. A decision may have a branch that is named but not bound — a
+  // reading whose source is not in the corpus. It is listed here with the
+  // reason, is never run, and the report shows it as not run rather than
+  // omitting it.
+  unbound_branches?: ReadonlyArray<Readonly<{ branch: string; reason: string }>>;
 }>;
 
 export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
@@ -614,6 +674,23 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     branches: [],
     narrower_than_draft:
       "Binds the two §16(א) premiums, read from the page image (inferred_visual, awaiting visual confirmation at attestation). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps, which bound the hours a scenario may supply rather than price them; this spec prices the hours it is given.",
+  },
+  // L7-9 / D6: the day's overtime from hours worked and the threshold.
+  {
+    spec: WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC,
+    bindings: [
+      { ref_id: "parameter.daily.threshold", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
+    ],
+    decision_id: WORKING_TIME_DAILY_THRESHOLD_DECISION,
+    branches: [["statute", "1951.1.0"]],
+    unbound_branches: [{
+      branch: "administrative",
+      reason: "BL-24: the Labour Ministry directive of 10.6.2018 (8.6 hours on a five-day week, 7.6 on a six-day week) is not discoverable on an official host; a copy on a non-official site is a mirror and is not acceptable. Unbound; not run; would bind at administrative grade.",
+    }],
+    narrower_than_draft:
+      "Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.",
   },
   // L6-4: overtime on the weekly rest, one decision, two computations.
   {

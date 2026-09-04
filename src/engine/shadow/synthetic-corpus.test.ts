@@ -14,7 +14,7 @@ import { SYNTHETIC_PREPARED_AT, syntheticUuid } from "./synthetic-payslip-month.
 import { testParametersFor } from "./test-support.ts";
 
 /** Pinned. A change here is a change to what the shadow runs on, and the state doc must say why. */
-const CORPUS_SHA256 = "afc49bbfd9b52748bfee9317b56af3ff2ba23ff40b7d3d531ca4af910793a76a";
+const CORPUS_SHA256 = "84bb020558d557be059e30c5d5e6e5891ac6ecb7436d2de55b0a05655f0f80b8";
 
 function runCase(entry: SyntheticCase, shadowId: string) {
   const spec = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
@@ -26,11 +26,11 @@ function runCase(entry: SyntheticCase, shadowId: string) {
 }
 
 describe("the synthetic corpus", () => {
-  it("is forty-two golden months — one per scenario family per topic — and eleven edge cases", () => {
+  it("is forty-two golden months — one per scenario family per topic — and twelve edge cases", () => {
     const golden = SYNTHETIC_CORPUS.filter((entry) => entry.family === "golden");
     expect(golden).toHaveLength(DRAFT_SHADOW_TOPICS.length * GOLDEN_SCENARIOS.length);
     expect(golden).toHaveLength(42);
-    expect(SYNTHETIC_CORPUS.filter((entry) => entry.family === "edge")).toHaveLength(11);
+    expect(SYNTHETIC_CORPUS.filter((entry) => entry.family === "edge")).toHaveLength(12);
     expect(new Set(SYNTHETIC_CORPUS.map((entry) => entry.case_id)).size).toBe(SYNTHETIC_CORPUS.length);
     for (const topic of DRAFT_SHADOW_TOPICS) {
       expect(golden.filter((entry) => entry.topic === topic).map((entry) => entry.scenario)).toEqual([...GOLDEN_SCENARIOS]);
@@ -105,8 +105,8 @@ describe("the synthetic corpus", () => {
       if (entry.expected.kind !== "preparation_refuses") continue;
       expect([...seen.get(entry.case_id)!].sort(), entry.case_id).toEqual([...entry.expected.codes].sort());
     }
-    expect(ran).toBe(60);
-    expect(refused).toBe(27);
+    expect(ran).toBe(66);
+    expect(refused).toBe(29);
   });
 
   it("finds a case by id and refuses an unknown one", () => {

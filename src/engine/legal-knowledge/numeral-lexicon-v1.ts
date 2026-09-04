@@ -58,6 +58,10 @@ export const LEGAL_NUMERAL_LEXICON: readonly LexiconEntry[] = Object.freeze([
   entry("מלא", "word", "1"),
   entry("מלאים", "word", "1"),
   entry("מלאה", "word", "1"),
+  // L7-9 / D6: §2 of the Hours of Work and Rest Law states the working day as
+  // "שמונה שעות". The whole, as a word; the count is the lexicon's, the unit
+  // is the parameter's.
+  entry("שמונה", "word", "8"),
   // Additive halves and quarters: "יום וחצי" is one day plus this.
   entry("וחצי", "word", "1", "2", true),
   entry("ורבע", "word", "1", "4", true),

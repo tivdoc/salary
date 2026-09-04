@@ -7,6 +7,8 @@ import {
   REST_DAY_OVERTIME_ADDITIVE_SPEC,
   REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC,
   SENSITIVITY_SPECS,
+  WORKING_TIME_DAILY_THRESHOLD_DECISION,
+  WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC,
   WORKING_TIME_OVERTIME_SPEC,
 } from "./sensitivity-rulespecs.ts";
 
@@ -79,5 +81,37 @@ describe("overtime on the weekly rest: one decision, two computations (D2)", () 
       ["legal.reference.il.decision.rest_day_overtime_composition", "additive"],
       ["legal.reference.il.decision.rest_day_overtime_composition", "multiplicative"],
     ]);
+  });
+});
+
+describe("L7-9 / D6: a day's overtime derived from hours worked and the daily threshold", () => {
+  const threshold = { ref_id: "parameter.daily.threshold", value: hours(8) };
+  const run = (worked: number, wageMinor: number) => executeRuleSpecAtomic({
+    rule: WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC,
+    facts: [{ ref_id: "fact.hours.worked.day", value: hours(worked) }, { ref_id: "fact.regular.hourly.wage", value: wage(wageMinor) }],
+    parameters: [threshold, ...PARAMETERS.slice(0, 2)],
+  } as never);
+
+  it("prices the hours beyond the threshold exactly as the given-overtime spec prices them", () => {
+    expect(money(run(12, 3_000))).toBe("16500");
+    expect(money(run(10, 3_000))).toBe("7500");
+    expect(money(run(9, 3_000))).toBe("3750");
+    expect(money(run(9, 3_333))).toBe("4166");
+  });
+
+  it("a day within the threshold has zero overtime and zero pay — not a refusal, not a negative count", () => {
+    expect(money(run(8, 3_000))).toBe("0");
+    expect(money(run(7, 3_000))).toBe("0");
+    expect(money(run(0, 3_000))).toBe("0");
+    const trace = run(7, 3_000).execution?.trace.map((step) => [step.step_id, step.result]) ?? [];
+    expect(trace.find(([id]) => id === "overtime.hours")?.[1]).toEqual({ kind: "integer", value: 0, unit: "hours" });
+  });
+
+  it("carries the daily-threshold decision with one bound branch and one unbound, named", () => {
+    const entry = SENSITIVITY_SPECS.find((candidate) => candidate.spec === WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC)!;
+    expect(entry.decision_id).toBe(WORKING_TIME_DAILY_THRESHOLD_DECISION);
+    expect(entry.branches).toEqual([["statute", "1951.1.0"]]);
+    expect(entry.unbound_branches).toEqual([expect.objectContaining({ branch: "administrative" })]);
+    expect(entry.unbound_branches?.[0].reason).toContain("BL-24");
   });
 });

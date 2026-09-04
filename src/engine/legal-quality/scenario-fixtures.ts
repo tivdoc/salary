@@ -148,6 +148,17 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
           parameter_rounding_boundary: HOURS(1),
         },
       },
+      // L7-9 / D6: the hours worked in the day, from which the threshold spec
+      // derives the overtime — the same four, three, two… as the declared
+      // overtime above, over an eight-hour threshold.
+      {
+        ref_id: "fact.hours.worked.day",
+        per_scenario: {
+          current: HOURS(12), effective_date_boundary: HOURS(11), sector_population: HOURS(10),
+          missing_conflicted_facts: HOURS(12), precedence_overlap: HOURS(13),
+          parameter_rounding_boundary: HOURS(9),
+        },
+      },
     ],
   },
   // L6-6: convalescence also carries the years of service, for the 1988

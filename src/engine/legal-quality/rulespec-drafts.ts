@@ -117,6 +117,11 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   { parameter_id: "il.minimum_wage.apprentice.monthly", versions: ["2026.1.0"] },
   { parameter_id: "il.minimum_wage.apprentice.hourly", versions: ["2026.1.0"] },
   { parameter_id: "il.working_time.weekly_overtime_threshold_hours", versions: ["2018.1.0"] },
+  // L7-9 (batch 16 / D6): §2's eight hours, bound through the lexicon. The
+  // decision working_time_daily_threshold has one bound branch (statute) and
+  // one unbound (administrative, BL-24), so it is carried on the spec and in
+  // the decision register rather than as a two-branch slot here.
+  { parameter_id: "il.working_time.daily_overtime_threshold_hours", versions: ["1951.1.0"] },
   {
     parameter_id: "il.pension.mandatory_wage_cap", versions: ["2026.1.0", "2026.2.0"],
     decision_id: "legal.reference.il.decision.pension_wage_cap_section",

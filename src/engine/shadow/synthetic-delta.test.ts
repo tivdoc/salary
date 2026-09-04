@@ -38,6 +38,7 @@ describe("paid components", () => {
     expect(PAID_COMPONENT_BINDINGS.map((entry) => entry.shadow_id)).toEqual([
       "minimum.wage.hourly.entitlement",
       "working.time.overtime.pay",
+      "working.time.overtime.from.hours.worked",
       "working.time.rest.day.overtime.additive",
       "working.time.rest.day.overtime.multiplicative",
       "pension.employee.contribution.on.wage",
