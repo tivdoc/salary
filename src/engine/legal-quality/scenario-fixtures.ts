@@ -59,7 +59,15 @@ export type ScenarioFixture = z.infer<typeof scenarioFixtureSchema>;
 const RATIO = (numerator: string, denominator = "1") =>
   ({ kind: "rational" as const, numerator, denominator, unit: "ratio" });
 
-type Seed = Readonly<{ ref_id: string; per_scenario: Readonly<Record<string, ReturnType<typeof RATIO>>> }>;
+/**
+ * L4-3. Not every topic's input is a scalar to multiply by. A seniority band is
+ * selected by a whole year, and a fixture that offered a ratio there would be
+ * describing a computation the topic does not have.
+ */
+const YEARS = (value: number) => ({ kind: "integer" as const, value, unit: "count.years" });
+
+type SeedValue = ReturnType<typeof RATIO> | ReturnType<typeof YEARS>;
+type Seed = Readonly<{ ref_id: string; per_scenario: Readonly<Record<string, SeedValue>> }>;
 
 // One multiplier per topic — the dimensionless scalar the topic's rule applies
 // to its money parameter. Named for what the computation does with it rather
@@ -112,12 +120,19 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
       parameter_rounding_boundary: RATIO("5", "3"),
     },
   },
+  // Vacation entitlement is a day count selected by a seniority band, so the
+  // input is a whole year rather than a multiplier. The scenarios are read
+  // against the band table: an ordinary year inside the first band, the first
+  // year of the second band, the third band, the year Amendment 15 moved, and —
+  // in place of a rounding boundary, which a table of integers does not have —
+  // the edge of the table itself, where the run must refuse rather than reach
+  // for the nearest band.
   vacation: {
-    ref_id: "fact.employment.fraction",
+    ref_id: "fact.seniority.year",
     per_scenario: {
-      current: RATIO("1"), effective_date_boundary: RATIO("1"), sector_population: RATIO("1", "2"),
-      missing_conflicted_facts: RATIO("1"), precedence_overlap: RATIO("1"),
-      parameter_rounding_boundary: RATIO("2", "3"),
+      current: YEARS(3), effective_date_boundary: YEARS(6), sector_population: YEARS(7),
+      missing_conflicted_facts: YEARS(3), precedence_overlap: YEARS(5),
+      parameter_rounding_boundary: YEARS(8),
     },
   },
   sick_leave: {

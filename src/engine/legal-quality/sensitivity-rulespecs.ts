@@ -130,44 +130,97 @@ export const TRAVEL_DAILY_CAP_SPEC: RuleSpecPackage = createRuleSpecPackage({
   resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
 });
 
+/**
+ * L4-3. The vacation entitlement table, §3(א) of the Annual Vacation Law 1951
+ * as Amendment 15 left it, expressed with the band-lookup node.
+ *
+ * Three bands and no more. §3(א)(5) — one additional day per work year from the
+ * eighth, up to 28 — is an increment, not a table entry: expressing it would
+ * mean either a subtraction node the vocabulary does not have, or six figures
+ * (22, 23, 24, 25, 26, 27) that the law never writes down and that I would be
+ * computing rather than citing. So the table stops at the seventh year and the
+ * eighth refuses, which is what the fail-closed band refusal is for.
+ */
+export const VACATION_SENIORITY_BAND_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.vacation.seniority.band.entitlement",
+  rule_spec_version: "1.0.0",
+  topic: "vacation",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_ANNUAL_VACATION_LAW@discovery-v0", "IL_ANNUAL_VACATION_LAW_AMENDMENT_15_2016@discovery-v0"],
+  effective_period: { from: "2017-01-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.seniority.year", value_kind: "integer", unit: "count.years" }],
+  parameters: [
+    { ref_id: "parameter.days.years.1.to.5", parameter_id: "il.vacation.calendar_days_years_1_to_5", parameter_version: "2017.1.0", value_kind: "integer", unit: "calendar_days" },
+    { ref_id: "parameter.days.year.6", parameter_id: "il.vacation.calendar_days_year_6", parameter_version: "1951.1.0", value_kind: "integer", unit: "calendar_days" },
+    { ref_id: "parameter.days.year.7", parameter_id: "il.vacation.calendar_days_year_7", parameter_version: "1951.1.0", value_kind: "integer", unit: "calendar_days" },
+  ],
+  nodes: [{
+    node_id: "entitlement.calendar.days",
+    operation: "band.lookup",
+    input_ref: "fact.seniority.year",
+    bands: [
+      { from_inclusive: 1, to_exclusive: 6, value_ref: "parameter.days.years.1.to.5" },
+      { from_inclusive: 6, to_exclusive: 7, value_ref: "parameter.days.year.6" },
+      { from_inclusive: 7, to_exclusive: 8, value_ref: "parameter.days.year.7" },
+    ],
+  }],
+  output_ref: "entitlement.calendar.days",
+  golden_case_set_sha256: blankGoldenSetSha256("vacation"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
+/** One governance parameter bound into one spec ref. */
+export type SensitivityBinding = Readonly<{
+  ref_id: string;
+  parameter_id: string;
+  /** Fixed here, or null when the open decision's branches choose the version. */
+  parameter_version: string | null;
+}>;
+
 export type SensitivitySpec = Readonly<{
   spec: RuleSpecPackage;
-  /** The governance parameter this spec's money slot binds, and its branches. */
-  parameter_id: string;
+  bindings: readonly SensitivityBinding[];
   decision_id: string | null;
   branches: ReadonlyArray<readonly [string, string]>;
-  fact_ref: string;
-  parameter_ref: string;
   narrower_than_draft: string | null;
 }>;
 
 export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
   {
     spec: MINIMUM_WAGE_HOURLY_SPEC,
-    parameter_id: "il.minimum_wage.hourly",
+    bindings: [{ ref_id: "parameter.hourly.floor", parameter_id: "il.minimum_wage.hourly", parameter_version: null }],
     decision_id: "legal.reference.il.decision.min_wage_hourly_divisor",
     branches: [["182", "2026.1.0"], ["186", "2026.2.0"]],
-    fact_ref: "fact.hours.multiplier",
-    parameter_ref: "parameter.hourly.floor",
     narrower_than_draft: null,
   },
   {
     spec: PENSION_WAGE_CAP_SPEC,
-    parameter_id: "il.pension.mandatory_wage_cap",
+    bindings: [{ ref_id: "parameter.wage.cap", parameter_id: "il.pension.mandatory_wage_cap", parameter_version: null }],
     decision_id: "legal.reference.il.decision.pension_wage_cap_section",
     branches: [["section1", "2026.1.0"], ["section2", "2026.2.0"]],
-    fact_ref: "fact.pensionable.wage.multiplier",
-    parameter_ref: "parameter.wage.cap",
     narrower_than_draft:
-      "Binds only the mandatory wage cap. The full pension draft also needs il.pension.employee_contribution_rate, which Pool P has not registered, so that draft stays not_run: slot_unbound.",
+      "Binds only the mandatory wage cap. The full pension draft also needs il.pension.employee_contribution_rate — registered at 2014.1.0 in L4-1 from the 2011 order's own table, but that instrument's last row is 2014 and whether a later instrument governs is the open precedence question, so this spec does not reach for it.",
   },
   {
     spec: TRAVEL_DAILY_CAP_SPEC,
-    parameter_id: "il.travel.daily_reimbursement_cap",
+    bindings: [{ ref_id: "parameter.daily.cap", parameter_id: "il.travel.daily_reimbursement_cap", parameter_version: "2016.1.0" }],
     decision_id: null,
     branches: [],
-    fact_ref: "fact.workdays.multiplier",
-    parameter_ref: "parameter.daily.cap",
     narrower_than_draft: null,
+  },
+  {
+    spec: VACATION_SENIORITY_BAND_SPEC,
+    bindings: [
+      { ref_id: "parameter.days.years.1.to.5", parameter_id: "il.vacation.calendar_days_years_1_to_5", parameter_version: "2017.1.0" },
+      { ref_id: "parameter.days.year.6", parameter_id: "il.vacation.calendar_days_year_6", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.days.year.7", parameter_id: "il.vacation.calendar_days_year_7", parameter_version: "1951.1.0" },
+    ],
+    decision_id: null,
+    branches: [],
+    narrower_than_draft:
+      "Covers the seventh year and below. §3(א)(5)'s one-day-per-year increment to a 28-day ceiling is not in the table: the intermediate figures are not written anywhere in the law, and computing them here would be authoring law rather than citing it. Year eight and above refuse.",
   },
 ]);
