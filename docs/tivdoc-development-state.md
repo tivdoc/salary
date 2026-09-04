@@ -2527,6 +2527,68 @@ deployments 0, remote production migrations 0, HUMAN_GROUND_TRUTH_LOCKED 0.
 | BL-25 | open, `visual_verification_required` | seven parameter versions read from page images await a person's visual confirmation against the page the package carries; the database refuses their attestation without it. Not an engineering gate |
 | BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
 
+## Long run 7 — L7-1…L7-12: the offline shadow runs the seven draft topics on synthetic facts, end to end
+
+Six runs built the legal track to seven topics with a grade on every
+parameter, and left one gate: attestation. What did not exist was the thing
+the tracker calls Offline Shadow Mode — the draft RuleSpecs executed against
+facts shaped like a payslip month, through the product's own fact model and
+rule-input preparation, inside the durable shadow envelope, with the
+difference between entitlement and what the payslip paid computed and
+labelled for what it is. This run closes that distance on synthetic facts
+only: draft parameters with their grades displayed, inputs declared by
+fixture and flagged synthetic, tenant `legal.synthetic.proof`, every output
+`synthetic_shadow_delta`, nothing under a Finding contract, nothing on a
+customer-facing route, no extraction, no provider call.
+
+**L7-1 — survey, R-1 style, at `3b30bcb`.** Run what exists before building
+anything. Passing, not rebuilt:
+
+- `prepareRuleInputs` (`src/engine/rule-input/preparation.ts`): strict
+  deterministic preparation over a canonical snapshot and a registered mapping
+  registry, nine rejection codes — `fact.missing`, `fact.conflicted`,
+  `fact.unconfirmed`, `fact.rejected`, `fact.stale`,
+  `fact.timestamp_after_preparation`, `fact.below_confidence_threshold`,
+  `transformation.unsupported`, `transformation.failed` — zero partial values
+  on any rejection; 7 tests in `rule-input.test.ts`. A conflicted fact is a
+  rejection, never resolved. Two callers outside the directory, both synthetic
+  (the Wave 2.1 negative matrices, the synthetic vertical slice).
+- The mapping registry (`mapping-registry.ts`): one registry, canonical order,
+  duplicate input/runtime/fact paths refused; `expected_output` knows
+  `decimal` and `money` only; one transformation exists,
+  `canonical.hours.amount@1.0.0`, hard-wired in `preparation.ts`.
+- The canonical fact model (`src/engine/facts/`): 22 paths in one list
+  (`fact-paths.ts`, R-11's single registry), one value schema per path, four
+  source types — documented, declared, derived, inferred — on every evidence
+  reference, six statuses; a conflicted fact has no value and at least two
+  conflicting ids; a snapshot holds one fact per path and is hashed whole.
+- The durable shadow: envelope v0.10.0 self-verifies its hash, mode
+  `offline_synthetic_only`, `source_state_pin.mode: synthetic_placeholder_only`;
+  `DurableOfflineShadowScheduler` schedule/enqueue/lease/execute/complete/
+  fail/pause/kill-switch/recover with a fenced lease and an append-only audit
+  chain; `complete()` refuses any monetary output, finding, customer report or
+  promotion; comparison (`src/engine/shadow/comparison.ts`) deterministic,
+  `human_review_required: true`, no automatic acceptance; flags default off in
+  every mode and throw in production; observability hashed and bounded. 46
+  tests pass (`rule-input`, `shadow`, `server/engine/shadow`,
+  `shadow-observability`); `scripts/shadow/verify-v010.mts` passes
+  (restart verified, audit chain 5 events, zero outputs).
+- `/operations` shadow panel: routed and access-controlled (S-8), 404
+  `CAPABILITY_ABSENT` because `readShadowSummary` has no implementation on the
+  canonical service; the DEV journey has 16 steps (4 positive, 12 negative).
+
+Exact gaps, each a unit below: no unit-typed `expected_output` kinds and no
+transformation registry (L7-2); no provenance on an execution, no worst-of
+grade (L7-3); no synthetic facts corpus shaped as canonical snapshots (L7-4);
+no paid-component mappings and no delta anywhere (L7-5); no envelope mode for
+draft parameters on synthetic inputs, no pins for draft versions, synthetic
+inputs or extraction, no run of the scheduler over the drafts (L7-6); no
+per-branch runs of the six open decisions through the shadow (L7-7); no
+`readShadowSummary` (L7-8); no daily-threshold decision and a working_time spec
+that takes a declared overtime count rather than hours worked (L7-9); no
+report or package that carries a shadow summary (L7-10); no tracker v42 in the
+repository (L7-11).
+
 ## Resume point
 
 Refreshed at long run 6. Everything before this point is history; this section
