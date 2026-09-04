@@ -62,9 +62,31 @@ async function main(): Promise<void> {
   };
   const messageOf = (error: unknown) => String((error as Error).message ?? "").slice(0, 200);
 
-  const registerDecision = async (decisionId: string, question: string) => tx((client) => client.query(statement(
-    "a73_register", "select * from private.governance_legal_open_decision_register($1,$2::jsonb,$3,$4,$5)",
-    [TENANT, JSON.stringify({ decision_id: decisionId, topic: "test", question, dossier_anchor: "test fixture, not a real dossier anchor" }),
+  // E3-3. Every fixture this proof registers is flagged synthetic in the same
+  // breath, because `legal_open_decisions` is append-only and each run of this
+  // script otherwise leaves two more permanent rows sitting beside the real
+  // legal questions. That is not hypothetical: it is how eight of them
+  // accumulated before anyone noticed, and how two more appeared between the
+  // marking pass and the end of the session that added the flag.
+  const registerDecision = async (decisionId: string, question: string) => {
+    const registered = await tx((client) => client.query(statement(
+      "a73_register", "select * from private.governance_legal_open_decision_register($1,$2::jsonb,$3,$4,$5)",
+      [TENANT, JSON.stringify({ decision_id: decisionId, topic: "test", question, dossier_anchor: "test fixture, not a real dossier anchor" }),
+        `a73.register.${decisionId}`, sha256(`register:${decisionId}`), new Date().toISOString()],
+    )));
+    await tx((client) => client.query(statement(
+      "a73_mark_synthetic",
+      "select * from private.governance_legal_open_decision_mark_synthetic($1,$2,$3,$4,$5,$6::timestamptz)",
+      [TENANT, decisionId,
+        "Fixture registered by the A7-3 withdrawal proof to exercise the decision state machine. Flagged at creation so it can never appear in a legal export.",
+        `a73.synthetic.${decisionId}`, sha256(`synthetic:${decisionId}`), new Date().toISOString()],
+    )));
+    return registered;
+  };
+  // Registers without flagging. Used only for genuine legal questions.
+  const registerRealDecision = async (decisionId: string, question: string) => tx((client) => client.query(statement(
+    "a73_register_real", "select * from private.governance_legal_open_decision_register($1,$2::jsonb,$3,$4,$5)",
+    [TENANT, JSON.stringify({ decision_id: decisionId, topic: "vacation", question, dossier_anchor: "research dossier 2026-09-03, topic 6, open decision 2" }),
       `a73.register.${decisionId}`, sha256(`register:${decisionId}`), new Date().toISOString()],
   )));
   const withdraw = async (decisionId: string, reason: string, locator: string, idempotencyKey?: string) => tx((client) => client.query(statement(
@@ -161,8 +183,14 @@ async function main(): Promise<void> {
   // --- Case 7 (the real one): the vacation "200 vs 240 days" question,
   // registered and immediately withdrawn with the actual citation locator
   // that dissolved it — Annual Vacation Law §3(b)/(c), read directly.
-  const vacationDecisionId = `${TENANT}.decision.vacation_minimum_days_threshold_200_vs_240`;
-  await registerDecision(
+  // .v2, and NOT through registerDecision. E3-3 made that helper flag every
+  // row it creates as a proof fixture, which is right for fixtures and was
+  // wrong for this one — the original row went through it and is now
+  // permanently marked synthetic, because the flag is one-way by design. That
+  // row keeps an annotation saying so; this is the corrected registration, and
+  // it uses its own non-flagging path so the mistake cannot repeat.
+  const vacationDecisionId = `${TENANT}.decision.vacation_minimum_days_threshold_200_vs_240.v2`;
+  await registerRealDecision(
     vacationDecisionId,
     "Research dossier topic 6, open decision 2: explanatory sources disagree on whether the vacation-entitlement minimum-days threshold is 200 or 240 (\"§3(ב)\", per the dossier's own table note). Which figure governs, and for whom?",
   );
