@@ -148,6 +148,8 @@ describe("L7-8 offline-shadow summary on the canonical service", () => {
     const stale = { ...sidecarContent };
     await writeFile(summaryPath, `${JSON.stringify({ ...stale, summary_sha256: "0".repeat(64) })}\n`, "utf8");
     await expect(readOfflineShadowSummary({ store, summary_path: summaryPath })).rejects.toThrow(/HASH_MISMATCH/u);
+    // A directory (or a link) at the sidecar path is not a regular file and is refused.
+    await expect(readOfflineShadowSummary({ store, summary_path: root })).rejects.toThrow("SHADOW_SUMMARY_SIDECAR_NOT_A_REGULAR_FILE");
     // No sidecar at all: the scheduler state alone is served.
     const alone = await readOfflineShadowSummary({ store, summary_path: path.join(root, "missing.json") });
     expect(alone.latest_draft_run).toBeNull();

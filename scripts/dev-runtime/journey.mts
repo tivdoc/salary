@@ -192,11 +192,13 @@ async function main(): Promise<void> {
 
     // Step 17 (L7-8): the offline-shadow summary on the canonical service —
     // the draft mode, its pin, zero active parameters, no content.
-    const shadow = await probe(port, "/api/operations/shadow/summary", authed);
+    const shadow = await probe(port, "/api/operations/shadow/summary", authed, 1_048_576);
     const shadowBody = ((): { data?: { summary?: { latest_draft_run?: { execution_mode?: string; draft_input_pin?: { active_real_parameter_count?: number } } | null; content_included?: boolean } } } => {
       try { return JSON.parse(shadow.body) as never; } catch { return {}; }
     })();
     const latest = shadowBody.data?.summary?.latest_draft_run ?? null;
+    // The whole response, beside the journey receipt: counts and hashes only, by construction.
+    writeFileSync(path.join(RECEIPT_ROOT, "shadow-summary-response.json"), shadow.body, "utf8");
     record("shadow_summary", shadow, "200 draft mode, zero active, no content",
       shadow.status === 200 && latest?.execution_mode === "draft_parameters_synthetic_inputs"
       && latest.draft_input_pin?.active_real_parameter_count === 0 && shadowBody.data?.summary?.content_included === false);

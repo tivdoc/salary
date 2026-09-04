@@ -5,7 +5,7 @@
 // sidecar is validated by a strict schema that names every field it may
 // carry, so a summary that grew a content field would fail to load rather
 // than be served.
-import { readFile } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
 import { z } from "zod";
 import { canonicalSha256 } from "../../../engine/rule-runtime/canonical.ts";
 import type { DurableShadowJob, ShadowSchedulerSnapshot } from "./durable-contracts.ts";
@@ -135,6 +135,10 @@ async function readSidecar(summaryPath: string | null): Promise<DraftShadowSumma
   if (summaryPath === null) return null;
   let text: string;
   try {
+    // Lane B (L7-8): the sidecar is read as a regular file only — a symbolic
+    // link at that path is refused rather than followed.
+    const stat = await lstat(summaryPath);
+    if (stat.isSymbolicLink() || !stat.isFile()) throw new Error("SHADOW_SUMMARY_SIDECAR_NOT_A_REGULAR_FILE");
     text = await readFile(summaryPath, "utf8");
   } catch (error) {
     if ((error as { code?: string }).code === "ENOENT") return null;

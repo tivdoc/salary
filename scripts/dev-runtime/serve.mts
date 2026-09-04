@@ -123,12 +123,14 @@ export async function probe(
   port: number,
   route: string,
   init: RequestInit = {},
+  /** L7-8: a step that must parse the whole response asks for it; the receipt still keeps 160 chars. */
+  bodyLimit = 400,
 ): Promise<Readonly<{ route: string; status: number; body: string }>> {
   try {
     const response = await fetch(`http://${LOOPBACK_LABEL}:${port}${route}`, {
       redirect: "manual", signal: AbortSignal.timeout(30_000), ...init,
     });
-    const body = (await response.text()).slice(0, 400);
+    const body = (await response.text()).slice(0, bodyLimit);
     return Object.freeze({ route, status: response.status, body });
   } catch (error) {
     return Object.freeze({ route, status: 0, body: String((error as Error).message).slice(0, 200) });
