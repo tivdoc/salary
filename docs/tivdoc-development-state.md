@@ -987,6 +987,37 @@ unit, not done silently here. Every Pool P unit from here forward
 (D-13…D-16's unlocked parameters, and any other new import) uses the
 eleven-dimension formula.
 
+### A7-3 — `withdrawn` as its own resolution state (this commit)
+
+Migration `202609020022`. `legal_open_decisions.resolution_state` gains
+`withdrawn`, alongside two new companion columns required exactly when
+that state applies (`withdrawn_reason`, `dissolution_citation_locator`),
+enforced by a single `case`-based pairing constraint that names every
+field for every state — not three independent checks that could pass
+together by accident. The append-only guard trigger now permits exactly
+two transitions out of `open` — to `resolved` (unchanged) or to
+`withdrawn` (new) — and nothing else, ever, from any state. A new
+`private.governance_legal_open_decision_withdraw(...)` function is the
+only entrypoint: no reviewer identity, no trust stack, no sibling cascade
+— an ill-posed decision was never validly split into branches to reject.
+
+Proven 7/7 by execution (`legal-open-decision-withdrawal.mts`): a fresh
+decision withdraws cleanly; withdrawal replays idempotently; **no runtime
+role can mutate the table directly at all** (not just the append-only
+trigger — `tivdoc_operations_runtime` is refused at the grant level, `42501`,
+before the trigger would even run — two independent layers, discovered by
+execution rather than assumed); withdrawing an already-withdrawn decision
+under a fresh idempotency key is refused; withdrawing an unknown decision
+id is refused; withdrawing without a reason is refused by the function's
+own validation, before ever touching the table.
+
+**The vacation "200 vs 240 days" question is now a real, evidenced
+`withdrawn` record**, not only prose in a commit message: decision id
+`legal.reference.il.decision.vacation_minimum_days_threshold_200_vs_240`,
+`dissolution_citation_locator = "IL_ANNUAL_VACATION_LAW@discovery-v0#0001-838721e06653
+(§3(b), §3(c))"`, `withdrawn_reason` recording that §3(b)/§3(c) are two
+thresholds for two situations, not competing answers to one question.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
