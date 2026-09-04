@@ -2066,57 +2066,287 @@ And a review agent pointed at five real defects in this run's own new code —
 including a PDF renderer that reversed English inside a Hebrew line, which was
 live in the document meant for a lawyer.
 
+## Long run 5 — L5-1…L5-12: the three shortfalls are engineering, and the report goes to 6/7
+
+Long run 4 left three topics that could not run and called each a human
+decision. The owner's standing ruling for this run: everything marked "human" is
+done by the engineer as a draft, reviewable artifact, and human review comes
+after full development. So the classification is retracted, and each shortfall
+is treated as what it is — a missing primitive, a missing selection, or a
+missing text — and built or fetched. Two of the three run now. The third,
+working_time, was attempted exactly once through the controlled acquisition
+path and refused by the host; that refusal is recorded by class, and nothing
+was read that the corpus does not state.
+
+**L5-1 (D1).** A numeral lexicon, `legal-numeral-lexicon-v1`, with every
+surface form the corpus states a figure in words: מחצית and חצי as 1/2, רבע,
+שליש, יום and יום אחד as 1, the glued and spaced compounds (יוםוחצי, יום וחצי
+as 3/2), the vulgar-fraction glyphs, and the exclusion clauses (אינו זכאי, לא
+ישולם) as 0. Binding through it requires the surface to stand as a whole word
+and refuses any chunk carrying the OCR shape `11/2` or `11/4` — the 1951 Hours
+law scan has six of those, and the lexicon names them
+`NUMERAL_CHUNK_OCR_AMBIGUOUS` rather than reading 1½ into them. Proof 9/9 against
+the live chunks: the sick-pay chunk binds מחצית beside בעד הימים השני והשלישי
+and the Hours-law chunk refuses. A lexicon citation carries the surface form and
+the value it resolved to into the dependency hash, so a lexicon change
+invalidates what it bound.
+
+**L5-2 (D2).** Units became a bijective registry with dimensions rather than
+strings compared by equality: ratio, days, months, weeks, hours, calendar_days,
+count.years, and the derived days_per_month, hours_per_week, hours_per_month,
+hours_per_day, calendar_days_per_year. Multiply and divide derive their result
+unit from the registry and refuse an unknown product or quotient by name; a bare
+base symbol (`day` for `days`) is refused as `RULESPEC_UNIT_ID_IS_A_BASE_SYMBOL`
+rather than aliased. The old sick_leave objection — a rational in
+days_per_month cannot meet an integer in days — dissolves: months ×
+days_per_month is days, and min with a cap in days is well-typed.
+
+**L5-3 (D3, BL-21).** `subtract`, `divide` and `constant.integer` join the
+vocabulary (fourteen operations). Constants refuse a currency unit; add and
+aggregate bound every partial sum, not only the last; subtract requires money of
+one currency or counted values of one unit; min and max promote mixed kinds to
+rational in validation and at runtime alike. The vacation spec goes to v2.0.0:
+years beyond the seventh are `subtract(years, 7)`, times the year-8 increment in
+calendar_days_per_year, added to the year-7 figure, capped at 28 — years 8
+through 14 yield 22 through 28, year 15 and beyond 28, year 0 refuses. BL-21 is
+closed by a node, not by six figures the law never writes down.
+
+**L5-4 (BL-20).** Sick pay is two computations over one fixture: accrual
+(months × 1.5 days_per_month, min 90) and a per-day rate looked up by the day
+of absence — day 1 refuses, days 2 and 3 bind `il.sick_pay.rate_days_2_to_3`
+(1/2, through the lexicon), day 4 onward is the identity. Two things the law
+does NOT state are recorded as not registered rather than filled: the first
+day's zero is stated by omission (§2(א) lists days two and three and four
+onward, never a non-entitlement), and the fourth day's full rate is a
+definitional identity, not a figure. Pool P batch 9 registers the half rate
+and the year-8 vacation increment; the not-registered figures are in its
+receipt with reasons.
+
+**L5-5 (D4, BL-19).** An instrument selection is a draft artifact: a page span
+of a quarantined multi-instrument gazette issue, bounded by two whole stored
+lines (title lines, ≥8 Hebrew letters, unique in the artifact), hashed over the
+selected pages, registered append-only in
+`private.legal_instrument_selections` (migration 029; the selector refuses a
+non-unique anchor, a short anchor, a page outside the artifact, and — after a
+Lane B review — pages that arrive out of order). Three selections registered:
+the 2023 convalescence order (gazette 11651, page 4), the 2026 order (gazette
+14863, page 2) and the 2018 general overtime permit (gazette 7732, pages 2–3).
+Each is chunked under `#s` ids beside the untouched whole-artifact files; the
+ledger records `parse_status: parsed` with `safe_error_code:
+instrument_selection_draft`, which is how this repository already says "parsed
+with a reservation" — the round-trip audit, the whole-artifact citation path
+and the readiness counts all read that reservation and refuse to treat the
+container as canonical. The 2016 pension increase order is a scanned image
+with no text layer: the selector cannot select what has no text, and it is
+recorded `technical_parse_failure`, not selected. BL-19 is reclassified: it was
+never a human gate, it was a missing primitive.
+
+**L5-6 / L5-7 (D6).** Pool P batch 10 binds six figures through
+`selectionCitation()`, which resolves the `#s` chunk from the ledger, checks
+the sidecar is the one named for the artifact, that its span and hash match
+the ledger, that the chunk lies inside the span, that every cited figure stands
+on its own digits (418 inside 9418 is some other number), and that the Hebrew
+anchor is in the same chunk — and carries the selection hash on the citation,
+so attesting the parameter attests the boundary. 418.00 for 2023 (from the
+signature date the text spells out; the order's own `172023` and `3062024`
+are dots collapsed by the layout parser and are recorded, not read); 451.50
+for 2026 on both branches of a new open decision,
+`convalescence_2026_rate_period` — the calendar year, or from the order's
+signature on 27 July 2026 — declared on the template slot so the draft carries
+both; and the 2018 permit's three caps, 12 hours a day, 16 overtime hours a
+week, 58 hours a week, as ceilings, not rates. The drafts now bind batches 8,
+9 and 10; the only unbound slot left is the first overtime tier.
+
+**L5-8 (D5).** The consolidated Hours of Work and Rest Law: one attempt, at the
+one official location the controlled acquisition target
+`ACQ-V02-HOURS-WORK-REST-OFFICIAL` already names, the Knesset legislation
+record for the law, registered as the 25th manifest entry and declared as the
+HTML that record serves — the same official record the existing entry points
+at, not a mirror. The fetch was answered with an HTML challenge or error
+page — `html_challenge_or_error_page`, 411 ms, no bytes of the law. Recorded
+`acquisition_blocked` with that class; the owner handoff request for the
+target is regenerated; the not-fetched build record is in the ledger in the
+shape the build command writes. No second fetch, no mirror, no secondary site.
+`il.working_time.overtime_rate_first_tier` stays unbound and says why in terms
+of this attempt.
+
+**L5-9 (D7).** The re-registration ledger walks every Pool P parameter that
+was blocked at the end of long run 4 and says whether its cause closed by
+execution. Six versions re-registered — the three 2018 caps and the three
+convalescence rates. P-11..P-14 (the premiums), P-15/P-16, P-21..P-23 (the
+2017 pension split, whose instrument is the image), P-29 and P-31 stay
+`blocked_dependency` on the same named cause each. Nothing was re-read more
+loosely to move it.
+
+**L5-10 (D8).** Sensitivity report v4: 60 scenarios attempted, 50 run, 10
+refused by name (the missing-input scenario, every topic), 50 traces appended
+to the synthetic proof tenant and 50 replayed byte-identically. Six topics run;
+working_time says why it does not, by slot and by L5-8's attempt. Execution ids
+name the spec as well as the topic — two specs on one topic collided on the
+idempotency key on the first run, and the guard refused rather than
+double-counting. The convalescence period decision reports what a value
+scenario cannot see: both branches carry 451.50 and differ only in period, so
+the summary says that instead of a bare "no difference". The Hebrew rendering
+is regenerated from v4 and hash-bound to it. Package v9 rebuilds v8 on v4 with
+v3 beside it as superseded; its topics-run gate is monotonic against the
+previous package's own manifest (floor six, bar whatever the last package
+shipped), recorded under `sensitivity` so the next package reads one field.
+21 files, built twice to one hash.
+
+**L5-11.** The blocked ledger, below. **L5-12.** This section, the freeze, and
+tracker delta v40.
+
+### What the matrix caught at this head
+
+Nine claims went stale in the course of this run and the matrix said so; each
+is fixed at the cause and named here so the fix is not mistaken for the run.
+
+- The governance-writer inventory did not name batch 9, batch 10, the selection
+  script or sensitivity run v4, and its write markers could not see the two
+  selection definers. All named now; a writer the markers cannot see is a writer
+  nobody checks.
+- The A7-1 tenant guard flagged the convalescence decision id written as a
+  literal in v4. Derived from the tenant constant now, like every other.
+- The supersession proof pinned three legal decisions; L5-6 registered a
+  fourth, and the pin says which.
+- The Wave-1 reconciliation pinned parsed 14 / failed 3 / chunks 202; the
+  three containers parse to their selected spans now, 16 / 1 / 194, with the
+  delta explained beside the Wave 2.1 history — which a Lane B review then
+  found being overwritten by the live counts, so the history is pinned as
+  history and the live counts are named for what they are.
+- The Wave 2.3 lifecycle seeds and invariants move to the same state: 274
+  extracted, 194 resolved, 80 quarantined, no source parsed-but-quarantined; the
+  Wave 2.3 labels stay as written beside an L5 label.
+- The citation round-trip audit failed the three containers as canonical
+  artifacts with no instrument chunks. A record parsed with a reservation is
+  not auditable as a whole artifact, and now says which reservation.
+- The 25th manifest entry had no build record; the one-to-one corpus check
+  refused. It has its not-fetched record in the shape the build command writes,
+  because a full rebuild would have overwritten the selection ledger.
+- The drafts test expected three unexplained slots; two of them bind now, and
+  the test names the one that does not.
+- Two load-sensitive cases — the path inventory and the ready-integration
+  services — each measured green alone; no budget was changed this run.
+
+### Lane B, this run
+
+Fourteen read-only Haiku agents, four in flight from the first minutes and
+refilled as they returned. Their findings applied: five defects in L5-1..L5-3
+(base-symbol aliasing, unbounded partial sums in `add`, substring surface
+binding, the OCR guard not applied to the chunk, an integer constant with a
+currency unit) and a sixth of my own (a tiered rate silently pricing units
+below a first tier that starts above zero); three in the selection citation
+path (digit-boundary needles, span and hash checks against the ledger, the
+sidecar named for the artifact); one in the selector (page order); one in the
+selection ledger (`parsed` with a reservation, read as such by every consumer);
+one in the reconciliation report (history overwritten by live counts). Two
+reviews returned no findings — the migration and the executor arithmetic — and
+one (package v9) found nothing to change. A final sweep of the whole diff
+against the run's not-authorised list found nothing: no attestation, nothing
+left draft, no `expected` filled, `11/2` and `11/4` refused everywhere they
+appear, one official record and no mirror, no cross-chunk citation, no
+dependency change. One agent's report came back empty and was relaunched.
+
+## Freeze — long run 5, the complete matrix
+
+### Local
+
+vitest **281/281 files, 1991 passed, 3 skipped, 0 failed** (a second full run; the first at this code failed only on a corpus-trust artifact left stale by a stash experiment, regenerated). tsc clean. eslint **0 errors, 0 warnings**. `next build`
+compiled successfully.
+
+### DEV, as the runtime roles
+
+Chain 52/52 applied, tail `202609020029_legal_instrument_selection.sql` — this
+run added one migration (foundation 52/52/53, replay tail pinned). Grant
+execution **22 executed, 0 denied, 18 context failures** (as long run 4). Identity
+negative matrix **8/8**. Definer surface **108**, ungated 2 (the known bootstrap
+pair), unexpected 0, reserved-execute 14, failures 0; 153 definitions pinned.
+Invalidation effects **10/10**. Dynamic matrix **14 checks, 10 supported, 10
+passed**. RLS force **65/65**, unforced 0. Journey **16/16**.
+
+Governance proofs, all by execution: A7-1 guards **6/6** (after the v4 literal
+was derived); P-0 / E2-2 parameter-decision matrix passed; A7-3 withdrawal
+passed; Q draft-binding **8/8**; R-14 trace replay passed; E3-2/E3-3
+supersession and synthetic passed at **four** legal decisions; E3-4 revocation
+passed; L4-5 registration ran and refused to run itself; L4-7 session recovery
+**8/8**; E2-10 hygiene passed at 42 candidates; L5-1 lexicon **9/9**; A7-2
+invalidation passed.
+
+Citation anchors: **39 declared, 24 chunks, 33 verified, 0 failed, 6
+impossible** — the six being the superseded rows. Selections **3 registered, 1
+not selected** (technical parse failure). Sensitivity run v4: **60 attempted, 50
+run, 10 refused, 50 traces, 50 replayed**.
+
+Report v4 `a12ec637a97c7cee2535a484672a5623f3c4a609ba89ecdbc75ed52ad735cfe4`.
+Hebrew rendering `06cfbc13dab937578b5775497baecc6912c4f1029e919bd749c9bc3aeeec2dc8`,
+PDF `69526e98606462e3a5877d4bc15fbfcc7893d71baf74a40fdd08a569eb667656`.
+Package v9 `e3fbdcce52b3d343c362a4c1ddb45611c2c211e586553c569a608e23734e3bcc`,
+21 files, built twice to one hash, topics_run 6 against a floor of 6 and a
+previous package at 4.
+
+Two observations outside this run's scope, recorded rather than chased: the
+isolated chain-replay runner (`run-chain-replay.mts replay`) fails on its
+stale replay database at the eighth file with "constraint already exists" —
+its database was not re-prepared, and the chain evidence above is the
+foundation test against DEV; and the Wave 2.3 corpus-trust evidence generator
+reports `W2_CORPUS_TRUST_EVIDENCE_FAILED` at this head and at the base
+`fd45d0d` alike (its lifecycle half passes; the readiness-delegate half does
+not), so it predates this run.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, customer rows 0, openai calls 0, deployments 0, remote
+production migrations 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-19 | reclassified and closed | not a human gate — a missing primitive. Three draft instrument selections registered (2023 order, 2026 order, 2018 permit); the figures inside them are bound with the selection hash on the citation. The 2016 pension order is a scanned image: `technical_parse_failure`, recorded, stopped |
+| BL-20 | closed | sick pay runs: derived units let months × days_per_month meet a cap in days; the half rate binds through the lexicon; day one refuses (stated by omission), day four is the identity |
+| BL-21 | closed | `subtract` and a derived unit carry the vacation table past year 7 to the 28-day ceiling |
+| BL-22 | open, `acquisition_blocked: html_challenge_or_error_page` | the consolidated Hours of Work and Rest Law at the official Knesset record. One attempt, refused by the host. The owner handoff for `ACQ-V02-HOURS-WORK-REST-OFFICIAL` is the path; the premiums in the 1951 scan are OCR-ambiguous and refused by name |
+| BL-23 | open, `technical_parse_failure` | the 2016 pension increase order has no text layer; the 2017 contribution split (P-21..P-23) waits on OCR or a text copy through the acquisition path |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
 ## Resume point
 
-Refreshed at long run 4. Everything before this point is history; this section
+Refreshed at long run 5. Everything before this point is history; this section
 is the only part a resuming session must read to know where things stand.
 
-**Where the work is.** Pools H, D, S and R are closed. Pool P has 34 registered
-draft parameter versions, 3 superseded by citation move and 1 by scope, and 9
-that stay blocked — each on a named corpus defect or an unmade human decision
-rather than on effort. Pool Q has seven drafts. Pools E2, E3 and L4 are 10/10.
-The sensitivity report runs four topics of seven and says why the other three do
-not.
+**Where the work is.** Pools H, D, S, R, E2, E3, L4 and L5 are closed. Pool P has
+42 registered draft parameter versions (4 superseded: 3 by citation move, 1 by
+scope) and 11 targets that stay blocked, each on a named corpus defect. Pool Q
+has seven drafts, one slot unbound. Three draft instrument selections are
+registered. The sensitivity report runs six topics of seven and says why the
+seventh does not.
 
-**What a lawyer could be handed today.** Review package v8 — dossier, Hebrew
-runbook, sensitivity report v3 with v2 and v1 beside it, **a Hebrew rendering of
-v3 in Markdown and PDF, both hash-bound to that exact report**, the legal
-decisions, the draft parameters with their binding hashes, the 42 scenario
-fixtures, 36 executions and 29 replayed traces, the three topics that did not
-run with reasons, and the citation anchors. Every item `not_reviewed`,
-`not_signed`, `not_activated`, `not_delivered`.
+**What a lawyer could be handed today.** Review package v9 — dossier, Hebrew
+runbook, sensitivity report v4 with v3, v2 and v1 beside it, a Hebrew rendering
+of v4 in Markdown and PDF, both hash-bound to that exact report, four legal
+decisions (three open, one withdrawn with its correction), the draft parameters
+with their binding hashes, the scenario fixtures, 60 executions and 50 replayed
+traces, the one topic that did not run with its reason, and the citation
+anchors.
 
-**The one gate that moves `0/7`, and it is now one command.** The owner runs
-`owner-reviewer-identity.mts keygen` if they have not, then `register
---reviewer-id <their.id>` **at a keyboard, in an interactive shell, with
-`TIVDOC_UNATTENDED` unset**. It refuses otherwise, deliberately and twice over.
-Then a labour lawyer reads `docs/legal/sensitivity-report.he.md` and attests as
-the second, independent identity.
+**The one gate that moves 0/7.** The owner runs `owner-reviewer-identity.mts
+keygen` if they have not, then `register --reviewer-id <their.id>` at a
+keyboard, in an interactive shell, with `TIVDOC_UNATTENDED` unset. Then a labour
+lawyer reads `docs/legal/sensitivity-report.he.md` and attests as the second,
+independent identity. Nothing engineering-side blocks this gate.
 
-**Next engineering work, in the order it unblocks things.**
+**Next engineering work, in order — none of it a human gate:**
 
-1. Nothing engineering-side blocks the gate above. It is a person's turn.
-2. The two remaining corpus shortfalls are both human decisions, not parses. The
-   2023 convalescence order's 418 rate is on disk and unusable because the
-   instrument boundary in that gazette issue is unmade; the 2018 overtime permit
-   is quarantined the same way. A reviewer deciding either unblocks
-   `il.convalescence.daily_rate` and the overtime tiers, and `tiered.rate` is
-   already built and waiting.
-3. sick_leave needs either the payment-tier figures — which the law states only
-   in words — or a unit-conversion node, because `days_per_month` and `days`
-   cannot be combined without relabelling one, and relabelling would be a lie.
-4. The vacation table above the seventh year needs a subtraction node or six
-   figures the law does not write down. Recorded, not attempted.
-
-**Do not retry.** Corpus acquisition beyond what is recorded; a second Supabase
-project; resetting the DEV default database; `initdb.exe` under Windows
-Application Control (BL-6); revoking the `session.legal.reference.system-import`
-session — but the reason has changed: it is no longer irrecoverable (L4-7 closed
-that), it is simply that fourteen scripts name that sid and would all have to
-move together.
-
-**Carried, human or external.** K-3's managed-bucket half (needs the Storage
-key, absent at every preflight since), K-5 (needs an off-host destination), the
-owner's visual review of the five payslip composites, and X-4's eight
-`public.*_salary_*` grants (all `cannot_move`: PostgREST cannot select a narrow
-role from a Supabase JWT — see E2-5 for the precondition).
+1. BL-22: the consolidated Hours law. The owner's browser session places the
+   text in `eval/legal-knowledge/acquisition/incoming/` under the regenerated
+   request and runs `legal:sources:acquisition:import`; then §16(א) binds
+   through the lexicon (the surface forms are already in it) and working_time
+   runs. No further fetch is authorised by this run.
+2. BL-23: an OCR pass with a pinned toolchain over the 2016 pension order, or a
+   text copy through the same path; then the 2017 split registers and the
+   2011/2016 precedence becomes an executable decision.
+3. The reviewer attests the three instrument selections (the boundary) before
+   the parameters inside them — the citation carries the selection hash for
+   exactly this order.
+4. The pre-existing corpus-trust generator failure, out of scope here.
