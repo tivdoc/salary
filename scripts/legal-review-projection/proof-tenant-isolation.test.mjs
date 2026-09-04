@@ -51,6 +51,7 @@ const WRITERS = Object.freeze({
   "decision-sensitivity-run-v3.mts": [SYNTHETIC, ""],
   "decision-sensitivity-run-v4.mts": [SYNTHETIC, ""],
   "decision-sensitivity-run-v5.mts": [SYNTHETIC, ""],
+  "decision-sensitivity-run-v6.mts": [SYNTHETIC, ""],
   // L7-6: the draft shadow run appends one trace per executed synthetic case.
   "draft-shadow-run-v1.mts": [SYNTHETIC, ""],
   "grant-execution-proof.mts": [OWN, ""],

@@ -33,7 +33,7 @@ import { NodePostgresConnectionFactory } from "../../src/server/platform/persist
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { TENANT } from "./pool-p-parameter-import.mts";
 
-const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v5.json");
+const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v6.json");
 const DOCS_ROOT = path.join("docs", "legal");
 const RECEIPT_ROOT = path.join("output", "next", "pool-q");
 const MARKDOWN = path.join(DOCS_ROOT, "sensitivity-report.he.md");
@@ -68,6 +68,7 @@ type PerScenario = Readonly<{
 }>;
 type OpenDecision = Readonly<{
   provenance_grade?: string;
+  unbound_branches?: ReadonlyArray<Readonly<{ branch: string; reason: string }>>;
   decision_id: string; topic: string; rule_spec_id: string; branches: readonly string[];
   narrower_than_draft: string | null; scenarios_run: number; scenarios_differing: number;
   per_scenario: readonly PerScenario[];
@@ -84,7 +85,38 @@ type Report = Readonly<{
     bound_parameter_versions: ReadonlyArray<Readonly<{ parameter_version_id: string; provenance_grade: string; visual_bindings: ReadonlyArray<Readonly<{ page_pdf_sha256: string; visual_reading: string }>> }>>;
   }>;
   executions: readonly Readonly<{ topic: string; scenario: string; branch: string; ran: boolean; output: string | null; refusal: string | null }>[];
+  // L7-10: the offline shadow beside the sensitivity — counts and hashes, no content.
+  shadow: Readonly<{
+    run_id: string; receipt_sha256: string; execution_mode: string; envelope_sha256: string; corpus_sha256: string;
+    draft_input_pin: Readonly<{ draft_parameter_versions: number; synthetic_inputs: number; active_real_parameter_count: number; extraction_used: boolean; tenant_id: string }>;
+    counts: Readonly<Record<string, number>>; refusals_by_reason: Readonly<Record<string, number>>; grades: Readonly<Record<string, number>>;
+    traces_included: number; traces_replayed_from_database: number;
+    decisions: ReadonlyArray<Readonly<{ decision_id: string; branches: readonly string[]; unbound_branches: ReadonlyArray<Readonly<{ branch: string; reason: string }>>; cases_compared: number; cases_differing: number; cases_not_comparable: number }>>;
+  }>;
 }>;
+
+const EXECUTION_GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
+  verified: "מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט",
+  lexicon: "פרמטר שנקרא דרך הלקסיקון",
+  declared: "עובדה מוצהרת, או פרמטר בתוך בחירת מסמך",
+  derived: "עובדה נגזרת מעובדות אחרות",
+  inferred: "עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד",
+  administrative: "פרמטר ממקור מנהלי",
+});
+const executionGradeLabel = (grade: string) => EXECUTION_GRADE_HEBREW[grade] ?? grade;
+const REFUSAL_HEBREW: Readonly<Record<string, string>> = Object.freeze({
+  "preparation:fact.missing": "עובדה חסרה",
+  "preparation:fact.conflicted": "עובדה סותרת — לא הוכרעה",
+  "preparation:fact.unconfirmed": "עובדה שלא אושרה",
+  "preparation:fact.rejected": "עובדה שנדחתה",
+  "preparation:fact.stale": "עובדה ישנה מדי",
+  "preparation:fact.timestamp_after_preparation": "עובדה מאוחרת להכנה",
+  "preparation:fact.below_confidence_threshold": "ביטחון נמוך מהסף",
+  "preparation:transformation.unsupported": "טרנספורמציה לא נתמכת",
+  "preparation:transformation.failed": "העובדה אינה בצורה שהמשבצת צורכת",
+  "executor:RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE": "מחוץ לטבלת המדרגות (שנה אפס / יום ראשון)",
+});
+const refusalLabel = (reason: string) => REFUSAL_HEBREW[reason] ?? reason;
 
 const GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
   text_verified: "אומת בטקסט",
@@ -156,7 +188,7 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד");
   out.push("מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.");
   out.push("");
-  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v5.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
+  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v6.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
   out.push("כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.");
   out.push("");
   out.push("הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.");
@@ -183,6 +215,10 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
     out.push(`## ${section}. ${topicLabel(decision.topic)} — \`${decision.decision_id}\``);
     out.push("");
     out.push(`השאלה הפתוחה מפרידה בין ${decision.branches.map((branch) => `**${branch}**`).join(" לבין ")}.`);
+    for (const unbound of decision.unbound_branches ?? []) {
+      out.push("");
+      out.push(`ענף שלא נקשר ולא רץ: **${unbound.branch}** — ${cell(unbound.reason)}`);
+    }
     out.push(`מתוך ${decision.per_scenario.length} תרחישים רצו ${decision.scenarios_run}, ומהם ${decision.scenarios_differing} מפרידים בין האפשרויות.`);
     if (decision.provenance_grade) {
       out.push("");
@@ -210,6 +246,54 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
     out.push("");
     section += 1;
   }
+
+  out.push(`## ${section}. הצל הלא־מקוון — טיוטות על עובדות סינתטיות`);
+  out.push("");
+  out.push("ריצת הצל מריצה את הטיוטות על ערכי פרמטרים בטיוטה ועל עובדות סינתטיות שהוצהרו לפי תבנית,");
+  out.push("דרך מודל העובדות הקנוני ורשמי המיפוי, בתוך המתזמן הלא־מקוון. שום פלט כאן אינו ממצא:");
+  out.push("כל תוצאה היא הפרש־צל סינתטי או סירוב; דבר אינו מופעל ודבר אינו נמסר. לא הופעל חילוץ.");
+  out.push("");
+  out.push("| מדד | ערך |");
+  out.push("|---|---|");
+  out.push(`| ריצה | \`${report.shadow.run_id}\` |`);
+  out.push(`| מצב ריצה | \`${report.shadow.execution_mode}\` |`);
+  out.push(`| גרסאות פרמטר בטיוטה שנקשרו | ${report.shadow.draft_input_pin.draft_parameter_versions} |`);
+  out.push(`| פרמטרים פעילים | ${report.shadow.draft_input_pin.active_real_parameter_count} |`);
+  out.push(`| חודשי תלוש סינתטיים | ${report.shadow.counts.cases} |`);
+  out.push(`| הרצות (מקרה × מפרט × ענף) | ${report.shadow.counts.executions} |`);
+  out.push(`| רצו | ${report.shadow.counts.ran} |`);
+  out.push(`| סורבו בהכנת הקלט | ${report.shadow.counts.preparation_refused} |`);
+  out.push(`| סורבו במנוע | ${report.shadow.counts.executor_refused} |`);
+  out.push(`| הפרשי־צל שחושבו | ${report.shadow.counts.deltas_computed} |`);
+  out.push(`| ללא רכיב תשלום להשוואה | ${report.shadow.counts.deltas_not_applicable} |`);
+  out.push(`| עקבות שנשמרו / שוחזרו מהמסד | ${report.shadow.traces_included} / ${report.shadow.traces_replayed_from_database} |`);
+  out.push(`| חילוץ בשימוש | ${report.shadow.draft_input_pin.extraction_used ? "כן" : "לא"} |`);
+  out.push(`| קורפוס (sha256) | \`${report.shadow.corpus_sha256.slice(0, 16)}…\` |`);
+  out.push(`| קבלה (sha256) | \`${report.shadow.receipt_sha256.slice(0, 16)}…\` |`);
+  out.push("");
+  out.push("סירובים לפי סיבה:");
+  out.push("");
+  out.push("| סיבה | מספר |");
+  out.push("|---|---|");
+  for (const [reason, count] of Object.entries(report.shadow.refusals_by_reason)) out.push(`| ${cell(refusalLabel(reason))} (\`${reason}\`) | ${count} |`);
+  out.push("");
+  out.push("דירוג הריצות — הגרוע מבין דירוגי העובדות והפרמטרים של כל הרצה:");
+  out.push("");
+  out.push("| דירוג | מספר |");
+  out.push("|---|---|");
+  for (const [grade, count] of Object.entries(report.shadow.grades)) out.push(`| ${cell(executionGradeLabel(grade))} (\`${grade}\`) | ${count} |`);
+  out.push("");
+  out.push("השאלות הפתוחות בצל — לכל שאלה, כמה מקרים הושוו בין הענפים וכמה מהם שונים; אף ענף לא התקבל:");
+  out.push("");
+  out.push("| הכרעה | ענפים | ענף שלא נקשר | הושוו | שונים | לא ניתנים להשוואה |");
+  out.push("|---|---|---|---|---|---|");
+  for (const decision of report.shadow.decisions) {
+    out.push(`| \`${decision.decision_id}\` | ${decision.branches.join(", ")} | ${decision.unbound_branches.map((entry) => entry.branch).join(", ") || "—"} | ${decision.cases_compared} | ${decision.cases_differing} | ${decision.cases_not_comparable} |`);
+  }
+  out.push("");
+  out.push("---");
+  out.push("");
+  section += 1;
 
   out.push(`## ${section}. דירוג המקור של כל פרמטר`);
   out.push("");
@@ -290,6 +374,7 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
   for (const decision of report.open_decisions) {
     blocks.push({ kind: "heading", text: topicLabel(decision.topic), level: 2 });
     blocks.push({ kind: "hash", label: "decision", value: decision.decision_id });
+    for (const unbound of decision.unbound_branches ?? []) blocks.push({ kind: "paragraph", text: `ענף שלא נקשר ולא רץ: ${unbound.branch} — ${unbound.reason}` });
     if (decision.provenance_grade) {
       blocks.push({ kind: "paragraph", text: `דירוג מקור: ${gradeLabel(decision.provenance_grade)} (${decision.provenance_grade})` });
       if (decision.provenance_grade === "inferred_visual") blocks.push({ kind: "paragraph", text: INFERRED_VISUAL_SENTENCE });
@@ -304,6 +389,31 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
     });
     blocks.push({ kind: "rule" });
   }
+  blocks.push({ kind: "heading", text: "הצל הלא־מקוון — טיוטות על עובדות סינתטיות", level: 2 });
+  blocks.push({ kind: "paragraph", text: "ריצת הצל מריצה את הטיוטות על ערכי פרמטרים בטיוטה ועל עובדות סינתטיות. שום פלט אינו ממצא; דבר אינו מופעל ואינו נמסר; לא הופעל חילוץ." });
+  blocks.push({
+    kind: "table",
+    columns: ["מדד", "ערך"],
+    rows: [
+      ["ריצה", report.shadow.run_id],
+      ["מצב ריצה", report.shadow.execution_mode],
+      ["גרסאות פרמטר בטיוטה", String(report.shadow.draft_input_pin.draft_parameter_versions)],
+      ["פרמטרים פעילים", String(report.shadow.draft_input_pin.active_real_parameter_count)],
+      ["חודשי תלוש סינתטיים", String(report.shadow.counts.cases)],
+      ["הרצות", String(report.shadow.counts.executions)],
+      ["רצו", String(report.shadow.counts.ran)],
+      ["סורבו", String(report.shadow.counts.preparation_refused + report.shadow.counts.executor_refused)],
+      ["הפרשי־צל שחושבו", String(report.shadow.counts.deltas_computed)],
+      ["עקבות שנשמרו / שוחזרו", `${report.shadow.traces_included} / ${report.shadow.traces_replayed_from_database}`],
+    ],
+  });
+  blocks.push({
+    kind: "table",
+    columns: ["הכרעה", "ענפים", "ענף שלא נקשר", "הושוו", "שונים"],
+    rows: report.shadow.decisions.map((decision) => [decision.decision_id, decision.branches.join(", "), decision.unbound_branches.map((entry) => entry.branch).join(", ") || "—", String(decision.cases_compared), String(decision.cases_differing)]),
+  });
+  blocks.push({ kind: "hash", label: "shadow receipt sha256", value: report.shadow.receipt_sha256 });
+  blocks.push({ kind: "rule" });
   blocks.push({ kind: "heading", text: "דירוג המקור של כל פרמטר", level: 2 });
   blocks.push({ kind: "paragraph", text: INFERRED_VISUAL_SENTENCE });
   blocks.push({
@@ -361,8 +471,8 @@ async function main(): Promise<void> {
   writeFileSync(PDF, pdf);
 
   const receipt = {
-    schema_version: "tivdoc-sensitivity-report-hebrew-v0.10.19",
-    unit: "L4-8",
+    schema_version: "tivdoc-sensitivity-report-hebrew-v0.11.0",
+    unit: "L7-10",
     generated_from: REPORT,
     source_report_sha256: report.report_sha256,
     markdown: { path: MARKDOWN, sha256: sha256(body), byte_count: Buffer.byteLength(body) },
@@ -371,6 +481,8 @@ async function main(): Promise<void> {
     topics_not_run: report.topics_not_run.length,
     provenance_counts: report.provenance.counts,
     withdrawn_decisions: withdrawn.length,
+    shadow_receipt_sha256: report.shadow.receipt_sha256,
+    shadow_cases_run: report.shadow.counts.ran,
     interpretation: "none",
     recommendation: "none",
   };

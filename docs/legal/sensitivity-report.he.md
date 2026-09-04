@@ -4,7 +4,7 @@
 תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד
 מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.
 
-המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v5.json` (`d713ba18d75769fb…`).
+המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v6.json` (`a094717b3c12c1ac…`).
 כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.
 
 הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.
@@ -16,11 +16,11 @@
 
 | מדד | ערך |
 |---|---|
-| תרחישים שנוסו | 96 |
-| תרחישים שרצו | 80 |
-| תרחישים שסורבו סירוב סגור | 16 |
-| עקבות חישוב שנשמרו | 80 |
-| עקבות ששוחזרו מהמסד בית־בבית | 80 |
+| תרחישים שנוסו | 102 |
+| תרחישים שרצו | 85 |
+| תרחישים שסורבו סירוב סגור | 17 |
+| עקבות חישוב שנשמרו | 85 |
+| עקבות ששוחזרו מהמסד בית־בבית | 85 |
 | נושאים שרצו | 7 מתוך 7 |
 
 ---
@@ -83,7 +83,30 @@
 
 ---
 
-## 5. שעות עבודה ומנוחה — `legal.reference.il.decision.rest_day_overtime_composition`
+## 5. שעות עבודה ומנוחה — `legal.reference.il.decision.working_time_daily_threshold`
+
+השאלה הפתוחה מפרידה בין **statute**.
+
+ענף שלא נקשר ולא רץ: **administrative** — BL-24: the Labour Ministry directive of 10.6.2018 (8.6 hours on a five-day week, 7.6 on a six-day week) is not discoverable on an official host; a copy on a non-official site is a mirror and is not acceptable. Unbound; not run; would bind at administrative grade.
+מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
+
+דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
+inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.
+
+הערת היקף: Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.
+
+| תרחיש | statute | הפרש |
+|---|---|---|
+| מצב רגיל | 165.00 ILS | 0.00 ILS |
+| גבול תחולה | 120.00 ILS | 0.00 ILS |
+| עובדה חסרה או סותרת | לא רץ | RULESPEC_INPUT_MISSING |
+| גבול עיגול או גבול הטבלה | 41.66 ILS | 0.00 ILS |
+| חפיפת מקורות | 210.00 ILS | 0.00 ILS |
+| ענף ואוכלוסייה | 75.00 ILS | 0.00 ILS |
+
+---
+
+## 6. שעות עבודה ומנוחה — `legal.reference.il.decision.rest_day_overtime_composition`
 
 השאלה הפתוחה מפרידה בין **additive** לבין **multiplicative**.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
@@ -104,7 +127,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 6. פנסיה — `legal.reference.il.decision.pension_2011_2016_precedence`
+## 7. פנסיה — `legal.reference.il.decision.pension_2011_2016_precedence`
 
 השאלה הפתוחה מפרידה בין **order_2011_2014_row** לבין **order_2016_2017_rates**.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
@@ -125,7 +148,66 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 7. דירוג המקור של כל פרמטר
+## 8. הצל הלא־מקוון — טיוטות על עובדות סינתטיות
+
+ריצת הצל מריצה את הטיוטות על ערכי פרמטרים בטיוטה ועל עובדות סינתטיות שהוצהרו לפי תבנית,
+דרך מודל העובדות הקנוני ורשמי המיפוי, בתוך המתזמן הלא־מקוון. שום פלט כאן אינו ממצא:
+כל תוצאה היא הפרש־צל סינתטי או סירוב; דבר אינו מופעל ודבר אינו נמסר. לא הופעל חילוץ.
+
+| מדד | ערך |
+|---|---|
+| ריצה | `l76.8b299e74` |
+| מצב ריצה | `draft_parameters_synthetic_inputs` |
+| גרסאות פרמטר בטיוטה שנקשרו | 28 |
+| פרמטרים פעילים | 0 |
+| חודשי תלוש סינתטיים | 54 |
+| הרצות (מקרה × מפרט × ענף) | 123 |
+| רצו | 86 |
+| סורבו בהכנת הקלט | 32 |
+| סורבו במנוע | 5 |
+| הפרשי־צל שחושבו | 61 |
+| ללא רכיב תשלום להשוואה | 25 |
+| עקבות שנשמרו / שוחזרו מהמסד | 86 / 86 |
+| חילוץ בשימוש | לא |
+| קורפוס (sha256) | `84bb020558d557be…` |
+| קבלה (sha256) | `b56f5086627f19e7…` |
+
+סירובים לפי סיבה:
+
+| סיבה | מספר |
+|---|---|
+| מחוץ לטבלת המדרגות (שנה אפס / יום ראשון) (`executor:RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE`) | 5 |
+| ביטחון נמוך מהסף (`preparation:fact.below_confidence_threshold`) | 4 |
+| עובדה סותרת — לא הוכרעה (`preparation:fact.conflicted`) | 4 |
+| עובדה חסרה (`preparation:fact.missing`) | 14 |
+| עובדה ישנה מדי (`preparation:fact.stale`) | 1 |
+| עובדה שלא אושרה (`preparation:fact.unconfirmed`) | 4 |
+| העובדה אינה בצורה שהמשבצת צורכת (`preparation:transformation.failed`) | 6 |
+
+דירוג הריצות — הגרוע מבין דירוגי העובדות והפרמטרים של כל הרצה:
+
+| דירוג | מספר |
+|---|---|
+| עובדה מוצהרת, או פרמטר בתוך בחירת מסמך (`declared`) | 33 |
+| עובדה נגזרת מעובדות אחרות (`derived`) | 5 |
+| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 26 |
+| פרמטר שנקרא דרך הלקסיקון (`lexicon`) | 5 |
+| מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט (`verified`) | 22 |
+
+השאלות הפתוחות בצל — לכל שאלה, כמה מקרים הושוו בין הענפים וכמה מהם שונים; אף ענף לא התקבל:
+
+| הכרעה | ענפים | ענף שלא נקשר | הושוו | שונים | לא ניתנים להשוואה |
+|---|---|---|---|---|---|
+| `legal.reference.il.decision.convalescence_2026_rate_period` | calendar_year_2026, from_signature_2026_07 | — | 5 | 0 | 2 |
+| `legal.reference.il.decision.min_wage_hourly_divisor` | 182, 186 | — | 5 | 5 | 2 |
+| `legal.reference.il.decision.pension_2011_2016_precedence` | order_2011_2014_row, order_2016_2017_rates | — | 5 | 5 | 2 |
+| `legal.reference.il.decision.pension_wage_cap_section` | section1, section2 | — | 5 | 2 | 2 |
+| `legal.reference.il.decision.rest_day_overtime_composition` | additive, multiplicative | — | 5 | 5 | 2 |
+| `legal.reference.il.decision.working_time_daily_threshold` | statute | administrative | 6 | 0 | 2 |
+
+---
+
+## 9. דירוג המקור של כל פרמטר
 
 כל פרמטר שנקשר בדוח נושא דירוג מקור. הדירוג אומר מאין הגיע המספר, לא אם הוא נכון.
 
@@ -157,15 +239,16 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 | `il.vacation.calendar_days_year_7@1951.1.0` | אומת בטקסט (`text_verified`) | — | — |
 | `il.vacation.calendar_days_years_1_to_5@2017.1.0` | אומת בטקסט (`text_verified`) | — | — |
 | `il.vacation.calendar_days_years_8_and_above_cap@1951.1.0` | אומת בטקסט (`text_verified`) | — | — |
+| `il.working_time.daily_overtime_threshold_hours@1951.1.0` | אומת בטקסט (`text_verified`) | — | — |
 | `il.working_time.overtime_rate_first_tier@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1¼ | 6b41df8306ce4c60… |
 | `il.working_time.overtime_rate_second_tier@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… |
 | `il.working_time.weekly_rest_rate@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… |
 
-סיכום: בתוך בחירת מסמך — 2; אומת בטקסט — 19; נקרא מתמונת העמוד — ממתין לאימות חזותי — 4; מילה שנקראה דרך הלקסיקון — 2.
+סיכום: בתוך בחירת מסמך — 2; אומת בטקסט — 20; נקרא מתמונת העמוד — ממתין לאימות חזותי — 4; מילה שנקראה דרך הלקסיקון — 2.
 
 ---
 
-## 8. נושאים שלא רצו
+## 10. נושאים שלא רצו
 
 כל שבעת הנושאים רצו.
 
@@ -174,7 +257,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 9. החלטות שנמשכו
+## 11. החלטות שנמשכו
 
 שאלות אלה אינן פתוחות עוד. הן מופיעות כאן כדי שהרשימה תהיה מלאה, ולא כדי שיוכרעו.
 
@@ -184,7 +267,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 10. היקף
+## 12. היקף
 
 Differences only, computed. This states what the answer to each open question changes in each scenario; it does not answer any of them, and nothing here is reviewed, attested or active.
 
