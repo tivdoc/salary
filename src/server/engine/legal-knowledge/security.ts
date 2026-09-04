@@ -9,6 +9,12 @@ export const LEGAL_SOURCE_ALLOWED_HOSTS = new Set([
   "fs.knesset.gov.il",
   "www.btl.gov.il",
   "btl.gov.il",
+  // Addendum 7 A7-5: a .gov.il subdomain is an official host by the same
+  // rule as every other entry above — the allowlist's purpose is
+  // officiality, not a fixed list. Ministry of Labor's collective
+  // agreement registry, needed for D-5's second half (the 1998 general
+  // collective agreement on convalescence pay).
+  "workagreements.labor.gov.il",
 ]);
 
 export const LEGAL_FETCH_MAX_BYTES = 20 * 1024 * 1024;

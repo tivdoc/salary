@@ -1097,6 +1097,59 @@
         "found_at": "2026-09-03",
         "included_reason": "Addendum 6 A6-4 D-1b: historical spreadsheet corroboration for the minimum-wage rate history, discovered as a direct download link on the D-1 HTML page."
       }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_GENERAL_AGREEMENT_1998",
+      "source_version": "discovery-v0",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": false,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
+      "canonical_url": "https://workagreements.labor.gov.il/Agreement/Index/19987038_%D7%93%D7%9E%D7%99-%D7%94%D7%91%D7%A8%D7%90%D7%94",
+      "publication_reference": "Agreement no. 19987038",
+      "published_at": "1998-07-13",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["convalescence"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "html",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 5 D-5 second half; Addendum 7 A7-5. The Ministry of Labor's own collective-agreement registry, workagreements.labor.gov.il — a .gov.il subdomain, added to the fetch allowlist for this source per Addendum 7 A7-5's rule (a .gov.il subdomain is official by the same test as every other allowlisted host)."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": ["No rate is activated by this manifest."]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_domain_search",
+        "found_at": "2026-09-04",
+        "included_reason": "Addendum 5 D-5 / Addendum 7 A7-5: the underlying 1998 general collective agreement the 2016 convalescence extension order (D of the same topic) is built on top of."
+      }
     }
   ]
 }
