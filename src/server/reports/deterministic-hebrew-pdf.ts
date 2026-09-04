@@ -317,6 +317,26 @@ function assemblePdf(
   htmlSha256: string,
 ): Uint8Array {
   if (pages.length !== HEBREW_REPORT_PAGE_COUNT) throw new Error("HEBREW_REPORT_PAGE_COUNT_INVALID");
+  return assemblePdfPages(fontBytes, metrics, used, pages, {
+    title: `Tivdoc synthetic Hebrew report ${report.report_id}`,
+    subject: `case=${report.case_id};analysis=${report.analysis_result_sha256};json=${jsonSha256};html=${htmlSha256}`,
+    fixed_date: report.as_of.replaceAll("-", ""),
+  });
+}
+
+/**
+ * L4-8. The page assembler with nothing case-report-shaped left in it. The
+ * font, the glyph subset, the ToUnicode map and the byte serialisation are the
+ * ones the case report has always used; only the document metadata differs,
+ * and it is an argument now. Nothing about the case-report path changes.
+ */
+function assemblePdfPages(
+  fontBytes: Uint8Array,
+  metrics: TtfMetrics,
+  used: Map<number, number>,
+  pages: readonly Uint8Array[],
+  info: Readonly<{ title: string; subject: string; fixed_date: string }>,
+): Uint8Array {
   const firstPageObject = 9;
   const firstContentObject = firstPageObject + pages.length;
   const objects = new Map<number, Uint8Array>();
@@ -327,8 +347,7 @@ function assemblePdf(
   objects.set(5, ascii(`<< /Type /FontDescriptor /FontName /DejaVuSans /Flags 32 /FontBBox [${metrics.bbox.join(" ")}] /ItalicAngle 0 /Ascent ${metrics.ascent} /Descent ${metrics.descent} /CapHeight ${metrics.capHeight} /StemV 80 /FontFile2 6 0 R >>`));
   objects.set(6, stream({ Length1: fontBytes.byteLength }, fontBytes));
   objects.set(7, stream({}, Buffer.from(toUnicodeCmap(used), "ascii")));
-  const fixedDate = report.as_of.replaceAll("-", "");
-  objects.set(8, ascii(`<< /Title ${pdfUtf16String(`Tivdoc synthetic Hebrew report ${report.report_id}`)} /Author (Tivdoc deterministic report renderer) /Subject ${pdfLiteral(`case=${report.case_id};analysis=${report.analysis_result_sha256};json=${jsonSha256};html=${htmlSha256}`)} /Creator (${REPORT_CREATOR}) /Producer (${REPORT_CREATOR}) /CreationDate (D:${fixedDate}000000Z) /ModDate (D:${fixedDate}000000Z) >>`));
+  objects.set(8, ascii(`<< /Title ${pdfUtf16String(info.title)} /Author (Tivdoc deterministic report renderer) /Subject ${pdfLiteral(info.subject)} /Creator (${REPORT_CREATOR}) /Producer (${REPORT_CREATOR}) /CreationDate (D:${info.fixed_date}000000Z) /ModDate (D:${info.fixed_date}000000Z) >>`));
   pages.forEach((page, index) => {
     objects.set(firstPageObject + index, ascii(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /CropBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${firstContentObject + index} 0 R >>`));
     objects.set(firstContentObject + index, stream({}, page));
@@ -337,6 +356,133 @@ function assemblePdf(
 }
 
 const REPORT_CREATOR = "tivdoc-rtl-hebrew-report-template-v0.8.0";
+
+// ---------------------------------------------------------------------------
+// L4-8. A second entry point on the same machinery.
+//
+// The sensitivity report is not a case report: it has no case id, no period, no
+// subtotal, and mapping it into `CanonicalCaseReport` to reach this renderer
+// would have meant filling those fields with something. So the font, the glyph
+// subsetting, the RTL text helper and the byte serialiser are shared, and the
+// page layout is a small structured document that paginates itself.
+//
+// Direction is handled the way the case report already handles it rather than
+// by guessing: a cell holding Hebrew is drawn right-to-left, a cell holding a
+// number or a Latin identifier is drawn left-to-right, and nothing tries to
+// reorder a mixed run. That is why the tables below keep their figures in their
+// own columns.
+
+export type RtlBlock =
+  | Readonly<{ kind: "heading"; text: string; level: 1 | 2 }>
+  | Readonly<{ kind: "paragraph"; text: string }>
+  | Readonly<{ kind: "rule" }>
+  | Readonly<{ kind: "table"; columns: readonly string[]; rows: readonly (readonly string[])[] }>
+  | Readonly<{ kind: "hash"; label: string; value: string }>;
+
+export type RtlDocument = Readonly<{
+  title: string;
+  subject: string;
+  /** `YYYYMMDD`. Fixed, so the same content is the same bytes on every run. */
+  fixed_date: string;
+  blocks: readonly RtlBlock[];
+}>;
+
+const HEBREW_CHARACTER = /[֐-׿]/u;
+const LINE_HEIGHT = 13;
+const BOTTOM = MARGIN + 24;
+
+/** How much vertical room a wrapped paragraph needs at this width. */
+function wrap(text: string, perLine: number): readonly string[] {
+  const words = text.split(/\s+/u).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > perLine && current) { lines.push(current); current = word; } else current = candidate;
+  }
+  if (current) lines.push(current);
+  return lines.length > 0 ? lines : [""];
+}
+
+function drawCell(ctx: PdfContext, text: string, x: number, y: number, size: number, color?: string): void {
+  if (HEBREW_CHARACTER.test(text)) rtl(ctx, text, x, y, size, "right", color);
+  else ltr(ctx, text, x - measure(ctx, text, size), y, size, "left", color);
+}
+
+function measure(ctx: PdfContext, text: string, size: number): number {
+  return encodeRun(ctx, text).width * size / 1000;
+}
+
+export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Array {
+  const fontBytes = readPinnedFont();
+  const metrics = parseTrueType(fontBytes);
+  const used = new Map<number, number>();
+  const pages: Uint8Array[] = [];
+  let ctx: PdfContext = { metrics, used, commands: [] };
+  let y = PAGE_HEIGHT - MARGIN;
+
+  const newPage = () => {
+    pages.push(finishPage(ctx));
+    ctx = { metrics, used, commands: [] };
+    y = PAGE_HEIGHT - MARGIN;
+  };
+  const room = (height: number) => { if (y - height < BOTTOM) newPage(); };
+
+  for (const block of document.blocks) {
+    if (block.kind === "rule") {
+      room(10);
+      line(ctx, MARGIN, y - 4, PAGE_WIDTH - MARGIN, y - 4, "0.86 0.89 0.88", 0.4);
+      y -= 14;
+      continue;
+    }
+    if (block.kind === "heading") {
+      const size = block.level === 1 ? 15 : 11.5;
+      room(size + 12);
+      drawCell(ctx, block.text, PAGE_WIDTH - MARGIN, y - size, size, "0.05 0.12 0.20");
+      y -= size + 10;
+      continue;
+    }
+    if (block.kind === "paragraph") {
+      for (const lineText of wrap(block.text, 92)) {
+        room(LINE_HEIGHT);
+        drawCell(ctx, lineText, PAGE_WIDTH - MARGIN, y - 9, 9, "0.12 0.18 0.24");
+        y -= LINE_HEIGHT;
+      }
+      y -= 4;
+      continue;
+    }
+    if (block.kind === "hash") {
+      room(LINE_HEIGHT);
+      hashRow(ctx, y - 9, block.label, block.value);
+      y -= LINE_HEIGHT;
+      continue;
+    }
+    // A table. Columns run right to left, because the reader does.
+    const width = (PAGE_WIDTH - MARGIN * 2) / block.columns.length;
+    const header = () => {
+      fillRect(ctx, MARGIN, y - 15, PAGE_WIDTH - MARGIN * 2, 15, "0.93 0.95 0.96");
+      block.columns.forEach((column, index) => {
+        drawCell(ctx, column, PAGE_WIDTH - MARGIN - index * width - 4, y - 11, 8.4, "0.06 0.14 0.22");
+      });
+      y -= 17;
+    };
+    room(34);
+    header();
+    for (const row of block.rows) {
+      if (y - 13 < BOTTOM) { newPage(); header(); }
+      row.forEach((cell, index) => {
+        drawCell(ctx, cell, PAGE_WIDTH - MARGIN - index * width - 4, y - 9, 8.2, "0.12 0.18 0.24");
+      });
+      line(ctx, MARGIN, y - 12, PAGE_WIDTH - MARGIN, y - 12, "0.90 0.92 0.93", 0.3);
+      y -= 13;
+    }
+    y -= 8;
+  }
+  pages.push(finishPage(ctx));
+  return assemblePdfPages(fontBytes, metrics, used, pages, {
+    title: document.title, subject: document.subject, fixed_date: document.fixed_date,
+  });
+}
 
 function widthArray(metrics: TtfMetrics, used: Map<number, number>): string {
   return `[${[...used.keys()].sort((a, b) => a - b).map((glyph) => `${glyph} [${Math.round(metrics.glyphWidth(glyph) * 1000 / metrics.unitsPerEm)}]`).join(" ")}]`;
