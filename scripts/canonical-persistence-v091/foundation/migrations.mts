@@ -66,6 +66,9 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609020023_legal_operations_execution_trace.sql",
   "202609020024_legal_open_decision_read.sql",
   "202609020025_legal_operations_execution_trace_guard_revoke_default_grant.sql",
+  "202609020026_parameter_supersession_and_synthetic_segregation.sql",
+  "202609020027_trigger_guard_tg_op_repair.sql",
+  "202609020028_legal_open_decision_annotate.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -142,6 +145,12 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "69ac1188e953823f390ef5364e86e97ee4399462fceea57017b8b5c6c8bb196e",
   "202609020025_legal_operations_execution_trace_guard_revoke_default_grant.sql":
     "7faeb91df398708b5f227bdbd9e677a78ca9a15f236ce76c81760a7c8740e8d7",
+  "202609020026_parameter_supersession_and_synthetic_segregation.sql":
+    "45edd87bbe20482fdf277c8180c6f3b77e9f96101416d1f6add6f8d9b5e99d6e",
+  "202609020027_trigger_guard_tg_op_repair.sql":
+    "89ff493408c50ed527b83ee5b3a47e87c16ae6f87ab7de4fc8be32abf7785eb9",
+  "202609020028_legal_open_decision_annotate.sql":
+    "c8b5ed718309f47df1b01cf69565e75ffb929e857e4cafd3d703b71cb7b2c9d9",
 });
 
 export type MigrationFile = Readonly<{

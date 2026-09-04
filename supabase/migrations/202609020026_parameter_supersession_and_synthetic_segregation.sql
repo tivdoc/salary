@@ -253,8 +253,13 @@ grant execute on function private.governance_legal_open_decision_mark_synthetic(
   to tivdoc_operations_runtime, tivdoc_worker_runtime;
 
 -- The read gains both new facts, so every consumer can filter without needing
--- to know the id-prefix convention that stood in for this until now.
-create or replace function private.legal_open_decision_read(target_tenant text)
+-- to know the id-prefix convention that stood in for this until now. Adding a
+-- column to a set-returning function changes its return type, which Postgres
+-- will not do through `create or replace` — so it is dropped and recreated,
+-- inside this migration's transaction, and its grants are restated below.
+drop function if exists private.legal_open_decision_read(text);
+
+create function private.legal_open_decision_read(target_tenant text)
 returns table (
   decision_id text, topic text, question text, dossier_anchor text,
   resolution_state text, resolved_branch text,
