@@ -65,6 +65,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { assertUsableAnchor, checkCitationAnchor } from "../../src/engine/legal-knowledge/citation-anchor.ts";
+import { bindCompoundThroughLexicon, bindThroughLexicon } from "../../src/engine/legal-knowledge/numeral-lexicon-v1.ts";
 import { frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";
 import { parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
 import type { Wave3Topic } from "../../src/engine/wave3/contracts.ts";
@@ -153,7 +154,13 @@ function chunkText(sourceId: string, sourceVersion: string, chunksPath: string, 
 }
 
 type SourceRef = Readonly<{ source_id: string; source_version: string }>;
-type Citation = Readonly<{ source: SourceRef; chunk_id: string; locator: string; must_contain: readonly string[] }>;
+/**
+ * L5-1 / D1. A citation that binds its figure through the numeral lexicon
+ * carries the surface string it bound from, the form that string took, and the
+ * rational it resolved to. Absent on every other citation.
+ */
+type NumeralCitation = Readonly<{ lexicon_version: string; surface: string; numeral_form: string; numerator: string; denominator: string }>;
+type Citation = Readonly<{ source: SourceRef; chunk_id: string; locator: string; must_contain: readonly string[]; numeral?: NumeralCitation }>;
 
 function citation(source: SourceRef, chunkId: string, locator: string, mustContain: readonly string[]): Citation {
   assertNotQuarantined(source.source_id, source.source_version);
@@ -202,6 +209,43 @@ function tableAwareChunk(sourceId: string, sourceVersion: string, chunksPath: st
   const chunk = byId.get(chunkId);
   if (!chunk) throw new Error(`POOL_P_UNKNOWN_TABLE_AWARE_CHUNK:${chunkId}`);
   return chunk;
+}
+
+/**
+ * L5-1 / D1. A citation whose figure is a WORD in the chunk, resolved through
+ * `legal-numeral-lexicon-v1`. The surface string must be in the chunk verbatim,
+ * the anchor must be in the same chunk, and the resolved rational must equal
+ * the value the caller is about to register — so a candidate cannot carry a
+ * figure its own citation resolved differently. OCR-mangled fractions refuse
+ * here by name; a `numeral_form` is recorded on the citation and travels into
+ * the binding hash.
+ */
+export function lexiconCitation(
+  source: SourceRef,
+  chunkId: string,
+  locator: string,
+  surface: string,
+  anchor: string,
+  expected: Readonly<{ numerator: string; denominator: string }>,
+  compound?: Readonly<{ whole: string; additive: string }>,
+): Citation {
+  assertNotQuarantined(source.source_id, source.source_version);
+  if (!chunkId.includes("#t")) throw new Error(`POOL_P_TABLE_AWARE_CHUNK_ID_EXPECTED:${chunkId}`);
+  const observation = selectObservation(source.source_id, source.source_version);
+  if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
+  const chunk = tableAwareChunk(source.source_id, source.source_version, observation.chunks_path, chunkId);
+  const outcome = compound
+    ? bindCompoundThroughLexicon(chunk.logical_text, compound.whole, compound.additive)
+    : bindThroughLexicon(chunk.logical_text, surface);
+  if (outcome.binding === null) throw new Error(`POOL_P_LEXICON_REFUSED:${outcome.refusal}:${chunkId}:${surface}`);
+  if (outcome.binding.numerator !== expected.numerator || outcome.binding.denominator !== expected.denominator) {
+    throw new Error(`POOL_P_LEXICON_VALUE_MISMATCH:${chunkId}:${surface}:${outcome.binding.numerator}/${outcome.binding.denominator}!=${expected.numerator}/${expected.denominator}`);
+  }
+  assertUsableAnchor(anchor);
+  if (!checkCitationAnchor(chunk.logical_text, anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
+  const numeral: NumeralCitation = outcome.binding;
+  TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [outcome.binding.surface], anchor, locator }));
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: [outcome.binding.surface], numeral });
 }
 
 export function tableAwareCitation(
@@ -258,7 +302,7 @@ function buildBindings(input: Readonly<{
     };
   });
   const citations = [...input.citations].sort((a, b) => (`${a.source.source_id}#${a.chunk_id}`).localeCompare(`${b.source.source_id}#${b.chunk_id}`))
-    .map((c) => ({ source_id: c.source.source_id, source_version: c.source.source_version, chunk_id: c.chunk_id, locator: c.locator }));
+    .map((c) => ({ source_id: c.source.source_id, source_version: c.source.source_version, chunk_id: c.chunk_id, locator: c.locator, ...(c.numeral ? { numeral: c.numeral } : {}) }));
   return computeElevenDimensionBindings({
     topic: input.topic, sourceSet, sources, citations, dossierSha256: DOSSIER_SHA256,
     value: input.value, unit: input.unit, effective_from: input.effective_from, effective_to: input.effective_to,

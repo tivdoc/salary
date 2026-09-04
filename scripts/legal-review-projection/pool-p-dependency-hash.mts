@@ -27,7 +27,13 @@ export type ElevenDimensionInput = Readonly<{
     parsed_version_id: string; // dim 2
     parser_version: string; normalizer_version: string; // dim 3
   }>[];
-  citations: readonly Readonly<{ source_id: string; source_version: string; chunk_id: string; locator: string }>[]; // dim 4
+  // L5-1 / D1: a citation that binds through the numeral lexicon also carries
+  // the surface form and the value it resolved to. Present only for such
+  // citations, so every existing candidate's hash is exactly what it was.
+  citations: readonly Readonly<{
+    source_id: string; source_version: string; chunk_id: string; locator: string;
+    numeral?: Readonly<{ lexicon_version: string; surface: string; numeral_form: string; numerator: string; denominator: string }>;
+  }>[]; // dim 4
   dossierSha256: string; // dim 10
   value: unknown; unit: string; // dims 5, 6
   effective_from: string; effective_to: string | null; // dim 7

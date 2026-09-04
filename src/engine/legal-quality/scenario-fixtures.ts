@@ -157,7 +157,7 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
       parameter_rounding_boundary: MONTHS("100", "7"),
     },
     companions: [{
-      ref_id: "fact.absence.days",
+      ref_id: "fact.absence.day.index",
       per_scenario: {
         // Two days is the first absence the half tier pays for; four is the
         // first the full tier reaches; seven spans both. One day is a refusal

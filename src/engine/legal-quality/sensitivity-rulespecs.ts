@@ -191,6 +191,93 @@ export const VACATION_SENIORITY_BAND_SPEC: RuleSpecPackage = createRuleSpecPacka
   resource_policy: { max_steps: 8, max_depth: 8, max_aggregate_items: 8, max_integer_digits: 32 },
 });
 
+/**
+ * L5-2 (D2). Sick-pay accrual, §4(א) of the Sick Pay Law: a day and a half for
+ * every full month, to a ceiling of ninety. The two parameters were bound two
+ * runs ago and could not meet, because one is days per month and the other is
+ * days. Now the product derives its unit — days_per_month × months = days —
+ * and the ceiling is a min over one dimension.
+ */
+export const SICK_PAY_ACCRUAL_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.sick.pay.accrual",
+  rule_spec_version: "1.0.0",
+  topic: "sick_leave",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_SICK_PAY_LAW@discovery-v0"],
+  effective_period: { from: "1976-01-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.months.employed", value_kind: "rational", unit: "months" }],
+  parameters: [
+    { ref_id: "parameter.accrual.per.month", parameter_id: "il.sick_pay.accrual_days_per_month", parameter_version: "1.0.0", value_kind: "rational", unit: "days_per_month" },
+    { ref_id: "parameter.accrual.cap", parameter_id: "il.sick_pay.accrual_cap_days", parameter_version: "1.0.0", value_kind: "integer", unit: "days" },
+  ],
+  nodes: [
+    { node_id: "days.accrued", operation: "multiply", left_ref: "fact.months.employed", right_ref: "parameter.accrual.per.month" },
+    { node_id: "entitlement.days", operation: "min", refs: ["days.accrued", "parameter.accrual.cap"] },
+  ],
+  output_ref: "entitlement.days",
+  golden_case_set_sha256: blankGoldenSetSha256("sick_leave"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
+/**
+ * L5-4 (D1). The rate of sick pay on day n of an absence, §2(א) of the Sick Pay
+ * Law: nothing for the first day, half from the second and third, full from
+ * the fourth. Read against the text as it stands:
+ *
+ *   - The half tier is a word — `מחצית דמי מחלה` — and binds through the
+ *     lexicon from its own chunk, with the surface form on the citation.
+ *   - The full tier is not a figure in the text at all. §2(א)(1) says "payment
+ *     under this law" from the fourth day, and §5(א) defines that payment as the
+ *     wage. Full is the identity, and the identity is `constant.rational 1`:
+ *     shape, not a parameter, because there is no figure to cite.
+ *   - The first day is stated by OMISSION. There is no exclusion clause in the
+ *     chunk, so under D1 there is nothing to bind a zero from, and day one
+ *     refuses — `RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE` — rather than being
+ *     priced at nothing by inference.
+ *
+ * It is a per-day rate rather than a cumulative sum over an absence for the
+ * same reason: a cumulative table with a hole at day one cannot price any
+ * absence honestly, and the executor now refuses such tables outright.
+ *
+ * The base is the registered 5-day-week daily minimum wage, so this is "sick
+ * pay at the minimum daily wage" — narrower than the draft, and it says so.
+ */
+export const SICK_PAY_DAILY_RATE_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.sick.pay.daily.rate",
+  rule_spec_version: "1.0.0",
+  topic: "sick_leave",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_SICK_PAY_LAW@discovery-v0", "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0"],
+  effective_period: { from: "2026-04-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.absence.day.index", value_kind: "integer", unit: "days" }],
+  parameters: [
+    { ref_id: "parameter.rate.days.2.to.3", parameter_id: "il.sick_pay.rate_days_2_to_3", parameter_version: "1.0.0", value_kind: "rational", unit: "ratio" },
+    { ref_id: "parameter.daily.wage", parameter_id: "il.minimum_wage.daily_5day", parameter_version: "2026.1.0", value_kind: "money", unit: "currency.ils" },
+  ],
+  nodes: [
+    { node_id: "rate.full", operation: "constant.rational", value: "1", unit: "ratio" },
+    {
+      node_id: "rate.on.day",
+      operation: "band.lookup",
+      input_ref: "fact.absence.day.index",
+      bands: [
+        { from_inclusive: 2, to_exclusive: 4, value_ref: "parameter.rate.days.2.to.3" },
+        { from_inclusive: 4, to_exclusive: null, value_ref: "rate.full" },
+      ],
+    },
+    { node_id: "sick.pay.on.day", operation: "money.scale", money_ref: "parameter.daily.wage", rational_ref: "rate.on.day", rounding: "half_up" },
+  ],
+  output_ref: "sick.pay.on.day",
+  golden_case_set_sha256: blankGoldenSetSha256("sick_leave"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
 /** One governance parameter bound into one spec ref. */
 export type SensitivityBinding = Readonly<{
   ref_id: string;
@@ -243,5 +330,27 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     branches: [],
     narrower_than_draft:
       "The whole of §3(א): a band table for years one to seven and, from the eighth, 21 + 1 × (years − 7) capped at 28. The figures 22 to 27 are computed from three cited parameters, not written into the spec; the one shape integer is the year-7 boundary. Year zero refuses.",
+  },
+  {
+    spec: SICK_PAY_ACCRUAL_SPEC,
+    bindings: [
+      { ref_id: "parameter.accrual.per.month", parameter_id: "il.sick_pay.accrual_days_per_month", parameter_version: "1.0.0" },
+      { ref_id: "parameter.accrual.cap", parameter_id: "il.sick_pay.accrual_cap_days", parameter_version: "1.0.0" },
+    ],
+    decision_id: null,
+    branches: [],
+    narrower_than_draft:
+      "Accrual only, §4(א): 1.5 days per full month of work, to a ceiling of 90. The output is a day count, not money. The derived unit days_per_month × months = days is what let these two parameters meet.",
+  },
+  {
+    spec: SICK_PAY_DAILY_RATE_SPEC,
+    bindings: [
+      { ref_id: "parameter.rate.days.2.to.3", parameter_id: "il.sick_pay.rate_days_2_to_3", parameter_version: "1.0.0" },
+      { ref_id: "parameter.daily.wage", parameter_id: "il.minimum_wage.daily_5day", parameter_version: "2026.1.0" },
+    ],
+    decision_id: null,
+    branches: [],
+    narrower_than_draft:
+      "The rate on day n of an absence at the 5-day-week daily minimum wage, §2(א) with §5(א). Half from the second and third day is a word in the text and binds through the lexicon (מחצית). Full from the fourth is the identity — §2(א)(1) says 'payment under this law' and §5(א) defines that payment as the wage — and is the constant 1, not a cited figure. Day one is stated by omission, has no exclusion clause to bind a zero from, and refuses.",
   },
 ]);
