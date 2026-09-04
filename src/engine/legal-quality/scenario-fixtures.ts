@@ -150,7 +150,17 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
       },
     ],
   },
+  // L6-6: convalescence also carries the years of service, for the 1988
+  // order's seniority bands (year 0 is the band table's edge and refuses).
   convalescence: {
+    companions: [{
+      ref_id: "fact.years.employed",
+      per_scenario: {
+        current: YEARS(3), effective_date_boundary: YEARS(1), sector_population: YEARS(12),
+        missing_conflicted_facts: YEARS(3), precedence_overlap: YEARS(20),
+        parameter_rounding_boundary: YEARS(4),
+      },
+    }],
     ref_id: "fact.convalescence.days.multiplier",
     per_scenario: {
       current: RATIO("5"), effective_date_boundary: RATIO("5"), sector_population: RATIO("6"),

@@ -154,6 +154,13 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
     // L6-7 / D1: the 2025 law's threshold beside the 2024 one — one slot per
     // year, so the two grades (text_verified, inferred_visual) sit side by side.
     { name: "reduction_wage_threshold_2025", parameter_id: "il.convalescence.2025_partial_reduction_wage_threshold", unit: "currency.ils" },
+    // L6-6 / D4 (P-29): the 1988 order's seniority bands, one slot per band.
+    { name: "days_year_1", parameter_id: "il.convalescence.days_year_1", unit: "days" },
+    { name: "days_years_2_to_3", parameter_id: "il.convalescence.days_years_2_to_3", unit: "days" },
+    { name: "days_years_4_to_10", parameter_id: "il.convalescence.days_years_4_to_10", unit: "days" },
+    { name: "days_years_11_to_15", parameter_id: "il.convalescence.days_years_11_to_15", unit: "days" },
+    { name: "days_years_16_to_19", parameter_id: "il.convalescence.days_years_16_to_19", unit: "days" },
+    { name: "days_years_20_and_above", parameter_id: "il.convalescence.days_years_20_and_above", unit: "days" },
   ],
   vacation: [
     // Years one to FIVE: amendment 15 moved the band and the count together.

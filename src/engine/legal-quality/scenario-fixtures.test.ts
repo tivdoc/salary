@@ -49,7 +49,7 @@ describe("E3-6 scenario input fixtures", () => {
     for (const topic of WAVE3_TOPICS) {
       // L6-3: working_time is three — the day's overtime hours, the hourly wage
       // and the rest-day overtime hours.
-      const expected = topic === "sick_leave" ? 2 : topic === "working_time" ? 3 : 1;
+      const expected = topic === "sick_leave" ? 2 : topic === "working_time" ? 3 : topic === "convalescence" ? 2 : 1;
       for (const scenario of GOLDEN_SCENARIOS.filter((entry) => entry !== "missing_conflicted_facts")) {
         expect(scenarioFixture(topic, scenario)!.inputs.length, `${topic}/${scenario}`).toBe(expected);
       }

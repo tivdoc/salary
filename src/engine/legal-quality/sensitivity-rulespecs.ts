@@ -474,6 +474,55 @@ export const PENSION_CONTRIBUTION_SPEC: RuleSpecPackage = createRuleSpecPackage(
   resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
 });
 
+
+// --- L6-6 / D4 (P-29): convalescence days by seniority, the 1988 order -----
+//
+// §4(א) of the 1988 order: days of convalescence by completed years of service
+// at the plant — a band table, looked up by a whole year. Year 0 is the edge of
+// the table and refuses: §4(ב) says entitlement starts after the first year is
+// completed, and a spec that priced year 0 would be inventing a row. Which
+// instrument governs today (this order, or the 1998 agreement that restates
+// bands) is the draft's precedence slot; the spec computes what THIS instrument
+// says.
+export const CONVALESCENCE_DAYS_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.convalescence.days.by.seniority",
+  rule_spec_version: "1.0.0",
+  topic: "convalescence",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_CONVALESCENCE_EXTENSION_ORDER_1988@discovery-v0"],
+  effective_period: { from: "1988-11-14", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.years.employed", value_kind: "integer", unit: "count.years" }],
+  parameters: [
+    { ref_id: "parameter.days.year.1", parameter_id: "il.convalescence.days_year_1", parameter_version: "1988.1.0", value_kind: "integer", unit: "days" },
+    { ref_id: "parameter.days.years.2.to.3", parameter_id: "il.convalescence.days_years_2_to_3", parameter_version: "1988.1.0", value_kind: "integer", unit: "days" },
+    { ref_id: "parameter.days.years.4.to.10", parameter_id: "il.convalescence.days_years_4_to_10", parameter_version: "1988.1.0", value_kind: "integer", unit: "days" },
+    { ref_id: "parameter.days.years.11.to.15", parameter_id: "il.convalescence.days_years_11_to_15", parameter_version: "1988.1.0", value_kind: "integer", unit: "days" },
+    { ref_id: "parameter.days.years.16.to.19", parameter_id: "il.convalescence.days_years_16_to_19", parameter_version: "1988.1.0", value_kind: "integer", unit: "days" },
+    { ref_id: "parameter.days.years.20.and.above", parameter_id: "il.convalescence.days_years_20_and_above", parameter_version: "1988.1.0", value_kind: "integer", unit: "days" },
+  ],
+  nodes: [
+    {
+      node_id: "days.by.band",
+      operation: "band.lookup",
+      input_ref: "fact.years.employed",
+      bands: [
+        { from_inclusive: 1, to_exclusive: 2, value_ref: "parameter.days.year.1" },
+        { from_inclusive: 2, to_exclusive: 4, value_ref: "parameter.days.years.2.to.3" },
+        { from_inclusive: 4, to_exclusive: 11, value_ref: "parameter.days.years.4.to.10" },
+        { from_inclusive: 11, to_exclusive: 16, value_ref: "parameter.days.years.11.to.15" },
+        { from_inclusive: 16, to_exclusive: 20, value_ref: "parameter.days.years.16.to.19" },
+        { from_inclusive: 20, to_exclusive: null, value_ref: "parameter.days.years.20.and.above" },
+      ],
+    },
+  ],
+  output_ref: "days.by.band",
+  golden_case_set_sha256: blankGoldenSetSha256("convalescence"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
 export type SensitivitySpec = Readonly<{
   spec: RuleSpecPackage;
   bindings: readonly SensitivityBinding[];
@@ -602,5 +651,21 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     branches: [["order_2011_2014_row", "2014.2.0"], ["order_2016_2017_rates", "2017.1.0"]],
     narrower_than_draft:
       "Binds the employee share under the precedence decision and pins the wage cap to its section-1 version so the spec carries one decision; the cap's own decision runs in the cap spec. The 2017 share is a visual citation of an image-only scan (inferred_visual).",
+  },
+  // L6-6 / D4 (P-29): the 1988 seniority bands, text-verified.
+  {
+    spec: CONVALESCENCE_DAYS_SPEC,
+    bindings: [
+      { ref_id: "parameter.days.year.1", parameter_id: "il.convalescence.days_year_1", parameter_version: "1988.1.0" },
+      { ref_id: "parameter.days.years.2.to.3", parameter_id: "il.convalescence.days_years_2_to_3", parameter_version: "1988.1.0" },
+      { ref_id: "parameter.days.years.4.to.10", parameter_id: "il.convalescence.days_years_4_to_10", parameter_version: "1988.1.0" },
+      { ref_id: "parameter.days.years.11.to.15", parameter_id: "il.convalescence.days_years_11_to_15", parameter_version: "1988.1.0" },
+      { ref_id: "parameter.days.years.16.to.19", parameter_id: "il.convalescence.days_years_16_to_19", parameter_version: "1988.1.0" },
+      { ref_id: "parameter.days.years.20.and.above", parameter_id: "il.convalescence.days_years_20_and_above", parameter_version: "1988.1.0" },
+    ],
+    decision_id: null,
+    branches: [],
+    narrower_than_draft:
+      "Computes the days the 1988 order states for a completed year of service; year 0 refuses at the table's edge. Whether the 1988 order or the 1998 agreement governs today is the draft's precedence slot, left unbound.",
   },
 ]);

@@ -127,6 +127,14 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   // L6-7 (batch 15 / D1): the 2025 threshold, read from the typeset page
   // (inferred_visual), paired with the 2024 one.
   { parameter_id: "il.convalescence.2025_partial_reduction_wage_threshold", versions: ["2025.1.0"] },
+  // L6-6 (batch 14 / D4, P-29): the 1988 order's six seniority bands, text-verified
+  // from the table-aware chunk of its page 3.
+  { parameter_id: "il.convalescence.days_year_1", versions: ["1988.1.0"] },
+  { parameter_id: "il.convalescence.days_years_2_to_3", versions: ["1988.1.0"] },
+  { parameter_id: "il.convalescence.days_years_4_to_10", versions: ["1988.1.0"] },
+  { parameter_id: "il.convalescence.days_years_11_to_15", versions: ["1988.1.0"] },
+  { parameter_id: "il.convalescence.days_years_16_to_19", versions: ["1988.1.0"] },
+  { parameter_id: "il.convalescence.days_years_20_and_above", versions: ["1988.1.0"] },
   { parameter_id: "il.vacation.full_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
   { parameter_id: "il.vacation.partial_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
   // B-7: the corrected scope. `il.vacation.calendar_days_years_1_to_4` is
