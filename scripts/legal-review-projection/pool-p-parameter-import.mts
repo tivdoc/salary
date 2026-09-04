@@ -66,6 +66,8 @@ import path from "node:path";
 
 import { assertUsableAnchor, checkCitationAnchor } from "../../src/engine/legal-knowledge/citation-anchor.ts";
 import { bindCompoundThroughLexicon, bindThroughLexicon } from "../../src/engine/legal-knowledge/numeral-lexicon-v1.ts";
+import { buildVisualCitation, visualBindingOf, worstProvenance, type ProvenanceGrade, type VisualCitation } from "../../src/engine/legal-knowledge/visual-citation-v1.ts";
+import { extractPagePdf, renderScanPagePng, sha256 as bytesSha256 } from "./visual-page.mts";
 import { frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";
 import { parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
 import type { Wave3Topic } from "../../src/engine/wave3/contracts.ts";
@@ -169,7 +171,16 @@ type NumeralCitation = Readonly<{ lexicon_version: string; surface: string; nume
  * the binding hash carries it on: attesting the parameter attests the boundary.
  */
 type SelectionCitation = Readonly<{ selection_id: string; selection_sha256: string }>;
-type Citation = Readonly<{ source: SourceRef; chunk_id: string; locator: string; must_contain: readonly string[]; numeral?: NumeralCitation; selection?: SelectionCitation }>;
+/**
+ * L6-2 / D1. Every citation carries its provenance grade; a citation whose
+ * figure was read from the page image carries the visual citation itself.
+ * `chunk_id` for a visual citation is the table-aware chunk of the same page,
+ * so the anchor is still checked against text a person can search.
+ */
+type Citation = Readonly<{
+  source: SourceRef; chunk_id: string; locator: string; must_contain: readonly string[];
+  provenance: ProvenanceGrade; numeral?: NumeralCitation; selection?: SelectionCitation; visual?: VisualCitation;
+}>;
 
 function citation(source: SourceRef, chunkId: string, locator: string, mustContain: readonly string[]): Citation {
   assertNotQuarantined(source.source_id, source.source_version);
@@ -179,7 +190,7 @@ function citation(source: SourceRef, chunkId: string, locator: string, mustConta
   for (const needle of mustContain) {
     if (!text.includes(needle)) throw new Error(`POOL_P_CITATION_TEXT_MISMATCH:${chunkId}:${needle}`);
   }
-  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain });
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain, provenance: "text_verified" });
 }
 
 // --- L4-1 / D2: citations against the table-aware chunk set ----------------
@@ -254,7 +265,7 @@ export function lexiconCitation(
   if (!checkCitationAnchor(chunk.logical_text, anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
   const numeral: NumeralCitation = outcome.binding;
   TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [outcome.binding.surface], anchor, locator }));
-  return frozen({ source, chunk_id: chunkId, locator, must_contain: [outcome.binding.surface], numeral });
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: [outcome.binding.surface], numeral, provenance: "lexicon" });
 }
 
 /**
@@ -323,7 +334,7 @@ export function selectionCitation(
   if (!checkCitationAnchor(chunk.logical_text, anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
   const selection: SelectionCitation = { selection_id: doc.selection_id, selection_sha256: doc.selection_sha256 };
   TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [...mustContain], anchor, locator }));
-  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain, selection });
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain, selection, provenance: "selection" });
 }
 
 export function tableAwareCitation(
@@ -345,9 +356,60 @@ export function tableAwareCitation(
   const verdict = checkCitationAnchor(chunk.logical_text, anchor);
   if (!verdict.matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
   TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [...mustContain], anchor, locator }));
-  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain });
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain, provenance: "text_verified" });
 }
 
+
+// --- L6-2 / D1: visual citations -------------------------------------------
+//
+// A figure that is unambiguous in the page image and ambiguous in the text
+// layer. The session read it from a render of the artifact's own scan stream;
+// the citation carries the page (as a standalone PDF, hashed), the render
+// (hashed), the stored text-layer line the figure sits on and what that line
+// says, and the reading. The anchor is still mandatory and still checked
+// against the same page's table-aware chunk — the words around the figure are
+// in the text layer even where the figure is not.
+/** Every visual citation this process made, for the receipt and the recheck. */
+export const VISUAL_CITATIONS: Array<Readonly<{ chunk_id: string; page: number; line_index: number; text_layer_surface: string | null; visual_reading: string; page_pdf_sha256: string; anchor: string; locator: string }>> = [];
+
+export async function visualCitation(
+  source: SourceRef,
+  chunkId: string,
+  locator: string,
+  page: number,
+  lineIndex: number,
+  textLayerSurface: string | null,
+  visualReading: string,
+  anchor: string,
+): Promise<Citation> {
+  const observation = selectObservation(source.source_id, source.source_version);
+  const build = selectBuildRecord(source.source_id, source.source_version, observation.artifact_sha256) as { normalized_path?: string | null };
+  if (!build.normalized_path) throw new Error(`POOL_P_NORMALIZED_MISSING:${source.source_id}@${source.source_version}`);
+  const normalized = JSON.parse(readFileSync(path.resolve(build.normalized_path), "utf8")) as { pages: Array<{ page: number; text: string }> };
+  const stored = normalized.pages[page - 1];
+  if (!stored || stored.page !== page) throw new Error(`POOL_P_VISUAL_PAGE_MISSING:${source.source_id}:${page}`);
+  const lines = stored.text.split("\n");
+  const lineText = lines[lineIndex];
+  if (lineText === undefined) throw new Error(`POOL_P_VISUAL_LINE_MISSING:${source.source_id}:${page}:${lineIndex}`);
+  const artifactBytes = readFileSync(path.resolve(observation.artifact_path));
+  if (bytesSha256(artifactBytes) !== observation.artifact_sha256) throw new Error(`POOL_P_ARTIFACT_HASH_MISMATCH:${source.source_id}`);
+  const pagePdf = await extractPagePdf(artifactBytes, page);
+  const render = await renderScanPagePng(artifactBytes, page);
+  const built = buildVisualCitation({
+    artifact_sha256: observation.artifact_sha256, page, page_pdf_sha256: bytesSha256(pagePdf), page_image_sha256: bytesSha256(render.png),
+    line_index: lineIndex, line_text: lineText, text_layer_surface: textLayerSurface, visual_reading: visualReading,
+  });
+  if (built.refusal !== null) throw new Error(`POOL_P_VISUAL_CITATION_REFUSED:${built.refusal}`);
+  // The anchor: the same page's table-aware chunk must carry it, so the
+  // citation can still be found by its words.
+  if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
+  const chunk = tableAwareChunk(source.source_id, source.source_version, observation.chunks_path, chunkId);
+  assertUsableAnchor(anchor);
+  if (!checkCitationAnchor(chunk.logical_text, anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
+  VISUAL_CITATIONS.push(frozen({ chunk_id: chunkId, page, line_index: lineIndex, text_layer_surface: textLayerSurface, visual_reading: visualReading, page_pdf_sha256: built.citation.page_pdf_sha256, anchor, locator }));
+  TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [], anchor, locator }));
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: [], provenance: "inferred_visual", visual: built.citation });
+}
 
 function buildBindings(input: Readonly<{
   topic: Wave3Topic;
@@ -380,7 +442,15 @@ function buildBindings(input: Readonly<{
     };
   });
   const citations = [...input.citations].sort((a, b) => (`${a.source.source_id}#${a.chunk_id}`).localeCompare(`${b.source.source_id}#${b.chunk_id}`))
-    .map((c) => ({ source_id: c.source.source_id, source_version: c.source.source_version, chunk_id: c.chunk_id, locator: c.locator, ...(c.numeral ? { numeral: c.numeral } : {}), ...(c.selection ? { selection: c.selection } : {}) }));
+    .map((c) => ({
+      source_id: c.source.source_id, source_version: c.source.source_version, chunk_id: c.chunk_id, locator: c.locator,
+      ...(c.numeral ? { numeral: c.numeral } : {}), ...(c.selection ? { selection: c.selection } : {}),
+      // The grade rides into the hash only when it is not the default, so
+      // every text-verified candidate registered before grades existed keeps
+      // its hash; a lexicon or selection citation already carried its own key.
+      ...(c.provenance === "inferred_visual" || c.provenance === "administrative" ? { provenance: c.provenance } : {}),
+      ...(c.visual ? { visual: c.visual } : {}),
+    }));
   return computeElevenDimensionBindings({
     topic: input.topic, sourceSet, sources, citations, dossierSha256: DOSSIER_SHA256,
     value: input.value, unit: input.unit, effective_from: input.effective_from, effective_to: input.effective_to,
@@ -406,6 +476,14 @@ export type DraftParameterInput = Readonly<{
   branch?: string | null;
 }>;
 
+function provenanceFields(citations: readonly Citation[]): { provenance_grade?: ProvenanceGrade; visual_bindings?: readonly { page_pdf_sha256: string; visual_reading: string }[] } {
+  const grade = worstProvenance(citations.map((entry) => entry.provenance));
+  const visual = citations.filter((entry): entry is Citation & { visual: VisualCitation } => entry.visual !== undefined).map((entry) => visualBindingOf(entry.visual));
+  if (grade === "inferred_visual") return { provenance_grade: grade, visual_bindings: visual };
+  if (grade === "administrative") return { provenance_grade: grade };
+  return {};
+}
+
 export function buildCandidate(input: DraftParameterInput): ParameterCandidate {
   const operativeSourceVersionIds = [...new Set(input.citations.map((c) => `${c.source.source_id}@${c.source.source_version}`))];
   const bindings = buildBindings({
@@ -430,6 +508,10 @@ export function buildCandidate(input: DraftParameterInput): ParameterCandidate {
     bindings,
     decision_id: input.decision_id ?? null,
     branch: input.branch ?? null,
+    // L6-2 / D1: the grade and, for a visual reading, what an attestation must
+    // confirm. Present only when the grade is below what the text alone gives,
+    // so earlier candidates keep their hashes.
+    ...provenanceFields(input.citations),
   });
   return parameterCandidateSchema.parse({ ...seed, candidate_sha256: legalOperationsSha256(seed) });
 }

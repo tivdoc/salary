@@ -36,6 +36,17 @@ export type ElevenDimensionInput = Readonly<{
     // L5-5 / D4: a citation into a selected span carries the selection's hash,
     // so attesting the parameter attests the boundary.
     selection?: Readonly<{ selection_id: string; selection_sha256: string }>;
+    // L6-2 / D1: a citation whose figure was read from the page image carries
+    // the page hashes, the region and the reading; and every citation made
+    // from here on carries its provenance grade. Both optional, so every
+    // earlier candidate's hash is exactly what it was.
+    provenance?: string;
+    visual?: Readonly<{
+      kind: string; artifact_sha256: string; page: number; page_pdf_sha256: string; page_image_sha256: string;
+      region: Readonly<{ kind: string; line_index: number; line_text: string }>;
+      text_layer_surface: string | null; visual_reading: string; value: Readonly<{ numerator: string; denominator: string }>;
+      provenance: string; visual_verification_required: true; read_by: string;
+    }>;
   }>[]; // dim 4
   dossierSha256: string; // dim 10
   value: unknown; unit: string; // dims 5, 6

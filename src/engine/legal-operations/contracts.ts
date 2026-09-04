@@ -193,6 +193,13 @@ export const dependencyBindingsSchema = z.object({
   reviewer_decisions_sha256: legalOperationsSha256Schema,
 }).strict().readonly();
 
+export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative"] as const;
+export const provenanceGradeSchema = z.enum(PROVENANCE_GRADES);
+export const visualBindingSchema = z.object({
+  page_pdf_sha256: legalOperationsSha256Schema,
+  visual_reading: z.string().min(1).max(40),
+}).strict().readonly();
+
 export const parameterCandidateSchema = z.object({
   schema_version: z.literal("tivdoc-parameter-candidate-v0.6.0"),
   parameter_id: legalOperationsIdSchema,
@@ -214,7 +221,16 @@ export const parameterCandidateSchema = z.object({
   // branch; paired so a candidate cannot silently drop one half of the link.
   decision_id: legalOperationsIdSchema.nullable(),
   branch: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,63}$/).nullable(),
+  // L6-2 / D1. The provenance grade of the candidate — the worst of its
+  // citations' — and, for a figure read from a page image, the bindings an
+  // attestation must confirm: the cited page's hash and the reading. Both are
+  // optional so every candidate registered before this field exists keeps its
+  // hash; a candidate that carries visual bindings must say its grade is
+  // inferred_visual, and one that says so must carry them.
+  provenance_grade: provenanceGradeSchema.optional(),
+  visual_bindings: z.array(visualBindingSchema).min(1).readonly().optional(),
 }).strict().superRefine((candidate, context) => {
+  if ((candidate.visual_bindings !== undefined) !== (candidate.provenance_grade === "inferred_visual")) context.addIssue({ code: "custom", message: "parameter_visual_bindings_grade_unpaired", path: ["visual_bindings"] });
   if (candidate.effective_to !== null && candidate.effective_to < candidate.effective_from) context.addIssue({ code: "custom", message: "parameter_interval_inverted", path: ["effective_to"] });
   if (candidate.value.kind === "money" && candidate.unit !== `currency.${candidate.value.value.currency.toLowerCase()}`) context.addIssue({ code: "custom", message: "parameter_money_unit_mismatch", path: ["unit"] });
   if (candidate.value.kind !== "money" && candidate.value.unit !== candidate.unit) context.addIssue({ code: "custom", message: "parameter_value_unit_mismatch", path: ["unit"] });
@@ -237,7 +253,14 @@ export const parameterAttestationSchema = z.object({
   decision: z.literal("approved"),
   attested_at: isoTimestampSchema,
   signature_sha256: legalOperationsSha256Schema,
-}).strict().readonly();
+  // L6-2 / D1. A reviewer confirming a figure read from a page image says so
+  // and names what they looked at. The database refuses an attestation of an
+  // inferred_visual candidate without both, and refuses both on any other.
+  visual_confirmed: z.literal(true).optional(),
+  visual_bindings: z.array(visualBindingSchema).min(1).readonly().optional(),
+}).strict().superRefine((attestation, context) => {
+  if ((attestation.visual_confirmed === true) !== (attestation.visual_bindings !== undefined)) context.addIssue({ code: "custom", message: "attestation_visual_confirmation_unpaired", path: ["visual_bindings"] });
+}).readonly();
 
 export const semanticApprovalSchema = z.object({
   schema_version: z.literal("tivdoc-legal-semantic-approval-v0.6.0"),

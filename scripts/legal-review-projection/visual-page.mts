@@ -1,0 +1,153 @@
+// L6-2 / D1. Two operations on a stored PDF artifact, both from its bytes and
+// nothing else:
+//
+// - extractPagePdf: one page as a standalone PDF, saved deterministically
+//   (fixed dates, fixed producer, no object streams) so its hash is a fact
+//   about the page and not about the clock. This is what the review package
+//   carries beside a visual citation.
+// - renderScanPagePng: the page's scan image, decoded from the artifact's own
+//   CCITT stream by wrapping it in a TIFF container and handing it to libvips.
+//   No rasteriser is installed on this machine, and none is needed to read a
+//   scan: the scan IS the image. This is what the session reads a figure from.
+//
+// Neither operation reads the text layer, and neither changes the artifact.
+import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
+import { readFileSync, writeFileSync } from "node:fs";
+import { inflateSync } from "node:zlib";
+
+const require = createRequire(import.meta.url);
+const { PDFDocument, PDFName, PDFRawStream, PDFArray, PDFDict, PDFNumber, PDFBool } = require("pdf-lib");
+const sharp = require("sharp");
+
+export const VISUAL_PAGE_TOOL_VERSION = "tivdoc-visual-page-v1" as const;
+
+export const sha256 = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
+
+export async function extractPagePdf(artifactBytes: Uint8Array, pageNumber: number): Promise<Uint8Array> {
+  const source = await PDFDocument.load(artifactBytes, { ignoreEncryption: true, updateMetadata: false });
+  if (pageNumber < 1 || pageNumber > source.getPageCount()) throw new Error(`VISUAL_PAGE_OUT_OF_RANGE:${pageNumber}/${source.getPageCount()}`);
+  const out = await PDFDocument.create();
+  const [page] = await out.copyPages(source, [pageNumber - 1]);
+  out.addPage(page);
+  out.setCreationDate(new Date(0));
+  out.setModificationDate(new Date(0));
+  out.setProducer(VISUAL_PAGE_TOOL_VERSION);
+  out.setCreator(VISUAL_PAGE_TOOL_VERSION);
+  out.setTitle("");
+  out.setAuthor("");
+  out.setSubject("");
+  out.setKeywords([]);
+  return out.save({ useObjectStreams: false, addDefaultPage: false, updateFieldAppearances: false });
+}
+
+type CcittImage = Readonly<{ width: number; height: number; k: number; blackIs1: boolean; byteAlign: boolean; data: Uint8Array }>;
+
+/** The first CCITT image XObject on the page — a scanned page has exactly one. */
+async function pageCcittImage(artifactBytes: Uint8Array, pageNumber: number): Promise<CcittImage> {
+  const source = await PDFDocument.load(artifactBytes, { ignoreEncryption: true, updateMetadata: false });
+  const page = source.getPage(pageNumber - 1);
+  const resources = page.node.Resources();
+  const xobjects = resources?.lookup(PDFName.of("XObject"), PDFDict);
+  if (!xobjects) throw new Error("VISUAL_PAGE_NO_XOBJECTS");
+  for (const [, ref] of xobjects.entries()) {
+    const stream = source.context.lookup(ref);
+    if (!(stream instanceof PDFRawStream)) continue;
+    const dict = stream.dict;
+    if (dict.lookup(PDFName.of("Subtype"))?.toString() !== "/Image") continue;
+    const filterEntry = dict.lookup(PDFName.of("Filter"));
+    const filters = filterEntry instanceof PDFArray ? filterEntry.asArray().map((entry: { toString(): string }) => entry.toString()) : [filterEntry?.toString()];
+    if (!filters.includes("/CCITTFaxDecode")) continue;
+    const parmsEntry = dict.lookup(PDFName.of("DecodeParms"));
+    const parms = parmsEntry instanceof PDFArray ? parmsEntry.asArray().map((entry: unknown) => source.context.lookup(entry)).find((entry: unknown) => entry instanceof PDFDict) : parmsEntry;
+    const num = (holder: typeof PDFDict | undefined, key: string, fallback: number) => {
+      const value = holder?.lookup(PDFName.of(key));
+      return value instanceof PDFNumber ? value.asNumber() : fallback;
+    };
+    const bool = (holder: typeof PDFDict | undefined, key: string, fallback: boolean) => {
+      const value = holder?.lookup(PDFName.of(key));
+      return value instanceof PDFBool ? value.asBoolean() : fallback;
+    };
+    let data: Uint8Array = stream.contents;
+    if (filters[0] === "/FlateDecode") data = new Uint8Array(inflateSync(Buffer.from(data)));
+    return Object.freeze({
+      width: num(parms, "Columns", num(dict, "Width", 1728)),
+      height: num(parms, "Rows", num(dict, "Height", 0)),
+      k: num(parms, "K", 0),
+      blackIs1: bool(parms, "BlackIs1", false),
+      byteAlign: bool(parms, "EncodedByteAlign", false),
+      data,
+    });
+  }
+  throw new Error("VISUAL_PAGE_NO_CCITT_IMAGE");
+}
+
+/** A minimal little-endian TIFF around a CCITT stream — what libtiff needs to decode it. */
+function ccittToTiff(image: CcittImage): Buffer {
+  const entries: Array<[number, number, number, number]> = [];
+  const compression = image.k < 0 ? 4 : 3;
+  // The CCITT codec itself produces "black" and "white" runs; PDF's BlackIs1
+  // says how those are written to bits, and libtiff's fax reader emits them
+  // under WhiteIsZero (0) by default. A scan with BlackIs1=false therefore
+  // renders right side up as WhiteIsZero and inverted as BlackIsZero — checked
+  // by eye on the 1951 page, which is the whole point of this tool.
+  const photometric = image.blackIs1 ? 1 : 0;
+  const t4Options = (image.k > 0 ? 1 : 0) | (image.byteAlign ? 4 : 0);
+  const headerBytes = 8;
+  const dataOffset = headerBytes;
+  const ifdOffset = dataOffset + image.data.length + (image.data.length % 2);
+  entries.push([256, 4, 1, image.width]);
+  entries.push([257, 4, 1, image.height]);
+  entries.push([258, 3, 1, 1]);
+  entries.push([259, 3, 1, compression]);
+  entries.push([262, 3, 1, photometric]);
+  entries.push([266, 3, 1, 1]);
+  entries.push([273, 4, 1, dataOffset]);
+  entries.push([277, 3, 1, 1]);
+  entries.push([278, 4, 1, image.height]);
+  entries.push([279, 4, 1, image.data.length]);
+  if (compression === 3) entries.push([292, 4, 1, t4Options]);
+  if (compression === 4) entries.push([293, 4, 1, 0]);
+  entries.sort((left, right) => left[0] - right[0]);
+  const ifd = Buffer.alloc(2 + entries.length * 12 + 4);
+  ifd.writeUInt16LE(entries.length, 0);
+  entries.forEach(([tag, type, count, value], index) => {
+    const at = 2 + index * 12;
+    ifd.writeUInt16LE(tag, at);
+    ifd.writeUInt16LE(type, at + 2);
+    ifd.writeUInt32LE(count, at + 4);
+    if (type === 3) { ifd.writeUInt16LE(value, at + 8); ifd.writeUInt16LE(0, at + 10); } else ifd.writeUInt32LE(value, at + 8);
+  });
+  ifd.writeUInt32LE(0, 2 + entries.length * 12);
+  const header = Buffer.alloc(headerBytes);
+  header.write("II", 0, "latin1");
+  header.writeUInt16LE(42, 2);
+  header.writeUInt32LE(ifdOffset, 4);
+  const padding = Buffer.alloc(image.data.length % 2);
+  return Buffer.concat([header, Buffer.from(image.data), padding, ifd]);
+}
+
+export async function renderScanPagePng(artifactBytes: Uint8Array, pageNumber: number): Promise<{ png: Buffer; width: number; height: number; k: number }> {
+  const image = await pageCcittImage(artifactBytes, pageNumber);
+  const tiff = ccittToTiff(image);
+  const png = await sharp(tiff).png().toBuffer();
+  return { png, width: image.width, height: image.height, k: image.k };
+}
+
+export async function cropPng(png: Buffer, region: { left: number; top: number; width: number; height: number }, scale = 1): Promise<Buffer> {
+  let pipeline = sharp(png).extract(region);
+  if (scale !== 1) pipeline = pipeline.resize(Math.round(region.width * scale), Math.round(region.height * scale), { kernel: "lanczos3" });
+  return pipeline.png().toBuffer();
+}
+
+if (process.argv[1] && /visual-page\.mts$/u.test(process.argv[1])) {
+  const [artifact, pageText, outBase] = process.argv.slice(2);
+  if (!artifact || !pageText || !outBase) throw new Error("usage: visual-page.mts <artifact.pdf> <page> <out-base>");
+  const bytes = readFileSync(artifact);
+  const page = Number.parseInt(pageText, 10);
+  const pdf = await extractPagePdf(bytes, page);
+  writeFileSync(`${outBase}.pdf`, pdf);
+  const rendered = await renderScanPagePng(bytes, page);
+  writeFileSync(`${outBase}.png`, rendered.png);
+  console.log(JSON.stringify({ page, page_pdf_sha256: sha256(pdf), page_pdf_bytes: pdf.length, png_bytes: rendered.png.length, width: rendered.width, height: rendered.height, k: rendered.k }));
+}

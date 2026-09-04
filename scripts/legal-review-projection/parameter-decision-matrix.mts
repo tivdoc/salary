@@ -100,8 +100,9 @@ function verified(envelope: ReturnType<typeof signHumanDecision>): VerifiedHuman
   }) as unknown as VerifiedHumanDecision;
 }
 
-function candidateFor(parameterId: string, decisionId: string | null, branch: string | null, minorUnits: number) {
+function candidateFor(parameterId: string, decisionId: string | null, branch: string | null, minorUnits: number, extra: Record<string, unknown> = {}) {
   const seed = {
+    ...extra,
     schema_version: "tivdoc-parameter-candidate-v0.6.0" as const,
     parameter_id: parameterId, parameter_version: "1.0.0", topic: "minimum_wage" as const,
     value: { kind: "money" as const, value: { currency: "ZZZ", minor_units: minorUnits } },
@@ -120,8 +121,9 @@ function candidateFor(parameterId: string, decisionId: string | null, branch: st
   return parameterCandidateSchema.parse({ ...seed, candidate_sha256: legalOperationsSha256(seed) });
 }
 
-function attestationFor(candidate: ReturnType<typeof candidateFor>, reviewerId: string, suffix: string): ParameterAttestation {
+function attestationFor(candidate: ReturnType<typeof candidateFor>, reviewerId: string, suffix: string, extra: Record<string, unknown> = {}): ParameterAttestation {
   const seed = {
+    ...extra,
     schema_version: "tivdoc-parameter-attestation-v0.6.0" as const,
     attestation_id: `attestation.${suffix}.${RUN}`, candidate_id: candidate.parameter_id,
     candidate_version: candidate.parameter_version, candidate_sha256: candidate.candidate_sha256,
@@ -280,9 +282,9 @@ async function main(): Promise<void> {
         return { work_item_id: claim.work_item_id, claimant_id: claim.claimant_id, fencing_token: claim.fencing_token };
       });
     };
-    const attestOnce = async (reviewer: Reviewer, candidate: ReturnType<typeof candidateFor>, expectedRevision: number, suffix: string) => {
+    const attestOnce = async (reviewer: Reviewer, candidate: ReturnType<typeof candidateFor>, expectedRevision: number, suffix: string, extra: Record<string, unknown> = {}) => {
       const claim = await claimFor(reviewer, candidate.parameter_id, suffix);
-      const attestation = attestationFor(candidate, reviewer.id, suffix);
+      const attestation = attestationFor(candidate, reviewer.id, suffix, extra);
       const payload = payloadWithoutEmbeddedSignature(attestation);
       const envelope = signHumanDecision({
         envelope_id: `env.${suffix}.${RUN}`, organization_id: ORG, organization_version: "1.0.0", policy_version: "1.0.0",
@@ -298,6 +300,29 @@ async function main(): Promise<void> {
 
     const firstOnA = await attestOnce(REVIEWERS.r1, candidateA, 1, "r1a");
     record("first_attestation_awaiting_second", firstOnA.state === "awaiting_second_attestation" && firstOnA.activation_allowed === false, firstOnA.state);
+
+    // --- L6-2 / D1: a figure read from a page image is attested only by
+    // someone who says they looked, at the very page and reading the candidate
+    // carries; and a candidate with no such reading refuses a confirmation of
+    // nothing. Four cases, on a synthetic candidate with synthetic hashes.
+    const visualBindings = [{ page_pdf_sha256: sha256(`page:${RUN}`), visual_reading: "1¼" }];
+    const paramV = `PARAM-SYNTHETIC-P0-V-${RUN}`;
+    const candidateV = candidateFor(paramV, null, null, 3_600, { provenance_grade: "inferred_visual", visual_bindings: visualBindings });
+    const importV = await importOne(candidateV, "v");
+    record("visual_candidate_imported_as_draft_with_grade", importV.state === "draft", importV.state);
+    const visualUnconfirmed = await refusal(() => attestOnce(REVIEWERS.r3, candidateV, 1, "r3v-unconfirmed"));
+    record("visual_attestation_without_confirmation_refused", visualUnconfirmed.startsWith("P0001"), visualUnconfirmed);
+    const visualWrongPage = await refusal(() => attestOnce(REVIEWERS.r3, candidateV, 1, "r3v-wrongpage",
+      { visual_confirmed: true, visual_bindings: [{ page_pdf_sha256: sha256(`other-page:${RUN}`), visual_reading: "1¼" }] }));
+    record("visual_attestation_naming_another_page_refused", visualWrongPage.startsWith("P0001"), visualWrongPage);
+    const visualWrongReading = await refusal(() => attestOnce(REVIEWERS.r3, candidateV, 1, "r3v-wrongreading",
+      { visual_confirmed: true, visual_bindings: [{ page_pdf_sha256: visualBindings[0].page_pdf_sha256, visual_reading: "1½" }] }));
+    record("visual_attestation_naming_another_reading_refused", visualWrongReading.startsWith("P0001"), visualWrongReading);
+    const visualConfirmed = await attestOnce(REVIEWERS.r3, candidateV, 1, "r3v-confirmed", { visual_confirmed: true, visual_bindings: visualBindings });
+    record("visual_attestation_confirmed_reaches_awaiting_second", visualConfirmed.state === "awaiting_second_attestation" && visualConfirmed.activation_allowed === false, visualConfirmed.state);
+    const confirmationOfNothing = await refusal(() => attestOnce(REVIEWERS.r4, candidateB, 1, "r4b-visual-on-text",
+      { visual_confirmed: true, visual_bindings: visualBindings }));
+    record("visual_confirmation_on_a_text_candidate_refused", confirmationOfNothing.startsWith("P0001"), confirmationOfNothing);
 
     // Confirmed by hand against DEV's own logs (message text is redacted by
     // the canonical wrapper by the time it reaches the port; only the

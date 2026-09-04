@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
 const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 
 /** Definition count, not distinct names: `create or replace` redefines. */
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 153;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 154;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
