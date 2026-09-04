@@ -134,6 +134,13 @@ export const POOL_P_CITATION_ANCHORS: readonly ChunkAnchor[] = Object.freeze([
     chunk_id: "IL_HOURS_WORK_REST_LAW@discovery-v0#t0006-1cec5eccebec",
     anchor: "בעד שתי השעות הנוספות הראשונות",
   },
+  // L6-6 / D4 (P-29): the 1988 convalescence order's band clause, page 3,
+  // table-aware chunk. The page interleaves two columns; the anchor is the
+  // clause that opens the bands, which only this instrument carries.
+  {
+    chunk_id: "IL_CONVALESCENCE_EXTENSION_ORDER_1988@discovery-v0#t0004-65c7115d3b4a",
+    anchor: "קצובת ההבראה תינתן בשיעורים הבאים",
+  },
 ]);
 
 export function anchorFor(chunkId: string): ChunkAnchor | null {
