@@ -1062,6 +1062,71 @@
       }
     },
     {
+      "source_id": "IL_HOURS_WORK_REST_LAW_CONSOLIDATED",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Hours of Work and Rest Law, 1951 - official full representation (consolidated text)",
+      "canonical_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "publication_reference": "Sefer Ha-Chukkim 76, p. 204, as amended",
+      "published_at": null,
+      "effective_from": "1951-09-27",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "html",
+      "supersedes_source_version": null,
+      "notes": [
+        "L5-8 / D5. The one controlled attempt at the law's current consolidated text, made at the official Knesset legislation record for the law (acquisition target ACQ-V02-HOURS-WORK-REST-OFFICIAL), declared as the HTML the record serves. No mirror and no secondary site is registered for this text.",
+        "The 1951 promulgation registered as IL_HOURS_WORK_REST_LAW is a gazette scan whose OCR renders the overtime premiums as 11/4 and 11/2; those are refused by name by the numeral lexicon and are never read as rates. Only a text in which section 16(a) states the premiums in readable words or figures can bind il.working_time.overtime_rate_first_tier.",
+        "Nothing binds to this entry until its artifact has parsed and a citation with a Hebrew anchor has been verified in the same chunk."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The legislation record is authoritative; whether it serves a consolidated text is what the fetch establishes, and the fetch ledger records the answer."
+        ]
+      },
+      "effective_period": {
+        "effective_from": "1951-09-27",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L5-8: the first overtime tier (Pool P P-11..P-14) has no citable figure without the current consolidated text of the Hours of Work and Rest Law."
+      }
+    },
+    {
       "source_id": "IL_MIN_WAGE_LAW",
       "source_version": "discovery-v0",
       "source_type": "statute",

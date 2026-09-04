@@ -21,7 +21,9 @@ export function loadCanonicalRoleInventory() {
   // registered beside the quarantined catalogue record that pointed at it.
   // Bumped 21 -> 23 by Addendum 7 A7-5: D-5's second half (1998 general
   // collective agreement) and D-16 (Annual Vacation Law Amendment 15).
-  if (rows.length !== 24) throw new Error(`canonical_role_inventory_expected_24_received_${rows.length}`);
+  // Bumped 24 -> 25 by L5-8 (D5): the one controlled attempt at the Hours of
+  // Work and Rest Law's consolidated text, registered at the official record.
+  if (rows.length !== 25) throw new Error(`canonical_role_inventory_expected_25_received_${rows.length}`);
   return Object.freeze({ schema_version: "canonical-source-role-inventory-v0.4.1" as const, source_count: rows.length, rows });
 }
 
