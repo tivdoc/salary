@@ -284,6 +284,10 @@ export function validateRuleSpecPackage(candidate: unknown): RuleSpecPackage {
     const inputs = dependencies.map((reference) => available.get(reference)!);
     let kind: string;
     let unit: string | null;
+    // A constant is shape. Shape may not be money-shaped: a constant carrying a
+    // currency unit would be a figure of money that never met a rounding
+    // policy, and the executor's output could be it.
+    if ((node.operation === "constant.rational" || node.operation === "constant.integer") && node.unit.startsWith("currency.")) throw new Error(`RULESPEC_CONSTANT_MAY_NOT_CARRY_CURRENCY:${node.node_id}`);
     if (node.operation === "constant.rational") [kind, unit] = ["rational", node.unit];
     else if (node.operation === "constant.integer") [kind, unit] = ["integer", node.unit];
     else if (node.operation === "compare.gte") {
@@ -459,12 +463,16 @@ export function executeRuleSpec(candidate: Readonly<{
     else if (node.operation === "add" || node.operation === "aggregate.bounded") {
       const items = node.refs.map(get);
       const first = items[0];
+      // Every partial sum is bounded, not only the total. Three fractions with
+      // coprime six-digit denominators sum to exactly one, and the seven-digit
+      // denominator on the way there is what the policy exists to refuse.
+      const bounded = (value: RuntimeValue): RuntimeValue => { assertRuntimeBounds(value, rule.resource_policy.max_integer_digits); return value; };
       if (first.kind === "money") {
         if (!items.every((item) => item.kind === "money" && item.currency === first.currency)) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
-        result = { kind: "money", currency: first.currency, minor_units: items.reduce((sum, item) => sum + (item.kind === "money" ? item.minor_units : BigInt(0)), BigInt(0)) };
+        result = items.slice(1).reduce<RuntimeValue>((sum, item) => bounded({ kind: "money", currency: first.currency, minor_units: (sum as { minor_units: bigint }).minor_units + (item as { minor_units: bigint }).minor_units }), first);
       } else {
         if (items.some((item) => item.kind === "money" || item.kind === "boolean")) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
-        result = items.slice(1).reduce<Counted>((sum, item) => addCounted(sum, item as Counted, BigInt(1)), first as Counted);
+        result = items.slice(1).reduce<Counted>((sum, item) => bounded(addCounted(sum, item as Counted, BigInt(1))) as Counted, first as Counted);
       }
     } else if (node.operation === "subtract") {
       const left = get(node.left_ref); const right = get(node.right_ref);
@@ -520,8 +528,15 @@ export function executeRuleSpec(candidate: Readonly<{
       // a quantity equal to the last tier's `to_exclusive` has consumed the
       // table exactly, with nothing left over, so it is paid rather than
       // refused. A quantity beyond it has units no tier covers, and refuses.
-      if (quantity.value < BigInt(node.tiers[0].from_inclusive)) throw new Error("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
+      // A negative quantity is outside every table. Zero consumes nothing and
+      // owes nothing, whatever the first tier starts at.
+      if (quantity.value < BigInt(0) || (quantity.value > BigInt(0) && quantity.value < BigInt(node.tiers[0].from_inclusive))) throw new Error("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
       if (last.to_exclusive !== null && quantity.value > BigInt(last.to_exclusive)) throw new Error("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
+      // L5-4. A table whose first tier starts above zero has said nothing about
+      // the units below it, and a positive quantity always contains them. The
+      // L4-2 version priced those units at nothing, silently — which is exactly
+      // the inference from an omitted tier that D1 forbids. They refuse now.
+      if (quantity.value > BigInt(0) && node.tiers[0].from_inclusive > 0) throw new Error("RULESPEC_TIERED_RATE_UNITS_BELOW_FIRST_TIER");
       // Cumulative: every tier is paid for the units that fall inside it, and
       // the sum stays an exact rational until one rounding at the end. Rounding
       // per tier and then adding would make the total depend on how the table

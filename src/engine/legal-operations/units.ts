@@ -47,8 +47,17 @@ function key(dimension: Dimension): string {
 
 const BY_KEY: ReadonlyMap<string, string> = new Map(Object.entries(REGISTRY).map(([id, dimension]) => [key(dimension), id]));
 
-/** The dimension behind a unit id. Unknown ids are opaque single symbols. */
+/** Every base symbol the registry uses. An id that IS one of these is not a unit. */
+const BASE_SYMBOLS: ReadonlySet<string> = new Set(Object.values(REGISTRY).flatMap((entry) => [...entry.numerator, ...entry.denominator]));
+
+/**
+ * The dimension behind a unit id. Unknown ids are opaque single symbols — with
+ * one refusal: an id that spells a base symbol (`day`, `month`, `year`) would
+ * alias the registry id built from it, and `day` would quietly equal `days`.
+ * A Lane B adversarial pass found exactly that, so it refuses by name.
+ */
 export function dimensionOf(unit: string): Dimension {
+  if (BASE_SYMBOLS.has(unit)) throw new Error(`RULESPEC_UNIT_ID_IS_A_BASE_SYMBOL:${unit}`);
   return REGISTRY[unit] ?? Object.freeze({ numerator: [unit], denominator: [] });
 }
 
@@ -67,9 +76,9 @@ function reduce(numerator: readonly string[], denominator: readonly string[]): D
 export function unitIdOf(dimension: Dimension): string | null {
   const known = BY_KEY.get(key(dimension));
   if (known !== undefined) return known;
-  // An opaque symbol on its own is its own id.
-  if (dimension.numerator.length === 1 && dimension.denominator.length === 0 && REGISTRY[dimension.numerator[0]] === undefined
-      && !Object.values(REGISTRY).some((entry) => entry.numerator.includes(dimension.numerator[0]) || entry.denominator.includes(dimension.numerator[0]))) {
+  // An opaque symbol on its own is its own id. It cannot be a base symbol,
+  // because `dimensionOf` refuses those before they ever become a dimension.
+  if (dimension.numerator.length === 1 && dimension.denominator.length === 0 && !BASE_SYMBOLS.has(dimension.numerator[0])) {
     return dimension.numerator[0];
   }
   return null;

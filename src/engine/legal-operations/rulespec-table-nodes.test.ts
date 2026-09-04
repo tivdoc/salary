@@ -194,6 +194,22 @@ describe("tiered.rate", () => {
     expect(executeRuleSpecAtomic({ rule: closed, facts: hours(5), parameters: TIER_PARAMETERS }).error_code).toBe("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
   });
 
+  it("refuses a table that starts above zero for any positive quantity — an omitted first tier is not a zero", () => {
+    // L5-4. The sick-pay law states its first day by omission. A table whose
+    // first tier starts at 1 has said nothing about unit [0,1), and every
+    // positive quantity contains that unit. The L4-2 version priced it at
+    // nothing, silently; that is the inference D1 forbids.
+    const gapped = createRuleSpecPackage(tierDraft([
+      { from_inclusive: 1, to_exclusive: 3, rate_ref: "parameter.rate.first" },
+      { from_inclusive: 3, to_exclusive: null, rate_ref: "parameter.rate.second" },
+    ]));
+    for (const count of [1, 2, 5]) {
+      expect(executeRuleSpecAtomic({ rule: gapped, facts: hours(count), parameters: TIER_PARAMETERS }).error_code, `quantity ${count}`).toBe("RULESPEC_TIERED_RATE_UNITS_BELOW_FIRST_TIER");
+    }
+    // Zero consumes nothing and owes nothing.
+    expect(executeRuleSpec({ rule: gapped, facts: hours(0), parameters: TIER_PARAMETERS }).output).toEqual({ kind: "money", currency: "ZZZ", minor_units: 0 });
+  });
+
   it("refuses fail-closed when a tier's rate is unbound", () => {
     const rule = createRuleSpecPackage(tierDraft());
     const outcome = executeRuleSpecAtomic({ rule, facts: hours(3), parameters: TIER_PARAMETERS.slice(0, 2) });

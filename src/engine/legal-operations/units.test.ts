@@ -118,3 +118,50 @@ describe("the sick-pay accrual executes under derived units", () => {
     expect(() => createRuleSpecPackage(draft)).toThrow("RULESPEC_MULTIPLY_REQUIRES_COUNTED_VALUES");
   });
 });
+
+describe("what an adversarial pass found, and what now refuses it", () => {
+  it("a bare base symbol is not a unit id: `day` cannot alias `days`", () => {
+    expect(() => dimensionOf("day")).toThrow("RULESPEC_UNIT_ID_IS_A_BASE_SYMBOL:day");
+    expect(() => sameUnit("day", "days")).toThrow("RULESPEC_UNIT_ID_IS_A_BASE_SYMBOL:day");
+    expect(() => quotientUnit("day", "month")).toThrow("RULESPEC_UNIT_ID_IS_A_BASE_SYMBOL");
+    // And at the spec boundary, by name, before any node runs.
+    const draft = accrualDraft() as unknown as Record<string, unknown>;
+    const facts = [{ ref_id: "fact.months.employed", value_kind: "rational", unit: "month" }];
+    expect(() => createRuleSpecPackage({ ...draft, facts } as unknown as RuleSpecDraft)).toThrow("RULESPEC_UNIT_ID_IS_A_BASE_SYMBOL:month");
+  });
+
+  it("a constant may not carry a currency unit", () => {
+    const draft = {
+      ...SHELL, rule_spec_id: "synthetic.rulespec.constant.currency", topic: "travel",
+      facts: [], parameters: [],
+      nodes: [{ node_id: "shape", operation: "constant.integer", value: 500, unit: "currency.ils" }],
+      output_ref: "shape",
+    } as unknown as RuleSpecDraft;
+    expect(() => createRuleSpecPackage(draft)).toThrow("RULESPEC_CONSTANT_MAY_NOT_CARRY_CURRENCY:shape");
+  });
+
+  it("bounds every partial sum of an add, not only the total", () => {
+    // 1/999983 + 1/999979 has a twelve-digit coprime denominator; the third
+    // term brings the total back inside the bound only if nobody looked at the
+    // partial sum. Somebody looks.
+    const draft = {
+      ...SHELL, rule_spec_id: "synthetic.rulespec.partial.sum", topic: "travel",
+      resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 6 },
+      facts: [
+        { ref_id: "fact.a", value_kind: "rational", unit: "ratio" },
+        { ref_id: "fact.b", value_kind: "rational", unit: "ratio" },
+        { ref_id: "fact.c", value_kind: "rational", unit: "ratio" },
+      ],
+      parameters: [],
+      nodes: [{ node_id: "sum", operation: "add", refs: ["fact.a", "fact.b", "fact.c"] }],
+      output_ref: "sum",
+    } as unknown as RuleSpecDraft;
+    const rule = createRuleSpecPackage(draft);
+    const facts: readonly RuleSpecInputValue[] = [
+      { ref_id: "fact.a", value: { kind: "rational", numerator: "1", denominator: "999983", unit: "ratio" } },
+      { ref_id: "fact.b", value: { kind: "rational", numerator: "1", denominator: "999979", unit: "ratio" } },
+      { ref_id: "fact.c", value: { kind: "rational", numerator: "0", denominator: "1", unit: "ratio" } },
+    ];
+    expect(executeRuleSpecAtomic({ rule, facts, parameters: [] }).error_code).toBe("RULESPEC_INTEGER_DIGIT_LIMIT_EXCEEDED");
+  });
+});

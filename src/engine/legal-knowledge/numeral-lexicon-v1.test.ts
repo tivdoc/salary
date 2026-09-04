@@ -115,3 +115,18 @@ describe("legal-numeral-lexicon-v1", () => {
     expect(bindThroughLexicon("½ מהשכר", "½").binding?.numeral_form).toBe("glyph");
   });
 });
+
+describe("what an adversarial pass found, and what now refuses it", () => {
+  it("a surface must stand as its own word: חצי does not bind from וחצי or מחצית, יום not from ליום", () => {
+    expect(bindThroughLexicon("תקופה של יום וחצי", "חצי").refusal).toBe("NUMERAL_SURFACE_NOT_IN_CHUNK");
+    expect(bindThroughLexicon("- מחצית דמי מחלה;", "חצי").refusal).toBe("NUMERAL_SURFACE_NOT_IN_CHUNK");
+    expect(bindThroughLexicon("לא ישולם שכר בעד ליום העדרות", "יום").refusal).toBe("NUMERAL_SURFACE_NOT_IN_CHUNK");
+    expect(bindThroughLexicon("ישולם בעד יום אחד בלבד", "יום").binding?.numerator).toBe("1");
+    expect(bindThroughLexicon("- יום נוסף לכל שנת-עבודה", "יום נוסף").binding?.numerator).toBe("1");
+  });
+
+  it("refuses to bind anything from a chunk that carries an OCR-mangled fraction anywhere", () => {
+    expect(bindThroughLexicon("מחצית מהשכר, 1 1/2 ימים", "מחצית").refusal).toBe("NUMERAL_CHUNK_OCR_AMBIGUOUS");
+    expect(bindCompoundThroughLexicon("יום וחצי ואחר כך 11/4", "יום", "וחצי").refusal).toBe("NUMERAL_CHUNK_OCR_AMBIGUOUS");
+  });
+});

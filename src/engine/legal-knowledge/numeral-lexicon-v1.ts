@@ -110,9 +110,30 @@ export type LexiconBinding = Readonly<{
 
 export type LexiconBindingRefusal =
   | "NUMERAL_OCR_AMBIGUOUS"
+  | "NUMERAL_CHUNK_OCR_AMBIGUOUS"
   | "NUMERAL_NOT_IN_LEXICON"
   | "NUMERAL_SURFACE_NOT_IN_CHUNK"
   | "NUMERAL_ADDITIVE_NEEDS_A_WHOLE";
+
+const HEBREW_LETTER = /[א-ת]/u;
+
+/**
+ * A surface must stand as its own word: `חצי` is a substring of `וחצי` and of
+ * `מחצית`, and `יום` of `ליום` and `היום`. A substring match would let half a
+ * day bind from a chunk that says a day and a half, which a Lane B adversarial
+ * pass demonstrated. So the character before and after must not be a Hebrew
+ * letter.
+ */
+function standsAsWord(chunkText: string, surface: string): boolean {
+  let from = chunkText.indexOf(surface);
+  while (from >= 0) {
+    const before = from === 0 ? "" : chunkText[from - 1];
+    const after = chunkText[from + surface.length] ?? "";
+    if (!HEBREW_LETTER.test(before) && !HEBREW_LETTER.test(after)) return true;
+    from = chunkText.indexOf(surface, from + 1);
+  }
+  return false;
+}
 
 export type LexiconBindingOutcome =
   | Readonly<{ binding: LexiconBinding; refusal: null }>
@@ -129,7 +150,11 @@ export function bindThroughLexicon(chunkText: string, surface: string): LexiconB
   const resolution = resolveNumeral(surface);
   if (!resolution.resolved) return refuse(resolution.refusal);
   if (resolution.additive) return refuse("NUMERAL_ADDITIVE_NEEDS_A_WHOLE");
-  if (!chunkText.includes(surface)) return refuse("NUMERAL_SURFACE_NOT_IN_CHUNK");
+  // A chunk carrying an OCR-mangled fraction anywhere is not a chunk to bind a
+  // rate from, whatever else it says: rule 3, applied to the chunk and not
+  // only to the surface.
+  if (containsOcrAmbiguousFraction(chunkText)) return refuse("NUMERAL_CHUNK_OCR_AMBIGUOUS");
+  if (!standsAsWord(chunkText, surface)) return refuse("NUMERAL_SURFACE_NOT_IN_CHUNK");
   return Object.freeze({
     binding: Object.freeze({
       lexicon_version: LEGAL_NUMERAL_LEXICON_VERSION,
@@ -152,9 +177,10 @@ export function bindCompoundThroughLexicon(chunkText: string, whole: string, add
   if (!base.resolved) return refuse(base.refusal);
   if (!extra.resolved) return refuse(extra.refusal);
   if (base.additive || !extra.additive) return refuse("NUMERAL_ADDITIVE_NEEDS_A_WHOLE");
+  if (containsOcrAmbiguousFraction(chunkText)) return refuse("NUMERAL_CHUNK_OCR_AMBIGUOUS");
   const compound = `${whole} ${additive}`;
   const fused = `${whole}${additive}`;
-  const surface = chunkText.includes(compound) ? compound : chunkText.includes(fused) ? fused : null;
+  const surface = standsAsWord(chunkText, compound) ? compound : standsAsWord(chunkText, fused) ? fused : null;
   if (surface === null) return refuse("NUMERAL_SURFACE_NOT_IN_CHUNK");
   const numerator = BigInt(base.numerator) * BigInt(extra.denominator) + BigInt(extra.numerator) * BigInt(base.denominator);
   const denominator = BigInt(base.denominator) * BigInt(extra.denominator);
