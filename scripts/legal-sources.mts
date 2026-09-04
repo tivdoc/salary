@@ -1209,7 +1209,12 @@ async function citationAuditCommand() {
   for (const build of buildState.records) {
     const source = manifest.sources.find((entry) => entry.source_id === build.source_id && entry.source_version === build.source_version);
     const observation = source ? selectedObservation(fetchState, source) : null;
-    if (!source || !observation || build.parse_status !== "parsed" || !build.normalized_path || !build.chunks_path || !build.normalized_text_sha256) {
+    // L5-5: a record parsed with a reservation (safe_error_code set — an
+    // instrument selection, for one) is parsed to a selected span, not to the
+    // whole artifact this audit round-trips. It is not auditable here, and says
+    // which reservation, rather than failing as if the whole artifact were
+    // meant to be canonical.
+    if (!source || !observation || build.parse_status !== "parsed" || build.safe_error_code || !build.normalized_path || !build.chunks_path || !build.normalized_text_sha256) {
       records.push({
         source_id: build.source_id,
         source_version_id: `${build.source_id}@${build.source_version}`,

@@ -3,10 +3,10 @@ import { CORPUS_LIFECYCLE, corpusLifecycleReconciliation } from "./lifecycle.ts"
 import { reconcileStableTransitions, type HistoricalChunkTransition } from "./transitions.ts";
 
 describe("orthogonal corpus lifecycle V0.5.0", () => {
-  it("reconciles all 17 sources and the corrected 274 to 202 arithmetic", () => {
+  it("reconciles all 17 sources and the L5 arithmetic: 274 extracted, 194 resolved through selections", () => {
     const report = corpusLifecycleReconciliation();
     expect(report.passed).toBe(true);
-    expect(report.totals).toMatchObject({ source_count: 17, technical_parsed_sources: 16, technical_failed_sources: 1, parsed_but_instrument_quarantined_sources: 2, extracted_chunks: 274, instrument_resolved_chunks: 202, quarantined_chunk_cardinality: 72, retrievable_review_chunks: 202, canonical_binding_candidate_chunks: 86, explanatory_or_corroborative_chunks: 116, reviewed_sources: 0, active_sources: 0, operative_sources: 0 });
+    expect(report.totals).toMatchObject({ source_count: 17, technical_parsed_sources: 16, technical_failed_sources: 1, parsed_but_instrument_quarantined_sources: 0, extracted_chunks: 274, instrument_resolved_chunks: 194, quarantined_chunk_cardinality: 80, retrievable_review_chunks: 194, canonical_binding_candidate_chunks: 78, explanatory_or_corroborative_chunks: 116, reviewed_sources: 0, active_sources: 0, operative_sources: 0 });
     expect(CORPUS_LIFECYCLE.every((entry) => entry.operative === false && entry.human_review_status === "needs_review" && entry.activation_status === "inactive")).toBe(true);
     expect(CORPUS_LIFECYCLE.find((entry) => entry.source_version_id.includes("OVERTIME_PERMIT"))?.technical_parse_status).toBe("parsed");
     expect(CORPUS_LIFECYCLE.find((entry) => entry.source_version_id.includes("CONVALESCENCE_EXTENSION_ORDER_2023"))?.technical_parse_status).toBe("parsed");

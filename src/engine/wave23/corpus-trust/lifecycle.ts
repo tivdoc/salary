@@ -38,16 +38,21 @@ type EntrySeed = Readonly<{
   surface?: CorpusLifecycleEntry["retrieval_surface"];
 }>;
 
+// L5-5 (D4): the three multi-instrument containers resolve to a registered
+// draft instrument selection — the selected span's chunks (1, 2 and 3) are
+// resolved and retrievable for review, the rest of each issue stays
+// quarantined, and the boundary is resolved_with_review_pending until a
+// reviewer attests the selection. Pension 2016 stays a technical parse failure.
 const SEEDS: readonly EntrySeed[] = Object.freeze([
   { source_version_id: "IL_ANNUAL_VACATION_LAW@discovery-v0", topic: "vacation", extracted: 6, resolved: 6 },
   { source_version_id: "IL_CONVALESCENCE_EXTENSION_ORDER_1988@discovery-v0", topic: "convalescence", extracted: 4, resolved: 4 },
   { source_version_id: "IL_CONVALESCENCE_EXTENSION_ORDER_2016@discovery-v0.1", topic: "convalescence", extracted: 3, resolved: 3 },
-  { source_version_id: "IL_CONVALESCENCE_EXTENSION_ORDER_2023@discovery-v0.2", topic: "convalescence", extracted: 6, resolved: 0, boundary: "ambiguous" },
-  { source_version_id: "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2", topic: "convalescence", extracted: 14, resolved: 14 },
+  { source_version_id: "IL_CONVALESCENCE_EXTENSION_ORDER_2023@discovery-v0.2", topic: "convalescence", extracted: 6, resolved: 1, boundary: "resolved_with_review_pending" },
+  { source_version_id: "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2", topic: "convalescence", extracted: 14, resolved: 2, boundary: "resolved_with_review_pending" },
   { source_version_id: "IL_CONVALESCENCE_KNESSET_RESEARCH_2025@discovery-v0", topic: "convalescence", extracted: 9, resolved: 9, role: "secondary_explanatory", surface: "explanatory_review" },
   { source_version_id: "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2024@discovery-v0.2", topic: "convalescence", extracted: 11, resolved: 11 },
   { source_version_id: "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2025@discovery-v0.3.1", topic: "convalescence", extracted: 65, resolved: 11, boundary: "resolved_with_review_pending" },
-  { source_version_id: "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1", topic: "working_time", extracted: 12, resolved: 0, boundary: "ambiguous", role: "role_pending" },
+  { source_version_id: "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1", topic: "working_time", extracted: 12, resolved: 3, boundary: "resolved_with_review_pending", role: "role_pending" },
   { source_version_id: "IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0", topic: "pension", extracted: 12, resolved: 12 },
   { source_version_id: "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016@discovery-v0.2", topic: "pension", extracted: 0, resolved: 0, parse: "failed", boundary: "unresolved" },
   { source_version_id: "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016@discovery-v0", topic: "travel", extracted: 1, resolved: 1 },
@@ -115,8 +120,12 @@ export function corpusLifecycleReconciliation() {
   const invariants = Object.freeze({
     sources_17: totals.source_count === 17,
     corrected_parse_16_1: totals.technical_parsed_sources === 16 && totals.technical_failed_sources === 1,
-    parsed_quarantine_2: totals.parsed_but_instrument_quarantined_sources === 2,
-    arithmetic_274_to_202: totals.extracted_chunks === 274 && totals.instrument_resolved_chunks === 202 && totals.quarantined_chunk_cardinality === 72,
+    // L5-5: no source is parsed-but-quarantined any more — the two that were
+    // resolve to a registered draft instrument selection, and so does the 2026
+    // order. 274 extracted, 194 resolved (the selected spans: 1 + 2 + 3 in
+    // place of 0 + 14 + 0), 80 quarantined.
+    parsed_quarantine_0: totals.parsed_but_instrument_quarantined_sources === 0,
+    arithmetic_274_to_194: totals.extracted_chunks === 274 && totals.instrument_resolved_chunks === 194 && totals.quarantined_chunk_cardinality === 80,
     retrieval_surface_partition: totals.canonical_binding_candidate_chunks + totals.explanatory_or_corroborative_chunks === totals.retrievable_review_chunks,
     all_unreviewed_inactive_nonoperative: totals.needs_review_sources === 17 && totals.reviewed_sources === 0 && totals.active_sources === 0 && totals.operative_sources === 0,
   });
@@ -131,6 +140,14 @@ export function corpusLifecycleReconciliation() {
       technical_parse_failure_source_version_id: "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016@discovery-v0.2",
       parsed_instrument_quarantine_source_version_ids: Object.freeze([
         "IL_CONVALESCENCE_EXTENSION_ORDER_2023@discovery-v0.2",
+        "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1",
+      ]),
+      // L5-5 (D4). The labels above are the Wave 2.3 history and stay as
+      // written; this is what changed since.
+      l5_instrument_selection_label: "16 technically parsed / 1 technical parse failure / 0 instrument-boundary quarantined: three containers resolve to registered draft selections, review pending",
+      l5_selected_span_source_version_ids: Object.freeze([
+        "IL_CONVALESCENCE_EXTENSION_ORDER_2023@discovery-v0.2",
+        "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2",
         "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1",
       ]),
     }),

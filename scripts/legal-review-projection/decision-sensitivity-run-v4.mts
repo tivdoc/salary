@@ -109,7 +109,7 @@ function renderDifference(amount: bigint, unit: string, kind: string): string {
 
 // Decisions whose branches differ in something a value scenario cannot see.
 const BRANCH_NOTES: Readonly<Record<string, string>> = Object.freeze({
-  "legal.reference.il.decision.convalescence_2026_rate_period":
+  [`${TENANT}.decision.convalescence_2026_rate_period`]:
     "both branches carry 451.50 ILS and differ only in effective period (the calendar year 2026, or from the order's signature on 27 July 2026); the executor is handed a version, not a date, so no value scenario can separate them — the period is the review question, and it is left open here",
 });
 

@@ -164,7 +164,8 @@ async function main(): Promise<void> {
   record("all_proof_fixtures_flagged_synthetic",
     afterRows.filter((row) => !row.decision_id.startsWith(LEGAL_DECISION_PREFIX)).every((row) => row.synthetic),
     `marked_now=${marked} fixtures=${fixtures.length}`);
-  record("exactly_three_legal_decisions_remain", legal.length === 3,
+  // L5-6 registered a fourth legal decision, the 2026 convalescence rate period.
+  record("exactly_four_legal_decisions_remain", legal.length === 4,
     `legal=${legal.length} of ${afterRows.length}: ${legal.map((row) => `${row.decision_id}=${row.resolution_state}`).join(" ")}`);
 
   // --- The flag is one-way. A fixture must never be laundered into a legal
