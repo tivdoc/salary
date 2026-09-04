@@ -1,0 +1,958 @@
+{
+  "schema_version": "tivdoc-hours-law-section-amendment-index-v1",
+  "unit": "L6-1 / D3",
+  "law": "חוק שעות עבודה ומנוחה, התשי\"א-1951",
+  "record_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+  "method": "Direct amendments: every section reference outside a nested other-law block is a Hours-law section. Indirect amendments: a section reference in the same sentence as the law's name. A term-replacement law that lists the Hours law touches every section terminologically, with its stated exclusions quoted. Evidence is the sentence the reference sits in; what an amendment did is read from that sentence by a person.",
+  "publications": [
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_01",
+      "title": "חוק שעות עבודה ומנוחה (תיקון), התשכ\"ט-1969",
+      "published_at": "1969-03-18",
+      "publication_reference": "ספר החוקים 551, p. 54",
+      "canonical_url": "https://fs.knesset.gov.il/6/law/6_lsr_209132.PDF",
+      "artifact_sha256": "b97d2bf2a67f666c0f5efb732359ad4ae4a7a72e0aafd9ff71e98d0d4347c596",
+      "logical_text_sha256": "a5f28360847adf70b72da91a790d4ac25107de0afce85abca45ee405c57f8291",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "9",
+        "9א",
+        "9ב",
+        "12",
+        "26"
+      ],
+      "hours_law_section_evidence": {
+        "9": [
+          {
+            "reference": "סעיף 9",
+            "sentence": "1 . בחוק שעות,עבודה ומנוחה,תשי\"א­1951 1 )להלן ­ החוק העיקרי(, אחרי סעיף 9"
+          }
+        ],
+        "12": [
+          {
+            "reference": "סעיף12",
+            "sentence": "4. ניתן היתר לפי סעיף12 לחוק העיקרי, לפני תחילתו של חוק זה, יראוהו גם כהיתר"
+          },
+          {
+            "reference": "סעיף12",
+            "sentence": "9ב. הוראות סעיף12 יחולו, בשינויים המחוייבים, על מתן היתרי עבודה"
+          }
+        ],
+        "26": [
+          {
+            "reference": "בסעיף26",
+            "sentence": "2. בסעיף26 לחול, העיקרי, אחרי סעיף קטן)ב( יבוא:"
+          },
+          {
+            "reference": "סעיף26",
+            "sentence": "תיקון סעיף26"
+          }
+        ],
+        "9ב": [
+          {
+            "reference": "סעיף 9ב",
+            "sentence": "לפי סעיף 9ב לחוק העיקרי לגבי אותו בית מלאכה, מפעל תעשייתי או חנות, הכל לפי"
+          }
+        ],
+        "9א": [
+          {
+            "reference": "סעיף 9א",
+            "sentence": "\")ג( העובר על הוראת סעיף 9א, דינו ­ קנס1000 לירות.\""
+          },
+          {
+            "reference": "סעיף 9א",
+            "sentence": "בימי מנוחה למי שהוראות סעיף 9א חלות עליו.\""
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_02",
+      "title": "חוק בית הדין לעבודה, התשכ\"ט-1969",
+      "published_at": "1969-03-27",
+      "publication_reference": "ספר החוקים 553, p. 78",
+      "canonical_url": "https://fs.knesset.gov.il/6/law/6_lsr_211655.PDF",
+      "artifact_sha256": "102c241d3fc5dd854ee906393c090a76c78e0ddb2e5b10953abca9eb08a9582f",
+      "logical_text_sha256": "e9e56531613211774067a5032eb7e44278c00601017d42f42d4b83ce5cc9dc9e",
+      "status": "parsed",
+      "kind": "indirect",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "30"
+      ],
+      "hours_law_section_evidence": {
+        "30": [
+          {
+            "reference": "בסעיף 30",
+            "sentence": "7. בסעיף 30)ב( לחוק שעות עבודה ומנוחה,תשי\"א­1951 13, במקום הסיפה המתחילה"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_03",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 2), התשל\"א-1971",
+      "published_at": "1971-03-05",
+      "publication_reference": "ספר החוקים 618, p. 69",
+      "canonical_url": "https://fs.knesset.gov.il/7/law/7_lsr_209131.PDF",
+      "artifact_sha256": "1a0b7bff7352d1cbf0d93dae284c283929e7e64da362f51521f22f5e99c712d6",
+      "logical_text_sha256": "cd5c62b45d29dbf61a43d60888a169912015fa0f57d329934b8b28de41324773",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "30"
+      ],
+      "hours_law_section_evidence": {
+        "30": [
+          {
+            "reference": "בסעיף 30",
+            "sentence": "1, בחוק שעות עבודה ומנוחה, תשי\"א­11951, בסעיף 30)א(, בסוף פסקה )1( יבוא תיקון סעיף 30"
+          },
+          {
+            "reference": "סעיף 30",
+            "sentence": "1, בחוק שעות עבודה ומנוחה, תשי\"א­11951, בסעיף 30)א(, בסוף פסקה )1( יבוא תיקון סעיף 30"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_04",
+      "title": "חוק בית הדין לעבודה (תיקון מס' 8), התש\"ם-1980",
+      "published_at": "1980-06-05",
+      "publication_reference": "ספר החוקים 972, p. 135",
+      "canonical_url": "https://fs.knesset.gov.il/9/law/9_lsr_208109.PDF",
+      "artifact_sha256": "0ec158b51143d4e6a0c05d3670ee69e886d465b0ac4d184efe5b1623c435c273",
+      "logical_text_sha256": "15425d0ddac6f459d76d6a293b266077360968a3826e4c3836595a7883e46fb7",
+      "status": "parsed",
+      "kind": "indirect",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "29"
+      ],
+      "hours_law_section_evidence": {
+        "29": [
+          {
+            "reference": "סעיף 29",
+            "sentence": ")2( סעיף 29 לחוק שעות עבודה ומנוחה, תשי\"א­51951;"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_05",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 5), התשמ\"א-1981",
+      "published_at": "1981-03-06",
+      "publication_reference": "ספר החוקים 1010, p. 124",
+      "canonical_url": "https://fs.knesset.gov.il/9/law/9_lsr_209130.PDF",
+      "artifact_sha256": "73422ae27bb30d0a47f5d2e157812b505396a5f1f0ee8ca791e45f90a0e17cfe",
+      "logical_text_sha256": "ac4b29bb4af74237f93208d4da589109b011e223b4da6b7e5459c805dcbc0041",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "9ב",
+        "9ג",
+        "12",
+        "15",
+        "23"
+      ],
+      "hours_law_section_evidence": {
+        "12": [
+          {
+            "reference": "בסעיף 12",
+            "sentence": "ושנקבעה בצו מאת ועדת השרים הנזכרת בסעיף 12)ב(,"
+          }
+        ],
+        "15": [
+          {
+            "reference": "סעיף 15",
+            "sentence": "לפי סעיף 15 לפקודת הראיות ]נוסח חדש[, התשל\"א­1971 2, ובו"
+          },
+          {
+            "reference": "סעיף 15",
+            "sentence": "סעיף 15 לפקודת הראיות ]נוסח חדש[, התשל\"א­1971, ובו הפרטים"
+          }
+        ],
+        "23": [
+          {
+            "reference": "סעיף23",
+            "sentence": "תיקון סעיף23"
+          },
+          {
+            "reference": "סעיף 23",
+            "sentence": "2. סעיף 23 לחוק העיקרי, אחרי \"מחייבים או מצדיקים זאת\" יבוא 'יוכן לגבי מי­"
+          }
+        ],
+        "9ב": [
+          {
+            "reference": "סעיף 9ב",
+            "sentence": "1. אחרי סעיף 9ב לחוק שעות עבודה ומנוחה, התשי\"א­1951 1 )להלן ­ החוק"
+          }
+        ],
+        "9ג": [
+          {
+            "reference": "סעיפים 9ג",
+            "sentence": "סעיפים 9ג עד 9ו, שהוגשה לאחר שחלפו שלושה חדשים מיום תחילת"
+          },
+          {
+            "reference": "סעיף 9ג",
+            "sentence": "לדון בתובענות שעילתן בהוראות סעיף 9ג."
+          },
+          {
+            "reference": "סעיפים 9ג",
+            "sentence": ")ב( הוראות סעיפים 9ג ו­9ד לא יחולו ­"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_06",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 6), התשמ\"ג-1983",
+      "published_at": "1983-03-30",
+      "publication_reference": "ספר החוקים 1079, p. 62",
+      "canonical_url": "https://fs.knesset.gov.il/10/law/10_lsr_209129.PDF",
+      "artifact_sha256": "8b4378c23efc24685eaf8bbbaad5efa592175b66d0d2a216cec08229c8a631b7",
+      "logical_text_sha256": "ba456089cf378abf022c1edb9a1e9d36b2ee4674880d3149aaa17b4a3eba2d9c",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "12"
+      ],
+      "hours_law_section_evidence": {
+        "12": [
+          {
+            "reference": "בסעיף12",
+            "sentence": "1. בסעיף12 לחוק שעות עבודה ומנוחה, התשי\"א­11951, בסוסו יבוא :"
+          },
+          {
+            "reference": "סעיף 12",
+            "sentence": "תיקוןסעיף 12"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_07",
+      "title": "חוק הסדרים במשק המדינה (יצירת תנאים לצמיחה ולקליטת העליה), התשנ\"א-1991",
+      "published_at": "1991-03-27",
+      "publication_reference": "ספר החוקים 1351, p. 129",
+      "canonical_url": "https://fs.knesset.gov.il/12/law/12_lsr_211728.PDF",
+      "artifact_sha256": "2e17354969ac7ad6bb45565e976fdee8eb66f7e95e0845f756427c397de5a2d5",
+      "logical_text_sha256": "a0dc3b452e8030dcbbaedbdfdab5ac89f3857e07e6dee9cc80156c4a565b449d",
+      "status": "parsed",
+      "kind": "indirect",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "22"
+      ],
+      "hours_law_section_evidence": {
+        "22": [
+          {
+            "reference": "בסעיף 22",
+            "sentence": "2. האמור בסעיף 22 לחויק שעות עבודה ומנוחה, התשי\"א­21951, יסומן )א( ואחריו יבוא: תיקון חוק שעות"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_08",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 8), התשנ\"ג-1993",
+      "published_at": "1993-08-11",
+      "publication_reference": "ספר החוקים 1430, p. 167",
+      "canonical_url": "https://fs.knesset.gov.il/13/law/13_lsr_210962.PDF",
+      "artifact_sha256": "dbc15158f82c610228696cf98ebd3669cb607f2b5dbff7b5303af3305bd3c566",
+      "logical_text_sha256": "eb4374e4b5747a57ee39c52ac33526041919c2939b9f3036c5a259f8a7bb1d0e",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "3",
+        "4",
+        "5",
+        "10"
+      ],
+      "hours_law_section_evidence": {
+        "3": [
+          {
+            "reference": "סעיף 3",
+            "sentence": "1. במקום סעיף 3 לחוק שעות עבודה ומנוחה, התשי\"א­1951 1 )להלן ­ החוק העיקרי(,"
+          },
+          {
+            "reference": "סעיף 3",
+            "sentence": "תיקון סעיף 3"
+          }
+        ],
+        "4": [
+          {
+            "reference": "סעיף 4",
+            "sentence": "תיקון סעיף 4"
+          },
+          {
+            "reference": "בסעיף 4",
+            "sentence": "2. בסעיף 4)א> לחוק העיקרי, במקום ''ארבעים ושבע'' יבוא \"ארבעים וחמש''."
+          }
+        ],
+        "5": [
+          {
+            "reference": "בסעיף 5",
+            "sentence": "3. בסעיף 5)א( לחוק העיקרי ­ תיקון סעיף 5"
+          },
+          {
+            "reference": "סעיף 5",
+            "sentence": "3. בסעיף 5)א( לחוק העיקרי ­ תיקון סעיף 5"
+          }
+        ],
+        "10": [
+          {
+            "reference": "בסעיף 10",
+            "sentence": "4. בסעיף 10)א20( לחוק העיקרי, במקום \"ארבעים ושבע\" יבוא \"ארבעים וחמש\". תיקון סעיף 10"
+          },
+          {
+            "reference": "סעיף 10",
+            "sentence": "4. בסעיף 10)א20( לחוק העיקרי, במקום \"ארבעים ושבע\" יבוא \"ארבעים וחמש\". תיקון סעיף 10"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_09",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 9), התש\"ס-2000",
+      "published_at": "2000-06-25",
+      "publication_reference": "ספר החוקים 1742, p. 213",
+      "canonical_url": "https://fs.knesset.gov.il/15/law/15_lsr_300222.pdf",
+      "artifact_sha256": "bcf038d78ef9629ba6f5ce555f2a872a6a5d42f090f6a90d5e94fb48b73da0d0",
+      "logical_text_sha256": "b752451de61288d20a299d5ee2f464c890f7c22921b53748c64a89d658ad0f16",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "20"
+      ],
+      "hours_law_section_evidence": {
+        "20": [
+          {
+            "reference": "בסעיף 20",
+            "sentence": "1. בחוק שעות עבודה ומנוחה, התשי\"א­1951 1, בסעיף 20, בסופו יבוא: תיקון סעיף20"
+          },
+          {
+            "reference": "סעיף20",
+            "sentence": "1. בחוק שעות עבודה ומנוחה, התשי\"א­1951 1, בסעיף 20, בסופו יבוא: תיקון סעיף20"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_10",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 10), התשס\"א-2000",
+      "published_at": "2000-11-26",
+      "publication_reference": "ספר החוקים 1757, p. 12",
+      "canonical_url": "https://fs.knesset.gov.il/15/law/15_lsr_300274.pdf",
+      "artifact_sha256": "0997ab3024e879cc0b29458966017fcc950a8d063cb7f3e96aa2fec1d61be551",
+      "logical_text_sha256": "a165414c911a85e9c97db27118e4846671a1cef5afe0e41d8eec66910d90f379",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "9ז"
+      ],
+      "hours_law_section_evidence": {
+        "9ז": [
+          {
+            "reference": "סעיף9ז",
+            "sentence": "תיקון סעיף9ז 1. בחוק שעות עבורה ומנוחה, התשי\"א­1951 1, בסעיף 9ז)ב(, במקום \"שלושה\" יבוא"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_11",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 11), התשס\"ב-2002",
+      "published_at": "2002-01-21",
+      "publication_reference": "ספר החוקים 1824, p. 100",
+      "canonical_url": "https://fs.knesset.gov.il/15/law/15_lsr_300451.pdf",
+      "artifact_sha256": "4ad82e6902acd5a1ca4bdc6ac157721be0d9f95df9e7089ef8ae20f361b97718",
+      "logical_text_sha256": "8602ce81b18ac1da3c5e54d38a65414976bc75f157f7cbe09525126483e6942a",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "9ד"
+      ],
+      "hours_law_section_evidence": {
+        "9ד": [
+          {
+            "reference": "סעיף 9ד",
+            "sentence": "תיקון סעיף 9ד 1. בחוק שעות עבורה ומנוחה, התשי\"א­ 1951 1, בסעיף 9ר)א(, במקום הרישה ער"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_12",
+      "title": "חוק הגנת השכר (תיקון מס' 24), התשס\"ח-2008",
+      "published_at": "2008-07-06",
+      "publication_reference": "ספר החוקים 2162, p. 616",
+      "canonical_url": "https://fs.knesset.gov.il/17/law/17_lsr_300652.pdf",
+      "artifact_sha256": "430cbe652634ef742946d73f9f3e7749b9a7fcf3ab910e2cad36b149bf6d793f",
+      "logical_text_sha256": "f75097648ba471d38def9a639b3698a24041a22b93d176bab50fc06aaa94ab28",
+      "status": "parsed",
+      "kind": "indirect",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "0",
+        "25"
+      ],
+      "hours_law_section_evidence": {
+        "0": [
+          {
+            "reference": "בסעיף 0",
+            "sentence": "העובד נמנה עם עובדים כאמור בסעיף 0 3(א) (6העובד נמנה עם עובדים כאמור בסעיף 0 3(א) (6) לחוק שעות עבודה ומנוחה, ) לחוק שעות עבודה ומנוחה,"
+          },
+          {
+            "reference": "בסעיף 0",
+            "sentence": "העובד נמנה עם עובדים כאמור בסעיף 0 3(א) (6העובד נמנה עם עובדים כאמור בסעיף 0 3(א) (6) לחוק שעות עבודה ומנוחה, ) לחוק שעות עבודה ומנוחה,"
+          },
+          {
+            "reference": "בסעיף 0",
+            "sentence": "העובד נמנה עם עובדים כאמור בסעיף 0 3(א) (6העובד נמנה עם עובדים כאמור בסעיף 0 3(א) (6) לחוק שעות עבודה ומנוחה, ) לחוק שעות עבודה ומנוחה,"
+          }
+        ],
+        "25": [
+          {
+            "reference": "בסעיף 25",
+            "sentence": "תיקון חוק שעות 6 בחוק שעות עבודה ומנוחה, התשי\"א-1951 7, בסעיף 25 , אחרי סעיף קטן (א) יבוא:"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_13",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 13), התש\"ע-2009",
+      "published_at": "2009-12-16",
+      "publication_reference": "ספר החוקים 2218, p. 276",
+      "canonical_url": "https://fs.knesset.gov.il/18/law/18_lsr_300963.pdf",
+      "artifact_sha256": "45f635d0b4a32bbba99e33c62eddd40329fb2f1319bce4092b25db6122dd36f0",
+      "logical_text_sha256": "0594fb076857b58efdc9290c33da638c001f6c07c8d1603d9988012964805dfa",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "20",
+        "20א",
+        "22",
+        "22א"
+      ],
+      "hours_law_section_evidence": {
+        "1": [
+          {
+            "reference": "סעיף 1",
+            "sentence": "תיקון סעיף 1 1 בחוק שעות עבודה ומנוחה, התשי\"א-1951 1 (להלן - החוק העיקרי), בסעיף 1 , בהגדרה"
+          },
+          {
+            "reference": "בסעיף 1",
+            "sentence": "תיקון סעיף 1 1 בחוק שעות עבודה ומנוחה, התשי\"א-1951 1 (להלן - החוק העיקרי), בסעיף 1 , בהגדרה"
+          },
+          {
+            "reference": "סעיף 1",
+            "sentence": "תיקון סעיף 1 1 בחוק התובלה האווירית , התש\"ם-0 198 1 (להלן - החוק העיק רי) , בסעיף 1, אחרי"
+          }
+        ],
+        "2": [
+          {
+            "reference": "סעיפים 2",
+            "sentence": "לפי חוקי העבודה כהפרת הוראות סעיפים 2 ו-3 לפי חוקי העבודה כהפרת הוראות סעיפים 2 ו-3"
+          },
+          {
+            "reference": "סעיפים 2",
+            "sentence": "לפי חוקי העבודה כהפרת הוראות סעיפים 2 ו-3 לפי חוקי העבודה כהפרת הוראות סעיפים 2 ו-3"
+          },
+          {
+            "reference": "בסעיף 2",
+            "sentence": "תחילתם של סעיף 20א(ב) (1 ) לחוק העיק רי, כנוסחו בסעיף 2 לחוק זה, ושל סעיף"
+          }
+        ],
+        "3": [
+          {
+            "reference": "בסעיף 3",
+            "sentence": "22א(ב) (1 ) לחוק עבודת הנוער, התשי\"ג-1953 , כנוסחו בסעיף 3 לחוק זה, שישה חודשים"
+          }
+        ],
+        "4": [
+          {
+            "reference": "סעיפים 4",
+            "sentence": "(ב)(ב) הוראות סעיפים 4 ו-5 הוראות סעיפים 4 ו-5 יחולו, בשינויים המחויבים, גם יחולו, בשינויים המחויבים, גם"
+          },
+          {
+            "reference": "סעיפים 4",
+            "sentence": "(ב)(ב) הוראות סעיפים 4 ו-5 הוראות סעיפים 4 ו-5 יחולו, בשינויים המחויבים, גם יחולו, בשינויים המחויבים, גם"
+          },
+          {
+            "reference": "סעיף 4",
+            "sentence": "(ג)(ג) בבואו לפסוק פיצויים לדוגמה לפי סעיף 4 כפי שהוא בבואו לפסוק פיצויים לדוגמה לפי סעיף 4 כפי שהוא"
+          }
+        ],
+        "5": [
+          {
+            "reference": "סעיף 5",
+            "sentence": "סעיף 5 א לחוק הזכות לעבודה בישיבה, התשס\"ז-07 20 3 \""
+          }
+        ],
+        "20": [
+          {
+            "reference": "סעיף 20",
+            "sentence": "הוספת סעיף 20א 2 אחרי סעיף 20 לחוק העיקרי יבוא:"
+          },
+          {
+            "reference": "סעיף 20(1)",
+            "sentence": "שירותיםשירותים(1) סעיף 20(1) סעיף 20א לחוק שעות עבודה ומנוחה, התשי\"א-א לחוק שעות עבודה ומנוחה, התשי\"א-"
+          }
+        ],
+        "22": [
+          {
+            "reference": "סעיף 22(2)",
+            "sentence": "(2) סעיף 22(2) סעיף 22א לחוק עבודת הנוער, התשי\"ג-1953 9;א לחוק עבודת הנוער, התשי\"ג-1953 9;"
+          }
+        ],
+        "20א": [
+          {
+            "reference": "סעיף 20א(א)",
+            "sentence": "\"שעות עבודה\", אחרי \"כוח ואויר\" יבוא \"ולרבות הפסקות לפי סעיף 20א(א)\""
+          },
+          {
+            "reference": "סעיף 20א",
+            "sentence": "הוספת סעיף 20א 2 אחרי סעיף 20 לחוק העיקרי יבוא:"
+          },
+          {
+            "reference": "סעיף 20א",
+            "sentence": "שירותיםשירותים(1) סעיף 20(1) סעיף 20א לחוק שעות עבודה ומנוחה, התשי\"א-א לחוק שעות עבודה ומנוחה, התשי\"א-"
+          }
+        ],
+        "22א": [
+          {
+            "reference": "סעיף 22א",
+            "sentence": "(2) סעיף 22(2) סעיף 22א לחוק עבודת הנוער, התשי\"ג-1953 9;א לחוק עבודת הנוער, התשי\"ג-1953 9;"
+          },
+          {
+            "reference": "סעיף 22א(ב)",
+            "sentence": "תחילתם של סעיף 20א(ב) (1 ) לחוק העיק רי, כנוסחו בסעיף 2 לחוק זה, ושל סעיף"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_14",
+      "title": "חוק להחלפת המונח מעביד (תיקוני חקיקה), התשע\"ד-2014",
+      "published_at": "2014-07-15",
+      "publication_reference": "ספר החוקים 2459, p. 603",
+      "canonical_url": "https://fs.knesset.gov.il/19/law/19_lsr_306572.pdf",
+      "artifact_sha256": "cda764185bea9314c0a2b0edb6e4747b63e9da5f78d227c94102bbe95f074846",
+      "logical_text_sha256": "4f5d17f1400ec54ce75f87e07bb79cbdf83fc2641177e10f9a83d441a06172c7",
+      "status": "parsed",
+      "kind": "indirect",
+      "mentions_hours_law": true,
+      "hours_law_sections": [],
+      "hours_law_section_evidence": {},
+      "terminology_scope": {
+        "whole_law": true,
+        "sentence": "3[מ ס ' 14]3חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19 5 , למעט המילה \"מעבידים\" בסעיפים[מ ס ' 14] 5 , למעט המילה \"מעבידים\" בסעיפים"
+      },
+      "touches": {
+        "section_16": {
+          "kind": "terminological",
+          "evidence": [
+            {
+              "reference": "(whole law, by title)",
+              "sentence": "3[מ ס ' 14]3חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19 5 , למעט המילה \"מעבידים\" בסעיפים[מ ס ' 14] 5 , למעט המילה \"מעבידים\" בסעיפים"
+            }
+          ]
+        },
+        "section_17": {
+          "kind": "terminological",
+          "evidence": [
+            {
+              "reference": "(whole law, by title)",
+              "sentence": "3[מ ס ' 14]3חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19 5 , למעט המילה \"מעבידים\" בסעיפים[מ ס ' 14] 5 , למעט המילה \"מעבידים\" בסעיפים"
+            }
+          ]
+        },
+        "section_18": {
+          "kind": "terminological",
+          "evidence": [
+            {
+              "reference": "(whole law, by title)",
+              "sentence": "3[מ ס ' 14]3חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19 5 , למעט המילה \"מעבידים\" בסעיפים[מ ס ' 14] 5 , למעט המילה \"מעבידים\" בסעיפים"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_15",
+      "title": "חוק הזכות לעבודה בישיבה (תיקון מס' 3), התשע\"ז-2017",
+      "published_at": "2017-04-03",
+      "publication_reference": "ספר החוקים 2628, p. 597",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_382421.pdf",
+      "artifact_sha256": "33fbca5fec8297c3c2b77fb5e25a0b33affd028a4d71817ee9a80cb90b8a9331",
+      "logical_text_sha256": "d189253d40e78abcd6c3444dbf73b74b96dfa357a4a69f37facf9fead56f4f5d",
+      "status": "parsed",
+      "kind": "indirect",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "20א"
+      ],
+      "hours_law_section_evidence": {
+        "20א": [
+          {
+            "reference": "בסעיף 20א(ד)",
+            "sentence": "\"\"מזמין שירות\", ו\"קבלן שירות\" - כהגדרתם בסעיף 20א(ד) לחוק שעות עבודה"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_16",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 16), התשע\"ח-2017",
+      "published_at": "2017-12-28",
+      "publication_reference": "ספר החוקים 2675, p. 73",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_456316.pdf",
+      "artifact_sha256": "fdd6686449047722e025c3dc0641ecaa9da4bdb10d4fb1eaec9b39019f172c9a",
+      "logical_text_sha256": "9857f5d6bb00955191628db42f06289293d3b562c7ccd0a82cb7eb1e988e5841",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "12",
+        "12ה",
+        "12ק",
+        "14",
+        "14ב"
+      ],
+      "hours_law_section_evidence": {
+        "12": [
+          {
+            "reference": "סעיף12",
+            "sentence": "תיקוןסעיף12 בחוקשעותעבודהומנוחה,בחוקשעותהתשי\"א-עבודה51 119 ,ומנוחה,בסעיף12התשי\"א-51 119 , ,אחריבסעיףסעיף12קטן(א)יבוא: ,אחריסעיףקטן(א)תיקוןסעיףיבוא:12"
+          }
+        ],
+        "14": [
+          {
+            "reference": "סעיף14",
+            "sentence": "2רתחולהחוק זה יחול2ר גם על מיחוק זה יחול שהתקיימו גם בו על מי תנאי הזכאות שהתקיימו בו למענק תנאי חימום לפי הזכאות סעיף למענק14ב חימום לחוק לפיתחולה סעיף14 ב לחוק"
+          }
+        ],
+        "14ב": [
+          {
+            "reference": "סעיף14ב",
+            "sentence": "תיקוןסעיף14ב 1 1 תיקוןסעיף14ב"
+          },
+          {
+            "reference": "סעיף14ב",
+            "sentence": "תיקוןסעיף14ב 1 1 תיקוןסעיף14ב"
+          },
+          {
+            "reference": "בסעיף14ב",
+            "sentence": "בחוק הבטחת הכנסה,בחוק הבטחת התשמ\"א-0 8 19 הכנסה, (להלן - התשמ\"א- החוק0 8 19 העיקרי), (להלן - בסעיף החוק14 העיקרי),ב , במקום בסעיף14ב , במקום"
+          }
+        ],
+        "12ה": [
+          {
+            "reference": "בסעיף12ה",
+            "sentence": "תיקוןסעיף12 בחוקשעותעבודהומנוחה,בחוקשעותהתשי\"א-עבודה51 119 ,ומנוחה,בסעיף12התשי\"א-51 119 , ,אחריבסעיףסעיף12קטן(א)יבוא: ,אחריסעיףקטן(א)תיקוןסעיףיבוא:12"
+          }
+        ],
+        "12ק": [
+          {
+            "reference": "סעיף12ק",
+            "sentence": "תיקוןסעיף12 בחוקשעותעבודהומנוחה,בחוקשעותהתשי\"א-עבודה51 119 ,ומנוחה,בסעיף12התשי\"א-51 119 , ,אחריבסעיףסעיף12קטן(א)יבוא: ,אחריסעיףקטן(א)תיקוןסעיףיבוא:12"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_17",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 17), התשע\"ח-2018",
+      "published_at": "2018-03-13",
+      "publication_reference": "ספר החוקים 2705, p. 284",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_491923.pdf",
+      "artifact_sha256": "5437ae6a5b736dc78b5b67428363820b062b5288278a051c6c1c085a350b2663",
+      "logical_text_sha256": "a83b39270ddc1ef2b5c9a4cba2707d24fadb533cbc4d8a0b59f4f506c861f294",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "9ג",
+        "11",
+        "14",
+        "22",
+        "33",
+        "90ב"
+      ],
+      "hours_law_section_evidence": {
+        "11": [
+          {
+            "reference": "סעיף11",
+            "sentence": "תיקוןסעיף11 1ר בחוקשעותעבודהומנוחה,התשי\"א-1 119 (להלן-החוקהעיקרי),בסעיף11 -"
+          },
+          {
+            "reference": "בסעיף11",
+            "sentence": "תיקוןסעיף11 1ר בחוקשעותעבודהומנוחה,התשי\"א-1 119 (להלן-החוקהעיקרי),בסעיף11 -"
+          },
+          {
+            "reference": "סעיף11(8 )",
+            "sentence": "כללי לפי סעיף11(8 ) יתחשב השר גם בהמלצה משותפת של ארגון העובדים וארגוני"
+          }
+        ],
+        "14": [
+          {
+            "reference": "סעיף14",
+            "sentence": "תיקוןסעיף14 2ר בס עיף 14 לחוקהעיקרי,אחריסעיףקטן(ב)יבוא:"
+          }
+        ],
+        "22": [
+          {
+            "reference": "סעיף22",
+            "sentence": "תיקוןסעיף22 3ר בס עיף 22 לחוקהעיקרי-"
+          }
+        ],
+        "33": [
+          {
+            "reference": "סעיף33",
+            "sentence": "תיקוןסעיף33 4ר בס עיף 33 לחוק העיקרי, במקום \"נוגעים בדבר\" יבוא \"נוגעים בדבר; לעניין מתן היתר"
+          }
+        ],
+        "9ג": [
+          {
+            "reference": "סעיף9ג",
+            "sentence": "(א) הכרזה על מצב מיוחד בעורף לפי סעיף9ג ל ח ו ק ה ה ת ג ו נ נ ו ת ה א ז ר ח י ת ,"
+          }
+        ],
+        "90ב": [
+          {
+            "reference": "סעיף90ב",
+            "sentence": "(ג) הכרזה על אירוע חירום אזרחי לפי סעיף90ב ל פ ק ו ד ת ה מ ש ט ר ה [נ ו ס ח"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_18",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 18), התשע\"ח-2018",
+      "published_at": "2018-06-21",
+      "publication_reference": "ספר החוקים 2725, p. 698",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_501345.pdf",
+      "artifact_sha256": "3fde6e1f8ece94d6f145039a2b6d0248cb418c3fe6b4196c2a36cded72bb7c16",
+      "logical_text_sha256": "0a2b2fde109b12e331cc7bf1d0aabb42658a9174f624bdcdcf3a7208fb70f6b1",
+      "status": "parsed",
+      "kind": "direct",
+      "mentions_hours_law": true,
+      "hours_law_sections": [
+        "2",
+        "9ג",
+        "9ד",
+        "9ה",
+        "9ו",
+        "12",
+        "20ג",
+        "20ד",
+        "32",
+        "61",
+        "214ב",
+        "312ר"
+      ],
+      "hours_law_section_evidence": {
+        "2": [
+          {
+            "reference": "סעיף2",
+            "sentence": "תיקוןסעיף2 1ר בחוק רישוי שירותים ומקצועות בענף הרכב, התשע\"ו- 016 12 (להלן - החוק העיקרי),"
+          }
+        ],
+        "12": [
+          {
+            "reference": "סעיף12",
+            "sentence": "3רתיקוןסעיף312רבס עיף 12(ב)לחוקהעיקרי,במקוםבס עיף 12\"שר(ב)לחוקהדתות\"יבואהעיקרי,\"השרבמקום\"שרלשירותידת\"רהדתות\"יבוא\"השרלשירותידת\"רתיקוןסעיף12"
+          }
+        ],
+        "32": [
+          {
+            "reference": "סעיף32",
+            "sentence": "תיקוןסעיף32 2רבס עיף 32לחוקהעיקרי-"
+          }
+        ],
+        "61": [
+          {
+            "reference": "בסעיף 61(א)",
+            "sentence": "בזנ ות שלוש שנים או קנס כאמור בסעיף 61(א) ( 4) , ואם ההצעה"
+          }
+        ],
+        "20ד": [
+          {
+            "reference": "סעיף 20ד",
+            "sentence": "הוספתסעיף 20ד1רבחוקהעונשין,התשל\"ז-7 7 119 (להלן-החוקהעיקרי),אחריסעיף 20גיבוא:"
+          }
+        ],
+        "20ג": [
+          {
+            "reference": "סעיף 20ג",
+            "sentence": "הוספתסעיף 20ד1רבחוקהעונשין,התשל\"ז-7 7 119 (להלן-החוקהעיקרי),אחריסעיף 20גיבוא:"
+          }
+        ],
+        "214ב": [
+          {
+            "reference": "סעיף 214ב",
+            "sentence": "תיקוןסעיף 214ב2רבס עיף 214בלחוקהעיקרי,במקום\" 20ג\"יבוא\" 20ג, 20 ד \"ר"
+          }
+        ],
+        "9ד": [
+          {
+            "reference": "סעיף 9ד",
+            "sentence": "הוספתסעיף 9ד1 1ר ב ח ו ק ש ע ו ת ע ב ו ד ה ו מ נ ו ח ה , ה ת ש י \" א- 1 119 (ל ה ל ן - ה ח ו ק ה ע י ק ר י ) , א ח ר י ס ע י ף 9 ד יב ו א :"
+          },
+          {
+            "reference": "בסעיף 9ד",
+            "sentence": "(ג) ועדת השרים האמורה בסעיף 9ד1 (ב) (2) לחוק העיקרי כנוסחו בחוק זה תתכנס"
+          }
+        ],
+        "9ג": [
+          {
+            "reference": "סעיפים9ג(א)",
+            "sentence": "המנוחה\"סירובלעבודהשבועיביום9ד 1ר(א) בלילגרועמהוראותסעיפים9ג(א)ו־9ד(א)-"
+          }
+        ],
+        "9ו": [
+          {
+            "reference": "בסעיף9ו(ב)",
+            "sentence": "(1 ) במקומות(1 ) עבודה או במקומות בעבודות עבודה המנויים או בסעיף בעבודות9ו(ב) ; המנויים בסעיף9ו(ב) ;"
+          }
+        ],
+        "9ה": [
+          {
+            "reference": "סעיף 9ה",
+            "sentence": "2רתיקוןסעיף 9ה2רבס עיף 9הלחוקהעיקרי,במקום\"9גאו9ד\"בס עיף 9היבוא\"9ג,9דאו9דלחוק1 \"רהעיקרי,במקום\"9גאו9ד\"יבוא\"9ג,9דאו9ד1 \"ר תיקוןסעיף 9ה"
+          },
+          {
+            "reference": "סעיף 9ה",
+            "sentence": "2רתיקוןסעיף 9ה2רבס עיף 9הלחוקהעיקרי,במקום\"9גאו9ד\"בס עיף 9היבוא\"9ג,9דאו9דלחוק1 \"רהעיקרי,במקום\"9גאו9ד\"יבוא\"9ג,9דאו9ד1 \"ר תיקוןסעיף 9ה"
+          }
+        ],
+        "312ר": [
+          {
+            "reference": "סעיף312ר",
+            "sentence": "3רתיקוןסעיף312רבס עיף 12(ב)לחוקהעיקרי,במקוםבס עיף 12\"שר(ב)לחוקהדתות\"יבואהעיקרי,\"השרבמקום\"שרלשירותידת\"רהדתות\"יבוא\"השרלשירותידת\"רתיקוןסעיף12"
+          }
+        ]
+      },
+      "terminology_scope": null,
+      "touches": {}
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_ERRATUM_1951",
+      "title": "תיקון טעות בחוק שעות עבודה ומנוחה, התשי\"א-1951",
+      "published_at": "1951-07-26",
+      "publication_reference": "ספר החוקים 82, p. 249",
+      "canonical_url": "https://fs.knesset.gov.il/1/law/1_lsr_ec_317270.PDF",
+      "artifact_sha256": "fdb99408cde910390d368684ab1db6de929244717d04b4e2f9a6bf5f915662d4",
+      "logical_text_sha256": "275a2382b8d8562e7d2c1cb0809c6526d52d9891ab907f1ae220811cd4fbb206",
+      "status": "parsed",
+      "kind": "indirect",
+      "mentions_hours_law": true,
+      "hours_law_sections": [],
+      "hours_law_section_evidence": {},
+      "terminology_scope": null,
+      "touches": {}
+    }
+  ],
+  "sections": {
+    "section_16": {
+      "substantive_publications": [],
+      "terminological_publications": [
+        {
+          "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_14",
+          "title": "חוק להחלפת המונח מעביד (תיקוני חקיקה), התשע\"ד-2014",
+          "published_at": "2014-07-15",
+          "evidence": [
+            {
+              "reference": "(whole law, by title)",
+              "sentence": "3[מ ס ' 14]3חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19 5 , למעט המילה \"מעבידים\" בסעיפים[מ ס ' 14] 5 , למעט המילה \"מעבידים\" בסעיפים"
+            }
+          ]
+        }
+      ],
+      "authoritative_text_for_figures": "IL_HOURS_WORK_REST_LAW@discovery-v0 (the 1951 promulgation): no official publication amends this section substantively; the 2014 term replacement changes a word, not a figure"
+    },
+    "section_17": {
+      "substantive_publications": [],
+      "terminological_publications": [
+        {
+          "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_14",
+          "title": "חוק להחלפת המונח מעביד (תיקוני חקיקה), התשע\"ד-2014",
+          "published_at": "2014-07-15",
+          "evidence": [
+            {
+              "reference": "(whole law, by title)",
+              "sentence": "3[מ ס ' 14]3חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19 5 , למעט המילה \"מעבידים\" בסעיפים[מ ס ' 14] 5 , למעט המילה \"מעבידים\" בסעיפים"
+            }
+          ]
+        }
+      ],
+      "authoritative_text_for_figures": "IL_HOURS_WORK_REST_LAW@discovery-v0 (the 1951 promulgation): no official publication amends this section substantively; the 2014 term replacement changes a word, not a figure"
+    },
+    "section_18": {
+      "substantive_publications": [],
+      "terminological_publications": [
+        {
+          "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_14",
+          "title": "חוק להחלפת המונח מעביד (תיקוני חקיקה), התשע\"ד-2014",
+          "published_at": "2014-07-15",
+          "evidence": [
+            {
+              "reference": "(whole law, by title)",
+              "sentence": "3[מ ס ' 14]3חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19חוק שעות עבודה ומנוחה, התשי\"א- 1 5 19 5 , למעט המילה \"מעבידים\" בסעיפים[מ ס ' 14] 5 , למעט המילה \"מעבידים\" בסעיפים"
+            }
+          ]
+        }
+      ],
+      "authoritative_text_for_figures": "IL_HOURS_WORK_REST_LAW@discovery-v0 (the 1951 promulgation): no official publication amends this section substantively; the 2014 term replacement changes a word, not a figure"
+    }
+  }
+}

@@ -8,7 +8,10 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/bills/148168",
       "artifact_url": "https://fs.knesset.gov.il/1/law/1_lsr_209133.PDF",
-      "allowlisted_hosts": ["main.knesset.gov.il", "fs.knesset.gov.il"],
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
       "expected_document_title": "Hours of Work and Rest Law, 1951 - original official promulgation",
       "recommended_filename": "hours-work-rest-law-original-1951.pdf",
       "required": true,
@@ -23,13 +26,358 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
       "artifact_url": null,
-      "allowlisted_hosts": ["main.knesset.gov.il", "fs.knesset.gov.il"],
-      "expected_document_title": "Hours of Work and Rest Law - official full representation",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "Hours of Work and Rest Law - official full representation (DOES NOT EXIST: the record's 'full law' link is he.wikisource.org, a community consolidation; retired L6-1)",
       "recommended_filename": "hours-work-rest-law-official.pdf",
       "required": true,
       "existing_source_version": "discovery-v0",
-      "browser_outcome": "partial",
-      "browser_safe_error_code": "original_promulgation_and_amendment_publications_visible_but_no_official_consolidated_text"
+      "browser_outcome": "unavailable",
+      "browser_safe_error_code": "no_official_consolidated_text_exists"
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-01",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_01",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/6/law/6_lsr_209132.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון), התשכ\"ט-1969",
+      "recommended_filename": "hours-work-rest-law-amendment-01.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-02",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_02",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/6/law/6_lsr_211655.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק בית הדין לעבודה, התשכ\"ט-1969",
+      "recommended_filename": "hours-work-rest-law-amendment-02.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-03",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_03",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/7/law/7_lsr_209131.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 2), התשל\"א-1971",
+      "recommended_filename": "hours-work-rest-law-amendment-03.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-04",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_04",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/9/law/9_lsr_208109.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק בית הדין לעבודה (תיקון מס' 8), התש\"ם-1980",
+      "recommended_filename": "hours-work-rest-law-amendment-04.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-05",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_05",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/9/law/9_lsr_209130.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 5), התשמ\"א-1981",
+      "recommended_filename": "hours-work-rest-law-amendment-05.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-06",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_06",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/10/law/10_lsr_209129.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 6), התשמ\"ג-1983",
+      "recommended_filename": "hours-work-rest-law-amendment-06.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-07",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_07",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/12/law/12_lsr_211728.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק הסדרים במשק המדינה (יצירת תנאים לצמיחה ולקליטת העליה), התשנ\"א-1991",
+      "recommended_filename": "hours-work-rest-law-amendment-07.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-08",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_08",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/13/law/13_lsr_210962.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 8), התשנ\"ג-1993",
+      "recommended_filename": "hours-work-rest-law-amendment-08.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-09",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_09",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/15/law/15_lsr_300222.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 9), התש\"ס-2000",
+      "recommended_filename": "hours-work-rest-law-amendment-09.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-10",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_10",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/15/law/15_lsr_300274.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 10), התשס\"א-2000",
+      "recommended_filename": "hours-work-rest-law-amendment-10.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-11",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_11",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/15/law/15_lsr_300451.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 11), התשס\"ב-2002",
+      "recommended_filename": "hours-work-rest-law-amendment-11.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-12",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_12",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/17/law/17_lsr_300652.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק הגנת השכר (תיקון מס' 24), התשס\"ח-2008",
+      "recommended_filename": "hours-work-rest-law-amendment-12.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-13",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_13",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/18/law/18_lsr_300963.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 13), התש\"ע-2009",
+      "recommended_filename": "hours-work-rest-law-amendment-13.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-14",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_14",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/19/law/19_lsr_306572.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק להחלפת המונח מעביד (תיקוני חקיקה), התשע\"ד-2014",
+      "recommended_filename": "hours-work-rest-law-amendment-14.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-15",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_15",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/20/law/20_lsr_382421.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק הזכות לעבודה בישיבה (תיקון מס' 3), התשע\"ז-2017",
+      "recommended_filename": "hours-work-rest-law-amendment-15.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-16",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_16",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/20/law/20_lsr_456316.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 16), התשע\"ח-2017",
+      "recommended_filename": "hours-work-rest-law-amendment-16.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-17",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_17",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/20/law/20_lsr_491923.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 17), התשע\"ח-2018",
+      "recommended_filename": "hours-work-rest-law-amendment-17.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-AMENDMENT-18",
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_18",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/20/law/20_lsr_501345.pdf",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "חוק שעות עבודה ומנוחה (תיקון מס' 18), התשע\"ח-2018",
+      "recommended_filename": "hours-work-rest-law-amendment-18.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-HOURS-WORK-REST-ERRATUM-1951",
+      "source_id": "IL_HOURS_WORK_REST_LAW_ERRATUM_1951",
+      "instrument_id": "INSTRUMENT:IL:HOURS-WORK-REST-LAW",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "artifact_url": "https://fs.knesset.gov.il/1/law/1_lsr_ec_317270.PDF",
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
+      "expected_document_title": "תיקון טעות בחוק שעות עבודה ומנוחה, התשי\"א-1951",
+      "recommended_filename": "hours-work-rest-law-erratum-1951.pdf",
+      "required": true,
+      "existing_source_version": "discovery-v0",
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
     },
     {
       "target_id": "ACQ-V02-WORK-PERMITS-CATALOG",
@@ -38,7 +386,10 @@
       "target_kind": "catalog",
       "canonical_landing_url": "https://www.gov.il/he/Departments/DynamicCollectors/work-permits",
       "artifact_url": null,
-      "allowlisted_hosts": ["www.gov.il", "gov.il"],
+      "allowlisted_hosts": [
+        "www.gov.il",
+        "gov.il"
+      ],
       "expected_document_title": "Ministry of Labor work permits catalog - complete snapshot",
       "recommended_filename": "work-permits-catalog-snapshot.json",
       "required": true,
@@ -53,7 +404,10 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://www.gov.il/he/Departments/DynamicCollectors/extension-orders",
       "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf",
-      "allowlisted_hosts": ["www.gov.il", "gov.il"],
+      "allowlisted_hosts": [
+        "www.gov.il",
+        "gov.il"
+      ],
       "expected_document_title": "Extension order increasing pension insurance contributions, 2016",
       "recommended_filename": "pension-increase-extension-order-2016.pdf",
       "required": true,
@@ -68,7 +422,10 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://www.gov.il/he/Departments/DynamicCollectors/extension-orders",
       "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-recovery-recreation-2016/he/extention-order-recovery-recreation-2016.pdf",
-      "allowlisted_hosts": ["www.gov.il", "gov.il"],
+      "allowlisted_hosts": [
+        "www.gov.il",
+        "gov.il"
+      ],
       "expected_document_title": "Convalescence and recreation extension order, 2016",
       "recommended_filename": "convalescence-extension-order-2016.pdf",
       "required": true,
@@ -83,7 +440,10 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://www.gov.il/he/Departments/DynamicCollectors/extension-orders",
       "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/11651/he/workers-rights_work-relations_11651.pdf",
-      "allowlisted_hosts": ["www.gov.il", "gov.il"],
+      "allowlisted_hosts": [
+        "www.gov.il",
+        "gov.il"
+      ],
       "expected_document_title": "Official publication containing the 2023 convalescence extension order",
       "recommended_filename": "convalescence-extension-order-2023.pdf",
       "required": true,
@@ -98,7 +458,10 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://main.knesset.gov.il/Activity/Legislation/Laws/Pages/default.aspx",
       "artifact_url": "https://fs.knesset.gov.il/25/law/25_lsr_4232982.pdf",
-      "allowlisted_hosts": ["main.knesset.gov.il", "fs.knesset.gov.il"],
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
       "expected_document_title": "Law on reduction and freeze of convalescence pay in 2024 for reservist benefits funding",
       "recommended_filename": "convalescence-reduction-freeze-law-2024.pdf",
       "required": true,
@@ -113,7 +476,10 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://main.knesset.gov.il/Activity/Legislation/Laws/Pages/default.aspx",
       "artifact_url": "https://fs.knesset.gov.il/25/law/25_lsr_6133485.pdf",
-      "allowlisted_hosts": ["main.knesset.gov.il", "fs.knesset.gov.il"],
+      "allowlisted_hosts": [
+        "main.knesset.gov.il",
+        "fs.knesset.gov.il"
+      ],
       "expected_document_title": "Official 2025 law publication continuing or changing convalescence-pay provisions",
       "recommended_filename": "convalescence-law-2025.pdf",
       "required": true,
@@ -128,7 +494,10 @@
       "target_kind": "artifact",
       "canonical_landing_url": "https://www.gov.il/he/Departments/DynamicCollectors/extension-orders",
       "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/order14863/he/workers-rights_order14863.pdf",
-      "allowlisted_hosts": ["www.gov.il", "gov.il"],
+      "allowlisted_hosts": [
+        "www.gov.il",
+        "gov.il"
+      ],
       "expected_document_title": "Extension order regarding employer participation in convalescence and recreation expenses, 2026",
       "recommended_filename": "convalescence-extension-order-2026.pdf",
       "required": true,

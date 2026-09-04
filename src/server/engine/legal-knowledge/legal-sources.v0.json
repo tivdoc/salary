@@ -1127,6 +1127,1222 @@
       }
     },
     {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_01",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון), התשכ\"ט-1969",
+      "canonical_url": "https://fs.knesset.gov.il/6/law/6_lsr_209132.PDF",
+      "publication_reference": "ספר החוקים 551, p. 54",
+      "published_at": "1969-03-18",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 1 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:1); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_02",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק בית הדין לעבודה, התשכ\"ט-1969",
+      "canonical_url": "https://fs.knesset.gov.il/6/law/6_lsr_211655.PDF",
+      "publication_reference": "ספר החוקים 553, p. 78",
+      "published_at": "1969-03-27",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 2 (עקיף) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:2); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_03",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 2), התשל\"א-1971",
+      "canonical_url": "https://fs.knesset.gov.il/7/law/7_lsr_209131.PDF",
+      "publication_reference": "ספר החוקים 618, p. 69",
+      "published_at": "1971-03-05",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 3 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:3); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_04",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק בית הדין לעבודה (תיקון מס' 8), התש\"ם-1980",
+      "canonical_url": "https://fs.knesset.gov.il/9/law/9_lsr_208109.PDF",
+      "publication_reference": "ספר החוקים 972, p. 135",
+      "published_at": "1980-06-05",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 4 (עקיף) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:4); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_05",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 5), התשמ\"א-1981",
+      "canonical_url": "https://fs.knesset.gov.il/9/law/9_lsr_209130.PDF",
+      "publication_reference": "ספר החוקים 1010, p. 124",
+      "published_at": "1981-03-06",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 5 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:5); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_06",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 6), התשמ\"ג-1983",
+      "canonical_url": "https://fs.knesset.gov.il/10/law/10_lsr_209129.PDF",
+      "publication_reference": "ספר החוקים 1079, p. 62",
+      "published_at": "1983-03-30",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 6 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:6); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_07",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק הסדרים במשק המדינה (יצירת תנאים לצמיחה ולקליטת העליה), התשנ\"א-1991",
+      "canonical_url": "https://fs.knesset.gov.il/12/law/12_lsr_211728.PDF",
+      "publication_reference": "ספר החוקים 1351, p. 129",
+      "published_at": "1991-03-27",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 7 (עקיף) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:7); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_08",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 8), התשנ\"ג-1993",
+      "canonical_url": "https://fs.knesset.gov.il/13/law/13_lsr_210962.PDF",
+      "publication_reference": "ספר החוקים 1430, p. 167",
+      "published_at": "1993-08-11",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 8 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:8); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_09",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 9), התש\"ס-2000",
+      "canonical_url": "https://fs.knesset.gov.il/15/law/15_lsr_300222.pdf",
+      "publication_reference": "ספר החוקים 1742, p. 213",
+      "published_at": "2000-06-25",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 9 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:9); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_10",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 10), התשס\"א-2000",
+      "canonical_url": "https://fs.knesset.gov.il/15/law/15_lsr_300274.pdf",
+      "publication_reference": "ספר החוקים 1757, p. 12",
+      "published_at": "2000-11-26",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 10 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:10); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_11",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 11), התשס\"ב-2002",
+      "canonical_url": "https://fs.knesset.gov.il/15/law/15_lsr_300451.pdf",
+      "publication_reference": "ספר החוקים 1824, p. 100",
+      "published_at": "2002-01-21",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 11 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:11); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_12",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק הגנת השכר (תיקון מס' 24), התשס\"ח-2008",
+      "canonical_url": "https://fs.knesset.gov.il/17/law/17_lsr_300652.pdf",
+      "publication_reference": "ספר החוקים 2162, p. 616",
+      "published_at": "2008-07-06",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 12 (עקיף) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:12); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_13",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 13), התש\"ע-2009",
+      "canonical_url": "https://fs.knesset.gov.il/18/law/18_lsr_300963.pdf",
+      "publication_reference": "ספר החוקים 2218, p. 276",
+      "published_at": "2009-12-16",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 13 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:13); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_14",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק להחלפת המונח מעביד (תיקוני חקיקה), התשע\"ד-2014",
+      "canonical_url": "https://fs.knesset.gov.il/19/law/19_lsr_306572.pdf",
+      "publication_reference": "ספר החוקים 2459, p. 603",
+      "published_at": "2014-07-15",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 14 (עקיף) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:14); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_15",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק הזכות לעבודה בישיבה (תיקון מס' 3), התשע\"ז-2017",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_382421.pdf",
+      "publication_reference": "ספר החוקים 2628, p. 597",
+      "published_at": "2017-04-03",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 15 (עקיף) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:15); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_16",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 16), התשע\"ח-2017",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_456316.pdf",
+      "publication_reference": "ספר החוקים 2675, p. 73",
+      "published_at": "2017-12-28",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 16 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:16); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_17",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 17), התשע\"ח-2018",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_491923.pdf",
+      "publication_reference": "ספר החוקים 2705, p. 284",
+      "published_at": "2018-03-13",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 17 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:17); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_AMENDMENT_18",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "חוק שעות עבודה ומנוחה (תיקון מס' 18), התשע\"ח-2018",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_501345.pdf",
+      "publication_reference": "ספר החוקים 2725, p. 698",
+      "published_at": "2018-06-21",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. Amendment 18 (ישיר) of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:AMENDMENT:18); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW_ERRATUM_1951",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "תיקון טעות בחוק שעות עבודה ומנוחה, התשי\"א-1951",
+      "canonical_url": "https://fs.knesset.gov.il/1/law/1_lsr_ec_317270.PDF",
+      "publication_reference": "ספר החוקים 82, p. 249",
+      "published_at": "1951-07-26",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "L6-1 / D3. The 1951 erratum of the Hours of Work and Rest Law as the official record lists it (publication identity KNESSET:HOURS-WORK-REST:ERROR-CORRECTION:1951); the official publication PDF on fs.knesset.gov.il, one controlled fetch. Which sections it amends is proven from its own text by the section_amendment_index, never taken from a consolidation.",
+        "No consolidated text exists officially: the record's 'full law' link points at a community site, which is not a source here."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "The publication row on the official record is authoritative; the PDF's text is what the build extracts."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "L6-1: the amendment history of §16, §17 and §18 must be proven from official publications before the 1951 rates are bound as the authoritative text."
+      }
+    },
+    {
       "source_id": "IL_MIN_WAGE_LAW",
       "source_version": "discovery-v0",
       "source_type": "statute",

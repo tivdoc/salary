@@ -513,12 +513,30 @@ function attachBuildRecord(state: FetchState, observation: FetchObservation, rec
   };
 }
 
-async function buildCommand() {
+async function buildCommand(args: string[] = []) {
   await ensureLocalDirectories();
   const manifest = await loadManifest();
   const fetchState = await readJson<FetchState>(fetchStatePath, { schema_version: "legal-source-fetch-state-v0", observations: [], failures: [] });
+  // L6-1: `--source-id A,B` rebuilds only those sources and carries every other
+  // record forward unchanged. A full rebuild starts from nothing and would
+  // overwrite records that other steps own — the instrument selections of L5-5
+  // point their chunks_path at a selected span, and a rebuild would silently
+  // re-point them at the whole artifact.
+  const options = parseOptions(args);
+  const requestedSourceIds = typeof options["source-id"] === "string"
+    ? new Set(options["source-id"].split(",").map((entry) => entry.trim()).filter(Boolean))
+    : null;
+  if (requestedSourceIds && ![...requestedSourceIds].every((id) => manifest.sources.some((source) => source.source_id === id))) throw new Error("unknown_build_source_id");
+  const previousBuildState = requestedSourceIds
+    ? await readJson<BuildState>(buildStatePath, { schema_version: "legal-source-build-state-v0", records: [] })
+    : null;
   const buildState: BuildState = { schema_version: "legal-source-build-state-v0", records: [] };
   for (const source of manifest.sources) {
+    if (requestedSourceIds && !requestedSourceIds.has(source.source_id)) {
+      const carried = previousBuildState?.records.find((record) => record.source_id === source.source_id && record.source_version === source.source_version);
+      if (carried) buildState.records.push(carried);
+      continue;
+    }
     const observation = selectedObservation(fetchState, source);
     if (!observation) {
       const record: BuildRecord = {
@@ -1618,7 +1636,7 @@ async function main() {
   let result: unknown;
   if (command === "validate") result = await validateManifestCommand();
   else if (command === "fetch") result = await fetchCommand(args);
-  else if (command === "build") result = await buildCommand();
+  else if (command === "build") result = await buildCommand(args);
   else if (command === "status") result = await statusCommand();
   else if (command === "search") result = await searchCommand(args);
   else if (command === "changes") result = await changesCommand();

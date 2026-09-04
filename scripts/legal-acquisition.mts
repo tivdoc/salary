@@ -217,8 +217,18 @@ function requestReadme(request: ReturnType<typeof acquisitionRequestForTarget>, 
 async function generateRequests() {
   const state = await loadState();
   const requests = [];
+  const retired = [];
   for (const target of state.targets.targets) {
     const requestRoot = path.join(handoffRoot, target.target_id);
+    // L6-1 / D3: a target the official record itself says cannot be fulfilled
+    // is retired, not re-requested. Its finding travels in retired.json beside
+    // the requests so no future run asks a person for a text that does not
+    // exist.
+    if (target.browser_outcome === "unavailable" && target.browser_safe_error_code) {
+      await rm(requestRoot, { recursive: true, force: true });
+      retired.push({ target_id: target.target_id, source_id: target.source_id, finding: target.browser_safe_error_code, expected_document_title: target.expected_document_title, canonical_landing_url: target.canonical_landing_url });
+      continue;
+    }
     const requestRelative = path.relative(handoffRoot, requestRoot);
     if (!requestRelative || requestRelative.startsWith("..") || path.isAbsolute(requestRelative)) throw new Error("handoff_request_path_escape");
     if (targetAcquired(target, state)) {
@@ -247,7 +257,8 @@ async function generateRequests() {
     await mkdir(path.join(incomingRoot, request.acquisition_request_id), { recursive: true });
     requests.push(request);
   }
-  return { requests_created: requests.length, request_ids: requests.map((request) => request.acquisition_request_id).sort(), handoff_path: path.relative(repoRoot, handoffRoot).replaceAll("\\", "/") };
+  await writeJsonAtomic(path.join(handoffRoot, "retired.json"), { schema_version: "owner-acquisition-retired-targets-v0.1", retired });
+  return { requests_created: requests.length, request_ids: requests.map((request) => request.acquisition_request_id).sort(), retired: retired.map((entry) => entry.target_id), handoff_path: path.relative(repoRoot, handoffRoot).replaceAll("\\", "/") };
 }
 
 async function findRequest(requestId: string) {

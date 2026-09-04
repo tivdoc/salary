@@ -23,7 +23,9 @@ export function loadCanonicalRoleInventory() {
   // collective agreement) and D-16 (Annual Vacation Law Amendment 15).
   // Bumped 24 -> 25 by L5-8 (D5): the one controlled attempt at the Hours of
   // Work and Rest Law's consolidated text, registered at the official record.
-  if (rows.length !== 25) throw new Error(`canonical_role_inventory_expected_25_received_${rows.length}`);
+  // Bumped 25 -> 44 by L6-1 (D3): the eighteen amendment publications and the
+  // 1951 erratum of the Hours of Work and Rest Law, from the official record.
+  if (rows.length !== 44) throw new Error(`canonical_role_inventory_expected_44_received_${rows.length}`);
   return Object.freeze({ schema_version: "canonical-source-role-inventory-v0.4.1" as const, source_count: rows.length, rows });
 }
 

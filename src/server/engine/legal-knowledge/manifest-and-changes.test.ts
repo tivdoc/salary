@@ -11,8 +11,8 @@ describe("official source manifest V0.2", () => {
     // Addendum 7 A7-5: D-5's second half (1998 general collective
     // agreement) and D-16 (Annual Vacation Law Amendment 15).
     const manifest = await loadLegalSourceManifest();
-    expect(manifest.sources).toHaveLength(25);
-    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(25);
+    expect(manifest.sources).toHaveLength(44);
+    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(44);
   });
 
   it("covers every initial discovery topic", async () => {
