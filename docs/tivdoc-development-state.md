@@ -1288,6 +1288,114 @@ read mutated bytes — passing alone, failing in the suite. The baseline path is
 now an input; the tamper test mutates a temp copy and no test writes the
 committed file at all.
 
+## Session B — R-2, R-14, R-8, Q-1…Q-8, B-7
+
+**R-2 (seven blank RuleSpec templates).** Built ON the existing seven authoring
+skeletons rather than beside them: each template carries the skeleton's id and
+content hash as provenance and takes its fact paths from it, so the two cannot
+drift. What the skeletons lacked is the slot vocabulary — inputs with per-input
+allowed and forbidden provenance plus fail-closed blocker codes, parameter slots
+naming the parameter, its unit and any open decision, citation slots naming the
+step each clause must support, and the rounding, effective-period,
+sector/population and precedence slots. Provenance reuses the fact registry's
+own `factSourceTypeSchema` rather than a second enum; no template allows
+`derived` or `inferred` on any input, because an agent's guess is not a basis
+for a monetary claim. The refusal is machinery, not a label: `executeRuleSpec`
+itself throws `RULESPEC_INPUT_MISSING` for all seven fixtures when parameters
+are absent.
+
+**R-14 (trace replay from the database).** New table
+`private.legal_operations_execution_traces`, deliberately not
+`public.engine_calculation_trace_versions` — that one is keyed by a customer
+case and an analysis run, and inventing a case row to hold a synthetic trace
+would put synthetic material on the customer path. Append-only (update and
+delete both raise 42501), structurally non-operative via a named CHECK. The
+inputs are stored beside the trace, because replaying from the database means
+reconstructing the computation, not reading a blob back and agreeing with
+itself. Two independent hashes: the engine's canonical hash from the caller, and
+the database's own hash of the stored jsonb computed in the definer and never
+accepted as a parameter. A genuinely fresh Node process replays byte-identically
+in canonical form; a one-increment change to a persisted input is detected and
+refused, and the refusal is provably about the recomputation — the database
+witness and the stored blob hash both stay intact while only the caller hash
+disagrees. 9/9 by execution.
+
+**R-8 (semantic closure).** Over all twelve mutation kinds, not the journey
+subset: the stale set is always a contiguous suffix running to the last stage, a
+change to any fact, source, parameter or rule reaches every dependent stage, and
+invalidation is monotone. Atomicity proven by failing each of the ten writing
+statements in turn: the call rejects, nothing after the failure is attempted,
+and the idempotency record is never committed. The three effects that stayed
+`"unknown"` stay `"unknown"` — R-8 says wire them only if a genuine caller now
+exists, and none does. That is now checked by execution (a grep for real
+invocations of `withCurrentAuthorization`, cross-checked against the disposition
+record's `implemented_uncalled` entry) rather than asserted in a comment: the
+day someone calls it, the test fails.
+
+**Q-1…Q-7 (seven draft RuleSpecs).** Each fills its template, pins it by hash,
+and binds only parameters that exist as `draft` rows. Both branches of both open
+decisions, never one. Three slots unbound, each naming its specific Pool P
+block. Proven on DEV 8/8.
+
+Worth recording for whoever comes next: **`governance_parameter_versions` is
+unreadable by everything that can connect.** No SELECT grant for any login role,
+and the admin migrator is refused `runtime_context_install` outright
+(`RUNTIME_CONTEXT_ROLE_FORBIDDEN`). The sanctioned read is
+`private.governance_aggregate_read(tenant, workflow_kind, aggregate_id,
+aggregate_version)`, whose `content_json` column carries the full candidate.
+Migration `202609020024` adds the missing read for `legal_open_decisions`, which
+had a register function, a withdraw function, a guard, and no read path at all —
+found by trying to use the system rather than by reading the schema.
+
+**Q-8 (the decision-sensitivity report).** Internal only, hashed, on the offline
+shadow envelope, never a Finding, never delivered. Two open questions with
+exact, checkable differences read from the governance database in BigInt minor
+units: `min_wage_hourly_divisor` 182 → 35.40 ILS vs 186 → 34.64 ILS (0.76), and
+`pension_wage_cap_section` 13566.00 vs 13769.00 (203.00). Per-scenario
+propagation is **not** computed and says so: the draft specs cannot execute
+while their judgement slots are unbound, and the 42 golden cases are blank
+templates with no input snapshot, so all 42 are recorded attempted-and-not-
+runnable with both reasons named. `scenarios_run: 0`.
+
+Two things the report records rather than works around: A7-3's proof fixtures
+are permanent (the table is append-only with no delete path), so eight throwaway
+decisions are listed as non-legal fixtures instead of appearing beside real
+questions; and the one genuinely withdrawn legal decision carries `topic: "test"`
+because A7-3's script registered it through the fixture helper. Neither is
+correctable. The id namespace is the reliable discriminator and is what the
+report uses.
+
+**B-7 — what the new artifacts actually unblock, and a defect one of them
+exposed.**
+
+D-5 unblocks nothing. Reading its bytes rather than its metadata: the fetched
+artifact is the Ministry of Labor registry's **index entry** for agreement
+19987038 — number, subject, signing date, status, signatories, and a link — with
+no operative text and no figure at all. The host is official and the page is
+genuinely about the right agreement, which is exactly why it passes every
+host-and-title check. Quarantined as
+`invalid_content_catalogue_record_not_instrument`, a new status in A7-4's
+vocabulary; the schema check now bars *any* non-`verified` integrity status from
+supporting a monetary rule, so a status added later is barred by default.
+P-26…P-29 stay `blocked_dependency` on the agreement text itself.
+
+D-16 unblocks two parameters and exposes one defect. Amendment 15 makes **two**
+changes to §3(a)(1), not one: `במקום "מ־4" יבוא "מ־5" ובמקום "14" יבוא "16"` —
+the seniority band moved as well as the day count. Session A's
+`il.vacation.calendar_days_years_1_to_4` therefore carries the right number
+against the wrong population, and its run-time citation check could not catch
+it: the chunk does contain "16" and "14", and a citation check cannot see that
+the scope in the parameter disagrees with the scope in the clause. That is the
+"citation-checked but still wrong" failure this discipline exists to prevent.
+The table is append-only so the row cannot be corrected; `SUPERSEDED_BY_SCOPE`
+in `rulespec-drafts.ts` names it, a test asserts nothing binds it, and Pool P
+batch 7 registers `il.vacation.calendar_days_years_1_to_5@2017.1.0` in its
+place. Batch 7 also registers the temporary provision nobody had noticed:
+`il.vacation.calendar_days_interim_2016@2016.1.0` = 15 days for 1.7.2016 to
+31.12.2016, band still four years.
+
+Pool P now stands at 28 registered draft parameter versions.
+
 ## Freeze — Addendum 7 close, the full matrix at this head
 
 Per A7-6: a session that stops runs the full matrix on its own final head

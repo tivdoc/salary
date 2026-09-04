@@ -159,7 +159,20 @@ export const legalSourceSchema = z.object({
   // edit; present only on a source this check has actually been run
   // against.
   content_integrity: z.object({
-    status: z.enum(["verified", "invalid_content_title_mismatch"]),
+    // A7-4 quarantine vocabulary. `invalid_content_title_mismatch` is a
+    // document whose content is about something else entirely.
+    // `invalid_content_catalogue_record_not_instrument` is subtler and was
+    // found by reading D-5's bytes rather than its metadata: the fetch
+    // succeeded, the host is official, the page is genuinely about the right
+    // agreement — and it is the registry's *index card* for that agreement
+    // (number, subject, signing date, status, a link), not the agreement. It
+    // will pass every check that looks at titles and hosts, and it can support
+    // no rule at all.
+    status: z.enum([
+      "verified",
+      "invalid_content_title_mismatch",
+      "invalid_content_catalogue_record_not_instrument",
+    ]),
     expected_title: z.string().min(1),
     observed_title: z.string().min(1).nullable(),
     detected_at: legalDateSchema,
@@ -178,9 +191,14 @@ export const legalSourceSchema = z.object({
   // can never independently support a monetary rule — this is not a
   // judgment call to leave to whoever writes the next Pool P citation, it
   // is enforced here, once, at registration.
-  if (source.content_integrity?.status === "invalid_content_title_mismatch"
+  // Any quarantined content, whichever way it failed, is barred from
+  // independently supporting a monetary rule. The check is over "not verified"
+  // rather than over one named status, so a status added later is barred by
+  // default instead of quietly slipping through.
+  if (source.content_integrity !== undefined
+    && source.content_integrity.status !== "verified"
     && source.authority.can_independently_support_monetary_rule) {
-    context.addIssue({ code: "custom", message: "title_mismatch_source_cannot_support_monetary_rule" });
+    context.addIssue({ code: "custom", message: "quarantined_source_cannot_support_monetary_rule" });
   }
   if (source.status === "active") {
     if (!source.content_sha256) context.addIssue({ code: "custom", message: "active_source_content_hash_required" });

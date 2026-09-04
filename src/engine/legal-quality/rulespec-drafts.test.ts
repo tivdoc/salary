@@ -3,6 +3,7 @@ import { canonicalSha256 } from "../rule-runtime/canonical.ts";
 import { WAVE3_TOPICS } from "../wave3/contracts.ts";
 import {
   REGISTERED_DRAFT_PARAMETERS,
+  SUPERSEDED_BY_SCOPE,
   buildRuleSpecDraft,
   buildSevenRuleSpecDrafts,
   draftBoundParameterVersionIds,
@@ -94,6 +95,25 @@ describe("Q-1..Q-7 draft RuleSpecs", () => {
     // ambiguous in a way the effective period could not resolve.
     const ids = REGISTERED_DRAFT_PARAMETERS.map((entry) => entry.parameter_id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("binds nothing that is superseded by scope, and says why each such row exists", () => {
+    // A registered row with the right number and the wrong scope is more
+    // dangerous than a missing one: every check that looks at the citation
+    // passes. The only defence is that nothing binds it, and that is asserted
+    // here rather than left to care.
+    const superseded = Object.keys(SUPERSEDED_BY_SCOPE);
+    expect(superseded.length).toBeGreaterThan(0);
+    const boundIds = draftBoundParameterVersionIds().map((id) => id.slice(0, id.lastIndexOf("@")));
+    for (const parameterId of superseded) {
+      expect(boundIds, parameterId).not.toContain(parameterId);
+      // And it is not silently absent either — it must not be in the registry
+      // this module binds from at all.
+      expect(REGISTERED_DRAFT_PARAMETERS.map((entry) => entry.parameter_id), parameterId).not.toContain(parameterId);
+      // The reason has to name what replaces it, or it is a dead end rather
+      // than a redirection.
+      expect(SUPERSEDED_BY_SCOPE[parameterId], parameterId).toMatch(/Superseded by /u);
+    }
   });
 
   it("leaves every judgement slot unbound: citations, rounding, period, sector, precedence", () => {

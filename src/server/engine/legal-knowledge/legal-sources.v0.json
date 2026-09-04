@@ -27,8 +27,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["minimum_wage"],
-      "sectors": ["general"],
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
@@ -40,9 +44,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["Content and historical versions are not yet legally verified."]
+        "notes": [
+          "Content and historical versions are not yet legally verified."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -81,19 +89,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["minimum_wage"],
-      "sectors": ["general"],
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "html",
       "supersedes_source_version": null,
-      "notes": ["Rate rows must be independently mapped to explicit effective periods before parameter activation."],
+      "notes": [
+        "Rate rows must be independently mapped to explicit effective periods before parameter activation."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["No rate is activated by this manifest."]
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -132,19 +150,31 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["working_time", "overtime", "weekly_rest"],
-      "sectors": ["general"],
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": "ca770f73436663094f546e53bed93aeca867bbed7124991fecfa1a8d750fdcd9",
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["The pinned artifact is the original 1951 promulgation only; current consolidated scope and amendments remain incomplete and require owner/legal review before activation."],
+      "notes": [
+        "The pinned artifact is the original 1951 promulgation only; current consolidated scope and amendments remain incomplete and require owner/legal review before activation."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official legislation database record inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["The legislation record is authoritative; extracted text remains unverified."]
+        "notes": [
+          "The legislation record is authoritative; extracted text remains unverified."
+        ]
       },
       "effective_period": {
         "effective_from": "1951-09-27",
@@ -183,19 +213,30 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["pension", "severance"],
-      "sectors": ["general"],
+      "topics": [
+        "pension",
+        "severance"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Later contribution updates and historical predecessor periods require version review."],
+      "notes": [
+        "Later contribution updates and historical predecessor periods require version review."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Ministry PDF and publication reference inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["No contribution percentage is activated by this manifest."]
+        "notes": [
+          "No contribution percentage is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": "2011-09-27",
@@ -234,19 +275,30 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["working_time", "overtime"],
-      "sectors": ["general"],
+      "topics": [
+        "working_time",
+        "overtime"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Candidate effective interval is stated in the official order and remains pending owner/legal review; no numeric parameter is extracted."],
+      "notes": [
+        "Candidate effective interval is stated in the official order and remains pending owner/legal review; no numeric parameter is extracted."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Ministry PDF discovery",
-        "verified_by": ["tivdoc-legal-remediation-v0.1"],
+        "verified_by": [
+          "tivdoc-legal-remediation-v0.1"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["Content parsing is technical evidence only and does not activate the order."]
+        "notes": [
+          "Content parsing is technical evidence only and does not activate the order."
+        ]
       },
       "effective_period": {
         "effective_from": "2018-04-01",
@@ -285,19 +337,30 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["working_time", "overtime"],
-      "sectors": ["general"],
+      "topics": [
+        "working_time",
+        "overtime"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Official gazette candidate retained with an unresolved effective interval until exact official evidence is reviewed."],
+      "notes": [
+        "Official gazette candidate retained with an unresolved effective interval until exact official evidence is reviewed."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Ministry permit catalog cross-reference",
-        "verified_by": ["tivdoc-legal-remediation-v0.1"],
+        "verified_by": [
+          "tivdoc-legal-remediation-v0.1"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["No permit limits or numeric values are activated."]
+        "notes": [
+          "No permit limits or numeric values are activated."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -336,19 +399,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["travel"],
-      "sectors": ["general"],
+      "topics": [
+        "travel"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Interaction with later public-transport fare arrangements requires review."],
+      "notes": [
+        "Interaction with later public-transport fare arrangements requires review."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Ministry PDF inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["No reimbursement cap is activated by this manifest."]
+        "notes": [
+          "No reimbursement cap is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": "2016-02-01",
@@ -387,19 +460,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Historical source only; the later general 1998 order and subsequent updates remain to be located on an official endpoint."],
+      "notes": [
+        "Historical source only; the later general 1998 order and subsequent updates remain to be located on an official endpoint."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Ministry publication inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["Topic remains incomplete and no rate is activated."]
+        "notes": [
+          "Topic remains incomplete and no rate is activated."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -438,19 +521,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Later official operative candidate than the 1988 record; the exact effective interval and relationship remain unresolved pending official-text review."],
+      "notes": [
+        "Later official operative candidate than the 1988 record; the exact effective interval and relationship remain unresolved pending official-text review."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Ministry extension-order catalog discovery",
-        "verified_by": ["tivdoc-legal-remediation-v0.1"],
+        "verified_by": [
+          "tivdoc-legal-remediation-v0.1"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["No convalescence amount or entitlement parameter is extracted or activated."]
+        "notes": [
+          "No convalescence amount or entitlement parameter is extracted or activated."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -489,19 +582,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Discovery and cross-check source only; it cannot independently support a monetary rule."],
+      "notes": [
+        "Discovery and cross-check source only; it cannot independently support a monetary rule."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Knesset domain and publication inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["Explanatory source, not an operative rate authority."]
+        "notes": [
+          "Explanatory source, not an operative rate authority."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -540,8 +643,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["vacation"],
-      "sectors": ["general"],
+      "topics": [
+        "vacation"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
@@ -553,9 +660,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["No vacation entitlement calculation is implemented."]
+        "notes": [
+          "No vacation entitlement calculation is implemented."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -594,19 +705,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["sick_leave"],
-      "sectors": ["general"],
+      "topics": [
+        "sick_leave"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Historical amendments and special-condition exceptions require version review."],
+      "notes": [
+        "Historical amendments and special-condition exceptions require version review."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-08-29T00:00:00Z",
-        "notes": ["No sick-pay entitlement calculation is implemented."]
+        "notes": [
+          "No sick-pay entitlement calculation is implemented."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -645,19 +766,30 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["pension", "severance"],
-      "sectors": ["general"],
+      "topics": [
+        "pension",
+        "severance"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Separate candidate instrument; relations, interval, scope and the general population tag remain unverified."],
+      "notes": [
+        "Separate candidate instrument; relations, interval, scope and the general population tag remain unverified."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "visible Ministry extension-order catalog record",
-        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_by": [
+          "tivdoc-acquisition-v0.2-system"
+        ],
         "verified_at": "2026-08-29T18:32:00Z",
-        "notes": ["No review, activation, relation or numeric parameter is inferred from catalog discovery."]
+        "notes": [
+          "No review, activation, relation or numeric parameter is inferred from catalog discovery."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -696,19 +828,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["The catalog entry combines publications; legal relations, scope and effectivity remain unverified."],
+      "notes": [
+        "The catalog entry combines publications; legal relations, scope and effectivity remain unverified."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "visible Ministry extension-order catalog record",
-        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_by": [
+          "tivdoc-acquisition-v0.2-system"
+        ],
         "verified_at": "2026-08-29T18:34:00Z",
-        "notes": ["Discovery does not establish amendment, replacement or current applicability."]
+        "notes": [
+          "Discovery does not establish amendment, replacement or current applicability."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -747,8 +889,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
@@ -760,9 +906,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "visible Ministry extension-order catalog record",
-        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_by": [
+          "tivdoc-acquisition-v0.2-system"
+        ],
         "verified_at": "2026-08-29T18:34:00Z",
-        "notes": ["No review, activation or current applicability is inferred."]
+        "notes": [
+          "No review, activation or current applicability is inferred."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -807,19 +957,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Official artifact candidate discovered through a link annotation in official Knesset secondary research; identity, provisions, relations, effectivity, scope and applicability remain unverified."],
+      "notes": [
+        "Official artifact candidate discovered through a link annotation in official Knesset secondary research; identity, provisions, relations, effectivity, scope and applicability remain unverified."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official Knesset research link annotation",
-        "verified_by": ["tivdoc-acquisition-v0.2-system"],
+        "verified_by": [
+          "tivdoc-acquisition-v0.2-system"
+        ],
         "verified_at": "2026-08-29T19:35:00Z",
-        "notes": ["The secondary research was used only for discovery of the official Knesset file URL."]
+        "notes": [
+          "The secondary research was used only for discovery of the official Knesset file URL."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -858,19 +1018,29 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Separate official raw artifact candidate. Identity, provisions, relations, effectivity, scope, population and applicability remain unverified."],
+      "notes": [
+        "Separate official raw artifact candidate. Identity, provisions, relations, effectivity, scope, population and applicability remain unverified."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "single safe fetch from the exact official Knesset file URL",
-        "verified_by": ["tivdoc-wave1-source-acquisition-system"],
+        "verified_by": [
+          "tivdoc-wave1-source-acquisition-system"
+        ],
         "verified_at": "2026-08-29T20:13:44.404Z",
-        "notes": ["Technical artifact validation only; no legal review or activation was performed."]
+        "notes": [
+          "Technical artifact validation only; no legal review or activation was performed."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -909,8 +1079,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["minimum_wage"],
-      "sectors": ["general"],
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "html",
@@ -922,9 +1096,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-09-03T00:00:00Z",
-        "notes": ["No rate is activated by this manifest."]
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -963,8 +1141,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["minimum_wage"],
-      "sectors": ["general"],
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
@@ -975,9 +1157,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-09-03T00:00:00Z",
-        "notes": ["No rate is activated by this manifest."]
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -1016,8 +1202,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["minimum_wage"],
-      "sectors": ["general"],
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
@@ -1028,9 +1218,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-09-03T00:00:00Z",
-        "notes": ["No rate is activated by this manifest."]
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -1069,8 +1263,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["minimum_wage"],
-      "sectors": ["general"],
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "table",
@@ -1081,9 +1279,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-09-03T00:00:00Z",
-        "notes": ["No rate is activated by this manifest."]
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -1108,10 +1310,10 @@
         "binding_level": "primary_binding",
         "court_level": null,
         "scope": "general",
-        "operative": true,
+        "operative": false,
         "explanatory": false,
         "contains_numeric_rate": false,
-        "can_independently_support_monetary_rule": true
+        "can_independently_support_monetary_rule": false
       },
       "jurisdiction": "IL",
       "title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
@@ -1122,21 +1324,30 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["convalescence"],
-      "sectors": ["general"],
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "html",
       "supersedes_source_version": null,
       "notes": [
-        "Addendum 5 D-5 second half; Addendum 7 A7-5. The Ministry of Labor's own collective-agreement registry, workagreements.labor.gov.il — a .gov.il subdomain, added to the fetch allowlist for this source per Addendum 7 A7-5's rule (a .gov.il subdomain is official by the same test as every other allowlisted host)."
+        "Addendum 5 D-5 second half; Addendum 7 A7-5. The Ministry of Labor's own collective-agreement registry, workagreements.labor.gov.il — a .gov.il subdomain, added to the fetch allowlist for this source per Addendum 7 A7-5's rule (a .gov.il subdomain is official by the same test as every other allowlisted host).",
+        "Session B B-7: quarantined invalid_content: catalogue_record_not_instrument. The fetched bytes are the Ministry of Labor registry's index entry for agreement 19987038 — agreement number, subject (דמי הבראה), signing date 13/07/1998, status פעיל, target audience, the signatory organisations, and a link headed 'להורדת צו הרחבה' — and contain no operative text and no figure at all. The host is official and the page is genuinely about the right agreement, which is precisely why it would pass a host-and-title check; only reading the bytes catches it. The agreement text sits behind the extension-order link on that page and was not what the fetch returned. Bytes kept immutable; nothing may bind to this source. P-26..P-29 stay blocked_dependency on the agreement text itself."
       ],
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-09-04T00:00:00Z",
-        "notes": ["No rate is activated by this manifest."]
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": null,
@@ -1149,6 +1360,12 @@
         "method": "official_domain_search",
         "found_at": "2026-09-04",
         "included_reason": "Addendum 5 D-5 / Addendum 7 A7-5: the underlying 1998 general collective agreement the 2016 convalescence extension order (D of the same topic) is built on top of."
+      },
+      "content_integrity": {
+        "status": "invalid_content_catalogue_record_not_instrument",
+        "expected_title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
+        "observed_title": "הסכם מס' 19987038 | משרד העבודה — collective-agreement registry index entry",
+        "detected_at": "2026-09-04"
       }
     },
     {
@@ -1175,8 +1392,12 @@
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
-      "topics": ["vacation"],
-      "sectors": ["general"],
+      "topics": [
+        "vacation"
+      ],
+      "sectors": [
+        "general"
+      ],
       "status": "needs_review",
       "content_sha256": null,
       "artifact_format": "pdf",
@@ -1187,9 +1408,13 @@
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
-        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
         "verified_at": "2026-09-04T00:00:00Z",
-        "notes": ["No rate is activated by this manifest."]
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
       },
       "effective_period": {
         "effective_from": "2017-01-01",

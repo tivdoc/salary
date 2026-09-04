@@ -119,10 +119,26 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   { parameter_id: "il.convalescence.2024_partial_reduction_wage_threshold", versions: ["2024.1.0"] },
   { parameter_id: "il.vacation.full_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
   { parameter_id: "il.vacation.partial_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
-  { parameter_id: "il.vacation.calendar_days_years_1_to_4", versions: ["2017.1.0"] },
+  // B-7: the corrected scope. `il.vacation.calendar_days_years_1_to_4` is
+  // registered and carries the right number against the wrong band — amendment
+  // 15 moved the seniority band from four years to five in the same clause that
+  // moved 14 to 16, and a citation check cannot see a scope disagreement. The
+  // candidate table is append-only, so the mis-scoped row cannot be corrected;
+  // it is listed in SUPERSEDED_BY_SCOPE below and nothing binds to it.
+  { parameter_id: "il.vacation.calendar_days_years_1_to_5", versions: ["2017.1.0"] },
+  { parameter_id: "il.vacation.calendar_days_interim_2016", versions: ["2016.1.0"] },
   { parameter_id: "il.sick_pay.accrual_days_per_month", versions: ["1.0.0"] },
   { parameter_id: "il.sick_pay.accrual_cap_days", versions: ["1.0.0"] },
 ]);
+
+// Parameters that exist as draft rows but must never be bound, because
+// something about them is known to be wrong and the append-only table cannot be
+// corrected. This is not a blocklist of hypotheticals: every entry is a real
+// row somebody could otherwise bind by id.
+export const SUPERSEDED_BY_SCOPE: Readonly<Record<string, string>> = Object.freeze({
+  "il.vacation.calendar_days_years_1_to_4":
+    "Wrong population. Amendment 15 changed the seniority band from the first four years to the first five in the same clause that changed 14 days to 16, so the figure is right and the scope is not. Superseded by il.vacation.calendar_days_years_1_to_5@2017.1.0 (Pool P batch 7). The row cannot be removed — governance_parameter_versions is append-only.",
+});
 
 // Why each still-unregistered parameter is unregistered, in the words of the
 // Pool P and Addendum 7 write-ups rather than a shrug. A slot with no reason

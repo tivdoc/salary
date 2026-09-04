@@ -143,7 +143,10 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
     { name: "reduction_wage_threshold", parameter_id: "il.convalescence.2024_partial_reduction_wage_threshold", unit: "currency.ils" },
   ],
   vacation: [
-    { name: "calendar_days_early_seniority", parameter_id: "il.vacation.calendar_days_years_1_to_4", unit: "calendar_days" },
+    // Years one to FIVE: amendment 15 moved the band and the count together.
+    // See SUPERSEDED_BY_SCOPE in rulespec-drafts.ts for the four-year id that
+    // must not be bound.
+    { name: "calendar_days_early_seniority", parameter_id: "il.vacation.calendar_days_years_1_to_5", unit: "calendar_days" },
     { name: "full_year_threshold", parameter_id: "il.vacation.full_year_relationship_minimum_days_threshold", unit: "days" },
   ],
   sick_leave: [
