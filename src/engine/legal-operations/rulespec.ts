@@ -417,6 +417,13 @@ export function executeRuleSpec(candidate: Readonly<{
       if (quantity.kind !== "integer") throw new Error("RULESPEC_TIERED_RATE_INPUT_NOT_INTEGER");
       if (base.kind !== "money") throw new Error("RULESPEC_TIERED_RATE_BASE_NOT_MONEY");
       const last = node.tiers[node.tiers.length - 1];
+      // A tier lookup is not a band lookup, and the difference at the top
+      // boundary is deliberate rather than an inconsistency. `band.lookup`
+      // selects by a POINT: year 8 against a table ending at 8 is outside it,
+      // and refuses. `tiered.rate` accumulates over the INTERVAL [0, quantity):
+      // a quantity equal to the last tier's `to_exclusive` has consumed the
+      // table exactly, with nothing left over, so it is paid rather than
+      // refused. A quantity beyond it has units no tier covers, and refuses.
       if (quantity.value < BigInt(node.tiers[0].from_inclusive)) throw new Error("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
       if (last.to_exclusive !== null && quantity.value > BigInt(last.to_exclusive)) throw new Error("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
       // Cumulative: every tier is paid for the units that fall inside it, and
@@ -437,6 +444,10 @@ export function executeRuleSpec(candidate: Readonly<{
         denominator = denominator * rate.denominator;
         const divisor = gcd(numerator, denominator);
         if (divisor > BigInt(1)) [numerator, denominator] = [numerator / divisor, denominator / divisor];
+        // The running sum is bounded too, not only the rounded result. Thirty-two
+        // tiers with coprime denominators multiply, and a policy that is checked
+        // only after the division is a policy the intermediate never had to obey.
+        assertRuntimeBounds(rational(numerator, denominator, "ratio"), rule.resource_policy.max_integer_digits);
       }
       result = { kind: "money", currency: base.currency, minor_units: roundDivision(numerator, denominator, node.rounding) };
     } else if (node.operation === "min" || node.operation === "max") {

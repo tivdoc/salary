@@ -79,6 +79,16 @@ type Report = Readonly<{
 const scenarioLabel = (name: string) => SCENARIO_HEBREW[name] ?? name;
 const topicLabel = (name: string) => TOPIC_HEBREW[name] ?? name;
 
+/**
+ * A cell value, safe to put in a Markdown table.
+ *
+ * A pipe in a `detail` string would split the row and shift every column to its
+ * right — in a document whose whole claim is that no figure was retyped or
+ * moved. A newline would break the table outright. Neither is in the data
+ * today; both are one edit away.
+ */
+const cell = (value: string) => value.replaceAll("|", "\\|").replaceAll(/\s*\n\s*/gu, " ");
+
 /** Withdrawn decisions, listed separately because they are no longer questions. */
 async function withdrawnDecisions(): Promise<Array<Record<string, string>>> {
   const env = readDevEnvFile();
@@ -164,12 +174,12 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
     out.push(`|---|${decision.branches.map(() => "---|").join("")}---|`);
     for (const row of decision.per_scenario) {
       if (!row.ran) {
-        out.push(`| ${scenarioLabel(row.scenario)} | ${decision.branches.map(() => "לא רץ").join(" | ")} | ${row.reason ?? "לא רץ"} |`);
+        out.push(`| ${cell(scenarioLabel(row.scenario))} | ${decision.branches.map(() => "לא רץ").join(" | ")} | ${cell(row.reason ?? "לא רץ")} |`);
         continue;
       }
       const byBranch = decision.branches.map((branch) =>
         row.by_branch?.find((entry) => entry.branch === branch)?.output ?? "—");
-      out.push(`| ${scenarioLabel(row.scenario)} | ${byBranch.join(" | ")} | ${row.difference ?? "לא ניתן להשוואה"} |`);
+      out.push(`| ${cell(scenarioLabel(row.scenario))} | ${byBranch.map(cell).join(" | ")} | ${cell(row.difference ?? "לא ניתן להשוואה")} |`);
     }
     out.push("");
     out.push("---");
@@ -182,7 +192,7 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("| נושא | סיבה | משבצת | פירוט |");
   out.push("|---|---|---|---|");
   for (const topic of report.topics_not_run) {
-    out.push(`| ${topicLabel(topic.topic)} | ${NOT_RUN_HEBREW[topic.not_run] ?? topic.not_run} | \`${topic.slots.join("`, `")}\` | ${topic.detail} |`);
+    out.push(`| ${cell(topicLabel(topic.topic))} | ${cell(NOT_RUN_HEBREW[topic.not_run] ?? topic.not_run)} | \`${topic.slots.join("`, `")}\` | ${cell(topic.detail)} |`);
   }
   out.push("");
   out.push("---");
@@ -199,7 +209,7 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
     out.push("| מזהה | נושא | סיבת המשיכה |");
     out.push("|---|---|---|");
     for (const row of withdrawn) {
-      out.push(`| \`${row.decision_id}\` | ${topicLabel(String(row.topic))} | ${String(row.withdrawn_reason)} |`);
+      out.push(`| \`${row.decision_id}\` | ${cell(topicLabel(String(row.topic)))} | ${cell(String(row.withdrawn_reason))} |`);
     }
   }
   out.push("");

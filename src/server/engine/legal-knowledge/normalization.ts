@@ -319,7 +319,7 @@ export function chunkLegalPagesTableAware(
       const leavingTable = !insideTable && index > 0 && table[index - 1];
       if (enteringTable) flushKeepingHeader();
       if (leavingTable) flush();
-      if (!insideTable && isHeading(line)) {
+      if (!insideTable && !isTableRowLine(line) && isHeading(line)) {
         flush();
         headingPath = [line];
         sectionIdentifier = normalizeLegalText(line).slice(0, 120);

@@ -404,9 +404,49 @@ function wrap(text: string, perLine: number): readonly string[] {
   return lines.length > 0 ? lines : [""];
 }
 
+/**
+ * Split a line into maximal Hebrew and non-Hebrew runs, in logical order, with
+ * each run keeping the spaces that follow it.
+ */
+function directionalRuns(text: string): readonly Readonly<{ text: string; hebrew: boolean }>[] {
+  const runs: Array<{ text: string; hebrew: boolean }> = [];
+  for (const symbol of text) {
+    const hebrew = HEBREW_CHARACTER.test(symbol);
+    const last = runs[runs.length - 1];
+    // Whitespace and shared punctuation join whichever run they follow, so a
+    // space never becomes a run of its own and never flips direction.
+    if (last && (/[\s.,:;()[\]"'’“”/-]/u.test(symbol) || last.hebrew === hebrew)) last.text += symbol;
+    else runs.push({ text: symbol, hebrew });
+  }
+  return runs;
+}
+
+/**
+ * One line, laid out right to left, each run drawn in its own direction.
+ *
+ * The naive version of this reversed the whole string whenever it contained a
+ * single Hebrew character, which rendered the English half of a mixed line
+ * backwards — and the three `topics_not_run` details are English sentences
+ * behind Hebrew labels, so that was not hypothetical. This is a single-level
+ * bidi: runs are placed from the right in logical order, Hebrew runs reversed
+ * inside themselves and Latin runs not. It is not the full algorithm and does
+ * not claim to be; it is correct for one line with no nesting, which is what
+ * this document has.
+ */
 function drawCell(ctx: PdfContext, text: string, x: number, y: number, size: number, color?: string): void {
-  if (HEBREW_CHARACTER.test(text)) rtl(ctx, text, x, y, size, "right", color);
-  else ltr(ctx, text, x - measure(ctx, text, size), y, size, "left", color);
+  const runs = directionalRuns(text);
+  if (runs.length <= 1) {
+    if (runs[0]?.hebrew ?? false) rtl(ctx, text, x, y, size, "right", color);
+    else ltr(ctx, text, x - measure(ctx, text, size), y, size, "left", color);
+    return;
+  }
+  let right = x;
+  for (const run of runs) {
+    const width = measure(ctx, run.text, size);
+    if (run.hebrew) rtl(ctx, run.text, right, y, size, "right", color);
+    else ltr(ctx, run.text, right - width, y, size, "left", color);
+    right -= width;
+  }
 }
 
 function measure(ctx: PdfContext, text: string, size: number): number {
@@ -458,6 +498,9 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
       continue;
     }
     // A table. Columns run right to left, because the reader does.
+    // A table with no rows is a labelled empty box, which tells a reader
+    // nothing and looks like something went missing. Nothing is drawn.
+    if (block.rows.length === 0) continue;
     const width = (PAGE_WIDTH - MARGIN * 2) / block.columns.length;
     const header = () => {
       fillRect(ctx, MARGIN, y - 15, PAGE_WIDTH - MARGIN * 2, 15, "0.93 0.95 0.96");
