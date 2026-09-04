@@ -2,6 +2,7 @@ import { z } from "zod";
 import { WAVE3_TOPICS } from "../wave3/contracts.ts";
 import { frozen, legalOperationsSha256 } from "./canonical.ts";
 import { exactRationalSchema, legalOperationsIdSchema, legalOperationsSha256Schema, type ParameterValue } from "./contracts.ts";
+import { productUnit, quotientUnit, sameUnit, unitMismatch } from "./units.ts";
 
 const valueKindSchema = z.enum(["rational", "money", "integer", "boolean"]);
 const declarationObjectSchema = z.object({
@@ -50,6 +51,14 @@ export const ruleSpecNodeSchema = z.discriminatedUnion("operation", [
   z.object({ ...nodeBase, operation: z.literal("min"), refs: z.array(legalOperationsIdSchema).min(2).max(32).readonly() }).strict(),
   z.object({ ...nodeBase, operation: z.literal("max"), refs: z.array(legalOperationsIdSchema).min(2).max(32).readonly() }).strict(),
   z.object({ ...nodeBase, operation: z.literal("aggregate.bounded"), refs: z.array(legalOperationsIdSchema).min(1).max(32).readonly() }).strict(),
+  // L5-2 / L5-3 (D2, D3). `subtract` and `divide` beside `add` and `multiply`,
+  // and a shape constant that is an integer rather than 0 or 1. A boundary such
+  // as "from the eighth year" is shape, exactly as a band's `from_inclusive` is
+  // shape; it is visible in the spec, hashed with it, and named in the trace.
+  // It is not a rate and cannot carry money.
+  z.object({ ...nodeBase, operation: z.literal("constant.integer"), value: z.number().int().safe(), unit: legalOperationsIdSchema }).strict(),
+  z.object({ ...nodeBase, operation: z.literal("subtract"), left_ref: legalOperationsIdSchema, right_ref: legalOperationsIdSchema }).strict(),
+  z.object({ ...nodeBase, operation: z.literal("divide"), left_ref: legalOperationsIdSchema, right_ref: legalOperationsIdSchema }).strict(),
   z.object({ ...nodeBase, operation: z.literal("band.lookup"), input_ref: legalOperationsIdSchema, bands: z.array(bandSchema).min(1).max(32).readonly() }).strict(),
   z.object({ ...nodeBase, operation: z.literal("tiered.rate"), input_ref: legalOperationsIdSchema, base_ref: legalOperationsIdSchema, tiers: z.array(tierSchema).min(1).max(32).readonly(), rounding: z.enum(["exact", "toward_zero", "half_up", "half_even"]) }).strict(),
 ]).readonly();
@@ -62,7 +71,7 @@ export const ruleSpecNodeSchema = z.discriminatedUnion("operation", [
  * `min`.
  */
 export const RULE_SPEC_OPERATIONS = Object.freeze([
-  "constant.rational", "add", "multiply", "money.scale", "compare.gte",
+  "constant.rational", "constant.integer", "add", "subtract", "multiply", "divide", "money.scale", "compare.gte",
   "select", "min", "max", "aggregate.bounded", "band.lookup", "tiered.rate",
 ] as const);
 
@@ -183,27 +192,54 @@ function serialized(value: RuntimeValue): RuleSpecInputValue["value"] {
   return value;
 }
 
+/** A counted value — integer or rational — with its unit; money and booleans are not counted values. */
+type Counted = Extract<RuntimeValue, { kind: "rational" } | { kind: "integer" }>;
+
+/** An integer as the exact rational it is. Promotion is exact and never narrows. */
+function asRational(value: Counted): Extract<RuntimeValue, { kind: "rational" }> {
+  return value.kind === "rational" ? value : rational(value.value, BigInt(1), value.unit) as Extract<RuntimeValue, { kind: "rational" }>;
+}
+
+/**
+ * Two values may be compared when they are money of one currency, or counted
+ * values of one unit. Integer and rational of the same unit compare exactly by
+ * cross-multiplication; a dimension is a dimension whichever kind carries it.
+ */
 function sameType(left: RuntimeValue, right: RuntimeValue) {
-  return left.kind === right.kind && (left.kind !== "rational" || right.kind !== "rational" || left.unit === right.unit) && (left.kind !== "integer" || right.kind !== "integer" || left.unit === right.unit) && (left.kind !== "money" || right.kind !== "money" || left.currency === right.currency);
+  if (left.kind === "money" && right.kind === "money") return left.currency === right.currency;
+  if (left.kind === "boolean" || right.kind === "boolean") return left.kind === right.kind;
+  if (left.kind === "money" || right.kind === "money") return false;
+  return sameUnit(left.unit, right.unit);
 }
 
 function compare(left: RuntimeValue, right: RuntimeValue) {
-  if (!sameType(left, right)) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
   if (left.kind === "boolean" || right.kind === "boolean") throw new Error("RULESPEC_BOOLEAN_NOT_ORDERED");
-  if (left.kind === "money" && right.kind === "money") return left.minor_units < right.minor_units ? -1 : left.minor_units > right.minor_units ? 1 : 0;
-  if (left.kind === "integer" && right.kind === "integer") return left.value < right.value ? -1 : left.value > right.value ? 1 : 0;
-  if (left.kind === "rational" && right.kind === "rational") {
-    const difference = left.numerator * right.denominator - right.numerator * left.denominator;
-    return difference < BigInt(0) ? -1 : difference > BigInt(0) ? 1 : 0;
+  if (!sameType(left, right)) {
+    const name = (value: RuntimeValue) => value.kind === "money" ? `currency.${value.currency.toLowerCase()}` : value.kind === "boolean" ? "boolean" : value.unit;
+    throw new Error(unitMismatch("compare", name(left), name(right)));
   }
-  throw new Error("RULESPEC_COMPARISON_INVALID");
+  if (left.kind === "money" && right.kind === "money") return left.minor_units < right.minor_units ? -1 : left.minor_units > right.minor_units ? 1 : 0;
+  if (left.kind === "money" || right.kind === "money") throw new Error("RULESPEC_COMPARISON_INVALID");
+  const a = asRational(left);
+  const b = asRational(right);
+  const difference = a.numerator * b.denominator - b.numerator * a.denominator;
+  return difference < BigInt(0) ? -1 : difference > BigInt(0) ? 1 : 0;
+}
+
+/** `left + right` or `left − right` over counted values of one unit. Integer stays integer; anything else is exact rational. */
+function addCounted(left: Counted, right: Counted, sign: bigint): Counted {
+  if (!sameUnit(left.unit, right.unit)) throw new Error(unitMismatch(sign === BigInt(1) ? "add" : "subtract", left.unit, right.unit));
+  if (left.kind === "integer" && right.kind === "integer") return frozen({ kind: "integer", value: left.value + sign * right.value, unit: left.unit });
+  const a = asRational(left);
+  const b = asRational(right);
+  return rational(a.numerator * b.denominator + sign * b.numerator * a.denominator, a.denominator * b.denominator, left.unit) as Counted;
 }
 
 export function refs(node: RuleSpecPackage["nodes"][number]): readonly string[] {
   switch (node.operation) {
-    case "constant.rational": return [];
+    case "constant.rational": case "constant.integer": return [];
     case "add": case "min": case "max": case "aggregate.bounded": return node.refs;
-    case "multiply": case "compare.gte": return [node.left_ref, node.right_ref];
+    case "multiply": case "subtract": case "divide": case "compare.gte": return [node.left_ref, node.right_ref];
     case "money.scale": return [node.money_ref, node.rational_ref];
     case "select": return [node.condition_ref, node.when_true_ref, node.when_false_ref];
     case "band.lookup": return [node.input_ref, ...node.bands.map((band) => band.value_ref)];
@@ -249,16 +285,44 @@ export function validateRuleSpecPackage(candidate: unknown): RuleSpecPackage {
     let kind: string;
     let unit: string | null;
     if (node.operation === "constant.rational") [kind, unit] = ["rational", node.unit];
-    else if (node.operation === "compare.gte") [kind, unit] = ["boolean", null];
+    else if (node.operation === "constant.integer") [kind, unit] = ["integer", node.unit];
+    else if (node.operation === "compare.gte") {
+      if (inputs[0].kind === "boolean" || inputs[1].kind === "boolean") throw new Error("RULESPEC_BOOLEAN_NOT_ORDERED");
+      if (inputs[0].kind === "money" || inputs[1].kind === "money"
+        ? inputs[0].kind !== inputs[1].kind || inputs[0].unit !== inputs[1].unit
+        : !sameUnit(String(inputs[0].unit), String(inputs[1].unit))) throw new Error(unitMismatch("compare", String(inputs[0].unit), String(inputs[1].unit)));
+      [kind, unit] = ["boolean", null];
+    }
     else if (node.operation === "select") {
       if (inputs[0].kind !== "boolean" || inputs[1].kind !== inputs[2].kind || inputs[1].unit !== inputs[2].unit) throw new Error("RULESPEC_SELECT_TYPE_MISMATCH");
       [kind, unit] = [inputs[1].kind, inputs[1].unit];
     } else if (node.operation === "money.scale") {
       if (inputs[0].kind !== "money" || inputs[1].kind !== "rational" || inputs[1].unit !== "ratio") throw new Error("RULESPEC_MONEY_SCALE_UNIT_MISMATCH");
       [kind, unit] = ["money", inputs[0].unit];
-    } else if (node.operation === "multiply") {
-      if (inputs[0].kind !== "rational" || inputs[1].kind !== "rational" || (inputs[0].unit !== "ratio" && inputs[1].unit !== "ratio")) throw new Error("RULESPEC_MULTIPLY_REQUIRES_RATIO");
-      [kind, unit] = ["rational", inputs[0].unit === "ratio" ? inputs[1].unit : inputs[0].unit];
+    } else if (node.operation === "multiply" || node.operation === "divide") {
+      // D2. Counted values only; the unit of the result is DERIVED from the two
+      // operands' dimensions, and a product or quotient no unit id names is a
+      // refusal that says which two it was given. `money.scale` is how money
+      // meets a ratio; there is no path by which money meets a unit here.
+      const counted = (input: { kind: string }) => input.kind === "rational" || input.kind === "integer";
+      if (!counted(inputs[0]) || !counted(inputs[1])) throw new Error(`RULESPEC_${node.operation.toUpperCase()}_REQUIRES_COUNTED_VALUES`);
+      const derived = node.operation === "multiply"
+        ? productUnit(String(inputs[0].unit), String(inputs[1].unit))
+        : quotientUnit(String(inputs[0].unit), String(inputs[1].unit));
+      if ("refusal" in derived) throw new Error(derived.refusal);
+      // Integer × integer stays integer. Anything else, and every quotient, is
+      // an exact rational — a division is not a place to round.
+      [kind, unit] = [node.operation === "multiply" && inputs[0].kind === "integer" && inputs[1].kind === "integer" ? "integer" : "rational", derived.unit];
+    } else if (node.operation === "subtract") {
+      const counted = (input: { kind: string }) => input.kind === "rational" || input.kind === "integer";
+      if (inputs[0].kind === "money" && inputs[1].kind === "money") {
+        if (inputs[0].unit !== inputs[1].unit) throw new Error(unitMismatch("subtract", String(inputs[0].unit), String(inputs[1].unit)));
+        [kind, unit] = ["money", inputs[0].unit];
+      } else {
+        if (!counted(inputs[0]) || !counted(inputs[1])) throw new Error("RULESPEC_SUBTRACT_REQUIRES_COUNTED_VALUES");
+        if (!sameUnit(String(inputs[0].unit), String(inputs[1].unit))) throw new Error(unitMismatch("subtract", String(inputs[0].unit), String(inputs[1].unit)));
+        [kind, unit] = [inputs[0].kind === "integer" && inputs[1].kind === "integer" ? "integer" : "rational", inputs[0].unit];
+      }
     } else if (node.operation === "band.lookup") {
       // The selector is a whole count — a seniority year, a headcount. The
       // values are whatever the table holds, but all of one type, because a
@@ -277,8 +341,17 @@ export function validateRuleSpecPackage(candidate: unknown): RuleSpecPackage {
       assertContiguous(node.tiers, "RULESPEC_TIERED_RATE_TIERS_NOT_CONTIGUOUS");
       [kind, unit] = ["money", inputs[1].unit];
     } else {
-      if (inputs.length === 0 || inputs.some((input) => input.kind !== inputs[0].kind || input.unit !== inputs[0].unit || input.kind === "boolean")) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
-      [kind, unit] = [inputs[0].kind, inputs[0].unit];
+      // add, min, max, aggregate.bounded: one dimension throughout. Money with
+      // money of one currency; counted values of one unit, integer and rational
+      // allowed to meet — the result is integer only when every input is.
+      if (inputs.length === 0 || inputs.some((input) => input.kind === "boolean")) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
+      const money = inputs.filter((input) => input.kind === "money").length;
+      if (money > 0 && money !== inputs.length) throw new Error(unitMismatch(node.operation, String(inputs[0].unit), String(inputs.find((input) => input.kind !== inputs[0].kind)?.unit)));
+      for (const input of inputs.slice(1)) {
+        const equal = money > 0 ? input.unit === inputs[0].unit : sameUnit(String(input.unit), String(inputs[0].unit));
+        if (!equal) throw new Error(unitMismatch(node.operation, String(inputs[0].unit), String(input.unit)));
+      }
+      [kind, unit] = [money > 0 ? "money" : inputs.every((input) => input.kind === "integer") ? "integer" : "rational", inputs[0].unit];
     }
     const depth = inputs.length === 0 ? 1 : Math.max(...inputs.map((input) => input.depth)) + 1;
     if (depth > parsed.resource_policy.max_depth) throw new Error("RULESPEC_DEPTH_LIMIT_EXCEEDED");
@@ -382,17 +455,40 @@ export function executeRuleSpec(candidate: Readonly<{
     const get = (reference: string) => { const value = values.get(reference); if (!value) throw new Error("RULESPEC_REFERENCE_MISSING"); return value; };
     let result: RuntimeValue;
     if (node.operation === "constant.rational") result = rational(BigInt(node.value), BigInt(1), node.unit);
+    else if (node.operation === "constant.integer") result = frozen({ kind: "integer", value: BigInt(node.value), unit: node.unit });
     else if (node.operation === "add" || node.operation === "aggregate.bounded") {
       const items = node.refs.map(get);
       const first = items[0];
-      if (first.kind === "money" && items.every((item) => item.kind === "money" && item.currency === first.currency)) result = { kind: "money", currency: first.currency, minor_units: items.reduce((sum, item) => sum + (item.kind === "money" ? item.minor_units : BigInt(0)), BigInt(0)) };
-      else if (first.kind === "integer" && items.every((item) => item.kind === "integer" && item.unit === first.unit)) result = { kind: "integer", value: items.reduce((sum, item) => sum + (item.kind === "integer" ? item.value : BigInt(0)), BigInt(0)), unit: first.unit };
-      else if (first.kind === "rational" && items.every((item) => item.kind === "rational" && item.unit === first.unit)) result = items.slice(1).reduce<RuntimeValue>((sum, item) => item.kind === "rational" && sum.kind === "rational" ? rational(sum.numerator * item.denominator + item.numerator * sum.denominator, sum.denominator * item.denominator, sum.unit) : sum, first);
-      else throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
-    } else if (node.operation === "multiply") {
+      if (first.kind === "money") {
+        if (!items.every((item) => item.kind === "money" && item.currency === first.currency)) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
+        result = { kind: "money", currency: first.currency, minor_units: items.reduce((sum, item) => sum + (item.kind === "money" ? item.minor_units : BigInt(0)), BigInt(0)) };
+      } else {
+        if (items.some((item) => item.kind === "money" || item.kind === "boolean")) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
+        result = items.slice(1).reduce<Counted>((sum, item) => addCounted(sum, item as Counted, BigInt(1)), first as Counted);
+      }
+    } else if (node.operation === "subtract") {
       const left = get(node.left_ref); const right = get(node.right_ref);
-      if (left.kind !== "rational" || right.kind !== "rational") throw new Error("RULESPEC_MULTIPLY_TYPE_MISMATCH");
-      result = rational(left.numerator * right.numerator, left.denominator * right.denominator, left.unit === "ratio" ? right.unit : left.unit);
+      if (left.kind === "money" && right.kind === "money") {
+        if (left.currency !== right.currency) throw new Error(unitMismatch("subtract", `currency.${left.currency.toLowerCase()}`, `currency.${right.currency.toLowerCase()}`));
+        result = { kind: "money", currency: left.currency, minor_units: left.minor_units - right.minor_units };
+      } else {
+        if (left.kind === "money" || right.kind === "money" || left.kind === "boolean" || right.kind === "boolean") throw new Error("RULESPEC_SUBTRACT_REQUIRES_COUNTED_VALUES");
+        result = addCounted(left as Counted, right as Counted, BigInt(-1));
+      }
+    } else if (node.operation === "multiply" || node.operation === "divide") {
+      const left = get(node.left_ref); const right = get(node.right_ref);
+      if (left.kind === "money" || right.kind === "money" || left.kind === "boolean" || right.kind === "boolean") throw new Error(`RULESPEC_${node.operation.toUpperCase()}_REQUIRES_COUNTED_VALUES`);
+      const derived = node.operation === "multiply" ? productUnit(left.unit, right.unit) : quotientUnit(left.unit, right.unit);
+      if ("refusal" in derived) throw new Error(derived.refusal);
+      if (node.operation === "multiply" && left.kind === "integer" && right.kind === "integer") {
+        result = frozen({ kind: "integer", value: left.value * right.value, unit: derived.unit });
+      } else {
+        const a = asRational(left); const b = asRational(right);
+        if (node.operation === "divide" && b.numerator === BigInt(0)) throw new Error("RULESPEC_DIVIDE_BY_ZERO");
+        result = node.operation === "multiply"
+          ? rational(a.numerator * b.numerator, a.denominator * b.denominator, derived.unit)
+          : rational(a.numerator * b.denominator * (b.numerator < BigInt(0) ? BigInt(-1) : BigInt(1)), a.denominator * (b.numerator < BigInt(0) ? -b.numerator : b.numerator), derived.unit);
+      }
     } else if (node.operation === "money.scale") {
       const money = get(node.money_ref); const ratio = get(node.rational_ref);
       if (money.kind !== "money" || ratio.kind !== "rational" || ratio.unit !== "ratio") throw new Error("RULESPEC_MONEY_SCALE_TYPE_MISMATCH");
@@ -451,7 +547,13 @@ export function executeRuleSpec(candidate: Readonly<{
       }
       result = { kind: "money", currency: base.currency, minor_units: roundDivision(numerator, denominator, node.rounding) };
     } else if (node.operation === "min" || node.operation === "max") {
-      const items = node.refs.map(get); result = items.slice(1).reduce((selected, item) => node.operation === "min" ? (compare(item, selected) < 0 ? item : selected) : (compare(item, selected) > 0 ? item : selected), items[0]);
+      const items = node.refs.map(get);
+      const selected = items.slice(1).reduce((chosen, item) => node.operation === "min" ? (compare(item, chosen) < 0 ? item : chosen) : (compare(item, chosen) > 0 ? item : chosen), items[0]);
+      // The chosen value keeps its own kind when every candidate shares it.
+      // When integer and rational meet, the result is the exact rational so the
+      // runtime kind is the one static validation declared — never a narrowing.
+      const mixed = items.some((item) => item.kind === "rational") && items.some((item) => item.kind === "integer");
+      result = mixed && selected.kind === "integer" ? asRational(selected) : selected;
     } else assertExhaustive(node);
     assertRuntimeBounds(result, rule.resource_policy.max_integer_digits);
     const rendered = serialized(result);
