@@ -8,13 +8,13 @@
 // (IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016), which failed to
 // build (document_sanity_minimum_content_failed) — a pre-existing gap,
 // not re-diagnosed here.
-import { buildCandidate, citation, importPoolPBatch } from "./pool-p-parameter-import.mts";
+import { buildCandidate, citation, importPoolPBatch, TENANT } from "./pool-p-parameter-import.mts";
 
 const D2 = { source_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES", source_version: "discovery-v0" };
 const D10 = { source_id: "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016", source_version: "discovery-v0" };
 
 const avgWageChunk = "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#0002-00fe06cb93a9";
-const PENSION_WAGE_CAP_DECISION = "legal.reference.il.decision.pension_wage_cap_section";
+const PENSION_WAGE_CAP_DECISION = `${TENANT}.decision.pension_wage_cap_section`;
 
 const p24a = buildCandidate({
   parameter_id: "il.pension.mandatory_wage_cap",

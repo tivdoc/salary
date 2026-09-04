@@ -65,7 +65,7 @@ const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "tok
 // There is no foreign key from product_identity_sessions.reviewer_org_id to
 // governance_reviewer_organizations, so this is a label, not a real trust
 // organization — nothing in Pool P's draft-only import path verifies it.
-const REVIEWER_ORG_PLACEHOLDER = "legal.reference.il.no-attestation-placeholder";
+const REVIEWER_ORG_PLACEHOLDER = `${TENANT}.no-attestation-placeholder`;
 const RECEIPT_ROOT = path.join("output", "next", "pool-p");
 
 // --- Pool D artifact lookup (real fetched bytes, real built chunks) -------

@@ -4,7 +4,7 @@
 // or from the research dossier's own tables) — pool-p-parameter-import.mts's
 // citation() helper re-reads the chunk at run time and refuses to import if
 // the cited chunk does not literally contain the quoted figure.
-import { buildCandidate, citation, importPoolPBatch } from "./pool-p-parameter-import.mts";
+import { buildCandidate, citation, importPoolPBatch, TENANT } from "./pool-p-parameter-import.mts";
 
 const D1 = { source_id: "IL_MIN_WAGE_OFFICIAL_RATES", source_version: "discovery-v0" };
 const D2 = { source_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES", source_version: "discovery-v0" };
@@ -18,7 +18,7 @@ const derivationClause = citation(D3, "IL_MIN_WAGE_LAW@discovery-v0#0002-bcf9eab
   "Minimum Wage Law 1987 §6 — monthly minimum wage = 47.5% of the average wage per National Insurance Law §1, as of 1 April each year",
   ["47.5"]);
 
-const HOURLY_DIVISOR_DECISION = "legal.reference.il.decision.min_wage_hourly_divisor";
+const HOURLY_DIVISOR_DECISION = `${TENANT}.decision.min_wage_hourly_divisor`;
 
 const MONTHLY = [
   {
