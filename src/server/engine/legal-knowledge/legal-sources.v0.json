@@ -4,7 +4,7 @@
   "classification": "source_discovery_manifest_pending_content_review",
   "sources": [
     {
-      "source_id": "IL_MIN_WAGE_LAW",
+      "source_id": "IL_ANNUAL_VACATION_LAW",
       "source_version": "discovery-v0",
       "source_type": "statute",
       "authority": {
@@ -19,8 +19,8 @@
         "can_independently_support_monetary_rule": true
       },
       "jurisdiction": "IL",
-      "title": "Minimum Wage Law, 1987 - consolidated official copy",
-      "canonical_url": "https://www.btl.gov.il/Laws1/00_0021_000000.pdf",
+      "title": "Annual Vacation Law, 1951 - consolidated official copy",
+      "canonical_url": "https://www.btl.gov.il/Laws1/02_0082_000000.pdf",
       "publication_reference": null,
       "published_at": null,
       "effective_from": null,
@@ -28,7 +28,7 @@
       "retrieved_at": null,
       "language": "he",
       "topics": [
-        "minimum_wage"
+        "vacation"
       ],
       "sectors": [
         "general"
@@ -38,8 +38,8 @@
       "artifact_format": "pdf",
       "supersedes_source_version": null,
       "notes": [
-        "Consolidated text requires amendment/effective-period review before activation.",
-        "Addendum 5 D-3: per the research dossier, record this artifact as consolidated_through_2015 — later amendments (e.g. Sefer HaChukim 3072, 1.8.2023 / IL_SEFER_HACHUKIM_3072_2023) are not reflected in this consolidated text and must be layered on separately, not assumed already merged."
+        "Historical amendments and day-count periods require version review.",
+        "Addendum 7 A7-4: consolidated_before_2017. §3(a)(1) of this fetched text gives 14 calendar days for each of the first four work-years; the current, amendment-15 figure (effective 1.1.2017) is 16. This artifact's own amendment footnote list stops at a 2013 amendment, confirming it predates amendment 15. Kept, not discarded — §3(b)/(c)'s day-count thresholds (200/240) were still bound to it in Pool P batch 5, since amendment 15 is documented as touching only the years-1-4 figure. The current, post-2017 consolidated text is D-16 (Addendum 7 A7-5), not yet fetched."
       ],
       "verification": {
         "status": "domain_verified",
@@ -49,7 +49,7 @@
         ],
         "verified_at": "2026-08-29T00:00:00Z",
         "notes": [
-          "Content and historical versions are not yet legally verified."
+          "No vacation entitlement calculation is implemented."
         ]
       },
       "effective_period": {
@@ -62,11 +62,72 @@
       "discovery": {
         "method": "official_domain_search",
         "found_at": "2026-08-29",
-        "included_reason": "Primary statutory basis for the general minimum-wage topic."
+        "included_reason": "Primary statutory basis for annual vacation."
       }
     },
     {
-      "source_id": "IL_MIN_WAGE_OFFICIAL_RATES",
+      "source_id": "IL_ANNUAL_VACATION_LAW_AMENDMENT_15_2016",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Israeli legislature",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Annual Vacation Law (Amendment No. 15 and Temporary Provision), 5776-2016",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_321785.pdf",
+      "publication_reference": "Sefer HaChukim 2531, p. 574, 16.2.2016",
+      "published_at": "2016-02-16",
+      "effective_from": "2017-01-01",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "vacation"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 7 A7-5, D-16. Not a full re-consolidation of the Annual Vacation Law — the specific amending law raising the years-1-4 calendar-day entitlement from 14 to 16 days (phased: +1 day from July 2016, +1 more from January 2017), exactly as D-4 is the specific 2023 amending law for minimum wage rather than a full consolidation. Registered so a current P-32 (calendar-days table) parameter can bind to this artifact instead of the pre-2017 IL_ANNUAL_VACATION_LAW text (consolidated_before_2017)."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
+      },
+      "effective_period": {
+        "effective_from": "2017-01-01",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "Addendum 7 A7-5 D-16: the current, post-2017 Annual Vacation Law amendment, found via the Knesset National Legislation Database's own official Reshumot publication link for Amendment 15."
+      }
+    },
+    {
+      "source_id": "IL_AVERAGE_WAGE_OFFICIAL_RATES",
       "source_version": "discovery-v0",
       "source_type": "official_rate_table",
       "authority": {
@@ -81,8 +142,8 @@
         "can_independently_support_monetary_rule": false
       },
       "jurisdiction": "IL",
-      "title": "Minimum wage - official general data and rate history",
-      "canonical_url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%99%D7%A0%D7%99%D7%9E%D7%95%D7%9D.aspx",
+      "title": "Average wage - official general data and rate history (Sections 1 and 2)",
+      "canonical_url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%9E%D7%95%D7%A6%D7%A2.aspx",
       "publication_reference": null,
       "published_at": null,
       "effective_from": null,
@@ -100,7 +161,8 @@
       "artifact_format": "html",
       "supersedes_source_version": null,
       "notes": [
-        "Rate rows must be independently mapped to explicit effective periods before parameter activation."
+        "Addendum 5 D-2. Section 1 (general) and Section 2 (self-employed/other) average wage rows must be independently mapped to explicit effective periods before any parameter binds to either.",
+        "The 47.5%-of-average-wage minimum-wage derivation (P-1..P-4) cites this table's Section 1 row, never Section 2, per the research dossier."
       ],
       "verification": {
         "status": "domain_verified",
@@ -108,7 +170,7 @@
         "verified_by": [
           "tivdoc-legal-manifest-v0"
         ],
-        "verified_at": "2026-08-29T00:00:00Z",
+        "verified_at": "2026-09-03T00:00:00Z",
         "notes": [
           "No rate is activated by this manifest."
         ]
@@ -122,318 +184,8 @@
       },
       "discovery": {
         "method": "official_cross_reference",
-        "found_at": "2026-08-29",
-        "included_reason": "Official implementation table needed to discover and verify versioned minimum-wage rates."
-      }
-    },
-    {
-      "source_id": "IL_HOURS_WORK_REST_LAW",
-      "source_version": "discovery-v0",
-      "source_type": "statute",
-      "authority": {
-        "kind": "israeli_legislature",
-        "issuing_body": "Knesset National Legislation Database",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "Hours of Work and Rest Law, 1951",
-      "canonical_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
-      "publication_reference": "Sefer Ha-Chukkim 76, p. 204",
-      "published_at": "1951-05-22",
-      "effective_from": "1951-09-27",
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "working_time",
-        "overtime",
-        "weekly_rest"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": "ca770f73436663094f546e53bed93aeca867bbed7124991fecfa1a8d750fdcd9",
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "The pinned artifact is the original 1951 promulgation only; current consolidated scope and amendments remain incomplete and require owner/legal review before activation."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official legislation database record inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "The legislation record is authoritative; extracted text remains unverified."
-        ]
-      },
-      "effective_period": {
-        "effective_from": "1951-09-27",
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "work_date"
-      },
-      "discovery": {
-        "method": "official_registry",
-        "found_at": "2026-08-29",
-        "included_reason": "Primary statutory basis for working time, overtime, and weekly rest."
-      }
-    },
-    {
-      "source_id": "IL_GENERAL_PENSION_EXTENSION_ORDER_2011",
-      "source_version": "discovery-v0",
-      "source_type": "extension_order",
-      "authority": {
-        "kind": "ministry_of_labor",
-        "issuing_body": "Ministry of Labor",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "General mandatory pension extension order - consolidated version",
-      "canonical_url": "https://www.gov.il/BlobFolder/guide/labor-wage/he/workers-rights_working-conditions_pension_H096.pdf",
-      "publication_reference": "Yalkut HaPirsumim 6302",
-      "published_at": "2011-09-27",
-      "effective_from": "2011-09-27",
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "pension",
-        "severance"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Later contribution updates and historical predecessor periods require version review."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official Ministry PDF and publication reference inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "No contribution percentage is activated by this manifest."
-        ]
-      },
-      "effective_period": {
-        "effective_from": "2011-09-27",
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "salary_month"
-      },
-      "discovery": {
-        "method": "official_domain_search",
-        "found_at": "2026-08-29",
-        "included_reason": "Primary general extension order governing mandatory pension coverage."
-      }
-    },
-    {
-      "source_id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018",
-      "source_version": "discovery-v0.1",
-      "source_type": "extension_order",
-      "authority": {
-        "kind": "ministry_of_labor",
-        "issuing_body": "Ministry of Labor",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "General extension order shortening the work week, 2018",
-      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-short-week-2018/he/extention-order-short-week-2018.pdf",
-      "publication_reference": "Yalkut HaPirsumim 7732",
-      "published_at": "2018-03-19",
-      "effective_from": "2018-04-01",
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "working_time",
-        "overtime"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Candidate effective interval is stated in the official order and remains pending owner/legal review; no numeric parameter is extracted."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official Ministry PDF discovery",
-        "verified_by": [
-          "tivdoc-legal-remediation-v0.1"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "Content parsing is technical evidence only and does not activate the order."
-        ]
-      },
-      "effective_period": {
-        "effective_from": "2018-04-01",
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "work_date"
-      },
-      "discovery": {
-        "method": "official_registry",
-        "found_at": "2026-08-29",
-        "included_reason": "The working-time topic requires the general work-week shortening instrument in addition to the base statute."
-      }
-    },
-    {
-      "source_id": "IL_GENERAL_OVERTIME_PERMIT_2018",
-      "source_version": "discovery-v0.1",
-      "source_type": "official_permit",
-      "authority": {
-        "kind": "ministry_of_labor",
-        "issuing_body": "Ministry of Labor",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "General permit for overtime employment, 2018 - official gazette publication",
-      "canonical_url": "https://www.gov.il/BlobFolder/guide/overtime-and-extra-hours/he/workers-rights_working-conditions_permits-for-overtime-employment_%D7%99%D7%9C%D7%A7%D7%95%D7%98%20%D7%94%D7%A4%D7%A8%D7%A1%D7%95%D7%9E%D7%99%D7%9D-7732.pdf",
-      "publication_reference": "Yalkut HaPirsumim 7732",
-      "published_at": "2018-03-19",
-      "effective_from": null,
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "working_time",
-        "overtime"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Official gazette candidate retained with an unresolved effective interval until exact official evidence is reviewed."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official Ministry permit catalog cross-reference",
-        "verified_by": [
-          "tivdoc-legal-remediation-v0.1"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "No permit limits or numeric values are activated."
-        ]
-      },
-      "effective_period": {
-        "effective_from": null,
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "requires_historical_version_review"
-      },
-      "discovery": {
-        "method": "official_registry",
-        "found_at": "2026-08-29",
-        "included_reason": "The official permits catalog identifies general and sector permits required for overtime applicability review."
-      }
-    },
-    {
-      "source_id": "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016",
-      "source_version": "discovery-v0",
-      "source_type": "extension_order",
-      "authority": {
-        "kind": "ministry_of_labor",
-        "issuing_body": "Ministry of Labor",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "General travel-expense reimbursement extension order, 2016",
-      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-travel-expenses-2016/he/extention-order-travel-expenses-2016.pdf",
-      "publication_reference": null,
-      "published_at": null,
-      "effective_from": "2016-02-01",
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "travel"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Interaction with later public-transport fare arrangements requires review."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official Ministry PDF inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "No reimbursement cap is activated by this manifest."
-        ]
-      },
-      "effective_period": {
-        "effective_from": "2016-02-01",
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "work_date"
-      },
-      "discovery": {
-        "method": "official_domain_search",
-        "found_at": "2026-08-29",
-        "included_reason": "Primary general extension order for travel reimbursement."
+        "found_at": "2026-09-03",
+        "included_reason": "Addendum 5 D-2: official implementation table needed to bind the 47.5%-of-average-wage minimum-wage derivation (P-1..P-4) to a fetched artifact hash rather than a value in a memo."
       }
     },
     {
@@ -556,252 +308,6 @@
         "method": "official_registry",
         "found_at": "2026-08-29",
         "included_reason": "Official later general convalescence instrument required to prevent current retrieval from returning the 1988 record alone."
-      }
-    },
-    {
-      "source_id": "IL_CONVALESCENCE_KNESSET_RESEARCH_2025",
-      "source_version": "discovery-v0",
-      "source_type": "secondary_reference",
-      "authority": {
-        "kind": "other_government_authority",
-        "issuing_body": "Knesset Research and Information Center",
-        "binding_level": "secondary_explanatory",
-        "court_level": null,
-        "scope": "general",
-        "operative": false,
-        "explanatory": true,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": false
-      },
-      "jurisdiction": "IL",
-      "title": "Knesset research note on the 2025 convalescence-pay proposal",
-      "canonical_url": "https://fs.knesset.gov.il/globaldocs/MMM/22fee8f6-4dd7-ef11-a856-005056aa1f91/2_22fee8f6-4dd7-ef11-a856-005056aa1f91_11_20791.pdf",
-      "publication_reference": null,
-      "published_at": "2025-01-20",
-      "effective_from": null,
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "convalescence"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Discovery and cross-check source only; it cannot independently support a monetary rule."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official Knesset domain and publication inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "Explanatory source, not an operative rate authority."
-        ]
-      },
-      "effective_period": {
-        "effective_from": null,
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "explanatory_as_of"
-      },
-      "discovery": {
-        "method": "official_cross_reference",
-        "found_at": "2026-08-29",
-        "included_reason": "Official explanatory cross-check identifying the general order history and unresolved updates."
-      }
-    },
-    {
-      "source_id": "IL_ANNUAL_VACATION_LAW",
-      "source_version": "discovery-v0",
-      "source_type": "statute",
-      "authority": {
-        "kind": "israeli_legislature",
-        "issuing_body": "Israeli legislature",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "Annual Vacation Law, 1951 - consolidated official copy",
-      "canonical_url": "https://www.btl.gov.il/Laws1/02_0082_000000.pdf",
-      "publication_reference": null,
-      "published_at": null,
-      "effective_from": null,
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "vacation"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Historical amendments and day-count periods require version review.",
-        "Addendum 7 A7-4: consolidated_before_2017. §3(a)(1) of this fetched text gives 14 calendar days for each of the first four work-years; the current, amendment-15 figure (effective 1.1.2017) is 16. This artifact's own amendment footnote list stops at a 2013 amendment, confirming it predates amendment 15. Kept, not discarded — §3(b)/(c)'s day-count thresholds (200/240) were still bound to it in Pool P batch 5, since amendment 15 is documented as touching only the years-1-4 figure. The current, post-2017 consolidated text is D-16 (Addendum 7 A7-5), not yet fetched."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official-domain allowlist and source-title inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "No vacation entitlement calculation is implemented."
-        ]
-      },
-      "effective_period": {
-        "effective_from": null,
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "requires_historical_version_review"
-      },
-      "discovery": {
-        "method": "official_domain_search",
-        "found_at": "2026-08-29",
-        "included_reason": "Primary statutory basis for annual vacation."
-      }
-    },
-    {
-      "source_id": "IL_SICK_PAY_LAW",
-      "source_version": "discovery-v0",
-      "source_type": "statute",
-      "authority": {
-        "kind": "israeli_legislature",
-        "issuing_body": "Israeli legislature",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "Sick Pay Law, 1976 - consolidated official copy",
-      "canonical_url": "https://www.btl.gov.il/Laws1/00_0098_000000.pdf",
-      "publication_reference": "Sefer Ha-Chukkim 814, p. 206",
-      "published_at": "1976-06-24",
-      "effective_from": null,
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "sick_leave"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Historical amendments and special-condition exceptions require version review."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official-domain allowlist and source-title inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-08-29T00:00:00Z",
-        "notes": [
-          "No sick-pay entitlement calculation is implemented."
-        ]
-      },
-      "effective_period": {
-        "effective_from": null,
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "requires_historical_version_review"
-      },
-      "discovery": {
-        "method": "official_domain_search",
-        "found_at": "2026-08-29",
-        "included_reason": "Primary statutory basis for general sick leave."
-      }
-    },
-    {
-      "source_id": "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016",
-      "source_version": "discovery-v0.2",
-      "source_type": "extension_order",
-      "authority": {
-        "kind": "ministry_of_labor",
-        "issuing_body": "Minister of Labor",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "Extension order increasing pension insurance contributions, 2016",
-      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf",
-      "publication_reference": "Yalkut HaPirsumim 7287",
-      "published_at": null,
-      "effective_from": null,
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "pension",
-        "severance"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Separate candidate instrument; relations, interval, scope and the general population tag remain unverified."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "visible Ministry extension-order catalog record",
-        "verified_by": [
-          "tivdoc-acquisition-v0.2-system"
-        ],
-        "verified_at": "2026-08-29T18:32:00Z",
-        "notes": [
-          "No review, activation, relation or numeric parameter is inferred from catalog discovery."
-        ]
-      },
-      "effective_period": {
-        "effective_from": null,
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "requires_historical_version_review"
-      },
-      "discovery": {
-        "method": "official_registry",
-        "found_at": "2026-08-29",
-        "included_reason": "Required pension source-set candidate identified in the visible official catalog."
       }
     },
     {
@@ -934,6 +440,196 @@
       }
     },
     {
+      "source_id": "IL_CONVALESCENCE_GENERAL_AGREEMENT_1998",
+      "source_version": "discovery-v0",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": false,
+        "explanatory": false,
+        "contains_numeric_rate": false,
+        "can_independently_support_monetary_rule": false
+      },
+      "jurisdiction": "IL",
+      "title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
+      "canonical_url": "https://workagreements.labor.gov.il/Agreement/Index/19987038_%D7%93%D7%9E%D7%99-%D7%94%D7%91%D7%A8%D7%90%D7%94",
+      "publication_reference": "Agreement no. 19987038",
+      "published_at": "1998-07-13",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "html",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 5 D-5 second half; Addendum 7 A7-5. The Ministry of Labor's own collective-agreement registry, workagreements.labor.gov.il — a .gov.il subdomain, added to the fetch allowlist for this source per Addendum 7 A7-5's rule (a .gov.il subdomain is official by the same test as every other allowlisted host).",
+        "Session B B-7: quarantined invalid_content: catalogue_record_not_instrument. The fetched bytes are the Ministry of Labor registry's index entry for agreement 19987038 — agreement number, subject (דמי הבראה), signing date 13/07/1998, status פעיל, target audience, the signatory organisations, and a link headed 'להורדת צו הרחבה' — and contain no operative text and no figure at all. The host is official and the page is genuinely about the right agreement, which is precisely why it would pass a host-and-title check; only reading the bytes catches it. The agreement text sits behind the extension-order link on that page and was not what the fetch returned. Bytes kept immutable; nothing may bind to this source. P-26..P-29 stay blocked_dependency on the agreement text itself."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_domain_search",
+        "found_at": "2026-09-04",
+        "included_reason": "Addendum 5 D-5 / Addendum 7 A7-5: the underlying 1998 general collective agreement the 2016 convalescence extension order (D of the same topic) is built on top of."
+      },
+      "content_integrity": {
+        "status": "invalid_content_catalogue_record_not_instrument",
+        "expected_title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
+        "observed_title": "הסכם מס' 19987038 | משרד העבודה — collective-agreement registry index entry",
+        "detected_at": "2026-09-04"
+      }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_GENERAL_AGREEMENT_1998_DOCUMENT",
+      "source_version": "discovery-v0",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": false,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
+      "canonical_url": "https://workagreements.labor.gov.il/api/GetSelect/DownLoadFile?Type=Agreements&FileName=19987038&FileExtension=pdf",
+      "publication_reference": "Agreement no. 19987038",
+      "published_at": "1998-07-13",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Session E3-5 (BL-14). The agreement document itself, not the registry's index entry for it. The download link was read out of the immutable bytes of the quarantined catalogue record (IL_CONVALESCENCE_GENERAL_AGREEMENT_1998@discovery-v0), which is what a quarantined artifact is for: it is still evidence, and in this case it is the evidence that led to the real target. Same official host, already allowlisted."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_cross_reference",
+        "found_at": "2026-09-04",
+        "included_reason": "E3-5 (BL-14): the 1998 general collective agreement on convalescence pay, the instrument the 2016 extension order builds on."
+      }
+    },
+    {
+      "source_id": "IL_CONVALESCENCE_KNESSET_RESEARCH_2025",
+      "source_version": "discovery-v0",
+      "source_type": "secondary_reference",
+      "authority": {
+        "kind": "other_government_authority",
+        "issuing_body": "Knesset Research and Information Center",
+        "binding_level": "secondary_explanatory",
+        "court_level": null,
+        "scope": "general",
+        "operative": false,
+        "explanatory": true,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": false
+      },
+      "jurisdiction": "IL",
+      "title": "Knesset research note on the 2025 convalescence-pay proposal",
+      "canonical_url": "https://fs.knesset.gov.il/globaldocs/MMM/22fee8f6-4dd7-ef11-a856-005056aa1f91/2_22fee8f6-4dd7-ef11-a856-005056aa1f91_11_20791.pdf",
+      "publication_reference": null,
+      "published_at": "2025-01-20",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "convalescence"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Discovery and cross-check source only; it cannot independently support a monetary rule."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Knesset domain and publication inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": [
+          "Explanatory source, not an operative rate authority."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "explanatory_as_of"
+      },
+      "discovery": {
+        "method": "official_cross_reference",
+        "found_at": "2026-08-29",
+        "included_reason": "Official explanatory cross-check identifying the general order history and unresolved updates."
+      }
+    },
+    {
       "source_id": "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2024",
       "source_version": "discovery-v0.2",
       "source_type": "statute",
@@ -1056,7 +752,379 @@
       }
     },
     {
-      "source_id": "IL_AVERAGE_WAGE_OFFICIAL_RATES",
+      "source_id": "IL_GENERAL_OVERTIME_PERMIT_2018",
+      "source_version": "discovery-v0.1",
+      "source_type": "official_permit",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General permit for overtime employment, 2018 - official gazette publication",
+      "canonical_url": "https://www.gov.il/BlobFolder/guide/overtime-and-extra-hours/he/workers-rights_working-conditions_permits-for-overtime-employment_%D7%99%D7%9C%D7%A7%D7%95%D7%98%20%D7%94%D7%A4%D7%A8%D7%A1%D7%95%D7%9E%D7%99%D7%9D-7732.pdf",
+      "publication_reference": "Yalkut HaPirsumim 7732",
+      "published_at": "2018-03-19",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Official gazette candidate retained with an unresolved effective interval until exact official evidence is reviewed."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Ministry permit catalog cross-reference",
+        "verified_by": [
+          "tivdoc-legal-remediation-v0.1"
+        ],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": [
+          "No permit limits or numeric values are activated."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "The official permits catalog identifies general and sector permits required for overtime applicability review."
+      }
+    },
+    {
+      "source_id": "IL_GENERAL_PENSION_EXTENSION_ORDER_2011",
+      "source_version": "discovery-v0",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General mandatory pension extension order - consolidated version",
+      "canonical_url": "https://www.gov.il/BlobFolder/guide/labor-wage/he/workers-rights_working-conditions_pension_H096.pdf",
+      "publication_reference": "Yalkut HaPirsumim 6302",
+      "published_at": "2011-09-27",
+      "effective_from": "2011-09-27",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "pension",
+        "severance"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Later contribution updates and historical predecessor periods require version review."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Ministry PDF and publication reference inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": [
+          "No contribution percentage is activated by this manifest."
+        ]
+      },
+      "effective_period": {
+        "effective_from": "2011-09-27",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "salary_month"
+      },
+      "discovery": {
+        "method": "official_domain_search",
+        "found_at": "2026-08-29",
+        "included_reason": "Primary general extension order governing mandatory pension coverage."
+      }
+    },
+    {
+      "source_id": "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016",
+      "source_version": "discovery-v0.2",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Minister of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Extension order increasing pension insurance contributions, 2016",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf",
+      "publication_reference": "Yalkut HaPirsumim 7287",
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "pension",
+        "severance"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Separate candidate instrument; relations, interval, scope and the general population tag remain unverified."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "visible Ministry extension-order catalog record",
+        "verified_by": [
+          "tivdoc-acquisition-v0.2-system"
+        ],
+        "verified_at": "2026-08-29T18:32:00Z",
+        "notes": [
+          "No review, activation, relation or numeric parameter is inferred from catalog discovery."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "Required pension source-set candidate identified in the visible official catalog."
+      }
+    },
+    {
+      "source_id": "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016",
+      "source_version": "discovery-v0",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General travel-expense reimbursement extension order, 2016",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-travel-expenses-2016/he/extention-order-travel-expenses-2016.pdf",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": "2016-02-01",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "travel"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Interaction with later public-transport fare arrangements requires review."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Ministry PDF inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": [
+          "No reimbursement cap is activated by this manifest."
+        ]
+      },
+      "effective_period": {
+        "effective_from": "2016-02-01",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "discovery": {
+        "method": "official_domain_search",
+        "found_at": "2026-08-29",
+        "included_reason": "Primary general extension order for travel reimbursement."
+      }
+    },
+    {
+      "source_id": "IL_HOURS_WORK_REST_LAW",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset National Legislation Database",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Hours of Work and Rest Law, 1951",
+      "canonical_url": "https://main.knesset.gov.il/apps/legislation/main/laws/2000019",
+      "publication_reference": "Sefer Ha-Chukkim 76, p. 204",
+      "published_at": "1951-05-22",
+      "effective_from": "1951-09-27",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime",
+        "weekly_rest"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": "ca770f73436663094f546e53bed93aeca867bbed7124991fecfa1a8d750fdcd9",
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "The pinned artifact is the original 1951 promulgation only; current consolidated scope and amendments remain incomplete and require owner/legal review before activation."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official legislation database record inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": [
+          "The legislation record is authoritative; extracted text remains unverified."
+        ]
+      },
+      "effective_period": {
+        "effective_from": "1951-09-27",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "Primary statutory basis for working time, overtime, and weekly rest."
+      }
+    },
+    {
+      "source_id": "IL_MIN_WAGE_LAW",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Israeli legislature",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Minimum Wage Law, 1987 - consolidated official copy",
+      "canonical_url": "https://www.btl.gov.il/Laws1/00_0021_000000.pdf",
+      "publication_reference": null,
+      "published_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Consolidated text requires amendment/effective-period review before activation.",
+        "Addendum 5 D-3: per the research dossier, record this artifact as consolidated_through_2015 — later amendments (e.g. Sefer HaChukim 3072, 1.8.2023 / IL_SEFER_HACHUKIM_3072_2023) are not reflected in this consolidated text and must be layered on separately, not assumed already merged."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": [
+          "Content and historical versions are not yet legally verified."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_domain_search",
+        "found_at": "2026-08-29",
+        "included_reason": "Primary statutory basis for the general minimum-wage topic."
+      }
+    },
+    {
+      "source_id": "IL_MIN_WAGE_OFFICIAL_RATES",
       "source_version": "discovery-v0",
       "source_type": "official_rate_table",
       "authority": {
@@ -1071,8 +1139,8 @@
         "can_independently_support_monetary_rule": false
       },
       "jurisdiction": "IL",
-      "title": "Average wage - official general data and rate history (Sections 1 and 2)",
-      "canonical_url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%9E%D7%95%D7%A6%D7%A2.aspx",
+      "title": "Minimum wage - official general data and rate history",
+      "canonical_url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%99%D7%A0%D7%99%D7%9E%D7%95%D7%9D.aspx",
       "publication_reference": null,
       "published_at": null,
       "effective_from": null,
@@ -1090,8 +1158,7 @@
       "artifact_format": "html",
       "supersedes_source_version": null,
       "notes": [
-        "Addendum 5 D-2. Section 1 (general) and Section 2 (self-employed/other) average wage rows must be independently mapped to explicit effective periods before any parameter binds to either.",
-        "The 47.5%-of-average-wage minimum-wage derivation (P-1..P-4) cites this table's Section 1 row, never Section 2, per the research dossier."
+        "Rate rows must be independently mapped to explicit effective periods before parameter activation."
       ],
       "verification": {
         "status": "domain_verified",
@@ -1099,7 +1166,7 @@
         "verified_by": [
           "tivdoc-legal-manifest-v0"
         ],
-        "verified_at": "2026-09-03T00:00:00Z",
+        "verified_at": "2026-08-29T00:00:00Z",
         "notes": [
           "No rate is activated by this manifest."
         ]
@@ -1113,130 +1180,8 @@
       },
       "discovery": {
         "method": "official_cross_reference",
-        "found_at": "2026-09-03",
-        "included_reason": "Addendum 5 D-2: official implementation table needed to bind the 47.5%-of-average-wage minimum-wage derivation (P-1..P-4) to a fetched artifact hash rather than a value in a memo."
-      }
-    },
-    {
-      "source_id": "IL_SEFER_HACHUKIM_3072_2023",
-      "source_version": "discovery-v0",
-      "source_type": "statute",
-      "authority": {
-        "kind": "israeli_legislature",
-        "issuing_body": "Knesset",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": false,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "Sefer HaChukim 3072 (1.8.2023)",
-      "canonical_url": "https://fs.knesset.gov.il/25/law/25_lsr_3020007.pdf",
-      "publication_reference": "Sefer HaChukim 3072",
-      "published_at": "2023-08-01",
-      "effective_from": null,
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "minimum_wage"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Addendum 5 D-4. The research dossier records this target as having returned HTTP 474 to a prior automated fetch attempt; retried once with the repository's own fetch tool per the addendum, result recorded whichever way it lands."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official-domain allowlist and source-title inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-09-03T00:00:00Z",
-        "notes": [
-          "No rate is activated by this manifest."
-        ]
-      },
-      "effective_period": {
-        "effective_from": null,
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "requires_historical_version_review"
-      },
-      "discovery": {
-        "method": "official_registry",
-        "found_at": "2026-09-03",
-        "included_reason": "Addendum 5 D-4: the 1.8.2023 amending law the research dossier cites, from the exact official Knesset file URL."
-      }
-    },
-    {
-      "source_id": "IL_MIN_WAGE_YOUTH_APPRENTICES_REGULATIONS_1987",
-      "source_version": "discovery-v0",
-      "source_type": "regulation",
-      "authority": {
-        "kind": "ministry_of_labor",
-        "issuing_body": "Ministry of Labor",
-        "binding_level": "primary_binding",
-        "court_level": null,
-        "scope": "general",
-        "operative": true,
-        "explanatory": false,
-        "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
-      },
-      "jurisdiction": "IL",
-      "title": "Minimum Wage Regulations (Working Youth and Apprentices), 1987",
-      "canonical_url": "https://www.btl.gov.il/Laws1/02_0021_100000.pdf",
-      "publication_reference": null,
-      "published_at": null,
-      "effective_from": null,
-      "effective_to": null,
-      "retrieved_at": null,
-      "language": "he",
-      "topics": [
-        "minimum_wage"
-      ],
-      "sectors": [
-        "general"
-      ],
-      "status": "needs_review",
-      "content_sha256": null,
-      "artifact_format": "pdf",
-      "supersedes_source_version": null,
-      "notes": [
-        "Addendum 6 A6-3 D-7. Official copy found on the same btl.gov.il host and URL family already carrying IL_MIN_WAGE_LAW (00_0021_000000.pdf vs 02_0021_100000.pdf), not nevo. If the repository's own fetch tool cannot retrieve it (challenge/error page or non-2xx), this source is recorded blocked_external and P-7..P-10 stay unbound rather than bound to an explanatory source, per the addendum."
-      ],
-      "verification": {
-        "status": "domain_verified",
-        "method": "official-domain allowlist and source-title inspection",
-        "verified_by": [
-          "tivdoc-legal-manifest-v0"
-        ],
-        "verified_at": "2026-09-03T00:00:00Z",
-        "notes": [
-          "No rate is activated by this manifest."
-        ]
-      },
-      "effective_period": {
-        "effective_from": null,
-        "effective_to": null,
-        "retroactive": false,
-        "retroactive_basis": null,
-        "applicability_basis": "requires_historical_version_review"
-      },
-      "discovery": {
-        "method": "official_domain_search",
-        "found_at": "2026-09-03",
-        "included_reason": "Addendum 6 A6-3 D-7: bind the youth minimum-wage percentages (P-7..P-10) to an official regulation artifact rather than nevo or a memo."
+        "found_at": "2026-08-29",
+        "included_reason": "Official implementation table needed to discover and verify versioned minimum-wage rates."
       }
     },
     {
@@ -1301,42 +1246,41 @@
       }
     },
     {
-      "source_id": "IL_CONVALESCENCE_GENERAL_AGREEMENT_1998",
+      "source_id": "IL_MIN_WAGE_YOUTH_APPRENTICES_REGULATIONS_1987",
       "source_version": "discovery-v0",
-      "source_type": "extension_order",
+      "source_type": "regulation",
       "authority": {
         "kind": "ministry_of_labor",
         "issuing_body": "Ministry of Labor",
         "binding_level": "primary_binding",
         "court_level": null,
         "scope": "general",
-        "operative": false,
+        "operative": true,
         "explanatory": false,
-        "contains_numeric_rate": false,
-        "can_independently_support_monetary_rule": false
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
       },
       "jurisdiction": "IL",
-      "title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
-      "canonical_url": "https://workagreements.labor.gov.il/Agreement/Index/19987038_%D7%93%D7%9E%D7%99-%D7%94%D7%91%D7%A8%D7%90%D7%94",
-      "publication_reference": "Agreement no. 19987038",
-      "published_at": "1998-07-13",
+      "title": "Minimum Wage Regulations (Working Youth and Apprentices), 1987",
+      "canonical_url": "https://www.btl.gov.il/Laws1/02_0021_100000.pdf",
+      "publication_reference": null,
+      "published_at": null,
       "effective_from": null,
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
       "topics": [
-        "convalescence"
+        "minimum_wage"
       ],
       "sectors": [
         "general"
       ],
       "status": "needs_review",
       "content_sha256": null,
-      "artifact_format": "html",
+      "artifact_format": "pdf",
       "supersedes_source_version": null,
       "notes": [
-        "Addendum 5 D-5 second half; Addendum 7 A7-5. The Ministry of Labor's own collective-agreement registry, workagreements.labor.gov.il — a .gov.il subdomain, added to the fetch allowlist for this source per Addendum 7 A7-5's rule (a .gov.il subdomain is official by the same test as every other allowlisted host).",
-        "Session B B-7: quarantined invalid_content: catalogue_record_not_instrument. The fetched bytes are the Ministry of Labor registry's index entry for agreement 19987038 — agreement number, subject (דמי הבראה), signing date 13/07/1998, status פעיל, target audience, the signatory organisations, and a link headed 'להורדת צו הרחבה' — and contain no operative text and no figure at all. The host is official and the page is genuinely about the right agreement, which is precisely why it would pass a host-and-title check; only reading the bytes catches it. The agreement text sits behind the extension-order link on that page and was not what the fetch returned. Bytes kept immutable; nothing may bind to this source. P-26..P-29 stay blocked_dependency on the agreement text itself."
+        "Addendum 6 A6-3 D-7. Official copy found on the same btl.gov.il host and URL family already carrying IL_MIN_WAGE_LAW (00_0021_000000.pdf vs 02_0021_100000.pdf), not nevo. If the repository's own fetch tool cannot retrieve it (challenge/error page or non-2xx), this source is recorded blocked_external and P-7..P-10 stay unbound rather than bound to an explanatory source, per the addendum."
       ],
       "verification": {
         "status": "domain_verified",
@@ -1344,7 +1288,7 @@
         "verified_by": [
           "tivdoc-legal-manifest-v0"
         ],
-        "verified_at": "2026-09-04T00:00:00Z",
+        "verified_at": "2026-09-03T00:00:00Z",
         "notes": [
           "No rate is activated by this manifest."
         ]
@@ -1358,18 +1302,135 @@
       },
       "discovery": {
         "method": "official_domain_search",
-        "found_at": "2026-09-04",
-        "included_reason": "Addendum 5 D-5 / Addendum 7 A7-5: the underlying 1998 general collective agreement the 2016 convalescence extension order (D of the same topic) is built on top of."
-      },
-      "content_integrity": {
-        "status": "invalid_content_catalogue_record_not_instrument",
-        "expected_title": "General Collective Agreement on employer participation in convalescence and recreation expenses, 13.7.1998",
-        "observed_title": "הסכם מס' 19987038 | משרד העבודה — collective-agreement registry index entry",
-        "detected_at": "2026-09-04"
+        "found_at": "2026-09-03",
+        "included_reason": "Addendum 6 A6-3 D-7: bind the youth minimum-wage percentages (P-7..P-10) to an official regulation artifact rather than nevo or a memo."
       }
     },
     {
-      "source_id": "IL_ANNUAL_VACATION_LAW_AMENDMENT_15_2016",
+      "source_id": "IL_SEFER_HACHUKIM_3072_2023",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Knesset",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": false,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Sefer HaChukim 3072 (1.8.2023)",
+      "canonical_url": "https://fs.knesset.gov.il/25/law/25_lsr_3020007.pdf",
+      "publication_reference": "Sefer HaChukim 3072",
+      "published_at": "2023-08-01",
+      "effective_from": null,
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "minimum_wage"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 5 D-4. The research dossier records this target as having returned HTTP 474 to a prior automated fetch attempt; retried once with the repository's own fetch tool per the addendum, result recorded whichever way it lands."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": [
+          "tivdoc-legal-manifest-v0"
+        ],
+        "verified_at": "2026-09-03T00:00:00Z",
+        "notes": [
+          "No rate is activated by this manifest."
+        ]
+      },
+      "effective_period": {
+        "effective_from": null,
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "requires_historical_version_review"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-03",
+        "included_reason": "Addendum 5 D-4: the 1.8.2023 amending law the research dossier cites, from the exact official Knesset file URL."
+      }
+    },
+    {
+      "source_id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018",
+      "source_version": "discovery-v0.1",
+      "source_type": "extension_order",
+      "authority": {
+        "kind": "ministry_of_labor",
+        "issuing_body": "Ministry of Labor",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "General extension order shortening the work week, 2018",
+      "canonical_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-short-week-2018/he/extention-order-short-week-2018.pdf",
+      "publication_reference": "Yalkut HaPirsumim 7732",
+      "published_at": "2018-03-19",
+      "effective_from": "2018-04-01",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": [
+        "working_time",
+        "overtime"
+      ],
+      "sectors": [
+        "general"
+      ],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Candidate effective interval is stated in the official order and remains pending owner/legal review; no numeric parameter is extracted."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official Ministry PDF discovery",
+        "verified_by": [
+          "tivdoc-legal-remediation-v0.1"
+        ],
+        "verified_at": "2026-08-29T00:00:00Z",
+        "notes": [
+          "Content parsing is technical evidence only and does not activate the order."
+        ]
+      },
+      "effective_period": {
+        "effective_from": "2018-04-01",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-08-29",
+        "included_reason": "The working-time topic requires the general work-week shortening instrument in addition to the base statute."
+      }
+    },
+    {
+      "source_id": "IL_SICK_PAY_LAW",
       "source_version": "discovery-v0",
       "source_type": "statute",
       "authority": {
@@ -1384,16 +1445,16 @@
         "can_independently_support_monetary_rule": true
       },
       "jurisdiction": "IL",
-      "title": "Annual Vacation Law (Amendment No. 15 and Temporary Provision), 5776-2016",
-      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_321785.pdf",
-      "publication_reference": "Sefer HaChukim 2531, p. 574, 16.2.2016",
-      "published_at": "2016-02-16",
-      "effective_from": "2017-01-01",
+      "title": "Sick Pay Law, 1976 - consolidated official copy",
+      "canonical_url": "https://www.btl.gov.il/Laws1/00_0098_000000.pdf",
+      "publication_reference": "Sefer Ha-Chukkim 814, p. 206",
+      "published_at": "1976-06-24",
+      "effective_from": null,
       "effective_to": null,
       "retrieved_at": null,
       "language": "he",
       "topics": [
-        "vacation"
+        "sick_leave"
       ],
       "sectors": [
         "general"
@@ -1403,7 +1464,7 @@
       "artifact_format": "pdf",
       "supersedes_source_version": null,
       "notes": [
-        "Addendum 7 A7-5, D-16. Not a full re-consolidation of the Annual Vacation Law — the specific amending law raising the years-1-4 calendar-day entitlement from 14 to 16 days (phased: +1 day from July 2016, +1 more from January 2017), exactly as D-4 is the specific 2023 amending law for minimum wage rather than a full consolidation. Registered so a current P-32 (calendar-days table) parameter can bind to this artifact instead of the pre-2017 IL_ANNUAL_VACATION_LAW text (consolidated_before_2017)."
+        "Historical amendments and special-condition exceptions require version review."
       ],
       "verification": {
         "status": "domain_verified",
@@ -1411,22 +1472,22 @@
         "verified_by": [
           "tivdoc-legal-manifest-v0"
         ],
-        "verified_at": "2026-09-04T00:00:00Z",
+        "verified_at": "2026-08-29T00:00:00Z",
         "notes": [
-          "No rate is activated by this manifest."
+          "No sick-pay entitlement calculation is implemented."
         ]
       },
       "effective_period": {
-        "effective_from": "2017-01-01",
+        "effective_from": null,
         "effective_to": null,
         "retroactive": false,
         "retroactive_basis": null,
-        "applicability_basis": "work_date"
+        "applicability_basis": "requires_historical_version_review"
       },
       "discovery": {
-        "method": "official_registry",
-        "found_at": "2026-09-04",
-        "included_reason": "Addendum 7 A7-5 D-16: the current, post-2017 Annual Vacation Law amendment, found via the Knesset National Legislation Database's own official Reshumot publication link for Amendment 15."
+        "method": "official_domain_search",
+        "found_at": "2026-08-29",
+        "included_reason": "Primary statutory basis for general sick leave."
       }
     }
   ]

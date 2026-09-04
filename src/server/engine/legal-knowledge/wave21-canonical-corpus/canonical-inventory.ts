@@ -17,9 +17,11 @@ export function loadCanonicalRoleInventory() {
   // Bumped 17 -> 21 by Addendum 5/6 Pool D discovery: D-2 (average-wage
   // official rates), D-4 (Sefer HaChukim 3072), D-7 (youth minimum-wage
   // regulations), D-1b (BTL historical rate spreadsheet corroboration).
+  // Bumped 23 -> 24 by E3-5 (BL-14): the 1998 convalescence agreement DOCUMENT,
+  // registered beside the quarantined catalogue record that pointed at it.
   // Bumped 21 -> 23 by Addendum 7 A7-5: D-5's second half (1998 general
   // collective agreement) and D-16 (Annual Vacation Law Amendment 15).
-  if (rows.length !== 23) throw new Error(`canonical_role_inventory_expected_23_received_${rows.length}`);
+  if (rows.length !== 24) throw new Error(`canonical_role_inventory_expected_24_received_${rows.length}`);
   return Object.freeze({ schema_version: "canonical-source-role-inventory-v0.4.1" as const, source_count: rows.length, rows });
 }
 
