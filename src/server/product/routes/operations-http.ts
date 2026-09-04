@@ -28,6 +28,16 @@ export const GROUND_TRUTH_ROUTES = Object.freeze([
   Object.freeze({ path: "ground-truth/queue", method: "GET" as const }),
 ]);
 
+/**
+ * Wave 8 (S-8). The nested offline-shadow control-plane panel — same
+ * precedent as Ground Truth: read-only by construction, one GET, served
+ * only once the canonical service actually provides the capability
+ * (shadowCapability below), same as every other panel here.
+ */
+export const SHADOW_ROUTES = Object.freeze([
+  Object.freeze({ path: "shadow/summary", method: "GET" as const }),
+]);
+
 type OperationsRoute =
   | Readonly<{ method: "GET"; kind: InternalOpsReadKind; caseId: string | null }>
   | Readonly<{ method: "POST"; action: InternalOpsAction; caseId: string | null }>;
@@ -64,6 +74,27 @@ export function createOperationsHttpHandler(input: Readonly<{
           const data = await groundTruth.readGroundTruthQueue({
             actor: session.actor, correlation_id: correlationId, limit,
           });
+          return productJson({ correlation_id: correlationId, data });
+        } catch (error) {
+          const code = problemCode(error);
+          return productJson({ code, correlation_id: correlationId, retryable: false }, statusFor(code));
+        }
+      }
+      // Wave 8 (S-8). Nested offline-shadow control-plane panel. Same
+      // session and correlation handling as Ground Truth; read-only, no
+      // action route, no CSRF check — there is nothing here to mutate.
+      if (segments[0] === "shadow") {
+        const shadow = shadowCapability(input.service);
+        if (!shadow) return productNotFound("CAPABILITY_ABSENT");
+        const joined = segments.join("/");
+        if (!SHADOW_ROUTES.some((route) => route.path === joined && route.method === request.method)) {
+          return productNotFound("PATH_NOT_ROUTED");
+        }
+        const session = await input.sessions.verify(request, "operations", false);
+        if (!session) return productNotFound("SESSION_UNVERIFIED");
+        const correlationId = correlationIdFor(request);
+        try {
+          const data = await shadow.readShadowSummary({ actor: session.actor, correlation_id: correlationId });
           return productJson({ correlation_id: correlationId, data });
         } catch (error) {
           const code = problemCode(error);
@@ -175,6 +206,17 @@ function groundTruthCapability(service: InternalOpsApplicationPort | null): Grou
   const candidate = service as unknown as Partial<GroundTruthCapability> | null;
   return candidate && typeof candidate.readGroundTruthQueue === "function"
     ? candidate as GroundTruthCapability : null;
+}
+
+type ShadowCapability = Readonly<{
+  readShadowSummary(input: Readonly<{ actor: unknown; correlation_id: string }>): Promise<unknown>;
+}>;
+
+/** The shadow control-plane panel is served only when the canonical durable service provides it. */
+function shadowCapability(service: InternalOpsApplicationPort | null): ShadowCapability | null {
+  const candidate = service as unknown as Partial<ShadowCapability> | null;
+  return candidate && typeof candidate.readShadowSummary === "function"
+    ? candidate as ShadowCapability : null;
 }
 
 /** The panel is served only when the canonical durable service provides it. */
