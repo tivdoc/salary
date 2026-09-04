@@ -1234,6 +1234,60 @@ Blocked on R-2 (no blank per-topic templates exist to fill), per Addendum
 6's own ordering. Q-8 (the sensitivity run) stays `deferred_to_session_b`
 regardless, per the standing instruction.
 
+## Session B — B-0: the three red tests, fixed by scope and derivation
+
+Session A's `NEXT` said "hand-update `wave1-artifact-partition.v0.10.9.json`".
+That was wrong and Session B's brief says so: the partition asserts exhaustive,
+non-overlapping accounting derived from the recorded ledger, and a file you edit
+to match cannot assert that. Both red files needed a **scope decision recorded
+in code** and a **derivation**, not an editor.
+
+**Scope, `wave1-artifact-partition.v0.10.9.json`: frozen Wave-1 invariant over a
+named source-version list.** Everything in the reconciliation says so — the
+artifact is named for Wave 1 and pinned to V0.10.9, the builder is
+`buildWave1ArtifactReconciliation`, and the assertions around it are Wave-1
+absolutes (20 publications, 58 permits, 68 permit artifact urls, 72 acquired
+files, 15×403 + 1×404) that later corpus growth was never meant to move. Its
+second test is a tamper detector, which is a claim about a closed historical
+accounting rather than about how large the corpus is today. The seventeen source
+version ids are now named in `src/engine/wave2/evidence-audit/wave1-partition-scope.ts`;
+the reconciliation reads the ledger, the manifest and the build state through
+that scope, so Pool D's six new sources are out of subject matter **by
+construction**. A Wave-1 source that vanishes or is reclassified still fails.
+
+**Derivation**: the file had **no writer anywhere in the repository** — it was
+hand-authored once, which is exactly why every legitimate change since read as
+tampering. `wave1-artifact-partition-builder.ts` now derives it from the
+append-only fetch state and the byte-diff ledger and is forbidden by
+construction from reading its own previous output;
+`scripts/wave2-evidence-audit/build-wave1-artifact-partition.mts` writes it.
+Regenerating moved exactly one byte-level fact — `IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0`
+from `aa05c64b…` to `f1265224…`, the BTL page legitimately re-acquired during
+Pool D — plus the note. Drift guard: `wave1-artifact-partition-drift.test.ts`
+rebuilds and compares bytes, failing with
+`REGENERATE_VIA_<builder command>`. A hand edit cannot land silently now.
+
+**Scope, `lifecycle-reconciliation.json`: also frozen, and failing from the
+opposite direction.** It *does* have a deterministic builder
+(`scripts/wave23-corpus-trust/generate-evidence.mts` →
+`corpusLifecycleReconciliation()`), but that function takes **no input**: it is a
+hardcoded seed table for the same seventeen Wave-1 source versions. Regenerating
+it therefore changes nothing, and the mismatch was never in the artifact — it was
+in the consumer. `overnight-v07/inventory.ts` compared frozen totals against the
+whole live corpus. It now compares them against exactly the source versions the
+document names in its own `sources[]`, which is self-describing and needs no
+second list to maintain. `lifecycle-drift.test.ts` guards the generated artifact
+against hand edits the same way, and asserts the document stays internally
+closed with `reviewed 0 / active 0 / operative 0`.
+
+**One real defect found and fixed on the way**: `artifact-reconciliation.test.ts`
+proved its tamper case by writing mutations over the committed baseline and
+restoring it in a `finally`. Under full-suite parallelism that made the
+committed file shared mutable state across test files, and the new drift guard
+read mutated bytes — passing alone, failing in the suite. The baseline path is
+now an input; the tamper test mutates a temp copy and no test writes the
+committed file at all.
+
 ## Freeze — Addendum 7 close, the full matrix at this head
 
 Per A7-6: a session that stops runs the full matrix on its own final head

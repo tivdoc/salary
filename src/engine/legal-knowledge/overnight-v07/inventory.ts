@@ -97,6 +97,16 @@ export function recomputeCorpusInventory(input: Readonly<{
     candidate_sha256s: readonly string[];
   }>;
   lifecycle_totals: LifecycleTotals;
+  // B-0. The lifecycle reconciliation is a FROZEN document: its totals come
+  // from a hardcoded seed table in `wave23/corpus-trust/lifecycle.ts` covering
+  // the seventeen Wave-1 source versions, not from the live ledger. Comparing
+  // frozen totals against a corpus that has since grown is a category error —
+  // it reported P3_LIFECYCLE_RECONCILIATION_MISMATCH the moment a legitimate
+  // twenty-third source landed. The document names its own subject matter, so
+  // the comparison is scoped to exactly the source versions it claims to
+  // account for, and a source acquired after it was frozen is out of scope by
+  // construction rather than by a number someone has to keep updating.
+  lifecycle_scope_source_version_ids: readonly string[];
 }>) {
   const sourceVersionIds = input.sources.map((source) => `${source.source_id}@${source.source_version}`);
   if (new Set(sourceVersionIds).size !== sourceVersionIds.length) throw new Error("P3_DUPLICATE_SOURCE_VERSION");
@@ -108,7 +118,14 @@ export function recomputeCorpusInventory(input: Readonly<{
   const legacyParsed = input.build_records.filter((record) => record.parse_status === "parsed").length;
   const legacyFailed = input.build_records.length - legacyParsed;
   const legacyChunks = input.build_records.reduce((sum, record) => sum + record.chunk_count, 0);
-  if (input.lifecycle_totals.source_count !== input.sources.length || input.lifecycle_totals.instrument_resolved_chunks !== legacyChunks || input.lifecycle_totals.retrievable_review_chunks !== legacyChunks) {
+  const lifecycleScope = new Set(input.lifecycle_scope_source_version_ids);
+  if (lifecycleScope.size !== input.lifecycle_scope_source_version_ids.length) throw new Error("P3_LIFECYCLE_SCOPE_DUPLICATE");
+  const outsideLifecycleScope = [...lifecycleScope].filter((id) => !buildById.has(id));
+  if (outsideLifecycleScope.length > 0) throw new Error("P3_LIFECYCLE_SCOPE_SOURCE_MISSING");
+  const scopedSources = input.sources.filter((source) => lifecycleScope.has(`${source.source_id}@${source.source_version}`));
+  const scopedBuildRecords = input.build_records.filter((record) => lifecycleScope.has(`${record.source_id}@${record.source_version}`));
+  const scopedChunks = scopedBuildRecords.reduce((sum, record) => sum + record.chunk_count, 0);
+  if (input.lifecycle_totals.source_count !== scopedSources.length || input.lifecycle_totals.instrument_resolved_chunks !== scopedChunks || input.lifecycle_totals.retrievable_review_chunks !== scopedChunks) {
     throw new Error("P3_LIFECYCLE_RECONCILIATION_MISMATCH");
   }
   if (input.lifecycle_totals.extracted_chunks - input.lifecycle_totals.quarantined_chunk_cardinality !== input.lifecycle_totals.instrument_resolved_chunks) {

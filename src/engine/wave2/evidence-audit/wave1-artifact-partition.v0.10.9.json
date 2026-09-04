@@ -1,6 +1,6 @@
 {
   "schema_version": "tivdoc-wave1-artifact-partition-v0.10.9",
-  "note": "Committed partition baseline. Live fetch-state is append-only across acquisition runs, so the reconciliation derives the latest observation per source version and compares it here. Legal baselines are not encoded and are never replaced by this file.",
+  "note": "Derived partition baseline. Built from the append-only fetch state and the byte-diff ledger, restricted to the frozen Wave-1 scope in wave1-partition-scope.ts. Regenerate with the builder; never hand-edit. Legal baselines are not encoded and are never replaced by this file.",
   "distinct_source_versions": 17,
   "entries": [
     {
@@ -76,7 +76,7 @@
     {
       "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0",
       "disposition": "pending_change_review",
-      "artifact_sha256": "aa05c64bd964f6a0ed6ef17329d07363dc96bf37027300c0fcfc142d5d81eca7"
+      "artifact_sha256": "f126522484d3108c00996e051a6b2878625d722eed9b29641b6fd29cf469950e"
     },
     {
       "source_version_id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018@discovery-v0.1",

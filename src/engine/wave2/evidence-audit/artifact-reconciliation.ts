@@ -10,6 +10,7 @@ import {
   stableJson,
 } from "./common.ts";
 import { assertNoProhibitedCustomerPath } from "./runtime-denial.ts";
+import { inWave1PartitionScope } from "./wave1-partition-scope.ts";
 
 type PublicationEntry = Readonly<{
   publication_ordinal: number;
@@ -87,6 +88,14 @@ type ReconciliationPaths = Readonly<{
   repo_root: string;
   evidence_repo_root: string;
   source_pack_root: string;
+  // B-0. The tamper test used to prove its point by writing mutations over the
+  // committed baseline and restoring it afterwards. That made the real file
+  // shared mutable state between test files, and the drift guard beside it
+  // read the mutated bytes whenever the two ran concurrently — an
+  // order-dependent failure, which is hidden global state rather than a flake.
+  // The baseline path is now an input, so the tamper test mutates a temporary
+  // copy and the committed file is never written by a test at all.
+  partition_baseline_path?: string;
 }>;
 
 function assertArray<T>(value: unknown, code: string): asserts value is T[] {
@@ -352,18 +361,27 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
   // dependent on mutable untracked local state.
   const observationKey = (entry: { source_id: string; source_version: string }) =>
     `${entry.source_id}@${entry.source_version}`;
+  // B-0: this is a frozen Wave-1 invariant over a named source-version list,
+  // not a live-corpus one. Everything below reads the ledger through that
+  // scope, so a source acquired after Wave 1 is out of subject matter by
+  // construction and cannot make the partition look tampered with. The reasons
+  // are recorded in `wave1-partition-scope.ts`.
+  const scopedObservations = fetchState.observations.filter(inWave1PartitionScope);
+  const scopedFailures = fetchState.failures.filter((failure) => inWave1PartitionScope(failure as never));
+  const scopedManifestSources = manifest.sources.filter(inWave1PartitionScope);
+  const scopedBuildRecords = buildState.records.filter(inWave1PartitionScope);
   const latestObservation = new Map<string, FetchObservation>();
-  for (const observation of fetchState.observations) latestObservation.set(observationKey(observation), observation);
-  const unavailableKeys = [...new Set(fetchState.failures.map((failure) => observationKey(failure as never)))].sort();
+  for (const observation of scopedObservations) latestObservation.set(observationKey(observation), observation);
+  const unavailableKeys = [...new Set(scopedFailures.map((failure) => observationKey(failure as never)))].sort();
   const unavailable = unavailableKeys.map((sourceVersionId) => ({
     source_version_id: sourceVersionId,
-    safe_error_codes: [...new Set(fetchState.failures
+    safe_error_codes: [...new Set(scopedFailures
       .filter((failure) => observationKey(failure as never) === sourceVersionId)
       .map((failure) => String((failure as Record<string, unknown>).safe_error_code ?? "unknown")))].sort(),
   }));
   // Quarantine is historical evidence: a challenge page stays recorded even
   // after a later attempt succeeds, so it is counted over every row.
-  const challenges = fetchState.observations.filter(isChallengeObservation);
+  const challenges = scopedObservations.filter(isChallengeObservation);
   const derivedPartition = [...latestObservation.entries()]
     .map(([sourceVersionId, observation]) => ({
       source_version_id: sourceVersionId,
@@ -386,7 +404,8 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
       rejected_challenge_observation: number;
       detections_total: number;
     };
-  }>(path.join(repoRoot, "src", "engine", "wave2", "evidence-audit", "wave1-artifact-partition.v0.10.9.json"));
+  }>(paths.partition_baseline_path
+    ?? path.join(repoRoot, "src", "engine", "wave2", "evidence-audit", "wave1-artifact-partition.v0.10.9.json"));
 
   const baselineKeys = new Set(partitionBaseline.entries.map((entry) => entry.source_version_id));
   const derivedKeys = new Set(derivedPartition.map((entry) => entry.source_version_id));
@@ -431,17 +450,17 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
 
   const validRawArtifacts = [...latestObservation.values()].filter((observation) => !isChallengeObservation(observation));
   const currentCounts = {
-    registry_records: manifest.sources.length,
+    registry_records: scopedManifestSources.length,
     fetch_observation_records: latestObservation.size,
     fetch_failure_records: unavailable.length,
     fetch_attempt_records_combined: latestObservation.size + unavailable.length,
     valid_raw_artifact_versions: validRawArtifacts.length,
     quarantined_observations: challenges.length,
     quarantined_or_unavailable: challenges.length + unavailable.length,
-    legal_text_versions: buildState.records.length,
-    parsed_versions: buildState.records.filter((record) => record.parse_status === "parsed").length,
-    parse_failed_versions: buildState.records.filter((record) => record.parse_status !== "parsed").length,
-    chunks: buildState.records.reduce((sum, record) => sum + record.chunk_count, 0),
+    legal_text_versions: scopedBuildRecords.length,
+    parsed_versions: scopedBuildRecords.filter((record) => record.parse_status === "parsed").length,
+    parse_failed_versions: scopedBuildRecords.filter((record) => record.parse_status !== "parsed").length,
+    chunks: scopedBuildRecords.reduce((sum, record) => sum + record.chunk_count, 0),
     browser_catalog_observations_runtime: 6,
     persistent_owner_import_ledger_entries: await ledgerEntryCount(path.join(legalRoot, "acquisition", "ledger")),
     test_only_ledger_entries_retained: 0,

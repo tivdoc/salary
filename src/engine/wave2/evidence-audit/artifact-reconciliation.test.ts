@@ -1,4 +1,5 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildWave1ArtifactReconciliation } from "./artifact-reconciliation.ts";
@@ -39,13 +40,19 @@ describe("Wave 1 artifact reconciliation", () => {
     expect(report.invariants).toMatchObject({ reviewed_sources: 0, active_sources: 0 });
   }, 30_000);
   it("fails when an observation is dropped, added or double counted", async () => {
-    const baselinePath = path.resolve("src/engine/wave2/evidence-audit/wave1-artifact-partition.v0.10.9.json");
-    const original = await readFile(baselinePath, "utf8");
+    // B-0: mutations go to a temporary copy. Writing them over the committed
+    // baseline made that file shared mutable state across concurrently running
+    // test files, which is how the drift guard beside this one started failing
+    // in the full suite while passing alone.
+    const committedPath = path.resolve("src/engine/wave2/evidence-audit/wave1-artifact-partition.v0.10.9.json");
+    const original = await readFile(committedPath, "utf8");
+    const scratch = await mkdtemp(path.join(tmpdir(), "tivdoc-wave1-partition-"));
+    const baselinePath = path.join(scratch, "wave1-artifact-partition.v0.10.9.json");
     const baseline = JSON.parse(original) as {
       distinct_source_versions: number;
       entries: Array<{ source_version_id: string; disposition: string; artifact_sha256: string | null }>;
     };
-    const build = () => buildWave1ArtifactReconciliation(RECONCILIATION_PATHS);
+    const build = () => buildWave1ArtifactReconciliation({ ...RECONCILIATION_PATHS, partition_baseline_path: baselinePath });
     const mutations = [
       { name: "dropped", value: { ...baseline, entries: baseline.entries.slice(1) } },
       {
@@ -72,8 +79,11 @@ describe("Wave 1 artifact reconciliation", () => {
         await expect(build(), mutation.name).rejects.toThrow(/quarantine_or_change_partition_mismatch/u);
       }
     } finally {
-      await writeFile(baselinePath, original, "utf8");
+      await rm(scratch, { recursive: true, force: true });
     }
-    await expect(build()).resolves.toBeDefined();
+    // The committed file is byte-identical to how this test found it, and the
+    // unmutated baseline still reconciles.
+    expect(await readFile(committedPath, "utf8")).toBe(original);
+    await expect(buildWave1ArtifactReconciliation(RECONCILIATION_PATHS)).resolves.toBeDefined();
   }, 60_000);
 });

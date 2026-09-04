@@ -99,6 +99,11 @@ export async function loadCurrentP3Corpus(input: Readonly<{
       candidate_sha256s: minimumWageCandidates.map((candidate) => String(candidate.artifact_sha256)),
     },
     lifecycle_totals: lifecycleRaw.totals as LifecycleTotals,
+    // B-0: the frozen lifecycle document names the source versions it accounts
+    // for. Its totals are compared against those and nothing else.
+    lifecycle_scope_source_version_ids: asArray<Record<string, unknown>>(
+      lifecycleRaw.sources, "P3_LIFECYCLE_SOURCES_INVALID",
+    ).map((entry) => String(entry.source_version_id)),
   });
   return Object.freeze({
     inventory,
