@@ -123,7 +123,6 @@ describe("classification guard — a delta is not a finding", () => {
       case_id: "11111111-1111-4111-8111-111111111111",
       analysis_run_id: "11111111-1111-4111-8111-111111111111",
       category: "working_time",
-      status: "candidate",
       period: null,
       paid: { currency: "ILS", minor_units: 20_000 },
       expected: { currency: "ILS", minor_units: 22_000 },
@@ -137,6 +136,7 @@ describe("classification guard — a delta is not a finding", () => {
       requires_confirmation: true,
       created_at: "2026-08-01T00:00:00.000Z",
       ...delta,
+      status: "candidate",
     };
     // The strict Finding schema refuses the delta's own keys; stripping them would be a rewrite, not a delta.
     expect(findingSchema.safeParse(dressed).success).toBe(false);
