@@ -17,7 +17,6 @@ import {
   type GlobalDependencyInvalidationReceipt,
   type GlobalDependencyMutation,
   type GlobalDependencyMutationKind,
-  type GlobalDependencyStage,
 } from "./global-invalidation.ts";
 
 const TENANT = "tenant.synthetic.001";

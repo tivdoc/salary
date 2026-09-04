@@ -106,7 +106,7 @@ async function main(): Promise<void> {
   });
 
   const client = await factory.acquire();
-  let candidates: Candidate[] = [];
+  const candidates: Candidate[] = [];
   let decisions: Array<Record<string, string | null>> = [];
   try {
     await client.query(statement("q8_begin", "begin", []));

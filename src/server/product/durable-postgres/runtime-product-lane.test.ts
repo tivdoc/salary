@@ -5,10 +5,7 @@ import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 
 import { LocalRuntimePrivateBlobProvider } from "../../platform/storage/local-runtime/private-blob-provider.ts";
-import {
-  CANONICAL_POSTGRES_SCHEMA_VERSION,
-  type CanonicalVerifiedTransactionInput,
-} from "../../platform/composition/canonical-postgres.ts";
+import { CANONICAL_POSTGRES_SCHEMA_VERSION } from "../../platform/composition/canonical-postgres.ts";
 import {
   DURABLE_RUNTIME_POSTGRES_CONTEXT_REQUIREMENTS,
   DURABLE_RUNTIME_PRODUCT_SCHEMA_VERSION,
@@ -17,7 +14,6 @@ import {
   createDurableRuntimeReportJobEnvelope,
   type DurableRuntimePostgresContextPort,
   type DurableRuntimeDatabasePrincipal,
-  type DurableRuntimeTransactionBundle,
   type DurableRuntimeTimelineBinding,
 } from "./runtime-product-lane.ts";
 
@@ -192,10 +188,11 @@ class DisabledContext implements DurableRuntimePostgresContextPort {
     reason: "PERSISTENCE_DISABLED" as const,
   });
 
-  async transaction<T>(
-    _input: Readonly<{ case_id: string; correlation_id: string }>,
-    _operation: (bundle: DurableRuntimeTransactionBundle) => Promise<T>,
-  ): Promise<T> {
+  // Parameters removed rather than underscore-prefixed: the stub throws
+  // before reading anything, and a signature with fewer parameters still
+  // satisfies the port. Silencing the rule would have left dead arguments in
+  // place pretending to be used.
+  async transaction<T>(): Promise<T> {
     throw new Error("TEST_CONTEXT_MUST_NOT_EXECUTE");
   }
 }
@@ -214,17 +211,10 @@ class IsolatedContext implements DurableRuntimePostgresContextPort {
     durable: true as const,
     target_id: "runtime-product-focused-test",
     schema_version: CANONICAL_POSTGRES_SCHEMA_VERSION,
-    async transaction<T>(
-      _tenantId: string,
-      _caseId: string,
-      _operation: (bundle: DurableRuntimeTransactionBundle) => Promise<T>,
-    ): Promise<T> {
+    async transaction<T>(): Promise<T> {
       throw new Error("TEST_POSTGRES_MUST_NOT_EXECUTE");
     },
-    async verified_transaction<T>(
-      _input: CanonicalVerifiedTransactionInput,
-      _operation: (bundle: DurableRuntimeTransactionBundle) => Promise<T>,
-    ): Promise<T> {
+    async verified_transaction<T>(): Promise<T> {
       throw new Error("TEST_POSTGRES_MUST_NOT_EXECUTE");
     },
   });
@@ -233,10 +223,11 @@ class IsolatedContext implements DurableRuntimePostgresContextPort {
     this.database_principal = principal;
   }
 
-  async transaction<T>(
-    _input: Readonly<{ case_id: string; correlation_id: string }>,
-    _operation: (bundle: DurableRuntimeTransactionBundle) => Promise<T>,
-  ): Promise<T> {
+  // Parameters removed rather than underscore-prefixed: the stub throws
+  // before reading anything, and a signature with fewer parameters still
+  // satisfies the port. Silencing the rule would have left dead arguments in
+  // place pretending to be used.
+  async transaction<T>(): Promise<T> {
     throw new Error("TEST_CONTEXT_MUST_NOT_EXECUTE");
   }
 }
