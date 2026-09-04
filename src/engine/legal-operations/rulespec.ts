@@ -16,6 +16,27 @@ const declarationSchema = declarationObjectSchema.readonly();
 
 const parameterDeclarationSchema = declarationObjectSchema.extend({ parameter_id: legalOperationsIdSchema, parameter_version: z.string().regex(/^[1-9]\d*(?:\.\d+){0,2}$/) }).strict().readonly();
 const nodeBase = { node_id: legalOperationsIdSchema } as const;
+
+// L4-2 / D1. Two shape-only nodes. A band boundary or a tier threshold is the
+// shape of a table; the value or the rate sitting at each one is a parameter,
+// cited and bound like every other. Neither node decides anything — the
+// boundaries come from the spec its drafter wrote, the numbers come from the
+// parameter store, and both are visible in the trace.
+//
+// Ranges are half-open, `[from_inclusive, to_exclusive)`, and the field names
+// say so. "Years 1 to 4" is ambiguous in every direction, and over half-open
+// ranges the contiguity check is a single equality.
+const bandSchema = z.object({
+  from_inclusive: z.number().int().safe(),
+  to_exclusive: z.number().int().safe().nullable(),
+  value_ref: legalOperationsIdSchema,
+}).strict().readonly();
+const tierSchema = z.object({
+  from_inclusive: z.number().int().safe(),
+  to_exclusive: z.number().int().safe().nullable(),
+  rate_ref: legalOperationsIdSchema,
+}).strict().readonly();
+
 export const ruleSpecNodeSchema = z.discriminatedUnion("operation", [
   z.object({ ...nodeBase, operation: z.literal("constant.rational"), value: z.enum(["0", "1"]), unit: legalOperationsIdSchema }).strict(),
   z.object({ ...nodeBase, operation: z.literal("add"), refs: z.array(legalOperationsIdSchema).min(2).max(32).readonly() }).strict(),
@@ -23,9 +44,50 @@ export const ruleSpecNodeSchema = z.discriminatedUnion("operation", [
   z.object({ ...nodeBase, operation: z.literal("money.scale"), money_ref: legalOperationsIdSchema, rational_ref: legalOperationsIdSchema, rounding: z.enum(["exact", "toward_zero", "half_up", "half_even"]) }).strict(),
   z.object({ ...nodeBase, operation: z.literal("compare.gte"), left_ref: legalOperationsIdSchema, right_ref: legalOperationsIdSchema }).strict(),
   z.object({ ...nodeBase, operation: z.literal("select"), condition_ref: legalOperationsIdSchema, when_true_ref: legalOperationsIdSchema, when_false_ref: legalOperationsIdSchema }).strict(),
-  z.object({ ...nodeBase, operation: z.enum(["min", "max"]), refs: z.array(legalOperationsIdSchema).min(2).max(32).readonly() }).strict(),
+  // `min` and `max` were one member carrying `z.enum(["min", "max"])`. They are
+  // two members now, identical in what they parse, so that narrowing on the
+  // discriminant actually removes them and `assertExhaustive` can do its job.
+  z.object({ ...nodeBase, operation: z.literal("min"), refs: z.array(legalOperationsIdSchema).min(2).max(32).readonly() }).strict(),
+  z.object({ ...nodeBase, operation: z.literal("max"), refs: z.array(legalOperationsIdSchema).min(2).max(32).readonly() }).strict(),
   z.object({ ...nodeBase, operation: z.literal("aggregate.bounded"), refs: z.array(legalOperationsIdSchema).min(1).max(32).readonly() }).strict(),
+  z.object({ ...nodeBase, operation: z.literal("band.lookup"), input_ref: legalOperationsIdSchema, bands: z.array(bandSchema).min(1).max(32).readonly() }).strict(),
+  z.object({ ...nodeBase, operation: z.literal("tiered.rate"), input_ref: legalOperationsIdSchema, base_ref: legalOperationsIdSchema, tiers: z.array(tierSchema).min(1).max(32).readonly(), rounding: z.enum(["exact", "toward_zero", "half_up", "half_even"]) }).strict(),
 ]).readonly();
+
+/**
+ * Every operation the executor knows, in one place. `assertExhaustive` below
+ * turns the compiler into the check that no dispatch forgets one — the previous
+ * shape of `refs()` and of the executor's `else` chain would have swallowed a
+ * new kind silently, one returning no input refs and one evaluating it as
+ * `min`.
+ */
+export const RULE_SPEC_OPERATIONS = Object.freeze([
+  "constant.rational", "add", "multiply", "money.scale", "compare.gte",
+  "select", "min", "max", "aggregate.bounded", "band.lookup", "tiered.rate",
+] as const);
+
+function assertExhaustive(node: never): never {
+  throw new Error(`RULESPEC_OPERATION_UNHANDLED:${(node as { operation?: string }).operation ?? "unknown"}`);
+}
+
+/** Half-open ranges must start where the previous one ended, and only the last may be open. */
+function assertContiguous(ranges: readonly Readonly<{ from_inclusive: number; to_exclusive: number | null }>[], code: string): void {
+  for (const [index, range] of ranges.entries()) {
+    const isLast = index === ranges.length - 1;
+    if (range.to_exclusive === null && !isLast) throw new Error(code);
+    if (range.to_exclusive !== null && range.to_exclusive <= range.from_inclusive) throw new Error(code);
+    if (index > 0 && ranges[index - 1].to_exclusive !== range.from_inclusive) throw new Error(code);
+  }
+}
+
+/** The band or tier covering `quantity`, or `null` when nothing does. */
+function rangeAt<T extends Readonly<{ from_inclusive: number; to_exclusive: number | null }>>(ranges: readonly T[], quantity: bigint): T | null {
+  for (const range of ranges) {
+    if (quantity < BigInt(range.from_inclusive)) continue;
+    if (range.to_exclusive === null || quantity < BigInt(range.to_exclusive)) return range;
+  }
+  return null;
+}
 
 const ruleSpecDraftObjectSchema = z.object({
   schema_version: z.literal("tivdoc-rulespec-v0.6.0"),
@@ -137,12 +199,17 @@ function compare(left: RuntimeValue, right: RuntimeValue) {
   throw new Error("RULESPEC_COMPARISON_INVALID");
 }
 
-function refs(node: RuleSpecPackage["nodes"][number]): readonly string[] {
-  if ("refs" in node) return node.refs;
-  if (node.operation === "multiply" || node.operation === "compare.gte") return [node.left_ref, node.right_ref];
-  if (node.operation === "money.scale") return [node.money_ref, node.rational_ref];
-  if (node.operation === "select") return [node.condition_ref, node.when_true_ref, node.when_false_ref];
-  return [];
+export function refs(node: RuleSpecPackage["nodes"][number]): readonly string[] {
+  switch (node.operation) {
+    case "constant.rational": return [];
+    case "add": case "min": case "max": case "aggregate.bounded": return node.refs;
+    case "multiply": case "compare.gte": return [node.left_ref, node.right_ref];
+    case "money.scale": return [node.money_ref, node.rational_ref];
+    case "select": return [node.condition_ref, node.when_true_ref, node.when_false_ref];
+    case "band.lookup": return [node.input_ref, ...node.bands.map((band) => band.value_ref)];
+    case "tiered.rate": return [node.input_ref, node.base_ref, ...node.tiers.map((tier) => tier.rate_ref)];
+    default: return assertExhaustive(node);
+  }
 }
 
 export function createRuleSpecPackage(candidate: RuleSpecDraft): RuleSpecPackage {
@@ -176,6 +243,8 @@ export function validateRuleSpecPackage(candidate: unknown): RuleSpecPackage {
     const dependencies = refs(node);
     if (dependencies.some((reference) => !available.has(reference))) throw new Error("RULESPEC_FORWARD_OR_MISSING_REF");
     if (node.operation === "aggregate.bounded" && node.refs.length > parsed.resource_policy.max_aggregate_items) throw new Error("RULESPEC_AGGREGATE_BOUND_EXCEEDED");
+    if (node.operation === "band.lookup" && node.bands.length > parsed.resource_policy.max_aggregate_items) throw new Error("RULESPEC_AGGREGATE_BOUND_EXCEEDED");
+    if (node.operation === "tiered.rate" && node.tiers.length > parsed.resource_policy.max_aggregate_items) throw new Error("RULESPEC_AGGREGATE_BOUND_EXCEEDED");
     const inputs = dependencies.map((reference) => available.get(reference)!);
     let kind: string;
     let unit: string | null;
@@ -190,6 +259,23 @@ export function validateRuleSpecPackage(candidate: unknown): RuleSpecPackage {
     } else if (node.operation === "multiply") {
       if (inputs[0].kind !== "rational" || inputs[1].kind !== "rational" || (inputs[0].unit !== "ratio" && inputs[1].unit !== "ratio")) throw new Error("RULESPEC_MULTIPLY_REQUIRES_RATIO");
       [kind, unit] = ["rational", inputs[0].unit === "ratio" ? inputs[1].unit : inputs[0].unit];
+    } else if (node.operation === "band.lookup") {
+      // The selector is a whole count — a seniority year, a headcount. The
+      // values are whatever the table holds, but all of one type, because a
+      // band lookup that could return money or days depending on the input
+      // would be a branch pretending to be a table.
+      if (inputs[0].kind !== "integer") throw new Error("RULESPEC_BAND_LOOKUP_INPUT_NOT_INTEGER");
+      const values = inputs.slice(1);
+      if (values.some((value) => value.kind === "boolean" || value.kind !== values[0].kind || value.unit !== values[0].unit)) throw new Error("RULESPEC_BAND_LOOKUP_VALUE_TYPE_MISMATCH");
+      assertContiguous(node.bands, "RULESPEC_BAND_LOOKUP_BANDS_NOT_CONTIGUOUS");
+      [kind, unit] = [values[0].kind, values[0].unit];
+    } else if (node.operation === "tiered.rate") {
+      if (inputs[0].kind !== "integer") throw new Error("RULESPEC_TIERED_RATE_INPUT_NOT_INTEGER");
+      if (inputs[1].kind !== "money") throw new Error("RULESPEC_TIERED_RATE_BASE_NOT_MONEY");
+      if (inputs.slice(2).some((rate) => rate.kind !== "rational" || rate.unit !== "ratio")) throw new Error("RULESPEC_TIERED_RATE_RATE_NOT_RATIO");
+      if (node.tiers[0].from_inclusive < 0) throw new Error("RULESPEC_TIERED_RATE_TIERS_NOT_CONTIGUOUS");
+      assertContiguous(node.tiers, "RULESPEC_TIERED_RATE_TIERS_NOT_CONTIGUOUS");
+      [kind, unit] = ["money", inputs[1].unit];
     } else {
       if (inputs.length === 0 || inputs.some((input) => input.kind !== inputs[0].kind || input.unit !== inputs[0].unit || input.kind === "boolean")) throw new Error("RULESPEC_UNIT_OR_TYPE_MISMATCH");
       [kind, unit] = [inputs[0].kind, inputs[0].unit];
@@ -315,9 +401,47 @@ export function executeRuleSpec(candidate: Readonly<{
     else if (node.operation === "select") {
       const condition = get(node.condition_ref); if (condition.kind !== "boolean") throw new Error("RULESPEC_SELECT_CONDITION_NOT_BOOLEAN");
       result = get(condition.value ? node.when_true_ref : node.when_false_ref);
-    } else {
+    } else if (node.operation === "band.lookup") {
+      const selector = get(node.input_ref);
+      if (selector.kind !== "integer") throw new Error("RULESPEC_BAND_LOOKUP_INPUT_NOT_INTEGER");
+      const band = rangeAt(node.bands, selector.value);
+      // Fail-closed: a value the table does not cover is not a zero and not the
+      // nearest band. The caller gets a refusal and no output at all.
+      if (band === null) throw new Error("RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE");
+      const value = values.get(band.value_ref);
+      if (!value) throw new Error("RULESPEC_BAND_LOOKUP_VALUE_UNBOUND");
+      result = value;
+    } else if (node.operation === "tiered.rate") {
+      const quantity = get(node.input_ref);
+      const base = get(node.base_ref);
+      if (quantity.kind !== "integer") throw new Error("RULESPEC_TIERED_RATE_INPUT_NOT_INTEGER");
+      if (base.kind !== "money") throw new Error("RULESPEC_TIERED_RATE_BASE_NOT_MONEY");
+      const last = node.tiers[node.tiers.length - 1];
+      if (quantity.value < BigInt(node.tiers[0].from_inclusive)) throw new Error("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
+      if (last.to_exclusive !== null && quantity.value > BigInt(last.to_exclusive)) throw new Error("RULESPEC_TIERED_RATE_INPUT_OUT_OF_RANGE");
+      // Cumulative: every tier is paid for the units that fall inside it, and
+      // the sum stays an exact rational until one rounding at the end. Rounding
+      // per tier and then adding would make the total depend on how the table
+      // happens to be cut up.
+      let numerator = BigInt(0);
+      let denominator = BigInt(1);
+      for (const tier of node.tiers) {
+        const rate = values.get(tier.rate_ref);
+        if (!rate) throw new Error("RULESPEC_TIERED_RATE_RATE_UNBOUND");
+        if (rate.kind !== "rational" || rate.unit !== "ratio") throw new Error("RULESPEC_TIERED_RATE_RATE_NOT_RATIO");
+        const ceiling = tier.to_exclusive === null ? quantity.value : BigInt(tier.to_exclusive);
+        const units = (ceiling < quantity.value ? ceiling : quantity.value) - BigInt(tier.from_inclusive);
+        if (units <= BigInt(0)) continue;
+        const addition = units * base.minor_units * rate.numerator;
+        numerator = numerator * rate.denominator + addition * denominator;
+        denominator = denominator * rate.denominator;
+        const divisor = gcd(numerator, denominator);
+        if (divisor > BigInt(1)) [numerator, denominator] = [numerator / divisor, denominator / divisor];
+      }
+      result = { kind: "money", currency: base.currency, minor_units: roundDivision(numerator, denominator, node.rounding) };
+    } else if (node.operation === "min" || node.operation === "max") {
       const items = node.refs.map(get); result = items.slice(1).reduce((selected, item) => node.operation === "min" ? (compare(item, selected) < 0 ? item : selected) : (compare(item, selected) > 0 ? item : selected), items[0]);
-    }
+    } else assertExhaustive(node);
     assertRuntimeBounds(result, rule.resource_policy.max_integer_digits);
     const rendered = serialized(result);
     values.set(node.node_id, result);

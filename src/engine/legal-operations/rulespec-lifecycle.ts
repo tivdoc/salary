@@ -9,6 +9,7 @@ import {
   type DependencyBindings,
 } from "./contracts.ts";
 import {
+  refs as ruleSpecNodeInputRefs,
   validateGoldenCaseSet,
   validateRuleSpecPackage,
   type GoldenCaseSet,
@@ -213,16 +214,15 @@ function sortedUnique(values: readonly string[], code: string): readonly string[
   return Object.freeze(sorted);
 }
 
+/**
+ * The dependency manifest sorts the same refs the executor walks. This used to
+ * be a second copy of `refs()` whose fall-through returned `[]`, which meant a
+ * node kind added to the executor and forgotten here would ship an empty
+ * `input_refs` into `operation_graph_sha256` without anything failing. There is
+ * one function now, and it is exhaustive.
+ */
 function inputRefs(node: RuleSpecPackage["nodes"][number]): readonly string[] {
-  if ("refs" in node) return [...node.refs].sort();
-  if (node.operation === "multiply" || node.operation === "compare.gte") {
-    return [node.left_ref, node.right_ref].sort();
-  }
-  if (node.operation === "money.scale") return [node.money_ref, node.rational_ref].sort();
-  if (node.operation === "select") {
-    return [node.condition_ref, node.when_true_ref, node.when_false_ref].sort();
-  }
-  return [];
+  return [...ruleSpecNodeInputRefs(node)].sort();
 }
 
 function manifestBody(rule: RuleSpecPackage) {
