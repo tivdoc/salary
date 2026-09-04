@@ -1,0 +1,210 @@
+// Q-1 … Q-7. One draft RuleSpec per topic, filled from the R-2 templates.
+//
+// A draft binds only parameters that actually exist as `draft` rows in the
+// governance database — never a value typed in here, never a plausible-looking
+// id. Where the dossier records an open legal question the draft carries BOTH
+// branches, because picking one silently is the single thing this whole
+// apparatus exists to prevent. Where nothing is registered yet, the slot stays
+// unbound and says why in its own words; R-2's refusal is what makes that safe,
+// since a spec with an unbound slot cannot be executed at all.
+//
+// Nothing here is operative, nothing is approved, and no draft carries a
+// number. The values live in the governance database behind two attestations
+// this repository cannot produce.
+import { z } from "zod";
+import { canonicalSha256, deepFreeze } from "../rule-runtime/canonical.ts";
+import { WAVE3_TOPICS, type Wave3Topic } from "../wave3/contracts.ts";
+import {
+  buildRuleSpecTemplate,
+  ruleSpecTemplateSchema,
+  type RuleSpecTemplate,
+} from "./rulespec-templates.ts";
+
+export const RULESPEC_DRAFT_SCHEMA = "tivdoc-rulespec-draft-v0.8.0" as const;
+
+const idSchema = z.string().regex(/^[a-z][a-z0-9._:-]{2,159}$/u);
+const shaSchema = z.string().regex(/^[a-f0-9]{64}$/u);
+// `parameter_id@parameter_version` — the same identity the governance database
+// keys a candidate by, so a binding is checkable against it without
+// interpretation.
+const parameterVersionIdSchema = z.string().regex(/^[a-z][a-z0-9._]{2,159}@[0-9]+(\.[0-9]+){0,2}$/u);
+
+const boundSlotSchema = z.object({
+  slot_id: idSchema,
+  parameter_id: idSchema,
+  bound: z.literal(true),
+  // Every registered version of this parameter. Which one applies is decided
+  // at execution time by the effective period, not chosen here.
+  parameter_version_ids: z.array(parameterVersionIdSchema).min(1).readonly(),
+  // Both branches of an open decision, keyed by branch. A draft that carried
+  // one branch would be a decision this system has no standing to make.
+  decision_id: idSchema.nullable(),
+  decision_branches: z.array(z.object({
+    branch: z.string().min(1).max(64),
+    parameter_version_id: parameterVersionIdSchema,
+  }).strict()).readonly(),
+}).strict().readonly();
+
+const unboundSlotSchema = z.object({
+  slot_id: idSchema,
+  parameter_id: idSchema,
+  bound: z.literal(false),
+  slot_unbound: z.string().min(10).max(400),
+  decision_id: idSchema.nullable(),
+}).strict().readonly();
+
+export const ruleSpecDraftSchema = z.object({
+  schema_version: z.literal(RULESPEC_DRAFT_SCHEMA),
+  draft_id: idSchema,
+  draft_version: z.literal("0.8.0"),
+  topic: z.enum(WAVE3_TOPICS),
+  state: z.literal("draft"),
+  operative: z.literal(false),
+  catalog_boundary: z.literal("real_inactive"),
+  tenant_id: z.literal("legal.reference.il"),
+  // The template this draft fills, pinned by hash. A template edit invalidates
+  // every draft built on it rather than silently changing what the draft meant.
+  template: z.object({ template_id: idSchema, template_content_sha256: shaSchema }).strict(),
+  parameter_slots: z.array(z.union([boundSlotSchema, unboundSlotSchema])).min(1).readonly(),
+  // Still unbound, all of them: a citation is verified by a person reading the
+  // clause, an effective period and a sector/population are legal judgements,
+  // and precedence between instruments is the hardest judgement of the three.
+  citation_slots_bound: z.literal(0),
+  rounding_policy_bound: z.literal(false),
+  effective_period_bound: z.literal(false),
+  sector_population_bound: z.literal(false),
+  precedence_bound: z.literal(false),
+  attestations: z.literal(0),
+  content_sha256: shaSchema,
+}).strict().readonly();
+
+export type RuleSpecDraft = z.infer<typeof ruleSpecDraftSchema>;
+
+type Registration = Readonly<{
+  parameter_id: string;
+  versions: readonly string[];
+  decision_id?: string;
+  branches?: ReadonlyArray<readonly [string, string]>;
+}>;
+
+// Exactly what Pool P registered, as it registered it. This list is checked
+// against the live governance database by
+// `scripts/legal-review-projection/rulespec-draft-binding-proof.mts`; a drift
+// in either direction is a failure there rather than a silently wrong draft
+// here.
+export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freeze([
+  { parameter_id: "il.minimum_wage.monthly", versions: ["2023.1.0", "2024.1.0", "2025.1.0", "2026.1.0"] },
+  {
+    parameter_id: "il.minimum_wage.hourly", versions: ["2026.1.0", "2026.2.0"],
+    decision_id: "legal.reference.il.decision.min_wage_hourly_divisor",
+    branches: [["182", "2026.1.0"], ["186", "2026.2.0"]],
+  },
+  { parameter_id: "il.minimum_wage.daily_6day", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.daily_5day", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.youth_under16.monthly", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.youth_under16.hourly", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.youth_16_17.monthly", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.youth_16_17.hourly", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.youth_17_18.monthly", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.youth_17_18.hourly", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.apprentice.monthly", versions: ["2026.1.0"] },
+  { parameter_id: "il.minimum_wage.apprentice.hourly", versions: ["2026.1.0"] },
+  { parameter_id: "il.working_time.weekly_overtime_threshold_hours", versions: ["2018.1.0"] },
+  {
+    parameter_id: "il.pension.mandatory_wage_cap", versions: ["2026.1.0", "2026.2.0"],
+    decision_id: "legal.reference.il.decision.pension_wage_cap_section",
+    branches: [["section1", "2026.1.0"], ["section2", "2026.2.0"]],
+  },
+  { parameter_id: "il.travel.daily_reimbursement_cap", versions: ["2016.1.0"] },
+  { parameter_id: "il.convalescence.2024_partial_reduction_wage_threshold", versions: ["2024.1.0"] },
+  { parameter_id: "il.vacation.full_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
+  { parameter_id: "il.vacation.partial_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
+  { parameter_id: "il.vacation.calendar_days_years_1_to_4", versions: ["2017.1.0"] },
+  { parameter_id: "il.sick_pay.accrual_days_per_month", versions: ["1.0.0"] },
+  { parameter_id: "il.sick_pay.accrual_cap_days", versions: ["1.0.0"] },
+]);
+
+// Why each still-unregistered parameter is unregistered, in the words of the
+// Pool P and Addendum 7 write-ups rather than a shrug. A slot with no reason
+// here is a slot nobody has thought about, so building a draft for it fails.
+const UNBOUND_REASONS: Readonly<Record<string, string>> = Object.freeze({
+  "il.working_time.overtime_rate_first_tier":
+    "Pool P P-11..P-14 blocked_dependency: the overtime rates need the Hours of Work and Rest Law's current consolidated text, and the fetched IL_HOURS_WORK_REST_LAW artifact is an HTML challenge page, quarantined not parsed.",
+  "il.pension.employee_contribution_rate":
+    "Pool P P-21..P-23 blocked_dependency: the 6/6.5/6 split needs D-9's consolidated 2011 pension extension order; the 2016 increase order is a scanned PDF with no text layer and the pinned OCR toolchain has no installed binaries in this environment.",
+  "il.convalescence.daily_rate":
+    "Pool P P-26..P-28 blocked_dependency: the registered IL_CONVALESCENCE_EXTENSION_ORDER_2026 artifact is quarantined as invalid_content: title_mismatch, so no daily rate may be bound to it.",
+});
+
+function bindingFor(parameterId: string) {
+  return REGISTERED_DRAFT_PARAMETERS.find((entry) => entry.parameter_id === parameterId) ?? null;
+}
+
+function unsignedDraft(topic: Wave3Topic, template: RuleSpecTemplate) {
+  const parameterSlots = template.parameter_slots.map((slot) => {
+    const registration = bindingFor(slot.parameter_id);
+    if (!registration) {
+      const reason = UNBOUND_REASONS[slot.parameter_id];
+      if (!reason) throw new Error(`RULESPEC_DRAFT_UNBOUND_SLOT_REASON_MISSING:${slot.parameter_id}`);
+      return { slot_id: slot.slot_id, parameter_id: slot.parameter_id, bound: false as const, slot_unbound: reason, decision_id: slot.decision_id };
+    }
+    // A slot that names a decision must have branches, and a slot that does not
+    // must have none. A mismatch means the template and the registry disagree
+    // about whether a legal question is open, which is never a detail.
+    if ((slot.decision_id === null) !== (registration.decision_id === undefined)) {
+      throw new Error(`RULESPEC_DRAFT_DECISION_BINDING_MISMATCH:${slot.slot_id}`);
+    }
+    if (slot.decision_id !== null && slot.decision_id !== registration.decision_id) {
+      throw new Error(`RULESPEC_DRAFT_DECISION_ID_MISMATCH:${slot.slot_id}`);
+    }
+    return {
+      slot_id: slot.slot_id,
+      parameter_id: slot.parameter_id,
+      bound: true as const,
+      parameter_version_ids: registration.versions.map((version) => `${slot.parameter_id}@${version}`),
+      decision_id: slot.decision_id,
+      decision_branches: (registration.branches ?? []).map(([branch, version]) => ({
+        branch, parameter_version_id: `${slot.parameter_id}@${version}`,
+      })),
+    };
+  });
+  return {
+    schema_version: RULESPEC_DRAFT_SCHEMA,
+    draft_id: `rulespec.draft.${topic}`,
+    draft_version: "0.8.0" as const,
+    topic,
+    state: "draft" as const,
+    operative: false as const,
+    catalog_boundary: "real_inactive" as const,
+    tenant_id: "legal.reference.il" as const,
+    template: { template_id: template.template_id, template_content_sha256: template.content_sha256 },
+    parameter_slots: parameterSlots,
+    citation_slots_bound: 0 as const,
+    rounding_policy_bound: false as const,
+    effective_period_bound: false as const,
+    sector_population_bound: false as const,
+    precedence_bound: false as const,
+    attestations: 0 as const,
+  };
+}
+
+export function buildRuleSpecDraft(topic: Wave3Topic): RuleSpecDraft {
+  const template = ruleSpecTemplateSchema.parse(buildRuleSpecTemplate(topic));
+  const content = unsignedDraft(topic, template);
+  return deepFreeze(ruleSpecDraftSchema.parse({ ...content, content_sha256: canonicalSha256(content) })) as RuleSpecDraft;
+}
+
+export function buildSevenRuleSpecDrafts(): readonly RuleSpecDraft[] {
+  return deepFreeze(WAVE3_TOPICS.map(buildRuleSpecDraft)) as readonly RuleSpecDraft[];
+}
+
+/** Every distinct `parameter_id@version` any draft binds. */
+export function draftBoundParameterVersionIds(): readonly string[] {
+  const ids = new Set<string>();
+  for (const draft of buildSevenRuleSpecDrafts()) {
+    for (const slot of draft.parameter_slots) {
+      if (slot.bound) for (const id of slot.parameter_version_ids) ids.add(id);
+    }
+  }
+  return Object.freeze([...ids].sort());
+}

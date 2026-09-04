@@ -137,7 +137,10 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
   ],
   convalescence: [
     { name: "daily_rate", parameter_id: "il.convalescence.daily_rate", unit: "currency.ils" },
-    { name: "reduction_wage_threshold", parameter_id: "il.convalescence.partial_reduction_wage_threshold", unit: "currency.ils" },
+    // The registered id is year-qualified because the 2024 freeze law set its
+    // own threshold for its own window. Naming the real id rather than a
+    // tidier invented one is what lets a draft actually bind this slot.
+    { name: "reduction_wage_threshold", parameter_id: "il.convalescence.2024_partial_reduction_wage_threshold", unit: "currency.ils" },
   ],
   vacation: [
     { name: "calendar_days_early_seniority", parameter_id: "il.vacation.calendar_days_years_1_to_4", unit: "calendar_days" },
