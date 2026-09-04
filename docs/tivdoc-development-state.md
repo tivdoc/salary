@@ -1018,6 +1018,35 @@ own validation, before ever touching the table.
 (§3(b), §3(c))"`, `withdrawn_reason` recording that §3(b)/§3(c) are two
 thresholds for two situations, not competing answers to one question.
 
+### A7-4 — quarantine, not skip (this commit)
+
+`legalSourceSchema` gains an optional `content_integrity` field (absent
+entirely for every one of the 21 sources that never needed it — no edit
+to any of them): `{ status: "verified" | "invalid_content_title_mismatch",
+expected_title, observed_title, detected_at }`. A new `superRefine` check
+forces `can_independently_support_monetary_rule` to `false` whenever
+`status` is the mismatch value — enforced at registration, not left to
+whoever writes the next citation to remember.
+
+**`IL_CONVALESCENCE_EXTENSION_ORDER_2026`** is now flagged: `expected_title`
+is the order this manifest entry claims to be; `observed_title` records
+what its 14 fetched, byte-immutable chunks actually contain — Reshumot
+issue 14863 (18.8.2026), a notice on a deputy minister's cessation of
+tenure and unrelated government business, no occurrence of "convalescence"
+anywhere. `can_independently_support_monetary_rule` flipped to `false`.
+Defense in depth beyond the schema check: `pool-p-parameter-import.mts`'s
+`citation()` now refuses (`POOL_P_SOURCE_QUARANTINED_TITLE_MISMATCH`) any
+attempt to cite a quarantined source at all, before ever reading its
+chunks — proven by execution, not left to the schema alone.
+
+**`IL_ANNUAL_VACATION_LAW`** is annotated `consolidated_before_2017`,
+exactly as D-3 was annotated `consolidated_through_2015`: kept (its
+§3(b)/(c) day-count thresholds are still genuinely bound in Pool P batch
+5, since amendment 15 is documented as touching only the years-1-4
+figure, not those thresholds), not discarded, with the current
+post-2017 consolidated text now D-16 (§A7-5) — a new acquisition target,
+not a silent gap.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base

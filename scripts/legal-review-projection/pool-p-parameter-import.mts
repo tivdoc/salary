@@ -91,7 +91,21 @@ const RECEIPT_ROOT = path.join("output", "next", "pool-p");
 
 const manifest = JSON.parse(readFileSync(
   path.resolve("src/server/engine/legal-knowledge/legal-sources.v0.json"), "utf8",
-)) as { sources: Array<{ source_id: string; source_version: string; content_sha256: string | null }> };
+)) as { sources: Array<{ source_id: string; source_version: string; content_sha256: string | null; content_integrity?: { status: string } }> };
+
+// Addendum 7 A7-4, defense in depth: contracts.ts's own superRefine already
+// forces can_independently_support_monetary_rule to false for a
+// title-mismatched source, but citation() below never reads that field —
+// it only checks fetched/built status. A citation attempt against a
+// quarantined source is refused here too, at the one place every Pool P
+// script actually calls to bind a value to a source, not left to a schema
+// check three layers away.
+function assertNotQuarantined(sourceId: string, sourceVersion: string) {
+  const source = manifest.sources.find((entry) => entry.source_id === sourceId && entry.source_version === sourceVersion);
+  if (source?.content_integrity?.status === "invalid_content_title_mismatch") {
+    throw new Error(`POOL_P_SOURCE_QUARANTINED_TITLE_MISMATCH:${sourceId}@${sourceVersion}`);
+  }
+}
 const fetchState = JSON.parse(readFileSync(
   path.resolve("eval/legal-knowledge/manifests/fetch-state.json"), "utf8",
 )) as { observations: Array<{ source_id: string; source_version: string; artifact_sha256: string; status: string; chunks_path: string | null }> };
@@ -138,6 +152,7 @@ type SourceRef = Readonly<{ source_id: string; source_version: string }>;
 type Citation = Readonly<{ source: SourceRef; chunk_id: string; locator: string; must_contain: readonly string[] }>;
 
 function citation(source: SourceRef, chunkId: string, locator: string, mustContain: readonly string[]): Citation {
+  assertNotQuarantined(source.source_id, source.source_version);
   const observation = selectObservation(source.source_id, source.source_version);
   if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
   const text = chunkText(source.source_id, source.source_version, observation.chunks_path, chunkId);

@@ -149,6 +149,21 @@ export const legalSourceSchema = z.object({
     found_at: legalDateSchema,
     included_reason: z.string().min(1),
   }).strict(),
+  // Addendum 7 A7-4: a registered source whose fetched bytes pass envelope
+  // validation but do not match what the source's own title claims to be
+  // (a real content-identity failure, not a wrong URL or a robots block)
+  // is quarantined here rather than silently left registered with no
+  // record of the mismatch or silently deregistered as if it never
+  // existed. Optional — absent entirely for every source that has never
+  // needed it, so the 21 sources registered before this addendum need no
+  // edit; present only on a source this check has actually been run
+  // against.
+  content_integrity: z.object({
+    status: z.enum(["verified", "invalid_content_title_mismatch"]),
+    expected_title: z.string().min(1),
+    observed_title: z.string().min(1).nullable(),
+    detected_at: legalDateSchema,
+  }).strict().optional(),
 }).strict().superRefine((source, context) => {
   if (source.effective_from !== source.effective_period.effective_from || source.effective_to !== source.effective_period.effective_to) {
     context.addIssue({ code: "custom", message: "effective_period_fields_disagree" });
@@ -158,6 +173,14 @@ export const legalSourceSchema = z.object({
   }
   if (source.source_type === "secondary_reference" && source.authority.binding_level !== "secondary_explanatory") {
     context.addIssue({ code: "custom", message: "secondary_reference_binding_level_invalid" });
+  }
+  // A6-4/A7-4: a source whose fetched content doesn't match its own title
+  // can never independently support a monetary rule — this is not a
+  // judgment call to leave to whoever writes the next Pool P citation, it
+  // is enforced here, once, at registration.
+  if (source.content_integrity?.status === "invalid_content_title_mismatch"
+    && source.authority.can_independently_support_monetary_rule) {
+    context.addIssue({ code: "custom", message: "title_mismatch_source_cannot_support_monetary_rule" });
   }
   if (source.status === "active") {
     if (!source.content_sha256) context.addIssue({ code: "custom", message: "active_source_content_hash_required" });

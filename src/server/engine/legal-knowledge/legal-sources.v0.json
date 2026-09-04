@@ -546,7 +546,10 @@
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Historical amendments and day-count periods require version review."],
+      "notes": [
+        "Historical amendments and day-count periods require version review.",
+        "Addendum 7 A7-4: consolidated_before_2017. §3(a)(1) of this fetched text gives 14 calendar days for each of the first four work-years; the current, amendment-15 figure (effective 1.1.2017) is 16. This artifact's own amendment footnote list stops at a 2013 amendment, confirming it predates amendment 15. Kept, not discarded — §3(b)/(c)'s day-count thresholds (200/240) were still bound to it in Pool P batch 5, since amendment 15 is documented as touching only the years-1-4 figure. The current, post-2017 consolidated text is D-16 (Addendum 7 A7-5), not yet fetched."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "official-domain allowlist and source-title inspection",
@@ -733,7 +736,7 @@
         "operative": true,
         "explanatory": false,
         "contains_numeric_rate": true,
-        "can_independently_support_monetary_rule": true
+        "can_independently_support_monetary_rule": false
       },
       "jurisdiction": "IL",
       "title": "Extension order regarding employer participation in convalescence and recreation expenses, 2026",
@@ -750,7 +753,10 @@
       "content_sha256": null,
       "artifact_format": "pdf",
       "supersedes_source_version": null,
-      "notes": ["Catalog and artifact candidate only; effectivity, relations, scope and population remain unverified."],
+      "notes": [
+        "Catalog and artifact candidate only; effectivity, relations, scope and population remain unverified.",
+        "Addendum 7 A7-4: quarantined, not skipped. The fetched bytes pass envelope validation (a genuine, well-formed PDF, not a challenge page) but their content is Reshumot issue 14863 (18.8.2026) — a notice on a deputy minister's cessation of tenure and other unrelated government notices — not this convalescence extension order. None of the 14 built chunks contains the word convalescence (הבראה) in either letter order. gov.il's dynamiccollectorresultitem numeric-id URLs are not stable permalinks; this is most plausibly the id being reassigned to different content since registration. can_independently_support_monetary_rule forced to false and enforced by contracts.ts's title_mismatch_source_cannot_support_monetary_rule check — this source can never bind a Pool P parameter, structurally, not by convention. Re-source under a new source_version once a correct artifact is found (D-14)."
+      ],
       "verification": {
         "status": "domain_verified",
         "method": "visible Ministry extension-order catalog record",
@@ -769,6 +775,12 @@
         "method": "official_registry",
         "found_at": "2026-08-29",
         "included_reason": "Required 2026 convalescence order identified in the visible official catalog."
+      },
+      "content_integrity": {
+        "status": "invalid_content_title_mismatch",
+        "expected_title": "Extension order regarding employer participation in convalescence and recreation expenses, 2026",
+        "observed_title": "Reshumot (Official Gazette) issue 14863, 18.8.2026 — notice on the cessation of a deputy minister's tenure and other unrelated government notices",
+        "detected_at": "2026-09-04"
       }
     },
     {
