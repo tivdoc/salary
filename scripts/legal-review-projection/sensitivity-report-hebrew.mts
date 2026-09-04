@@ -3,7 +3,7 @@
 //   node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types \
 //     scripts/legal-review-projection/sensitivity-report-hebrew.mts
 //
-// Generated from `decision-sensitivity-report-v3.json` and from nothing else.
+// Generated from `decision-sensitivity-report-v4.json` and from nothing else.
 // Every number in it comes out of that file; no figure is retyped, no figure is
 // rounded here, and nothing is added that the JSON does not say.
 //
@@ -28,7 +28,7 @@ import { NodePostgresConnectionFactory } from "../../src/server/platform/persist
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { TENANT } from "./pool-p-parameter-import.mts";
 
-const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v3.json");
+const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v4.json");
 const DOCS_ROOT = path.join("docs", "legal");
 const RECEIPT_ROOT = path.join("output", "next", "pool-q");
 const MARKDOWN = path.join(DOCS_ROOT, "sensitivity-report.he.md");
@@ -137,7 +137,7 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד");
   out.push("מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.");
   out.push("");
-  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v3.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
+  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v4.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
   out.push("כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.");
   out.push("");
   out.push("הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.");
@@ -303,7 +303,7 @@ async function main(): Promise<void> {
   writeFileSync(PDF, pdf);
 
   const receipt = {
-    schema_version: "tivdoc-sensitivity-report-hebrew-v0.10.16",
+    schema_version: "tivdoc-sensitivity-report-hebrew-v0.10.17",
     unit: "L4-8",
     generated_from: REPORT,
     source_report_sha256: report.report_sha256,

@@ -116,7 +116,7 @@ const fetchState = JSON.parse(readFileSync(
 )) as { observations: Array<{ source_id: string; source_version: string; artifact_sha256: string; status: string; chunks_path: string | null }> };
 const buildState = JSON.parse(readFileSync(
   path.resolve("eval/legal-knowledge/manifests/build-state.json"), "utf8",
-)) as { records: Array<{ source_id: string; source_version: string; artifact_sha256: string; parsed_version_id: string | null; parser_version: string | null; normalizer_version: string | null; parse_status: string }> };
+)) as { records: Array<{ source_id: string; source_version: string; artifact_sha256: string; parsed_version_id: string | null; parser_version: string | null; normalizer_version: string | null; parse_status: string; safe_error_code?: string | null }> };
 
 function selectBuildRecord(sourceId: string, sourceVersion: string, artifactSha256: string) {
   const record = buildState.records.find((entry) =>
@@ -124,6 +124,10 @@ function selectBuildRecord(sourceId: string, sourceVersion: string, artifactSha2
   if (!record || record.parse_status !== "parsed" || !record.parsed_version_id || !record.parser_version || !record.normalizer_version) {
     throw new Error(`POOL_P_BUILD_RECORD_MISSING:${sourceId}@${sourceVersion}`);
   }
+  // Lane B (L5): a parsed record that carries a safe_error_code is parsed with
+  // a reservation — an instrument selection, for one — and a whole-artifact
+  // citation may not stand on it. Selections cite through selectionCitation().
+  if (record.safe_error_code) throw new Error(`POOL_P_BUILD_RECORD_RESERVED:${sourceId}@${sourceVersion}:${record.safe_error_code}`);
   return record;
 }
 

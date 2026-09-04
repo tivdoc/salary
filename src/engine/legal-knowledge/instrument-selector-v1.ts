@@ -49,6 +49,8 @@ export type InstrumentSelection = Readonly<{
 export const END_OF_ARTIFACT = "END_OF_ARTIFACT" as const;
 
 export type SelectionRefusal =
+  | "SELECTION_PAGES_EMPTY"
+  | "SELECTION_PAGES_NOT_SEQUENTIAL"
   | "SELECTION_START_ANCHOR_NOT_FOUND"
   | "SELECTION_START_ANCHOR_NOT_UNIQUE"
   | "SELECTION_END_ANCHOR_NOT_FOUND"
@@ -90,6 +92,11 @@ export function selectInstrument(input: Readonly<{
 }>): Readonly<{ selection: InstrumentSelection; refusal: null }> | Readonly<{ selection: null; refusal: SelectionRefusal }> {
   const refuse = (refusal: SelectionRefusal) => Object.freeze({ selection: null, refusal });
   if ([...input.start_anchor].filter((character) => /[א-ת]/u.test(character)).length < 8) return refuse("SELECTION_ANCHOR_TOO_SHORT");
+  // Lane B (L5): page numbers come from position, so the pages must arrive in
+  // order and complete — a span over a reordered array would hash the wrong
+  // text under the right page numbers.
+  if (input.pages.length === 0) return refuse("SELECTION_PAGES_EMPTY");
+  if (input.pages.some((page, index) => page.page !== index + 1)) return refuse("SELECTION_PAGES_NOT_SEQUENTIAL");
   const starts = locate(input.pages, input.start_anchor);
   if (starts.length === 0) return refuse("SELECTION_START_ANCHOR_NOT_FOUND");
   if (starts.length > 1) return refuse("SELECTION_START_ANCHOR_NOT_UNIQUE");

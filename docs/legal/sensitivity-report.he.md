@@ -4,7 +4,7 @@
 תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד
 מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.
 
-המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v3.json` (`11889f032cb65404…`).
+המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v4.json` (`a12ec637a97c7cee…`).
 כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.
 
 הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.
@@ -16,12 +16,12 @@
 
 | מדד | ערך |
 |---|---|
-| תרחישים שנוסו | 36 |
-| תרחישים שרצו | 29 |
-| תרחישים שסורבו סירוב סגור | 7 |
-| עקבות חישוב שנשמרו | 29 |
-| עקבות ששוחזרו מהמסד בית־בבית | 29 |
-| נושאים שרצו | 4 מתוך 7 |
+| תרחישים שנוסו | 60 |
+| תרחישים שרצו | 50 |
+| תרחישים שסורבו סירוב סגור | 10 |
+| עקבות חישוב שנשמרו | 50 |
+| עקבות ששוחזרו מהמסד בית־בבית | 50 |
+| נושאים שרצו | 6 מתוך 7 |
 
 ---
 
@@ -59,17 +59,33 @@
 
 ---
 
-## 4. נושאים שלא רצו
+## 4. דמי הבראה — `legal.reference.il.decision.convalescence_2026_rate_period`
 
-| נושא | סיבה | משבצת | פירוט |
+השאלה הפתוחה מפרידה בין **calendar_year_2026** לבין **from_signature_2026_07**.
+מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
+
+הערת היקף: The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and both branches carry the same figure, so no scenario separates them in amount. The full draft also needs the seniority-band day counts, which are not in the corpus.
+
+| תרחיש | calendar_year_2026 | from_signature_2026_07 | הפרש |
 |---|---|---|---|
-| שעות עבודה ומנוחה | משבצת פרמטר לא קשורה — המספר אינו קיים בקורפוס | `slot.working_time.overtime_first_tier_rate` | il.working_time.overtime_rate_first_tier is unbound because the 125/150/175/200 percentages are not in the corpus at all. IL_HOURS_WORK_REST_LAW's nine chunks carry the overtime premium only as words, never as a figure, and the 2018 general overtime permit is quarantined pending an instrument-boundary decision. The tiered.rate node added in L4-2 is ready and has no rates to bind. |
-| דמי הבראה | משבצת פרמטר לא קשורה — המקור בהסגר עד להכרעת אדם | `slot.convalescence.daily_rate` | il.convalescence.daily_rate is unbound, and the reason recorded until now — that IL_CONVALESCENCE_EXTENSION_ORDER_2023 failed to parse — is wrong. The order parsed: six chunks exist on disk and one of them states the 418 shekel day rate from 1.7.2023. What blocks it is a policy quarantine, not a technical failure: that gazette issue carries several instruments, the boundary between them is an unmade human decision (instrument_selector_pending_human_review), and the build ledger therefore records chunks_path: null so no citation can resolve. The remedy is a human instrument-boundary decision, not more parsing. |
-| דמי מחלה | משבצת פרמטר לא קשורה — המספר אינו קיים בקורפוס | `slot.sick_leave.payment_tier_rates` | The entitlement this topic is about is the payment tiers — nothing for the first day, half for the second and third, full from the fourth. IL_SICK_PAY_LAW carries those only as words, never as figures, so tiered.rate has no rates to bind. The two parameters that ARE bound cannot be combined either: accrual_days_per_month is a rational in days_per_month and accrual_cap_days an integer in days, and min and multiply both require matching kinds and units. Relabelling one to make them fit would be a lie in the spec, so this needs either a unit-conversion node or the tier figures themselves. |
+| מצב רגיל | 2257.50 ILS | 2257.50 ILS | 0.00 ILS |
+| גבול תחולה | 2257.50 ILS | 2257.50 ILS | 0.00 ILS |
+| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING |
+| גבול עיגול או גבול הטבלה | 752.50 ILS | 752.50 ILS | 0.00 ILS |
+| חפיפת מקורות | 3160.50 ILS | 3160.50 ILS | 0.00 ILS |
+| ענף ואוכלוסייה | 2709.00 ILS | 2709.00 ILS | 0.00 ILS |
 
 ---
 
-## 5. החלטות שנמשכו
+## 5. נושאים שלא רצו
+
+| נושא | סיבה | משבצת | פירוט |
+|---|---|---|---|
+| שעות עבודה ומנוחה | משבצת פרמטר לא קשורה — המספר אינו קיים בקורפוס | `slot.working_time.overtime_first_tier_rate` | il.working_time.overtime_rate_first_tier is unbound. The only corpus text of the Hours of Work and Rest Law is the 1951 gazette scan, whose OCR renders 1¼ and 1½ as 11/4 and 11/2 — ambiguous, and refused by name by the numeral lexicon rather than read. The 2018 general permit's caps (12 hours a day, 16 overtime hours a week, 58 hours a week) are registered from their instrument selection, but they are ceilings, not rates; the tiered.rate node is built and waiting on a consolidated text. That text is requested through the controlled acquisition path (L5-8); if it lands, §16(א) binds through the lexicon and this topic runs. |
+
+---
+
+## 6. החלטות שנמשכו
 
 שאלות אלה אינן פתוחות עוד. הן מופיעות כאן כדי שהרשימה תהיה מלאה, ולא כדי שיוכרעו.
 
@@ -79,7 +95,7 @@
 
 ---
 
-## 6. היקף
+## 7. היקף
 
 Differences only, computed. This states what the answer to each open question changes in each scenario; it does not answer any of them, and nothing here is reviewed, attested or active.
 

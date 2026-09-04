@@ -477,9 +477,13 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
     valid_raw_artifact_versions: 17,
     quarantined_or_unavailable: 4,
     legal_text_versions: 17,
-    parsed_versions: 14,
-    parse_failed_versions: 3,
-    chunks: 202,
+    // L5-5: the three multi-instrument containers parse again, each through a
+    // registered draft instrument selection — the whole-artifact record carries
+    // safe_error_code instrument_selection_draft and its chunks are the selected
+    // span only (1 + 2 + 3). Pension 2016 remains failed closed.
+    parsed_versions: 16,
+    parse_failed_versions: 1,
+    chunks: 194,
     persistent_owner_import_ledger_entries: 0,
   };
   for (const [key, expected] of Object.entries(expectedCurrent)) {
@@ -503,6 +507,14 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
       parsed_versions: { before: 16, after: 14, reason: "two multi-instrument container sources now fail closed until instrument selectors receive human review; Pension 2016 remains failed closed" },
       parse_failed_versions: { before: 1, after: 3, reason: "the two selector-pending sources moved from parsed to fail-closed without changing the 17 registered legal versions" },
       chunks: { before: 274, after: 202, reason: "the convalescence container changed from 65 to 11 instrument-bound chunks and 18 chunks from two selector-pending sources became ineligible; stable-ID mapping is retained in Wave 2.1 evidence" },
+    },
+    // L5-5 (D4): instrument selections are drafts the engineer registers and a
+    // reviewer attests later, so the containers no longer wait on a human to
+    // parse at all — they parse to their selected span and say so by code.
+    after_l5_instrument_selections: {
+      parsed_versions: { before: 14, after: 16, reason: "the 2023 convalescence order, the 2026 convalescence order and the 2018 general overtime permit parse through registered draft instrument selections (safe_error_code instrument_selection_draft on the whole-artifact record); Pension 2016 remains failed closed as a scanned image with no text layer" },
+      parse_failed_versions: { before: 3, after: 1, reason: "only the 2016 pension increase order remains failed closed" },
+      chunks: { before: 202, after: 194, reason: "the three containers contribute only their selected spans, 1 + 2 + 3 chunks under #s ids; whole-artifact chunk files are untouched and not counted" },
     },
   };
 

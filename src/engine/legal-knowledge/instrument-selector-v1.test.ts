@@ -32,10 +32,18 @@ describe("legal-instrument-selector-v1", () => {
     expect(selectInstrument({ ...BASE, start_anchor: "צו הרחבה בדבר עניין", end_anchor: END_OF_ARTIFACT }).refusal).toBe("SELECTION_START_ANCHOR_NOT_FOUND");
     // The TOC line and the body line are different strings here; a title that
     // appears twice verbatim would be ambiguous and refuses.
-    const twice = { ...BASE, pages: [PAGES[1], PAGES[1]] };
+    const twice = { ...BASE, pages: [{ ...PAGES[1], page: 1 }, { ...PAGES[1], page: 2 }] };
     expect(selectInstrument({ ...twice, start_anchor: "צו הרחבה בדבר עניין ראשון", end_anchor: END_OF_ARTIFACT }).refusal).toBe("SELECTION_START_ANCHOR_NOT_UNIQUE");
     expect(selectInstrument({ ...BASE, start_anchor: "הודעה על עניין שני", end_anchor: "צו הרחבה בדבר עניין ראשון" }).refusal).toBe("SELECTION_END_BEFORE_START");
     expect(selectInstrument({ ...BASE, start_anchor: "צו הרחבה בדבר עניין ראשון", end_anchor: "לא קיים" }).refusal).toBe("SELECTION_END_ANCHOR_NOT_FOUND");
+  });
+
+  it("refuses pages that are out of order, missing, or absent", () => {
+    const reversed = { ...BASE, pages: [...BASE.pages].reverse() };
+    expect(selectInstrument({ ...reversed, start_anchor: "צו הרחבה בדבר עניין ראשון", end_anchor: END_OF_ARTIFACT }).refusal).toBe("SELECTION_PAGES_NOT_SEQUENTIAL");
+    const gapped = { ...BASE, pages: BASE.pages.map((page) => ({ ...page, page: page.page + 1 })) };
+    expect(selectInstrument({ ...gapped, start_anchor: "צו הרחבה בדבר עניין ראשון", end_anchor: END_OF_ARTIFACT }).refusal).toBe("SELECTION_PAGES_NOT_SEQUENTIAL");
+    expect(selectInstrument({ ...BASE, pages: [], start_anchor: "צו הרחבה בדבר עניין ראשון", end_anchor: END_OF_ARTIFACT }).refusal).toBe("SELECTION_PAGES_EMPTY");
   });
 
   it("refuses an anchor too short to be a title", () => {
