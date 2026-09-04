@@ -156,8 +156,11 @@ const MAX_AGE_SECONDS = 31_536_000;
 
 function expectedOutputOf(declaration: RuleSpecPackage["facts"][number]): ExpectedOutput {
   switch (declaration.value_kind) {
-    case "money":
-      return { kind: "money", currency: declaration.unit === "currency.ils" ? "ILS" : declaration.unit!.slice("currency.".length).toUpperCase() };
+    case "money": {
+      const match = /^currency.([a-z]{3})$/u.exec(declaration.unit ?? "");
+      if (!match) throw new Error(`SHADOW_INPUT_CURRENCY_UNIT_MALFORMED:${declaration.ref_id}`);
+      return { kind: "money", currency: match[1].toUpperCase() };
+    }
     case "rational":
       return { kind: "rational", unit: declaration.unit! as never };
     case "integer":

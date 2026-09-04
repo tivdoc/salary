@@ -165,6 +165,9 @@ describe("days", () => {
     expect(value([{ path: "leave.sick_absence", value: { start_date: "2026-07-06", end_date: "2026-07-10" } }], entry).value).toEqual({ kind: "integer", value: 5 });
     expect(value([{ path: "leave.sick_absence", value: { start_date: "2026-07-06", end_date: "2026-07-06" } }], entry).value).toEqual({ kind: "integer", value: 1 });
     expect(value([{ path: "leave.sick_absence", value: { start_date: "2026-07-06", end_date: null } }], entry).codes).toEqual(["transformation.failed"]);
+    // Across a month end and a leap day — civil-day arithmetic, no Date.
+    expect(value([{ path: "leave.sick_absence", value: { start_date: "2026-01-30", end_date: "2026-02-02" } }], entry).value).toEqual({ kind: "integer", value: 4 });
+    expect(value([{ path: "leave.sick_absence", value: { start_date: "2024-02-28", end_date: "2024-03-01" } }], entry).value).toEqual({ kind: "integer", value: 3 });
   });
 
   it("a leave balance in whole days binds; hours or a fraction of a day refuse", () => {

@@ -52,13 +52,15 @@ function wholeNumber(amount: string): number | null {
 function hoursValue(fact: CanonicalFact): { amount: string; unit: string } | null {
   const value = fact.value;
   if (value === null || typeof value !== "object" || !("amount" in value) || !("unit" in value)) return null;
-  return { amount: String(value.amount), unit: String(value.unit) };
+  if (typeof value.amount !== "string" || typeof value.unit !== "string") return null;
+  return { amount: value.amount, unit: value.unit };
 }
 
 function moneyValue(fact: CanonicalFact): { currency: string; minor_units: number } | null {
   const value = fact.value;
   if (value === null || typeof value !== "object" || !("currency" in value) || !("minor_units" in value)) return null;
-  return { currency: String(value.currency), minor_units: Number(value.minor_units) };
+  if (typeof value.currency !== "string" || typeof value.minor_units !== "number" || !Number.isSafeInteger(value.minor_units)) return null;
+  return { currency: value.currency, minor_units: value.minor_units };
 }
 
 function periodEnd(context: TransformationContext): string | null {
@@ -68,13 +70,34 @@ function periodEnd(context: TransformationContext): string | null {
   return range.end_date ?? null;
 }
 
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/u;
+
+/** A calendar date's parts, or null unless it is a plausible YYYY-MM-DD (the fact schema already guarantees the shape; this refuses anyway). */
+function civil(date: string): { year: number; month: number; day: number } | null {
+  const match = ISO_DATE.exec(date);
+  if (!match) return null;
+  const [year, month, day] = [match[1], match[2], match[3]].map((part) => Number.parseInt(part, 10));
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { year, month, day };
+}
+
+/** Days since 1970-01-01 for a civil date — integer arithmetic only (Hinnant's days_from_civil). */
+function daysFromCivil(date: { year: number; month: number; day: number }): number {
+  const y = date.month <= 2 ? date.year - 1 : date.year;
+  const era = Math.floor(y / 400);
+  const yoe = y - era * 400;
+  const doy = Math.floor((153 * (date.month + (date.month > 2 ? -3 : 9)) + 2) / 5) + date.day - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146_097 + doe - 719_468;
+}
+
 /** Whole years (or months) completed between a start date and a period end, calendar arithmetic, no clock. */
 function completedUnits(start: string, end: string, unit: "years" | "months"): number | null {
-  const [sy, sm, sd] = start.split("-").map((part) => Number.parseInt(part, 10));
-  const [ey, em, ed] = end.split("-").map((part) => Number.parseInt(part, 10));
-  if ([sy, sm, sd, ey, em, ed].some((part) => !Number.isFinite(part))) return null;
-  if (end < start) return null;
-  const months = (ey - sy) * 12 + (em - sm) - (ed < sd ? 1 : 0);
+  const from = civil(start);
+  const to = civil(end);
+  if (from === null || to === null) return null;
+  if (daysFromCivil(to) < daysFromCivil(from)) return null;
+  const months = (to.year - from.year) * 12 + (to.month - from.month) - (to.day < from.day ? 1 : 0);
   return unit === "months" ? months : Math.floor(months / 12);
 }
 
@@ -202,10 +225,11 @@ export const TRANSFORMATIONS: readonly Transformation[] = Object.freeze([
     apply: (fact, mapping) => {
       const value = fact.value as { start_date?: string; end_date?: string | null } | null;
       if (!value?.start_date || !value.end_date || mapping.expected_output.kind !== "integer" || mapping.expected_output.unit !== "days") return null;
-      const start = Date.parse(`${value.start_date}T00:00:00Z`);
-      const end = Date.parse(`${value.end_date}T00:00:00Z`);
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
-      return integer(Math.round((end - start) / 86_400_000) + 1);
+      const start = civil(value.start_date);
+      const end = civil(value.end_date);
+      if (start === null || end === null) return null;
+      const length = daysFromCivil(end) - daysFromCivil(start) + 1;
+      return length < 1 ? null : integer(length);
     },
   },
   {

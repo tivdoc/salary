@@ -15,6 +15,7 @@ import {
   boundInputSlots,
   type DraftShadowSpec,
 } from "./draft-shadow-specs.ts";
+import { transformationAccepts } from "../rule-input/transformations.ts";
 import { bridgePreparedInputs, decimalToRational } from "./prepared-input-bridge.ts";
 import {
   SYNTHETIC_PREPARED_AT,
@@ -116,8 +117,9 @@ describe("the draft shadow set", () => {
     }
   });
 
-  it("each mapping's expected output is the spec slot's own kind and unit", () => {
+  it("each mapping's expected output is the spec slot's own kind and unit, and its transformation accepts the slot", () => {
     for (const slot of boundInputSlots()) {
+      expect(transformationAccepts(slot.mapping), slot.ref_id).toBe(true);
       const entry = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === slot.shadow_id)!;
       const declaration = entry.spec.facts.find((fact) => fact.ref_id === slot.ref_id)!;
       if (slot.mapping.expected_output.kind === "money") expect(declaration.value_kind).toBe("money");
