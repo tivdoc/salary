@@ -1608,78 +1608,148 @@ fabricated.
 Counters unchanged: HUMAN_GROUND_TRUTH_LOCKED 0, REAL_* 0, DEPLOYMENTS 0,
 REMOTE_PRODUCTION_MIGRATIONS 0, LIVE_PROVIDER_CALLS 0.
 
+## Long run 3 — E3-1…E3-10: the sensitivity report gets numbers, BL-10…BL-14 close
+
+**E3-1 (BL-10).** A citation now needs a Hebrew anchor as well as its numbers,
+compared against v1 logical-order text with whitespace stripped and quote/dash
+forms folded — glyph extraction destroys spacing, and exact-byte matching would
+push an author to shorten the anchor until it passed. An anchor with no Hebrew,
+or under eight Hebrew letters, is refused at authoring time. 18 citations over
+16 chunks: **12 verified, 0 failed, 6 anchor_impossible.**
+
+Two findings. The first anchor written for the convalescence threshold pointed
+at a definitional preamble in the same chunk with nothing to do with the 6,000
+figure; the check caught it. And six of sixteen cited chunks contain no Hebrew
+at all — they are bare table rows like `1.04.2023 257.16 222.87 29.95 30.61
+5,571.75`, because the chunker split the rate tables row by row and left the
+headers behind. Those citations rest on a number with no textual context, which
+is precisely BL-10, and no anchor can repair it. The remedy is a re-chunk
+carrying header with row: corpus work, recorded, not patched.
+
+**E3-2 (BL-11).** Supersession appends a revision in state `superseded` naming
+what replaces it and why; the original stays as written. The mis-scoped vacation
+parameter is superseded by the years-1-to-5 revision. Refusals proven: unknown
+replacement, reason too short, self-reference, superseding twice.
+
+**E3-3 (BL-12).** `synthetic` is a column now, not a prefix convention. Ten
+fixtures flagged, three legal decisions remain. The flag is one-way in the
+guard. The mislabelled withdrawal got a corrective append, not an edit.
+
+**E3-4 (BL-13).** The pre-guard session is revoked as the identity runtime
+through `product_session_revoke`. Active sessions: 1. Nothing deleted.
+
+Worth carrying forward: **D4's literal assertion cannot be made true safely.**
+A7-1's guard refuses every identity-session registration for this tenant,
+including the system-import session every governance write runs under. That
+session predates the guard, cannot be recreated, and revoking it would leave
+`legal.reference.il` permanently unwritable. If it is ever lost, restoring write
+access needs a migration granting an exception to the A7-1 refusal.
+
+**E3-5 (BL-14).** The quarantined catalogue record was not a dead end: reading
+its immutable bytes for the download link it advertises gave the agreement
+itself, 107,467 bytes, fetched and parsed, registered under its own source id so
+the quarantined entry stays untouched. Corpus 23 → 24. It does not unblock
+P-26…P-29 — the figure in it is the 1998 rate.
+
+**E3-6.** 42 scenario input fixtures, hashed, synthetic, and with no `expected`
+field in the schema at all. The missing/conflicted scenario really withholds its
+input in every topic.
+
+**E3-7 — the run.** Three executable specs bound to real draft values,
+`real_inactive`. 30 scenario-branch executions: **25 ran, 5 refused** (every
+refusal a missing/conflicted case hitting `RULESPEC_INPUT_MISSING`), **25 traces
+persisted and all 25 replayed byte-identically from the database.** Report v2
+`798f1c66…` replaces v1 `6f36428f…`, both kept.
+
+  `min_wage_hourly_divisor` differs in 5 of 6 scenarios. Ordinary month at 182
+  hours: **6442.80 vs 6304.48 ILS, difference 138.32**. At the rounding
+  boundary: 5057.14 vs 4948.57, 108.57. Largest, at 186 hours: 141.36.
+
+  `pension_wage_cap_section` differs in 5 of 6, largest **203.00 ILS**.
+
+Four topics did not run, each with its own reason: working_time and
+convalescence on `slot_unbound`; vacation and sick_leave because their
+entitlement is an integer day count selected by seniority band and the node
+vocabulary has no band lookup — expressing it would mean encoding a legal rule
+in a draft.
+
+**E3-8.** Package v7, manifest `509532ad…`, 16 files, built twice.
+`traces_included` 25 and the build refuses if it is zero.
+
+**E3-10 — nothing new binds, and why.** Re-checked every source blocking the
+nine remaining Pool P parameters. `IL_HOURS_WORK_REST_LAW` and
+`IL_GENERAL_PENSION_EXTENSION_ORDER_2011` are now parsed (9 and 12 chunks), so
+the old "quarantined challenge page" reason no longer holds — but the rates
+still cannot be bound. The 2011 order's chunk 0010 carries `1.1.2014 %6 %5.5 %6
+%17.5`: a table row whose column headers live in a different chunk, which is
+the same defect E3-1 documented for the six anchor-impossible citations. Binding
+employee/employer/severance shares by guessing column order would be exactly the
+mistake this run exists to prevent. The overtime rates are not in the parsed
+chunks at all. `IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016`,
+`IL_CONVALESCENCE_EXTENSION_ORDER_2023` and `IL_GENERAL_OVERTIME_PERMIT_2018`
+remain `parse_failed`. Nothing registered.
+
+**A mistake of mine this run, permanent, recorded.** Making the A7-3 helper flag
+every row it registers was right for fixtures and wrong for one row: the real
+vacation withdrawal had been registered through that same helper and is now
+flagged `synthetic`, irreversibly by design. The corrected record is registered
+under a `.v2` id through a new non-flagging path, carrying the identical reason
+and dissolving locator; the mis-flagged row keeps a corrective annotation. That
+is the second time a fixture helper has quietly claimed a real record — the
+first cost a wrong `topic` column, this one cost a row. Both are now
+structurally impossible in that script.
+
+**Still open from D3:** proof scripts still run against `legal.reference.il`
+rather than a dedicated `legal.synthetic.proof` tenant. The self-flagging at
+registration closes the leak at the source, but the tenant separation D3 asks
+for needs a session on a new tenant and was not done.
+
 ## Resume point
 
-- **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
-  `ba80cc2`).** D-00 (`e920066`), D-0 (`011c3a6`), H-1 (`a6d40c5`), H-2
-  (`d77781e`), H-3 (`e6e1a68`), H-4 (`aab075d`), H-5 (`33091c3`), H-6/H-7
-  (`b3550b4`), H-8 (`092aef0`) — 10 commits, 10 units, all resolved (X-4/H-5
-  and the storage key/H-7 resolved to a correctly-recorded
-  `blocked_dependency`, not left silent). Pool H is complete: 8/8.
-- **Checkpoint at unit 16.** P-0 (`d8497ed`), D-2 (`8d3019e`), D-4
-  (`1f6c709`), D-7 (`370f4c9`), D-1b (`9b27863`), D-3 (`6c73202`) — 6 more
-  commits, 6 more units. Pool D is complete: 12/12 + D-1b (10 resolved and
-  bound to a fetched artifact, D-5's second half and D-12 correctly
-  recorded blocked with evidence rather than dropped or fabricated).
-- **Checkpoint at unit 22.** Pool P batches 1-5 (`5ba732e`, `845d83b`,
-  `026804b`, `e1d86a2`, `44da0cb`) — 5 commits, 5 units, 18 of 37
-  addendum-listed parameters registered as DEV-verified draft candidates
-  (tenant `legal.reference.il`, flagged for owner confirmation — see the
-  Pool P write-up above), the rest recorded `blocked_dependency` with a
-  specific corpus-anchored reason each. Two new findings surfaced along
-  the way, both documented above: the registered
-  `IL_CONVALESCENCE_EXTENSION_ORDER_2026` source's fetched content does
-  not match its own title at all (content mismatch, not a wrong citation),
-  and the fetched `IL_ANNUAL_VACATION_LAW` predates 2017's amendment 15
-  (stale primary text, not safe to bind a "current" parameter to).
-- **Checkpoint at unit 29 (Addendum 7).** A7-1 (`1023455`), A7-2
-  (`783c8b9`), A7-3 (`c59bb20`), A7-4 (`c56c1c2`), A7-5's D-5 (`dcb759b`),
-  A7-5's D-13…D-16 (`5271a28`), Pool P batch 6 / P-32 (`9eb402a`) — 7
-  commits, 7 units. All three A7-1 guards proven by execution; the
-  eleven-dimension hash formula implemented and tested per-dimension;
-  `withdrawn` is now a real, distinct, evidenced decision state and the
-  vacation "200 vs 240" finding has its own record; two sources
-  quarantined structurally, not just by convention; one more official host
-  allowlisted (a `.gov.il` subdomain) and D-16 registered. Addendum 7's
-  own corrections (A7-6) are in force from here: no stopping at a domain
-  boundary, and the chat only gets the ten-line report at the very end —
-  this file carries everything else.
-- **Checkpoint at unit 32.** Pool S (`34d4a0f`, `05f5828`) — S-1…S-8, 8/8:
-  most already existed and already passed (envelope replay, kill switch,
-  restart/crash recovery, comparison, zero-customer-exit, audit
-  tamper-detection, redacted observability all confirmed by running what
-  was there), S-2 got one more explicit runtime-mode test, S-8 (product
-  integration) is genuinely new — a protected read-only `/operations`
-  panel following G-12's exact precedent, 8/8 negative-matrix tests
-  passing. Pool R survey (`7c650e7`) — R-1, R-3…R-5, R-7, R-9, R-11…R-13
-  confirmed already passing against existing tests; R-6 newly built and
-  proven; R-10 already satisfied by A7-2. **R-2 and R-14's specific claim
-  are not attempted this session** — R-2 needs real per-topic slot design,
-  not verification, and blocks all of **Pool Q, which is accordingly not
-  started**. R-8 and Q-8 stay `deferred_to_session_b` as instructed.
-- **Next for whoever resumes this**: R-2 (design seven real blank
-  RuleSpec templates against this session's actual registered parameter
-  ids) is the one open prerequisite before Pool Q can start at all;
-  R-14's specific "executor trace persists and replays from the durable
-  DB" claim wants its own targeted proof; the remaining Pool P units
-  (P-11…P-16, P-21…P-23, P-27/P-28, P-33, years 5+ of P-32) need the
-  acquisition or tooling work recorded blocked in the Pool P and A7-5
-  write-ups above. The one full matrix and the ten-line report follow
-  this checkpoint, per Addendum 6 / `tivdoc-next-run.md` as corrected by
-  Addendum 7's A7-6 (no further stopping at a domain boundary was needed
-  to reach this point; the backlog from here is genuinely new-design work
-  each unit's own write-up names precisely). That matrix run and its two
-  named, diagnosed failures are recorded above in "Freeze — Addendum 7
-  close"; the `wave1-artifact-partition.v0.10.9.json` hand-update is the
-  most concrete of the next steps.
-- carried from before this session: K-3's managed-bucket half (needs the
-  Storage key — H-7 re-confirmed absent this session), K-5 (needs a
-  provisioned off-host destination), the owner's visual review of the five
-  payslip composites (human, open), and the eight `public.*_salary_*`
-  grants (H-5: needs a PostgREST-selectable narrow runtime role that does
-  not exist, not a per-function grant move — do not retry as a plain grant
-  change).
-- B-3..B-7 once a fixture exists per history guard.
-- known blocks that must not be retried: corpus acquisition, a second Supabase
-  project, resetting the DEV default database, `initdb.exe` under Windows
-  Application Control (BL-6).
+Refreshed at long run 3. Everything before this point is history; this section
+is the only part a resuming session must read to know where things stand.
+
+**Where the work is.** Pools H, D, S and R are closed. Pool P has 28 registered
+draft parameter versions and 9 that stay blocked, each on a named corpus
+defect rather than on effort. Pool Q has seven drafts, and the sensitivity
+report they exist for now contains real numbers for both open decisions. Pool
+E2 is 10/10 and Pool E3 is 10/10.
+
+**What a lawyer could be handed today.** Review package v7, manifest
+`509532ad610f7441e1fa4762e01a8d86f5f017933d7accd3c0ded1fb935e7252` — dossier,
+Hebrew runbook, sensitivity report v2 with the superseded v1 beside it, the
+three legal decisions, 28 draft parameters with their binding hashes, the 42
+scenario fixtures, 30 executions and 25 replayed traces, the four topics that
+did not run with reasons, and the citation anchors. Every item `not_reviewed`,
+`not_signed`, `not_activated`, `not_delivered`.
+
+**The one gate that moves `0/7`.** The owner registers a reviewer identity —
+`owner-reviewer-identity.mts keygen` is ready and prints the single command;
+`register` deliberately refuses, because creating a real identity is
+irreversible and is the owner's act. Then a labour lawyer reads the
+sensitivity report and attests as the second, independent identity.
+
+**Next engineering work, in the order it unblocks things.**
+
+1. Re-chunk the rate tables so each row carries its column headers. Six cited
+   chunks and the 2011 pension rate table are all blocked on this one defect,
+   and it is what stands between Pool P and its remaining nine parameters.
+2. Move proof scripts to a `legal.synthetic.proof` tenant (D3, half done: they
+   self-flag at registration now, but still write to the real tenant).
+3. Executable specs for working_time and convalescence once their slots bind;
+   vacation and sick_leave need a seniority-band node the vocabulary lacks.
+4. R-2's templates and Q's drafts remain unexecutable by design until a
+   reviewer fills their judgement slots. That is not a defect.
+
+**Do not retry.** Corpus acquisition beyond what is recorded; a second Supabase
+project; resetting the DEV default database; `initdb.exe` under Windows
+Application Control (BL-6); revoking the
+`session.legal.reference.system-import` identity session (it cannot be
+recreated — see E3-4).
+
+**Carried, human or external.** K-3's managed-bucket half (needs the Storage
+key, absent at every preflight since), K-5 (needs an off-host destination), the
+owner's visual review of the five payslip composites, and X-4's eight
+`public.*_salary_*` grants (all `cannot_move`: PostgREST cannot select a narrow
+role from a Supabase JWT — see E2-5 for the precondition).
+
