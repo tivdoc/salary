@@ -15,12 +15,21 @@
 // here explicitly with that reason rather than omitted, so the gap is counted.
 
 export type ChunkAnchor =
-  | Readonly<{ chunk_id: string; anchor: string; anchor_absent?: undefined }>
-  | Readonly<{ chunk_id: string; anchor?: undefined; anchor_absent: "chunk_has_no_clause_text"; remedy: string }>;
+  | Readonly<{ chunk_id: string; anchor: string; anchor_absent?: undefined; replaced_by?: undefined }>
+  | Readonly<{ chunk_id: string; anchor?: undefined; anchor_absent: "chunk_has_no_clause_text"; remedy: string; replaced_by?: string }>;
 
 const NO_CLAUSE_TEXT = "chunk_has_no_clause_text" as const;
 const RECHUNK =
   "Re-chunk the rate table so each row carries its column headers and the table caption, then re-cite. Until then this citation rests on a number with no textual context." as const;
+
+// L4-1 did the re-chunk. Each of the six now has a table-aware chunk that says
+// the same thing with its column headers attached, and the parameter revision
+// that cited it has been superseded by one citing the new chunk. The six
+// entries below stay exactly as they were — batch 1 still contains those
+// citations and always will, because nothing here is edited in place — but they
+// now name their replacement instead of only naming a remedy.
+const MIN_WAGE_T1 = "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#t0003-78f59eeddfde" as const;
+const AVERAGE_WAGE_T1 = "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#t0003-ca1e4b6ac154" as const;
 
 export const POOL_P_CITATION_ANCHORS: readonly ChunkAnchor[] = Object.freeze([
   {
@@ -72,12 +81,31 @@ export const POOL_P_CITATION_ANCHORS: readonly ChunkAnchor[] = Object.freeze([
     chunk_id: "IL_SICK_PAY_LAW@discovery-v0#0003-b11393df222b",
     anchor: "ולא יותר מ-90 יום, בניכוי התקופה",
   },
-  { chunk_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#0004-4756224b67b5", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK },
-  { chunk_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#0007-a497d09cf256", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK },
-  { chunk_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#0011-597f613d66a4", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK },
-  { chunk_id: "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0007-94349aa03f47", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK },
-  { chunk_id: "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0009-b04d9d5b7243", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK },
-  { chunk_id: "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0010-12819b83ab84", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK },
+  { chunk_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#0004-4756224b67b5", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK, replaced_by: AVERAGE_WAGE_T1 },
+  { chunk_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#0007-a497d09cf256", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK, replaced_by: AVERAGE_WAGE_T1 },
+  { chunk_id: "IL_AVERAGE_WAGE_OFFICIAL_RATES@discovery-v0#0011-597f613d66a4", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK, replaced_by: AVERAGE_WAGE_T1 },
+  { chunk_id: "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0007-94349aa03f47", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK, replaced_by: MIN_WAGE_T1 },
+  { chunk_id: "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0009-b04d9d5b7243", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK, replaced_by: MIN_WAGE_T1 },
+  { chunk_id: "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0010-12819b83ab84", anchor_absent: NO_CLAUSE_TEXT, remedy: RECHUNK, replaced_by: MIN_WAGE_T1 },
+  // The table-aware chunks the replacements cite. Each of these carries the
+  // column headers and the caption in the same chunk as the figures, which is
+  // the whole point of the re-chunk.
+  {
+    chunk_id: MIN_WAGE_T1,
+    anchor: "שכר מינימום לחודש סכום השכר המינימלי שיש לשלם לעובד בעבור חודש עבודה",
+  },
+  {
+    chunk_id: AVERAGE_WAGE_T1,
+    anchor: "שכר חודשי ממוצע",
+  },
+  {
+    chunk_id: "IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0#t0007-b1a272cd922a",
+    anchor: "ישולמו מדי חודש בחודשו בהתאם לטבלה הזו",
+  },
+  {
+    chunk_id: "IL_ANNUAL_VACATION_LAW@discovery-v0#t0001-838721e06653",
+    anchor: "אורך החופשה לכל שנת-עבודה אצל מעביד אחד או במקום-עבודה אחד",
+  },
 ]);
 
 export function anchorFor(chunkId: string): ChunkAnchor | null {

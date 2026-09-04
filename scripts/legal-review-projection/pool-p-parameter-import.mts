@@ -60,10 +60,11 @@
 // check). R-8 (semantic invalidation *closure* — propagating a changed
 // bindings_sha256 across every dependent run, report and grant) stays
 // deferred to Session B; this only makes the hash itself complete.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { assertUsableAnchor, checkCitationAnchor } from "../../src/engine/legal-knowledge/citation-anchor.ts";
 import { frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";
 import { parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
 import type { Wave3Topic } from "../../src/engine/wave3/contracts.ts";
@@ -159,6 +160,66 @@ function citation(source: SourceRef, chunkId: string, locator: string, mustConta
   for (const needle of mustContain) {
     if (!text.includes(needle)) throw new Error(`POOL_P_CITATION_TEXT_MISMATCH:${chunkId}:${needle}`);
   }
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain });
+}
+
+// --- L4-1 / D2: citations against the table-aware chunk set ----------------
+//
+// A `#t` chunk id resolves in the `.t1.chunks.json` sidecar rather than the v0
+// file, and needles are checked against the LOGICAL-order text, because that is
+// the text a person reads and the text the anchor check runs on.
+//
+// The anchor is mandatory here, unlike in `citation()`. The entire reason the
+// table-aware chunk set exists is that the v0 rows carried numbers with no
+// words beside them; a v1 citation that still could not name its clause in
+// Hebrew would have gained nothing. So the anchor is an argument, it is checked
+// at authoring time against the same chunk, and there is no way to write one
+// without it.
+/**
+ * Every table-aware citation this process made, in the order it made them.
+ * Source scraping cannot see a needle built from a loop variable, and a checker
+ * that silently reads an empty needle list would report a pass it never made.
+ * A batch script writes this into its receipt and the anchor recheck reads it.
+ */
+export const TABLE_AWARE_CITATIONS: Array<Readonly<{ chunk_id: string; must_contain: readonly string[]; anchor: string; locator: string }>> = [];
+
+const tableAwareCache = new Map<string, Map<string, { text: string; logical_text: string }>>();
+function tableAwareChunk(sourceId: string, sourceVersion: string, chunksPath: string, chunkId: string) {
+  const key = `${sourceId}@${sourceVersion}`;
+  let byId = tableAwareCache.get(key);
+  if (!byId) {
+    const sidecar = chunksPath.replace(/\.chunks\.json$/u, ".t1.chunks.json");
+    if (!existsSync(path.resolve(sidecar))) throw new Error(`POOL_P_TABLE_AWARE_CHUNKS_MISSING:${key}`);
+    const doc = JSON.parse(readFileSync(path.resolve(sidecar), "utf8")) as {
+      chunks: Array<{ chunk_id: string; text: string; logical_text: string }>;
+    };
+    byId = new Map(doc.chunks.map((chunk) => [chunk.chunk_id, { text: chunk.text, logical_text: chunk.logical_text }]));
+    tableAwareCache.set(key, byId);
+  }
+  const chunk = byId.get(chunkId);
+  if (!chunk) throw new Error(`POOL_P_UNKNOWN_TABLE_AWARE_CHUNK:${chunkId}`);
+  return chunk;
+}
+
+export function tableAwareCitation(
+  source: SourceRef,
+  chunkId: string,
+  locator: string,
+  mustContain: readonly string[],
+  anchor: string,
+): Citation {
+  assertNotQuarantined(source.source_id, source.source_version);
+  if (!chunkId.includes("#t")) throw new Error(`POOL_P_TABLE_AWARE_CHUNK_ID_EXPECTED:${chunkId}`);
+  const observation = selectObservation(source.source_id, source.source_version);
+  if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
+  const chunk = tableAwareChunk(source.source_id, source.source_version, observation.chunks_path, chunkId);
+  for (const needle of mustContain) {
+    if (!chunk.logical_text.includes(needle)) throw new Error(`POOL_P_CITATION_TEXT_MISMATCH:${chunkId}:${needle}`);
+  }
+  assertUsableAnchor(anchor);
+  const verdict = checkCitationAnchor(chunk.logical_text, anchor);
+  if (!verdict.matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
+  TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [...mustContain], anchor, locator }));
   return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain });
 }
 

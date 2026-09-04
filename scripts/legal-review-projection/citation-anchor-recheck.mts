@@ -24,6 +24,14 @@ function loadV1Chunks(): Map<string, string> {
       const dir = path.join(NORMALIZED_ROOT, source, version);
       for (const file of readdirSync(dir)) {
         if (!file.endsWith(".chunks.json") || file.endsWith(".v1.chunks.json")) continue;
+        // L4-1: the table-aware set ships its own logical text, decided once per
+        // document by the same rule, so it is taken as given rather than
+        // re-derived here.
+        if (file.endsWith(".t1.chunks.json")) {
+          const tableAware = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as { chunks: Array<{ chunk_id: string; logical_text: string }> };
+          for (const chunk of tableAware.chunks) byId.set(chunk.chunk_id, chunk.logical_text);
+          continue;
+        }
         const document = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as { chunks: Chunk[] };
         const joined = document.chunks.map((chunk) => chunk.text).join("\n");
         const signal = hebrewOrderSignal(joined);
@@ -37,14 +45,50 @@ function loadV1Chunks(): Map<string, string> {
   return byId;
 }
 
+/**
+ * Citations a batch recorded as it made them, read from its own receipt.
+ *
+ * L4-1. Source scraping cannot see a needle that is a loop variable, and a
+ * checker that quietly read an empty needle list would report a pass it never
+ * performed. A batch that writes its citations down is checked against what it
+ * did; scraping stays for the batches that do not.
+ */
+function readRecordedCitations(): Array<{ file: string; chunk_id: string; must_contain: string[] }> {
+  const receipts = path.join("output", "next", "pool-p");
+  if (!existsSync(receipts)) return [];
+  const recorded: Array<{ file: string; chunk_id: string; must_contain: string[] }> = [];
+  for (const name of readdirSync(receipts).filter((entry) => entry.endsWith(".json")).sort()) {
+    const receipt = JSON.parse(readFileSync(path.join(receipts, name), "utf8")) as {
+      citations?: Array<{ chunk_id: string; must_contain: string[] }>;
+    };
+    for (const entry of receipt.citations ?? []) {
+      recorded.push({ file: `${name.replace(/\.json$/u, "")}.mts`, chunk_id: entry.chunk_id, must_contain: entry.must_contain });
+    }
+  }
+  return recorded;
+}
+
 /** Every citation declared by a Pool P batch script, chunk id and needles. */
 function readDeclaredCitations(): Array<{ file: string; chunk_id: string; must_contain: string[] }> {
   const dir = path.join("scripts", "legal-review-projection");
-  const citations: Array<{ file: string; chunk_id: string; must_contain: string[] }> = [];
+  const citations: Array<{ file: string; chunk_id: string; must_contain: string[] }> = [...readRecordedCitations()];
+  const recordedFiles = new Set(citations.map((entry) => entry.file));
   for (const file of readdirSync(dir).filter((name) => /^pool-p-batch-.*\.mts$/u.test(name)).sort()) {
+    if (recordedFiles.has(file)) continue;
     const source = readFileSync(path.join(dir, file), "utf8");
+    // L4-1: a chunk id may be written inline or held in a file-level constant,
+    // because the table-aware citations name the same chunk three times over.
+    // Both forms are resolved here — a scanner that only understood string
+    // literals would quietly stop counting the moment an author factored one
+    // out, and a citation nobody counts is a citation nobody checks.
+    const constants = new Map<string, string>();
+    for (const match of source.matchAll(/const\s+([A-Z][A-Z0-9_]*)\s*=\s*"([^"]*#[^"]*)"/gu)) {
+      constants.set(match[1], match[2]);
+    }
     for (const fragment of source.split("citation(").slice(1)) {
-      const chunkId = /"([^"]+)"/u.exec(fragment)?.[1];
+      const head = fragment.split("[")[0];
+      const chunkId = /"([^"]*#[^"]*)"/u.exec(head)?.[1]
+        ?? [...head.matchAll(/\b([A-Z][A-Z0-9_]*)\b/gu)].map((match) => constants.get(match[1])).find((value) => value !== undefined);
       const rawArray = /(\[[^\]]*\])/u.exec(fragment)?.[1];
       if (!chunkId || !chunkId.includes("#")) continue;
       let mustContain: string[] = [];
