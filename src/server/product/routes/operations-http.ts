@@ -24,8 +24,21 @@ export const LEGAL_REVIEW_ROUTES = Object.freeze([
  * The nested Ground Truth queue panel. Read-only by construction: one GET, no
  * action route, so there is nothing here that a CSRF token would protect.
  */
+/**
+ * E2-3. The annotator write path beside G-12's read-only queue. Two POSTs and
+ * nothing else: claim one item, submit one annotation envelope.
+ *
+ * What is deliberately NOT here is any enforcement. G-4 independence (an
+ * annotator may not verify their own work) and G-7 lock semantics (a committed
+ * item opens a new revision rather than being mutated) are enforced by the
+ * definers, in the database, where they hold for every caller. A route that
+ * re-checked them would be a second copy of the rule that can drift from the
+ * first, and the one that drifts is always the one someone trusts.
+ */
 export const GROUND_TRUTH_ROUTES = Object.freeze([
   Object.freeze({ path: "ground-truth/queue", method: "GET" as const }),
+  Object.freeze({ path: "ground-truth/claims", method: "POST" as const }),
+  Object.freeze({ path: "ground-truth/annotations", method: "POST" as const }),
 ]);
 
 /**
@@ -62,17 +75,48 @@ export function createOperationsHttpHandler(input: Readonly<{
       if (segments[0] === "ground-truth") {
         const groundTruth = groundTruthCapability(input.service);
         if (!groundTruth) return productNotFound("CAPABILITY_ABSENT");
+        const isPost = request.method === "POST";
         const joined = segments.join("/");
         if (!GROUND_TRUTH_ROUTES.some((route) => route.path === joined && route.method === request.method)) {
           return productNotFound("PATH_NOT_ROUTED");
         }
-        const session = await input.sessions.verify(request, "operations", false);
+        // CSRF is required for the writes and not for the read, the same way
+        // Legal Review does it — one rule, applied from the method rather than
+        // from a per-path exception someone can forget to add.
+        const session = await input.sessions.verify(request, "operations", isPost);
         if (!session) return productNotFound("SESSION_UNVERIFIED");
         const correlationId = correlationIdFor(request);
         try {
-          const limit = queueLimit(request);
-          const data = await groundTruth.readGroundTruthQueue({
-            actor: session.actor, correlation_id: correlationId, limit,
+          if (!isPost) {
+            const limit = queueLimit(request);
+            const data = await groundTruth.readGroundTruthQueue({
+              actor: session.actor, correlation_id: correlationId, limit,
+            });
+            return productJson({ correlation_id: correlationId, data });
+          }
+          const body = await strictJsonObject(request);
+          if (!body || body.schema_version !== STABLE_OPERATIONS_COMMAND_SCHEMA
+            || typeof body.work_item_id !== "string"
+            || typeof body.idempotency_key !== "string" || typeof body.occurred_at !== "string") {
+            throw new InternalOpsError("OPS_INVALID_REQUEST");
+          }
+          if (joined === "ground-truth/claims") {
+            const data = await groundTruth.claimGroundTruthItem({
+              actor: session.actor, correlation_id: correlationId,
+              work_item_id: body.work_item_id,
+              idempotency_key: body.idempotency_key, occurred_at: body.occurred_at,
+            });
+            return productJson({ correlation_id: correlationId, data });
+          }
+          // The envelope is passed through whole. This route does not read
+          // inside it, does not validate its contents against the item, and
+          // does not decide whether the annotator is allowed to submit it —
+          // the definer does all three, for every caller, not just this one.
+          if (!isRecord(body.envelope)) throw new InternalOpsError("OPS_INVALID_REQUEST");
+          const data = await groundTruth.submitGroundTruthAnnotation({
+            actor: session.actor, correlation_id: correlationId,
+            work_item_id: body.work_item_id, envelope: body.envelope as never,
+            idempotency_key: body.idempotency_key, occurred_at: body.occurred_at,
           });
           return productJson({ correlation_id: correlationId, data });
         } catch (error) {
@@ -199,12 +243,21 @@ type LegalReviewCapability = Readonly<{
 
 type GroundTruthCapability = Readonly<{
   readGroundTruthQueue(input: Readonly<{ actor: unknown; correlation_id: string; limit: number }>): Promise<unknown>;
+  claimGroundTruthItem(input: Readonly<Record<string, unknown>>): Promise<unknown>;
+  submitGroundTruthAnnotation(input: Readonly<Record<string, unknown>>): Promise<unknown>;
 }>;
 
-/** The queue panel is served only when the canonical durable service provides it. */
+/**
+ * The panel is served only when the canonical durable service provides ALL
+ * THREE. A service with only the read would otherwise serve a queue whose
+ * claim button 500s; the whole panel staying at 404 until the write path exists
+ * is the honest state, and it is the same rule Legal Review already follows.
+ */
 function groundTruthCapability(service: InternalOpsApplicationPort | null): GroundTruthCapability | null {
   const candidate = service as unknown as Partial<GroundTruthCapability> | null;
   return candidate && typeof candidate.readGroundTruthQueue === "function"
+    && typeof candidate.claimGroundTruthItem === "function"
+    && typeof candidate.submitGroundTruthAnnotation === "function"
     ? candidate as GroundTruthCapability : null;
 }
 
