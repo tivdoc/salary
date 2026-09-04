@@ -157,6 +157,19 @@ export function buildVisualCitation(input: VisualCitationInput): { citation: Vis
     if (!input.region.line_text.includes(input.text_layer_surface)) return { citation: null, refusal: "VISUAL_SURFACE_NOT_ON_STORED_LINE" };
     if (!containsOcrAmbiguousFraction(input.text_layer_surface)) return { citation: null, refusal: "VISUAL_SURFACE_NOT_AMBIGUOUS_USE_TEXT_PATH" };
   }
+  // No surface named on a stored line means the text layer dropped or broke
+  // the figure. If the reading's own digits stand whole on that line, the text
+  // layer has it and a text citation is the right kind — a visual citation
+  // would be a lower grade chosen for no reason.
+  if (input.text_layer_surface === null && input.region.kind === "stored_line") {
+    const digits = input.visual_reading.replace(/[^0-9]/gu, "");
+    const line = input.region.line_text;
+    const whole = [...new Set([digits, input.visual_reading.replace(/\s+/gu, "")])].filter((form) => form.length > 0);
+    const escape = (form: string) => form.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+    if (whole.some((form) => new RegExp(`(?<![0-9])${escape(form)}(?![0-9])`, "u").test(line))) {
+      return { citation: null, refusal: "VISUAL_READING_PRESENT_IN_TEXT_USE_TEXT_PATH" };
+    }
+  }
   const parsed = visualCitationSchema.safeParse({
     kind: LEGAL_VISUAL_CITATION_VERSION,
     artifact_sha256: input.artifact_sha256,

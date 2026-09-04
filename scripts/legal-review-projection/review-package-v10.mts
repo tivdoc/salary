@@ -344,7 +344,7 @@ async function build(): Promise<{ manifest_sha256: string; files: Written[]; ite
   }));
   // --- D1: the cited page beside every visual citation, bytes from the stored
   // artifact, hash checked against the receipt the batch wrote.
-  const visualReceipts = ["batch-11-visual.json", "batch-13-pension-visual.json"];
+  const visualReceipts = ["batch-11-visual.json", "batch-13-pension-visual.json", "batch-15-threshold-visual.json"];
   const visualIndex: Array<Record<string, unknown>> = [];
   const extracted = new Map<string, string>();
   for (const receiptName of visualReceipts) {

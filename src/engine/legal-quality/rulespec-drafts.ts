@@ -124,6 +124,9 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   },
   { parameter_id: "il.travel.daily_reimbursement_cap", versions: ["2016.1.0"] },
   { parameter_id: "il.convalescence.2024_partial_reduction_wage_threshold", versions: ["2024.1.0"] },
+  // L6-7 (batch 15 / D1): the 2025 threshold, read from the typeset page
+  // (inferred_visual), paired with the 2024 one.
+  { parameter_id: "il.convalescence.2025_partial_reduction_wage_threshold", versions: ["2025.1.0"] },
   { parameter_id: "il.vacation.full_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
   { parameter_id: "il.vacation.partial_year_relationship_minimum_days_threshold", versions: ["1.0.0"] },
   // B-7: the corrected scope. `il.vacation.calendar_days_years_1_to_4` is

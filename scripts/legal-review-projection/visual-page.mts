@@ -15,6 +15,11 @@ import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { readFileSync, writeFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync as readFileSyncFs, rmSync, writeFileSync as writeFileSyncFs } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const { PDFDocument, PDFName, PDFRawStream, PDFArray, PDFDict, PDFNumber, PDFBool } = require("pdf-lib");
@@ -61,8 +66,11 @@ async function pageCcittImage(artifactBytes: Uint8Array, pageNumber: number): Pr
   const source = await PDFDocument.load(artifactBytes, { ignoreEncryption: true, updateMetadata: false });
   const page = source.getPage(pageNumber - 1);
   const resources = page.node.Resources();
-  const xobjects = resources?.lookup(PDFName.of("XObject"), PDFDict);
-  if (!xobjects) throw new Error("VISUAL_PAGE_NO_XOBJECTS");
+  // A typeset page may have no XObjects at all; that is "no scan stream",
+  // not an error, and the caller falls back to the OS rasteriser.
+  const xobjectsEntry = resources?.get(PDFName.of("XObject"));
+  const xobjects = xobjectsEntry === undefined ? undefined : source.context.lookup(xobjectsEntry);
+  if (!(xobjects instanceof PDFDict)) throw new Error("VISUAL_PAGE_NO_CCITT_IMAGE");
   for (const [, ref] of xobjects.entries()) {
     const stream = source.context.lookup(ref);
     if (!(stream instanceof PDFRawStream)) continue;
@@ -138,6 +146,44 @@ function ccittToTiff(image: CcittImage): Buffer {
   header.writeUInt32LE(ifdOffset, 4);
   const padding = Buffer.alloc(image.data.length % 2);
   return Buffer.concat([header, Buffer.from(image.data), padding, ifd]);
+}
+
+/**
+ * A typeset page (no scan stream) rendered by the operating system's own PDF
+ * rasteriser — Windows.Data.Pdf through PowerShell; nothing installed. The
+ * extracted single page is what is rendered, so the render is of the very
+ * bytes the package ships.
+ */
+export function renderTypesetPagePng(pagePdf: Uint8Array, scale = 3): Buffer {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "tivdoc-visual-"));
+  try {
+    const pdfPath = path.join(dir, "page.pdf");
+    const pngPath = path.join(dir, "page.png");
+    writeFileSyncFs(pdfPath, pagePdf);
+    const script = path.join(path.dirname(fileURLToPath(import.meta.url)), "render-page-winrt.ps1");
+    const result = spawnSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, pdfPath, pngPath, String(scale)], { encoding: "utf8" });
+    if (result.status !== 0) throw new Error(`VISUAL_PAGE_WINRT_RENDER_FAILED:${(result.stderr || result.stdout).trim().slice(0, 200)}`);
+    return readFileSyncFs(pngPath);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * What the session read a figure from. A scanned page renders from its own
+ * CCITT stream through libvips; a typeset page renders through the operating
+ * system's rasteriser. The image hash and the tool version say which.
+ */
+export async function renderPageForReading(artifactBytes: Uint8Array, pageNumber: number, pagePdf: Uint8Array): Promise<{ image_sha256: string; render_tool_version: string; png: Buffer; width: number; height: number }> {
+  try {
+    const rendered = await renderScanPagePng(artifactBytes, pageNumber);
+    return { image_sha256: sha256(rendered.png), render_tool_version: renderToolVersion(), png: rendered.png, width: rendered.width, height: rendered.height };
+  } catch (error) {
+    if (!(error instanceof Error && error.message === "VISUAL_PAGE_NO_CCITT_IMAGE")) throw error;
+    const png = renderTypesetPagePng(pagePdf);
+    const box = await pageMediaBox(artifactBytes, pageNumber);
+    return { image_sha256: sha256(png), render_tool_version: `${VISUAL_PAGE_TOOL_VERSION}/windows-data-pdf@${os.release()}/scale3`, png, width: Math.round(box.width * 3), height: Math.round(box.height * 3) };
+  }
 }
 
 export async function renderScanPagePng(artifactBytes: Uint8Array, pageNumber: number): Promise<{ png: Buffer; width: number; height: number; k: number }> {

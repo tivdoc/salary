@@ -141,6 +141,13 @@ export const POOL_P_CITATION_ANCHORS: readonly ChunkAnchor[] = Object.freeze([
     chunk_id: "IL_CONVALESCENCE_EXTENSION_ORDER_1988@discovery-v0#t0004-65c7115d3b4a",
     anchor: "קצובת ההבראה תינתן בשיעורים הבאים",
   },
+  // L6-7 / D1 (P-31): the 2025 convalescence law, artifact page 19, table-aware
+  // chunk. The figure is a visual citation (the text layer fragments it); the
+  // anchor is the clause's own words, which the text layer does carry.
+  {
+    chunk_id: "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2025@discovery-v0.3.1#t0004-00460caf38b0",
+    anchor: "ואם הוא מועסק",
+  },
 ]);
 
 export function anchorFor(chunkId: string): ChunkAnchor | null {

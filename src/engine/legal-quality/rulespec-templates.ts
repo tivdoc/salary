@@ -151,6 +151,9 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
     // own threshold for its own window. Naming the real id rather than a
     // tidier invented one is what lets a draft actually bind this slot.
     { name: "reduction_wage_threshold", parameter_id: "il.convalescence.2024_partial_reduction_wage_threshold", unit: "currency.ils" },
+    // L6-7 / D1: the 2025 law's threshold beside the 2024 one — one slot per
+    // year, so the two grades (text_verified, inferred_visual) sit side by side.
+    { name: "reduction_wage_threshold_2025", parameter_id: "il.convalescence.2025_partial_reduction_wage_threshold", unit: "currency.ils" },
   ],
   vacation: [
     // Years one to FIVE: amendment 15 moved the band and the count together.

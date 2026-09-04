@@ -50,11 +50,24 @@ describe("legal-visual-citation-v1 (L6-2, D1)", () => {
     expect(buildVisualCitation({ ...BASE, visual_reading: "1.25" }).refusal).toMatch(/^VISUAL_READING_NOT_IN_VOCABULARY/u);
   });
 
-  it("allows an absent text-layer surface — a figure the text layer dropped entirely", () => {
+  it("allows an absent text-layer surface — a figure the text layer dropped or broke", () => {
     const built = buildVisualCitation({ ...BASE, text_layer_surface: null, visual_reading: "6.5%" });
     expect(built.refusal).toBeNull();
     expect(built.citation?.text_layer_surface).toBeNull();
     expect(built.citation?.value).toEqual({ numerator: "13", denominator: "200" });
+    // The 2025 threshold: the text layer has "6 ,15 0", not 6,150.
+    const fragmented = { kind: "stored_line" as const, line_index: 29, line_text: "םילקש 6 ,15 0לע הלוע םילקש הניא 6 ,15 0202 4לע רבמצד" };
+    expect(buildVisualCitation({ ...BASE, region: fragmented, text_layer_surface: null, visual_reading: "6,150" }).refusal).toBeNull();
+  });
+
+  it("refuses a visual reading of a figure that stands whole in the text layer — no grade shopping downward", () => {
+    const plain = { kind: "stored_line" as const, line_index: 3, line_text: "אינה עולה על 6,150 שקלים חדשים" };
+    expect(buildVisualCitation({ ...BASE, region: plain, text_layer_surface: null, visual_reading: "6,150" }).refusal).toBe("VISUAL_READING_PRESENT_IN_TEXT_USE_TEXT_PATH");
+    const bare = { kind: "stored_line" as const, line_index: 3, line_text: "לא פחות מ-6150 שקלים" };
+    expect(buildVisualCitation({ ...BASE, region: bare, text_layer_surface: null, visual_reading: "6,150" }).refusal).toBe("VISUAL_READING_PRESENT_IN_TEXT_USE_TEXT_PATH");
+    // 16150 is another number.
+    const other = { kind: "stored_line" as const, line_index: 3, line_text: "סעיף 16150 לחוק" };
+    expect(buildVisualCitation({ ...BASE, region: other, text_layer_surface: null, visual_reading: "6,150" }).refusal).toBeNull();
   });
 
   it("an image-only artifact cites a box on the page, in PDF user space, and carries no text surface", () => {
