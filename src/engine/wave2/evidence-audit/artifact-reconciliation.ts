@@ -499,7 +499,10 @@ export async function buildWave1ArtifactReconciliation(paths: ReconciliationPath
       parse_failed_versions: 1,
       chunks: 274,
     },
-    after_wave21_canonical_enforcement: currentCounts,
+    // Pinned as history: the three counts Wave 2.1 enforcement left, which the
+    // explained_deltas below describe. The live counts are under `current`.
+    after_wave21_canonical_enforcement: { parsed_versions: 14, parse_failed_versions: 3, chunks: 202 },
+    current: currentCounts,
     explained_deltas: {
       registry_records: { before: v02Inventory.counts.registry_records, after: 17, reason: "one separately registered 2025 convalescence-law discovery record" },
       valid_raw_artifact_versions: { before: v02Inventory.counts.valid_raw_artifact_versions, after: 20, reason: "one exact 2025 official PDF artifact added" },
