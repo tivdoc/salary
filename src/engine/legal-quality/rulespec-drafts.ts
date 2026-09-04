@@ -145,9 +145,25 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   { parameter_id: "il.vacation.calendar_days_year_6", versions: ["1951.1.0"] },
   { parameter_id: "il.vacation.calendar_days_year_7", versions: ["1951.1.0"] },
   { parameter_id: "il.vacation.calendar_days_years_8_and_above_cap", versions: ["1951.1.0"] },
-  { parameter_id: "il.pension.employer_contribution_rate", versions: ["2014.1.0"] },
-  { parameter_id: "il.pension.employee_contribution_rate", versions: ["2014.1.0"] },
-  { parameter_id: "il.pension.severance_contribution_rate", versions: ["2014.1.0"] },
+  // L6-5 (batch 13 / D7): the 2014 rows re-registered as 2014.2.0 on the
+  // precedence decision (2014.1.0 superseded naming them), beside the 2016
+  // order's 2017 rows read from the page image (inferred_visual). The draft
+  // carries both branches; the executor runs both.
+  {
+    parameter_id: "il.pension.employer_contribution_rate", versions: ["2014.2.0", "2017.1.0"],
+    decision_id: "legal.reference.il.decision.pension_2011_2016_precedence",
+    branches: [["order_2011_2014_row", "2014.2.0"], ["order_2016_2017_rates", "2017.1.0"]],
+  },
+  {
+    parameter_id: "il.pension.employee_contribution_rate", versions: ["2014.2.0", "2017.1.0"],
+    decision_id: "legal.reference.il.decision.pension_2011_2016_precedence",
+    branches: [["order_2011_2014_row", "2014.2.0"], ["order_2016_2017_rates", "2017.1.0"]],
+  },
+  {
+    parameter_id: "il.pension.severance_contribution_rate", versions: ["2014.2.0", "2017.1.0"],
+    decision_id: "legal.reference.il.decision.pension_2011_2016_precedence",
+    branches: [["order_2011_2014_row", "2014.2.0"], ["order_2016_2017_rates", "2017.1.0"]],
+  },
   // L5-4 (batch 9): figures the law states as words, bound through the lexicon.
   { parameter_id: "il.sick_pay.rate_days_2_to_3", versions: ["1.0.0"] },
   { parameter_id: "il.vacation.calendar_days_increment_per_year_from_year_8", versions: ["1951.1.0"] },

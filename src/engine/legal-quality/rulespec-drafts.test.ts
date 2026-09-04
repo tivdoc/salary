@@ -12,6 +12,7 @@ import {
   OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR,
   OPEN_DECISION_PENSION_WAGE_CAP_SECTION,
   OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
+  OPEN_DECISION_PENSION_2011_2016_PRECEDENCE,
   buildRuleSpecTemplate,
 } from "./rulespec-templates.ts";
 
@@ -51,7 +52,7 @@ describe("Q-1..Q-7 draft RuleSpecs", () => {
   it("carries both branches of every open decision — never one, never a chosen winner", () => {
     const slots = buildSevenRuleSpecDrafts().flatMap((draft) => draft.parameter_slots);
     const decisionSlots = slots.filter((slot) => slot.decision_id !== null);
-    expect(decisionSlots).toHaveLength(3);
+    expect(decisionSlots).toHaveLength(4);
     for (const slot of decisionSlots) {
       expect(slot.bound, slot.slot_id).toBe(true);
       if (!slot.bound) continue;
@@ -67,6 +68,7 @@ describe("Q-1..Q-7 draft RuleSpecs", () => {
     }
     expect(new Set(decisionSlots.map((slot) => slot.decision_id))).toEqual(new Set([
       OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR, OPEN_DECISION_PENSION_WAGE_CAP_SECTION, OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
+      OPEN_DECISION_PENSION_2011_2016_PRECEDENCE,
     ]));
   });
 

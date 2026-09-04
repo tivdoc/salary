@@ -122,6 +122,9 @@ export const OPEN_DECISION_PENSION_WAGE_CAP_SECTION = "legal.reference.il.decisi
 // says "for the convalescence year 2026" and is signed on 27 July 2026; the
 // figure is the same on both branches, the period is not.
 export const OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD = "legal.reference.il.decision.convalescence_2026_rate_period";
+// L6-5 / D7: which instrument governs the contribution shares — the 2011
+// order's last row (1.1.2014) or the 2016 increase order (1.1.2017).
+export const OPEN_DECISION_PENSION_2011_2016_PRECEDENCE = "legal.reference.il.decision.pension_2011_2016_precedence";
 
 const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>> = Object.freeze({
   minimum_wage: [
@@ -137,7 +140,7 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
   ],
   pension: [
     { name: "mandatory_wage_cap", parameter_id: "il.pension.mandatory_wage_cap", unit: "currency.ils", decision_id: OPEN_DECISION_PENSION_WAGE_CAP_SECTION },
-    { name: "employee_contribution_rate", parameter_id: "il.pension.employee_contribution_rate", unit: "ratio" },
+    { name: "employee_contribution_rate", parameter_id: "il.pension.employee_contribution_rate", unit: "ratio", decision_id: OPEN_DECISION_PENSION_2011_2016_PRECEDENCE },
   ],
   travel: [
     { name: "daily_cap", parameter_id: "il.travel.daily_reimbursement_cap", unit: "currency.ils" },

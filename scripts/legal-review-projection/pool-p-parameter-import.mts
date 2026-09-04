@@ -67,8 +67,8 @@ import path from "node:path";
 
 import { assertUsableAnchor, checkCitationAnchor } from "../../src/engine/legal-knowledge/citation-anchor.ts";
 import { bindCompoundThroughLexicon, bindThroughLexicon } from "../../src/engine/legal-knowledge/numeral-lexicon-v1.ts";
-import { buildVisualCitation, visualBindingOf, worstProvenance, type ProvenanceGrade, type VisualCitation } from "../../src/engine/legal-knowledge/visual-citation-v1.ts";
-import { extractPagePdf, renderScanPagePng, renderToolVersion, sha256 as bytesSha256 } from "./visual-page.mts";
+import { buildVisualCitation, visualBindingOf, worstProvenance, type ProvenanceGrade, type VisualCitation, type VisualRegionInput } from "../../src/engine/legal-knowledge/visual-citation-v1.ts";
+import { extractPagePdf, pageMediaBox, renderScanPagePng, renderToolVersion, sha256 as bytesSha256 } from "./visual-page.mts";
 import { frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";
 import { parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
 import type { Wave3Topic } from "../../src/engine/wave3/contracts.ts";
@@ -371,7 +371,35 @@ export function tableAwareCitation(
 // against the same page's table-aware chunk — the words around the figure are
 // in the text layer even where the figure is not.
 /** Every visual citation this process made, for the receipt and the recheck. */
-export const VISUAL_CITATIONS: Array<Readonly<{ chunk_id: string; page: number; line_index: number; text_layer_surface: string | null; visual_reading: string; page_pdf_sha256: string; anchor: string; locator: string }>> = [];
+export const VISUAL_CITATIONS: Array<Readonly<{
+  chunk_id: string | null; page: number; region: VisualRegionInput; text_layer_surface: string | null; visual_reading: string;
+  page_pdf_sha256: string; page_image_sha256: string; anchor: string | null; anchor_absent: "no_text_layer" | null; locator: string;
+}>> = [];
+
+/**
+ * An image-only artifact — a scan with no usable text layer, recorded
+ * parse_failed with document_sanity_minimum_content_failed — has no chunks,
+ * no normalized text and no anchor. A visual citation is the only kind that
+ * can cite it, and its build record is taken as it stands: the artifact's
+ * hash and the parser that failed, with a parsed_version_id that says so.
+ */
+function selectBuildRecordForImageOnly(sourceId: string, sourceVersion: string, artifactSha256: string) {
+  const record = buildState.records.find((entry) =>
+    entry.source_id === sourceId && entry.source_version === sourceVersion && entry.artifact_sha256 === artifactSha256) as
+    (typeof buildState.records[number] & { safe_error_code?: string | null }) | undefined;
+  if (!record) throw new Error(`POOL_P_BUILD_RECORD_MISSING:${sourceId}@${sourceVersion}`);
+  if (record.parse_status !== "parse_failed" || record.safe_error_code !== "document_sanity_minimum_content_failed") {
+    throw new Error(`POOL_P_IMAGE_ONLY_RECORD_EXPECTED:${sourceId}@${sourceVersion}:${record.parse_status}:${record.safe_error_code ?? "none"}`);
+  }
+  return {
+    ...record,
+    parsed_version_id: `image_only:${artifactSha256.slice(0, 16)}:no_text_layer`,
+    parser_version: record.parser_version ?? "none",
+    normalizer_version: record.normalizer_version ?? "none",
+  };
+}
+/** The sources every citation for which is an image-only visual citation. */
+const IMAGE_ONLY_SOURCES = new Set<string>();
 
 /** The page span of a table-aware chunk, read from its sidecar. */
 function tableAwareSidecarEntry(sourceId: string, sourceVersion: string, chunksPath: string, chunkId: string): { page_from: number; page_to: number } {
@@ -384,49 +412,82 @@ function tableAwareSidecarEntry(sourceId: string, sourceVersion: string, chunksP
   return { page_from: entry.page_from, page_to: entry.page_to };
 }
 
-export async function visualCitation(
-  source: SourceRef,
-  chunkId: string,
-  locator: string,
-  page: number,
-  lineIndex: number,
-  textLayerSurface: string | null,
-  visualReading: string,
-  anchor: string,
-): Promise<Citation> {
+export type VisualCitationRequest = Readonly<{
+  source: SourceRef;
+  locator: string;
+  page: number;
+  visual_reading: string;
+}> & (
+  // An artifact with a text layer: the figure sits on a stored line whose text
+  // layer is ambiguous, and the same page's table-aware chunk carries the anchor.
+  | Readonly<{ kind: "stored_line"; chunk_id: string; line_index: number; text_layer_surface: string; anchor: string }>
+  // An image-only artifact: a box round the figure in image pixels, converted
+  // to PDF user space against the page box; no chunk, no anchor, and the
+  // citation says so.
+  | Readonly<{ kind: "page_bbox"; box_px: Readonly<{ left: number; top: number; width: number; height: number }> }>
+);
+
+export async function visualCitation(request: VisualCitationRequest): Promise<Citation> {
+  const { source, locator, page } = request;
   const observation = selectObservation(source.source_id, source.source_version);
-  const build = selectBuildRecord(source.source_id, source.source_version, observation.artifact_sha256) as { normalized_path?: string | null };
-  if (!build.normalized_path) throw new Error(`POOL_P_NORMALIZED_MISSING:${source.source_id}@${source.source_version}`);
-  const normalized = JSON.parse(readFileSync(path.resolve(build.normalized_path), "utf8")) as { pages: Array<{ page: number; text: string }> };
-  const stored = normalized.pages[page - 1];
-  if (!stored || stored.page !== page) throw new Error(`POOL_P_VISUAL_PAGE_MISSING:${source.source_id}:${page}`);
-  const lines = stored.text.split("\n");
-  const lineText = lines[lineIndex];
-  if (lineText === undefined) throw new Error(`POOL_P_VISUAL_LINE_MISSING:${source.source_id}:${page}:${lineIndex}`);
   const artifactBytes = readFileSync(path.resolve(observation.artifact_path));
   if (bytesSha256(artifactBytes) !== observation.artifact_sha256) throw new Error(`POOL_P_ARTIFACT_HASH_MISMATCH:${source.source_id}`);
-  // The anchor chunk must be the same page's chunk: a page read here and a
-  // chunk anchored elsewhere would be a citation in two places.
-  if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
-  const sidecar = tableAwareSidecarEntry(source.source_id, source.source_version, observation.chunks_path, chunkId);
-  if (sidecar.page_from > page || sidecar.page_to < page) throw new Error(`POOL_P_VISUAL_CHUNK_NOT_ON_PAGE:${chunkId}:${page}`);
   const pagePdf = await extractPagePdf(artifactBytes, page);
   const render = await renderScanPagePng(artifactBytes, page);
+  const pageHashes = { page_pdf_sha256: bytesSha256(pagePdf), page_image_sha256: bytesSha256(render.png) };
+
+  if (request.kind === "stored_line") {
+    const build = selectBuildRecord(source.source_id, source.source_version, observation.artifact_sha256) as { normalized_path?: string | null };
+    if (!build.normalized_path) throw new Error(`POOL_P_NORMALIZED_MISSING:${source.source_id}@${source.source_version}`);
+    const normalized = JSON.parse(readFileSync(path.resolve(build.normalized_path), "utf8")) as { pages: Array<{ page: number; text: string }> };
+    const stored = normalized.pages[page - 1];
+    if (!stored || stored.page !== page) throw new Error(`POOL_P_VISUAL_PAGE_MISSING:${source.source_id}:${page}`);
+    const lineText = stored.text.split("\n")[request.line_index];
+    if (lineText === undefined) throw new Error(`POOL_P_VISUAL_LINE_MISSING:${source.source_id}:${page}:${request.line_index}`);
+    // The anchor chunk must be the same page's chunk: a page read here and a
+    // chunk anchored elsewhere would be a citation in two places.
+    if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
+    const sidecar = tableAwareSidecarEntry(source.source_id, source.source_version, observation.chunks_path, request.chunk_id);
+    if (sidecar.page_from > page || sidecar.page_to < page) throw new Error(`POOL_P_VISUAL_CHUNK_NOT_ON_PAGE:${request.chunk_id}:${page}`);
+    const region: VisualRegionInput = { kind: "stored_line", line_index: request.line_index, line_text: lineText };
+    const built = buildVisualCitation({
+      artifact_sha256: observation.artifact_sha256, page, ...pageHashes, region,
+      text_layer_surface: request.text_layer_surface, visual_reading: request.visual_reading, render_tool_version: renderToolVersion(),
+    });
+    if (built.refusal !== null) throw new Error(`POOL_P_VISUAL_CITATION_REFUSED:${built.refusal}`);
+    const chunk = tableAwareChunk(source.source_id, source.source_version, observation.chunks_path, request.chunk_id);
+    assertUsableAnchor(request.anchor);
+    if (!checkCitationAnchor(chunk.logical_text, request.anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${request.chunk_id}`);
+    VISUAL_CITATIONS.push(frozen({ chunk_id: request.chunk_id, page, region, text_layer_surface: request.text_layer_surface, visual_reading: request.visual_reading, ...pageHashes, anchor: request.anchor, anchor_absent: null, locator }));
+    TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: request.chunk_id, must_contain: [], anchor: request.anchor, locator }));
+    return frozen({ source, chunk_id: request.chunk_id, locator, must_contain: [], provenance: "inferred_visual", visual: built.citation });
+  }
+
+  // Image-only. The box is drawn in render pixels and stored in PDF user
+  // space (origin bottom-left, points) against the page's own box.
+  selectBuildRecordForImageOnly(source.source_id, source.source_version, observation.artifact_sha256);
+  const pageBox = await pageMediaBox(artifactBytes, page);
+  const scaleX = pageBox.width / render.width;
+  const scaleY = pageBox.height / render.height;
+  const { left, top, width, height } = request.box_px;
+  const region: VisualRegionInput = {
+    kind: "page_bbox",
+    x0: round3(left * scaleX), x1: round3((left + width) * scaleX),
+    y0: round3(pageBox.height - (top + height) * scaleY), y1: round3(pageBox.height - top * scaleY),
+    page_width: round3(pageBox.width), page_height: round3(pageBox.height),
+  };
   const built = buildVisualCitation({
-    artifact_sha256: observation.artifact_sha256, page, page_pdf_sha256: bytesSha256(pagePdf), page_image_sha256: bytesSha256(render.png),
-    line_index: lineIndex, line_text: lineText, text_layer_surface: textLayerSurface, visual_reading: visualReading,
-    render_tool_version: renderToolVersion(),
+    artifact_sha256: observation.artifact_sha256, page, ...pageHashes, region,
+    text_layer_surface: null, visual_reading: request.visual_reading, render_tool_version: renderToolVersion(),
   });
   if (built.refusal !== null) throw new Error(`POOL_P_VISUAL_CITATION_REFUSED:${built.refusal}`);
-  // The anchor: the same page's table-aware chunk must carry it, so the
-  // citation can still be found by its words.
-  const chunk = tableAwareChunk(source.source_id, source.source_version, observation.chunks_path, chunkId);
-  assertUsableAnchor(anchor);
-  if (!checkCitationAnchor(chunk.logical_text, anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
-  VISUAL_CITATIONS.push(frozen({ chunk_id: chunkId, page, line_index: lineIndex, text_layer_surface: textLayerSurface, visual_reading: visualReading, page_pdf_sha256: built.citation.page_pdf_sha256, anchor, locator }));
-  TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [], anchor, locator }));
+  IMAGE_ONLY_SOURCES.add(`${source.source_id}@${source.source_version}`);
+  const chunkId = `${source.source_id}@${source.source_version}#image-p${page}`;
+  VISUAL_CITATIONS.push(frozen({ chunk_id: null, page, region, text_layer_surface: null, visual_reading: request.visual_reading, ...pageHashes, anchor: null, anchor_absent: "no_text_layer", locator }));
   return frozen({ source, chunk_id: chunkId, locator, must_contain: [], provenance: "inferred_visual", visual: built.citation });
 }
+
+const round3 = (value: number) => Math.round(value * 1000) / 1000;
 
 function buildBindings(input: Readonly<{
   topic: Wave3Topic;
@@ -449,7 +510,9 @@ function buildBindings(input: Readonly<{
   const sourceSet = sourceRefs.map((ref) => `${ref.source_id}@${ref.source_version}`);
   const sources = sourceRefs.map((ref) => {
     const observation = selectObservation(ref.source_id, ref.source_version);
-    const build = selectBuildRecord(ref.source_id, ref.source_version, observation.artifact_sha256);
+    const build = IMAGE_ONLY_SOURCES.has(`${ref.source_id}@${ref.source_version}`)
+      ? selectBuildRecordForImageOnly(ref.source_id, ref.source_version, observation.artifact_sha256)
+      : selectBuildRecord(ref.source_id, ref.source_version, observation.artifact_sha256);
     return {
       ...ref,
       artifact_sha256: observation.artifact_sha256,

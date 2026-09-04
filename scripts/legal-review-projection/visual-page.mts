@@ -47,6 +47,13 @@ export async function extractPagePdf(artifactBytes: Uint8Array, pageNumber: numb
   return out.save({ useObjectStreams: false, addDefaultPage: false, updateFieldAppearances: false });
 }
 
+/** The page's media box in PDF user space — what a box region is expressed against. */
+export async function pageMediaBox(artifactBytes: Uint8Array, pageNumber: number): Promise<{ x: number; y: number; width: number; height: number }> {
+  const source = await PDFDocument.load(artifactBytes, { ignoreEncryption: true, updateMetadata: false });
+  const box = source.getPage(pageNumber - 1).getMediaBox();
+  return { x: box.x, y: box.y, width: box.width, height: box.height };
+}
+
 type CcittImage = Readonly<{ width: number; height: number; k: number; blackIs1: boolean; byteAlign: boolean; data: Uint8Array }>;
 
 /** The first CCITT image XObject on the page — a scanned page has exactly one. */

@@ -46,11 +46,22 @@ export const visualCitationSchema = z.object({
   page: z.number().int().min(1),
   page_pdf_sha256: sha,
   page_image_sha256: sha,
-  region: z.object({
-    kind: z.literal("stored_line"),
-    line_index: z.number().int().min(0),
-    line_text: z.string().min(1).max(400),
-  }).strict(),
+  // Where on the page: the stored text-layer line the figure sits on, when
+  // the artifact has a text layer; or, for an image-only artifact, a box in
+  // PDF user space (origin bottom-left, points) drawn round the figure.
+  region: z.discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("stored_line"),
+      line_index: z.number().int().min(0),
+      line_text: z.string().min(1).max(400),
+    }).strict(),
+    z.object({
+      kind: z.literal("page_bbox"),
+      unit: z.literal("pdf_user_space"),
+      x0: z.number().min(0), y0: z.number().min(0), x1: z.number().min(0), y1: z.number().min(0),
+      page_width: z.number().positive(), page_height: z.number().positive(),
+    }).strict(),
+  ]),
   text_layer_surface: z.string().min(1).max(40).nullable(),
   visual_reading: z.string().min(1).max(40),
   value: z.object({ numerator: digits, denominator: digits }).strict(),
@@ -108,13 +119,16 @@ function reduced(numerator: bigint, denominator: bigint): { numerator: string; d
   return { numerator: (numerator / divisor).toString(), denominator: (denominator / divisor).toString() };
 }
 
+export type VisualRegionInput =
+  | Readonly<{ kind: "stored_line"; line_index: number; line_text: string }>
+  | Readonly<{ kind: "page_bbox"; x0: number; y0: number; x1: number; y1: number; page_width: number; page_height: number }>;
+
 export type VisualCitationInput = Readonly<{
   artifact_sha256: string;
   page: number;
   page_pdf_sha256: string;
   page_image_sha256: string;
-  line_index: number;
-  line_text: string;
+  region: VisualRegionInput;
   text_layer_surface: string | null;
   visual_reading: string;
   render_tool_version?: string;
@@ -131,9 +145,16 @@ export type VisualCitationInput = Readonly<{
 export function buildVisualCitation(input: VisualCitationInput): { citation: VisualCitation; refusal: null } | { citation: null; refusal: string } {
   const resolved = resolveVisualReading(input.visual_reading);
   if ("refusal" in resolved) return { citation: null, refusal: resolved.refusal };
-  if (input.line_text.trim().length === 0) return { citation: null, refusal: "VISUAL_STORED_LINE_EMPTY" };
-  if (input.text_layer_surface !== null) {
-    if (!input.line_text.includes(input.text_layer_surface)) return { citation: null, refusal: "VISUAL_SURFACE_NOT_ON_STORED_LINE" };
+  if (input.region.kind === "stored_line" && input.region.line_text.trim().length === 0) return { citation: null, refusal: "VISUAL_STORED_LINE_EMPTY" };
+  if (input.region.kind === "page_bbox") {
+    const { x0, y0, x1, y1, page_width, page_height } = input.region;
+    if (!(x0 < x1 && y0 < y1 && x1 <= page_width && y1 <= page_height)) return { citation: null, refusal: "VISUAL_BBOX_NOT_ON_PAGE" };
+    // A box region is for an artifact with no usable text layer; a surface
+    // would be a claim about text that is not there.
+    if (input.text_layer_surface !== null) return { citation: null, refusal: "VISUAL_BBOX_WITH_TEXT_SURFACE" };
+  }
+  if (input.text_layer_surface !== null && input.region.kind === "stored_line") {
+    if (!input.region.line_text.includes(input.text_layer_surface)) return { citation: null, refusal: "VISUAL_SURFACE_NOT_ON_STORED_LINE" };
     if (!containsOcrAmbiguousFraction(input.text_layer_surface)) return { citation: null, refusal: "VISUAL_SURFACE_NOT_AMBIGUOUS_USE_TEXT_PATH" };
   }
   const parsed = visualCitationSchema.safeParse({
@@ -142,7 +163,9 @@ export function buildVisualCitation(input: VisualCitationInput): { citation: Vis
     page: input.page,
     page_pdf_sha256: input.page_pdf_sha256,
     page_image_sha256: input.page_image_sha256,
-    region: { kind: "stored_line", line_index: input.line_index, line_text: input.line_text },
+    region: input.region.kind === "stored_line"
+      ? { kind: "stored_line", line_index: input.region.line_index, line_text: input.region.line_text }
+      : { ...input.region, kind: "page_bbox" as const, unit: "pdf_user_space" as const },
     text_layer_surface: input.text_layer_surface,
     visual_reading: input.visual_reading,
     value: resolved,

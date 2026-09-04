@@ -441,6 +441,39 @@ export const REST_DAY_OVERTIME_ADDITIVE_SPEC: RuleSpecPackage = restDayCompositi
 export const REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC: RuleSpecPackage = restDayCompositionSpec("multiplicative");
 export const REST_DAY_OVERTIME_COMPOSITION_DECISION = "legal.reference.il.decision.rest_day_overtime_composition";
 
+
+// --- L6-5 / D7: the employee's contribution, under the precedence decision -
+//
+// The pensionable wage is the cap scaled by the scenario's multiplier (as the
+// cap spec does); the contribution is that wage times the employee share.
+// Which share — the 2011 order's 1.1.2014 row (5.5%) or the 2016 order's
+// 1.1.2017 row (6%, read from the page image) — is the open decision, and the
+// report runs both. The cap is pinned to one of its own two versions so this
+// spec carries exactly one decision.
+export const PENSION_CONTRIBUTION_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.pension.employee.contribution",
+  rule_spec_version: "1.0.0",
+  topic: "pension",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0", "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016@discovery-v0.2"],
+  effective_period: { from: "2014-01-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.pensionable.wage.multiplier", value_kind: "rational", unit: "ratio" }],
+  parameters: [
+    { ref_id: "parameter.wage.cap", parameter_id: "il.pension.mandatory_wage_cap", parameter_version: "2026.1.0", value_kind: "money", unit: "currency.ils" },
+    { ref_id: "parameter.employee.share", parameter_id: "il.pension.employee_contribution_rate", parameter_version: "2017.1.0", value_kind: "rational", unit: "ratio" },
+  ],
+  nodes: [
+    { node_id: "pensionable.wage", operation: "money.scale", money_ref: "parameter.wage.cap", rational_ref: "fact.pensionable.wage.multiplier", rounding: "half_up" },
+    { node_id: "employee.contribution", operation: "money.scale", money_ref: "pensionable.wage", rational_ref: "parameter.employee.share", rounding: "half_up" },
+  ],
+  output_ref: "employee.contribution",
+  golden_case_set_sha256: blankGoldenSetSha256("pension"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
 export type SensitivitySpec = Readonly<{
   spec: RuleSpecPackage;
   bindings: readonly SensitivityBinding[];
@@ -557,5 +590,17 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     branches: [],
     composition_branch: "multiplicative",
     narrower_than_draft: "The multiplicative reading: the rest premium times the overtime premium — 187.5% and 225%, again outputs and not figures.",
+  },
+  // L6-5 / D7: the pension precedence, both branches executed.
+  {
+    spec: PENSION_CONTRIBUTION_SPEC,
+    bindings: [
+      { ref_id: "parameter.wage.cap", parameter_id: "il.pension.mandatory_wage_cap", parameter_version: "2026.1.0" },
+      { ref_id: "parameter.employee.share", parameter_id: "il.pension.employee_contribution_rate", parameter_version: null },
+    ],
+    decision_id: "legal.reference.il.decision.pension_2011_2016_precedence",
+    branches: [["order_2011_2014_row", "2014.2.0"], ["order_2016_2017_rates", "2017.1.0"]],
+    narrower_than_draft:
+      "Binds the employee share under the precedence decision and pins the wage cap to its section-1 version so the spec carries one decision; the cap's own decision runs in the cap spec. The 2017 share is a visual citation of an image-only scan (inferred_visual).",
   },
 ]);

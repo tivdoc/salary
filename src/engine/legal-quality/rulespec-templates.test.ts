@@ -8,6 +8,7 @@ import {
   OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR,
   OPEN_DECISION_PENSION_WAGE_CAP_SECTION,
   OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
+  OPEN_DECISION_PENSION_2011_2016_PRECEDENCE,
   assertRuleSpecTemplateBindable,
   buildRuleSpecTemplate,
   buildSevenRuleSpecTemplates,
@@ -109,6 +110,7 @@ describe("R-2 blank RuleSpec templates", () => {
       OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR,
       OPEN_DECISION_PENSION_WAGE_CAP_SECTION,
       OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
+      OPEN_DECISION_PENSION_2011_2016_PRECEDENCE,
     ]));
     expect(byTopic.get("minimum_wage")!.parameter_slots.find((slot) => slot.slot_id.endsWith("hourly_floor"))!.decision_id)
       .toBe(OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR);
@@ -116,6 +118,8 @@ describe("R-2 blank RuleSpec templates", () => {
       .toBe(OPEN_DECISION_PENSION_WAGE_CAP_SECTION);
     expect(byTopic.get("convalescence")!.parameter_slots.find((slot) => slot.slot_id.endsWith("daily_rate"))!.decision_id)
       .toBe(OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD);
+    expect(byTopic.get("pension")!.parameter_slots.find((slot) => slot.slot_id.endsWith("employee_contribution_rate"))!.decision_id)
+      .toBe(OPEN_DECISION_PENSION_2011_2016_PRECEDENCE);
   });
 
   it("forbids inferred provenance on every input of every template, and derived on all of them", () => {

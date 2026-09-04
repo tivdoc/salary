@@ -54,15 +54,18 @@ async function main(): Promise<void> {
   mkdirSync(RECEIPT_ROOT, { recursive: true });
   // Page 4 of the promulgation; the stored (visual-order) text-layer lines the
   // figures sit on, quoted as they stand in the normalized JSON.
-  const firstTier = await visualCitation(LAW, PAGE4,
-    "Hours of Work and Rest Law 1951 §16(א), gazette ס\"ח 76 p. 207 (page 4 of the promulgation scan): overtime pay for the first two overtime hours of a day is not less than 1¼ of the regular wage. Text layer line 38 reads the stacked fraction as 11/4; read from the page image as 1¼.",
-    4, 38, "11/4", "1¼", "בעד שתי השעות הנוספות הראשונות");
-  const secondTier = await visualCitation(LAW, PAGE4,
-    "Hours of Work and Rest Law 1951 §16(א), page 4: for every overtime hour after the first two, not less than 1½ of the regular wage. Text layer line 37 reads the stacked fraction as 11/2; read from the page image as 1½.",
-    4, 37, "11/2", "1½", "ובעד כל שעה נוספת שאחריהן");
-  const weeklyRest = await visualCitation(LAW, PAGE4,
-    "Hours of Work and Rest Law 1951 §17(א)(1), page 4: for hours worked in the weekly rest the employer pays not less than 1½ of the regular wage. Text layer line 24 reads the stacked fraction as 11/2; read from the page image as 1½.",
-    4, 24, "11/2", "1½", "ישלם לו המעביד בעד שעות אלה");
+  const firstTier = await visualCitation({
+    kind: "stored_line", source: LAW, chunk_id: PAGE4, page: 4, line_index: 38, text_layer_surface: "11/4", visual_reading: "1¼", anchor: "בעד שתי השעות הנוספות הראשונות",
+    locator: "Hours of Work and Rest Law 1951 §16(א), gazette ס\"ח 76 p. 207 (page 4 of the promulgation scan): overtime pay for the first two overtime hours of a day is not less than 1¼ of the regular wage. Text layer line 38 reads the stacked fraction as 11/4; read from the page image as 1¼.",
+  });
+  const secondTier = await visualCitation({
+    kind: "stored_line", source: LAW, chunk_id: PAGE4, page: 4, line_index: 37, text_layer_surface: "11/2", visual_reading: "1½", anchor: "ובעד כל שעה נוספת שאחריהן",
+    locator: "Hours of Work and Rest Law 1951 §16(א), page 4: for every overtime hour after the first two, not less than 1½ of the regular wage. Text layer line 37 reads the stacked fraction as 11/2; read from the page image as 1½.",
+  });
+  const weeklyRest = await visualCitation({
+    kind: "stored_line", source: LAW, chunk_id: PAGE4, page: 4, line_index: 24, text_layer_surface: "11/2", visual_reading: "1½", anchor: "ישלם לו המעביד בעד שעות אלה",
+    locator: "Hours of Work and Rest Law 1951 §17(א)(1), page 4: for hours worked in the weekly rest the employer pays not less than 1½ of the regular wage. Text layer line 24 reads the stacked fraction as 11/2; read from the page image as 1½.",
+  });
   const candidates = [
     rate("il.working_time.overtime_rate_first_tier", "5", "4", firstTier),
     rate("il.working_time.overtime_rate_second_tier", "3", "2", secondTier),
