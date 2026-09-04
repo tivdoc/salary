@@ -1081,6 +1081,69 @@ disagreement this session did not adjudicate rather than guess at.
   Cloudflare-challenge-protected — not bypassed, per standing rules.
   `blocked_external: no_official_url_found_within_search_effort`.
 
+## Wave 8 — offline synthetic shadow: S-1…S-8 (`34d4a0f`)
+
+Most of this pool turned out to already exist from an earlier wave and
+already pass — R-1's own framing ("recompute the executor's current state
+against the tracker's last recorded failures") applied to S first: run
+what exists before building anything new.
+
+- **S-1** (envelope: immutable, hashed, durable, replay reproduces) —
+  `durable-contracts.ts`'s `durableShadowRunEnvelopeSchema` self-verifies
+  its own `envelope_sha256`; `control-plane.test.ts`'s "runs seven
+  synthetic slots, compares pinned versions and replays exactly" already
+  proves the replay half. Confirmed passing, not rebuilt.
+- **S-2** (kill switch, default off, every runtime mode) —
+  `flags.ts`/`readOfflineShadowFlags` already existed and already throws
+  rather than defaults closed if any flag would be true under
+  `NODE_ENV=production`; `durable-scheduler.test.ts` already covers
+  pause/kill-switch/concurrency limits. New this unit:
+  `flags.test.ts` (13 tests) — the one thing not explicitly covered,
+  booting in every mode (test/development/production/unset) with nothing
+  set resolves all-off.
+- **S-3** (scheduler, retry, restart, no duplicate output) —
+  `durable-scheduler.test.ts`'s "survives restart and completes a fenced
+  lease", "recovers an expired crash lease and rejects the stale fencing
+  token", "supports explicit cancel and bounded failed-run retry".
+  Confirmed passing.
+- **S-4** (comparison, deterministic diff, no automatic acceptance) —
+  `comparison.test.ts`'s "reports field/topic deltas, blocked and
+  uncertainty regressions without promotion". Confirmed passing.
+- **S-5** (internal-only: no shadow output reaches any customer-facing
+  exit) — `control-plane.test.ts`'s "blocks all real inactive slots with
+  zero money, Findings and reports". Confirmed passing.
+- **S-6** (audit chain, append-only, walks valid) —
+  `durable-scheduler.test.ts`'s "detects committed-state tampering and
+  ignores uncommitted partial snapshots"; `control-plane.test.ts`'s "is
+  ordering/process stable, append-only audited and makes no network
+  calls". Confirmed passing.
+- **S-7** (observability: safe, redacted, no identifiers) —
+  `shadow-observability.test.ts`'s "emits only hashed correlations and
+  bounded synthetic/offline labels with retention deletion". Confirmed
+  passing.
+- **S-8** (product integration, protected read-only panel inside the
+  existing 11-tab `/operations` contract, negative matrix as for the
+  other panels) — genuinely new. Found the precedent: addendum 3's G-12
+  built the exact same shape for the Ground Truth queue
+  (`operations-http.ts`'s `ground-truth` branch,
+  `operations-ground-truth-http.test.ts`'s negative matrix). Added a
+  `shadow` branch the same way — `SHADOW_ROUTES` (one GET,
+  `shadow/summary`), a `shadowCapability()` duck-typed guard, the same
+  session-verify-without-CSRF handling — and
+  `operations-shadow-http.test.ts` (8 tests) mirroring G-12's own negative
+  matrix exactly: one identical 404 shape for five distinct internal
+  refusal reasons (`SURFACE_DISABLED`, `SERVICE_ABSENT`,
+  `CAPABILITY_ABSENT`, `PATH_NOT_ROUTED`, `SESSION_UNVERIFIED`), wrong
+  method refused, exactly one route declared. Same steady state as Ground
+  Truth: `readShadowSummary` has no implementation on the canonical
+  service anywhere in the non-test tree (neither does Ground Truth's own
+  `readGroundTruthQueue`), so the panel correctly 404s
+  `CAPABILITY_ABSENT` until a real backing implementation is wired —
+  routing and access control are proven now; wiring live (still zero)
+  content behind it is a separate, later step.
+
+Pool S: 8/8.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
