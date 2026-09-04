@@ -307,6 +307,22 @@ async function main(): Promise<void> {
     const crossBranch = await refusal(() => attestOnce(REVIEWERS.r1, candidateB, 1, "r1b"));
     record("cross_branch_attestation_by_same_reviewer_refused", crossBranch.startsWith("P0001"), crossBranch);
 
+    // E2-2. The plainest way to fake two independent reviewers is to be one
+    // reviewer twice on the same candidate, so that is proven refused directly
+    // rather than inferred from the cross-branch case above — which is a
+    // different rule about a different mistake. The definer counts prior
+    // attestations and rejects any whose reviewer_id is already present
+    // (GOVERNANCE_PARAMETER_REVIEWER_SEPARATION_REQUIRED).
+    const sameReviewerTwice = await refusal(() => attestOnce(REVIEWERS.r1, candidateA, 2, "r1a-again"));
+    record("same_identity_attesting_twice_refused", sameReviewerTwice.startsWith("P0001"), sameReviewerTwice);
+    // And the candidate did not move because of the refused attempt: it is
+    // still awaiting a second, distinct reviewer.
+    const afterRefusal = await transaction(factory, SYSTEM_SESSION, (context) =>
+      new PostgresParameterApprovalRepository(context, TENANT).readCurrent("parameter_approval", paramA, "1.0.0"));
+    record("refused_second_attestation_left_state_untouched",
+      afterRefusal.receipt.state === "awaiting_second_attestation" && afterRefusal.receipt.activation_allowed === false,
+      `${afterRefusal.receipt.state} activation_allowed=${afterRefusal.receipt.activation_allowed}`);
+
     const secondOnA = await attestOnce(REVIEWERS.r2, candidateA, 2, "r2a");
     record("second_distinct_reviewer_resolves_decision",
       secondOnA.state === "dual_attested_inactive" && secondOnA.activation_allowed === false, secondOnA.state);
