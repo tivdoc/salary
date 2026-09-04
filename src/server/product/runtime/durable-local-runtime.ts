@@ -1,3 +1,4 @@
+import path from "node:path";
 import "../routes/server-boundary.ts";
 
 import { ConfiguredIdentityVerificationKeyResolver } from "../../platform/auth/configured-verification-key.ts";
@@ -20,6 +21,8 @@ import { DurableCryptographicProductSessionBoundary } from "../auth/durable-sess
 import { installProductSessionBoundary } from "../auth/runtime.ts";
 import { createDurableCustomerPortalAdapter } from "../customer-portal/durable-postgres-application.ts";
 import { createDurableGovernanceOperationsRouteAdapter } from "../internal-ops/durable-governance/application.ts";
+import { LocalFileDurableShadowStateStore } from "../../engine/shadow/durable-store.ts";
+import type { ShadowSummarySource } from "../../engine/shadow/summary-projection.ts";
 import {
   createDurableInternalOpsLocalRuntimeClass,
   createDurableInternalOpsPostgresAdapter,
@@ -95,6 +98,21 @@ function runtimeGlobal(): DurableRuntimeGlobal {
  * database role, and global route state is installed only after the complete
  * durable composition has been constructed successfully.
  */
+
+/**
+ * L7-8. The offline-shadow summary source: the durable scheduler's file store
+ * at the configured root, and the last draft run's summary sidecar beside it.
+ * Null when no root is configured, and then the /operations shadow panel is
+ * CAPABILITY_ABSENT exactly as before.
+ */
+function shadowSummarySource(root: string | null): ShadowSummarySource | null {
+  if (root === null) return null;
+  return Object.freeze({
+    store: new LocalFileDurableShadowStateStore({ root, root_kind: "generated_offline_synthetic_state" }),
+    summary_path: path.join(path.dirname(root), "draft-shadow-summary-v1.json"),
+  });
+}
+
 export async function initializeDurableLocalProductRuntime(): Promise<DurableLocalProductStartupProof> {
   const runtime = runtimeGlobal();
   runtime.__tivdocDurableLocalProductInitialization ??= buildDurableLocalProductRuntime();
@@ -201,7 +219,7 @@ async function buildDurableLocalProductRuntime(): Promise<DurableLocalProductSta
           runtime_class: runtimeClass,
           synthetic_report_pipeline: syntheticReportPipeline,
         });
-        return createDurableGovernanceOperationsRouteAdapter({ context, base });
+        return createDurableGovernanceOperationsRouteAdapter({ context, base, shadow: shadowSummarySource(config.offline_shadow_state_root) });
       },
     });
     const capabilities = createStableEntrypointRuntime({

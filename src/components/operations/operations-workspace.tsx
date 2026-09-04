@@ -4,6 +4,7 @@ import { useState } from "react";
 import styles from "./operations-workspace.module.css";
 import { GroundTruthQueuePanel } from "./ground-truth-queue-panel";
 import { LegalReviewPanel } from "./legal-review-panel";
+import { ShadowSummaryPanel } from "./shadow-summary-panel";
 
 const TOPICS = ["minimum_wage", "working_time", "pension", "travel", "convalescence", "vacation", "sick_leave"] as const;
 const TOPIC_LABELS: Readonly<Record<(typeof TOPICS)[number], string>> = Object.freeze({
@@ -146,6 +147,7 @@ export function OperationsWorkspace({ csrfToken }: OperationsWorkspaceProps) {
           )}
           <LegalReviewPanel csrfToken={csrfToken} />
           <GroundTruthQueuePanel />
+          <ShadowSummaryPanel />
         </main>
       </div>
     </div>

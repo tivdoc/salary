@@ -124,12 +124,11 @@ describe("Wave 8 nested offline-shadow control-plane endpoint (S-8)", () => {
     expect(SHADOW_ROUTES.map((route) => `${route.method} ${route.path}`)).toEqual(["GET shadow/summary"]);
   });
 
-  it("today: the canonical service does not implement the capability, so the panel is not reachable in production yet", () => {
-    // Same steady state as the Ground Truth panel (readGroundTruthQueue has
-    // no implementation anywhere in the non-test tree either) — the route,
-    // session and CSRF handling are wired and proven; the panel goes live
-    // only once a real backing implementation exists, and nothing here
-    // fakes that with a stub to make the panel look wired before it is.
+  it("L7-8: the canonical service implements the capability only when a shadow state root is configured; the base double never does", () => {
+    // The route's duck-typed guard finds readShadowSummary on the canonical
+    // adapter only when the runtime configured TIVDOC_OFFLINE_SHADOW_STATE_ROOT
+    // (proven in shadow-summary-workspace.test.ts); without it the facade omits
+    // the method and this route stays CAPABILITY_ABSENT, as the matrix above shows.
     expect(baseService()).not.toHaveProperty("readShadowSummary");
   });
 });

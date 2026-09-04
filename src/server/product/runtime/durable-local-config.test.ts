@@ -91,6 +91,10 @@ describe("durable local product runtime configuration", () => {
     expect(projection.capabilities.customer_processing.state).toBe("disabled");
     expect(projection.capabilities.delivery.state).toBe("disabled");
     expect(projection.capabilities.shadow).toMatchObject({ state: "blocked", blocker_codes: ["CUSTOMER_SHADOW_NOT_AUTHORIZED"] });
+    // L7-8: the offline-shadow summary root is optional and must be absolute; the customer-shadow block above is unrelated to it.
+    expect(config.offline_shadow_state_root).toBeNull();
+    expect(readDurableLocalProductRuntimeConfig({ ...env, TIVDOC_OFFLINE_SHADOW_STATE_ROOT: "C:/ignored/shadow/state" }).offline_shadow_state_root).toBe("C:/ignored/shadow/state");
+    expect(() => readDurableLocalProductRuntimeConfig({ ...env, TIVDOC_OFFLINE_SHADOW_STATE_ROOT: "output/next/shadow/state" })).toThrow("DURABLE_LOCAL_PRODUCT_SHADOW_STATE_ROOT_INVALID");
     expect(buildDurableLocalInternalOpsFlags()).toEqual({
       TIVDOC_INTERNAL_OPS_UI_ENABLED: true,
       TIVDOC_INTERNAL_OPS_API_ENABLED: true,

@@ -507,6 +507,7 @@ function localConfig(): DurableLocalProductRuntimeConfig {
     build_identity_sha: "1".repeat(40),
     allowed_origin: "http://127.0.0.1:45124",
     allow_loopback_http: true,
+    offline_shadow_state_root: null,
     identity: Object.freeze({
       issuer: "https://identity.test.invalid",
       key_id: "key-00000001",

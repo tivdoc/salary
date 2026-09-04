@@ -49,6 +49,8 @@ export function buildRuntimeEnvironment(input: Readonly<{
   identity?: Readonly<{ key_id: string; public_key_spki_pem: string }>;
   tenant_id?: string;
   worker?: Readonly<{ actor_id: string; session_id: string; token_id: string }>;
+  /** L7-8: the offline-shadow state root the summary panel reads; absent, the panel stays 404. */
+  offline_shadow_state_root?: string;
 }>): NodeJS.ProcessEnv {
   const entries = readDevEnvFile();
   const required = (key: string): string => {
@@ -107,6 +109,7 @@ export function buildRuntimeEnvironment(input: Readonly<{
     TIVDOC_REMOTE_DEV_DATABASE: databaseUrl.pathname.replace(/^\//u, ""),
     // The provider refuses any root whose basename lacks this prefix.
     TIVDOC_PRIVATE_STORAGE_ROOT: path.resolve(RECEIPT_ROOT, "tivdoc-private-runtime-dev"),
+    ...(input.offline_shadow_state_root ? { TIVDOC_OFFLINE_SHADOW_STATE_ROOT: input.offline_shadow_state_root } : {}),
     TIVDOC_DOWNLOAD_GRANT_HMAC_KEY_BASE64URL: randomBytes(32).toString("base64url"),
     TIVDOC_WORKER_ACTOR_ID: input.worker?.actor_id ?? "worker.dev.runtime.001",
     TIVDOC_WORKER_TENANT_ID: input.tenant_id ?? "tenant.dev.runtime.001",

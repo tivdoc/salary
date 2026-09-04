@@ -22,6 +22,7 @@ import { buildLegalTopicReadiness, type LegalTopicEvidence, type LegalTopicReadi
 import type { InternalOpsApplicationPort } from "../application-port.ts";
 import type { InternalOpsCommandResult, OpsReadProjection } from "../contracts.ts";
 import { actorScopePermits } from "../policy.ts";
+import { readOfflineShadowSummary, type OfflineShadowSummary, type ShadowSummarySource } from "../../../engine/shadow/summary-projection.ts";
 import type { InternalOpsReadKind } from "../service.ts";
 import {
   DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION,
@@ -46,6 +47,16 @@ const LEGAL_REVIEW_READ_ROLES = Object.freeze([
   "legal_reviewer", "report_approver", "auditor", "break_glass_admin",
 ] as const satisfies readonly V07Role[]);
 
+/**
+ * L7-8 (S-8). Who may read the offline-shadow summary panel: the legal
+ * reviewer who owns the drafts, the parameter verifier whose drafts it ran
+ * on, and the approve/audit roles. The panel is a read of counts and hashes;
+ * there is nothing in it to claim, act on or activate.
+ */
+const SHADOW_SUMMARY_READ_ROLES = Object.freeze([
+  "parameter_verifier", "legal_reviewer", "report_approver", "auditor", "break_glass_admin",
+] as const satisfies readonly V07Role[]);
+
 /** An auditor observes; only a reviewer or approver may submit an action. */
 const LEGAL_REVIEW_ACTION_ROLES = Object.freeze([
   "legal_reviewer", "report_approver", "break_glass_admin",
@@ -64,6 +75,17 @@ const GROUND_TRUTH_QUEUE_READ_ROLES = Object.freeze([
 export type DurableGovernanceLegalReviewScope = Readonly<{
   actor: VerifiedActor;
   correlation_id: string;
+}>;
+
+export type DurableShadowSummaryProjection = Readonly<{
+  schema_version: typeof DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION;
+  persistence: "local_file_durable_shadow_state";
+  governance_workflow: "offline_shadow";
+  summary: OfflineShadowSummary;
+  content_included: false;
+  product_reachable_memory_fallback: false;
+  activation_allowed: false;
+  delivery_allowed: false;
 }>;
 
 export type DurableGroundTruthQueueProjection = Readonly<{
@@ -179,6 +201,8 @@ export interface DurableGovernanceOperationsApplication extends InternalOpsAppli
   readGroundTruthQueue(input: DurableGovernanceLegalReviewScope & Readonly<{
     limit: number;
   }>): Promise<DurableGroundTruthQueueProjection>;
+  /** L7-8: present only when the runtime configured a shadow state root (see the adapter factory). */
+  readShadowSummary?(input: DurableGovernanceLegalReviewScope): Promise<DurableShadowSummaryProjection>;
   submitLegalReviewAction(input: DurableGovernanceLegalReviewScope & Readonly<{
     packet: LegalReviewPacket;
     action: LegalReviewAction;
@@ -197,15 +221,43 @@ class PostgresDurableGovernanceOperationsApplication implements DurableGovernanc
   readonly #base: InternalOpsApplicationPort;
   readonly #context: DurableProductRouteContext;
   readonly #now: () => string;
+  readonly #shadow: ShadowSummarySource | null;
 
   constructor(input: Readonly<{
     base: InternalOpsApplicationPort;
     context: DurableProductRouteContext;
     now: () => string;
+    shadow?: ShadowSummarySource | null;
   }>) {
     this.#base = input.base;
     this.#context = input.context;
     this.#now = input.now;
+    this.#shadow = input.shadow ?? null;
+  }
+
+  /**
+   * L7-8. The offline-shadow summary: the durable scheduler's committed state
+   * (verified hash, verified audit chain) and the last draft run's counts —
+   * mode, pins, refusals by reason, grades, hashes — with no content of any
+   * kind. The read does not enter a governance transaction: the shadow state
+   * is a local file store the product never writes, and the session is
+   * verified by the route before this is reached. The role check is this
+   * panel's own.
+   */
+  async readShadowSummary(input: DurableGovernanceLegalReviewScope): Promise<DurableShadowSummaryProjection> {
+    this.#assertLegalReviewScope(input, SHADOW_SUMMARY_READ_ROLES);
+    if (this.#shadow === null) throw new Error("DURABLE_GOVERNANCE_SHADOW_SUMMARY_UNCONFIGURED");
+    const summary = await readOfflineShadowSummary(this.#shadow);
+    return Object.freeze({
+      schema_version: DURABLE_GOVERNANCE_OPERATIONS_SCHEMA_VERSION,
+      persistence: "local_file_durable_shadow_state",
+      governance_workflow: "offline_shadow",
+      summary,
+      content_included: false,
+      product_reachable_memory_fallback: false,
+      activation_allowed: false,
+      delivery_allowed: false,
+    });
   }
 
   proof(): DurableGovernanceOperationsProof {
@@ -597,6 +649,8 @@ export function createDurableGovernanceOperationsRouteAdapter(input: Readonly<{
   context: DurableProductRouteContext;
   base: DurableProductRouteServiceAdapter<InternalOpsApplicationPort>;
   now?: () => string;
+  /** L7-8: the offline-shadow state to summarise; absent, and the shadow panel stays CAPABILITY_ABSENT. */
+  shadow?: ShadowSummarySource | null;
 }>): DurableGovernanceOperationsRouteAdapter {
   if (!input.context || !input.base
       || input.base.proof_class !== "POSTGRESQL_TRANSACTIONAL_ROUTE_SERVICE"
@@ -607,11 +661,17 @@ export function createDurableGovernanceOperationsRouteAdapter(input: Readonly<{
       || typeof input.base.service?.mutate !== "function") {
     throw new Error("DURABLE_GOVERNANCE_OPERATIONS_TRANSACTION_ROOT_MISMATCH");
   }
-  const service = new PostgresDurableGovernanceOperationsApplication({
+  const application = new PostgresDurableGovernanceOperationsApplication({
     base: input.base.service,
     context: input.context,
     now: input.now ?? (() => new Date().toISOString()),
+    shadow: input.shadow ?? null,
   });
+  // The shadow panel is served only when the runtime configured a state
+  // root: without one the capability is ABSENT — the route's duck-typed guard
+  // must not find the method — rather than present and refusing. The facade
+  // binds every other method to the one application instance.
+  const service = input.shadow ? application : withoutShadowSummary(application);
   return Object.freeze({
     service,
     postgres: input.context.postgres,
@@ -619,6 +679,16 @@ export function createDurableGovernanceOperationsRouteAdapter(input: Readonly<{
     session_context: input.context.session_context,
     proof_class: "POSTGRESQL_TRANSACTIONAL_ROUTE_SERVICE" as const,
   });
+}
+
+function withoutShadowSummary(application: PostgresDurableGovernanceOperationsApplication): DurableGovernanceOperationsApplication {
+  const facade: Record<string, unknown> = {};
+  for (const name of Object.getOwnPropertyNames(PostgresDurableGovernanceOperationsApplication.prototype)) {
+    if (name === "constructor" || name === "readShadowSummary") continue;
+    const member = (application as unknown as Record<string, unknown>)[name];
+    if (typeof member === "function") facade[name] = (member as (...args: unknown[]) => unknown).bind(application);
+  }
+  return Object.freeze(facade) as unknown as DurableGovernanceOperationsApplication;
 }
 
 function validateReferences(input: readonly GovernanceAggregateReference[]): readonly GovernanceAggregateReference[] {

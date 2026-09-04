@@ -1,3 +1,4 @@
+import path from "node:path";
 import "../routes/server-boundary.ts";
 
 import { Buffer } from "node:buffer";
@@ -57,6 +58,8 @@ export type DurableLocalProductRuntimeConfig = Readonly<{
    */
   remote_dev_target: NodePostgresRemoteDevTarget | null;
   private_storage_root: string;
+  /** L7-8: the offline-shadow state root the /operations summary panel reads, or null (panel absent). */
+  offline_shadow_state_root: string | null;
   download_grant_hmac_key: Uint8Array;
   worker_identity: Readonly<{
     actor_id: string;
@@ -151,6 +154,7 @@ export function readDurableLocalProductRuntimeConfig(
     connection_urls: connectionUrls,
     remote_dev_target: remoteDevTarget,
     private_storage_root: required(environment, "TIVDOC_PRIVATE_STORAGE_ROOT", 4_096),
+    offline_shadow_state_root: optionalAbsolutePath(environment.TIVDOC_OFFLINE_SHADOW_STATE_ROOT),
     download_grant_hmac_key: Uint8Array.from(hmac),
     worker_identity: workerIdentity,
   });
@@ -368,6 +372,13 @@ function required(
       || Buffer.byteLength(value, "utf8") > maxBytes) {
     throw new Error("DURABLE_LOCAL_PRODUCT_CONFIGURATION_INCOMPLETE");
   }
+  return value;
+}
+
+/** An absolute path or nothing; a relative path is a misconfiguration, not a default. */
+function optionalAbsolutePath(value: string | undefined): string | null {
+  if (value === undefined || value === "") return null;
+  if (value.length > 4_096 || !path.isAbsolute(value)) throw new Error("DURABLE_LOCAL_PRODUCT_SHADOW_STATE_ROOT_INVALID");
   return value;
 }
 

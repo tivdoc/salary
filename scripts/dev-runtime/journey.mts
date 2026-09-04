@@ -142,6 +142,9 @@ async function main(): Promise<void> {
       session_id: fixture.worker.session_id,
       token_id: fixture.worker.token_id,
     },
+    // L7-8: the draft shadow run's state (draft-shadow-run-v1.mts writes it);
+    // the summary panel reads it and shows counts and hashes, never content.
+    offline_shadow_state_root: path.resolve("output", "next", "shadow", "state"),
   });
   const issuer = environment.TIVDOC_IDENTITY_ISSUER as string;
   const issuedAt = Math.floor(Date.now() / 1_000);
@@ -186,6 +189,17 @@ async function main(): Promise<void> {
 
     const topics = await probe(port, "/api/operations/legal-review/topics", authed);
     record("seven_topic_readiness", topics, "200", topics.status === 200);
+
+    // Step 17 (L7-8): the offline-shadow summary on the canonical service —
+    // the draft mode, its pin, zero active parameters, no content.
+    const shadow = await probe(port, "/api/operations/shadow/summary", authed);
+    const shadowBody = ((): { data?: { summary?: { latest_draft_run?: { execution_mode?: string; draft_input_pin?: { active_real_parameter_count?: number } } | null; content_included?: boolean } } } => {
+      try { return JSON.parse(shadow.body) as never; } catch { return {}; }
+    })();
+    const latest = shadowBody.data?.summary?.latest_draft_run ?? null;
+    record("shadow_summary", shadow, "200 draft mode, zero active, no content",
+      shadow.status === 200 && latest?.execution_mode === "draft_parameters_synthetic_inputs"
+      && latest.draft_input_pin?.active_real_parameter_count === 0 && shadowBody.data?.summary?.content_included === false);
 
     const actionBody = JSON.stringify({
       schema_version: "tivdoc-operations-command",
