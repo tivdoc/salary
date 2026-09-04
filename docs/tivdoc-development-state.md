@@ -2310,43 +2310,264 @@ production migrations 0, HUMAN_GROUND_TRUTH_LOCKED 0.
 | BL-23 | open, `technical_parse_failure` | the 2016 pension increase order has no text layer; the 2017 contribution split (P-21..P-23) waits on OCR or a text copy through the acquisition path |
 | BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
 
+## Long run 6 — L6-1…L6-11: there is no official consolidated Hours law — the scan is the source, and the report goes to 7/7 with provenance grades
+
+Long run 5 ended with one topic short and one acquisition blocked: the
+consolidated Hours of Work and Rest Law, refused by the host. The owner
+verified in a browser what the run had not: the official Knesset record for
+the law serves no consolidated text — its "full law" link is a community
+site — and the figures the topic needs are unambiguous in the image of the
+1951 promulgation and ambiguous only in its OCR text layer. So this run
+proves the first from the official amendment publications, builds a citation
+kind for the second that says out loud what it is, and every topic runs.
+
+**L6-1 (D3).** The official record, read in the app browser and recorded:
+eighteen amendment publications, ס"ח 551 (1969) to 2725 (2018), and a 1951
+erratum, each an official PDF on fs.knesset.gov.il; the "full law" link is
+he.wikisource.org. Nineteen manifest entries, one controlled fetch each —
+19/19 fetched, 19/19 parsed. The build command gained a `--source-id` scope
+that carries every other record forward, because a full rebuild starts from
+nothing and would have re-pointed L5's instrument selections at their whole
+artifacts. `hours-law-section-amendment-index.v1.json` is the derived
+artifact: for each publication, the Hours-law sections it references, with
+the sentence each reference sits in and the hash of the text it was read
+from; direct amendments read whole, indirect ones read in the sentence that
+names the law. Conclusion, recomputed by its test rather than copied: no
+official publication amends §16, §17 or §18 substantively; the 2014
+term-replacement law touches them by word (מעביד → מעסיק, "למעט המילה
+מעבידים בסעיפים 25(א1)(2) ו-33"). The 1951 promulgation is the authoritative
+text for the premiums, subject to a word. `ACQ-V02-HOURS-WORK-REST-OFFICIAL`
+is retired with the finding and the URL the record links; request generation
+skips an unavailable target and writes `retired.json`, so no run asks a
+person for a text that does not exist. BL-22 closes as
+`no_official_consolidated_text_exists`.
+
+**L6-2 (D1).** `legal-visual-citation-v1`: a citation kind for a figure that
+is unambiguous in the artifact's page image and ambiguous or absent in its
+text layer. It carries the artifact hash, the page, the hash of that page
+extracted as a standalone PDF (what the package ships), the hash of the
+render the reading was made from and the toolchain that made it, the region
+— the stored text-layer line and what it says, or for an image-only artifact
+a box in PDF user space — the glyph reading and the rational it resolves to
+through a short fixed vocabulary, and provenance `inferred_visual` with
+`visual_verification_required: true`. It cannot be built as documented,
+cannot drop the flag, refuses a reading outside the vocabulary, a surface not
+on the stored line, a surface the lexicon would read, a box off the page, and
+— on a Lane B question — a reading whose own digits stand whole on the line,
+so a lower grade cannot be chosen for no reason. The render is the
+artifact's own: a scanned page decodes from its CCITT stream through libvips,
+a typeset page through the operating system's PDF rasteriser, nothing
+installed. Every citation now carries a provenance grade (text_verified,
+lexicon, selection, inferred_visual, administrative); a candidate's grade is
+the worst of its citations', recorded with the visual bindings an attestation
+must confirm; both optional in the contract and in the hash only below text
+grade, so every earlier candidate keeps its hash. Migration 030 replaces
+`governance_parameter_attestation_append` with one more refusal beside the
+binding checks: an inferred_visual candidate is attested only with
+`visual_confirmed = true` and the identical bindings, and a candidate with no
+visual reading refuses a confirmation of nothing — proven on the
+parameter-decision matrix, 21/21 with four new cases.
+
+**L6-3 (D1).** Batch 11 registers the 1951 premiums as visual citations of
+page 4: §16(א) 1¼ for the first two overtime hours and 1½ after them,
+§17(א)(1) 1½ for hours in the weekly rest — each on the stored line whose
+text layer reads 11/4 or 11/2, read from a 300-dpi render of the scan
+stream and checked by eye. The template gains the second tier and the rest
+premium as slots; every slot of every draft binds, and `UNBOUND_REASONS` is
+empty. The working_time spec is tiered.rate over a day's overtime hours on
+the regular hourly wage. working_time runs.
+
+**L6-4 (D2).** P-13 and P-14 are retired as corpus parameters — 175% and
+200% are not figures in the law — and re-recorded as the open decision
+`rest_day_overtime_composition` (batch 12). Two specs, one decision:
+additive derives 1¾ and 2 from the three parameters by subtract and add,
+multiplicative derives 1⅞ and 2¼ by multiply; a test asserts no constant but
+1 is authored and that 175, 200 and their fractions appear nowhere. A
+sensitivity entry may carry a `composition_branch`; the report compares the
+two computations per scenario under the one decision.
+
+**L6-5 (D1, D7).** The 2016 pension increase order is an image-only scan;
+its page 2 §3 states the shares plainly: employee 6% and employer 6.5% from
+1.1.2017, severance not less than 6%. Batch 13 registers them as page_bbox
+visual citations — no stored line, no anchor, `anchor_absent: no_text_layer`
+said out loud. The 2011 order's 1.1.2014 row and the 2016 order's 2017 row
+are the two branches of `pension_2011_2016_precedence`: the 2014 rows
+re-register as 2014.2.0 with batch 8's own citations on the 2011 branch and
+2014.1.0 is superseded naming them; a pension contribution spec runs both.
+
+**L6-6 (D4).** P-29: the table-aware chunker keeps the 1988 order's page 3
+whole, and its text carries §4(א) with all six bands, interleaved line by
+line with an unrelated appointment notice. Batch 14 registers them
+text-verified (1 → 5, 2–3 → 6, 4–10 → 7, 11–15 → 8, 16–19 → 9, 20+ → 10
+days), with the OCR's own garbles quoted where they fall; a band.lookup
+spec runs them and refuses year 0 at the table's edge. P-15/P-16: absent
+from the 42-hour order in every form and both letter orders, not a
+container; the Labour Ministry directive of 10.6.2018 was not discoverable
+on gov.il in three site searches — registered as an administrative-grade
+target with no artifact URL, one owner handoff, zero fetches; still blocked.
+
+**L6-7 (D1).** P-31: the 2025 law's threshold, 6,150 new shekels, is on
+artifact page 19; the text layer carries it as the kerned fragments "6 ,15 0".
+Batch 15 registers it as a visual citation of the typeset page, rendered by
+the operating system's rasteriser from the extracted page bytes; pages are
+looked up by their own number, because the artifact is a gazette slice. It
+pairs with the 2024 threshold in the convalescence template and drafts, one
+slot per year, so the two grades sit side by side.
+
+**L6-8 (D5).** Report v5: 96 scenarios attempted, 80 run, 16 refused by
+name, 80 traces appended and 80 replayed; seven topics of seven; every bound
+parameter carries its grade and every execution the worst of them — 19
+text_verified, 2 lexicon, 2 selection, 4 inferred_visual among the 27 bound
+versions. The Hebrew rendering shows the grade under every decision and in a
+table of its own, with one sentence saying what inferred_visual means.
+Package v10, 26 files, built twice to one hash, floor seven against a
+previous package at six, with the three cited pages under `visual-pages/`,
+each member's hash the very page hash the candidates' bindings name, and an
+index mapping every reading to its page.
+
+**L6-9 (D6).** The P line, reconciled once:
+`output/next/pool-p/l6-9-p-reconciliation.json`. Targets: 33 of 37
+registered, 2 blocked (P-15/P-16, administrative source not discoverable),
+2 retired as a decision (P-13/P-14). Versions: 58 registered, 7 superseded
+(3 by citation move, 1 by scope, 3 by decision linkage), 51 draft; 16
+registered this run. Long run 4's "9 blocked" is retracted: it counted
+ledger rows; 17 targets were blocked at its end, as the L5-9 enumeration
+showed. No denominator moved.
+
+**L6-10.** The blocked ledger, below. **L6-11.** This section, the freeze,
+tracker delta v41.
+
+### What the matrix caught at this head
+
+- The section amendment index first read the direct amendments as
+  amending nothing: its block opener took "שעות עבודה ומנוחה" for another
+  law's name. Read on the law's name without the word חוק, all twelve direct
+  amendments name their sections.
+- pdf-lib's page lookup threw on a page with no XObjects instead of saying
+  "no scan stream"; it says so now, and the typeset fallback engages.
+- The package first resolved the Hours-law artifact through the source's
+  earliest observation — the challenge page. It resolves through the build
+  record's hash now, and checks the artifact's bytes against it.
+- Report v5's first provenance summary attached every visual binding in an
+  execution to every visual parameter in it; bindings are per parameter now.
+- The governance-writer inventory, the tenant guard, the supersession pin
+  and the count canaries each moved once, as they are meant to.
+
+### Lane B, this run
+
+Fifteen read-only Haiku agents, four in flight from the first minutes and
+refilled as they returned. Findings applied: three on the visual kind (the
+anchor chunk must be on the cited page; the render toolchain is recorded;
+visual bindings travel with any candidate that has a visual citation), one
+on the typeset path (a visual reading of a figure that stands whole in the
+text is refused). Reviews of the amendment index, the composition specs,
+batches 13 and 14, the D5 grade path and the L6 diff against the
+not-authorised list returned no findings; the typeset review confirmed the
+OS render deterministic across runs.
+
+## Freeze — long run 6, the complete matrix
+
+### Local
+
+vitest **285/285 files, 2011 passed, 3 skipped, 0 failed** (a second full run at the final head; the first caught the writer inventory, fixed and committed). tsc clean. eslint **0 errors, 0 warnings**. `next build` compiled successfully.
+
+### DEV, as the runtime roles
+
+Chain 53/53 applied, tail `202609020030_parameter_attestation_visual_confirmation.sql`
+— this run added one migration (foundation 53/53/54, replay tail pinned).
+Grant execution **22 executed, 0 denied, 18 context failures** (as long runs 4
+and 5). Identity negative matrix **8/8**. Definer surface **108**, ungated 2
+(the known bootstrap pair), unexpected 0, reserved-execute 14, failures 0;
+154 definitions pinned. Invalidation effects **10/10**. Dynamic matrix **14
+checks, 10 supported, 10 passed**. RLS force **65/65**, unforced 0. Journey
+**16/16**.
+
+Governance proofs, all by execution: A7-1 guards **6/6**; P-0 / E2-2
+parameter-decision matrix **21/21** (four visual-confirmation cases among
+them); A7-3 withdrawal passed; Q draft-binding **8/8** with every slot bound;
+R-14 trace replay passed; E3-2/E3-3 supersession and synthetic passed at
+**six** legal decisions; E3-4 revocation passed; L4-5 registration ran and
+refused to run itself; L4-7 session recovery **8/8**; E2-10 hygiene passed;
+L5-1 lexicon **9/9**; A7-2 invalidation passed.
+
+Citation anchors: **52 declared, 26 chunks, 46 verified, 0 failed, 6
+impossible** — the six being the superseded rows. Section amendment index:
+**19 publications parsed, §16/§17/§18 substantive 0, terminological 1**.
+Sensitivity run v5: **96 attempted, 80 run, 16 refused, 80 traces, 80
+replayed**; grades over 27 bound versions: 19 text_verified, 2 lexicon, 2
+selection, 4 inferred_visual.
+
+Report v5 `d713ba18d75769fb5a7d6f39ea65f7719712634c7e95f3d3a7b453575dfa533f`.
+Hebrew rendering `49b91e67c3ce9b1a5b7050ba1d5a47eda1e8b9b5b5cab85c3436d0c7d246fe7f`,
+PDF `987fe9d2965f84f2a6bfb621fdbccfb6f09158adcd75b82121c09e0e104f3e93`.
+Package v10 `a30a856b6d31f8b802da1717c832c707744b2eeeca8b768b5fb9721ddd9e8c6c`,
+26 files, built twice to one hash, topics_run 7 against a floor of 7 and a
+previous package at 6; cited pages
+`6b41df8306ce4c60…` (1951 promulgation p. 4),
+`bfba6c9e3b55508a…` (2016 pension order p. 2),
+`adc28e10b2d5aad5…` (2025 law p. 19).
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, visual confirmations 0, customer rows 0, openai calls 0,
+deployments 0, remote production migrations 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-22 | closed, `no_official_consolidated_text_exists` | proven from the official amendment publications: no official consolidated text exists; §16–§18 are unamended substantively; the 1951 promulgation is the authoritative text and its premiums are bound as visual citations awaiting confirmation |
+| BL-23 | closed by D1 | the 2016 pension order's 2017 shares are read from the page image (page_bbox visual citations); the 2011/2016 precedence is an executable decision with both branches |
+| BL-24 | open, `acquisition_blocked: administrative_source_not_discoverable_on_official_site` | P-15/P-16, the 8.6 / 8 daily hours: absent from the 42-hour order; the Labour Ministry directive of 10.6.2018 not discoverable on gov.il; administrative-grade target `ACQ-V06-LABOUR-DIRECTIVE-DAILY-HOURS-2018`, owner handoff, zero fetches. An hours threshold bound to it would be an open decision for the reviewer, graded administrative |
+| BL-25 | open, `visual_verification_required` | seven parameter versions read from page images await a person's visual confirmation against the page the package carries; the database refuses their attestation without it. Not an engineering gate |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
 ## Resume point
 
-Refreshed at long run 5. Everything before this point is history; this section
+Refreshed at long run 6. Everything before this point is history; this section
 is the only part a resuming session must read to know where things stand.
 
-**Where the work is.** Pools H, D, S, R, E2, E3, L4 and L5 are closed. Pool P has
-42 registered draft parameter versions (4 superseded: 3 by citation move, 1 by
-scope) and 11 targets that stay blocked, each on a named corpus defect. Pool Q
-has seven drafts, one slot unbound. Three draft instrument selections are
-registered. The sensitivity report runs six topics of seven and says why the
-seventh does not.
+**Where the work is.** Pools H, D, S, R, E2, E3, L4, L5 and L6 are closed.
+Pool P: 33 of 37 targets registered, 2 blocked on an administrative source, 2
+retired as a decision; 58 draft versions, 7 superseded, 51 draft, 7 of them
+inferred_visual. Pool Q: seven drafts, every slot bound. Six legal decisions
+open, two withdrawn. The sensitivity report runs seven topics of seven and
+grades every parameter it binds.
 
-**What a lawyer could be handed today.** Review package v9 — dossier, Hebrew
-runbook, sensitivity report v4 with v3, v2 and v1 beside it, a Hebrew rendering
-of v4 in Markdown and PDF, both hash-bound to that exact report, four legal
-decisions (three open, one withdrawn with its correction), the draft parameters
-with their binding hashes, the scenario fixtures, 60 executions and 50 replayed
-traces, the one topic that did not run with its reason, and the citation
+**What a lawyer could be handed today.** Review package v10 — dossier, Hebrew
+runbook, sensitivity report v5 with v4, v3, v2 and v1 beside it, a Hebrew
+rendering of v5 in Markdown and PDF that shows the provenance grade of every
+parameter and explains inferred_visual in one sentence, the three cited pages
+extracted from the stored artifacts with an index from each reading to its
+page, the legal decisions, the draft parameters with their binding hashes, the
+scenario fixtures, 96 executions and 80 replayed traces, and the citation
 anchors.
 
 **The one gate that moves 0/7.** The owner runs `owner-reviewer-identity.mts
 keygen` if they have not, then `register --reviewer-id <their.id>` at a
 keyboard, in an interactive shell, with `TIVDOC_UNATTENDED` unset. Then a labour
-lawyer reads `docs/legal/sensitivity-report.he.md` and attests as the second,
-independent identity. Nothing engineering-side blocks this gate.
+lawyer reads `docs/legal/sensitivity-report.he.md`, confirms the seven visual
+readings against the pages in the package (`visual_confirmed: true` in the
+attestation, or the database refuses), and attests as the second, independent
+identity. Nothing engineering-side blocks this gate.
 
 **Next engineering work, in order — none of it a human gate:**
 
-1. BL-22: the consolidated Hours law. The owner's browser session places the
-   text in `eval/legal-knowledge/acquisition/incoming/` under the regenerated
-   request and runs `legal:sources:acquisition:import`; then §16(א) binds
-   through the lexicon (the surface forms are already in it) and working_time
-   runs. No further fetch is authorised by this run.
-2. BL-23: an OCR pass with a pinned toolchain over the 2016 pension order, or a
-   text copy through the same path; then the 2017 split registers and the
-   2011/2016 precedence becomes an executable decision.
-3. The reviewer attests the three instrument selections (the boundary) before
-   the parameters inside them — the citation carries the selection hash for
-   exactly this order.
-4. The pre-existing corpus-trust generator failure, out of scope here.
+1. BL-24: if the owner's browser session finds the 10.6.2018 directive, it
+   goes through `legal:sources:acquisition:import` under the registered target
+   and binds at administrative grade as an open decision; otherwise P-15/P-16
+   stay blocked and say so.
+2. The interim 1.7.2016 pension shares (5.75% / 6.25%) are readable on the
+   same page as the 2017 ones and are recorded, not registered; a version each
+   if a period question ever needs them.
+3. The precedence slots — 1988 order versus 1998 agreement for the
+   convalescence bands, 2011 versus 2016 for the pension shares — are the
+   drafts' unbound precedence slots and the open decisions; nothing engineering
+   answers them.
+4. The pre-existing corpus-trust generator failure and the stale isolated
+   replay database, unchanged and out of scope.
