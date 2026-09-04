@@ -60,7 +60,7 @@ const BOOTSTRAP_SITES = Object.freeze([
  * without revoking its default PUBLIC grant, exactly as 018 had, fixed forward
  * in 025.
  */
-const EXPECTED_TOTAL = 104;
+const EXPECTED_TOTAL = 108;
 
 // Definer functions a Supabase reserved role may still execute, each because
 // something real reaches it that way.

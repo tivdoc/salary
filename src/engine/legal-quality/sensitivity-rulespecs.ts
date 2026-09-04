@@ -278,6 +278,51 @@ export const SICK_PAY_DAILY_RATE_SPEC: RuleSpecPackage = createRuleSpecPackage({
   resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
 });
 
+/**
+ * L5-5 (D4). Convalescence pay for a number of convalescence days at the day
+ * rate the extension order states. The rate is a money parameter cited into an
+ * INSTRUMENT SELECTION — the 2026 gazette issue carries several instruments,
+ * and the convalescence order is selected by its own title line — so the
+ * citation carries the selection's hash and attesting the parameter attests
+ * the boundary.
+ *
+ * The open decision here is the PERIOD, not the figure: the order states the
+ * rate "for the convalescence year 2026" and is signed in July, and which
+ * twelve months that names is a question the text leaves open. The two
+ * branches carry the same figure with different effective periods, so a
+ * sensitivity run reports no difference in the amount — which is the honest
+ * shape of a decision about when, not how much.
+ */
+export const CONVALESCENCE_DAILY_RATE_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.convalescence.daily.rate.entitlement",
+  rule_spec_version: "1.0.0",
+  topic: "convalescence",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2"],
+  effective_period: { from: "2026-01-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.convalescence.days.multiplier", value_kind: "rational", unit: "ratio" }],
+  parameters: [{
+    ref_id: "parameter.daily.rate",
+    parameter_id: "il.convalescence.daily.rate",
+    parameter_version: "2026.1.0",
+    value_kind: "money",
+    unit: "currency.ils",
+  }],
+  nodes: [{
+    node_id: "convalescence.pay",
+    operation: "money.scale",
+    money_ref: "parameter.daily.rate",
+    rational_ref: "fact.convalescence.days.multiplier",
+    rounding: "half_up",
+  }],
+  output_ref: "convalescence.pay",
+  golden_case_set_sha256: blankGoldenSetSha256("convalescence"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
 /** One governance parameter bound into one spec ref. */
 export type SensitivityBinding = Readonly<{
   ref_id: string;
@@ -352,5 +397,13 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     branches: [],
     narrower_than_draft:
       "The rate on day n of an absence at the 5-day-week daily minimum wage, §2(א) with §5(א). Half from the second and third day is a word in the text and binds through the lexicon (מחצית). Full from the fourth is the identity — §2(א)(1) says 'payment under this law' and §5(א) defines that payment as the wage — and is the constant 1, not a cited figure. Day one is stated by omission, has no exclusion clause to bind a zero from, and refuses.",
+  },
+  {
+    spec: CONVALESCENCE_DAILY_RATE_SPEC,
+    bindings: [{ ref_id: "parameter.daily.rate", parameter_id: "il.convalescence.daily_rate", parameter_version: null }],
+    decision_id: "legal.reference.il.decision.convalescence_2026_rate_period",
+    branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"]],
+    narrower_than_draft:
+      "The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and both branches carry the same figure, so no scenario separates them in amount. The full draft also needs the seniority-band day counts, which are not in the corpus.",
   },
 ]);

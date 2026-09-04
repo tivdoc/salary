@@ -36,6 +36,7 @@ const REGISTRY: Readonly<Record<string, Dimension>> = Object.freeze({
   days_per_month: { numerator: ["day"], denominator: ["month"] },
   hours_per_week: { numerator: ["hour"], denominator: ["week"] },
   hours_per_month: { numerator: ["hour"], denominator: ["month"] },
+  hours_per_day: { numerator: ["hour"], denominator: ["day"] },
   calendar_days_per_year: { numerator: ["calendar_day"], denominator: ["year"] },
 });
 

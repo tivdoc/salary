@@ -33,6 +33,9 @@ export type ElevenDimensionInput = Readonly<{
   citations: readonly Readonly<{
     source_id: string; source_version: string; chunk_id: string; locator: string;
     numeral?: Readonly<{ lexicon_version: string; surface: string; numeral_form: string; numerator: string; denominator: string }>;
+    // L5-5 / D4: a citation into a selected span carries the selection's hash,
+    // so attesting the parameter attests the boundary.
+    selection?: Readonly<{ selection_id: string; selection_sha256: string }>;
   }>[]; // dim 4
   dossierSha256: string; // dim 10
   value: unknown; unit: string; // dims 5, 6

@@ -258,6 +258,10 @@ export function chunkLegalPagesTableAware(
   artifactSha256: string,
   pages: readonly Readonly<{ page: number | null; text: string }>[],
   lineage: Readonly<{ normalizedTextSha256?: string; parserVersion?: string }> = {},
+  // L5-5: a selected span is chunked with the same chunker under its own id
+  // marker (`#s0001-…`), so a chunk of a selection can never be mistaken for a
+  // chunk of the whole artifact.
+  idMarker: "t" | "s" = "t",
 ): LegalChunk[] {
   const chunks: LegalChunk[] = [];
   const normalizedTextSha256 = lineage.normalizedTextSha256 ?? normalizedDocumentHash(pages);
@@ -282,7 +286,7 @@ export function chunkLegalPagesTableAware(
       const textHash = hash(text);
       sequence += 1;
       chunks.push({
-        chunk_id: `${source.source_id}@${source.source_version}#t${String(sequence).padStart(4, "0")}-${textHash.slice(0, 12)}`,
+        chunk_id: `${source.source_id}@${source.source_version}#${idMarker}${String(sequence).padStart(4, "0")}-${textHash.slice(0, 12)}`,
         source_id: source.source_id,
         source_version: source.source_version,
         source_version_id: legalSourceVersionId(source),

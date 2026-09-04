@@ -102,6 +102,27 @@ export const POOL_P_CITATION_ANCHORS: readonly ChunkAnchor[] = Object.freeze([
     chunk_id: "IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0#t0007-b1a272cd922a",
     anchor: "ישולמו מדי חודש בחודשו בהתאם לטבלה הזו",
   },
+  // L5-4: the sick-pay tier clause, whose figure is a word. The anchor is the
+  // clause as a person reads it; the scan glues its words, and the anchor
+  // check strips whitespace on both sides, which is why it still matches.
+  {
+    chunk_id: "IL_SICK_PAY_LAW@discovery-v0#t0001-b0208d864901",
+    anchor: "בעד הימים השני והשלישי",
+  },
+  // L5-5 / L5-6 / L5-7: chunks of instrument SELECTIONS, `#s` ids. Each anchor
+  // is the selected instrument's own clause, in the same chunk as the figure.
+  {
+    chunk_id: "IL_CONVALESCENCE_EXTENSION_ORDER_2023@discovery-v0.2#s0001-441d64217a93",
+    anchor: "גובה השתתפות המעסיק בהוצאות ההבראה",
+  },
+  {
+    chunk_id: "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2#s0001-3242816cc02a",
+    anchor: "גובה השתתפות המעסיק בהוצאות ההבראה",
+  },
+  {
+    chunk_id: "IL_GENERAL_OVERTIME_PERMIT_2018@discovery-v0.1#s0001-d88c8300ebf8",
+    anchor: "אורך שבוע עבודה לא יעלה על",
+  },
   {
     chunk_id: "IL_ANNUAL_VACATION_LAW@discovery-v0#t0001-838721e06653",
     anchor: "אורך החופשה לכל שנת-עבודה אצל מעביד אחד או במקום-עבודה אחד",

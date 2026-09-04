@@ -136,6 +136,32 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   { parameter_id: "il.vacation.calendar_days_interim_2016", versions: ["2016.1.0"] },
   { parameter_id: "il.sick_pay.accrual_days_per_month", versions: ["1.0.0"] },
   { parameter_id: "il.sick_pay.accrual_cap_days", versions: ["1.0.0"] },
+  // L4-1 (batch 8): the unamended vacation bands and the 2011 pension order's
+  // last row, read from the table-aware chunks with the column reading proven
+  // by the sum. The 2014 contribution rates are the last row THAT instrument
+  // states; whether a later instrument governs is the open precedence
+  // question registered in L5-6, and binding them here binds a draft, not an
+  // answer.
+  { parameter_id: "il.vacation.calendar_days_year_6", versions: ["1951.1.0"] },
+  { parameter_id: "il.vacation.calendar_days_year_7", versions: ["1951.1.0"] },
+  { parameter_id: "il.vacation.calendar_days_years_8_and_above_cap", versions: ["1951.1.0"] },
+  { parameter_id: "il.pension.employer_contribution_rate", versions: ["2014.1.0"] },
+  { parameter_id: "il.pension.employee_contribution_rate", versions: ["2014.1.0"] },
+  { parameter_id: "il.pension.severance_contribution_rate", versions: ["2014.1.0"] },
+  // L5-4 (batch 9): figures the law states as words, bound through the lexicon.
+  { parameter_id: "il.sick_pay.rate_days_2_to_3", versions: ["1.0.0"] },
+  { parameter_id: "il.vacation.calendar_days_increment_per_year_from_year_8", versions: ["1951.1.0"] },
+  // L5-5..L5-7 (batch 10): figures inside instrument selections. The 2026
+  // convalescence rate carries a period decision; the figure is the same on
+  // both branches.
+  {
+    parameter_id: "il.convalescence.daily_rate", versions: ["2023.1.0", "2026.1.0", "2026.2.0"],
+    decision_id: "legal.reference.il.decision.convalescence_2026_rate_period",
+    branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"]],
+  },
+  { parameter_id: "il.working_time.daily_hours_cap_including_overtime", versions: ["2018.1.0"] },
+  { parameter_id: "il.working_time.weekly_overtime_hours_cap", versions: ["2018.1.0"] },
+  { parameter_id: "il.working_time.weekly_hours_cap_including_overtime", versions: ["2018.1.0"] },
 ]);
 
 // Parameters that exist as draft rows but must never be bound, because
@@ -152,11 +178,7 @@ export const SUPERSEDED_BY_SCOPE: Readonly<Record<string, string>> = Object.free
 // here is a slot nobody has thought about, so building a draft for it fails.
 const UNBOUND_REASONS: Readonly<Record<string, string>> = Object.freeze({
   "il.working_time.overtime_rate_first_tier":
-    "Pool P P-11..P-14 blocked_dependency: the overtime rates need the Hours of Work and Rest Law's current consolidated text, and the fetched IL_HOURS_WORK_REST_LAW artifact is an HTML challenge page, quarantined not parsed.",
-  "il.pension.employee_contribution_rate":
-    "Pool P P-21..P-23 blocked_dependency: the 6/6.5/6 split needs D-9's consolidated 2011 pension extension order; the 2016 increase order is a scanned PDF with no text layer and the pinned OCR toolchain has no installed binaries in this environment.",
-  "il.convalescence.daily_rate":
-    "Pool P P-26..P-28 blocked_dependency: the registered IL_CONVALESCENCE_EXTENSION_ORDER_2026 artifact is quarantined as invalid_content: title_mismatch, so no daily rate may be bound to it.",
+    "Pool P P-11..P-14, restated at L5-8: the only corpus text of the Hours of Work and Rest Law is the 1951 gazette scan, whose OCR renders 1¼ and 1½ as 11/4 and 11/2 — ambiguous, refused by name by legal-numeral-lexicon-v1, never read. The consolidated text is requested through the controlled acquisition path; until it lands, the first-tier rate has no citable figure.",
 });
 
 function bindingFor(parameterId: string) {

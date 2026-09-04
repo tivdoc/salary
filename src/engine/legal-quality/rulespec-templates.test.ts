@@ -7,6 +7,7 @@ import { buildSevenRuleSpecAuthoringSkeletons } from "./rulespec-authoring.ts";
 import {
   OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR,
   OPEN_DECISION_PENSION_WAGE_CAP_SECTION,
+  OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
   assertRuleSpecTemplateBindable,
   buildRuleSpecTemplate,
   buildSevenRuleSpecTemplates,
@@ -107,11 +108,14 @@ describe("R-2 blank RuleSpec templates", () => {
     expect(new Set(decisions)).toEqual(new Set([
       OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR,
       OPEN_DECISION_PENSION_WAGE_CAP_SECTION,
+      OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
     ]));
     expect(byTopic.get("minimum_wage")!.parameter_slots.find((slot) => slot.slot_id.endsWith("hourly_floor"))!.decision_id)
       .toBe(OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR);
     expect(byTopic.get("pension")!.parameter_slots.find((slot) => slot.slot_id.endsWith("mandatory_wage_cap"))!.decision_id)
       .toBe(OPEN_DECISION_PENSION_WAGE_CAP_SECTION);
+    expect(byTopic.get("convalescence")!.parameter_slots.find((slot) => slot.slot_id.endsWith("daily_rate"))!.decision_id)
+      .toBe(OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD);
   });
 
   it("forbids inferred provenance on every input of every template, and derived on all of them", () => {

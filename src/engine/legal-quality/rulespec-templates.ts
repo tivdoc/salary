@@ -118,6 +118,10 @@ type OutputSeed = Readonly<{ name: string; unit: RuleSpecTemplate["outputs"][num
 // the test below proves this list is exactly what the P-pool registered.
 export const OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR = "legal.reference.il.decision.min_wage_hourly_divisor";
 export const OPEN_DECISION_PENSION_WAGE_CAP_SECTION = "legal.reference.il.decision.pension_wage_cap_section";
+// L5-6: which twelve months the 2026 convalescence day rate covers. The order
+// says "for the convalescence year 2026" and is signed on 27 July 2026; the
+// figure is the same on both branches, the period is not.
+export const OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD = "legal.reference.il.decision.convalescence_2026_rate_period";
 
 const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>> = Object.freeze({
   minimum_wage: [
@@ -136,7 +140,7 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
     { name: "daily_cap", parameter_id: "il.travel.daily_reimbursement_cap", unit: "currency.ils" },
   ],
   convalescence: [
-    { name: "daily_rate", parameter_id: "il.convalescence.daily_rate", unit: "currency.ils" },
+    { name: "daily_rate", parameter_id: "il.convalescence.daily_rate", unit: "currency.ils", decision_id: OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD },
     // The registered id is year-qualified because the 2024 freeze law set its
     // own threshold for its own window. Naming the real id rather than a
     // tidier invented one is what lets a draft actually bind this slot.

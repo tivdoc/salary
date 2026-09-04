@@ -27,7 +27,8 @@ function loadV1Chunks(): Map<string, string> {
         // L4-1: the table-aware set ships its own logical text, decided once per
         // document by the same rule, so it is taken as given rather than
         // re-derived here.
-        if (file.endsWith(".t1.chunks.json")) {
+        // L5-5: chunks of an instrument selection carry their own logical text too.
+        if (file.endsWith(".t1.chunks.json") || file.endsWith(".s1.chunks.json")) {
           const tableAware = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as { chunks: Array<{ chunk_id: string; logical_text: string }> };
           for (const chunk of tableAware.chunks) byId.set(chunk.chunk_id, chunk.logical_text);
           continue;

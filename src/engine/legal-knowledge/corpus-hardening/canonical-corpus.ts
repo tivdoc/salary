@@ -4,6 +4,16 @@ import type { LegalChunk, LegalSource } from "../contracts.ts";
 export const CANONICAL_CORPUS_CONTRACT_VERSION = "canonical-corpus-boundary-v0.4.1" as const;
 
 const CONVALESCENCE_2025_ID = "IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2025";
+/**
+ * L5-5 / D4. A container source with a registered instrument selection is no
+ * longer "pending human review": its boundary is a draft, hashed, supersedable
+ * artifact, and the selected span is chunked and citable under `#s` ids. This
+ * module's retrieval selection is unchanged — the whole-artifact chunks stay
+ * hidden — because a selection is attested together with the parameter that
+ * rests on it, not on its own.
+ */
+export const INSTRUMENT_SELECTION_DRAFT = "instrument_selection_draft" as const;
+
 const containerSources = new Set([
   CONVALESCENCE_2025_ID,
   "IL_CONVALESCENCE_EXTENSION_ORDER_2023",

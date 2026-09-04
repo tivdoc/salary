@@ -160,7 +160,12 @@ type SourceRef = Readonly<{ source_id: string; source_version: string }>;
  * rational it resolved to. Absent on every other citation.
  */
 type NumeralCitation = Readonly<{ lexicon_version: string; surface: string; numeral_form: string; numerator: string; denominator: string }>;
-type Citation = Readonly<{ source: SourceRef; chunk_id: string; locator: string; must_contain: readonly string[]; numeral?: NumeralCitation }>;
+/**
+ * L5-5 / D4. A citation into a selected span carries the selection's hash, and
+ * the binding hash carries it on: attesting the parameter attests the boundary.
+ */
+type SelectionCitation = Readonly<{ selection_id: string; selection_sha256: string }>;
+type Citation = Readonly<{ source: SourceRef; chunk_id: string; locator: string; must_contain: readonly string[]; numeral?: NumeralCitation; selection?: SelectionCitation }>;
 
 function citation(source: SourceRef, chunkId: string, locator: string, mustContain: readonly string[]): Citation {
   assertNotQuarantined(source.source_id, source.source_version);
@@ -248,6 +253,75 @@ export function lexiconCitation(
   return frozen({ source, chunk_id: chunkId, locator, must_contain: [outcome.binding.surface], numeral });
 }
 
+/**
+ * L5-5 / D4. A citation into an instrument SELECTION. The `#s` chunk resolves in
+ * the `.s1.chunks.json` the build ledger now points at for that source; the
+ * needles are checked against the logical text; the anchor is mandatory, as for
+ * every table-aware citation; and the selection's hash is recorded on the
+ * citation and carried into the binding hash.
+ *
+ * `assertNotQuarantined` is deliberately NOT called here. The title-mismatch
+ * quarantine says "this artifact is a gazette issue, not the instrument", and
+ * the selection is precisely the answer to that — it names the instrument by
+ * its own title line and hashes the span. A citation that resolves through a
+ * registered selection has resolved the mismatch; one that does not, still
+ * refuses through `citation()`.
+ */
+/** Every occurrence of `needle` in `text` that is not glued to a digit on either side. */
+export function standsAsFigure(text: string, needle: string): boolean {
+  let from = 0;
+  for (;;) {
+    const at = text.indexOf(needle, from);
+    if (at < 0) return false;
+    const before = at === 0 ? "" : text[at - 1];
+    const after = text[at + needle.length] ?? "";
+    if (!/[0-9]/u.test(before) && !/[0-9]/u.test(after)) return true;
+    from = at + 1;
+  }
+}
+
+export function selectionCitation(
+  source: SourceRef,
+  chunkId: string,
+  locator: string,
+  mustContain: readonly string[],
+  anchor: string,
+): Citation {
+  if (!chunkId.includes("#s")) throw new Error(`POOL_P_SELECTION_CHUNK_ID_EXPECTED:${chunkId}`);
+  const record = buildState.records.find((entry) => entry.source_id === source.source_id && entry.source_version === source.source_version) as
+    (Record<string, unknown> & {
+      artifact_sha256?: string; chunks_path?: string | null;
+      instrument_selection?: { selection_id: string; selection_sha256: string; page_from: number; page_to: number };
+    }) | undefined;
+  if (!record?.chunks_path || !record.instrument_selection) throw new Error(`POOL_P_SELECTION_NOT_REGISTERED:${source.source_id}@${source.source_version}`);
+  // L5 Lane B: the sidecar is trusted only as far as the ledger vouches for it —
+  // it must be the file named for this artifact, carry the ledger's selection
+  // hash and page span, and the chunk must lie inside that span.
+  if (!path.basename(record.chunks_path).startsWith(`${record.artifact_sha256 ?? ""}.`)) throw new Error(`POOL_P_SELECTION_SIDECAR_NOT_FOR_ARTIFACT:${source.source_id}`);
+  const doc = JSON.parse(readFileSync(path.resolve(record.chunks_path), "utf8")) as {
+    selection_id: string; selection_sha256: string; page_from: number; page_to: number;
+    chunks: Array<{ chunk_id: string; logical_text: string; selection_sha256: string; page_from: number; page_to: number }>;
+  };
+  const ledger = record.instrument_selection;
+  if (doc.selection_sha256 !== ledger.selection_sha256 || doc.selection_id !== ledger.selection_id) throw new Error(`POOL_P_SELECTION_LEDGER_MISMATCH:${source.source_id}`);
+  if (doc.page_from !== ledger.page_from || doc.page_to !== ledger.page_to) throw new Error(`POOL_P_SELECTION_SPAN_MISMATCH:${source.source_id}`);
+  const chunk = doc.chunks.find((entry) => entry.chunk_id === chunkId);
+  if (!chunk) throw new Error(`POOL_P_UNKNOWN_SELECTION_CHUNK:${chunkId}`);
+  if (chunk.selection_sha256 !== ledger.selection_sha256) throw new Error(`POOL_P_SELECTION_CHUNK_HASH_MISMATCH:${chunkId}`);
+  if (!(chunk.page_from >= ledger.page_from && chunk.page_to <= ledger.page_to)) throw new Error(`POOL_P_SELECTION_CHUNK_OUTSIDE_SPAN:${chunkId}`);
+  for (const needle of mustContain) {
+    // A figure must stand on its own digits: "418" inside "9418" or "4180" is
+    // some other number, and a citation that matched it would be verified
+    // against a page number or a date.
+    if (!standsAsFigure(chunk.logical_text, needle)) throw new Error(`POOL_P_CITATION_TEXT_MISMATCH:${chunkId}:${needle}`);
+  }
+  assertUsableAnchor(anchor);
+  if (!checkCitationAnchor(chunk.logical_text, anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
+  const selection: SelectionCitation = { selection_id: doc.selection_id, selection_sha256: doc.selection_sha256 };
+  TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: chunkId, must_contain: [...mustContain], anchor, locator }));
+  return frozen({ source, chunk_id: chunkId, locator, must_contain: mustContain, selection });
+}
+
 export function tableAwareCitation(
   source: SourceRef,
   chunkId: string,
@@ -302,7 +376,7 @@ function buildBindings(input: Readonly<{
     };
   });
   const citations = [...input.citations].sort((a, b) => (`${a.source.source_id}#${a.chunk_id}`).localeCompare(`${b.source.source_id}#${b.chunk_id}`))
-    .map((c) => ({ source_id: c.source.source_id, source_version: c.source.source_version, chunk_id: c.chunk_id, locator: c.locator, ...(c.numeral ? { numeral: c.numeral } : {}) }));
+    .map((c) => ({ source_id: c.source.source_id, source_version: c.source.source_version, chunk_id: c.chunk_id, locator: c.locator, ...(c.numeral ? { numeral: c.numeral } : {}), ...(c.selection ? { selection: c.selection } : {}) }));
   return computeElevenDimensionBindings({
     topic: input.topic, sourceSet, sources, citations, dossierSha256: DOSSIER_SHA256,
     value: input.value, unit: input.unit, effective_from: input.effective_from, effective_to: input.effective_to,
