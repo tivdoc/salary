@@ -1,6 +1,7 @@
 import { canonicalSha256, deepFreeze } from "../../../engine/rule-runtime/canonical.ts";
 import type { OfflineShadowFlags } from "./flags.ts";
 import {
+  SHADOW_EXECUTION_MODES,
   durableShadowRunEnvelopeSchema,
   sealShadowJob,
   type DurableShadowJob,
@@ -405,7 +406,7 @@ export class DurableOfflineShadowScheduler {
     } catch (error) {
       const candidate = input as { execution_mode?: unknown; customer_input_allowed?: unknown; dataset_pin?: { customer_material?: unknown }; source_state_pin?: { active_real_source_count?: unknown; selected_real_source_count?: unknown }; parameter_state_pin?: { active_real_parameter_count?: unknown }; rule_state_pin?: { active_real_rule_count?: unknown } };
       if (candidate.customer_input_allowed === true || candidate.dataset_pin?.customer_material === true) throw new Error("SHADOW_CUSTOMER_INPUT_FORBIDDEN");
-      if (candidate.execution_mode !== "offline_synthetic_only"
+      if (!(SHADOW_EXECUTION_MODES as readonly unknown[]).includes(candidate.execution_mode)
         || Number(candidate.source_state_pin?.active_real_source_count ?? 0) > 0
         || Number(candidate.source_state_pin?.selected_real_source_count ?? 0) > 0
         || Number(candidate.parameter_state_pin?.active_real_parameter_count ?? 0) > 0

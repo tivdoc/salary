@@ -12,10 +12,41 @@ const ordinaryPinSchema = z.object({
   sha256: sha,
 }).strict();
 
+// L7-6 / D1. Envelope v0.11 adds one execution mode beside the v0.10
+// synthetic-only one: `draft_parameters_synthetic_inputs` — the draft
+// RuleSpecs executed on DRAFT parameter values (their grade displayed) over
+// SYNTHETIC declared facts. It carries a pin that says so in numbers: zero
+// active real parameters, how many draft versions were bound, how many
+// synthetic inputs ran, extraction not used, and the corpus hash. A v0.10
+// envelope is still valid unchanged; a v0.11 envelope in the new mode must
+// carry the pin and a v0.10 envelope must not.
+export const DURABLE_SHADOW_ENVELOPE_V010 = "tivdoc-durable-offline-shadow-envelope-v0.10.0" as const;
+export const DURABLE_SHADOW_ENVELOPE_V011 = "tivdoc-durable-offline-shadow-envelope-v0.11.0" as const;
+export const SHADOW_EXECUTION_MODES = ["offline_synthetic_only", "draft_parameters_synthetic_inputs"] as const;
+export type ShadowExecutionMode = (typeof SHADOW_EXECUTION_MODES)[number];
+
+const draftInputPinSchema = ordinaryPinSchema.extend({
+  mode: z.literal("draft_parameters_synthetic_inputs"),
+  active_real_parameter_count: z.literal(0),
+  draft_parameter_versions: z.number().int().positive().max(10_000),
+  synthetic_inputs: z.number().int().positive().max(100_000),
+  extraction_used: z.literal(false),
+  corpus_sha256: sha,
+  tenant_id: z.literal("legal.synthetic.proof"),
+}).strict();
+
+function refineEnvelopeMode(value: Readonly<{ schema_version: string; execution_mode: string; draft_input_pin?: unknown }>, context: z.RefinementCtx) {
+  const draft = value.execution_mode === "draft_parameters_synthetic_inputs";
+  if (draft && value.schema_version !== DURABLE_SHADOW_ENVELOPE_V011) context.addIssue({ code: "custom", message: "SHADOW_ENVELOPE_DRAFT_MODE_REQUIRES_V011" });
+  if (draft && value.draft_input_pin === undefined) context.addIssue({ code: "custom", message: "SHADOW_ENVELOPE_DRAFT_MODE_REQUIRES_DRAFT_INPUT_PIN" });
+  if (!draft && value.draft_input_pin !== undefined) context.addIssue({ code: "custom", message: "SHADOW_ENVELOPE_DRAFT_INPUT_PIN_WITHOUT_DRAFT_MODE" });
+}
+
 const envelopeContentObjectSchema = z.object({
-  schema_version: z.literal("tivdoc-durable-offline-shadow-envelope-v0.10.0"),
+  schema_version: z.enum([DURABLE_SHADOW_ENVELOPE_V010, DURABLE_SHADOW_ENVELOPE_V011]),
   run_id: id,
-  execution_mode: z.literal("offline_synthetic_only"),
+  execution_mode: z.enum(SHADOW_EXECUTION_MODES),
+  draft_input_pin: draftInputPinSchema.optional(),
   dataset_pin: ordinaryPinSchema.extend({
     classification: z.literal("deterministic_synthetic"),
     byte_count: z.number().int().positive().max(128 * 1024 * 1024),
@@ -48,7 +79,7 @@ const envelopeContentObjectSchema = z.object({
   automatic_production_promotion: z.literal(false),
 }).strict();
 
-const envelopeContentSchema = envelopeContentObjectSchema.readonly();
+const envelopeContentSchema = envelopeContentObjectSchema.superRefine(refineEnvelopeMode).readonly();
 
 export const durableShadowRunEnvelopeSchema = z.object({
   ...envelopeContentObjectSchema.shape,
@@ -56,6 +87,7 @@ export const durableShadowRunEnvelopeSchema = z.object({
 }).strict().superRefine((value, context) => {
   const { envelope_sha256: expected, ...content } = value;
   if (canonicalSha256(content) !== expected) context.addIssue({ code: "custom", message: "SHADOW_ENVELOPE_HASH_MISMATCH" });
+  refineEnvelopeMode(value, context);
 }).readonly();
 
 export type DurableShadowRunEnvelope = z.infer<typeof durableShadowRunEnvelopeSchema>;

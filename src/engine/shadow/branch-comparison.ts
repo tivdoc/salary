@@ -1,0 +1,60 @@
+// L7-7. For each open decision: every case the corpus ran through its specs,
+// with the output under each branch and the difference between the
+// branches — deterministic, sorted, and never a choice. Every row says
+// `human_review_required: true` and `automatic_acceptance: false`; nothing
+// here accepts a branch, weights one, or hides a case that did not run.
+import type { ShadowExecutionRecord } from "./draft-shadow-run.ts";
+
+type Comparable = Readonly<{ amount: bigint; unit: string; kind: string }>;
+
+function comparable(output: Record<string, unknown> | null): Comparable | null {
+  if (!output) return null;
+  if (output.kind === "money") return { amount: BigInt(String(output.minor_units)), unit: String(output.currency), kind: "money" };
+  if (output.kind === "integer") return { amount: BigInt(String(output.value)), unit: String(output.unit), kind: "integer" };
+  return null;
+}
+
+export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
+  const decisionIds = [...new Set(executions.map((execution) => execution.decision_id).filter((id): id is string => id !== null))].sort();
+  return decisionIds.map((decisionId) => {
+    const mine = executions.filter((execution) => execution.decision_id === decisionId);
+    const branches = [...new Set(mine.map((execution) => execution.branch ?? "single"))].sort();
+    const caseIds = [...new Set(mine.map((execution) => execution.case_id))].sort();
+    const cases = caseIds.map((caseId) => {
+      const rows = mine.filter((execution) => execution.case_id === caseId);
+      const byBranch = branches.map((branch) => {
+        const row = rows.find((execution) => (execution.branch ?? "single") === branch);
+        return {
+          branch,
+          shadow_id: row?.shadow_id ?? null,
+          status: row?.status ?? "not_run",
+          output: row?.output ?? null,
+          delta: row?.delta?.status === "computed" ? row.delta.delta : null,
+          execution_grade: row?.provenance?.execution_grade ?? null,
+          refusal: row ? (row.rejection_codes.length > 0 ? row.rejection_codes.join(",") : row.error_code) : "not_run",
+        };
+      });
+      const ran = byBranch.filter((row) => row.status === "ran");
+      const values = ran.map((row) => comparable(row.output));
+      if (ran.length !== branches.length || values.some((value) => value === null)) {
+        return { case_id: caseId, ran: ran.length === branches.length, comparable: false, differs: false, by_branch: byBranch, difference: null };
+      }
+      const amounts = values as Comparable[];
+      const low = amounts.reduce((a, b) => (a.amount < b.amount ? a : b));
+      const high = amounts.reduce((a, b) => (a.amount > b.amount ? a : b));
+      const difference = high.amount - low.amount;
+      return { case_id: caseId, ran: true, comparable: true, differs: difference !== BigInt(0), by_branch: byBranch, difference: { amount: difference.toString(), unit: low.unit, kind: low.kind } };
+    });
+    return {
+      decision_id: decisionId,
+      branches,
+      cases_compared: cases.filter((entry) => entry.comparable).length,
+      cases_differing: cases.filter((entry) => entry.differs).length,
+      cases_not_comparable: cases.filter((entry) => !entry.comparable).length,
+      human_review_required: true as const,
+      automatic_acceptance: false as const,
+      cases,
+    };
+  });
+}
+

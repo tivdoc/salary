@@ -7,6 +7,7 @@
 import { randomUUID } from "node:crypto";
 import { executeRuleSpec } from "../../src/engine/legal-operations/rulespec.ts";
 import { SENSITIVITY_SPECS } from "../../src/engine/legal-quality/sensitivity-rulespecs.ts";
+import { DRAFT_SHADOW_SPECS } from "../../src/engine/shadow/draft-shadow-specs.ts";
 import { canonicalSha256, canonicalStringify } from "../../src/engine/rule-runtime/canonical.ts";
 import { statement } from "../../src/server/platform/persistence/postgres/contracts.ts";
 import { NodePostgresConnectionFactory } from "../../src/server/platform/persistence/postgres/runtime/node-pg-driver.ts";
@@ -17,9 +18,12 @@ import { TENANT } from "./pool-p-parameter-import.mts";
 // proof tenant, and the reference tenant stays the default so the traces v2
 // wrote there are still replayable.
 const TRACE_TENANT = process.argv[3] ?? TENANT;
+// L7-6: the proof session is an argument too, so the draft shadow run's traces
+// replay under the session that wrote them.
+const PROOF_SID = process.argv[4] ?? "session.synthetic.proof.sensitivity";
 const SYSTEM_SESSION = TRACE_TENANT === TENANT
   ? { sid: "session.legal.reference.system-import", jti: "token.legal.reference.system-import" }
-  : { sid: "session.synthetic.proof.sensitivity", jti: "token.synthetic.proof.sensitivity" };
+  : { sid: PROOF_SID, jti: PROOF_SID.replace(/^session[.]/u, "token.") };
 const executionId = process.argv[2];
 if (!executionId) throw new Error("E37_REPLAY_EXECUTION_ID_REQUIRED");
 
@@ -53,7 +57,10 @@ try {
 
 const stored = row.execution_trace as Record<string, unknown>;
 const inputs = row.execution_inputs as { facts: unknown[]; parameters: unknown[] };
-const entry = SENSITIVITY_SPECS.find((candidate) => candidate.spec.rule_spec_id === row.rule_spec_id);
+// L7-6: the three shadow-form specs live beside the sensitivity specs; a trace
+// names its rule, and the rule is found in whichever set declares it.
+const entry = SENSITIVITY_SPECS.find((candidate) => candidate.spec.rule_spec_id === row.rule_spec_id)
+  ?? DRAFT_SHADOW_SPECS.find((candidate) => candidate.spec.rule_spec_id === row.rule_spec_id);
 if (!entry) throw new Error("E37_REPLAY_RULE_NOT_FOUND");
 if (entry.spec.content_sha256 !== row.rule_content_sha256) throw new Error("E37_REPLAY_RULE_CONTENT_DRIFT");
 

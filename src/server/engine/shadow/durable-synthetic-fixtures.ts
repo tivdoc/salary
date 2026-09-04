@@ -87,3 +87,54 @@ export function buildSyntheticShadowThresholdPolicy(overrides: Partial<Pick<Shad
     automatic_promotion_allowed: false,
   });
 }
+
+/**
+ * L7-6 / D1. A v0.11 envelope in the draft mode: draft parameter values over
+ * synthetic inputs. The pin carries the counts the run will prove and the
+ * corpus hash; nothing real is active, extraction is not used.
+ */
+export function buildDraftShadowEnvelope(input: Readonly<{
+  run_id: string;
+  corpus_sha256: string;
+  draft_parameter_versions: number;
+  synthetic_inputs: number;
+  requested_at?: string;
+  dataset_byte_count?: number;
+  code_sha256?: string;
+}>): DurableShadowRunEnvelope {
+  const requestedAt = input.requested_at ?? "2026-09-05T00:00:00.000Z";
+  return createDurableShadowRunEnvelope({
+    schema_version: "tivdoc-durable-offline-shadow-envelope-v0.11.0",
+    run_id: input.run_id,
+    execution_mode: "draft_parameters_synthetic_inputs",
+    draft_input_pin: {
+      ...pin("draft-input.synthetic-corpus", "2.0.0"),
+      sha256: input.corpus_sha256,
+      mode: "draft_parameters_synthetic_inputs",
+      active_real_parameter_count: 0,
+      draft_parameter_versions: input.draft_parameter_versions,
+      synthetic_inputs: input.synthetic_inputs,
+      extraction_used: false,
+      corpus_sha256: input.corpus_sha256,
+      tenant_id: "legal.synthetic.proof",
+    },
+    dataset_pin: { ...pin("dataset.synthetic-corpus", "2.0.0"), sha256: input.corpus_sha256, classification: "deterministic_synthetic", byte_count: input.dataset_byte_count ?? 4_096, customer_material: false },
+    ground_truth_pin: { ...pin("ground-truth.blank", "0.7.0"), classification: "synthetic_mechanics_ground_truth", customer_material: false, human_ground_truth_count: 0 },
+    source_state_pin: { ...pin("source-state.synthetic"), mode: "synthetic_placeholder_only", active_real_source_count: 0, selected_real_source_count: 0 },
+    parameter_state_pin: { ...pin("parameter-state.draft-only"), active_real_parameter_count: 0 },
+    rule_state_pin: { ...pin("rule-state.real-inactive"), active_real_rule_count: 0 },
+    approved_baseline_pin: { ...pin("baseline.none"), approval_receipt_sha256: sha("baseline-approval-receipt.none") },
+    candidate_pin: pin("candidate.draft-shadow", "1.0.0"),
+    code_pin: { ...pin("code.draft-shadow"), ...(input.code_sha256 ? { sha256: input.code_sha256 } : {}) },
+    config_pin: pin("config.draft-shadow"),
+    threshold_policy_pin: pin("threshold-policy.none"),
+    requested_at: requestedAt,
+    scheduled_for: requestedAt,
+    network_allowed: false,
+    external_provider_allowed: false,
+    customer_input_allowed: false,
+    delivery_allowed: false,
+    automatic_customer_promotion: false,
+    automatic_production_promotion: false,
+  });
+}
