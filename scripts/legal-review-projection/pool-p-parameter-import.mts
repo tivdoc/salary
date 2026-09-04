@@ -316,10 +316,20 @@ export type OpenDecisionInput = Readonly<{ decision_id: string; topic: Wave3Topi
 
 // --- DEV import runner -----------------------------------------------------
 
+/**
+ * L4-6 / D4 (BL-17). Which tenant a batch writes to is an argument now, and it
+ * defaults to the reference catalogue because that is what the real batches
+ * want. A proof batch passes `SYNTHETIC_PROOF_TENANT` and its rows never touch
+ * the catalogue at all — better than flagging them after the fact, which is
+ * what E3-3 had to settle for.
+ */
 export async function importPoolPBatch(
   batchName: string,
   candidates: readonly ParameterCandidate[],
   openDecisions: readonly OpenDecisionInput[] = [],
+  target: Readonly<{ tenant: string; session: { sid: string; jti: string }; subject: string }> = {
+    tenant: TENANT, session: SYSTEM_SESSION, subject: SYSTEM_ACTOR,
+  },
 ): Promise<void> {
   const env = readDevEnvFile();
   const adminUrl = env.get("TIVDOC_DEV_DATABASE_URL");
@@ -333,7 +343,7 @@ export async function importPoolPBatch(
   const admin = new pg.Client({ connectionString: adminUrl, connectionTimeoutMillis: 20_000 });
   await admin.connect();
   try {
-    await admin.query("select set_config('tivdoc.tenant_id', $1, false)", [TENANT]);
+    await admin.query("select set_config('tivdoc.tenant_id', $1, false)", [target.tenant]);
     const now = Math.floor(Date.now() / 1_000);
     await admin.query(
       `insert into public.product_identity_sessions(
@@ -344,8 +354,8 @@ export async function importPoolPBatch(
          subject = excluded.subject, session_sha256 = excluded.session_sha256,
          current_jti = excluded.current_jti, valid_after = excluded.valid_after,
          expires_at = excluded.expires_at, reviewer_org_id = excluded.reviewer_org_id`,
-      [TENANT, SYSTEM_SESSION.sid, SYSTEM_ACTOR, SYSTEM_SESSION.jti, now - 5, now + 3_600 * 24 * 365,
-        sha256(`${TENANT}|${SYSTEM_SESSION.sid}|${SYSTEM_ACTOR}|${SYSTEM_SESSION.jti}`), REVIEWER_ORG_PLACEHOLDER],
+      [target.tenant, target.session.sid, target.subject, target.session.jti, now - 5, now + 3_600 * 24 * 365,
+        sha256(`${target.tenant}|${target.session.sid}|${target.subject}|${target.session.jti}`), `${target.tenant}.no-attestation-placeholder`],
     );
   } finally {
     await admin.end().catch(() => undefined);
@@ -366,11 +376,11 @@ export async function importPoolPBatch(
       try {
         await client.query(statement("pool_p_decision_begin", "begin", []));
         await client.query(statement("pool_p_decision_context", "select * from private.runtime_context_install($1,$2,$3)",
-          [SYSTEM_SESSION.sid, SYSTEM_SESSION.jti, `poolp:decision:${sha256(decision.decision_id).slice(0, 8)}`]));
+          [target.session.sid, target.session.jti, `poolp:decision:${sha256(decision.decision_id).slice(0, 8)}`]));
         const idempotencyKey = `pool-p.decision.${decision.decision_id}`.replace(/[^A-Za-z0-9._:@-]/gu, "_").slice(0, 200);
         await client.query(statement("pool_p_decision_register",
           "select * from private.governance_legal_open_decision_register($1,$2::jsonb,$3,$4,$5)",
-          [TENANT, JSON.stringify(decision), idempotencyKey, sha256(`decision:${decision.decision_id}`), new Date().toISOString()]));
+          [target.tenant, JSON.stringify(decision), idempotencyKey, sha256(`decision:${decision.decision_id}`), new Date().toISOString()]));
         await client.query(statement("pool_p_decision_commit", "commit", []));
         decisionResults.push({ decision_id: decision.decision_id, state: "registered_or_already_open" });
       } catch (error) {
@@ -395,9 +405,9 @@ export async function importPoolPBatch(
       try {
         await client.query(statement("pool_p_begin", "begin", []));
         await client.query(statement("pool_p_context", "select * from private.runtime_context_install($1,$2,$3)",
-          [SYSTEM_SESSION.sid, SYSTEM_SESSION.jti, `poolp:${sha256(candidate.parameter_id + candidate.parameter_version).slice(0, 8)}`]));
+          [target.session.sid, target.session.jti, `poolp:${sha256(candidate.parameter_id + candidate.parameter_version).slice(0, 8)}`]));
         const context: PostgresTransactionContext = { client, transaction_id: `poolp:${sha256(candidate.parameter_id + candidate.parameter_version).slice(0, 12)}` };
-        const repo = new PostgresParameterApprovalRepository(context, TENANT);
+        const repo = new PostgresParameterApprovalRepository(context, target.tenant);
         const idempotencyKey = `pool-p.import.${candidate.parameter_id}.${candidate.parameter_version}`.replace(/[^A-Za-z0-9._:@-]/gu, "_").slice(0, 200);
         const receipt = await repo.importCandidate(candidate, { idempotency_key: idempotencyKey, occurred_at: new Date().toISOString() });
         const snapshot = await repo.readCurrent("parameter_approval", candidate.parameter_id, candidate.parameter_version);
@@ -420,7 +430,7 @@ export async function importPoolPBatch(
 
   await mkdir(RECEIPT_ROOT, { recursive: true });
   const receiptPath = path.join(RECEIPT_ROOT, `${batchName}.json`);
-  await writeFile(receiptPath, `${JSON.stringify({ tenant: TENANT, batch: batchName, decisions: decisionResults, results }, null, 2)}\n`);
+  await writeFile(receiptPath, `${JSON.stringify({ tenant: target.tenant, batch: batchName, decisions: decisionResults, results }, null, 2)}\n`);
   const failed = [...decisionResults.filter((r) => "error" in r), ...results.filter((r) => "error" in r)];
   process.stdout.write(`${JSON.stringify({ batch: batchName, total: results.length, failed: failed.length, receipt: receiptPath })}\n`);
   if (failed.length > 0) {

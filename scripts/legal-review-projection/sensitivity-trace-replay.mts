@@ -13,7 +13,13 @@ import { NodePostgresConnectionFactory } from "../../src/server/platform/persist
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { TENANT } from "./pool-p-parameter-import.mts";
 
-const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "token.legal.reference.system-import" };
+// L4-6 / D4. The trace tenant is an argument: v3 persists to the synthetic
+// proof tenant, and the reference tenant stays the default so the traces v2
+// wrote there are still replayable.
+const TRACE_TENANT = process.argv[3] ?? TENANT;
+const SYSTEM_SESSION = TRACE_TENANT === TENANT
+  ? { sid: "session.legal.reference.system-import", jti: "token.legal.reference.system-import" }
+  : { sid: "session.synthetic.proof.sensitivity", jti: "token.synthetic.proof.sensitivity" };
 const executionId = process.argv[2];
 if (!executionId) throw new Error("E37_REPLAY_EXECUTION_ID_REQUIRED");
 
@@ -37,7 +43,7 @@ try {
   await client.query(statement("e37r_context", "select * from private.runtime_context_install($1,$2,$3)",
     [SYSTEM_SESSION.sid, SYSTEM_SESSION.jti, `e37r:${randomUUID().slice(0, 8)}`]));
   const read = await client.query(statement("e37r_read",
-    "select * from private.legal_operations_execution_trace_read($1,$2)", [TENANT, executionId]));
+    "select * from private.legal_operations_execution_trace_read($1,$2)", [TRACE_TENANT, executionId]));
   if (read.row_count !== 1) throw new Error("E37_REPLAY_ROW_NOT_FOUND");
   row = read.rows[0] as Record<string, unknown>;
   await client.query(statement("e37r_rollback", "rollback", []));

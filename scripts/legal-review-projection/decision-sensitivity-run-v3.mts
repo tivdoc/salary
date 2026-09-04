@@ -25,12 +25,19 @@ import { statement } from "../../src/server/platform/persistence/postgres/contra
 import { NodePostgresConnectionFactory } from "../../src/server/platform/persistence/postgres/runtime/node-pg-driver.ts";
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { TENANT } from "./pool-p-parameter-import.mts";
+import { seedSessions, SYNTHETIC_PROOF_TENANT } from "./reviewer-registration.mts";
 
 import type { ParameterValue } from "../../src/engine/legal-operations/contracts.ts";
 import type { RuleSpecInputValue } from "../../src/engine/legal-operations/rulespec.ts";
 
 const RECEIPT_ROOT = path.join("output", "next", "pool-q");
 const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "token.legal.reference.system-import" };
+// L4-6 / D4 (BL-17). Parameters are READ from the reference catalogue, because
+// that is where the real draft values live. Execution traces are WRITTEN to the
+// synthetic proof tenant, because a trace of a synthetic scenario is a proof
+// row and has no business in the catalogue. Two tenants, one run, and the
+// direction of each is the whole point.
+const PROOF_SESSION = { sid: "session.synthetic.proof.sensitivity", jti: "token.synthetic.proof.sensitivity", subject: "system_import" };
 const sha256 = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
 const PIN_SHA = (label: string) => canonicalSha256({ pin: label });
 
@@ -99,12 +106,14 @@ async function main(): Promise<void> {
     },
   });
 
-  async function tx<T>(label: string, work: (client: import("pg").Client) => Promise<T>): Promise<T> {
+  await seedSessions(SYNTHETIC_PROOF_TENANT, `${SYNTHETIC_PROOF_TENANT}.no-attestation-placeholder`, [PROOF_SESSION]);
+
+  async function tx<T>(label: string, work: (client: import("pg").Client) => Promise<T>, session = SYSTEM_SESSION): Promise<T> {
     const client = await factory.acquire();
     try {
       await client.query(statement(`${label}_begin`, "begin", []));
       await client.query(statement(`${label}_context`, "select * from private.runtime_context_install($1,$2,$3)",
-        [SYSTEM_SESSION.sid, SYSTEM_SESSION.jti, `${label}:${randomUUID().slice(0, 8)}`]));
+        [session.sid, session.jti, `${label}:${randomUUID().slice(0, 8)}`]));
       const value = await work(client);
       await client.query(statement(`${label}_commit`, "commit", []));
       return value;
@@ -196,7 +205,7 @@ async function main(): Promise<void> {
           };
           await tx("e37_append", (client) => client.query(statement("e37_append_call",
             "select * from private.legal_operations_execution_trace_append($1,$2::jsonb,$3,$4,$5::timestamptz)",
-            [TENANT, JSON.stringify(payload), `l44.${executionId}`, sha256(`l44:${executionId}:${traceSha}`), new Date().toISOString()])));
+            [SYNTHETIC_PROOF_TENANT, JSON.stringify(payload), `l44.${executionId}`, sha256(`l44:${executionId}:${traceSha}`), new Date().toISOString()])), PROOF_SESSION);
           persisted.push(executionId);
         }
 
@@ -233,7 +242,7 @@ async function main(): Promise<void> {
     try {
       const stdout = execFileSync(process.execPath, [
         "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--experimental-strip-types",
-        "scripts/legal-review-projection/sensitivity-trace-replay.mts", executionId,
+        "scripts/legal-review-projection/sensitivity-trace-replay.mts", executionId, SYNTHETIC_PROOF_TENANT,
       ], { encoding: "utf8", cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] });
       const verdict = /E37_REPLAY_VERDICT (\{.*\})/u.exec(stdout)?.[1];
       replayed.push(verdict ? JSON.parse(verdict) as Record<string, unknown> : { execution_id: executionId, accepted: false, error: "no verdict" });
@@ -334,6 +343,7 @@ async function main(): Promise<void> {
     is_finding: false,
     is_legal_advice: false,
     tenant_id: TENANT,
+    trace_tenant_id: SYNTHETIC_PROOF_TENANT,
     shadow_envelope_sha256: envelope.envelope_sha256,
     execution_mode: envelope.execution_mode,
     replaces: "tivdoc-decision-sensitivity-report-v2-v0.10.15 (money-only, topics_run 3 of 7)",

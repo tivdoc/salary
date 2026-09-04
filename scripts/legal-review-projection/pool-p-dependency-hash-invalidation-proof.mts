@@ -4,9 +4,25 @@
 // append-only and governance_parameter_import always inserts at revision 1
 // (verified by reading its body, supabase/migrations/202609020018) —
 // always lands state=draft, revision=1, zero attestations. This is a
-// throwaway test-fixture parameter_id under the same reference tenant; it
-// is not part of the real Pool P catalog and carries no legal claim.
+// throwaway test-fixture parameter_id.
+//
+// L4-6 / D4 (BL-17): it used to write that fixture into the reference
+// catalogue and then flag it `synthetic` afterwards. It writes to
+// `legal.synthetic.proof` now, so the row never reaches the catalogue at all.
+// A flag applied after the fact depends on the flagging never being forgotten,
+// and it was forgotten once already, permanently, on a real row.
 import { buildCandidate, citation, importPoolPBatch } from "./pool-p-parameter-import.mts";
+import { SYNTHETIC_PROOF_TENANT } from "./reviewer-registration.mts";
+
+// The write definers require the asserted actor to equal the session subject
+// (RUNTIME_ACTOR_IMPERSONATION_FORBIDDEN), and the import path asserts the same
+// system actor on every tenant, so the synthetic session carries that subject.
+const PROOF_SUBJECT = "system_import";
+const PROOF_TARGET = {
+  tenant: SYNTHETIC_PROOF_TENANT,
+  session: { sid: "session.synthetic.proof.import", jti: "token.synthetic.proof.import" },
+  subject: PROOF_SUBJECT,
+};
 
 const PARAMETER_ID = "test.addendum7.a72.dependency_hash_invalidation_proof";
 
@@ -36,7 +52,7 @@ const candidate = buildCandidate({
   citations: [derivationClause],
 });
 
-await importPoolPBatch("a72-dependency-hash-invalidation-proof", [candidate]);
+await importPoolPBatch("a72-dependency-hash-invalidation-proof", [candidate], [], PROOF_TARGET);
 
 // The batch receipt's state/revision/activation_allowed come from
 // private.governance_aggregate_read (readCurrent) — the one read path any
