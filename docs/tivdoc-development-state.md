@@ -1396,6 +1396,81 @@ place. Batch 7 also registers the temporary provision nobody had noticed:
 
 Pool P now stands at 28 registered draft parameter versions.
 
+## Pool E2 — the layer after Q-8
+
+**E2-1 review package v6.** Manifest
+`c21a35f0ef27e2310dd372aac087e7e4e2b7513e428380aedeeaefecc1fefe27`, 11 files,
+built twice byte-identical (every member hash compared, not just the manifest).
+Contents: the research dossier, the Hebrew reviewer runbook, the Q-8 sensitivity
+report, the `legal_open_decisions` export with reasons, every bound draft
+parameter with its eleven binding hashes and its artifact ids, the v0-vs-v1
+citation re-check, the seven templates, the seven drafts, and the sixty-nine
+supersession packets index. Every item `not_reviewed`, `not_signed`,
+`not_activated`, `not_delivered`, stated per item.
+
+The 42 scenario traces the brief asked for are **not** in it, because they do
+not exist: the drafts cannot execute and the golden cases are blank. In their
+place is `scenarios/scenarios-not-run.json` — all 42 attempted, both reasons
+each, `traces_included: 0` — read out of the sensitivity report so the two can
+never disagree. An empty `traces/` directory would have read as an oversight.
+
+**E2-2 owner reviewer identity.** `keygen` writes an Ed25519 pair to the
+git-ignored dev env file and prints only the public half and the registration
+command. It is deliberately **not run here**: generating the owner's own signing
+key unattended is not something to do on their behalf. `register` is an explicit
+refusal that explains itself. The proof half extended the P-0 matrix with the
+case E2-2 turns on — the same identity attesting the same candidate twice is
+refused, and the refused attempt leaves the candidate exactly where it was.
+15/15. Recorded: **a synthetic identity cannot be torn down** — every identity
+table raises `GOVERNANCE_APPEND_ONLY` on update and delete, for anyone.
+
+**E2-3 ground-truth write path.** Two POSTs beside G-12's read. G-4 independence
+and G-7 lock semantics stay in the definers; the route passes the envelope
+through whole. CSRF from the method, not a per-path exception. The capability
+now requires all three methods, so a read-only service serves nothing rather
+than a queue whose claim button 500s. 16 tests, zero annotation content,
+`HUMAN_GROUND_TRUTH_LOCKED` 0.
+
+**E2-4 logical-order Hebrew.** `legal-normalizer-v1`, 61 of 71 sources reordered,
+71 new parsed versions beside immutable v0, zero rebinds. The finding it made by
+accident is the important one: re-checking all 18 registered citations over 16
+chunks, 10 had their text move and **not one changed status**. Every needle is
+numeric — zero non-numeric across the whole corpus — so digits survive the
+transform both ways and the check has never verified a word of Hebrew. That is
+exactly how it passed on amendment 15 while the band was wrong.
+
+**E2-5 the eight `public.*_salary_*` grants.** All eight `cannot_move`, recorded
+per function with its own caller and its own consequence. Every caller reaches
+Postgres through PostgREST with a service-role JWT, and PostgREST picks its role
+from that claim, which Supabase issues only as `anon`, `authenticated` or
+`service_role`. Revoking first would break paid-invoice verification and
+once-only purchase tracking. The unblock precondition is written down so a
+fourth session need not re-derive it.
+
+**E2-6 permit retry.** 16/16 still blocked, every safe error code byte-identical
+to the previous observation. Dated evidence that the block is still real.
+
+**E2-7 reviewer runbook** (`docs/legal/reviewer-runbook.he.md`), mechanics only,
+honest about which panels are live and what is still missing.
+
+**E2-8 tracker delta v37** at `output/next/tracker-delta-v37.md` (ignored tree,
+as specified). Five blockers closed, five opened: BL-10 the citation check
+verifies no Hebrew; BL-11 the mis-scoped vacation parameter that cannot be
+corrected; BL-12 the permanent A7-3 fixtures and the mislabelled real
+withdrawal; BL-13 the pre-guard identity session; BL-14 D-5's catalogue-record
+artifact.
+
+**E2-9 eslint** 0 errors, 0 warnings, by removing dead parameters rather than
+configuring an ignore pattern.
+
+**E2-10 reference-tenant hygiene.** 28 candidates all draft, none activatable;
+11 decisions (3 legal, 8 permanent fixtures); zero customer rows. Every private
+governance table returns 42501 to the runtime role rather than an empty result.
+Two things said plainly instead of rounded to zero: identity sessions are 2, not
+0 (one sanctioned, one pre-guard residue that nobody can delete), and teardown
+was not performed and should not be — a deletion path in an evidence ledger is
+worth more to an attacker than to housekeeping.
+
 ## Freeze — Addendum 7 close, the full matrix at this head
 
 Per A7-6: a session that stops runs the full matrix on its own final head
