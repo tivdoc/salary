@@ -123,7 +123,13 @@ async function main(): Promise<void> {
       claim: "D4 asks for an assertion that no active session predates the A7-1 guard. That assertion cannot be made true safely.",
       why: "A7-1's guard refuses every identity-session registration for this tenant, including the system-import session every governance write runs under. That session necessarily predates the guard and cannot be recreated. Revoking it would leave the tenant permanently unwritable — no parameter could be imported, no decision registered, no trace persisted, ever again.",
       assertion_made_instead: "Exactly one active session remains, it is the named system-import session, and every other session on this tenant is revoked.",
-      follow_up: "If the system-import session is ever revoked or expires, restoring write access to legal.reference.il requires a migration that grants an exception to the A7-1 refusal, reviewed as the security change it is.",
+      // L4-7 (BL-18) replaced this sentence, and A7-1's own guard 1 is what
+      // caught that it had gone stale. What it used to say — that restoring
+      // write access needs a migration granting an exception to the A7-1
+      // refusal — is false. The session row is derived, not remembered, and it
+      // is written by the admin role, which the guard never sees. The guard is
+      // intact and unchanged; the claim about it was wrong.
+      follow_up: `If the system-import session is ever revoked or expires, restoring write access to ${TENANT} is one idempotent command — scripts/legal-review-projection/identity-session-recovery.mts — which rewrites the row from the tenant name and three fixed strings as the admin role. A revoked session is deliberately not resurrected; recovery mints the next sid. No migration and no exception to A7-1 is involved, and the drill is run end to end on the synthetic proof tenant.`,
       system_import_session_expires_at: before?.find((row) => row.sid === SANCTIONED_SID)?.created_at ? "see census" : "unknown",
     },
     cases: results,

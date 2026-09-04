@@ -72,7 +72,11 @@ describe("separate-process untrusted PDF screening", () => {
     });
     expect(result.request_sha256).toMatch(/^[a-f0-9]{64}$/u);
     expect(result.receipt_sha256).toMatch(/^[a-f0-9]{64}$/u);
-  });
+    // 30s because the mechanism is a real OS process spawn under a permission
+    // restriction, not because 768ms — measured alone — needs headroom. Under a
+    // fully parallel suite Windows can schedule that spawn arbitrarily late, and
+    // this case is about what the child returns, never about how soon.
+  }, 30_000);
 
   it.each([
     ["encryption", "/Encrypt", "isolated_parser_encrypted"],

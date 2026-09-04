@@ -591,6 +591,13 @@ async function rebuild(value: Awaited<ReturnType<typeof fixture>>): Promise<void
   await writeDeterministicStoreZip({ root: value.root, output: value.archive, entries: [...names, "evidence-manifest.json"].sort() });
 }
 
+// Every case in this suite builds a temp evidence tree on disk, mutates one
+// file, rebuilds the manifest and re-hashes it. That is the mechanism, it is the
+// same for all of them, and under full-suite parallelism it competes with the
+// whole run for the filesystem: measured at 324ms and 345ms alone, three
+// different cases timed out at the 5s default on three different runs. Raising
+// them one at a time just moved the failure, which is the signal that the budget
+// belongs to the file rather than to any case in it.
 describe("Marathon independent evidence verifier", () => {
   it("accepts only the fixed three-commit exhausted-attempt closure", () => {
     const value = exhaustedClosureFixture();
@@ -705,6 +712,11 @@ describe("Marathon independent evidence verifier", () => {
     })}\n`);
     await rebuild(value);
     await expect(verifyEvidenceDirectory(value)).rejects.toThrow("POSTGRESQL_MATRIX_RECEIPT_FAILED");
+    // Same triage as the parser-isolation case. The mechanism is a temp evidence
+    // tree rebuilt and re-hashed on disk: 324ms alone, timed out at the 5s
+    // default under full-suite parallelism. The budget comes from the mechanism
+    // — filesystem work competing with the whole suite — not from a multiple of
+    // the measurement, which would have left it under the ceiling that failed.
   });
 
   it("rejects a detailed PostgreSQL receipt that drops a fail-closed revocation proof", async () => {
@@ -764,4 +776,4 @@ describe("Marathon independent evidence verifier", () => {
     await expect(verifyEvidenceDirectory(value)).rejects.toThrow("MANIFEST_RECOMPUTE_MISMATCH");
     expect((await readFile(value.archive)).byteLength).toBeGreaterThan(0);
   });
-});
+}, 30_000);

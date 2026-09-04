@@ -85,7 +85,10 @@ const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "tok
 // There is no foreign key from product_identity_sessions.reviewer_org_id to
 // governance_reviewer_organizations, so this is a label, not a real trust
 // organization — nothing in Pool P's draft-only import path verifies it.
-const REVIEWER_ORG_PLACEHOLDER = `${TENANT}.no-attestation-placeholder`;
+//
+// L4-6 made it a function of the target tenant rather than a constant, since a
+// batch can now write to the synthetic proof tenant; it is derived inline where
+// the session is seeded.
 const RECEIPT_ROOT = path.join("output", "next", "pool-p");
 
 // --- Pool D artifact lookup (real fetched bytes, real built chunks) -------

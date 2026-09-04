@@ -42,7 +42,7 @@ const RECEIPT_ROOT = path.join("output", "next", "owner-identity");
 const OWNER_KEY_ENV = "TIVDOC_OWNER_REVIEWER_PRIVATE_KEY_PEM";
 const OWNER_PUBLIC_ENV = "TIVDOC_OWNER_REVIEWER_PUBLIC_KEY_PEM";
 /** The owner's trust organisation on the reference tenant. One, created on first registration. */
-const OWNER_ORGANIZATION = "legal.reference.il.reviewer-organization";
+const OWNER_ORGANIZATION = `${REFERENCE_TENANT}.reviewer-organization`;
 /** The policy admin on the synthetic proof tenant. Never a real person. */
 const PROOF_ADMIN = "synthetic.proof.policy-admin";
 

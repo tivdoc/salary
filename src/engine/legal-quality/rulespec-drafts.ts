@@ -93,7 +93,14 @@ type Registration = Readonly<{
 // in either direction is a failure there rather than a silently wrong draft
 // here.
 export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freeze([
-  { parameter_id: "il.minimum_wage.monthly", versions: ["2023.1.0", "2024.1.0", "2025.1.0", "2026.1.0"] },
+  // L4-1 / D2. The 2023, 2024 and 2025 revisions moved from `.1.0` to `.2.0`.
+  // The values are identical; what changed is that the citations now point at
+  // the table-aware chunks, where the figure sits beside the column header that
+  // names it, instead of at a bare row. The `.1.0` rows are `superseded` in the
+  // database and nothing may bind to them — the draft-binding proof checks
+  // exactly that, and is what caught this list when it still named them.
+  // 2026.1.0 is unchanged: its citation always pointed at the header chunk.
+  { parameter_id: "il.minimum_wage.monthly", versions: ["2023.2.0", "2024.2.0", "2025.2.0", "2026.1.0"] },
   {
     parameter_id: "il.minimum_wage.hourly", versions: ["2026.1.0", "2026.2.0"],
     decision_id: "legal.reference.il.decision.min_wage_hourly_divisor",

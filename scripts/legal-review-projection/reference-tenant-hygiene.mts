@@ -169,6 +169,14 @@ async function main(): Promise<void> {
     parameter_candidates: {
       counted: candidates.length,
       all_draft: candidates.every((entry) => entry.state === "draft"),
+      // L4-1 / D2. "Every candidate is draft" stopped being the property this
+      // tenant should have the moment supersession existed. A superseded row is
+      // not a hygiene failure — it is the correction mechanism working, and it
+      // names its replacement. What must still hold is that nothing is
+      // activatable and that `superseded` is the only other state anything
+      // reaches, because every remaining transition needs an attestation.
+      all_draft_or_superseded: candidates.every((entry) => entry.state === "draft" || entry.state === "superseded"),
+      superseded: candidates.filter((entry) => entry.state === "superseded").map((entry) => entry.id),
       any_activatable: candidates.some((entry) => entry.activation_allowed),
       states: [...new Set(candidates.map((entry) => entry.state))].sort(),
       superseded_by_scope_present: candidates.filter((entry) => Object.keys(SUPERSEDED_BY_SCOPE)
@@ -220,6 +228,8 @@ async function main(): Promise<void> {
   process.stdout.write(`${JSON.stringify({
     candidates: receipt.parameter_candidates.counted,
     all_draft: receipt.parameter_candidates.all_draft,
+    all_draft_or_superseded: receipt.parameter_candidates.all_draft_or_superseded,
+    superseded: receipt.parameter_candidates.superseded,
     any_activatable: receipt.parameter_candidates.any_activatable,
     decisions: receipt.decisions,
     identity_sessions: { total: receipt.identity_sessions.total, sanctioned: receipt.identity_sessions.sanctioned, residue: receipt.identity_sessions.residue },
@@ -227,7 +237,7 @@ async function main(): Promise<void> {
     governance_tables_denied: denied.map((entry) => `${entry.table}=${entry.sqlstate}`),
   }, null, 2)}\n`);
 
-  const clean = receipt.parameter_candidates.all_draft
+  const clean = receipt.parameter_candidates.all_draft_or_superseded
     && !receipt.parameter_candidates.any_activatable
     && Object.values(customerCounts).every((value) => value === 0)
     && denied.every((entry) => entry.sqlstate === "42501");
