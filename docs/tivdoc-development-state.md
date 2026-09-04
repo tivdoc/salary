@@ -2589,47 +2589,322 @@ that takes a declared overtime count rather than hours worked (L7-9); no
 report or package that carries a shadow summary (L7-10); no tracker v42 in the
 repository (L7-11).
 
+**L7-2 (D2).** The fact model gains eight paths in its one list — hours
+worked in a day, rest-day overtime hours, workdays in the month, overtime
+pay, weekly-rest pay, sick absence dates, sick pay, vacation days paid — each
+with its own value schema and a Hebrew prompt in the synthetic portal
+repository. The mapping registry's `expected_output` gains `rational` and
+`integer` kinds typed by the executor's own unit registry (`days_per_week`
+added), so a mapping says what the spec's slot consumes in the spec's terms.
+Transformations move out of `preparation.ts` into a versioned registry of
+twelve — hours as decimal, hours as a count applied to an hourly amount,
+whole hours in a day, money identity, either pension contribution side,
+completed years and months from the start date to the period end (civil-day
+integer arithmetic, the period read from the snapshot's own confirmed
+`documents.period`), workdays per week, workdays as a count applied to a
+daily cap, the absence's last-day index, leave in whole days — and
+preparation only looks them up: an unknown `id@version` is
+`transformation.unsupported`, a fact the transformation cannot honestly turn
+into the slot's kind (a fractional hour where whole hours are consumed, a
+start after the period end, a rate-only contribution, an open-ended absence,
+leave in hours) is `transformation.failed`. The seven topics execute as
+thirteen specs after L7-9: ten sensitivity specs verbatim and three shadow
+FORMS whose inputs are payslip facts rather than a fixture's multiplier — the
+pension cap on a wage (`min`), the employee contribution on the capped wage,
+convalescence pay as the 1988 band days over one day applied to the 2026
+rate. Each spec carries a registry `legal.draft.shadow.<spec>@2.0.0` binding
+every fact slot (17 slots, 17 mappings, every transformation accepting its
+slot), and a bridge turns prepared values into executor inputs as exact
+fractions. `synthetic-payslip-month.ts` builds a canonical snapshot from a
+seed — every id derived, the proof tenant's case, provenance chosen by the
+fixture, a conflicted fact with no value and two conflicting ids. Tests: all
+thirteen specs execute on one synthetic month through prepare → bridge →
+executor; one proof per rejection code, nine of nine; a conflicted fact is
+never resolved. Lane B's pass on this unit landed: civil-day arithmetic in
+place of `Date.parse`, the date shape guarded, no `String()`/`Number()`
+coercion of fact values, the currency unit validated.
+
+**L7-3 (D3).** One ladder — verified, lexicon, declared, derived, inferred,
+administrative — names the weakest link on either side. Every prepared input
+records its source types, fact id, confidence and transformation; a
+parameter its L6 grade; the execution's grade is the worst of them all, never
+an average, never improved by a better input, order-independent. Displayed,
+never used to decide.
+
+**L7-4 (D5).** The corpus: forty-two golden months, one per scenario family
+per topic, plus twelve edge cases — a fractional hour, hours in the wrong
+unit, year zero twice, the first day of an absence, an open-ended absence, a
+start after the period, an unconfirmed period, a low-confidence wage, a
+stale count, an unconfirmed wage, a day within the daily threshold. Every
+month is a canonical snapshot built from a seed, its hash pinned, the whole
+corpus hashed and pinned in the test beside it (`84bb0205…`). Provenance is
+mixed on purpose. `missing_conflicted_facts` withholds one fact and conflicts
+another and refuses; `sector_population` names a population the fact model
+does not carry and says so on the case rather than pretending to model it.
+Every label is proven by running the case: 66 run, 29 refusals, at the
+primary branch.
+
+**L7-5 (D4).** One paid registry per spec that has a paid line — gross
+salary, overtime pay (both overtime specs), weekly-rest pay (both
+compositions), the employee pension contribution, travel reimbursement,
+convalescence payment, vacation days paid. The delta is `entitlement − paid`,
+exact BigInt subtraction in the output's unit — ILS minor units or calendar
+days — with the sign convention named on every instance and the spec's own
+rounding recorded and never applied twice. Four specs have no paid line and
+say why: a capped wage is a base, day counts are balances, and the sick day
+rate prices one day while the payslip's sick pay covers an absence whose
+total needs the day-one rate the L5-4 reading refused to invent. One
+deviation from D4, recorded: D4 names the employer contribution; the draft
+the P line registered binds the employee share and the employer share is not
+a registered parameter, so the pension delta compares the side the draft
+computes. The classification guard: `is_finding` and `delivery_allowed` are
+literal `false`, the Finding contract rejects a delta bare or dressed in
+finding fields, and a test walks `src/engine/findings`, the customer portal
+and the portal routes to prove none imports a shadow module or names
+`synthetic_shadow_delta`.
+
+**L7-6 (D1).** Envelope v0.11 beside v0.10: `execution_mode` gains
+`draft_parameters_synthetic_inputs` with a `draft_input_pin` —
+`active_real_parameter_count: 0`, `draft_parameter_versions`,
+`synthetic_inputs`, `extraction_used: false`, the corpus hash, the proof
+tenant. The mode without the pin, the pin without the mode, a real parameter
+or extraction refuse; a v0.10 envelope validates unchanged. `draft-shadow-run.ts`
+is the pure run — every corpus case through every spec it names, per branch
+when asked, prepared → bridged → executed → graded → paid → delta, traced,
+counted, hashed, with zero monetary/finding/report counts by construction.
+On DEV, `draft-shadow-run-v1.mts` reads the draft values through
+`governance_aggregate_read` on the reference tenant (the system session
+rewritten idempotently the way the recovery drill does it — sessions live an
+hour), proves the default flags off and the schedule refused
+(`SHADOW_OFFLINE_SYNTHETIC_DISABLED`) before enabling them explicitly, takes
+the corpus through `DurableOfflineShadowScheduler` under the v0.11 envelope in
+a fenced lease, appends one R-14 trace per executed case on
+`legal.synthetic.proof`, and replays every one of them in a fresh process.
+Final DEV run `l76.*` at this head: 54 cases, 123 executions (every branch),
+86 ran, 32 preparation refusals, 5 executor refusals, 61 deltas computed, 25
+not applicable, 0 paid refused, 28 draft versions bound, 0 active; 86 traces
+appended, 86 replayed byte-identically, 0 failures; audit chain valid. The
+scheduler refuses to complete a run claiming a monetary output, a finding or
+a report; the kill switch is off by default and, engaged, refuses every
+schedule.
+
+**L7-7.** `branch-comparison.ts`: for each open decision, every case under
+each branch and the exact difference between the branches, deterministic in
+execution order, `human_review_required: true` and `automatic_acceptance:
+false` on every row; a case that refuses under a branch is not comparable and
+names the refusal; a branch named on the decision and not bound is listed
+with its reason and never run. On DEV: min_wage_hourly_divisor 5/5 cases
+differ, pension_2011_2016_precedence 5/5, rest_day_overtime_composition 5/5,
+pension_wage_cap_section 2/5, convalescence_2026_rate_period 0/5 (same
+figure, different period), working_time_daily_threshold 0/6 (one bound
+branch — nothing to separate, and the report says so).
+
+**L7-8.** `readShadowSummary` on the canonical service: the durable
+scheduler's committed state (hash and audit chain verified) and the last
+run's sidecar, validated by a strict schema that names every field it may
+carry and refuses one that grew a content field, names an unknown run or
+disagrees with the scheduler's hashes. Its own role set — parameter_verifier,
+legal_reviewer, report_approver, auditor, break_glass_admin. Present on the
+service only when the runtime configured `TIVDOC_OFFLINE_SHADOW_STATE_ROOT`
+(absolute, optional); otherwise the facade omits the method and the route
+stays `CAPABILITY_ABSENT` with the same empty 404 as before — the negative
+matrix is unchanged. The Hebrew panel on `/operations` shows mode, pins,
+counts, hashes and refusals by reason, never content. Journey step 17 asserts
+the draft mode, zero active parameters and `content_included: false` on DEV.
+
+**L7-9 (D6).** §2(א) of the 1951 law — "יום עבודה לא יעלה על שמונה שעות
+עבודה" — is on page 1 in the table-aware chunk's logical text, and the word
+שמונה binds through the lexicon (one entry added) as eight: batch 16 registers
+`il.working_time.daily_overtime_threshold_hours@1951.1.0`, `text_verified`,
+anchor `יום עבודה לא יעלה על`, and the decision
+`working_time_daily_threshold` with both branches named — statute bound,
+administrative (8.6 hours on a five-day week, 7.6 on a six-day week, the
+Labour Ministry directive of 10.6.2018) UNBOUND: not discoverable on an
+official host, a copy on a non-official site is a mirror and is not
+acceptable, no fetch (BL-24). A new spec derives a day's overtime from hours
+worked and the threshold — subtract, `max(…, 0)`, then the §16(א) tiers — so a
+day within the threshold pays zero rather than refusing; the L6-3 spec that
+prices overtime it is given stays beside it. `SensitivitySpec.unbound_branches`
+names a branch that is never run; the template gains the daily slot; the
+fixtures, the corpus (`work.hours_worked_day` on every working-time month)
+and the shadow set follow. The drafts' two-branch invariant is untouched: a
+decision with one bound branch lives on the spec and in the decision
+register, not as a slot with a chosen winner.
+
+**L7-10.** Report v6 = v5 plus the shadow beside it, read from the run's
+receipt and bound by hash, never recomputed: mode, pins, counts, refusals by
+reason, grades, per-decision comparison, replay counts; decisions carry their
+unbound branches. DEV: 102 attempted, 85 run, 17 refused, 85 traces, 85
+replayed, 7/7 topics; shadow 86 run / 86 replayed. The Hebrew rendering gains
+a section for the shadow (refusal reasons and execution grades in Hebrew)
+and names the unbound branch under its decision, Markdown and deterministic
+PDF. Package v11: report v6 with v5…v1 beside it, `shadow/` members (receipt,
+summary, branch comparison, corpus index with hashes), the batch-16 receipt,
+the topics_run gate read from v10's manifest (floor 7) and the new
+`shadow_cases_run` gate (floor `max(1, previous)`, 86 here; a receipt with a
+replay failure, a finding, a delivery or extraction is refused); 32 files,
+built twice to one hash.
+
+**L7-11 (D7).** Tracker v42 regenerated in the repository at
+`docs/tivdoc-development-master-tracker.v42.md`: one read-only read of the
+owner's v36, deltas v37–v41 and this run's v42 applied, the same sections
+0–17 and the same Hebrew, counters from the receipts, the status-flag block
+regenerated, the execution log extended with Session A and long runs 2–7.
+The owner's file was not edited; nothing else was copied.
+
+**L7-12.** This section, the freeze, the ledger, the resume point, and
+`output/next/tracker-delta-v42.md`.
+
+### What the matrix caught at this head
+
+- The reference system session lives an hour from its seed: the first DEV
+  shadow run's parameter read was refused (42501) because nothing had
+  re-seeded it since L6. The runner now rewrites it idempotently, the way the
+  recovery drill does, before it reads.
+- The journey's probe keeps 400 bytes of a body; step 17's JSON is longer,
+  the parse failed and the step read 16/17 against a 200. The probe takes a
+  limit now, and the step writes the whole response beside the receipt.
+- The supersession proof pinned six legal decisions; the seventh moved it.
+- A `status` key named twice in the dressed-finding guard test slipped past
+  a commit as a type error and was caught by the next `tsc`.
+- The Bash heredoc quoting that failed in long run 6 failed again on the L7-8
+  wiring; the patch went through a scratchpad script, as recorded.
+
+### Lane B, this run
+
+Six read-only Haiku agents: the L7-1 survey pass (rule-input, facts, shadow,
+operations, trace/replay, tracker), then adversarial passes on the L7-2
+mappings, the synthetic month, the scheduler and summary, and the delta,
+comparison and report. Applied: civil-day arithmetic in place of
+`Date.parse` and a guarded date shape in the transformations; no
+`String()`/`Number()` coercion of fact values; the currency unit validated;
+an explicit test that every slot's transformation accepts it; the summary
+sidecar read as a regular file only, never through a symbolic link. The
+synthetic-month review confirmed derived ids, the conflicted shape and the
+single path registry; the delta review confirmed the seven D3/D4/D7 rules
+with no finding.
+
+## Freeze — long run 7, the complete matrix
+
+### Local
+
+vitest **293/293 files, 2088 passed, 3 skipped, 0 failed (the second of three full runs at the freeze fixes lost one file to the controlled-import concurrency timeout under load — B-73 class, 58/58 alone — and the third full run at the same head was clean)** at `dc99f89`. tsc clean. eslint **0 errors, 0
+warnings**. `next build` compiled successfully, twice (before and after the
+freeze fixes).
+
+### DEV, as the runtime roles
+
+Chain 53/53, tail `202609020030` — no migration this run. Grant execution
+**22 executed, 0 denied, 18 context failures** (as long runs 4–6). Identity
+negative matrix **8/8**. Definer surface **108**, ungated 2 (the known
+bootstrap pair), unexpected 0, reserved-execute 14; 154 definitions pinned.
+Invalidation effects **10/10**. Dynamic matrix **14 checks, 10 supported, 10
+passed**. RLS force **65/65**, unforced 0. Journey **17/17** — the seventeenth
+step reads the shadow summary on the canonical service: mode
+`draft_parameters_synthetic_inputs`, zero active parameters,
+`content_included: false`, two completed jobs, audit chain valid over ten
+events.
+
+Governance proofs, all by execution: A7-1 guards passed; parameter-decision
+matrix passed (the visual-confirmation refusals among them); A7-3 withdrawal
+passed; Q draft-binding passed with every slot bound; E3-2/E3-3 supersession
+and synthetic passed at **seven** legal decisions; E3-4 revocation passed;
+L4-7 session recovery **8/8**; E2-10 hygiene passed; L5-1 lexicon **9/9**;
+A7-2 dependency-hash invalidation passed. Citation anchors **46 verified, 0
+failed, 6 impossible** (the superseded rows).
+
+S-1…S-7: the shadow suites pass (`src/engine/shadow`,
+`src/server/engine/shadow`, observability), `verify-v010.mts` PASS (restart
+verified, audit 5 events, zero outputs), `shadow/run.mts all` PASS (synthetic
+run and real-blocked run, zero money, zero findings, zero reports).
+
+The draft shadow on DEV, `l76.8b299e74`: envelope
+`3384e301a26a9146e3e68f633f4a43e854e97aff8e66e41931290182add529f3`, receipt
+`b56f5086627f19e73a06b24858efedd0d43d973c2561f2e21e0477022fb1c422`; 54
+cases, 123 executions, 86 ran, 32 preparation refusals, 5 executor refusals,
+61 deltas computed, 25 not applicable, 0 paid refused; 28 draft versions
+bound, 0 active; 86 traces, 86 replayed, 0 failures; execution grades
+verified 22, lexicon 5, declared 33, derived 5, inferred 26.
+
+Sensitivity run v6: **102 attempted, 85 run, 17 refused, 85 traces, 85
+replayed**; grades over 28 bound versions: 20 text_verified, 2 lexicon, 2
+selection, 4 inferred_visual. Report v6
+`a094717b3c12c1ac2e082898e8daa6af640926a620370aab067c0a403b617876`. Hebrew
+rendering `034bd7855b686523a38fea7c87bc5c134911713ce9318bdaa24c60662e251d5f`,
+PDF `5fe64f2b26c3c8bc7f36223183128383f0e9d499a8d67ec2896d4b17715bd6c1`.
+Package v11 `3cb35fabcc02eea1880bd94c1ffed3d218c070fba00923341f68c8aab44a2641`,
+32 files, built twice to one hash, topics_run 7 against a floor of 7,
+shadow_cases_run 86 against a floor of 1 (previous package 0).
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, visual confirmations 0, customer rows 0, customer payslips
+read 0, real payslips read 0, composites opened 0, openai calls 0, provider
+calls 0, extraction used no, deployments 0, remote production migrations 0,
+findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-24 | open, `acquisition_blocked: administrative_source_not_discoverable_on_official_site` | P-15/P-16 and now the `administrative` branch of `working_time_daily_threshold`: 8.6 hours on a five-day week / 7.6 on a six-day week, the Labour Ministry directive of 10.6.2018. A copy exists on a non-official site — a mirror, not acceptable; the official host is unknown; no fetch. The statute branch (eight hours, §2(א), text_verified) runs; the administrative branch is named on the decision and never run, and would bind at administrative grade if the directive is found on an official host and imported under `ACQ-V06-LABOUR-DIRECTIVE-DAILY-HOURS-2018` |
+| BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation; the shadow's execution grade marks every case that stands on one (26 of 86 ran `inferred`) |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
 ## Resume point
 
-Refreshed at long run 6. Everything before this point is history; this section
+Refreshed at long run 7. Everything before this point is history; this section
 is the only part a resuming session must read to know where things stand.
 
-**Where the work is.** Pools H, D, S, R, E2, E3, L4, L5 and L6 are closed.
-Pool P: 33 of 37 targets registered, 2 blocked on an administrative source, 2
-retired as a decision; 58 draft versions, 7 superseded, 51 draft, 7 of them
-inferred_visual. Pool Q: seven drafts, every slot bound. Six legal decisions
-open, two withdrawn. The sensitivity report runs seven topics of seven and
-grades every parameter it binds.
+**Where the work is.** Pools H, D, S, R, E2, E3, L4, L5, L6 and L7 are
+closed. Pool P: 34 of 38 targets registered, 2 blocked on an administrative
+source, 2 retired as a decision; 59 draft versions, 7 superseded, 52 draft, 7
+of them inferred_visual. Pool Q: seven drafts, every slot bound; thirteen
+executable specs. Six legal decisions open (one with an unbound branch), two
+withdrawn. The sensitivity report runs seven topics of seven and grades every
+parameter it binds. The offline shadow runs the seven drafts on 54 synthetic
+payslip months through the product's own fact model and mapping registries,
+inside the durable scheduler, with a synthetic delta per paid component —
+none of it a finding, none of it delivered, no extraction, no provider.
 
-**What a lawyer could be handed today.** Review package v10 — dossier, Hebrew
-runbook, sensitivity report v5 with v4, v3, v2 and v1 beside it, a Hebrew
-rendering of v5 in Markdown and PDF that shows the provenance grade of every
-parameter and explains inferred_visual in one sentence, the three cited pages
-extracted from the stored artifacts with an index from each reading to its
-page, the legal decisions, the draft parameters with their binding hashes, the
-scenario fixtures, 96 executions and 80 replayed traces, and the citation
-anchors.
+**What a lawyer could be handed today.** Review package v11 — dossier,
+Hebrew runbook, sensitivity report v6 with v5…v1 beside it, a Hebrew
+rendering of v6 in Markdown and PDF with a section for the shadow and the
+unbound branch named, the three cited pages with their index, the legal
+decisions, the draft parameters with their binding hashes, the scenario
+fixtures, 102 executions and 85 replayed traces, the shadow receipt, summary,
+branch comparison and corpus index, the batch-16 lexicon receipt, and the
+citation anchors.
 
 **The one gate that moves 0/7.** The owner runs `owner-reviewer-identity.mts
 keygen` if they have not, then `register --reviewer-id <their.id>` at a
 keyboard, in an interactive shell, with `TIVDOC_UNATTENDED` unset. Then a labour
 lawyer reads `docs/legal/sensitivity-report.he.md`, confirms the seven visual
 readings against the pages in the package (`visual_confirmed: true` in the
-attestation, or the database refuses), and attests as the second, independent
-identity. Nothing engineering-side blocks this gate.
+attestation, or the database refuses), decides the six open questions, and
+attests as the second, independent identity. Nothing engineering-side blocks
+this gate.
 
 **Next engineering work, in order — none of it a human gate:**
 
-1. BL-24: if the owner's browser session finds the 10.6.2018 directive, it
-   goes through `legal:sources:acquisition:import` under the registered target
-   and binds at administrative grade as an open decision; otherwise P-15/P-16
-   stay blocked and say so.
-2. The interim 1.7.2016 pension shares (5.75% / 6.25%) are readable on the
-   same page as the 2017 ones and are recorded, not registered; a version each
-   if a period question ever needs them.
-3. The precedence slots — 1988 order versus 1998 agreement for the
-   convalescence bands, 2011 versus 2016 for the pension shares — are the
-   drafts' unbound precedence slots and the open decisions; nothing engineering
-   answers them.
-4. The pre-existing corpus-trust generator failure and the stale isolated
+1. BL-24: if the owner's browser session finds the 10.6.2018 directive on an
+   official host, it goes through `legal:sources:acquisition:import` under the
+   registered target and binds at administrative grade as the
+   `administrative` branch of `working_time_daily_threshold`; otherwise the
+   branch stays named and unbound.
+2. The shadow's `sector_population` months run on the general figure because
+   the fact model carries no population path; a population fact and the youth
+   minimum-wage branches would let those months select their own parameter.
+3. The sick-pay total over an absence needs the day-one rate the L5-4
+   reading refused to invent; until a reviewer decides day one, the sick delta
+   stays `not_applicable` and says why.
+4. The interim 1.7.2016 pension shares and the precedence slots (1988 order
+   versus 1998 agreement; 2011 versus 2016) are unchanged: open decisions for
+   the reviewer, nothing engineering answers.
+5. The pre-existing corpus-trust generator failure and the stale isolated
    replay database, unchanged and out of scope.

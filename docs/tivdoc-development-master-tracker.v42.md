@@ -5,7 +5,7 @@
 Repository: `C:\dev\tivdoc\salary`
 Current integration branch: `claude/v0-10-2b-full-parallel`
 Canonical base branch: `codex/tivdoc-engine-foundation`
-HEAD נוכחי: `__HEAD__` (long run 7, freeze) · BASE הריצה: `3b30bcb`
+HEAD נוכחי: `dc99f89` (long run 7, freeze) · BASE הריצה: `3b30bcb`
 Worktree: clean
 המשימה הפעילה: `ההנדסה האוטומטית הושלמה עד לשער האנושי: ריצות רציפות 1–3, Addendum 4 (H/R/S), מאגרים E2/E3/L4/L5/L6/L7 סגורים. במקביל: פעולות בעלים (ביקורת משפטית, composites, Storage key, BL-24)`
 
@@ -286,7 +286,7 @@ Worktree: clean
 | E-39 | 2026-09-04 | Long run 4 `fd45d0d` | Pool L4 10/10: chunker v1, ‏band.lookup/tiered.rate, ‏34 גרסאות, דוח v3 (4/7), `register` מוכח, דוח בעברית | ירוק | PASS |
 | E-40 | 2026-09-04 | Long run 5 `deec5b6` | Pool L5 12/12: לקסיקון, יחידות, בחירות מכשירים, ‏42 גרסאות, דוח v4 (6/7), חבילה v9 | ירוק | PASS |
 | E-41 | 2026-09-04 | Long run 6 `3b30bcb` | Pool L6 11/11: ‏19 פרסומי תיקון, ציטוטים חזותיים, דירוג מקור, migration 030, ‏58 גרסאות, דוח v5 (7/7), חבילה v10 | ‏2,011 passed; ‏53/53 migrations; journey ‏16/16 | PASS |
-| E-42 | 2026-09-05 | Long run 7 `__HEAD__` | Pool L7 12/12: רישום מיפוי v2, ‏12 טרנספורמציות, דירוג ביצוע, קורפוס 54, הפרש־צל, מעטפה v0.11, ריצת צל על DEV (‏86 רצו, ‏86 עקבות שוחזרו), השוואת 6 הכרעות, פאנל צל, הכרעת סף יומי (batch 16), דוח v6, חבילה v11 (32 קבצים), tracker v42 | ‏__VITEST__; tsc/eslint/build נקיים; journey ‏__JOURNEY__; כל מטריצות DEV ירוקות | PASS |
+| E-42 | 2026-09-05 | Long run 7 `dc99f89` | Pool L7 12/12: רישום מיפוי v2, ‏12 טרנספורמציות, דירוג ביצוע, קורפוס 54, הפרש־צל, מעטפה v0.11, ריצת צל על DEV (‏86 רצו, ‏86 עקבות שוחזרו), השוואת 6 הכרעות, פאנל צל, הכרעת סף יומי (batch 16), דוח v6, חבילה v11 (32 קבצים), tracker v42 | ‏293/293 files, 2088 passed, 3 skipped, 0 failed (the second of three full runs at the freeze fixes lost one file to the controlled-import concurrency timeout under load — B-73 class, 58/58 alone — and the third full run at the same head was clean); tsc/eslint/build נקיים; journey ‏17/17; כל מטריצות DEV ירוקות | PASS |
 
 ## 16. יומן עדכוני tracker
 
@@ -306,9 +306,9 @@ Worktree: clean
 ## 17. סטטוס רשמי נוכחי
 
 ```text
-CURRENT_HEAD___HEAD__
+CURRENT_HEAD_dc99f89
 LONG_RUNS_1_TO_7_COMPLETE_POOLS_H_D_S_R_Q_E2_E3_L4_L5_L6_L7_CLOSED
-BROWSER_JOURNEY___JOURNEY___ON_SUPABASE_DEV
+BROWSER_JOURNEY_17/17_ON_SUPABASE_DEV
 MIGRATION_CHAIN_53_OF_53_PINNED_TAIL_030
 DYNAMIC_MATRIX_14_CHECKS_10_SUPPORTED_10_PASSED_4_NOT_SUPPORTED_BY_MANAGED_PLATFORM
 GRANT_COVERAGE_PROVEN_BY_EXECUTION_22_EXECUTED_0_DENIED
