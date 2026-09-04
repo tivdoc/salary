@@ -504,6 +504,24 @@
       "existing_source_version": "discovery-v0.2",
       "browser_outcome": "discovered",
       "browser_safe_error_code": null
+    },
+    {
+      "target_id": "ACQ-V06-LABOUR-DIRECTIVE-DAILY-HOURS-2018",
+      "source_id": "IL_LABOUR_MINISTRY_DAILY_HOURS_DIRECTIVE_2018",
+      "instrument_id": "INSTRUMENT:IL:LABOUR-DIRECTIVE-DAILY-HOURS-2018",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://www.gov.il/he/departments/ministry_of_labor",
+      "artifact_url": null,
+      "allowlisted_hosts": [
+        "www.gov.il",
+        "gov.il"
+      ],
+      "expected_document_title": "Labour Ministry directive of 10.6.2018 on daily working hours after the 42-hour week (8.6 hours on a five-day week, 8 on a six-day week) - ADMINISTRATIVE grade: an hours threshold bound to it is an open decision for the reviewer, not a parameter of statute grade",
+      "recommended_filename": "labour-ministry-daily-hours-directive-2018.pdf",
+      "required": true,
+      "existing_source_version": null,
+      "browser_outcome": "partial",
+      "browser_safe_error_code": "not_discoverable_on_gov_il_search_two_queries_2026_09_04"
     }
   ]
 }

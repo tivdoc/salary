@@ -372,7 +372,7 @@ export function tableAwareCitation(
 // in the text layer even where the figure is not.
 /** Every visual citation this process made, for the receipt and the recheck. */
 export const VISUAL_CITATIONS: Array<Readonly<{
-  chunk_id: string | null; page: number; region: VisualRegionInput; text_layer_surface: string | null; visual_reading: string;
+  source_version_id: string; chunk_id: string | null; page: number; region: VisualRegionInput; text_layer_surface: string | null; visual_reading: string;
   page_pdf_sha256: string; page_image_sha256: string; anchor: string | null; anchor_absent: "no_text_layer" | null; locator: string;
 }>> = [];
 
@@ -458,7 +458,7 @@ export async function visualCitation(request: VisualCitationRequest): Promise<Ci
     const chunk = tableAwareChunk(source.source_id, source.source_version, observation.chunks_path, request.chunk_id);
     assertUsableAnchor(request.anchor);
     if (!checkCitationAnchor(chunk.logical_text, request.anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${request.chunk_id}`);
-    VISUAL_CITATIONS.push(frozen({ chunk_id: request.chunk_id, page, region, text_layer_surface: request.text_layer_surface, visual_reading: request.visual_reading, ...pageHashes, anchor: request.anchor, anchor_absent: null, locator }));
+    VISUAL_CITATIONS.push(frozen({ source_version_id: `${source.source_id}@${source.source_version}`, chunk_id: request.chunk_id, page, region, text_layer_surface: request.text_layer_surface, visual_reading: request.visual_reading, ...pageHashes, anchor: request.anchor, anchor_absent: null, locator }));
     TABLE_AWARE_CITATIONS.push(frozen({ chunk_id: request.chunk_id, must_contain: [], anchor: request.anchor, locator }));
     return frozen({ source, chunk_id: request.chunk_id, locator, must_contain: [], provenance: "inferred_visual", visual: built.citation });
   }
@@ -483,7 +483,7 @@ export async function visualCitation(request: VisualCitationRequest): Promise<Ci
   if (built.refusal !== null) throw new Error(`POOL_P_VISUAL_CITATION_REFUSED:${built.refusal}`);
   IMAGE_ONLY_SOURCES.add(`${source.source_id}@${source.source_version}`);
   const chunkId = `${source.source_id}@${source.source_version}#image-p${page}`;
-  VISUAL_CITATIONS.push(frozen({ chunk_id: null, page, region, text_layer_surface: null, visual_reading: request.visual_reading, ...pageHashes, anchor: null, anchor_absent: "no_text_layer", locator }));
+  VISUAL_CITATIONS.push(frozen({ source_version_id: `${source.source_id}@${source.source_version}`, chunk_id: null, page, region, text_layer_surface: null, visual_reading: request.visual_reading, ...pageHashes, anchor: null, anchor_absent: "no_text_layer", locator }));
   return frozen({ source, chunk_id: chunkId, locator, must_contain: [], provenance: "inferred_visual", visual: built.citation });
 }
 

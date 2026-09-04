@@ -3,7 +3,12 @@
 //   node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types \
 //     scripts/legal-review-projection/sensitivity-report-hebrew.mts
 //
-// Generated from `decision-sensitivity-report-v4.json` and from nothing else.
+// Generated from `decision-sensitivity-report-v5.json` and from nothing else.
+// (L5-10: re-pointed from v3 to v4. L6-8 / D5: re-pointed to v5, and the
+// provenance grade of every bound parameter is shown — in the decision tables
+// and in a section of its own — with one sentence saying what inferred_visual
+// means: the figure was read from the page image and awaits visual
+// confirmation. A reader sees the grade before the number.)
 // Every number in it comes out of that file; no figure is retyped, no figure is
 // rounded here, and nothing is added that the JSON does not say.
 //
@@ -28,7 +33,7 @@ import { NodePostgresConnectionFactory } from "../../src/server/platform/persist
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { TENANT } from "./pool-p-parameter-import.mts";
 
-const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v4.json");
+const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v5.json");
 const DOCS_ROOT = path.join("docs", "legal");
 const RECEIPT_ROOT = path.join("output", "next", "pool-q");
 const MARKDOWN = path.join(DOCS_ROOT, "sensitivity-report.he.md");
@@ -62,6 +67,7 @@ type PerScenario = Readonly<{
   difference?: string; reason?: string;
 }>;
 type OpenDecision = Readonly<{
+  provenance_grade?: string;
   decision_id: string; topic: string; rule_spec_id: string; branches: readonly string[];
   narrower_than_draft: string | null; scenarios_run: number; scenarios_differing: number;
   per_scenario: readonly PerScenario[];
@@ -73,9 +79,22 @@ type Report = Readonly<{
   traces_included: number; traces_replayed_from_database: number;
   topics_run: readonly string[]; topics_run_count: number; topics_total: number;
   topics_not_run: readonly TopicNotRun[]; open_decisions: readonly OpenDecision[];
+  provenance: Readonly<{
+    grades: readonly string[]; counts: Readonly<Record<string, number>>;
+    bound_parameter_versions: ReadonlyArray<Readonly<{ parameter_version_id: string; provenance_grade: string; visual_bindings: ReadonlyArray<Readonly<{ page_pdf_sha256: string; visual_reading: string }>> }>>;
+  }>;
   executions: readonly Readonly<{ topic: string; scenario: string; branch: string; ran: boolean; output: string | null; refusal: string | null }>[];
 }>;
 
+const GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
+  text_verified: "אומת בטקסט",
+  lexicon: "מילה שנקראה דרך הלקסיקון",
+  selection: "בתוך בחירת מסמך",
+  inferred_visual: "נקרא מתמונת העמוד — ממתין לאימות חזותי",
+  administrative: "מקור מנהלי",
+});
+const INFERRED_VISUAL_SENTENCE = "inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.";
+const gradeLabel = (grade: string) => GRADE_HEBREW[grade] ?? grade;
 const scenarioLabel = (name: string) => SCENARIO_HEBREW[name] ?? name;
 const topicLabel = (name: string) => TOPIC_HEBREW[name] ?? name;
 
@@ -137,7 +156,7 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד");
   out.push("מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.");
   out.push("");
-  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v4.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
+  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v5.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
   out.push("כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.");
   out.push("");
   out.push("הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.");
@@ -165,6 +184,11 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
     out.push("");
     out.push(`השאלה הפתוחה מפרידה בין ${decision.branches.map((branch) => `**${branch}**`).join(" לבין ")}.`);
     out.push(`מתוך ${decision.per_scenario.length} תרחישים רצו ${decision.scenarios_run}, ומהם ${decision.scenarios_differing} מפרידים בין האפשרויות.`);
+    if (decision.provenance_grade) {
+      out.push("");
+      out.push(`דירוג מקור של הפרמטרים בשאלה זו: **${gradeLabel(decision.provenance_grade)}** (\`${decision.provenance_grade}\`).`);
+      if (decision.provenance_grade === "inferred_visual") out.push(INFERRED_VISUAL_SENTENCE);
+    }
     if (decision.narrower_than_draft) {
       out.push("");
       out.push(`הערת היקף: ${decision.narrower_than_draft}`);
@@ -187,7 +211,28 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
     section += 1;
   }
 
+  out.push(`## ${section}. דירוג המקור של כל פרמטר`);
+  out.push("");
+  out.push("כל פרמטר שנקשר בדוח נושא דירוג מקור. הדירוג אומר מאין הגיע המספר, לא אם הוא נכון.");
+  out.push("");
+  out.push(INFERRED_VISUAL_SENTENCE);
+  out.push("");
+  out.push("| פרמטר | דירוג | קריאה חזותית | עמוד (sha256) |");
+  out.push("|---|---|---|---|");
+  for (const row of report.provenance.bound_parameter_versions) {
+    const readings = row.visual_bindings.map((binding) => binding.visual_reading).join(", ") || "—";
+    const pages = row.visual_bindings.map((binding) => `${binding.page_pdf_sha256.slice(0, 16)}…`).join(", ") || "—";
+    out.push(`| \`${row.parameter_version_id}\` | ${cell(gradeLabel(row.provenance_grade))} (\`${row.provenance_grade}\`) | ${cell(readings)} | ${cell(pages)} |`);
+  }
+  out.push("");
+  out.push(`סיכום: ${Object.entries(report.provenance.counts).map(([grade, count]) => `${gradeLabel(grade)} — ${count}`).join("; ")}.`);
+  out.push("");
+  out.push("---");
+  out.push("");
+  section += 1;
   out.push(`## ${section}. נושאים שלא רצו`);
+  out.push("");
+  if (report.topics_not_run.length === 0) out.push("כל שבעת הנושאים רצו.");
   out.push("");
   out.push("| נושא | סיבה | משבצת | פירוט |");
   out.push("|---|---|---|---|");
@@ -245,6 +290,10 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
   for (const decision of report.open_decisions) {
     blocks.push({ kind: "heading", text: topicLabel(decision.topic), level: 2 });
     blocks.push({ kind: "hash", label: "decision", value: decision.decision_id });
+    if (decision.provenance_grade) {
+      blocks.push({ kind: "paragraph", text: `דירוג מקור: ${gradeLabel(decision.provenance_grade)} (${decision.provenance_grade})` });
+      if (decision.provenance_grade === "inferred_visual") blocks.push({ kind: "paragraph", text: INFERRED_VISUAL_SENTENCE });
+    }
     blocks.push({
       kind: "table",
       columns: ["תרחיש", ...decision.branches, "הפרש"],
@@ -255,7 +304,16 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
     });
     blocks.push({ kind: "rule" });
   }
+  blocks.push({ kind: "heading", text: "דירוג המקור של כל פרמטר", level: 2 });
+  blocks.push({ kind: "paragraph", text: INFERRED_VISUAL_SENTENCE });
+  blocks.push({
+    kind: "table",
+    columns: ["פרמטר", "דירוג", "קריאה חזותית"],
+    rows: report.provenance.bound_parameter_versions.map((row) => [row.parameter_version_id, gradeLabel(row.provenance_grade), row.visual_bindings.map((binding) => binding.visual_reading).join(", ") || "—"]),
+  });
+  blocks.push({ kind: "rule" });
   blocks.push({ kind: "heading", text: "נושאים שלא רצו", level: 2 });
+  if (report.topics_not_run.length === 0) blocks.push({ kind: "paragraph", text: "כל שבעת הנושאים רצו." });
   blocks.push({
     kind: "table",
     columns: ["נושא", "סיבה"],
@@ -303,7 +361,7 @@ async function main(): Promise<void> {
   writeFileSync(PDF, pdf);
 
   const receipt = {
-    schema_version: "tivdoc-sensitivity-report-hebrew-v0.10.17",
+    schema_version: "tivdoc-sensitivity-report-hebrew-v0.10.19",
     unit: "L4-8",
     generated_from: REPORT,
     source_report_sha256: report.report_sha256,
@@ -311,6 +369,7 @@ async function main(): Promise<void> {
     pdf: { path: PDF, sha256: sha256(pdf), byte_count: pdf.byteLength, deterministic: true },
     open_decisions: report.open_decisions.length,
     topics_not_run: report.topics_not_run.length,
+    provenance_counts: report.provenance.counts,
     withdrawn_decisions: withdrawn.length,
     interpretation: "none",
     recommendation: "none",
