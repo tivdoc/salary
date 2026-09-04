@@ -1234,6 +1234,69 @@ Blocked on R-2 (no blank per-topic templates exist to fill), per Addendum
 6's own ordering. Q-8 (the sensitivity run) stays `deferred_to_session_b`
 regardless, per the standing instruction.
 
+## Freeze — Addendum 7 close, the full matrix at this head
+
+Per A7-6: a session that stops runs the full matrix on its own final head
+before the report; green does not travel across heads, and the 406-test
+figure cited earlier in this file was the engine/governance suites, not
+the whole repo. This is that run, at `41cfd25`, 36 commits since base
+`ba80cc2`, working tree clean.
+
+Local: vitest 261/263 files, 1829/1835 tests, 3 failing, 3 skipped
+(140.25s). Both failures are the same root cause: this session's own Pool
+D growth (17→23 sources) outran two derived/reconciliation snapshots that
+compare the live corpus manifest against a stored count.
+`src/engine/wave2/evidence-audit/artifact-reconciliation.test.ts` throws
+`quarantine_or_change_partition_mismatch` from
+`artifact-reconciliation.ts:430` against the git-tracked baseline
+`wave1-artifact-partition.v0.10.9.json`, whose per-source
+`disposition`/`artifact_sha256` list and aggregate counts predate the six
+D-pool sources this session added. Re-running the apparent official
+regenerator (`TIVDOC_LEGAL_NETWORK_DISABLED=1 node
+scripts/wave2-evidence-audit/run-all.mts`) throws the identical error —
+the fixture needs a correct, careful hand update (per-source entries plus
+recomputed aggregates for D-5, D-16 and the others), which this session
+did not attempt given the risk of silently encoding a wrong
+`disposition`/hash this late. `src/server/product/integration/ready-integration.test.ts`
+throws `P3_LIFECYCLE_RECONCILIATION_MISMATCH` from
+`overnight-v07/inventory.ts:112` against the git-**ignored**, local-only
+`output/parallel-wave-2.3/workers/w2-corpus-trust/lifecycle-reconciliation.json`
+— lower severity, regenerable, not investigated further tonight. Running
+`legal:sources:citations` mid-diagnosis correctly resynced
+`citation-round-trip-report.json` (23 source versions, 468 chunks
+checked) and cleared the first, milder variant of this second failure
+(`P3_ONE_TO_ONE_CORPUS_STATE_REQUIRED`), leaving the lifecycle-count
+mismatch above it. Neither failure touches anything this session wrote
+directly; both are confirmed corpus-size/snapshot desync, not a code
+regression (`git status` clean before this run — nothing to stash).
+
+tsc clean (`tsc --noEmit`, exit 0). eslint 0 errors, 10 pre-existing
+warnings in two files untouched this session
+(`global-invalidation.test.ts`, `runtime-product-lane.test.ts`).
+`next build` succeeds; every route compiles, including the new
+`/api/operations/[...segments]` `shadow` branch; only the two
+pre-existing dynamic-filesystem-access tracing warnings remain
+(`browser-runtime.ts`, `deterministic-hebrew-pdf.ts`), unrelated to this
+session.
+
+Not re-run this close: the extended DEV-role sweep from the prior wave's
+freeze above (RLS force, definer-surface census, service-role closure,
+identity negative matrix, invalidation effects, grant execution, dynamic
+matrix, supersession, review-package build, ground-truth matrix, owner
+reassignment, HTTP journey) — nothing this session touched changes what
+that sweep measures, and re-running the full DEV apparatus was judged out
+of proportion for a checkpoint whose new surface (A7-1's guards, A7-3's
+withdrawal path, S-8, R-6) already has its own execution-proof scripts
+and tests, listed unit-by-unit above. It should be re-run in full before
+anything from this branch is treated as production-ready.
+
+Lane B (four continuously-refilled Haiku read-only agents) was not
+launched this session, in either phase — recorded honestly as 0, not
+fabricated.
+
+Counters unchanged: HUMAN_GROUND_TRUTH_LOCKED 0, REAL_* 0, DEPLOYMENTS 0,
+REMOTE_PRODUCTION_MIGRATIONS 0, LIVE_PROVIDER_CALLS 0.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
@@ -1294,7 +1357,10 @@ regardless, per the standing instruction.
   this checkpoint, per Addendum 6 / `tivdoc-next-run.md` as corrected by
   Addendum 7's A7-6 (no further stopping at a domain boundary was needed
   to reach this point; the backlog from here is genuinely new-design work
-  each unit's own write-up names precisely).
+  each unit's own write-up names precisely). That matrix run and its two
+  named, diagnosed failures are recorded above in "Freeze — Addendum 7
+  close"; the `wave1-artifact-partition.v0.10.9.json` hand-update is the
+  most concrete of the next steps.
 - carried from before this session: K-3's managed-bucket half (needs the
   Storage key — H-7 re-confirmed absent this session), K-5 (needs a
   provisioned off-host destination), the owner's visual review of the five
