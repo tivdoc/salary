@@ -4,13 +4,15 @@ import { loadProvenanceRegistry } from "./acquisition.ts";
 import { loadLegalSourceManifest } from "./manifest.ts";
 
 describe("official source manifest V0.2", () => {
-  it("loads twenty-one unique official source records", async () => {
+  it("loads twenty-three unique official source records", async () => {
     // 17 pre-existing + Addendum 5/6 Pool D discovery: D-2 (average-wage
     // official rates), D-4 (Sefer HaChukim 3072), D-7 (youth minimum-wage
-    // regulations), D-1b (BTL historical rate spreadsheet corroboration).
+    // regulations), D-1b (BTL historical rate spreadsheet corroboration) +
+    // Addendum 7 A7-5: D-5's second half (1998 general collective
+    // agreement) and D-16 (Annual Vacation Law Amendment 15).
     const manifest = await loadLegalSourceManifest();
-    expect(manifest.sources).toHaveLength(21);
-    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(21);
+    expect(manifest.sources).toHaveLength(23);
+    expect(new Set(manifest.sources.map((source) => `${source.source_id}@${source.source_version}`)).size).toBe(23);
   });
 
   it("covers every initial discovery topic", async () => {
@@ -22,7 +24,7 @@ describe("official source manifest V0.2", () => {
 
   it("uses only official allowlisted domains and keeps every source inactive", async () => {
     const manifest = await loadLegalSourceManifest();
-    expect(manifest.sources.every((source) => ["www.gov.il", "www.btl.gov.il", "main.knesset.gov.il", "fs.knesset.gov.il"].includes(new URL(source.canonical_url).hostname))).toBe(true);
+    expect(manifest.sources.every((source) => ["www.gov.il", "www.btl.gov.il", "main.knesset.gov.il", "fs.knesset.gov.il", "workagreements.labor.gov.il"].includes(new URL(source.canonical_url).hostname))).toBe(true);
     expect(manifest.sources.every((source) => source.status === "needs_review")).toBe(true);
     expect(manifest.sources.filter((source) => source.source_type === "statute").every((source) => source.authority.kind === "israeli_legislature")).toBe(true);
   });

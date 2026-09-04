@@ -1150,6 +1150,59 @@
         "found_at": "2026-09-04",
         "included_reason": "Addendum 5 D-5 / Addendum 7 A7-5: the underlying 1998 general collective agreement the 2016 convalescence extension order (D of the same topic) is built on top of."
       }
+    },
+    {
+      "source_id": "IL_ANNUAL_VACATION_LAW_AMENDMENT_15_2016",
+      "source_version": "discovery-v0",
+      "source_type": "statute",
+      "authority": {
+        "kind": "israeli_legislature",
+        "issuing_body": "Israeli legislature",
+        "binding_level": "primary_binding",
+        "court_level": null,
+        "scope": "general",
+        "operative": true,
+        "explanatory": false,
+        "contains_numeric_rate": true,
+        "can_independently_support_monetary_rule": true
+      },
+      "jurisdiction": "IL",
+      "title": "Annual Vacation Law (Amendment No. 15 and Temporary Provision), 5776-2016",
+      "canonical_url": "https://fs.knesset.gov.il/20/law/20_lsr_321785.pdf",
+      "publication_reference": "Sefer HaChukim 2531, p. 574, 16.2.2016",
+      "published_at": "2016-02-16",
+      "effective_from": "2017-01-01",
+      "effective_to": null,
+      "retrieved_at": null,
+      "language": "he",
+      "topics": ["vacation"],
+      "sectors": ["general"],
+      "status": "needs_review",
+      "content_sha256": null,
+      "artifact_format": "pdf",
+      "supersedes_source_version": null,
+      "notes": [
+        "Addendum 7 A7-5, D-16. Not a full re-consolidation of the Annual Vacation Law — the specific amending law raising the years-1-4 calendar-day entitlement from 14 to 16 days (phased: +1 day from July 2016, +1 more from January 2017), exactly as D-4 is the specific 2023 amending law for minimum wage rather than a full consolidation. Registered so a current P-32 (calendar-days table) parameter can bind to this artifact instead of the pre-2017 IL_ANNUAL_VACATION_LAW text (consolidated_before_2017)."
+      ],
+      "verification": {
+        "status": "domain_verified",
+        "method": "official-domain allowlist and source-title inspection",
+        "verified_by": ["tivdoc-legal-manifest-v0"],
+        "verified_at": "2026-09-04T00:00:00Z",
+        "notes": ["No rate is activated by this manifest."]
+      },
+      "effective_period": {
+        "effective_from": "2017-01-01",
+        "effective_to": null,
+        "retroactive": false,
+        "retroactive_basis": null,
+        "applicability_basis": "work_date"
+      },
+      "discovery": {
+        "method": "official_registry",
+        "found_at": "2026-09-04",
+        "included_reason": "Addendum 7 A7-5 D-16: the current, post-2017 Annual Vacation Law amendment, found via the Knesset National Legislation Database's own official Reshumot publication link for Amendment 15."
+      }
     }
   ]
 }

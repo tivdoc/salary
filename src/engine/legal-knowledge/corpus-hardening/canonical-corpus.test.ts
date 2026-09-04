@@ -45,8 +45,9 @@ describe("canonical corpus boundary v0.4.1", () => {
 
   it("keeps research, implementation and permit roles out of canonical operative resolution", () => {
     const inventory = loadCanonicalRoleInventory();
-    // 17 pre-existing + Addendum 5/6 Pool D discovery: D-2, D-4, D-7, D-1b.
-    expect(inventory.source_count).toBe(21);
+    // 17 pre-existing + Addendum 5/6 Pool D discovery: D-2, D-4, D-7, D-1b +
+    // Addendum 7 A7-5: D-5's second half, D-16.
+    expect(inventory.source_count).toBe(23);
     const byId = new Map(inventory.rows.map((row) => [row.source_version_id.split("@")[0], row]));
     expect(byId.get("IL_CONVALESCENCE_KNESSET_RESEARCH_2025")?.role).toBe("secondary_explanatory");
     expect(byId.get("IL_MIN_WAGE_OFFICIAL_RATES")?.role).toBe("official_implementation_or_corroboration");
