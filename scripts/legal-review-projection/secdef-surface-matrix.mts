@@ -48,6 +48,10 @@ const BOOTSTRAP_SITES = Object.freeze([
 /**
  * The surface may not grow silently; a new definer function updates this.
  *
+ * 101 -> 104 at long run 3: governance_parameter_supersede,
+ * governance_legal_open_decision_mark_synthetic and
+ * governance_legal_open_decision_annotate.
+ *
  * 92 -> 101 at Session B's B-1 freeze. The pin had been at 92 since `5273615`,
  * before Session A's base, while Session A's migrations 018-022 and Session B's
  * 023-025 added definers — because Session A's freeze ran the local checks and
@@ -56,7 +60,7 @@ const BOOTSTRAP_SITES = Object.freeze([
  * without revoking its default PUBLIC grant, exactly as 018 had, fixed forward
  * in 025.
  */
-const EXPECTED_TOTAL = 101;
+const EXPECTED_TOTAL = 104;
 
 // Definer functions a Supabase reserved role may still execute, each because
 // something real reaches it that way.

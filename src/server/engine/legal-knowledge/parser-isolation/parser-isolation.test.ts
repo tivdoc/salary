@@ -102,7 +102,7 @@ describe("separate-process untrusted PDF screening", () => {
 
   it("enforces input, output, timeout and cancellation without returning partial output", async () => {
     await expect(screenUntrustedPdfIsolated({ bytes: validPdf(), limits: { max_input_bytes: 512 } })).rejects.toThrow("isolated_parser_input_limit_exceeded");
-    await expect(screenUntrustedPdfIsolated({ bytes: validPdf(), limits: { max_output_bytes: 256 }, testOnlyBehavior: "oversize_output" })).rejects.toThrow("isolated_parser_output_limit_exceeded");
+    await expect(screenUntrustedPdfIsolated({ bytes: validPdf(), limits: { max_output_bytes: 256, timeout_ms: 30_000 }, testOnlyBehavior: "oversize_output" })).rejects.toThrow("isolated_parser_output_limit_exceeded");
     await expect(screenUntrustedPdfIsolated({ bytes: validPdf(), limits: { timeout_ms: 50 }, testOnlyBehavior: "partial_then_hang" })).rejects.toThrow("isolated_parser_timeout");
     const controller = new AbortController();
     const pending = screenUntrustedPdfIsolated({ bytes: validPdf(), signal: controller.signal, testOnlyBehavior: "hang" });

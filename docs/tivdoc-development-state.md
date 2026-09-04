@@ -1704,6 +1704,62 @@ rather than a dedicated `legal.synthetic.proof` tenant. The self-flagging at
 registration closes the leak at the source, but the tenant separation D3 asks
 for needs a session on a new tenant and was not done.
 
+## Freeze — long run 3, the complete matrix
+
+### Local
+
+vitest **273/273 files, 1913 passed, 3 skipped, 0 failed**. tsc clean. eslint
+**0 errors, 0 warnings**. `next build` compiled successfully.
+
+Three tests were triaged rather than papered over, all the same class —
+load-sensitivity under full-suite parallelism, each measured green in isolation:
+
+- `multiprocess.test.ts` timed out at 20s. It spawns real OS processes; alone
+  each case takes 1.6–4.5s. Raised to 60s, and the note says the budget comes
+  from the mechanism rather than from 2× the measurement, because 2× would
+  still have been under the ceiling that failed.
+- `acquisition.test.ts` timed out at the 5s default; measured 1263ms alone.
+  Raised to 30s.
+- `parser-isolation.test.ts` expected `isolated_parser_output_limit_exceeded`
+  and got `isolated_parser_timeout` — under load the child was scheduled late
+  and hit the clock before producing 256 bytes. That one is not a budget: the
+  case is about the output limit, and it had an implicit dependency on the
+  default timeout. Given an explicit generous `timeout_ms`, the output limit is
+  what bites, which is what the test was always claiming to check.
+
+### DEV, as the runtime roles
+
+Chain 51/51, tail pinned to `202609020028`. Grant execution 22 executed, 0
+denied, 18 context failures. Identity negative matrix 8/8. Definer surface
+**104**, ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute
+14. Invalidation effects 10/10. Dynamic matrix 14 checks, 10 supported, 10
+passed. RLS force 64/64, unforced 0. Journey **16/16**.
+
+Governance proofs, all by execution: A7-1 guards 6/6; P-0 / E2-2 attestation
+matrix 15/15; A7-3 withdrawal 7/7; Q draft-binding 8/8; R-14 trace replay 9/9;
+E3-2/E3-3 supersession and synthetic 10/10; E3-4 revocation 8/8. Citation
+anchors 12 verified, 0 failed, 6 impossible. Sensitivity run 25 of 30 executed,
+5 refused fail-closed, 25 traces persisted and 25 replayed byte-identically.
+
+Identity sessions active on `legal.reference.il`: **1**.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, customer rows 0, openai calls 0, deployments 0, remote
+production migrations 0, `HUMAN_GROUND_TRUTH_LOCKED` 0.
+
+### Lane B
+
+Four read-only Haiku agents from the first minutes, pinned to the SHA they
+read. Their findings shaped four units: the citation check's `must_contain`
+enforcement point and the absence of any anchor field (E3-1), the candidate
+table's append-only revision model, which is why supersession appends rather
+than updates (E3-2), `product_session_revoke` existing and being granted to the
+identity runtime, which is why E3-4 went through the sanctioned path instead of
+an admin UPDATE, and the executor's exact node vocabulary, which decided which
+topics could get an executable spec and which honestly could not (E3-7).
+
 ## Resume point
 
 Refreshed at long run 3. Everything before this point is history; this section

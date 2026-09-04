@@ -99,6 +99,12 @@ async function run(input: unknown) {
   });
 }
 
+// Timeouts raised 20s -> 60s at long run 3's freeze. These tests spawn real
+// OS processes; alone they take 1.6-4.5s each (measured), but under full-suite
+// parallelism the machine is saturated and wall time is dominated by process
+// scheduling rather than by the work, and one of them timed out at 20s. The
+// budget is set from the mechanism, not from the measurement alone: 2x the
+// measured time would still have been under the old ceiling that failed.
 describe("real multi-process local controlled-import matrices", () => {
   it("serializes identical concurrent imports across processes", async () => {
     const item = await fixture();
@@ -110,7 +116,7 @@ describe("real multi-process local controlled-import matrices", () => {
       persistent_owner_import_entries: 0,
       synthetic_test_import_entries: 1,
     });
-  }, 20_000);
+  }, 60_000);
 
   it("fails closed for different bytes under one identity and identical bytes under conflicting identities", async () => {
     const first = await fixture("first", "CONFLICT");
@@ -161,7 +167,7 @@ describe("real multi-process local controlled-import matrices", () => {
     );
     const conflict = await run({ mode: "import", import_input: { ...identityBase.input, incomingRoot: conflictIncoming, request: conflictingRequest } });
     expect(conflict.result).toMatchObject({ ok: false, code: "immutable_target_mismatch" });
-  }, 20_000);
+  }, 60_000);
 
   it("takes over dead-process and PID-reuse-poisoned locks", async () => {
     for (const [label, pid, processStart] of [["stale", 2_147_483_647, 0], ["pid-reuse", process.pid, 0]] as const) {
@@ -184,7 +190,7 @@ describe("real multi-process local controlled-import matrices", () => {
       const outcome = await run({ mode: "import", import_input: item.input });
       expect(outcome.result).toMatchObject({ ok: true, created: true });
     }
-  }, 20_000);
+  }, 60_000);
 
   it("recovers after the process holding the identity lock is terminated", async () => {
     const item = await fixture("restart-lock", "RESTART");
