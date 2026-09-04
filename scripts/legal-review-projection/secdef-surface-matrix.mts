@@ -45,8 +45,18 @@ const BOOTSTRAP_SITES = Object.freeze([
   "private.runtime_context_install",
 ]);
 
-/** The surface may not grow silently; a new definer function updates this. */
-const EXPECTED_TOTAL = 92;
+/**
+ * The surface may not grow silently; a new definer function updates this.
+ *
+ * 92 -> 101 at Session B's B-1 freeze. The pin had been at 92 since `5273615`,
+ * before Session A's base, while Session A's migrations 018-022 and Session B's
+ * 023-025 added definers — because Session A's freeze ran the local checks and
+ * not the DEV matrices, so nothing looked. Running it here is what B-1 is for,
+ * and the first thing it found was a real one: 023 created a trigger guard
+ * without revoking its default PUBLIC grant, exactly as 018 had, fixed forward
+ * in 025.
+ */
+const EXPECTED_TOTAL = 101;
 
 // Definer functions a Supabase reserved role may still execute, each because
 // something real reaches it that way.

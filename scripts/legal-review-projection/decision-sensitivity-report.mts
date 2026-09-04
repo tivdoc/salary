@@ -36,6 +36,10 @@ import { TENANT } from "./pool-p-parameter-import.mts";
 const RECEIPT_ROOT = path.join("output", "next", "pool-q");
 const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "token.legal.reference.system-import" };
 const PIN_SHA = (label: string) => canonicalSha256({ pin: label });
+// Derived from TENANT, never written out: A7-1 guard 1 requires the tenant id
+// to exist as a literal in exactly one place, and it catches this file if it
+// does not — which is how this constant came to exist.
+const LEGAL_DECISION_PREFIX = `${TENANT}.decision.`;
 
 type Candidate = Readonly<{
   parameter_id: string;
@@ -177,7 +181,7 @@ async function main(): Promise<void> {
   // namespace can be trusted and the topic on that row cannot. Recorded below
   // as `known_metadata_defects` rather than quietly worked around.
   const isProofFixture = (row: Record<string, string | null>) =>
-    !String(row.decision_id ?? "").startsWith("legal.reference.il.decision.");
+    !String(row.decision_id ?? "").startsWith(LEGAL_DECISION_PREFIX);
   const proofFixtures = decisions.filter(isProofFixture)
     .map((row) => ({ decision_id: row.decision_id, resolution_state: row.resolution_state }));
   const legalDecisions = decisions.filter((row) => !isProofFixture(row));
@@ -278,7 +282,7 @@ async function main(): Promise<void> {
       "Throwaway decisions registered by the A7-3 withdrawal proof to exercise the state machine. legal_open_decisions is append-only with no delete path, so they remain in the table permanently. Listed here so they are accounted for rather than mistaken for legal questions, and excluded from every section above.",
     known_metadata_defects: [
       {
-        row: "legal.reference.il.decision.vacation_minimum_days_threshold_200_vs_240",
+        row: `${LEGAL_DECISION_PREFIX}vacation_minimum_days_threshold_200_vs_240`,
         defect: "topic recorded as 'test'",
         cause: "A7-3's proof script registered the real withdrawal through the same helper as its throwaway fixtures, which hardcodes the topic.",
         correctable: false,

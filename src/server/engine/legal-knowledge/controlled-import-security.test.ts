@@ -170,7 +170,13 @@ describe("controlled import E2E and atomic selection", () => {
       persistent_owner_import_entries: 0,
       synthetic_test_import_entries_excluded: 1,
     });
-  });
+    // Measured at 1338ms alone; it timed out at the 5s default under full-suite
+    // parallelism during Session B's freeze. Budget raised to well over 2x
+    // measured per the flake-triage rule, with the measurement recorded rather
+    // than the number picked. It does real filesystem work — writes a private
+    // copy, hashes it, publishes it immutably, appends to the ledger and
+    // verifies strictly — so it is slow by nature, not by accident.
+  }, 20_000);
 
   it("rejects changed bytes under the same immutable request/source identity", async () => {
     const item = await fixture(validPdf("first"));

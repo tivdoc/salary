@@ -32,6 +32,8 @@ const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "tok
 // The one session the import path legitimately runs under. Anything else with a
 // row for this tenant is residue and has to be named.
 const SANCTIONED_SESSION_SID = SYSTEM_SESSION.sid;
+// Derived from TENANT for the same reason as everywhere else: one literal.
+const LEGAL_DECISION_PREFIX = `${TENANT}.decision.`;
 
 async function main(): Promise<void> {
   mkdirSync(RECEIPT_ROOT, { recursive: true });
@@ -151,8 +153,8 @@ async function main(): Promise<void> {
     };
   });
 
-  const proofFixtureDecisions = decisions.filter((row) => !String(row.decision_id ?? "").startsWith("legal.reference.il.decision."));
-  const legalDecisions = decisions.filter((row) => String(row.decision_id ?? "").startsWith("legal.reference.il.decision."));
+  const proofFixtureDecisions = decisions.filter((row) => !String(row.decision_id ?? "").startsWith(LEGAL_DECISION_PREFIX));
+  const legalDecisions = decisions.filter((row) => String(row.decision_id ?? "").startsWith(LEGAL_DECISION_PREFIX));
 
   const receipt = {
     schema_version: "tivdoc-reference-tenant-hygiene-v0.10.14",

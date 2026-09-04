@@ -1471,6 +1471,80 @@ Two things said plainly instead of rounded to zero: identity sessions are 2, not
 was not performed and should not be — a deletion path in an evidence ledger is
 worth more to an attacker than to housekeeping.
 
+## Freeze — Session B, the complete matrix including the DEV half (B-1)
+
+Session A's freeze ran vitest, tsc, eslint and `next build` and **not** the DEV
+matrices, on a head whose migration chain had grown. B-1 exists because green
+does not travel across heads and a database change without the database matrix
+is unproven. Running them found two real defects that no local check could see,
+both fixed before this freeze:
+
+**The SECURITY DEFINER surface pin had been stale since `5273615`** — before
+Session A's base — while migrations 018-025 added definers. Nothing looked,
+because Session A never ran the census. Raising it to 101 was the smaller half.
+The larger half: `202609020023` created a trigger guard **without revoking its
+default PUBLIC grant**, leaving `private.legal_operations_execution_trace_guard()`
+executable by `anon`, `authenticated` and `service_role`. That is precisely the
+mistake `202609020019` already fixed once for `202609020018`'s guard. Fixed
+forward in `202609020025`; `reserved_execute` back from 15 to 14. The function
+body only raises, so no behavioural test would ever have noticed — the census is
+the only thing between that pattern and a shipped grant, and it is now on record
+that writing a trigger guard in this schema without the revoke is easy to do
+twice.
+
+**A7-1's guard 1 caught a regression this session introduced.** Q-8's report and
+E2-10's census both wrote `"legal.reference.il.decision."` as a literal, which
+is exactly what the guard forbids. Both now derive it from `TENANT`. The guard
+worked as designed, on its author.
+
+### Local
+
+vitest **271/271 files, 1898 passed, 3 skipped, 0 failed**. tsc clean. eslint
+**0 errors, 0 warnings** — the ten pre-existing warnings are gone, fixed rather
+than silenced. `next build` compiled successfully.
+
+One test failed on the first pass and was triaged, not papered over:
+`controlled-import-security.test.ts`'s end-to-end case timed out at the 5s
+default under full-suite parallelism. Measured alone: **1338ms**, 58/58 passing
+in that file. It does real filesystem work — private copy, hash, immutable
+publish, ledger append, strict verify — so it is slow by nature. Budget raised
+to 20s, well over the 2x-measured rule, with the measurement recorded in the
+test rather than the number picked.
+
+### DEV, as the runtime roles
+
+Chain 48/48, tail pinned to `202609020025`. Grant execution: 22 executed, 0
+denied, 18 context failures (lapsed-session setup, not denial). Identity
+negative matrix 8/8. Definer surface 101, ungated 2 (the known bootstrap pair),
+unexpected 0, reserved-execute 14. Invalidation effects 10/10. Dynamic matrix 14
+checks, 10 supported, 10 passed, 4 not supported. RLS force **64/64**
+tenant-scoped, unforced 0. Journey **16/16** over HTTP against a production
+server on DEV.
+
+The reference-tenant and governance proofs, all by execution: A7-1 guards 6/6;
+P-0 / E2-2 attestation matrix 15/15 (including the new same-identity-twice
+refusal); A7-3 withdrawal 7/7; Q draft-binding 8/8; R-14 trace replay 9/9;
+E2-10 hygiene census; E2-6 permit retry 16/16 still blocked with byte-identical
+error codes.
+
+### Counters
+
+`HUMAN_GROUND_TRUTH_LOCKED` 0, `REAL_*` 0, topics 0/7, sources active 0,
+parameters active 0, rules active 0, attestations 0, customer rows 0,
+deployments 0, remote production migrations 0, live provider calls 0.
+
+### Lane B
+
+Twelve read-only Haiku agents across the run, refilled continuously, each pinned
+to the SHA it read. Findings applied in B-0 (the partition had no builder
+anywhere — that was an agent's answer, and it changed the unit from "update the
+file" to "write the missing builder"), B-2 (the seven authoring skeletons
+already existed, so R-2 extended them instead of building beside them), B-3 (no
+trace table existed anywhere, which is why R-14 needed a migration), B-4 (no
+non-test caller of `withCurrentAuthorization`, which decided the three
+`"unknown"` effects), E2-5 (the whole PostgREST role analysis), and E2-2 (no
+teardown path exists for any identity table).
+
 ## Freeze — Addendum 7 close, the full matrix at this head
 
 Per A7-6: a session that stops runs the full matrix on its own final head
