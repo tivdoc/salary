@@ -131,20 +131,28 @@ export const TRAVEL_DAILY_CAP_SPEC: RuleSpecPackage = createRuleSpecPackage({
 });
 
 /**
- * L4-3. The vacation entitlement table, §3(א) of the Annual Vacation Law 1951
- * as Amendment 15 left it, expressed with the band-lookup node.
+ * L4-3, completed by L5-3 (D3). The vacation entitlement, §3(א) of the Annual
+ * Vacation Law 1951 as Amendment 15 left it — the whole clause this time.
  *
- * Three bands and no more. §3(א)(5) — one additional day per work year from the
- * eighth, up to 28 — is an increment, not a table entry: expressing it would
- * mean either a subtraction node the vocabulary does not have, or six figures
- * (22, 23, 24, 25, 26, 27) that the law never writes down and that I would be
- * computing rather than citing. So the table stops at the seventh year and the
- * eighth refuses, which is what the fail-closed band refusal is for.
+ * Years one to seven are the band table L4-3 built. From the eighth year §3(א)(5)
+ * states a rule rather than a figure: one additional day for each further work
+ * year, up to twenty-eight. L4-3 stopped at the seventh year because the
+ * vocabulary had no subtraction and the intermediate figures — 22 through 27 —
+ * are not written anywhere in the law. They still are not written anywhere, and
+ * they are still not here: the spec carries 21, the increment of one day, and
+ * the ceiling of 28, each a cited parameter, and the arithmetic
+ * `min(21 + 1 × (years − 7), 28)` is what produces 22 through 27. That is a
+ * computation stated by the clause, not a figure authored by me.
+ *
+ * The one integer written into the shape is 7 — the boundary between the seventh
+ * year's fixed figure and the eighth year's rule, the same boundary the band
+ * table carries as `from_inclusive: 8`. It is a constant.integer node, visible
+ * in the spec, hashed with it, and named in the trace.
  */
 export const VACATION_SENIORITY_BAND_SPEC: RuleSpecPackage = createRuleSpecPackage({
   schema_version: "tivdoc-rulespec-v0.6.0",
   rule_spec_id: "il.rulespec.vacation.seniority.band.entitlement",
-  rule_spec_version: "1.0.0",
+  rule_spec_version: "2.0.0",
   topic: "vacation",
   catalog_boundary: "real_inactive",
   source_version_ids: ["IL_ANNUAL_VACATION_LAW@discovery-v0", "IL_ANNUAL_VACATION_LAW_AMENDMENT_15_2016@discovery-v0"],
@@ -156,20 +164,31 @@ export const VACATION_SENIORITY_BAND_SPEC: RuleSpecPackage = createRuleSpecPacka
     { ref_id: "parameter.days.years.1.to.5", parameter_id: "il.vacation.calendar_days_years_1_to_5", parameter_version: "2017.1.0", value_kind: "integer", unit: "calendar_days" },
     { ref_id: "parameter.days.year.6", parameter_id: "il.vacation.calendar_days_year_6", parameter_version: "1951.1.0", value_kind: "integer", unit: "calendar_days" },
     { ref_id: "parameter.days.year.7", parameter_id: "il.vacation.calendar_days_year_7", parameter_version: "1951.1.0", value_kind: "integer", unit: "calendar_days" },
+    { ref_id: "parameter.increment.per.year", parameter_id: "il.vacation.calendar_days_increment_per_year_from_year_8", parameter_version: "1951.1.0", value_kind: "integer", unit: "calendar_days_per_year" },
+    { ref_id: "parameter.days.cap", parameter_id: "il.vacation.calendar_days_years_8_and_above_cap", parameter_version: "1951.1.0", value_kind: "integer", unit: "calendar_days" },
   ],
-  nodes: [{
-    node_id: "entitlement.calendar.days",
-    operation: "band.lookup",
-    input_ref: "fact.seniority.year",
-    bands: [
-      { from_inclusive: 1, to_exclusive: 6, value_ref: "parameter.days.years.1.to.5" },
-      { from_inclusive: 6, to_exclusive: 7, value_ref: "parameter.days.year.6" },
-      { from_inclusive: 7, to_exclusive: 8, value_ref: "parameter.days.year.7" },
-    ],
-  }],
+  nodes: [
+    { node_id: "boundary.year.7", operation: "constant.integer", value: 7, unit: "count.years" },
+    { node_id: "years.beyond.7", operation: "subtract", left_ref: "fact.seniority.year", right_ref: "boundary.year.7" },
+    // calendar_days_per_year × count.years = calendar_days, derived, not relabelled.
+    { node_id: "days.added", operation: "multiply", left_ref: "parameter.increment.per.year", right_ref: "years.beyond.7" },
+    { node_id: "days.uncapped", operation: "add", refs: ["parameter.days.year.7", "days.added"] },
+    { node_id: "days.from.year.8", operation: "min", refs: ["days.uncapped", "parameter.days.cap"] },
+    {
+      node_id: "entitlement.calendar.days",
+      operation: "band.lookup",
+      input_ref: "fact.seniority.year",
+      bands: [
+        { from_inclusive: 1, to_exclusive: 6, value_ref: "parameter.days.years.1.to.5" },
+        { from_inclusive: 6, to_exclusive: 7, value_ref: "parameter.days.year.6" },
+        { from_inclusive: 7, to_exclusive: 8, value_ref: "parameter.days.year.7" },
+        { from_inclusive: 8, to_exclusive: null, value_ref: "days.from.year.8" },
+      ],
+    },
+  ],
   output_ref: "entitlement.calendar.days",
   golden_case_set_sha256: blankGoldenSetSha256("vacation"),
-  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+  resource_policy: { max_steps: 8, max_depth: 8, max_aggregate_items: 8, max_integer_digits: 32 },
 });
 
 /** One governance parameter bound into one spec ref. */
@@ -217,10 +236,12 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
       { ref_id: "parameter.days.years.1.to.5", parameter_id: "il.vacation.calendar_days_years_1_to_5", parameter_version: "2017.1.0" },
       { ref_id: "parameter.days.year.6", parameter_id: "il.vacation.calendar_days_year_6", parameter_version: "1951.1.0" },
       { ref_id: "parameter.days.year.7", parameter_id: "il.vacation.calendar_days_year_7", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.increment.per.year", parameter_id: "il.vacation.calendar_days_increment_per_year_from_year_8", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.days.cap", parameter_id: "il.vacation.calendar_days_years_8_and_above_cap", parameter_version: "1951.1.0" },
     ],
     decision_id: null,
     branches: [],
     narrower_than_draft:
-      "Covers the seventh year and below. §3(א)(5)'s one-day-per-year increment to a 28-day ceiling is not in the table: the intermediate figures are not written anywhere in the law, and computing them here would be authoring law rather than citing it. Year eight and above refuse.",
+      "The whole of §3(א): a band table for years one to seven and, from the eighth, 21 + 1 × (years − 7) capped at 28. The figures 22 to 27 are computed from three cited parameters, not written into the spec; the one shape integer is the year-7 boundary. Year zero refuses.",
   },
 ]);

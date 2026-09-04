@@ -65,9 +65,20 @@ const RATIO = (numerator: string, denominator = "1") =>
  * describing a computation the topic does not have.
  */
 const YEARS = (value: number) => ({ kind: "integer" as const, value, unit: "count.years" });
+/** L5-2. A count of months carries its unit, so the executor can derive days from it. */
+const MONTHS = (numerator: string, denominator = "1") => ({ kind: "rational" as const, numerator, denominator, unit: "months" });
+/** L5-4. A count of absence days, for the payment tiers. */
+const DAYS = (value: number) => ({ kind: "integer" as const, value, unit: "days" });
 
-type SeedValue = ReturnType<typeof RATIO> | ReturnType<typeof YEARS>;
-type Seed = Readonly<{ ref_id: string; per_scenario: Readonly<Record<string, SeedValue>> }>;
+type SeedValue = ReturnType<typeof RATIO> | ReturnType<typeof YEARS> | ReturnType<typeof MONTHS> | ReturnType<typeof DAYS>;
+/**
+ * A topic supplies one input per fact its specs declare. Most topics have one;
+ * sick_leave has two because its entitlement is two computations — how many
+ * days accrue, and what a given absence pays — and a spec takes only the facts
+ * it declares. Every companion is withheld together with the primary in the
+ * missing/conflicted scenario, and listed with it.
+ */
+type Seed = Readonly<{ ref_id: string; per_scenario: Readonly<Record<string, SeedValue>>; companions?: readonly Readonly<{ ref_id: string; per_scenario: Readonly<Record<string, SeedValue>> }>[] }>;
 
 // One multiplier per topic — the dimensionless scalar the topic's rule applies
 // to its money parameter. Named for what the computation does with it rather
@@ -127,21 +138,36 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
   // in place of a rounding boundary, which a table of integers does not have —
   // the edge of the table itself, where the run must refuse rather than reach
   // for the nearest band.
+  // L5-3: the table now runs to the ceiling, so the boundary scenarios move
+  // with it — the eighth year, where the rule takes over from the figures, and
+  // the fifteenth, where 21 + 8 would pass 28 and the ceiling holds.
   vacation: {
     ref_id: "fact.seniority.year",
     per_scenario: {
-      current: YEARS(3), effective_date_boundary: YEARS(6), sector_population: YEARS(7),
+      current: YEARS(3), effective_date_boundary: YEARS(8), sector_population: YEARS(7),
       missing_conflicted_facts: YEARS(3), precedence_overlap: YEARS(5),
-      parameter_rounding_boundary: YEARS(8),
+      parameter_rounding_boundary: YEARS(15),
     },
   },
   sick_leave: {
-    ref_id: "fact.months.employed.multiplier",
+    ref_id: "fact.months.employed",
     per_scenario: {
-      current: RATIO("12"), effective_date_boundary: RATIO("12"), sector_population: RATIO("6"),
-      missing_conflicted_facts: RATIO("12"), precedence_overlap: RATIO("12"),
-      parameter_rounding_boundary: RATIO("100", "7"),
+      current: MONTHS("12"), effective_date_boundary: MONTHS("12"), sector_population: MONTHS("6"),
+      missing_conflicted_facts: MONTHS("12"), precedence_overlap: MONTHS("60"),
+      parameter_rounding_boundary: MONTHS("100", "7"),
     },
+    companions: [{
+      ref_id: "fact.absence.days",
+      per_scenario: {
+        // Two days is the first absence the half tier pays for; four is the
+        // first the full tier reaches; seven spans both. One day is a refusal
+        // the spec makes on purpose, and it is proven in its own test rather
+        // than hidden inside a scenario name.
+        current: DAYS(5), effective_date_boundary: DAYS(4), sector_population: DAYS(3),
+        missing_conflicted_facts: DAYS(5), precedence_overlap: DAYS(2),
+        parameter_rounding_boundary: DAYS(7),
+      },
+    }],
   },
 });
 
@@ -189,9 +215,9 @@ function unsignedFixture(topic: Wave3Topic, scenario: typeof GOLDEN_SCENARIOS[nu
     // The missing/conflicted scenario supplies nothing: the refusal is the
     // whole content of the case, and supplying a value and then also omitting
     // it would be two different tests wearing one name.
-    inputs: missing ? [] : [{ ref_id: seed.ref_id, value: seed.per_scenario[scenario] }],
-    omitted_refs: missing ? [seed.ref_id] : [],
-    conflicted_refs: missing ? [seed.ref_id] : [],
+    inputs: missing ? [] : [seed, ...(seed.companions ?? [])].map((source) => ({ ref_id: source.ref_id, value: source.per_scenario[scenario] })),
+    omitted_refs: missing ? [seed, ...(seed.companions ?? [])].map((source) => source.ref_id) : [],
+    conflicted_refs: missing ? [seed, ...(seed.companions ?? [])].map((source) => source.ref_id) : [],
     note: framing.note,
   };
 }

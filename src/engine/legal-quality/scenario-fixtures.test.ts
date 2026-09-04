@@ -42,11 +42,16 @@ describe("E3-6 scenario input fixtures", () => {
       expect(fixture.omitted_refs.length, topic).toBeGreaterThan(0);
       expect(fixture.conflicted_refs.length, topic).toBeGreaterThan(0);
     }
-    // And every other scenario supplies exactly what its topic's rule needs.
+    // And every other scenario supplies exactly what its topic's specs need:
+    // one input for every topic but sick_leave, whose entitlement is two
+    // computations (L5-2, L5-4) and which therefore carries two — and the
+    // withheld scenario must withhold both, listed by name.
     for (const topic of WAVE3_TOPICS) {
+      const expected = topic === "sick_leave" ? 2 : 1;
       for (const scenario of GOLDEN_SCENARIOS.filter((entry) => entry !== "missing_conflicted_facts")) {
-        expect(scenarioFixture(topic, scenario)!.inputs.length, `${topic}/${scenario}`).toBe(1);
+        expect(scenarioFixture(topic, scenario)!.inputs.length, `${topic}/${scenario}`).toBe(expected);
       }
+      expect(scenarioFixture(topic, "missing_conflicted_facts")!.omitted_refs.length, topic).toBe(expected);
     }
   });
 
