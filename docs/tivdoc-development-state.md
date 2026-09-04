@@ -1760,52 +1760,363 @@ identity runtime, which is why E3-4 went through the sanctioned path instead of
 an admin UPDATE, and the executor's exact node vocabulary, which decided which
 topics could get an executable spec and which honestly could not (E3-7).
 
+## Long run 4 — L4-1…L4-10: the rate tables keep their headers, `register` exists
+
+**L4-1 (BL-15).** The defect was in the chunker, not in the corpus. v0 treats any
+line starting with one to three digits and a dot as a heading, and every date
+cell in a rate table starts that way — `01.04.2026`, `1.1.2014`. So v0 flushed on
+every row and produced date-only chunks, value-only chunks, and column headers
+stranded several chunks upstream. The six anchor-impossible citations were rows
+like `"1.04.2023 257.16 222.87 29.95 30.61 5,571.75"`: no headers, no Hebrew, no
+anchor, and no honest way to say which column is which.
+
+`legal-structure-chunker-v1` changes two things. A line whose every token is a
+number, a date, a percentage or a money figure never opens a heading; and inside
+a table the soft size flush is suspended, so a table is never cut in half. On
+entering a table the buffer splits — everything older than a sixteen-line header
+lookback is flushed on its own, and the lookback opens the table chunk.
+
+  21 sources re-chunked. **Bare rows 307 → 6.** The minimum-wage rates page goes
+  from 107 chunks to 4, and the chunk carrying `33.58` also carries
+  `שכר מינימום לשעה`, `בהיקף של 186 שעות` and `בהיקף של 182 שעות`.
+
+v0 is byte-identical and a test still reproduces the defect against it, so the
+fix cannot quietly become the only story. The new set lives beside it with
+`#t0001-…` ids that cannot collide.
+
+Citations against it go through `tableAwareCitation()`, which differs from
+`citation()` in one way on purpose: **the Hebrew anchor is a mandatory argument**,
+checked against the same chunk at authoring time. A v1 citation that still could
+not name its clause in Hebrew would have gained nothing.
+
+Nine parameter versions registered, all `draft`, zero attestations:
+
+- `il.minimum_wage.monthly` @2023/2024/2025 re-cited and registered as `.2.0`
+  revisions with identical values — nothing about the law changed, only what the
+  citation can prove. The `.1.0` rows are superseded naming their replacement,
+  per D2: no rebinding in place.
+- The 2011 pension order's contribution table, which v0 had cut into four
+  header-less fragments and is now one chunk with its column names: employer 6%,
+  employee 5.5%, severance 6%. **The column reading is checked, not asserted** —
+  employer + employee + severance must equal the total column in all seven rows,
+  in exact thousandths, or the script registers nothing. The locator says plainly
+  that this is the last row *this instrument* states and that precedence between
+  instruments stays open.
+- The three unamended vacation bands: 18, 21, 28 days.
+
+Anchors: **31 citations, 25 verified, 0 failed, 6 impossible** — and those six are
+the superseded rows, which now name the chunk that replaced them.
+
+Two scanner weaknesses fixed on the way, both false passes waiting to happen.
+The anchor recheck split on `citation(` and so never saw `tableAwareCitation(`;
+and it read needles by regex, which cannot see a needle built from a loop
+variable and would have reported "verified" against an empty list. A batch
+records the citations it actually made into its receipt now, and the recheck
+reads that rather than scraping source it cannot parse.
+
+**L4-2 (D1).** `band.lookup` and `tiered.rate`. A band boundary or a tier
+threshold is the shape of a table; the value or the rate at each one is a
+parameter, cited and bound like every other. Ranges are half-open and the field
+names say so — `from_inclusive` / `to_exclusive` — because "years 1 to 4" is
+ambiguous in every direction and over half-open ranges contiguity is a single
+equality. `tiered.rate` is cumulative and rounds **once**, over an exact rational
+sum: rounding per tier and then adding would make the total depend on how the
+table happened to be cut up.
+
+Fail-closed, proven: an input outside every band is a refusal, not the nearest
+band and not zero; an input below the first tier or beyond a closed last tier is
+a refusal; an unbound value or rate is a refusal with no output visible.
+
+Two latent holes closed. `min`/`max` were one union member carrying an enum
+discriminant, so narrowing could not remove them and the executor's terminal
+`else` would have evaluated any new node kind as `min`. And
+`rulespec-lifecycle.ts` carried a near-duplicate `inputRefs()` whose
+fall-through returned `[]`, which would have hashed an empty `input_refs` into
+`operation_graph_sha256` for a forgotten kind without anything failing.
+
+**L4-3.** The vacation entitlement table as a band lookup: 16 days for years one
+to five, 18 for the sixth, 21 for the seventh. Three bands and no more. The
+one-day-per-year increment to a 28-day ceiling from the eighth year is not in the
+table, because the intermediate figures — 22 through 27 — are not written
+anywhere in the law, and computing them here would be authoring it rather than
+citing it. Year eight refuses, which is what the fail-closed band refusal is for.
+The vacation fixtures carry a whole seniority year now instead of a multiplier,
+and the scenario that has no rounding boundary carries the edge of the table.
+
+**L4-4 — report v3.** v2 could execute only specs whose parameter and whose
+output were money. That is why its `topics_not_run` gave "the vocabulary has no
+band lookup" for vacation: true at the time, and only half the story, because
+even with the node v2 could not have carried an integer day count through. v3
+binds by declared kind and renders by declared kind, and states a difference only
+where the outputs have a scalar to subtract.
+
+  **36 attempted, 29 run, 7 refused fail-closed, 29 traces persisted, 29 replayed
+  byte-identically from the database. `topics_run` 4 of 7.**
+  Vacation: 16 / 18 / 21 calendar days by band; year eight refuses with
+  `RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE`.
+  The two open decisions unchanged: 141.36 ILS largest, 203.00 ILS largest.
+
+The three shortfalls are each named by slot, and after L4-1 they are no longer
+the same answer:
+
+- **working_time** — the 125/150/175/200 percentages are not in the corpus at
+  all. `IL_HOURS_WORK_REST_LAW`'s nine chunks carry the overtime premium only as
+  words, and the 2018 general overtime permit is quarantined pending an
+  instrument-boundary decision. `tiered.rate` is ready and has no rates to bind.
+- **convalescence** — *the reason on file was wrong.*
+  `IL_CONVALESCENCE_EXTENSION_ORDER_2023` did not fail to parse: six chunks exist
+  on disk and one of them states the 418 shekel day rate from 1.7.2023. What
+  blocks it is a policy quarantine, not a technical failure — that gazette issue
+  carries several instruments, the boundary between them is an unmade human
+  decision (`instrument_selector_pending_human_review`), and the build ledger
+  therefore records `chunks_path: null` so no citation can resolve. The remedy is
+  a decision, not more parsing. The same correction applies to the 2026 order:
+  the recorded finding "no occurrence of הבראה anywhere across its 14 chunks" is
+  false — the word is there in reversed letter order, which is how that whole
+  artifact reads.
+- **sick_leave** — the payment tiers exist in the law only as words
+  (`מחצית דמי מחלה`), never as figures, so `tiered.rate` has no rates to bind.
+  And the two parameters that *are* bound cannot be combined either:
+  `accrual_days_per_month` is a rational in `days_per_month` and
+  `accrual_cap_days` an integer in `days`, and `min` and `multiply` both require
+  matching kinds and units. Relabelling one to make them fit would be a lie in
+  the spec, so this needs either a unit-conversion node or the tier figures.
+
+**L4-5 (D3).** `register` exists. It reads both halves of the key from the
+git-ignored environment file, appends the organisation, its policy and the
+reviewer record as the policy admin, has the database issue a possession
+challenge naming that public key, signs the challenge's canonical bytes with the
+private half, and lets the database verify that signature before it will record
+the key. The private half is read once into memory, used once, and never
+printed, logged, returned or written — the receipt carries the digest of the
+signature, which is evidence that possession was proven rather than a second
+copy of the proof.
+
+Two independent refusals, both proven rather than asserted: `TIVDOC_UNATTENDED=1`
+refuses on its own, and stdin not being a terminal refuses on its own. A reviewer
+id that reads as synthetic is refused too, because such an identity is
+permanently ineligible for real approval and the owner would only find that out
+after creating it.
+
+`prove` runs the identical function on `legal.synthetic.proof` with a keypair
+generated on the spot and an id `isSyntheticReviewerReference` recognises —
+**8 of 8**, including a wrong key refused with `GOVERNANCE_SIGNATURE_INVALID` and
+self-registration refused. Zero real identities created.
+
+**L4-6 (BL-17, D4).** Proof rows move off the reference catalogue: the
+sensitivity run's 29 traces per run, the dependency-hash fixture, and the
+registration proof. Parameters are still *read* from the catalogue, because that
+is where the real draft values live; proof rows are *written* to the synthetic
+tenant. `importPoolPBatch` takes its target tenant, session and subject as an
+argument now, defaulting to the catalogue because that is what the real batches
+want. One thing worth knowing for the next move: the write definers require the
+asserted actor to equal the session subject
+(`RUNTIME_ACTOR_IMPERSONATION_FORBIDDEN`), so a synthetic session carries the
+same system actor.
+
+The guard is an inventory rather than an inference. Every governance-writing
+script is listed with the tenant it writes to, and each of the eleven still on
+the reference catalogue carries the reason it cannot move. Inferring the tenant
+statically would be guessing — it is decided at run time through a session,
+several frames from any literal — and a guard that guesses eventually waves
+something through.
+
+**L4-7 (BL-18, D5).** The system-import session is a rename, not an incident.
+Every field of the row is a function of the tenant name and three fixed strings;
+nothing about it is secret or generated. The whole loop run on the synthetic
+tenant — **8 of 8**: created from the helper, lost by the sanctioned revoke,
+refused while lost, *not* resurrected by a re-seed (recovery is deliberately not
+a way to undo a revocation), recovered under a fresh sid and usable immediately,
+the reference row rewritten idempotently, and A7-1 still refusing the sanctioned
+path with a control on a tenant it does not name.
+
+**L4-8.** `docs/legal/sensitivity-report.he.md` and a PDF through the same
+deterministic RTL machinery the case report uses — the same pinned DejaVu 2.37,
+the same glyph subset, the same byte serialiser — both hashed, the PDF built
+twice and compared before it is written. Every figure comes out of the JSON;
+none is retyped. It answers neither question and recommends neither branch. One
+real withdrawn decision is listed, and only one: the `synthetic` column keeps
+seven throwaway "is this decision real?" fixtures out of a list where they would
+have looked like law.
+
+The renderer needed one honest change rather than a shortcut. A sensitivity
+report is not a case report — no case id, no period, no subtotal — so rather
+than filling those fields with something, the page assembler is shared and takes
+its metadata as an argument, and a second entry point paginates a small
+structured document. The case-report path is byte-for-byte unchanged and its
+tests still pass. Direction is handled the way that renderer already handles it
+rather than by guessing: Hebrew cells right to left, numeric and Latin cells
+left to right, and nothing tries to reorder a mixed run.
+
+**L4-9.** Package v8, 20 files, manifest
+`d2b83c1b14de1d154e0ffb2bd877a47d32e46af4a60c534ab53c45e22966e10f`, built twice
+to one hash. Two gates beyond v7's: the Hebrew rendering must have been generated
+from *this* report — the receipt's `source_report_sha256` is compared against the
+report's own hash and both files re-hashed before packing, proven by breaking it
+— and `topics_run` may go up but never down.
+
+**Three mistakes this run made and caught, all the same shape.** A check that
+passed without checking what it was checking. The reviewer-registration proof
+counted a unique-violation as a refused wrong key, because the
+organisation-existence read was blind: those tables force RLS on
+`tenant_id = runtime_verified_tenant()`, and an admin connection with no runtime
+context sees nothing. The session-recovery drill counted a zero-row DELETE as a
+successful loss for the same reason, and then "passed" a refusal against a
+session that had never gone anywhere. And its A7-1 probe ran as a role with no
+execute grant, so its 42501 came from the ACL and said nothing about the guard.
+All three assert what refused them now, and the guard case has a control on a
+tenant the guard does not name, so a broken function cannot pass as a working
+guard.
+
+## Freeze — long run 4, the complete matrix
+
+### Local
+
+vitest **277/277 files, 1951 passed, 3 skipped, 0 failed**. tsc clean. eslint **0 errors, 0 warnings**. `next build`
+compiled successfully.
+
+Five cases across three files were triaged rather than papered over, all one
+class — load sensitivity under full-suite parallelism, each measured green in
+isolation, each budget taken from the mechanism rather than from a multiple of
+the measurement. And one lesson, learned the slow way: raising cases one at a
+time only moved the failure to the next case in the same file. Three successive
+full runs failed on three different cases of `evidence-core.test.ts` before the
+budget went where it belonged, which is on the file.
+
+- `parser-isolation.test.ts`, the permission-restricted-child case: **768ms
+  alone**. It spawns a real OS process under a permission restriction, and under
+  a fully parallel suite Windows can schedule that spawn arbitrarily late. The
+  case is about what the child returns, never about how soon. 30s on the case.
+- `evidence-core.test.ts`, whole suite: **324ms, 345ms and one more at 5195ms**
+  across three runs. Every case builds a temp evidence tree on disk, mutates one
+  file, rebuilds the manifest and re-hashes it. 30s on the suite.
+- `acquisition.test.ts` and `controlled-import-security.test.ts`, the two
+  controlled-import suites: **~1.4s alone each**. Every case writes, hashes,
+  commits and re-reads real bytes on disk. 30s on each suite.
+
+### DEV, as the runtime roles
+
+Chain 51/51, tail `202609020028` — this run added no migration. Grant execution
+**22 executed, 0 denied, 18 context failures**. Identity negative matrix
+**8/8**. Definer surface **104**, ungated 2 (the known bootstrap pair),
+unexpected 0, reserved-execute 14, failures 0. Invalidation effects **10/10**.
+Dynamic matrix **14 checks, 10 supported, 10 passed**. RLS force **64/64**,
+unforced 0. Journey **16/16**.
+
+Governance proofs, all by execution: A7-1 guards **6/6**; P-0 / E2-2 attestation
+matrix **15/15**; A7-3 withdrawal **7/7**; Q draft-binding **8/8**; R-14 trace
+replay **9/9**; E3-2/E3-3 supersession and synthetic **10/10**; E3-4 revocation
+**6/6**; L4-5 registration **8/8**; L4-7 session recovery **8/8**.
+
+Citation anchors: **31 declared, 25 verified, 0 failed, 6 impossible** — the six
+being the superseded rows, which name the chunk that replaced them. Re-chunk:
+**21 sources, bare rows 307 → 5**. Sensitivity run: **36 attempted, 29 executed,
+7 refused fail-closed, 29 traces persisted to the synthetic proof tenant, 29
+replayed byte-identically from it**.
+
+Report v3 `11889f032cb65404c808d2e26b63b5dda9c8a53490ea43667c1332d098894f8a`.
+Hebrew rendering `ff931f655074a7494d890e55756dd363f55aa08da82e188ec037db22dd2bebd4`,
+PDF `9b1bcd06ef6b4b744186d72a42b95e26326e82be3116e5cd3e75350d66086dc8`.
+Package v8, 20 files, built twice to one hash.
+
+Identity sessions active on `legal.reference.il`: **1**. Reviewer identities on
+that tenant: **0** — `register` works and refuses to run itself.
+
+### Three proofs the freeze itself corrected
+
+Running the full matrix caught three claims this run had made stale, which is
+what a matrix is for.
+
+A7-1's own guard 1 flagged a sentence in E3-4's receipt promising that restoring
+write access after a lost system-import session "requires a migration that
+grants an exception to the A7-1 refusal". L4-7 had just proved otherwise. The
+sentence is corrected and derives the tenant from the constant.
+
+The Q draft-binding proof refused to bind `il.minimum_wage.monthly` at
+`2023.1.0`, `2024.1.0` and `2025.1.0` — because L4-1 superseded exactly those
+three. The drafts name the `.2.0` revisions now. That is supersession working
+end to end: a row goes `superseded`, and the thing that would have bound to it
+fails until it is moved.
+
+And E2-10's hygiene check asserted "every candidate is draft", which stopped
+being the right property the moment supersession existed. A superseded row is
+the correction mechanism working, not a hygiene failure. What must still hold —
+and does — is that nothing is activatable and `superseded` is the only other
+state anything reaches.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, customer rows 0, openai calls 0, deployments 0, remote
+production migrations 0, `HUMAN_GROUND_TRUTH_LOCKED` 0.
+
+### Lane B
+
+Fourteen read-only Haiku agents across the run, four in flight from the first
+minutes and refilled as they returned, each pinned to the SHA it read. None
+could write — the read-only agent type has no write tools — so their findings
+came back in their reports and were folded into these commits.
+
+Their findings shaped most of this run. The executor survey found both latent
+holes L4-2 closed. The chunker survey located the heading rule that turned out
+to be BL-15's cause. The identity survey produced the whole registration recipe.
+The tenant survey produced the write inventory L4-6's guard is built from. The
+corpus survey found the 418 rate sitting in a source recorded as `parse_failed`.
+And a review agent pointed at five real defects in this run's own new code —
+including a PDF renderer that reversed English inside a Hebrew line, which was
+live in the document meant for a lawyer.
+
 ## Resume point
 
-Refreshed at long run 3. Everything before this point is history; this section
+Refreshed at long run 4. Everything before this point is history; this section
 is the only part a resuming session must read to know where things stand.
 
-**Where the work is.** Pools H, D, S and R are closed. Pool P has 28 registered
-draft parameter versions and 9 that stay blocked, each on a named corpus
-defect rather than on effort. Pool Q has seven drafts, and the sensitivity
-report they exist for now contains real numbers for both open decisions. Pool
-E2 is 10/10 and Pool E3 is 10/10.
+**Where the work is.** Pools H, D, S and R are closed. Pool P has 34 registered
+draft parameter versions, 3 superseded by citation move and 1 by scope, and 9
+that stay blocked — each on a named corpus defect or an unmade human decision
+rather than on effort. Pool Q has seven drafts. Pools E2, E3 and L4 are 10/10.
+The sensitivity report runs four topics of seven and says why the other three do
+not.
 
-**What a lawyer could be handed today.** Review package v7, manifest
-`509532ad610f7441e1fa4762e01a8d86f5f017933d7accd3c0ded1fb935e7252` — dossier,
-Hebrew runbook, sensitivity report v2 with the superseded v1 beside it, the
-three legal decisions, 28 draft parameters with their binding hashes, the 42
-scenario fixtures, 30 executions and 25 replayed traces, the four topics that
-did not run with reasons, and the citation anchors. Every item `not_reviewed`,
+**What a lawyer could be handed today.** Review package v8 — dossier, Hebrew
+runbook, sensitivity report v3 with v2 and v1 beside it, **a Hebrew rendering of
+v3 in Markdown and PDF, both hash-bound to that exact report**, the legal
+decisions, the draft parameters with their binding hashes, the 42 scenario
+fixtures, 36 executions and 29 replayed traces, the three topics that did not
+run with reasons, and the citation anchors. Every item `not_reviewed`,
 `not_signed`, `not_activated`, `not_delivered`.
 
-**The one gate that moves `0/7`.** The owner registers a reviewer identity —
-`owner-reviewer-identity.mts keygen` is ready and prints the single command;
-`register` deliberately refuses, because creating a real identity is
-irreversible and is the owner's act. Then a labour lawyer reads the
-sensitivity report and attests as the second, independent identity.
+**The one gate that moves `0/7`, and it is now one command.** The owner runs
+`owner-reviewer-identity.mts keygen` if they have not, then `register
+--reviewer-id <their.id>` **at a keyboard, in an interactive shell, with
+`TIVDOC_UNATTENDED` unset**. It refuses otherwise, deliberately and twice over.
+Then a labour lawyer reads `docs/legal/sensitivity-report.he.md` and attests as
+the second, independent identity.
 
 **Next engineering work, in the order it unblocks things.**
 
-1. Re-chunk the rate tables so each row carries its column headers. Six cited
-   chunks and the 2011 pension rate table are all blocked on this one defect,
-   and it is what stands between Pool P and its remaining nine parameters.
-2. Move proof scripts to a `legal.synthetic.proof` tenant (D3, half done: they
-   self-flag at registration now, but still write to the real tenant).
-3. Executable specs for working_time and convalescence once their slots bind;
-   vacation and sick_leave need a seniority-band node the vocabulary lacks.
-4. R-2's templates and Q's drafts remain unexecutable by design until a
-   reviewer fills their judgement slots. That is not a defect.
+1. Nothing engineering-side blocks the gate above. It is a person's turn.
+2. The two remaining corpus shortfalls are both human decisions, not parses. The
+   2023 convalescence order's 418 rate is on disk and unusable because the
+   instrument boundary in that gazette issue is unmade; the 2018 overtime permit
+   is quarantined the same way. A reviewer deciding either unblocks
+   `il.convalescence.daily_rate` and the overtime tiers, and `tiered.rate` is
+   already built and waiting.
+3. sick_leave needs either the payment-tier figures — which the law states only
+   in words — or a unit-conversion node, because `days_per_month` and `days`
+   cannot be combined without relabelling one, and relabelling would be a lie.
+4. The vacation table above the seventh year needs a subtraction node or six
+   figures the law does not write down. Recorded, not attempted.
 
 **Do not retry.** Corpus acquisition beyond what is recorded; a second Supabase
 project; resetting the DEV default database; `initdb.exe` under Windows
-Application Control (BL-6); revoking the
-`session.legal.reference.system-import` identity session (it cannot be
-recreated — see E3-4).
+Application Control (BL-6); revoking the `session.legal.reference.system-import`
+session — but the reason has changed: it is no longer irrecoverable (L4-7 closed
+that), it is simply that fourteen scripts name that sid and would all have to
+move together.
 
 **Carried, human or external.** K-3's managed-bucket half (needs the Storage
 key, absent at every preflight since), K-5 (needs an off-host destination), the
 owner's visual review of the five payslip composites, and X-4's eight
 `public.*_salary_*` grants (all `cannot_move`: PostgREST cannot select a narrow
 role from a Supabase JWT — see E2-5 for the precondition).
-

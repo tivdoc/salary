@@ -133,6 +133,12 @@ async function fixture(bytes = validPdf()) {
   };
 }
 
+// Every case in this suite performs a real controlled import: bytes written,
+// hashed, committed and re-read on disk. That is the mechanism and it is the
+// same for all of them. Measured at roughly 1.4s alone; under full-suite
+// parallelism they compete with the whole run for the filesystem and cross the
+// 5s default. Raising cases one at a time only moves the failure to the next
+// one, which is how this budget ended up on the file rather than on a case.
 describe("controlled import E2E and atomic selection", () => {
   it("proves synthetic request to private-copy hash to immutable publish to ledger to strict verify", async () => {
     const item = await fixture();
@@ -421,7 +427,7 @@ describe("controlled import E2E and atomic selection", () => {
     expect(empty).toMatchObject({ status: "NO_IMPORTS_TO_VERIFY", exit_code: 0, ledger_entries: 0 });
     expect(strict).toMatchObject({ status: "REQUIRED_IMPORTS_MISSING", exit_code: 4, missing_required_request_ids: ["ACQ-V031-REQUIRED"] });
   });
-});
+}, 30_000);
 
 describe("receipt, request, URL, media and identity binding", () => {
   it.each([

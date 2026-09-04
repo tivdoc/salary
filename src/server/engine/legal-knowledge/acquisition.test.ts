@@ -93,6 +93,12 @@ function receipt(bytes = syntheticPdf(), overrides: Record<string, unknown> = {}
   };
 }
 
+// Every case in this suite performs a real controlled import: bytes written,
+// hashed, committed and re-read on disk. That is the mechanism and it is the
+// same for all of them. Measured at roughly 1.4s alone; under full-suite
+// parallelism they compete with the whole run for the filesystem and cross the
+// 5s default. Raising cases one at a time only moves the failure to the next
+// one, which is how this budget ended up on the file rather than on a case.
 describe("controlled owner acquisition", () => {
   it("routes every owner PDF validation through the isolated screener", async () => {
     await expect(validateOwnerPdfBytes(Buffer.from(`<html>${"x".repeat(600)}</html>`))).rejects.toThrow("isolated_parser_pdf_magic_mismatch");
@@ -234,7 +240,7 @@ describe("controlled owner acquisition", () => {
     await writeFile(artifactPath, Buffer.concat([original, Buffer.from("tamper")]));
     await expect(verifyOwnerAcquisitionLedger({ ledgerRoot: path.join(root, "ledger"), artifactRoot: path.join(root, "artifacts") })).rejects.toThrow("controlled_commit_artifact_bytes_mismatch");
   });
-});
+}, 30_000);
 
 describe("readiness outcomes", () => {
   it("uses the complete Wave 1 browser inventories without changing their discovery-only role", async () => {
