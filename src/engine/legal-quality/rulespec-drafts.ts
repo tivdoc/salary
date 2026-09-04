@@ -162,6 +162,13 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   { parameter_id: "il.working_time.daily_hours_cap_including_overtime", versions: ["2018.1.0"] },
   { parameter_id: "il.working_time.weekly_overtime_hours_cap", versions: ["2018.1.0"] },
   { parameter_id: "il.working_time.weekly_hours_cap_including_overtime", versions: ["2018.1.0"] },
+  // L6-3 (batch 11 / D1): the 1951 premiums, read from the page image and
+  // registered inferred_visual — the draft binds them as drafts, and the row,
+  // the report and the rendering all show the grade. Attestation needs
+  // visual_confirmed against the very page and reading.
+  { parameter_id: "il.working_time.overtime_rate_first_tier", versions: ["1951.1.0"] },
+  { parameter_id: "il.working_time.overtime_rate_second_tier", versions: ["1951.1.0"] },
+  { parameter_id: "il.working_time.weekly_rest_rate", versions: ["1951.1.0"] },
 ]);
 
 // Parameters that exist as draft rows but must never be bound, because
@@ -176,10 +183,10 @@ export const SUPERSEDED_BY_SCOPE: Readonly<Record<string, string>> = Object.free
 // Why each still-unregistered parameter is unregistered, in the words of the
 // Pool P and Addendum 7 write-ups rather than a shrug. A slot with no reason
 // here is a slot nobody has thought about, so building a draft for it fails.
-const UNBOUND_REASONS: Readonly<Record<string, string>> = Object.freeze({
-  "il.working_time.overtime_rate_first_tier":
-    "Pool P P-11..P-14, restated at L5-8: the only corpus text of the Hours of Work and Rest Law is the 1951 gazette scan, whose OCR renders 1¼ and 1½ as 11/4 and 11/2 — ambiguous, refused by name by legal-numeral-lexicon-v1, never read. The consolidated text is requested through the controlled acquisition path; until it lands, the first-tier rate has no citable figure.",
-});
+// L6-3: empty. Every slot of every draft binds a registered draft parameter.
+// The last unbound slot, the first overtime tier, bound through a visual
+// citation once L6-1 proved the 1951 text authoritative for it.
+const UNBOUND_REASONS: Readonly<Record<string, string>> = Object.freeze({});
 
 function bindingFor(parameterId: string) {
   return REGISTERED_DRAFT_PARAMETERS.find((entry) => entry.parameter_id === parameterId) ?? null;

@@ -331,12 +331,127 @@ export type SensitivityBinding = Readonly<{
   parameter_version: string | null;
 }>;
 
+
+// --- L6-3 / D1: working time — the §16(א) tiers over a day's overtime hours -
+//
+// The first two overtime hours of a day at the first-tier premium, every hour
+// after them at the second, each on the regular hourly wage: tiered.rate is
+// exactly that computation. Both premiums are visual citations of the 1951
+// page (batch 11), registered inferred_visual; the draft binds them as drafts
+// and the report shows the grade. The output is the pay due for the overtime
+// hours, premium included.
+export const WORKING_TIME_OVERTIME_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.working.time.overtime.pay",
+  rule_spec_version: "1.0.0",
+  topic: "working_time",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_HOURS_WORK_REST_LAW@discovery-v0"],
+  effective_period: { from: "1951-09-27", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [
+    { ref_id: "fact.overtime.hours.day", value_kind: "integer", unit: "hours" },
+    { ref_id: "fact.regular.hourly.wage", value_kind: "money", unit: "currency.ils" },
+  ],
+  parameters: [
+    { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+    { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+  ],
+  nodes: [
+    {
+      node_id: "overtime.pay",
+      operation: "tiered.rate",
+      input_ref: "fact.overtime.hours.day",
+      base_ref: "fact.regular.hourly.wage",
+      tiers: [
+        { from_inclusive: 0, to_exclusive: 2, rate_ref: "parameter.rate.first" },
+        { from_inclusive: 2, to_exclusive: null, rate_ref: "parameter.rate.second" },
+      ],
+      rounding: "half_up",
+    },
+  ],
+  output_ref: "overtime.pay",
+  golden_case_set_sha256: blankGoldenSetSha256("working_time"),
+  resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
+// --- L6-4 / D2: overtime on the weekly rest — a composition, not a figure ---
+//
+// §17(א)(1) states 1½ for rest-day hours; §16(א) states 1¼ and 1½ for
+// overtime. What an overtime hour ON the rest day pays is a composition of the
+// two, and the composition rule is a reading: additive (the rest premium plus
+// the overtime increment) or multiplicative (the rest premium times the
+// overtime premium). Neither 175 nor 200 is authored anywhere; each branch
+// derives its rates from the registered parameters through the executor,
+// under the open decision rest_day_overtime_composition.
+function restDayCompositionSpec(branch: "additive" | "multiplicative"): RuleSpecPackage {
+  const one = { node_id: "one", operation: "constant.rational" as const, value: "1" as const, unit: "ratio" };
+  const composed = branch === "additive"
+    ? [
+      { node_id: "increment.first", operation: "subtract" as const, left_ref: "parameter.rate.first", right_ref: "one" },
+      { node_id: "increment.second", operation: "subtract" as const, left_ref: "parameter.rate.second", right_ref: "one" },
+      { node_id: "rest.rate.first", operation: "add" as const, refs: ["parameter.rate.rest", "increment.first"] },
+      { node_id: "rest.rate.second", operation: "add" as const, refs: ["parameter.rate.rest", "increment.second"] },
+    ]
+    : [
+      { node_id: "rest.rate.first", operation: "multiply" as const, left_ref: "parameter.rate.rest", right_ref: "parameter.rate.first" },
+      { node_id: "rest.rate.second", operation: "multiply" as const, left_ref: "parameter.rate.rest", right_ref: "parameter.rate.second" },
+    ];
+  return createRuleSpecPackage({
+    schema_version: "tivdoc-rulespec-v0.6.0",
+    rule_spec_id: `il.rulespec.working.time.rest.day.overtime.${branch}`,
+    rule_spec_version: "1.0.0",
+    topic: "working_time",
+    catalog_boundary: "real_inactive",
+    source_version_ids: ["IL_HOURS_WORK_REST_LAW@discovery-v0"],
+    effective_period: { from: "1951-09-27", to: null },
+    sectors: ["general"],
+    populations: ["general"],
+    facts: [
+      { ref_id: "fact.rest.day.overtime.hours.day", value_kind: "integer", unit: "hours" },
+      { ref_id: "fact.regular.hourly.wage", value_kind: "money", unit: "currency.ils" },
+    ],
+    parameters: [
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+      { ref_id: "parameter.rate.rest", parameter_id: "il.working_time.weekly_rest_rate", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+    ],
+    nodes: [
+      ...(branch === "additive" ? [one] : []),
+      ...composed,
+      {
+        node_id: "rest.day.overtime.pay",
+        operation: "tiered.rate" as const,
+        input_ref: "fact.rest.day.overtime.hours.day",
+        base_ref: "fact.regular.hourly.wage",
+        tiers: [
+          { from_inclusive: 0, to_exclusive: 2, rate_ref: "rest.rate.first" },
+          { from_inclusive: 2, to_exclusive: null, rate_ref: "rest.rate.second" },
+        ],
+        rounding: "half_up" as const,
+      },
+    ],
+    output_ref: "rest.day.overtime.pay",
+    golden_case_set_sha256: blankGoldenSetSha256("working_time"),
+    resource_policy: { max_steps: 12, max_depth: 6, max_aggregate_items: 8, max_integer_digits: 32 },
+  });
+}
+export const REST_DAY_OVERTIME_ADDITIVE_SPEC: RuleSpecPackage = restDayCompositionSpec("additive");
+export const REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC: RuleSpecPackage = restDayCompositionSpec("multiplicative");
+export const REST_DAY_OVERTIME_COMPOSITION_DECISION = "legal.reference.il.decision.rest_day_overtime_composition";
+
 export type SensitivitySpec = Readonly<{
   spec: RuleSpecPackage;
   bindings: readonly SensitivityBinding[];
   decision_id: string | null;
   branches: ReadonlyArray<readonly [string, string]>;
   narrower_than_draft: string | null;
+  // L6-4 / D2. A decision whose branches are different COMPUTATIONS over the
+  // same parameters, not different parameter versions: each branch is its own
+  // spec, named here, and the report compares the two specs' outputs per
+  // scenario under the one decision id.
+  composition_branch?: string;
 }>;
 
 export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
@@ -405,5 +520,42 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"]],
     narrower_than_draft:
       "The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and both branches carry the same figure, so no scenario separates them in amount. The full draft also needs the seniority-band day counts, which are not in the corpus.",
+  },
+  // L6-3: working time runs — both §16(א) premiums are visual citations.
+  {
+    spec: WORKING_TIME_OVERTIME_SPEC,
+    bindings: [
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
+    ],
+    decision_id: null,
+    branches: [],
+    narrower_than_draft:
+      "Binds the two §16(א) premiums, read from the page image (inferred_visual, awaiting visual confirmation at attestation). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps, which bound the hours a scenario may supply rather than price them; this spec prices the hours it is given.",
+  },
+  // L6-4: overtime on the weekly rest, one decision, two computations.
+  {
+    spec: REST_DAY_OVERTIME_ADDITIVE_SPEC,
+    bindings: [
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.rest", parameter_id: "il.working_time.weekly_rest_rate", parameter_version: "1951.1.0" },
+    ],
+    decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION,
+    branches: [],
+    composition_branch: "additive",
+    narrower_than_draft: "The additive reading: the rest premium plus the overtime increment. 175% and 200% appear as outputs of the executor, never as figures in a source.",
+  },
+  {
+    spec: REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC,
+    bindings: [
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.rest", parameter_id: "il.working_time.weekly_rest_rate", parameter_version: "1951.1.0" },
+    ],
+    decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION,
+    branches: [],
+    composition_branch: "multiplicative",
+    narrower_than_draft: "The multiplicative reading: the rest premium times the overtime premium — 187.5% and 225%, again outputs and not figures.",
   },
 ]);

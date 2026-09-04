@@ -60,6 +60,7 @@
 // check). R-8 (semantic invalidation *closure* — propagating a changed
 // bindings_sha256 across every dependent run, report and grant) stays
 // deferred to Session B; this only makes the hash itself complete.
+import * as fs from "node:fs";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -67,7 +68,7 @@ import path from "node:path";
 import { assertUsableAnchor, checkCitationAnchor } from "../../src/engine/legal-knowledge/citation-anchor.ts";
 import { bindCompoundThroughLexicon, bindThroughLexicon } from "../../src/engine/legal-knowledge/numeral-lexicon-v1.ts";
 import { buildVisualCitation, visualBindingOf, worstProvenance, type ProvenanceGrade, type VisualCitation } from "../../src/engine/legal-knowledge/visual-citation-v1.ts";
-import { extractPagePdf, renderScanPagePng, sha256 as bytesSha256 } from "./visual-page.mts";
+import { extractPagePdf, renderScanPagePng, renderToolVersion, sha256 as bytesSha256 } from "./visual-page.mts";
 import { frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";
 import { parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
 import type { Wave3Topic } from "../../src/engine/wave3/contracts.ts";
@@ -372,6 +373,17 @@ export function tableAwareCitation(
 /** Every visual citation this process made, for the receipt and the recheck. */
 export const VISUAL_CITATIONS: Array<Readonly<{ chunk_id: string; page: number; line_index: number; text_layer_surface: string | null; visual_reading: string; page_pdf_sha256: string; anchor: string; locator: string }>> = [];
 
+/** The page span of a table-aware chunk, read from its sidecar. */
+function tableAwareSidecarEntry(sourceId: string, sourceVersion: string, chunksPath: string, chunkId: string): { page_from: number; page_to: number } {
+  const dir = path.dirname(path.resolve(chunksPath));
+  const sidecarFile = fs.readdirSync(dir).find((name) => name.endsWith(".t1.chunks.json"));
+  if (!sidecarFile) throw new Error(`POOL_P_TABLE_AWARE_SIDECAR_MISSING:${sourceId}@${sourceVersion}`);
+  const document = JSON.parse(readFileSync(path.join(dir, sidecarFile), "utf8")) as { chunks: Array<{ chunk_id: string; page_from: number; page_to: number }> };
+  const entry = document.chunks.find((chunk) => chunk.chunk_id === chunkId);
+  if (!entry) throw new Error(`POOL_P_UNKNOWN_TABLE_AWARE_CHUNK:${chunkId}`);
+  return { page_from: entry.page_from, page_to: entry.page_to };
+}
+
 export async function visualCitation(
   source: SourceRef,
   chunkId: string,
@@ -393,16 +405,21 @@ export async function visualCitation(
   if (lineText === undefined) throw new Error(`POOL_P_VISUAL_LINE_MISSING:${source.source_id}:${page}:${lineIndex}`);
   const artifactBytes = readFileSync(path.resolve(observation.artifact_path));
   if (bytesSha256(artifactBytes) !== observation.artifact_sha256) throw new Error(`POOL_P_ARTIFACT_HASH_MISMATCH:${source.source_id}`);
+  // The anchor chunk must be the same page's chunk: a page read here and a
+  // chunk anchored elsewhere would be a citation in two places.
+  if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
+  const sidecar = tableAwareSidecarEntry(source.source_id, source.source_version, observation.chunks_path, chunkId);
+  if (sidecar.page_from > page || sidecar.page_to < page) throw new Error(`POOL_P_VISUAL_CHUNK_NOT_ON_PAGE:${chunkId}:${page}`);
   const pagePdf = await extractPagePdf(artifactBytes, page);
   const render = await renderScanPagePng(artifactBytes, page);
   const built = buildVisualCitation({
     artifact_sha256: observation.artifact_sha256, page, page_pdf_sha256: bytesSha256(pagePdf), page_image_sha256: bytesSha256(render.png),
     line_index: lineIndex, line_text: lineText, text_layer_surface: textLayerSurface, visual_reading: visualReading,
+    render_tool_version: renderToolVersion(),
   });
   if (built.refusal !== null) throw new Error(`POOL_P_VISUAL_CITATION_REFUSED:${built.refusal}`);
   // The anchor: the same page's table-aware chunk must carry it, so the
   // citation can still be found by its words.
-  if (!observation.chunks_path) throw new Error(`POOL_P_SOURCE_NOT_BUILT:${source.source_id}@${source.source_version}`);
   const chunk = tableAwareChunk(source.source_id, source.source_version, observation.chunks_path, chunkId);
   assertUsableAnchor(anchor);
   if (!checkCitationAnchor(chunk.logical_text, anchor).matched) throw new Error(`POOL_P_CITATION_ANCHOR_NOT_IN_CHUNK:${chunkId}`);
@@ -479,7 +496,10 @@ export type DraftParameterInput = Readonly<{
 function provenanceFields(citations: readonly Citation[]): { provenance_grade?: ProvenanceGrade; visual_bindings?: readonly { page_pdf_sha256: string; visual_reading: string }[] } {
   const grade = worstProvenance(citations.map((entry) => entry.provenance));
   const visual = citations.filter((entry): entry is Citation & { visual: VisualCitation } => entry.visual !== undefined).map((entry) => visualBindingOf(entry.visual));
-  if (grade === "inferred_visual") return { provenance_grade: grade, visual_bindings: visual };
+  // Visual bindings travel whenever any citation is visual, whatever the
+  // worst grade is — an administrative citation beside a visual one does not
+  // make the visual one confirmable by nobody.
+  if (visual.length > 0) return { provenance_grade: grade, visual_bindings: visual };
   if (grade === "administrative") return { provenance_grade: grade };
   return {};
 }

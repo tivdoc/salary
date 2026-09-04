@@ -127,6 +127,13 @@ export const POOL_P_CITATION_ANCHORS: readonly ChunkAnchor[] = Object.freeze([
     chunk_id: "IL_ANNUAL_VACATION_LAW@discovery-v0#t0001-838721e06653",
     anchor: "אורך החופשה לכל שנת-עבודה אצל מעביד אחד או במקום-עבודה אחד",
   },
+  // L6-3 / D1: page 4 of the 1951 promulgation, §16(א) and §17(א)(1). The
+  // figures are visual citations (the text layer reads 11/4 and 11/2); the
+  // anchor is the clause's own opening words, which the text layer does carry.
+  {
+    chunk_id: "IL_HOURS_WORK_REST_LAW@discovery-v0#t0006-1cec5eccebec",
+    anchor: "בעד שתי השעות הנוספות הראשונות",
+  },
 ]);
 
 export function anchorFor(chunkId: string): ChunkAnchor | null {

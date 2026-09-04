@@ -69,8 +69,12 @@ const YEARS = (value: number) => ({ kind: "integer" as const, value, unit: "coun
 const MONTHS = (numerator: string, denominator = "1") => ({ kind: "rational" as const, numerator, denominator, unit: "months" });
 /** L5-4. A count of absence days, for the payment tiers. */
 const DAYS = (value: number) => ({ kind: "integer" as const, value, unit: "days" });
+/** L6-3. A count of hours in a day, for the overtime tiers. */
+const HOURS = (value: number) => ({ kind: "integer" as const, value, unit: "hours" });
+/** L6-3. A money fact — a regular hourly wage the premium scales. Synthetic, like every other value here. */
+const MONEY = (minorUnits: number) => ({ kind: "money" as const, currency: "ILS", minor_units: minorUnits });
 
-type SeedValue = ReturnType<typeof RATIO> | ReturnType<typeof YEARS> | ReturnType<typeof MONTHS> | ReturnType<typeof DAYS>;
+type SeedValue = ReturnType<typeof RATIO> | ReturnType<typeof YEARS> | ReturnType<typeof MONTHS> | ReturnType<typeof DAYS> | ReturnType<typeof HOURS> | ReturnType<typeof MONEY>;
 /**
  * A topic supplies one input per fact its specs declare. Most topics have one;
  * sick_leave has two because its entitlement is two computations — how many
@@ -115,13 +119,36 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
       parameter_rounding_boundary: RATIO("1", "3"),
     },
   },
+  // L6-3 / L6-4. Working time is three facts: the overtime hours of a day (the
+  // §16(א) tiers are per day), the regular hourly wage the premium scales,
+  // and the overtime hours worked on the weekly rest, for the composition
+  // decision. The rounding scenario puts a wage that does not divide evenly
+  // under a 1¼ premium.
   working_time: {
-    ref_id: "fact.overtime.hours.multiplier",
+    ref_id: "fact.overtime.hours.day",
     per_scenario: {
-      current: RATIO("10"), effective_date_boundary: RATIO("10"), sector_population: RATIO("5"),
-      missing_conflicted_facts: RATIO("10"), precedence_overlap: RATIO("12"),
-      parameter_rounding_boundary: RATIO("10", "3"),
+      current: HOURS(4), effective_date_boundary: HOURS(3), sector_population: HOURS(2),
+      missing_conflicted_facts: HOURS(4), precedence_overlap: HOURS(5),
+      parameter_rounding_boundary: HOURS(1),
     },
+    companions: [
+      {
+        ref_id: "fact.regular.hourly.wage",
+        per_scenario: {
+          current: MONEY(3_000), effective_date_boundary: MONEY(3_000), sector_population: MONEY(3_000),
+          missing_conflicted_facts: MONEY(3_000), precedence_overlap: MONEY(3_000),
+          parameter_rounding_boundary: MONEY(3_333),
+        },
+      },
+      {
+        ref_id: "fact.rest.day.overtime.hours.day",
+        per_scenario: {
+          current: HOURS(3), effective_date_boundary: HOURS(2), sector_population: HOURS(1),
+          missing_conflicted_facts: HOURS(3), precedence_overlap: HOURS(4),
+          parameter_rounding_boundary: HOURS(1),
+        },
+      },
+    ],
   },
   convalescence: {
     ref_id: "fact.convalescence.days.multiplier",

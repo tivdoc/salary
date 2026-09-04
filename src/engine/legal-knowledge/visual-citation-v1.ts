@@ -57,6 +57,12 @@ export const visualCitationSchema = z.object({
   provenance: z.literal(PROVENANCE_INFERRED_VISUAL),
   visual_verification_required: z.literal(true),
   read_by: z.literal("session"),
+  // The toolchain the page image was rendered with (tool version, sharp and
+  // libvips versions), so a reviewer reproducing page_image_sha256 knows what
+  // to reproduce it with. A different encoder gives different bytes for the
+  // same pixels; the page PDF hash, which the attestation binds, does not
+  // depend on it.
+  render_tool_version: z.string().min(1).max(120).optional(),
 }).strict().readonly();
 
 export type VisualCitation = z.infer<typeof visualCitationSchema>;
@@ -111,6 +117,7 @@ export type VisualCitationInput = Readonly<{
   line_text: string;
   text_layer_surface: string | null;
   visual_reading: string;
+  render_tool_version?: string;
 }>;
 
 /**
@@ -142,6 +149,7 @@ export function buildVisualCitation(input: VisualCitationInput): { citation: Vis
     provenance: PROVENANCE_INFERRED_VISUAL,
     visual_verification_required: true,
     read_by: "session",
+    ...(input.render_tool_version ? { render_tool_version: input.render_tool_version } : {}),
   });
   if (!parsed.success) return { citation: null, refusal: `VISUAL_CITATION_INVALID:${parsed.error.issues[0]?.path.join(".") ?? "shape"}` };
   return { citation: parsed.data, refusal: null };

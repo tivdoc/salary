@@ -74,7 +74,8 @@ describe("Q-1..Q-7 draft RuleSpecs", () => {
     const unbound = buildSevenRuleSpecDrafts()
       .flatMap((draft) => draft.parameter_slots)
       .filter((slot) => !slot.bound);
-    expect(unbound.length).toBeGreaterThan(0);
+    // L6-3: every slot binds now; the property still holds for any slot that
+    // comes unbound later, and the empty case is the state, not a gap.
     for (const slot of unbound) {
       if (slot.bound) continue;
       // A reason, not a shrug: it has to name the Pool P unit and the concrete
@@ -164,10 +165,8 @@ describe("Q-1..Q-7 draft RuleSpecs", () => {
     const reasons = buildSevenRuleSpecDrafts()
       .flatMap((draft) => draft.parameter_slots)
       .filter((slot) => !slot.bound);
-    // L5: convalescence and the pension split bind now (batches 8 and 10); the
-    // overtime rate waits on the consolidated Hours law (L5-8).
-    expect(reasons.map((slot) => slot.parameter_id).sort()).toEqual([
-      "il.working_time.overtime_rate_first_tier",
-    ]);
+    // L6-3: nothing is left unbound. The overtime premiums bind through visual
+    // citations of the 1951 page; the drafts carry the grade.
+    expect(reasons.map((slot) => slot.parameter_id).sort()).toEqual([]);
   });
 });

@@ -131,6 +131,9 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
   working_time: [
     { name: "weekly_overtime_threshold", parameter_id: "il.working_time.weekly_overtime_threshold_hours", unit: "hours_per_week" },
     { name: "overtime_first_tier_rate", parameter_id: "il.working_time.overtime_rate_first_tier", unit: "ratio" },
+    // L6-3 / D1: §16(א)'s second tier and §17(א)(1)'s weekly-rest premium.
+    { name: "overtime_second_tier_rate", parameter_id: "il.working_time.overtime_rate_second_tier", unit: "ratio" },
+    { name: "weekly_rest_rate", parameter_id: "il.working_time.weekly_rest_rate", unit: "ratio" },
   ],
   pension: [
     { name: "mandatory_wage_cap", parameter_id: "il.pension.mandatory_wage_cap", unit: "currency.ils", decision_id: OPEN_DECISION_PENSION_WAGE_CAP_SECTION },

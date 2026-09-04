@@ -230,7 +230,11 @@ export const parameterCandidateSchema = z.object({
   provenance_grade: provenanceGradeSchema.optional(),
   visual_bindings: z.array(visualBindingSchema).min(1).readonly().optional(),
 }).strict().superRefine((candidate, context) => {
-  if ((candidate.visual_bindings !== undefined) !== (candidate.provenance_grade === "inferred_visual")) context.addIssue({ code: "custom", message: "parameter_visual_bindings_grade_unpaired", path: ["visual_bindings"] });
+  // Visual bindings travel with any candidate that has a visual citation, and
+  // such a candidate's grade is inferred_visual or worse; a candidate that
+  // claims the inferred_visual grade must carry them.
+  if (candidate.visual_bindings !== undefined && candidate.provenance_grade !== "inferred_visual" && candidate.provenance_grade !== "administrative") context.addIssue({ code: "custom", message: "parameter_visual_bindings_grade_unpaired", path: ["visual_bindings"] });
+  if (candidate.visual_bindings === undefined && candidate.provenance_grade === "inferred_visual") context.addIssue({ code: "custom", message: "parameter_visual_bindings_grade_unpaired", path: ["visual_bindings"] });
   if (candidate.effective_to !== null && candidate.effective_to < candidate.effective_from) context.addIssue({ code: "custom", message: "parameter_interval_inverted", path: ["effective_to"] });
   if (candidate.value.kind === "money" && candidate.unit !== `currency.${candidate.value.value.currency.toLowerCase()}`) context.addIssue({ code: "custom", message: "parameter_money_unit_mismatch", path: ["unit"] });
   if (candidate.value.kind !== "money" && candidate.value.unit !== candidate.unit) context.addIssue({ code: "custom", message: "parameter_value_unit_mismatch", path: ["unit"] });

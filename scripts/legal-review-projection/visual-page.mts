@@ -24,6 +24,12 @@ export const VISUAL_PAGE_TOOL_VERSION = "tivdoc-visual-page-v1" as const;
 
 export const sha256 = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
 
+/** The toolchain a render was made with — what a reviewer needs to reproduce the image hash. */
+export function renderToolVersion(): string {
+  const versions = sharp.versions as Record<string, string>;
+  return `${VISUAL_PAGE_TOOL_VERSION}/sharp@${versions.sharp ?? "unknown"}/vips@${versions.vips ?? "unknown"}`;
+}
+
 export async function extractPagePdf(artifactBytes: Uint8Array, pageNumber: number): Promise<Uint8Array> {
   const source = await PDFDocument.load(artifactBytes, { ignoreEncryption: true, updateMetadata: false });
   if (pageNumber < 1 || pageNumber > source.getPageCount()) throw new Error(`VISUAL_PAGE_OUT_OF_RANGE:${pageNumber}/${source.getPageCount()}`);
