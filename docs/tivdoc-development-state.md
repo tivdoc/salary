@@ -1047,6 +1047,40 @@ figure, not those thresholds), not discarded, with the current
 post-2017 consolidated text now D-16 (§A7-5) — a new acquisition target,
 not a silent gap.
 
+### A7-5 — D-13…D-16 (`5271a28`, `9eb402a`)
+
+`workagreements.labor.gov.il` (a `.gov.il` subdomain — official by A7-5's
+own rule) added to the fetch allowlist. **D-5 completed** (`dcb759b`):
+the 13.7.1998 general collective agreement, fetched and parsed cleanly
+(agreement metadata: subject, dates, "active" status, "all employees"
+scope — no rate table of its own). **D-16 registered**: Annual Vacation
+Law Amendment 15 (fs.knesset.gov.il, via the Knesset database's own
+official Reshumot link), unblocking **P-32** (Pool P batch 6,
+`9eb402a`) — years 1-4 only, 16 calendar days, its own text confirmed
+directly ("instead of '14' comes '16'"). Years 5+ NOT registered: the
+pre-2017 law text and the dossier's own summary table disagree on those
+figures, and amendment 15 is documented as touching only years 1-4 — a
+disagreement this session did not adjudicate rather than guess at.
+
+**D-13, D-14, D-15 recorded blocked, each with concrete evidence:**
+- **D-13** (current consolidated Hours of Work and Rest Law): the Knesset
+  database's own page for this law has no consolidated-text link at all —
+  confirms the dossier's own finding (tracker 6.24) directly from the
+  source. `blocked_external: no_official_consolidated_text_found`.
+- **D-14** (2016 pension increase order): the already-fetched PDF (64285
+  bytes, correct URL) is a scan with no text layer — but this exact
+  artifact already has a fully pinned, tested OCR toolchain from an
+  earlier wave (`pension-ocr-runner.ts`,
+  `PENSION_2016_OCR_TOOLCHAIN.source_pdf_sha256` matches this session's
+  fetch byte-for-byte). Running it needs `tesseract` and `pdftoppm`
+  binaries this environment does not have — confirmed absent by direct
+  check, not assumed. Installing system tooling is not this session's
+  call. `blocked_dependency: ocr_toolchain_present_binaries_absent`.
+- **D-15** (correct 2026 convalescence order): no official-host URL found
+  within a bounded search; the gov.il extension-orders catalog listing is
+  Cloudflare-challenge-protected — not bypassed, per standing rules.
+  `blocked_external: no_official_url_found_within_search_effort`.
+
 ## Resume point
 
 - **Checkpoint at unit 10 (Session A, Sonnet, continuous grind, base
@@ -1071,20 +1105,28 @@ not a silent gap.
   not match its own title at all (content mismatch, not a wrong citation),
   and the fetched `IL_ANNUAL_VACATION_LAW` predates 2017's amendment 15
   (stale primary text, not safe to bind a "current" parameter to).
-- **Next unit: P-2 onward has nothing left to register cleanly without
-  new acquisition work** — the remaining unregistered Pool P units all
-  depend on artifacts this session could not fetch, could not get to
-  parse, or found to be mismatched/stale (see the Pool P write-up's
-  blocked list for the exact source and reason per unit). The next
-  productive Pool P action is a fresh acquisition pass for: a current
-  consolidated Hours of Work and Rest Law text (needed for P-11..P-16),
-  the 2016 pension increase order (P-21..P-23), a correct
-  2026-convalescence-order artifact (P-27/P-28), and a current
-  (post-2017) Annual Vacation Law consolidation (P-32/P-33). Absent that,
-  proceed to **S-1…S-8** (offline synthetic shadow — does not depend on
-  Pool P's blocked units, only its registered ones), then **R-1…R-7 +
-  R-9…R-14** (R-8 deferred to Session B), then **Q-1…Q-7** (Q-8 deferred
-  to Session B), per the revised order in Addendum 6 / `tivdoc-next-run.md`.
+- **Checkpoint at unit 29 (Addendum 7).** A7-1 (`1023455`), A7-2
+  (`783c8b9`), A7-3 (`c59bb20`), A7-4 (`c56c1c2`), A7-5's D-5 (`dcb759b`),
+  A7-5's D-13…D-16 (`5271a28`), Pool P batch 6 / P-32 (`9eb402a`) — 7
+  commits, 7 units. All three A7-1 guards proven by execution; the
+  eleven-dimension hash formula implemented and tested per-dimension;
+  `withdrawn` is now a real, distinct, evidenced decision state and the
+  vacation "200 vs 240" finding has its own record; two sources
+  quarantined structurally, not just by convention; one more official host
+  allowlisted (a `.gov.il` subdomain) and D-16 registered. Addendum 7's
+  own corrections (A7-6) are in force from here: no stopping at a domain
+  boundary, and the chat only gets the ten-line report at the very end —
+  this file carries everything else.
+- **Next: the remaining Pool P units (P-11…P-16, P-21…P-23, P-27/P-28,
+  P-33, years 5+ of P-32) stay `blocked_dependency`/`blocked_external`**
+  with the evidence recorded above and in the Pool P write-up — none is
+  cleanly closeable without either new acquisition this session's bounded
+  search did not find, or system tooling (OCR) this session does not
+  install. Per A7-6, that is not a stop condition: proceed to **S-1…S-8**
+  (offline synthetic shadow), then **R-1…R-7 + R-9…R-14** (R-8 deferred to
+  Session B), then **Q-1…Q-7** (Q-8 deferred to Session B), then the one
+  full matrix and the ten-line report, per Addendum 6 / `tivdoc-next-run.md`
+  as corrected by Addendum 7.
 - carried from before this session: K-3's managed-bucket half (needs the
   Storage key — H-7 re-confirmed absent this session), K-5 (needs a
   provisioned off-host destination), the owner's visual review of the five
