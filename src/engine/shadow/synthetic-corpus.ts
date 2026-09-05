@@ -147,6 +147,8 @@ const TOPIC_MONTHS: Readonly<Record<string, TopicMonth>> = Object.freeze({
     return [
       { path: "pension.base_salary", value: ils(wage[scenario]), source_type: scenario === "sector_population" ? "declared" : "documented" },
       { path: "pension.contributions", value: contributions(Math.round(Math.min(wage[scenario], 1_378_800) * 6 / 100) - (scenario === "current" ? 2_000 : 0)), source_type: "documented" },
+      // L8-3 / D4: the severance component, 6% of the capped wage, paid 10.00 short in the current month.
+      { path: "pension.severance_contribution", value: { amount: ils(Math.round(Math.min(wage[scenario], 1_378_800) * 6 / 100) - (scenario === "current" ? 1_000 : 0)), rate_basis_points: 600 }, source_type: "documented" },
     ];
   },
   travel: (scenario) => {
@@ -265,7 +267,7 @@ function edgeCases(): readonly SyntheticCase[] {
     month("period_unconfirmed", "sick_leave", ["sick.pay.accrual"],
       [{ path: "employment.start_date", value: "2020-01-01", source_type: "declared" }],
       { kind: "preparation_refuses", codes: ["transformation.failed"] }),
-    month("low_confidence_wage", "pension", ["pension.wage.cap.on.wage", "pension.employee.contribution.on.wage"],
+    month("low_confidence_wage", "pension", ["pension.wage.cap.on.wage", "pension.employee.contribution.on.wage", "pension.employer.contribution.on.wage", "pension.severance.contribution.on.wage"],
       [{ path: "pension.base_salary", value: ils(1_000_000), source_type: "inferred", confidence: 0.4 }],
       { kind: "preparation_refuses", codes: ["fact.below_confidence_threshold"] }),
     month("stale_workdays", "travel", ["travel.daily.cap.entitlement"],

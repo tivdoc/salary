@@ -14,7 +14,8 @@ import { SYNTHETIC_PREPARED_AT, syntheticUuid } from "./synthetic-payslip-month.
 import { testParametersFor } from "./test-support.ts";
 
 /** Pinned. A change here is a change to what the shadow runs on, and the state doc must say why. */
-const CORPUS_SHA256 = "84bb020558d557be059e30c5d5e6e5891ac6ecb7436d2de55b0a05655f0f80b8";
+// L8-3 / D4: the severance fact beside the contributions in the six pension months; the low-confidence edge month names four pension specs.
+const CORPUS_SHA256 = "4a7e7549a659e00cea3b793316dfbe6ff9616eda72afcb106736fd084b097b0c";
 
 function runCase(entry: SyntheticCase, shadowId: string) {
   const spec = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
@@ -105,8 +106,8 @@ describe("the synthetic corpus", () => {
       if (entry.expected.kind !== "preparation_refuses") continue;
       expect([...seen.get(entry.case_id)!].sort(), entry.case_id).toEqual([...entry.expected.codes].sort());
     }
-    expect(ran).toBe(66);
-    expect(refused).toBe(29);
+    expect(ran).toBe(76);
+    expect(refused).toBe(33);
   });
 
   it("finds a case by id and refuses an unknown one", () => {

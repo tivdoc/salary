@@ -100,10 +100,15 @@ export const PAID_COMPONENTS: Readonly<Record<string, PaidSource>> = Object.free
   "working.time.rest.day.overtime.additive": { ...MONEY, input_id: "paid.weekly.rest.pay", fact_path: "compensation.weekly_rest_pay" },
   "working.time.rest.day.overtime.multiplicative": { ...MONEY, input_id: "paid.weekly.rest.pay", fact_path: "compensation.weekly_rest_pay" },
   "pension.wage.cap.on.wage": { not_applicable: "a capped pensionable wage is a base, not a paid line" },
-  // D4 names the employer contribution; the draft the P line registered binds
-  // the EMPLOYEE share (the employer share is not a registered parameter), so
-  // the delta compares the side the draft computes. Recorded in the state doc.
+  // L8-3 / D4 retracts what stood here: "the employer share is not a
+  // registered parameter". It is — `il.pension.employer_contribution_rate` at
+  // 2014.2.0 and 2017.1.0, batch 13, bound in the P line's draft on both
+  // branches of the precedence decision. What was missing was the shadow spec
+  // that computes it; both sides of the contribution fact are compared now,
+  // and the severance component against its own fact.
   "pension.employee.contribution.on.wage": { ...MONEY, input_id: "paid.pension.employee.contribution", fact_path: "pension.contributions", transformation_id: "canonical.pension.employee.contribution" },
+  "pension.employer.contribution.on.wage": { ...MONEY, input_id: "paid.pension.employer.contribution", fact_path: "pension.contributions", transformation_id: "canonical.pension.employer.contribution" },
+  "pension.severance.contribution.on.wage": { ...MONEY, input_id: "paid.pension.severance.contribution", fact_path: "pension.severance_contribution", transformation_id: "canonical.pension.severance.contribution" },
   "travel.daily.cap.entitlement": { ...MONEY, input_id: "paid.travel.reimbursement", fact_path: "travel.reimbursement" },
   "convalescence.days.by.seniority": { not_applicable: "a day count; the pay form carries the delta" },
   "convalescence.pay.by.seniority": { ...MONEY, input_id: "paid.convalescence.payment", fact_path: "convalescence.payment" },

@@ -52,6 +52,7 @@ describe("the transformation registry", () => {
       "canonical.money.identity@1.0.0",
       "canonical.pension.employee.contribution@1.0.0",
       "canonical.pension.employer.contribution@1.0.0",
+      "canonical.pension.severance.contribution@1.0.0",
       "canonical.seniority.whole.years@1.0.0",
       "canonical.seniority.whole.months@1.0.0",
       "canonical.workdays.per.week@1.0.0",

@@ -49,7 +49,7 @@ describe("the draft shadow run", () => {
     expect(first.result_sha256).toBe(second.result_sha256);
     expect(first.execution_mode).toBe("draft_parameters_synthetic_inputs");
     expect(first.corpus_sha256).toBe(SYNTHETIC_CORPUS_SHA256);
-    expect(first.counts).toMatchObject({ cases: SYNTHETIC_CORPUS.length, executions: 95, ran: 66, preparation_refused: 25, executor_refused: 4, active_real_parameter_count: 0, monetary_output_count: 0, finding_count: 0, customer_report_count: 0 });
+    expect(first.counts).toMatchObject({ cases: SYNTHETIC_CORPUS.length, executions: 109, ran: 76, preparation_refused: 29, executor_refused: 4, active_real_parameter_count: 0, monetary_output_count: 0, finding_count: 0, customer_report_count: 0 });
     expect(first.counts.deltas_computed + first.counts.deltas_not_applicable + first.counts.deltas_paid_refused).toBe(first.counts.ran);
     expect(first.counts.deltas_paid_refused).toBe(0);
     for (const execution of first.executions) {

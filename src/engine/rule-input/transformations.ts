@@ -177,6 +177,19 @@ export const TRANSFORMATIONS: readonly Transformation[] = Object.freeze([
     },
   },
   {
+    // L8-3 / D4. The severance component is its own fact (an amount, or a rate
+    // with no amount), and the paid line the severance shadow spec compares to.
+    transformation_id: "canonical.pension.severance.contribution", transformation_version: "1.0.0",
+    accepts: ["pension.severance_contribution"], produces: ["money"],
+    description: "The severance-component contribution amount as paid; a contribution stated only as a rate has no amount to compare and fails.",
+    apply: (fact, mapping) => {
+      const value = fact.value as { amount: { currency: string; minor_units: number } | null } | null;
+      const amount = value?.amount ?? null;
+      if (!amount || mapping.expected_output.kind !== "money" || amount.currency !== mapping.expected_output.currency) return null;
+      return money(amount.currency, amount.minor_units);
+    },
+  },
+  {
     transformation_id: "canonical.seniority.whole.years", transformation_version: "1.0.0",
     accepts: ["employment.start_date"], produces: ["integer"],
     description: "Completed years of service from the start date to the payslip period end (documents.period, confirmed).",

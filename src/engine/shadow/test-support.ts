@@ -14,6 +14,9 @@ export const TEST_PARAMETER_VALUES: Readonly<Record<string, RuleSpecInputValue["
   "parameter.hourly.floor": money(3_468),
   "parameter.wage.cap": money(1_378_800),
   "parameter.employee.share": ratio("6", "100"),
+  // L8-3 / D4: the registered 2017 figures, as batch 13 read them.
+  "parameter.employer.share": ratio("13", "200"),
+  "parameter.severance.share": ratio("3", "50"),
   "parameter.daily.cap": money(2_260),
   "parameter.days.years.1.to.5": integer(16, "calendar_days"),
   "parameter.days.year.6": integer(18, "calendar_days"),

@@ -42,6 +42,8 @@ describe("paid components", () => {
       "working.time.rest.day.overtime.additive",
       "working.time.rest.day.overtime.multiplicative",
       "pension.employee.contribution.on.wage",
+      "pension.employer.contribution.on.wage",
+      "pension.severance.contribution.on.wage",
       "travel.daily.cap.entitlement",
       "convalescence.pay.by.seniority",
       "vacation.seniority.band.entitlement",
@@ -65,6 +67,12 @@ describe("the delta", () => {
     // Employee share 6% of the capped 13,788 = 827.28; the month paid 20.00 less.
     const pension = deltaFor("synthetic.pension.golden.current", "pension.employee.contribution.on.wage");
     expect(pension).toMatchObject({ status: "computed", entitlement: "82728", paid: "80728", delta: "2000", paid_fact_path: "pension.contributions" });
+    // L8-3 / D4. Employer share 6.5% of the capped 13,788 = 896.22; the month paid 65/60 of its short employee figure, 874.55.
+    const employer = deltaFor("synthetic.pension.golden.current", "pension.employer.contribution.on.wage");
+    expect(employer).toMatchObject({ status: "computed", entitlement: "89622", paid: "87455", delta: "2167", paid_fact_path: "pension.contributions" });
+    // Severance 6% of the capped wage = 827.28; the month paid 10.00 less, against its own fact.
+    const severance = deltaFor("synthetic.pension.golden.current", "pension.severance.contribution.on.wage");
+    expect(severance).toMatchObject({ status: "computed", entitlement: "82728", paid: "81728", delta: "1000", paid_fact_path: "pension.severance_contribution" });
   });
 
   it("agrees exactly when the month paid the draft's figure — zero, not a rounding residue", () => {

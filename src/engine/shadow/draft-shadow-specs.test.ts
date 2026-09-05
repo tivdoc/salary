@@ -33,6 +33,8 @@ const PARAMETER_VALUES: Readonly<Record<string, RuleSpecInputValue["value"]>> = 
   "parameter.hourly.floor": money(3_468),
   "parameter.wage.cap": money(1_378_800),
   "parameter.employee.share": ratio("6", "100"),
+  "parameter.employer.share": ratio("13", "200"),
+  "parameter.severance.share": ratio("3", "50"),
   "parameter.daily.cap": money(2_260),
   "parameter.days.years.1.to.5": integer(16, "calendar_days"),
   "parameter.days.year.6": integer(18, "calendar_days"),
@@ -96,22 +98,31 @@ function outputOf(outcome: ReturnType<typeof executeRuleSpecAtomic> | null): unk
 }
 
 describe("the draft shadow set", () => {
-  it("covers the seven topics with thirteen specs, three of them shadow forms", () => {
+  it("covers the seven topics with fifteen specs, three of them shadow forms and two under the pension decision alone", () => {
     expect(DRAFT_SHADOW_TOPICS).toEqual(["minimum_wage", "working_time", "pension", "travel", "convalescence", "vacation", "sick_leave"]);
-    expect(DRAFT_SHADOW_SPECS).toHaveLength(13);
+    expect(DRAFT_SHADOW_SPECS).toHaveLength(15);
     expect(DRAFT_SHADOW_SPECS.filter((entry) => entry.shadow_form_of !== null).map((entry) => entry.shadow_id)).toEqual([
       "pension.wage.cap.on.wage",
       "pension.employee.contribution.on.wage",
       "convalescence.pay.by.seniority",
     ]);
-    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(13);
+    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(15);
+    // L8-3 / D4: the employer and severance specs run under the precedence decision, both branches, no sensitivity counterpart.
+    for (const shadowId of ["pension.employer.contribution.on.wage", "pension.severance.contribution.on.wage"]) {
+      const entry = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
+      expect(entry.shadow_form_of).toBeNull();
+      expect(entry.decision_id).toBe("legal.reference.il.decision.pension_2011_2016_precedence");
+      expect(entry.branches).toEqual([["order_2011_2014_row", "2014.2.0"], ["order_2016_2017_rates", "2017.1.0"]]);
+      expect(entry.bindings.filter((binding) => binding.parameter_version === null).map((binding) => binding.parameter_id))
+        .toEqual([shadowId.includes("employer") ? "il.pension.employer_contribution_rate" : "il.pension.severance_contribution_rate"]);
+    }
   });
 
   it("binds every input slot of every spec through a registry mapping — no slot is typed", () => {
     const slots = boundInputSlots();
     const declared = DRAFT_SHADOW_SPECS.reduce((sum, entry) => sum + entry.spec.facts.length, 0);
     expect(slots).toHaveLength(declared);
-    expect(slots).toHaveLength(17);
+    expect(slots).toHaveLength(19);
     for (const entry of DRAFT_SHADOW_SPECS) {
       expect(entry.input_mappings.registry.mappings.map((mapping) => mapping.input_id).sort()).toEqual(entry.spec.facts.map((fact) => fact.ref_id).sort());
       expect(entry.input_mappings.registry.registry_version).toBe("2.0.0");
@@ -132,7 +143,7 @@ describe("the draft shadow set", () => {
     }
   });
 
-  it("executes all thirteen specs on one synthetic month, through preparation and the bridge", () => {
+  it("executes all fifteen specs on one synthetic month, through preparation and the bridge", () => {
     const outputs = new Map<string, unknown>();
     for (const entry of DRAFT_SHADOW_SPECS) {
       const { prepared, outcome } = runShadow(entry);
@@ -149,6 +160,9 @@ describe("the draft shadow set", () => {
     // A 15,000 wage capped at 13,788; 6% of it.
     expect(outputs.get("pension.wage.cap.on.wage")).toEqual(money(1_378_800));
     expect(outputs.get("pension.employee.contribution.on.wage")).toEqual(money(82_728));
+    // L8-3 / D4: 6.5% and 6% of the same capped wage.
+    expect(outputs.get("pension.employer.contribution.on.wage")).toEqual(money(89_622));
+    expect(outputs.get("pension.severance.contribution.on.wage")).toEqual(money(82_728));
     // 22 workdays at the 22.60 cap.
     expect(outputs.get("travel.daily.cap.entitlement")).toEqual(money(49_720));
     // Started 2023-03-01, period ends 2026-07-31: 3 completed years → 6 days → 6 × 451.50.

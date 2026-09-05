@@ -20,9 +20,13 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
   return decisionIds.map((decisionId) => {
     const mine = executions.filter((execution) => execution.decision_id === decisionId);
     const branches = [...new Set(mine.map((execution) => execution.branch ?? "single"))].sort();
-    const caseIds = [...new Set(mine.map((execution) => execution.case_id))].sort();
-    const cases = caseIds.map((caseId) => {
-      const rows = mine.filter((execution) => execution.case_id === caseId);
+    // L8-3: several specs can run under one decision (the three pension
+    // contribution specs under the precedence decision), so a case row is one
+    // spec's month, keyed by both, and the order is total.
+    const caseKeys = [...new Set(mine.map((execution) => `${execution.shadow_id}|${execution.case_id}`))].sort();
+    const cases = caseKeys.map((caseKey) => {
+      const [shadowId, caseId] = caseKey.split("|");
+      const rows = mine.filter((execution) => execution.shadow_id === shadowId && execution.case_id === caseId);
       const byBranch = branches.map((branch) => {
         const row = rows.find((execution) => (execution.branch ?? "single") === branch);
         return {
@@ -38,13 +42,13 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
       const ran = byBranch.filter((row) => row.status === "ran");
       const values = ran.map((row) => comparable(row.output));
       if (ran.length !== branches.length || values.some((value) => value === null)) {
-        return { case_id: caseId, ran: ran.length === branches.length, comparable: false, differs: false, by_branch: byBranch, difference: null };
+        return { case_id: caseId, shadow_id: shadowId, ran: ran.length === branches.length, comparable: false, differs: false, by_branch: byBranch, difference: null };
       }
       const amounts = values as Comparable[];
       const low = amounts.reduce((a, b) => (a.amount < b.amount ? a : b));
       const high = amounts.reduce((a, b) => (a.amount > b.amount ? a : b));
       const difference = high.amount - low.amount;
-      return { case_id: caseId, ran: true, comparable: true, differs: difference !== BigInt(0), by_branch: byBranch, difference: { amount: difference.toString(), unit: low.unit, kind: low.kind } };
+      return { case_id: caseId, shadow_id: shadowId, ran: true, comparable: true, differs: difference !== BigInt(0), by_branch: byBranch, difference: { amount: difference.toString(), unit: low.unit, kind: low.kind } };
     });
     // L7-9: a branch named on the decision but not bound is listed, with its
     // reason, and counted as not run — never as agreement.

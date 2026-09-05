@@ -101,6 +101,69 @@ export const PENSION_CONTRIBUTION_SHADOW_SPEC: RuleSpecPackage = createRuleSpecP
   resource_policy: POLICY,
 });
 
+/**
+ * L8-3 / D4. The employer share on the capped pensionable wage, from the
+ * registered parameter (`il.pension.employer_contribution_rate`: 6% on the
+ * 2011 order's 1.1.2014 row, 6.5% on the 2016 order's 2017 rates), under the
+ * same precedence decision as the employee share. Long run 7 recorded that the
+ * employer share "is not a registered parameter"; it was registered by batch
+ * 13 and bound in the P line's draft. The record is retracted, and the spec
+ * that was missing is this one.
+ */
+export const PENSION_EMPLOYER_CONTRIBUTION_SHADOW_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.pension.employer.contribution.on.wage",
+  rule_spec_version: "1.0.0",
+  topic: "pension",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0", "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016@discovery-v0.2"],
+  effective_period: { from: "2014-01-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.pensionable.wage", value_kind: "money", unit: "currency.ils" }],
+  parameters: [
+    { ref_id: "parameter.wage.cap", parameter_id: "il.pension.mandatory_wage_cap", parameter_version: "2026.1.0", value_kind: "money", unit: "currency.ils" },
+    { ref_id: "parameter.employer.share", parameter_id: "il.pension.employer_contribution_rate", parameter_version: "2017.1.0", value_kind: "rational", unit: "ratio" },
+  ],
+  nodes: [
+    { node_id: "pensionable.wage.capped", operation: "min", refs: ["fact.pensionable.wage", "parameter.wage.cap"] },
+    { node_id: "employer.contribution", operation: "money.scale", money_ref: "pensionable.wage.capped", rational_ref: "parameter.employer.share", rounding: "half_up" },
+  ],
+  output_ref: "employer.contribution",
+  golden_case_set_sha256: blankGoldenSetSha256("pension"),
+  resource_policy: POLICY,
+});
+
+/**
+ * L8-3 / D4. The severance component on the capped pensionable wage, from
+ * `il.pension.severance_contribution_rate` (6% on both branches: the figure is
+ * the same, the instrument is the open question). Its paid line is the
+ * separate `pension.severance_contribution` fact.
+ */
+export const PENSION_SEVERANCE_CONTRIBUTION_SHADOW_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.pension.severance.contribution.on.wage",
+  rule_spec_version: "1.0.0",
+  topic: "pension",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_GENERAL_PENSION_EXTENSION_ORDER_2011@discovery-v0", "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016@discovery-v0.2"],
+  effective_period: { from: "2014-01-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [{ ref_id: "fact.pensionable.wage", value_kind: "money", unit: "currency.ils" }],
+  parameters: [
+    { ref_id: "parameter.wage.cap", parameter_id: "il.pension.mandatory_wage_cap", parameter_version: "2026.1.0", value_kind: "money", unit: "currency.ils" },
+    { ref_id: "parameter.severance.share", parameter_id: "il.pension.severance_contribution_rate", parameter_version: "2017.1.0", value_kind: "rational", unit: "ratio" },
+  ],
+  nodes: [
+    { node_id: "pensionable.wage.capped", operation: "min", refs: ["fact.pensionable.wage", "parameter.wage.cap"] },
+    { node_id: "severance.contribution", operation: "money.scale", money_ref: "pensionable.wage.capped", rational_ref: "parameter.severance.share", rounding: "half_up" },
+  ],
+  output_ref: "severance.contribution",
+  golden_case_set_sha256: blankGoldenSetSha256("pension"),
+  resource_policy: POLICY,
+});
+
 /** Convalescence pay: the 1988 band days for the completed years at the 2026 day rate. */
 export const CONVALESCENCE_PAY_SHADOW_SPEC: RuleSpecPackage = createRuleSpecPackage({
   schema_version: "tivdoc-rulespec-v0.6.0",
@@ -257,15 +320,49 @@ function shadowForm(spec: RuleSpecPackage, of: RuleSpecPackage, bindings: readon
   };
 }
 
+/**
+ * L8-3 / D4. A spec that stands for no sensitivity spec — the report's P line
+ * binds the employee share only — but runs under a registered decision: the
+ * decision, its branches and any unbound branch are those of the spec that
+ * carries it in the sensitivity set, so the shadow and the report name one
+ * decision.
+ */
+function shadowUnderDecision(spec: RuleSpecPackage, decisionOf: RuleSpecPackage, bindings: readonly SensitivityBinding[]): DraftShadowSpec {
+  const entry = sensitivityOf(decisionOf);
+  return {
+    shadow_id: spec.rule_spec_id.replace(/^il\.rulespec\./u, ""),
+    topic: spec.topic,
+    spec,
+    shadow_form_of: null,
+    bindings,
+    decision_id: entry.decision_id,
+    branches: entry.branches,
+    composition_branch: null,
+    unbound_branches: entry.unbound_branches ?? [],
+    input_mappings: registryFor(spec),
+  };
+}
+
+const PENSION_WAGE_CAP_BINDING: SensitivityBinding = { ref_id: "parameter.wage.cap", parameter_id: "il.pension.mandatory_wage_cap", parameter_version: "2026.1.0" };
+const PENSION_EMPLOYER_BINDINGS: readonly SensitivityBinding[] = [
+  PENSION_WAGE_CAP_BINDING,
+  { ref_id: "parameter.employer.share", parameter_id: "il.pension.employer_contribution_rate", parameter_version: null },
+];
+const PENSION_SEVERANCE_BINDINGS: readonly SensitivityBinding[] = [
+  PENSION_WAGE_CAP_BINDING,
+  { ref_id: "parameter.severance.share", parameter_id: "il.pension.severance_contribution_rate", parameter_version: null },
+];
+
 const CONVALESCENCE_PAY_BINDINGS: readonly SensitivityBinding[] = [
   ...sensitivityOf(CONVALESCENCE_DAYS_SPEC).bindings,
   ...sensitivityOf(CONVALESCENCE_DAILY_RATE_SPEC).bindings,
 ];
 
 /**
- * The executable set, in the order the report lists topics. Thirteen specs
+ * The executable set, in the order the report lists topics. Fifteen specs
  * over seven topics; ten are the sensitivity specs verbatim, three are shadow
- * forms whose inputs are payslip facts.
+ * forms whose inputs are payslip facts, two (L8-3) run under the pension
+ * precedence decision with no sensitivity counterpart.
  */
 export const DRAFT_SHADOW_SPECS: readonly DraftShadowSpec[] = Object.freeze([
   fromSensitivity(MINIMUM_WAGE_HOURLY_SPEC),
@@ -275,6 +372,8 @@ export const DRAFT_SHADOW_SPECS: readonly DraftShadowSpec[] = Object.freeze([
   { ...fromSensitivity(REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC), decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION },
   shadowForm(PENSION_WAGE_CAP_SHADOW_SPEC, PENSION_WAGE_CAP_SPEC, sensitivityOf(PENSION_WAGE_CAP_SPEC).bindings),
   shadowForm(PENSION_CONTRIBUTION_SHADOW_SPEC, PENSION_CONTRIBUTION_SPEC, sensitivityOf(PENSION_CONTRIBUTION_SPEC).bindings),
+  shadowUnderDecision(PENSION_EMPLOYER_CONTRIBUTION_SHADOW_SPEC, PENSION_CONTRIBUTION_SPEC, PENSION_EMPLOYER_BINDINGS),
+  shadowUnderDecision(PENSION_SEVERANCE_CONTRIBUTION_SHADOW_SPEC, PENSION_CONTRIBUTION_SPEC, PENSION_SEVERANCE_BINDINGS),
   fromSensitivity(TRAVEL_DAILY_CAP_SPEC),
   fromSensitivity(CONVALESCENCE_DAYS_SPEC),
   shadowForm(CONVALESCENCE_PAY_SHADOW_SPEC, CONVALESCENCE_DAILY_RATE_SPEC, CONVALESCENCE_PAY_BINDINGS),
