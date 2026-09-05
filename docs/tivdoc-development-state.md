@@ -3171,6 +3171,168 @@ findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
 | F1 | long run 7's writer inventory: `draft-shadow-run-v1.mts` writes to the synthetic proof tenant | it re-seeds the reference tenant's system-import session through an imported constant; nothing revoked or deleted; the inventory is derived now and both it and `owner-reviewer-identity.mts` are reference writers with reasons |
 | F2 | `synthetic-delta.ts`: "the employer share is not a registered parameter" | `il.pension.employer_contribution_rate` is registered at 2014.2.0 and 2017.1.0 (batch 13) and bound on both precedence branches; the missing thing was the spec, which exists now |
 
+## Long run 9 — L9-1…L9-9: 412 commits existed on one disk, and the branch could not serve the business it is built on
+
+Three facts from the review of long run 8 set this run's order. The branch
+had never been pushed: `origin` carried `main` at `b963844` and nothing else,
+so every long run and the whole legal engine — 412 commits — lived on one
+Windows disk. `main` is an ancestor of HEAD (`git rev-list --left-right
+--count main...HEAD` = `0 412`): not a fork, nothing to reconcile. And the
+branch could not serve the live business: long run 8 closed a production
+build by blocking every capability, and the payments routes the five-minute
+cron posts to answered the same 404 as the operations panel — closure
+achieved by closing the business with the engine. One gap in L8-1's own
+proof: `register()` installs the closed projection for `VERCEL_ENV=preview`
+too, and preview is exactly what a branch push creates, but the proof ran
+only production. Nothing in this run deploys anything.
+
+**L9-1 (D1) — durability, first.** A git bundle of every ref (61 local
+branches, the two remote refs, the stale worktree heads of earlier waves —
+the full history) at head `0d60c0d`, verified by `git bundle verify` and by
+a clone into a temporary directory (restored HEAD `0d60c0db…`, 434 commits,
+`main` present, `git fsck --full` clean, a file spot-check matching the
+commit), copied with its digest to the OneDrive backup folder — the only
+write this run makes there. sha256
+`2fd5c3cd837bf04f5842375c8f371ffd0d16f7ca67fd057c90fedf85c53ba714`. A
+bundle is a file: no remote, no integration, no build. Lane B's restore
+drill repeated the clone from the OneDrive copy and confirmed every item.
+
+**L9-2 (D2, first half) — the proof is a matrix over production and
+preview.** Every check of `prove.mts` runs once per environment — the build,
+the module graph and deployment trace, the started server's 404 shape, the
+flag gates read with the environment under proof, all 147 entry points
+spawned — tagged, and the receipt (v2) records both builds and whether the
+set of passing checks is identical. At `0d60c0d`+L9-1: 44 checks, PASS,
+identical posture, production build `d1a89554…`, preview build `fe24ac07…`,
+receipt `b0938513…`.
+
+**L9-3 / L9-5 (D3, D4) — the split, as data, proven against `main`.**
+`route-split.ts` assigns every one of the 27 dispatcher roots to a half
+with a reason in prose: 20 product — everything `main` serves today: the
+pages, robots, sitemap, the Open Graph image, the case, document and funnel
+routes, health, the three payments routes — and 7 engine: the operations and
+portal pages and routes this branch added, and the registrar. Each product
+route carries the probes the proof sends and the status `main`'s own handler
+answers with when nothing is configured and nothing is sent, read from
+`main`'s code (Lane B). The test fails on any dispatcher root or `src/app`
+route file the split does not name: nothing defaults into the open half.
+And it proves the split against `main` itself: `git ls-tree -r main` — the
+20 route files `main` carries are all product; every route file this branch
+added is engine unless listed as product with its own reason (none is);
+`main` is an ancestor of HEAD; each of `main`'s route files differs on HEAD
+by the guard alone and imports nothing from the engine.
+
+**L9-4 (D3) — "closed" is two things.** The runtime takes two
+declarations: `served_as_main` — a dispatcher for which no capability is
+consulted and no limit applied, the route's own code (the live site's)
+deciding, decision ALLOW with `SERVED_AS_MAIN` — and
+`blocked_by_declaration`. The closed production runtime declares the
+split's product half served as `main` and its engine half blocked
+(`PRODUCTION_LEGAL_ENGINE_CLOSED`, the registrar included, which needs no
+capability and was allowed before); a dispatcher the split does not name is
+`ROUTE_HALF_UNASSIGNED`. The HTTP guard returns before reading a body for a
+dispatcher served as `main`. No capability is enabled anywhere: the product
+half is served by declaration, and the projection still enables 0 of 18. The
+refusal matrix's thirteen customer-route rows are the product half now:
+served as `main`, no engine import in the route's module, zero enabled
+capabilities.
+
+**L9-6 — the proof with the differential.** Three checks per environment beside the closure checks: every route file
+`git ls-tree -r main` carries is product-classified (20 of 20, nothing only
+on `main`, nothing only in the split); every product route, probed with its
+declared method and nothing configured, answers the status `main`'s own
+handler answers with — 20 probes, 0 mismatches: the pages, robots, sitemap
+and the Open Graph image 200; `/api/health` 200; `/api/cases/resume` 200;
+`/api/cases` 400; `/api/funnel/session` 400; `/api/cases/status`,
+`/api/documents/sign`, `/api/documents/complete` and `/api/payments/start`
+401; `/api/payments/return` 3xx; `/api/payments/reconcile` 401 — the cron's
+route answers 401 without its bearer, never 404; and every engine dispatcher
+answers 404, the API routes with the product's empty body, the pages with
+the framework's not-found page. Production build `6ee088e5…`, preview build
+`58f4983b…`, 48 checks, identical posture, receipt
+`662ef7fa3ae2004beb9d5e415c30e98980ff2dd2401882fca01db4431adc7dd5`.
+
+**L9-7 (D2, second half) — the push.** Before the push, a scan of the tracked tree for keys, tokens, connection
+strings, real project references, personal addresses and tracked `.env`
+files found only test fixtures and the placeholder example — the remote is
+public, which the owner should know. The push:
+`235802c..` → `origin/claude/v0-10-2b-full-parallel` (new branch), accepted.
+Two things followed that the push did not do. Vercel's integration on the
+tivdoc.com project created a preview deployment for the branch
+(`salary-git-claude-v0-10-2b-full-…-tivdoccom-5042s-projects.vercel.app`);
+every path on it, `/api/health` and the operations routes alike, answers a
+302 to the platform's login — it is behind Vercel's deployment protection,
+so nothing on it is publicly reachable, and its build is the closed one the
+proof established at that head. And the CI workflow ran on GitHub, three
+times before it passed: run 33954142142 failed in zero seconds with no job —
+the checkout step's name carried an unquoted colon, invalid YAML the local
+runner's line-regex parse had not seen (the runner reads the workflow through
+js-yaml now, and the name is quoted); run 33954357795 on `d4090e0` reached
+the unit step and failed 16 files that pass on this machine — evidence trees
+untracked by design, Python through the Windows launcher, the Windows Git
+toolchain the V0.9.1 foundation pins, the working copy's CRLF bytes in two
+hash pins, `main` present only as `origin/main`, a `C:/` path — each now a
+named host precondition that skips with its reason on a clean checkout, or
+a defect fixed (the `main` ref, the platform path, the pins on the
+repository's LF bytes); run 33954823347 on `6a99bb7` — the head of this run's code — **success**: check-out with full history, Node 22, `npm ci`, the type check, the lint, the suites (290 files passed, 8 skipped for a named host precondition; 2126 tests passed, 49 skipped; the Python self-tests ran on the runner's own Python), the build, the closure proof over production and preview — 48 checks, PASS, identical posture, 294 entry points refusing, receipt `635a8cd4732aedd63ab5c31d51282faaa6b100613ce1f5ab3e1d0bc828aeb55c` on a clean Ubuntu checkout, kept as the run's artifact — and the artifact upload. The workflow, the proof and the suite now agree on GitHub with what this machine's freeze says.
+
+**L9-8 — Lane B.** Six read-only Haiku agents: three surveys at the start (main's routes
+against HEAD's, the capability requirements each dispatcher derives, the
+preview environment's differences), then three adversarial passes (the
+split, the bundle restore drill, main's own handlers' answers with nothing
+configured — the probes the proof sends). Applied: the CI checkout fetches
+full history so `main` is present for the differential (Lane B saw the
+shallow-checkout failure before GitHub did); the probe table for the 20
+product routes; the bundle's restore confirmed from the OneDrive copy
+(hash, `bundle verify`, clone, `fsck`, a blob spot-check). Confirmed and
+left: no route file the pattern misses; no product route importing the
+engine two levels deep; `served_as_main` declared by no local runtime; the
+product routes' unbounded `request.json()` identical to `main`'s; the
+one-shot runtime install unreachable from any request. The preview survey
+found one behavioural difference and it is `main`'s own: the payment return
+URL is built from `VERCEL_URL` on a preview.
+
+**L9-9.** This section, the freeze, the ledger, the resume point,
+`output/next/tracker-delta-v44.md` and tracker v44 regenerated in the
+repository. Report v7 and package v12 stay the lawyer's copy: D3 changed no
+parameter, no spec and no scenario, and nothing in the legal or shadow
+surface moved.
+
+### What the matrix caught at this head
+
+- The first differential run failed on the engine probes, not the engine:
+  a GET on the session routes met the framework's 405 before any handler,
+  and the engine pages answer 404 with Next's not-found page (11 KB), not an
+  empty body. The probes send the declared method now and assert the empty
+  body on API routes only.
+- The registrar (CEP-078) needs no capability, so the closed projection had
+  allowed it; it is engine by declaration and blocked as such.
+- The remote repository is public. A scan of the tracked tree before the
+  push found no key, token, connection string, real project reference,
+  personal address or tracked `.env` — only test fixtures and the
+  placeholder example.
+- The Bash tool's heredoc rewrote `\U` in a Windows path and `\/` in a
+  regex; the state-doc block and the probe patch went through scratchpad
+  scripts, as in long runs 6–8.
+
+### Lane B, this run
+
+Six read-only Haiku agents: three surveys at the start (main's routes
+against HEAD's, the capability requirements each dispatcher derives, the
+preview environment's differences), then three adversarial passes (the
+split, the bundle restore drill, main's own handlers' answers with nothing
+configured — the probes the proof sends). Applied: the CI checkout fetches
+full history so `main` is present for the differential (Lane B saw the
+shallow-checkout failure before GitHub did); the probe table for the 20
+product routes; the bundle's restore confirmed from the OneDrive copy
+(hash, `bundle verify`, clone, `fsck`, a blob spot-check). Confirmed and
+left: no route file the pattern misses; no product route importing the
+engine two levels deep; `served_as_main` declared by no local runtime; the
+product routes' unbounded `request.json()` identical to `main`'s; the
+one-shot runtime install unreachable from any request. The preview survey
+found one behavioural difference and it is `main`'s own: the payment return
+URL is built from `VERCEL_URL` on a preview.
+
 ## Backup — long run 9, L9-1 (D1)
 
 The branch had never been pushed: 412 commits on one disk. Before any other
@@ -3187,46 +3349,107 @@ restores with one clone. Its sha256:
 2fd5c3cd837bf04f5842375c8f371ffd0d16f7ca67fd057c90fedf85c53ba714  salary-0d60c0d-20260905.bundle
 ```
 
+## Freeze — long run 9, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+against the committed head `6a99bb7`, worktree clean, receipt
+`52d4bc43c567c5ddf09e348bb7f3f347e3a16636cc394e0019f391050229e818`: type check 0 errors; eslint 0 errors, 0 warnings; vitest
+**298/298 files, 2172 passed, 3 skipped, 0 failed** in one run; `next build` compiled; the closure proof over
+both environments **48/48 PASS, identical posture, production build `21138a9e…`, preview build `f4d0b688…`, receipt `98f1066f478ef906fd6f07c11cc05c1169b0d3ac14902ad68191b169cbbe3b02`**. The same steps on GitHub, on a clean
+Ubuntu checkout of the same head: run 33954823347 **success** — 290 files passed, 8 skipped by their named host precondition, 2126 tests passed, 49 skipped; closure 48/48 in both environments, receipt `635a8cd4…`.
+
+### DEV, as the runtime roles
+
+Chain 53/53, tail `202609020030` — no migration this run. Grant execution
+**22 executed, 0 denied, 0 context failures** (runs 4–8 recorded 18 context
+failures at this proof; this run's sessions were fresh from the shadow run's
+re-seed an hour earlier, and the proof passed clean — recorded as observed,
+not explained). Identity negative matrix **8/8**. Definer surface **108**,
+ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute 14.
+Invalidation effects **10/10**. Dynamic matrix **14 checks, 10 supported,
+10 passed**. RLS force **65/65** already forced, unforced 0. Journey
+**17/17**.
+
+Governance proofs, all by execution: A7-1 guards passed; parameter-decision
+matrix passed; A7-3 withdrawal passed; Q draft-binding passed with every
+slot bound; E3-2/E3-3 supersession and synthetic passed at **seven** legal
+decisions; E3-4 revocation passed; L4-7 session recovery **8/8**; E2-10
+hygiene passed; L5-1 lexicon **9/9**; A7-2 dependency-hash invalidation
+passed. Citation anchors **46 verified, 0 failed, 6 impossible** (the
+superseded rows). S-1…S-7: `verify-v010.mts` PASS (restart verified, audit 5
+events, zero outputs), `shadow/run.mts all` PASS (synthetic run and
+real-blocked run, zero money, zero findings, zero reports).
+
+The draft shadow on DEV is long run 8's `l76.c952e04c` (106 ran, 106
+replayed), report v7 `515aaf3a…` and package v12 `9d96a71a…` unchanged: D3
+moved no parameter, no spec and no scenario, and nothing in the legal or
+shadow surface moved.
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, visual confirmations 0, customer rows 0, customer payslips
+read 0, real payslips read 0, composites opened 0, openai calls 0, provider
+calls 0, extraction used no, deployments 0 (a platform-created, protected
+preview is not one), remote production migrations 0, findings 0,
+HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-24 | open, `acquisition_blocked: administrative_source_not_discoverable_on_official_site` | unchanged |
+| BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation against the pages in package v12 |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
 ## Resume point
 
-Refreshed at long run 8. Everything before this point is history; this section
+Refreshed at long run 9. Everything before this point is history; this section
 is the only part a resuming session must read to know where things stand.
 
-**Where the work is.** Pools H, D, S, R, E2, E3, L4, L5, L6, L7 and L8 are
-closed. Pool P: 34 of 38 targets registered, 2 blocked on an administrative
-source, 2 retired as a decision; 59 draft versions, 7 superseded, 52 draft, 7
-of them inferred_visual. Pool Q: seven drafts, every slot bound; fifteen
-executable specs. Six legal decisions open (one with an unbound branch), two
-withdrawn. The sensitivity report runs seven topics of seven and grades every
-parameter it binds. The offline shadow runs the fifteen specs on 54 synthetic
-payslip months — their population a fact of the month — through the
-product's own fact model and mapping registries, inside the durable
-scheduler, with a synthetic delta per paid component (the employer and
-severance shares included); none of it a finding, none of it delivered, no
-extraction, no provider.
+**Where the work is.** On the remote, for the first time:
+`origin/claude/v0-10-2b-full-parallel` at this run's head, and a git bundle
+of the full history (sha256 `2fd5c3cd…`) in `output/next/backup/` and in the
+OneDrive backup folder. Pools H, D, S, R, E2, E3, L4, L5, L6, L7, L8 and L9
+are closed. Pool P: 34 of 38 targets registered, 2 blocked on an
+administrative source, 2 retired as a decision; 59 draft versions, 7
+superseded, 52 draft, 7 of them inferred_visual. Pool Q: seven drafts, every
+slot bound; fifteen executable specs. Six legal decisions open (one with an
+unbound branch), two withdrawn. The sensitivity report runs seven topics of
+seven and grades every parameter it binds; the offline shadow runs the
+fifteen specs on 54 synthetic payslip months with their population a fact —
+none of it a finding, none of it delivered, no extraction, no provider.
 
-**What is proven about the live site.** A production build of this branch
-is closed by construction: every capability blocked, the legal, shadow,
-portal and operations dispatchers one empty 404, every script entry point
-refusing a production environment, no reference-tenant or Pool P marker in
-any server chunk, no customer material in the deployment trace — the
-closure proof's receipt records the build's own hash. The CI workflow runs
-the type check, the lint, the suites, a build and that proof on every push
-and pull request, without a secret; it was proven locally on a regression
-and has not yet run on GitHub, because this branch has never been pushed.
-The governance writer inventory is derived from the scripts, and a
-customer-data refusal matrix of 43 surfaces refuses today. This branch is not
-deployable as the live business until customer processing is authorized;
-tivdoc.com serves `main`.
+**What is proven about the live site.** A production build of this branch,
+and a preview build, are closed by construction and serve the product: the
+27 dispatcher roots are split once, as data, into the 20 that `main` serves
+today (served as `main` serves them — no capability consulted, the route's
+own code deciding) and the 7 this branch added (blocked, the product's empty
+404). The closure proof runs over both environments and carries the
+differential against `main`'s own route inventory: the 20 route files
+`main` carries are all product; every product route answers the status
+`main`'s handler answers; every engine route answers 404; no capability is
+enabled anywhere; every script entry point refuses a deployment environment.
+Three properties the project never had at once — on the remote, closed in
+production and preview, able to serve what the live site serves — and none
+of them changes what runs today: tivdoc.com serves `main`. The branch push
+started a Vercel preview deployment on the tivdoc.com project, which the
+platform protects behind its login (every path answers a 302 to it), and
+the CI workflow runs on GitHub (green on the head of this run's code, run 33954823347).
 
-**What a lawyer could be handed today.** Review package v12 — dossier,
-Hebrew runbook, sensitivity report v7 with v6…v1 beside it, a Hebrew
-rendering of v7 in Markdown and PDF with a section for the shadow and the
-unbound branch named, the three cited pages with their index, the legal
-decisions, the draft parameters with their binding hashes, the scenario
-fixtures, 102 executions and 85 replayed traces, the shadow receipt, summary,
-branch comparison and corpus index (106 cases run, 106 traces replayed), the
-batch-16 lexicon receipt, and the citation anchors.
+**What a lawyer could be handed today.** Review package v12 — unchanged by
+this run: dossier, Hebrew runbook, sensitivity report v7 with v6…v1 beside
+it, the Hebrew rendering of v7 in Markdown and PDF, the three cited pages,
+the legal decisions, the draft parameters with their binding hashes, the
+scenario fixtures, 102 executions and 85 replayed traces, the shadow receipt
+(106 cases run, 106 traces replayed), the batch-16 lexicon receipt, and the
+citation anchors.
 
 **The one gate that moves 0/7.** The owner runs `owner-reviewer-identity.mts
 keygen` if they have not, then `register --reviewer-id <their.id>` at a
@@ -3239,11 +3462,12 @@ this gate.
 
 **Next engineering work, in order — none of it a human gate:**
 
-1. Push the branch, or open the pull request, so `.github/workflows/ci.yml`
-   runs on GitHub for the first time; before that, confirm on the Vercel
-   account that serves tivdoc.com whether branch pushes start preview
-   deployments, and disable them for this repository if they do. The local
-   proof stands until then.
+1. The pull request from `claude/v0-10-2b-full-parallel` into `main` is
+   the owner's to open, not this branch's: it would put a build on
+   tivdoc.com that serves the product as `main` does and carries the engine
+   closed. Before it, the owner decides whether the preview deployments the
+   Vercel project creates for branch pushes should stay on (they are
+   protected today) and whether the repository should stay public.
 2. BL-24: if the owner's browser session finds the 10.6.2018 directive on an
    official host, it goes through `legal:sources:acquisition:import` under the
    registered target and binds at administrative grade as the
