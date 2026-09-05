@@ -3568,64 +3568,305 @@ Exhausted. Every unit that does not need a person is done; what remains is
 the human gate the resume point names, and the three decisions in
 `docs/merge-readiness.md`.
 
+## Run 11 — L11-1…L11-10: the lawyer-approved decisions, recorded mechanically
+
+Short and mechanical, as briefed. On 5 September 2026 a labour lawyer
+approved an opinion on the six open legal decisions
+(`tivdoc-open-decisions-legal-opinion.md`, sha256
+`3ddad7e8c9fd81ec9715e84b3df65e9d780cc06ec09072eab4c6b73740acad6e`, 50,165
+bytes) and the approval was recorded
+(`tivdoc-legal-opinion-approval-record.md`, sha256
+`0258b6400040b156d246b84900a6db353d3f62aa0089816063a8ba42639234d4`, 9,200
+bytes). This run turned that into an **owner-recorded resolution** of each
+decision — which branch the report and the shadow treat as default — and
+nothing more. It is not an attestation: the lawyer has no reviewer identity,
+no source is reviewed, no parameter left `draft`, no RuleSpec activated, the
+counters stay 0/7. Nothing was copied from the owner's folder into the
+repository except the two evidence files, into the git-ignored artifact
+store, by hash.
+
+**L11-1 (D1) — evidence in, by exception.** `owner-evidence-import.mts`
+reads exactly the two named files from a folder it does not list, verifies
+the opinion's sha256 against the value pinned in code and named in the
+approval record (`verifyOwnerEvidence`, refusing the run with
+`BLOCKED_EVIDENCE_MISMATCH` on any mismatch — proven on tampered bytes: five
+mismatches, nothing stored), and stores both through
+`storeImmutableLegalArtifact` under
+`eval/legal-knowledge/artifacts/IL_OWNER_EVIDENCE_*` with a ledger record
+(`manifests/owner-evidence.json`, sha256 `3f12ee06…`): bytes, sha256,
+`acquired_at`, `source_grade: owner_evidence`, `attestation: none`,
+`citable_as_source: false`. `owner_evidence` is proven to be outside
+`PROVENANCE_GRADES`, so no parameter citation can ever point at the opinion.
+
+**L11-2 (D2) — a resolution is a new record.** The decision row's own
+`resolution_state` has one permitted transition, open → resolved, and it
+belongs to the two-attestation cascade; recording a lawyer's opinion is not
+that and must not look like it. So migration `202609020031` adds
+`private.legal_decision_resolutions`: one row per decision with
+`decision_key` (the opinion's name), `selected_branch` (the register's),
+`basis: lawyer_approved_opinion`, both evidence digests, `approved_on`,
+`approver_identity: null`, `status: owner_recorded`, `recorded_by:
+owner_action`, a mapping note and a canonical hash. The guard refuses every
+UPDATE and DELETE and refuses an insert born `attested`; the record definer
+refuses a payload naming `attested` or an approver by name
+(`…ATTESTATION_NOT_A_CODE_PATH`), an unknown decision, a decision that is
+not open, a second resolution, and a synthetic flag that disagrees with the
+row. `attested` exists in the vocabulary; nothing in this run can set it; the
+migration that adds the /operations attestation path adds the one transition
+with the registered-identity check. `202609020032` repairs the audit actor
+forward (the definer had named a literal actor and `runtime_assert_actor`
+refused it as impersonation). Chain 55/55; definer surface 108 → 111; grant
+rows 22 → 25 (record on operations, read on operations and worker). The six
+rows were recorded on `legal.reference.il` by `legal-decision-resolutions.mts`
+(receipt PASS, 22 cases: refusals on the synthetic proof tenant, read-back
+equal to the registry, every decision row still `open`, attested 0).
+
+The mapping from the opinion's names to the register's, with no decision
+registered twice:
+
+| opinion / brief | register (`legal.reference.il.decision.…`) | selected branch | note |
+|---|---|---|---|
+| `hourly_wage_divisor` → `order_182` | `min_wage_hourly_divisor` | `182` | `186` stays computed as the statutory floor |
+| `pension_wage_cap_source` → `nii_section_2_benefits` | `pension_wage_cap_section` | `section2` | `section1` stays computed |
+| `pension_2011_2016_precedence` → `overlay` | same | `order_2016_2017_rates` | rates from the 2016 order, the rest from 2011; `order_2011_2014_row` stays computed |
+| `rest_day_overtime_composition` → `additive` | same | `additive` | `multiplicative` retired (D3.3) |
+| `convalescence_rate_period` → `havraa_year` | `convalescence_2026_rate_period` | `havraa_year` | a new third branch, bound in L11-4 |
+| `working_time_daily_threshold` → `administrative` | same | `administrative` | unbound (BL-24); the statute branch runs until it is bound |
+
+The default is consumed in code: `defaultBranchOf` returns the selected
+branch when bound, the first bound branch with `first_bound_fallback` when
+the selection is unbound, the first listed branch when there is no
+resolution, and throws on a branch the spec does not know. The shadow's
+`primary` policy runs the default; `all` runs every branch; the comparison
+names the default on every decision and every branch's difference from it.
+
+**L11-3 (D3.1, D3.2).** Batch 17 registers the average wage twice by name:
+`il.average_wage.nii_s1@2026.1.0` (13,566, §1, the minimum-wage base) and
+`il.average_wage.nii_s2_benefits@2026.1.0` (13,769, §2 benefits, the cap's
+source), draft, text-verified, own citations into the BTL page; the
+minimum-wage draft binds the first and the pension draft the second (new
+template slots; binding proof 8/8). Gap severity classes:
+`statutory_violation` (below both figures), `order_entitlement` (between the
+statutory figure and the extension-order figure), `no_gap`,
+`order_figure_unbound`, `not_comparable` — a field on every classed case of
+the hourly-wage (186 vs 182) and daily-threshold (8 vs 8.6) decisions,
+computed from the sign of the two shadow deltas, never a suppression; one
+Hebrew sentence; the weekly dimension (45 vs 42) named as defined and not yet
+computed. In the re-run shadow the hourly-wage months classed 2
+`statutory_violation`, 2 `order_entitlement`, 1 `no_gap`, 2 not comparable.
+
+**L11-4 (D3.3, D3.4, D3.5).** The multiplicative rest-day reading is retired
+from the sensitivity set and the shadow (14 specs, corpus digest
+`2564a16a…`), kept as a regression fixture, listed once under
+`REJECTED_BRANCHES` with the reason "no source of any grade supports it".
+`convalescence-rate-table.ts`: the rate keyed by convalescence year with
+knowledge time — 2026: 451.50 valid 1.7.2025–30.6.2026, known 18.8.2026,
+retroactive; any period from 1.7.2026 → `rate_not_published`; a June, July or
+August 2026 payslip paying 418 → 33.50 a day tagged
+`retroactive_update_2026-08-18`. Batch 18 binds `havraa_year` to
+`il.convalescence.daily_rate@2026.3.0` (the same selection citation, the
+convalescence-year period); the shadow's branch guard refuses a 2027 month
+on that branch, and two corpus months exercise both (June 2026 paid at 418:
+delta 201.00 tagged; January 2027: refused). Batch 19 registers the new
+low-confidence decision `rest_day_daily_threshold` (branches
+`worker_daily_norm`, default, and `statute_8`) with two computations over
+the same rest-day scenarios in the sensitivity set — eight legal decisions
+now. Found on the way: the import helper's L5 reservation rule had made every
+selection-cited source unbuildable since batch 10; the selection exception
+added here rebuilds batch 10's stored `2026.1.0` candidate to the identical
+hash (`6d4657dc…`).
+
+**L11-5 (D3.6, D3.7).** `agreement_interpretation` joins the provenance and
+execution ladders below `administrative`. P-15/P-16 and the daily-threshold's
+`administrative` branch lose `administrative` and carry the sources
+`steering_committee_2018-04-24` and `kolzchut`; BL-24's attribution is
+corrected everywhere the code states it — the 10.6.2018 directive concerns
+the 182 divisor, not 8.6 / 7.6 — and, because the decision row is
+append-only, the correction is appended against the row through the
+sanctioned annotate path (`bl24-attribution-annotation.mts`, row unchanged).
+The dossier's §14 "72% / 100%" is marked derived (6 ÷ 8.33), not the order's
+text. `pension-contribution-delta.ts`: a cap difference becomes a
+contribution difference at the rates — 203.00 × 18.5% = 37.56 — shown apart
+from the base difference.
+
+**L11-6 (D6) — the shadow re-run.** `l76.7721fd34`: 56 months, 157
+executions, 111 ran, 111 traces replayed, provider and OpenAI calls 0,
+composites unopened. `shadow-run-comparison.mts` against `l76.c952e04c`:
+57 months present in both runs, 57 unchanged, 0 changed, 2 months added, 1
+branch added (`havraa_year`), 1 retired (`multiplicative`); the default's
+output moved in exactly the three decisions whose resolution moved it
+(convalescence, pension precedence, pension cap) and in none of the other
+three. Verdict PASS.
+
+**L11-7 (D4) — report v8, the Hebrew rendering, package v13.** The brief
+said "report v7"; v7 already existed, so the next report is v8 and this
+paragraph records that reading. v8 (`2e0f0d0ec4d4b57276575bedcf2d5a2f76bb5452b028b63bee6035e8321c19c9`):
+114 scenarios, 95 run, 95 traces replayed, 7/7 topics, the six resolutions
+read through their own path and checked against the registry (refused if
+absent, drifted or attested), every alternative computed with its
+difference from the default, the retired branch, the rate table, the
+severity classes, the contribution difference (37.56 beside 203.00),
+`resolutions_recorded: 6`, `resolutions_attested: 0`. The Hebrew rendering
+(Markdown `a8cb11ca…`, PDF `e64cbae9…`) states above the decision tables
+that the six defaults are owner-recorded on a lawyer-approved opinion and
+that no attestation occurred, and names the default on every decision.
+Package v13 (manifest
+`e8584d011b8e33834b6a1dcf476434a91c1ce706bcfeae6fffcc1dc888bc6019`, 46
+files, built twice to one hash): the two evidence files by hash, the
+resolutions, V1–V13 parsed from the approval record as open items, batches
+17–19, the annotation, the shadow comparison, v7 beside v8; gates
+`topics_run` 7 ≥ 7, `shadow_cases_run` 111 ≥ 106, and the new
+`resolutions_recorded` 6 ≥ 6, never down.
+
+**L11-8 (D5) — `docs/reviewer-onboarding.he.md`.** Identity registration at
+a keyboard (B-25), claiming a packet, visual confirmation for the seven OCR
+items against the pages in the package, attesting a parameter, what attesting
+an owner-recorded resolution will require and why it cannot happen yet, and
+what the system refuses and why. The refusal proofs re-ran: attestation
+without `visual_confirmed` refused, the same identity twice refused,
+cross-branch refused (parameter-decision matrix), a synthetic identity not
+human (operations ledger). No identity was registered.
+
+**L11-9 (Lane B).** Five read-only haiku agents: three surveys at the start
+(the artifact path, the decision model, the corrections' locations) and two
+adversarial passes at the end — any path by which a resolution alters a
+parameter's status, a RuleSpec's activation, a counter or the decision row,
+any way `attested` can be produced, any way the evidence could be cited; and
+any rendering presenting the opinion as an attestation. Both returned no
+finding, with the guards they checked named file by line. Nothing was
+applied because nothing was found.
+
+**Not done, by the brief.** No resolution attested; no reviewer identity;
+no source, parameter, selection or spec left `draft`; no deploy, merge or
+pull request; no repository, Vercel or GitHub setting; no customer or real
+payslip; no composite opened; no provider call; no non-official fetch; the
+DEV project unchanged but for the two migrations, the rows the units name
+and the proof-tenant fixtures; no `npm install`; no worktree.
+
+## Freeze — run 11, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+at `e0372d0` (the L11-8 docs commit; the last code commit is
+`a0a8fb9`), receipt `b668ddb5e09f70fa9b7fc186a16c9127128641325014f7377244fd37c7fb75d5`: type check 0 errors; eslint 0 errors,
+0 warnings; vitest **303/303 files, 2212 passed, 3 skipped, 0 failed**; `next build` compiled; the closure proof
+over both environments **48/48 PASS, identical posture, production build `872029bf…`, preview build `492a5fd5…`, 155 entry points guarded and refusing by execution, receipt `8b99f8fde0e5f1f9e5a252abff59c3eaabb24c65fdf94efc6106d9ba4f5a1e09`**.
+
+### DEV, as the runtime roles
+
+Chain 55/55, tail `202609020032` — two migrations this run
+(`202609020031_legal_decision_resolutions`, `202609020032_…_actor_repair`).
+Grant execution **25 executed, 0 denied, 0 refused by precondition, 0 unexplained (prior state of the fixture session: valid)**. Identity negative matrix **8/8**.
+Definer surface **111, ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute 14**. Invalidation effects **10/10**.
+Dynamic matrix **14 checks, 10 supported, 10 passed**. RLS force **66/66 already forced, unforced 0 (the resolutions table joined the 65)**. Journey **17/17**.
+
+Governance proofs, all by execution: A7-1 guards passed; parameter-decision
+matrix passed (visual confirmation required, same identity twice refused,
+cross-branch refused); A7-3 withdrawal passed; Q draft-binding passed with
+every slot bound, the two average-wage slots and the convalescence-year
+version among them; E3-2/E3-3 supersession and synthetic passed at
+**eight** legal decisions; E3-4 revocation passed; L4-7 session recovery
+**8/8**; E2-10 hygiene passed (resolutions 6 legal, 6 owner_recorded, 0
+attested, 0 with an approver); L5-1 lexicon **9/9**; A7-2 dependency-hash
+invalidation passed. Citation anchors **48 verified, 0 failed, 6 impossible (the superseded rows)**. Resolutions
+**22/22 PASS — six recorded on the reference tenant, read-back equal to the registry, decision rows open, attested 0; every refusal on the synthetic proof tenant**. Shadow comparison **PASS — 57 months in both runs unchanged, 0 changed, 2 added, havraa_year added, multiplicative retired; the default moved in exactly convalescence, pension precedence and pension cap**. S-1…S-7:
+`verify-v010.mts` PASS, `shadow/run.mts all` PASS (zero money, zero
+findings, zero reports).
+
+The draft shadow on DEV is this run's `l76.7721fd34` (111 ran, 111
+replayed; receipt `65a4f9334c93a03dbe0532322addf220504be2c616e7bddd5965a800978c69f2`),
+report v8 `2e0f0d0e…`, Hebrew rendering `a8cb11ca…` / `e64cbae9…`, package
+v13 `e8584d01…`.
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, resolutions owner_recorded 6, resolutions attested 0,
+reviewer identities registered 0, visual confirmations 0, customer rows 0,
+customer payslips read 0, real payslips read 0, composites opened 0, openai
+calls 0, provider calls 0, extraction used no, deployments 0, remote
+production migrations 0, findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-24 | open, `acquisition_blocked: administrative_source_not_discoverable_on_official_site` | attribution corrected (L11-5): the 8.6 / 7.6 daily figures are the steering committee's interpretation of the 42-hour order (24.4.2018) as reported by kolzchut, grade `agreement_interpretation`; the 10.6.2018 directive concerns the 182 divisor; no official artifact carries the figures; the branch is the owner-recorded default and runs when bound |
+| BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation against the pages in package v13 |
+| BL-26 | open, `attestation_path_not_built` | a resolution's `owner_recorded → attested` transition and its /operations screen do not exist; built with the registered-identity check when a reviewer identity exists (V1–V13 are the lawyer's, not this ledger's) |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
+### Backlog
+
+One engineering unit is queued behind a human gate: the resolution
+attestation path (BL-26), to be built when the lawyer's reviewer identity
+exists. Everything else that does not need a person is done.
+
 ## Resume point
 
-Refreshed at long run 10 — the last engineering run before the human gates.
+Refreshed at run 11 — the lawyer-approved decisions recorded, mechanically.
 Everything before this point is history; this section and
 `docs/resume-after-pause.md` are what a resuming session must read.
 
-**Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`),
-in a bundle of every ref at `677ea92` (sha256 `bfb6421a…`, 444 commits,
-restore verified) and in an evidence archive of the git-ignored trees the
-receipts depend on (sha256 `ee089bf2…`), both in `output/next/backup/` and
-the OneDrive backup folder. Pools H, D, S, R, E2, E3, L4, L5, L6, L7, L8, L9
-and L10 are closed; the engineering backlog is exhausted. Pool P: 34 of 38
-targets registered, 2 blocked on an administrative source, 2 retired as a
-decision; 59 draft versions, 7 superseded, 52 draft, 7 inferred_visual.
-Pool Q: seven drafts, every slot bound; fifteen executable specs. Six legal
-decisions open (one with an unbound branch), two withdrawn. The sensitivity
-report (v7) runs seven topics of seven; the offline shadow runs the fifteen
-specs on 54 synthetic months (106 ran, 106 traces replayed) — none of it a
-finding, none delivered, no extraction, no provider.
+**Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`)
+and, up to `677ea92`, in the bundle and evidence archive long run 10 put on
+OneDrive (sha256 `bfb6421a…` and `ee089bf2…`); run 11's commits are on the
+remote only until the next bundle. Pools H, D, S, R, E2, E3, L4–L10 and run
+11 are closed. Pool P: 38 targets, 62 draft versions (batches 17 and 18 added
+three), 7 superseded, 7 inferred_visual. Pool Q: seven drafts, every slot
+bound; fourteen executable shadow specs, seventeen sensitivity specs. Eight
+legal decisions: six carry an owner-recorded resolution (`owner_recorded`,
+0 attested), one is new and open at low confidence
+(`rest_day_daily_threshold`), one is withdrawn; the multiplicative rest-day
+reading is retired. The sensitivity report is v8; the offline shadow is
+`l76.7721fd34` (111 ran, 111 replayed); the review package is v13 (manifest
+`e8584d01…`, 46 files) — none of it a finding, none delivered, no
+extraction, no provider.
 
-**What is proven about the live site.** A production build and a preview
-build of this branch are closed by construction and serve the product: 20
-dispatchers served as `main` serves them, 7 engine dispatchers blocked,
-nothing unassigned, no capability enabled; the differential against `main`'s
-own route inventory is 20 routes, 0 mismatches; every script entry point
-refuses a deployment environment; the same proof passes on GitHub's Ubuntu
-runner. The grant matrix is readable again: 22 executed, 0 denied, 0 refused
-by its named precondition, 0 unexplained, whatever its fixture session's
-prior state. `docs/merge-readiness.md` says what a merge into `main` would
-and would not change, with a hash beside every claim. tivdoc.com serves
-`main`.
+**What the resolutions are and are not.** Six rows in
+`private.legal_decision_resolutions`, each naming the branch the report and
+the shadow treat as default, on the opinion's sha256 `3ddad7e8…` and the
+approval record's `0258b640…`, both stored as owner evidence (not a source:
+`owner_evidence` is outside the provenance grades). They are not
+attestations: no reviewer identity, no source reviewed, no parameter or rule
+active; the decision rows stay `open`. `attested` is a status nothing can
+set today (BL-26).
 
-**What a lawyer could be handed today.** Review package v12 (manifest
-`9d96a71a…`, 33 files): dossier, Hebrew runbook, sensitivity report v7 with
-v6…v1 beside it, the Hebrew rendering of v7 in Markdown and PDF, the three
-cited pages, the legal decisions, the draft parameters with their binding
-hashes, the scenario fixtures, executions and traces, the shadow receipt,
-summary, comparison and corpus index, the batch-16 lexicon receipt, the
-citation anchors. It is inside the evidence archive.
+**What is proven about the live site.** Unchanged from long run 10: a
+production build and a preview build of this branch are closed by
+construction and serve the product; the differential against `main` is 20
+routes, 0 mismatches; the same proof passes on GitHub's Ubuntu runner.
+tivdoc.com serves `main`.
 
 **The human gates, named.**
 
-1. The owner runs `owner-reviewer-identity.mts keygen` if they have not,
-   then `register --reviewer-id <their.id>` at a keyboard, in an interactive
-   shell, with `TIVDOC_UNATTENDED` unset — after DEV is resumed, never before
-   a pause. Then a labour lawyer reads `docs/legal/sensitivity-report.he.md`,
-   confirms the seven visual readings against the pages in package v12
-   (`visual_confirmed: true` in the attestation, or the database refuses),
-   decides the six open questions, and attests as the second, independent
-   identity. Nothing engineering-side blocks this gate.
-2. The three decisions in `docs/merge-readiness.md`: open the pull request
+1. The owner runs `owner-reviewer-identity.mts keygen` then `register
+   --reviewer-id <their.id>` at a keyboard, in an interactive shell, with
+   `TIVDOC_UNATTENDED` unset, after DEV is resumed. Then the lawyer registers
+   a second identity the same way (B-25; `docs/reviewer-onboarding.he.md`),
+   reads `docs/legal/sensitivity-report.he.md`, confirms the seven visual
+   readings against the pages in package v13 (`visual_confirmed: true`, or
+   the database refuses), attests the parameters of the six default branches
+   as the second, independent identity, and answers V1–V13
+   (`decisions/open-items-v1-v13.json` in package v13).
+2. BL-26: once a registered reviewer identity exists, the resolution
+   attestation path (`owner_recorded → attested`, one transition, at the
+   /operations screen) is the one engineering unit queued. Not before.
+3. The three decisions in `docs/merge-readiness.md`: open the pull request
    into `main` or not; keep the Vercel project's branch previews on or not;
    keep the repository public or not.
-3. BL-24: the 10.6.2018 directive on an official host, if the owner's
-   browser session finds one.
+4. BL-24: an official artifact for the 8.6 / 7.6 daily norm (the steering
+   committee's interpretation of the 42-hour order), if one exists; until
+   then the owner-recorded default of `working_time_daily_threshold` stays
+   unbound and the statute branch runs.
 
-**Engineering after the pause.** None is queued. A resuming session follows
-`docs/resume-after-pause.md`: get the tree, run what needs nothing,
-reconnect DEV, regenerate only if the project was reset, run the matrix,
-read this section. The pre-existing corpus-trust generator failure and the
-stale isolated replay database remain out of scope.
+**Engineering after this run.** BL-26 only, gated on gate 1. A resuming
+session follows `docs/resume-after-pause.md`: get the tree, run what needs
+nothing, reconnect DEV, regenerate only if the project was reset, run the
+matrix, read this section. The pre-existing corpus-trust generator failure
+and the stale isolated replay database remain out of scope.
