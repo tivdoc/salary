@@ -45,8 +45,9 @@ export function hermeticBrowserRuntimeBootstrapEnabled(
  * the V0.10.10 posture: nothing installed, every dispatcher fails closed.
  */
 export function closedProductionEnvironment(environment: RuntimeEnvironment = process.env): boolean {
-  const vercelEnvironment = runtimeEnvironmentValue(environment, "VERCEL_ENV");
-  const nodeEnvironment = runtimeEnvironmentValue(environment, "NODE_ENV");
+  // Case-insensitive (Lane B, long run 8): a mis-cased "Production" closes too.
+  const vercelEnvironment = runtimeEnvironmentValue(environment, "VERCEL_ENV")?.trim().toLowerCase();
+  const nodeEnvironment = runtimeEnvironmentValue(environment, "NODE_ENV")?.trim().toLowerCase();
   return vercelEnvironment === "production" || vercelEnvironment === "preview" || nodeEnvironment === "production";
 }
 

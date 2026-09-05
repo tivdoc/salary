@@ -37,6 +37,18 @@ describe("the branch comparison", () => {
     ]);
   });
 
+  it("a composition decision compares its two specs over one month, and the pension decision compares each of its three specs", () => {
+    // L8-3 regression (caught on DEV): keying rows by spec and month made the
+    // composition decision's two specs two rows with one branch each — 0/0.
+    const composition = comparison.find((entry) => entry.decision_id.endsWith("rest_day_overtime_composition"))!;
+    expect(composition.branches).toEqual(["additive", "multiplicative"]);
+    expect(composition.cases_compared).toBe(5);
+    expect(composition.cases.filter((entry) => entry.comparable).every((entry) => entry.shadow_id === null && entry.by_branch.map((row) => row.shadow_id).sort().join(",") === "working.time.rest.day.overtime.additive,working.time.rest.day.overtime.multiplicative")).toBe(true);
+    const pension = comparison.find((entry) => entry.decision_id.endsWith("pension_2011_2016_precedence"))!;
+    expect(new Set(pension.cases.map((entry) => entry.shadow_id))).toEqual(new Set(["pension.employee.contribution.on.wage", "pension.employer.contribution.on.wage", "pension.severance.contribution.on.wage"]));
+    expect(pension.cases_compared).toBe(15);
+  });
+
   it("a decision with an unbound branch names it, with its reason, and runs only the bound one", () => {
     const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
     expect(threshold.branches).toEqual(["statute"]);

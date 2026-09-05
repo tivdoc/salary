@@ -22,11 +22,17 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
     const branches = [...new Set(mine.map((execution) => execution.branch ?? "single"))].sort();
     // L8-3: several specs can run under one decision (the three pension
     // contribution specs under the precedence decision), so a case row is one
-    // spec's month, keyed by both, and the order is total.
-    const caseKeys = [...new Set(mine.map((execution) => `${execution.shadow_id}|${execution.case_id}`))].sort();
+    // spec's month, keyed by both, and the order is total. A COMPOSITION
+    // decision is the exception by design: its branches are different specs
+    // over the same month (L6-4 / D2), so its rows are keyed by the month
+    // alone and the branches come from the two specs.
+    const composition = DRAFT_SHADOW_SPECS.some((spec) => spec.decision_id === decisionId && spec.composition_branch !== null);
+    const keyOf = (execution: ShadowExecutionRecord) => (composition ? `*|${execution.case_id}` : `${execution.shadow_id}|${execution.case_id}`);
+    const caseKeys = [...new Set(mine.map(keyOf))].sort();
     const cases = caseKeys.map((caseKey) => {
-      const [shadowId, caseId] = caseKey.split("|");
-      const rows = mine.filter((execution) => execution.shadow_id === shadowId && execution.case_id === caseId);
+      const [shadowKey, caseId] = caseKey.split("|");
+      const shadowId = shadowKey === "*" ? null : shadowKey;
+      const rows = mine.filter((execution) => keyOf(execution) === caseKey);
       const byBranch = branches.map((branch) => {
         const row = rows.find((execution) => (execution.branch ?? "single") === branch);
         return {

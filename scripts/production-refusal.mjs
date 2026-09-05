@@ -13,9 +13,12 @@
 // The refusal is by environment, not by host name, so a script copied into a
 // production shell refuses too. The closure proof (scripts/production-closure)
 // spawns every entry point under such an environment and expects exactly this.
+// Compared case-insensitively (Lane B, long run 8): "Production" is nobody's
+// development environment either.
 const nodeEnv = process.env.NODE_ENV;
 const vercelEnv = process.env.VERCEL_ENV;
-if (nodeEnv === "production" || vercelEnv === "production" || vercelEnv === "preview") {
+const lowered = (value) => (typeof value === "string" ? value.trim().toLowerCase() : value);
+if (lowered(nodeEnv) === "production" || lowered(vercelEnv) === "production" || lowered(vercelEnv) === "preview") {
   process.stderr.write(`PRODUCTION_ENVIRONMENT_REFUSED node_env=${nodeEnv ?? ""} vercel_env=${vercelEnv ?? ""}\n`);
   process.exit(2);
 }

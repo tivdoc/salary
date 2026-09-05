@@ -93,6 +93,8 @@ const EXPECTED = Object.freeze({
   "decision-sensitivity-run-v4.mts": SYNTHETIC,
   "decision-sensitivity-run-v5.mts": SYNTHETIC,
   "decision-sensitivity-run-v6.mts": SYNTHETIC,
+  // L8-8: v7 is v6 rebuilt on the fifteen-spec shadow; reads the catalogue, writes its traces to the proof tenant.
+  "decision-sensitivity-run-v7.mts": SYNTHETIC,
   "draft-shadow-run-v1.mts": REFERENCE,
   "dynamic-matrix.mts": OWN,
   "grant-execution-proof.mts": OWN,
@@ -282,6 +284,50 @@ describe("the derived inventory, proven by breaking it", () => {
       "proof.mts: carries a reason but does not write to the reference tenant (synthetic-proof)",
       "ghost.mts: listed with a reason but is not a writer",
     ]);
+  });
+
+  // Lane B, long run 8: the three bypasses the adversarial pass found, closed.
+  it("a template whose literal parts spell the reference tenant is a reference writer, not its head's namespace", () => {
+    const directory = fixture("template", {
+      "helpers.mts": HELPERS,
+      "owner.mts": OWNER,
+      "split.mts": 'import { seedSessions } from "./helpers.mts";\nconst T = `legal.${"reference.il"}`;\nawait seedSessions(T, "org", []);\n',
+      "unresolved.mts": 'import { seedSessions } from "./helpers.mts";\nconst T = `legal.${process.env.PART ?? ""}`;\nawait seedSessions(T, "org", []);\n',
+      "own.mts": 'import { seedSessions } from "./helpers.mts";\nconst RUN = process.env.RUN ?? "x";\nconst T = `tenant.synthetic.gt.${RUN}`;\nawait seedSessions(T, "org", []);\n',
+    });
+    const { inventory: derived } = inventoryFindings(directory, {});
+    expect(derived["split.mts"].classification).toBe(REFERENCE);
+    expect(derived["unresolved.mts"].classification).toBe(UNDECIDABLE);
+    expect(derived["own.mts"].classification).toBe(OWN);
+  });
+
+  it("the object form of a query carries its parameters beside the text, and a write outside the governance convention is undecidable", () => {
+    const directory = fixture("object-form", {
+      "owner.mts": OWNER,
+      "writer.mts": 'import { TENANT } from "./owner.mts";\nasync function main(client: { query(input: unknown): Promise<unknown> }) {\n'
+        + '  await client.query({ text: "select * from private.governance_parameter_import($1,$2)", values: [TENANT, "{}"] });\n}\nvoid main;\n',
+      "product.mts": 'async function main(client: { query(sql: string, params: unknown[]): Promise<unknown> }) {\n'
+        + '  await client.query("select private.product_privacy_append($1,$2)", ["case.1", "x"]);\n}\nvoid main;\n',
+    });
+    const { inventory: derived, findings: found } = inventoryFindings(directory, {});
+    expect(derived["writer.mts"].classification).toBe(REFERENCE);
+    expect(derived["product.mts"].classification).toBe(UNDECIDABLE);
+    expect(found).toEqual([
+      "product.mts: undecidable — sql:product_privacy_append@2",
+      "writer.mts: reference writer without a reason — sql:governance_parameter_import@3",
+    ]);
+  });
+
+  it("a writer with a .ts or .mjs extension in the directory is scanned too", () => {
+    const directory = fixture("extensions", {
+      "owner.mts": OWNER,
+      "helpers.mts": HELPERS,
+      "sneaky.ts": 'import { TENANT } from "./owner.mts";\nimport { seedSessions } from "./helpers.mts";\nawait seedSessions(TENANT, "org", []);\n',
+      "sneaky.mjs": 'import { TENANT } from "./owner.mts";\nimport { seedSessions } from "./helpers.mts";\nawait seedSessions(TENANT, "org", []);\n',
+    });
+    const { inventory: derived } = inventoryFindings(directory, {});
+    expect(derived["sneaky.ts"].classification).toBe(REFERENCE);
+    expect(derived["sneaky.mjs"].classification).toBe(REFERENCE);
   });
 
   it("the real directory derives with the resolver the fixtures just exercised", () => {

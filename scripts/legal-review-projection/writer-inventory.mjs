@@ -49,6 +49,23 @@ export const SQL_WRITE_FUNCTIONS = Object.freeze([
   "governance_legal_review_packet_enqueue", "governance_legal_review_action_append", "governance_work_enqueue",
   "governance_gt_manifest_append", "governance_golden_case_set_import",
   "governance_legal_review_observation_supersession_append",
+  // Lane B (long run 8): every other mutating governance function the
+  // migrations define, tenant first by the same convention.
+  "governance_gt_eligibility_append", "governance_human_decision_admit", "governance_legal_observation_decide",
+  "governance_reviewer_key_revoke", "governance_rulespec_approval_append", "governance_work_claim", "governance_work_release",
+  "governance_append_audit", "governance_complete_claim", "governance_store_idempotency",
+]);
+/**
+ * Mutating functions outside the governance convention (product, controlled
+ * import, payments): their first parameter is not a tenant. A scanned script
+ * calling one is a writer whose tenant this resolver does not decide — it
+ * fails the suite until the resolver learns the function's shape.
+ */
+export const SQL_UNDECIDED_WRITE_FUNCTIONS = Object.freeze([
+  "product_case_owner_bind", "product_owner_revoke", "product_privacy_append", "product_private_report_object_bind",
+  "product_report_object_approve", "product_report_object_revoke", "mark_salary_case_paid",
+  "controlled_import_publish", "controlled_import_reject", "controlled_import_reserve", "controlled_import_stage_exact_bytes",
+  "append_controlled_import_audit", "claim_controlled_import_recovery",
 ]);
 /**
  * A session revocation or rotation names a session, not a tenant: the definer
@@ -127,14 +144,26 @@ function classifyExpression(expression, index, hops = 2, params = new Set()) {
   if (ts.isParenthesizedExpression(expression) || ts.isAsExpression(expression) || ts.isSatisfiesExpression?.(expression)) return classifyExpression(expression.expression, index, hops, params);
   if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return classifyText(expression.text);
   if (ts.isTemplateExpression(expression)) {
-    // `tenant.synthetic.gt.${RUN}`: the literal head fixes the namespace, whatever
-    // the run id resolves to. `${X}` alone is X. Anything else with a reference
-    // span is a reference.
-    const spans = expression.templateSpans.map((span) => classifyExpression(span.expression, index, hops, params));
-    if (spans.includes(REFERENCE)) return REFERENCE;
-    if (expression.head.text !== "") return classifyText(expression.head.text);
-    if (expression.templateSpans.length === 1) return spans[0];
-    return UNDECIDABLE;
+    // The literal parts are read together: `legal.${"reference.il"}` is the
+    // reference tenant (Lane B, long run 8). A span that resolves to a tenant
+    // decides as that tenant; a span that does not resolve leaves the
+    // template decidable only under the own-per-run namespace (`tenant.…`),
+    // where the run id is the part that varies. `${X}` alone is X.
+    const spans = expression.templateSpans.map((span) => ({
+      literal: ts.isStringLiteralLike(span.expression) ? span.expression.text : null,
+      tenant: classifyExpression(span.expression, index, hops, params),
+      tail: span.literal.text,
+    }));
+    if (spans.some((span) => span.tenant === REFERENCE)) return REFERENCE;
+    const literalText = expression.head.text + spans.map((span) => `${span.literal ?? ""}${span.tail}`).join("");
+    if (literalText.includes(REFERENCE_LITERAL)) return REFERENCE;
+    if (literalText.includes(SYNTHETIC_LITERAL) && spans.every((span) => span.literal !== null)) return SYNTHETIC;
+    if (expression.head.text === "" && spans.length === 1 && spans[0].tail === "") return spans[0].tenant;
+    if (spans.some((span) => span.literal === null && span.tenant === UNDECIDABLE)) {
+      return expression.head.text.startsWith("tenant.") ? OWN : UNDECIDABLE;
+    }
+    if (spans.some((span) => span.tenant === SYNTHETIC)) return SYNTHETIC;
+    return spans.some((span) => span.tenant === "parameter") ? "parameter" : classifyText(literalText);
   }
   if (ts.isObjectLiteralExpression(expression)) {
     const tenant = expression.properties.find((property) => ts.isPropertyAssignment(property) && ts.isIdentifier(property.name) && property.name.text === "tenant");
@@ -309,11 +338,20 @@ export function writeSitesOf(file) {
       const sql = node.text;
       const write = SQL_WRITE_FUNCTIONS.find((fn) => sql.includes(`${fn}(`));
       const session = SQL_SESSION_FUNCTIONS.find((fn) => sql.includes(`${fn}(`));
+      const undecided = SQL_UNDECIDED_WRITE_FUNCTIONS.find((fn) => sql.includes(`${fn}(`));
+      if (undecided && !write && !session) {
+        sites.push({ kind: "sql", name: undecided, tenant: UNDECIDABLE, line: lineOf(source, node) });
+      }
       if (write || session) {
         const siblings = ts.isCallExpression(node.parent) ? node.parent.arguments
           : ts.isArrayLiteralExpression(node.parent) ? node.parent.elements : [];
         const position = siblings.indexOf(node);
-        const paramsArray = position >= 0 ? siblings.slice(position + 1).find((sibling) => ts.isArrayLiteralExpression(sibling)) : undefined;
+        // The object form — `query({ text, values })`, `{ sql, params }` — carries the parameters beside the text (Lane B, long run 8).
+        const objectForm = ts.isPropertyAssignment(node.parent) && ts.isObjectLiteralExpression(node.parent.parent)
+          ? node.parent.parent.properties.find((property) => ts.isPropertyAssignment(property) && ts.isIdentifier(property.name) && (property.name.text === "values" || property.name.text === "params"))
+          : undefined;
+        const paramsArray = position >= 0 ? siblings.slice(position + 1).find((sibling) => ts.isArrayLiteralExpression(sibling))
+          : objectForm && ts.isArrayLiteralExpression(objectForm.initializer) ? objectForm.initializer : undefined;
         const params = enclosingParameters(node);
         let tenant = UNDECIDABLE;
         if (session) {
@@ -361,7 +399,7 @@ function classificationOf(sites) {
 /** The inventory of a directory: every .mts file that writes, and where. */
 export function deriveWriterInventory(directory) {
   indexCache.clear();
-  const files = readdirSync(directory).filter((name) => name.endsWith(".mts") && !name.endsWith(".test.mts")).sort();
+  const files = readdirSync(directory).filter((name) => /\.(?:mts|ts|mjs|js)$/u.test(name) && !/\.test\.(?:mts|ts|mjs|js)$/u.test(name) && name !== "writer-inventory.mjs").sort();
   const inventory = {};
   for (const name of files) {
     const sites = writeSitesOf(path.join(directory, name));
