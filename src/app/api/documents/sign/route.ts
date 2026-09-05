@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     const uploads = await Promise.all(
       parsed.data.files.map(async (file) => {
-        const fileName = `${storageBaseName(file.documentType)}.${extensionForMimeType(file.type)}`;
+        const fileName = `${storageBaseName(file.slot)}.${extensionForMimeType(file.type)}`;
         const path = `cases/${caseId}/${fileName}`;
         const { data, error } = await supabase.storage
           .from("salary-documents")
@@ -52,7 +52,10 @@ export async function POST(request: Request) {
         if (error) throw error;
         return {
           documentType: file.documentType,
+          // S2.2: the client addresses each upload by its slot, so two payslips never share a target.
+          slot: file.slot,
           path,
+          signedUrl: data.signedUrl,
           token: data.token,
         };
       }),

@@ -51,8 +51,8 @@ describe("uploadManifestSchema", () => {
   it("accepts one payslip and optional supporting documents", () => {
     const result = uploadManifestSchema.safeParse({
       files: [
-        { documentType: "payslip", name: "august.pdf", type: "application/pdf", size: 120_000 },
-        { documentType: "contract", name: "contract.jpg", type: "image/jpeg", size: 240_000 },
+        { documentType: "payslip", slot: "payslip-01", name: "august.pdf", type: "application/pdf", size: 120_000 },
+        { documentType: "contract", slot: "contract", name: "contract.jpg", type: "image/jpeg", size: 240_000 },
       ],
     });
     expect(result.success).toBe(true);
@@ -60,7 +60,7 @@ describe("uploadManifestSchema", () => {
 
   it("rejects a manifest without a payslip", () => {
     const result = uploadManifestSchema.safeParse({
-      files: [{ documentType: "contract", name: "contract.pdf", type: "application/pdf", size: 120_000 }],
+      files: [{ documentType: "contract", slot: "contract", name: "contract.pdf", type: "application/pdf", size: 120_000 }],
     });
     expect(result.success).toBe(false);
   });

@@ -79,6 +79,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609050004_legal_decision_resolution_revisions.sql",
   "202609050005_legal_decision_resolution_revisions_actor_repair.sql",
   "202609060001_delivery_recipient_allowlist.sql",
+  "202609060002_document_slots_and_check_month.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -181,6 +182,8 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "3ec8850aae1fb633a656555a522657affb1643cb7a65c6cfdcc41795ab812a53",
   "202609060001_delivery_recipient_allowlist.sql":
     "6dbcde79b1d0f54549e8c3bbaac790f4696ec955cea80b6899a185fa9cd845d3",
+  "202609060002_document_slots_and_check_month.sql":
+    "a010bf719e11be04c240185a02b86759559cd50891aeb654f84a9de38bed2f24",
 });
 
 export type MigrationFile = Readonly<{

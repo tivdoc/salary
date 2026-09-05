@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     if (listError) throw listError;
 
     const records = parsed.data.files.map((file) => {
-      const fileName = `${storageBaseName(file.documentType)}.${extensionForMimeType(file.type)}`;
+      const fileName = `${storageBaseName(file.slot)}.${extensionForMimeType(file.type)}`;
       const stored = objects.find((object) => object.name === fileName);
       if (!stored) throw new Error(`Uploaded object is missing: ${fileName}`);
 
@@ -58,6 +58,9 @@ export async function POST(request: Request) {
       return {
         case_id: caseId,
         document_type: file.documentType,
+        // S2.2: the slot is what the unique constraint is on now, so two payslips are two rows.
+        slot: file.slot,
+        period_month: file.periodMonth === undefined ? null : `${file.periodMonth}-01`,
         storage_path: `${directory}/${fileName}`,
         original_filename: file.name,
         mime_type: storedMimeType,
@@ -72,12 +75,19 @@ export async function POST(request: Request) {
 
     const { error: documentError } = await supabase
       .from("documents")
-      .upsert(records, { onConflict: "case_id,document_type" });
+      // S2.2: conflict is on the SLOT. Re-uploading into the same slot is a deliberate replacement
+      // the customer made on the review screen; a different slot is a different document and never collides.
+      .upsert(records, { onConflict: "case_id,slot" });
     if (documentError) throw documentError;
 
     const { error: updateError } = await supabase
       .from("cases")
-      .update({ status: "documents_uploaded", updated_at: new Date().toISOString() })
+      .update({
+        status: "documents_uploaded",
+        // S2.2 / D-4.1: the one month the initial check runs on, chosen by the customer before paying.
+        ...(parsed.data.checkPeriodMonth === undefined ? {} : { check_period_month: `${parsed.data.checkPeriodMonth}-01` }),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", caseId)
       .in("status", ["started", "questionnaire_completed", "documents_uploaded"]);
     if (updateError) throw updateError;

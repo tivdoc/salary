@@ -30,10 +30,13 @@ describe("/check/upload without a case", () => {
     process.env.CASE_TOKEN_SECRET = ["s1", "test", "secret"].join("-").repeat(3);
   });
 
+  // The first dynamic import of this page pulls the whole review screen's graph (S2's document
+  // review, validation, readability). Under the full suite that transform contends with 300+ other
+  // files, so the budget is generous on purpose: this test measures a redirect, not import speed.
   it("redirects to /check instead of rendering the file picker", async () => {
     const { default: UploadPage } = await import("./page.tsx");
     await expect(UploadPage()).rejects.toThrow("REDIRECT:/check");
-  });
+  }, 30_000);
 
   // External review #1, finding 1: a case whose contact was never verified is sent to the verification step, not to the picker.
   it("redirects an unverified contact to the verification step", async () => {

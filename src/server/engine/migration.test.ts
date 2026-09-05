@@ -29,12 +29,19 @@ describe("engine persistence migration safety", () => {
     }
   });
 
-  it("preserves the current document slot constraint and upsert behavior", () => {
+  // Site S2 / S2.2 replaced the MVP's one-payslip-per-case rule with a SLOT. This guard moved with
+  // it: the engine's own migration still may not touch the documents table's constraints, and the
+  // upload path must key on the slot — which is what makes a second payslip a second document
+  // instead of an overwrite of the first.
+  it("keys documents on their slot, so a second payslip never overwrites the first", () => {
     expect(migration).not.toMatch(/drop\s+constraint[^;]*documents/i);
     expect(migration).not.toMatch(/drop\s+index[^;]*documents/i);
-    expect(uploadRoute).toContain('.upsert(records, { onConflict: "case_id,document_type" })');
-    expect(uploadRoute).toContain("storageBaseName(file.documentType)");
-    expect(validation).toContain('if (documentType === "payslip") return "payslip-01"');
+    expect(uploadRoute).toContain('.upsert(records, { onConflict: "case_id,slot" })');
+    expect(uploadRoute).toContain("storageBaseName(file.slot)");
+    expect(uploadRoute).toContain("slot: file.slot");
+    expect(validation).toContain("export function storageBaseName(slot: DocumentSlot)");
+    // The slot vocabulary is fixed: twelve payslips, a contract and an attendance report.
+    expect(validation).toContain("MAX_PAYSLIPS = 12");
   });
 
   it("requires UUID-addressed paths only for future immutable records", () => {
