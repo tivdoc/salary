@@ -2856,30 +2856,361 @@ findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
 | BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation; the shadow's execution grade marks every case that stands on one (26 of 86 ran `inferred`) |
 | BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
 
+## Long run 8 — L8-1…L8-9: the legal engine is provably unreachable from the live site, the matrix runs in CI, and two false records are corrected
+
+Seven runs built the legal track; none of them proved, at build level, that
+the repository the live site is deployed from cannot reach the legal engine,
+the shadow or the reference catalogue. `.github/workflows/reconcile-payments.yml`
+posts to `https://tivdoc.com/api/payments/reconcile` every five minutes with
+a bearer secret, so the repository is the live site as well as the engine.
+This run proves the closure first, by building and running the build, and
+then corrects two records long run 7 left false.
+
+**L8-1 (D2) — the production closure proof, first.** A production build of
+this branch — `NODE_ENV=production`, `VERCEL_ENV=production`, no Tivdoc flag
+— was not closed: it was down. With no runtime mode requested, nothing
+installed a capability runtime, and every guarded dispatcher answered 500
+`CAPABILITY_RUNTIME_NOT_INSTALLED`: `/`, `/api/health` and
+`/api/payments/reconcile` included. That was the V0.10.10 fail-closed
+posture, and it outranked every other unit here. `register()` now installs a
+closed projection under a production or preview environment: every one of the
+eighteen capabilities `blocked` (`PRODUCTION_LEGAL_ENGINE_CLOSED`;
+customer processing and delivery `CUSTOMER_PROCESSING_DISABLED`, the
+inventory's own word for those routes on this branch), nothing enabled, so
+nothing a request could turn on. The public pages and health answer 200; the
+six legal, shadow, portal and operations dispatchers answer the product's one
+empty 404 (`refusedEntrypoint`, reason `CAPABILITY_BLOCKED`; app roots
+`notFound()`); the thirteen customer funnel and payments dispatchers answer
+404 too, recorded honestly — this branch is not deployable as the live
+business until customer processing is authorized; tivdoc.com serves `main`.
+
+The second finding was the build's file tracer: it copied the whole working
+directory — 6,879 repository files, docs, scripts, output, eval — into the
+instrumentation trace, because a font read and an evidence root were spelled
+beside `process.cwd()`. Both are literals now; the trace names 61 tracked
+files, and the proof asserts nothing tracked is customer material (the
+customer and real payslip trees are untracked and ignored, so they cannot
+deploy) and every script it names is a data reference no chunk bundles.
+
+`scripts/production-closure/prove.mts`: the build under the production
+environment, its own hash recorded; ten markers of the reference tenant, Pool
+P, the selection registrar and the shadow and sensitivity runners absent from
+every server chunk, and no `[project]/scripts/` module bundled; the built
+server started and every closed route probed with its declared method; every
+flag reader's default and refusal (shadow flags throw under production, route
+flags refuse Vercel when on, customer processing, customer shadow and delivery
+off by default, the durable and hermetic runtimes refusing Vercel); and all
+145 script entry points — every `package.json` target and every file with a
+top-level `main()`/`run()` — spawned under the production environment, each
+refusing by execution. `scripts/production-refusal.mjs` is their first
+import (ESM evaluates imports in order, and a test decrees the order); the
+Python entries inline the same refusal after the docstring. No override flag.
+Receipt `output/next/closure/production-closure-receipt.json`, 22 checks,
+PASS, build `58b6cc37ef8ddc35…`, receipt
+`677b2082cd891e9559acf91ee1f33bd39d5df2de59ae053dd979be5bd4282b76`.
+
+**L8-2 (D1) — the writer inventory is derived, not declared; F1 retracted.**
+Long run 7's inventory said `draft-shadow-run-v1.mts` writes to the synthetic
+proof tenant. It re-seeds the reference tenant's system-import session
+through an imported constant — `seedSessions(TENANT, …)` — and the two checks
+that should have seen it read only the hand-written columns: one looked for
+a reason, the other for the literal, and an imported constant is neither.
+Nothing was revoked or deleted (`on conflict do update` never clears
+`revoked_at`); the record was wrong about where the script writes. A second
+gap: `owner-reviewer-identity.mts` was not in the inventory at all, and its
+`register` command creates the owner's real reviewer identity on the
+reference tenant. `writer-inventory.mjs` follows every write — the
+tenant-taking helpers, the governance and identity SQL functions through
+their first parameter, session writes through the `set_config('tivdoc.tenant_id', …)`
+before them, repositories constructed with a tenant, a helper's default
+target — to its tenant expression, and the expression through one import hop
+and a re-export. What it cannot decide is `undecidable`, and the suite fails
+on it. The reason column stays hand-written; the class column is derived and
+pinned. Proven by breaking: fixture writers reaching the constant by import,
+by re-export and by a helper default fail without a reason; an unfollowable
+tenant fails as undecidable; a stale reason is a finding. Both files are
+reference writers now, with reasons.
+
+**L8-3 (D4) — the employer and severance contribution specs; F2 retracted.**
+`synthetic-delta.ts` said "the employer share is not a registered parameter".
+It is: `il.pension.employer_contribution_rate` at 2014.2.0 (6%) and 2017.1.0
+(6.5%), batch 13, bound in the P line's draft on both branches of
+`pension_2011_2016_precedence`. What was missing was the shadow spec that
+computes it. Two specs run under the precedence decision with no sensitivity
+counterpart (`shadowUnderDecision`): the employer share and the severance
+component on the capped pensionable wage, the branch choosing the version.
+Paid components: the employer side of `pension.contributions` through the
+existing employer transformation; the severance component through a new
+`canonical.pension.severance.contribution@1.0.0` on its own fact. The corpus
+seeds the severance fact in the six pension months (10.00 short in the
+current month); the low-confidence edge month names four pension specs.
+Fifteen specs, 19 slots; locally 109 executions on the primary branch.
+
+**L8-4 (D5) — `employment.population` is a fact of the month.** An adult, a
+working youth by the 1987 youth regulations' age band, or an apprentice —
+the shape batch 2 registered the figures in. `populationOf` reads it per case
+(the fact; absent, an adult; conflicted, refused with `population.conflicted`);
+`parameterSlotsFor` decides each slot's parameter — the spec's binding under
+the branch, or, for the minimum-wage hourly slot, the population's registered
+figure: youth_under16, youth_16_17, youth_17_18, apprentice at 2026.1.0, all
+four bands batch 2 carries, so nothing is recorded as a mismatch. The youth
+figures are published by BTL as such, so both divisor branches bind the same
+one and the selection says why. Every golden month declares its population
+as a fact; the youth minimum-wage month computes 2,541.63 against 3,000.00
+paid where it used to run on the adult figure. The DEV run pre-binds per
+spec, branch and population through the same slots. Corpus `aac7753d…`.
+
+**L8-5 (D3) — CI.** `.github/workflows/ci.yml`: on every push and pull
+request, the type check, the lint, the unit and guard suites, a plain build
+and the closure proof with its receipt kept as an artifact; one concurrency
+group per ref; `contents: read`; no secret, no DEV connection, no migration;
+the payments workflow untouched. Proven by a regression, not by a push: a
+push to the repository can start a preview deployment on the Vercel
+integration that serves tivdoc.com, which lives on an account the engineer
+cannot inspect (the account visible here links other repositories), and a
+deploy is not authorized. So `scripts/ci/run-workflow-steps.mjs` executes
+the workflow's own `run:` steps in order against the checked-out tree and
+writes a receipt with each step's exit code and the commit. On a scratch
+branch carrying a deliberate regression — the draft shadow run's guard import
+removed, commit `dfe9548a…` — the type check and the lint passed and the unit
+step failed on exactly "every entry point carries the refusal as its first
+import"; receipt `68a48ab5b740c46c827107b5614f64b4f95487f5543631a9a8c746fc3c4558a1`,
+the branch discarded. The first attempt (`049f531`) failed on a second test
+as well: the durable-runtime source test compared a literal with a bare
+newline, and git's autocrlf had rewritten `instrumentation.ts` with CRLF on a
+stash pop — the test reads line-ending agnostic now, and the runner lists
+the failed-test markers in its receipt. The freeze runs the same runner on
+the real branch.
+
+**L8-6 (D6) — the customer-data refusal matrix.** Customer Shadow stays
+shut, and `customer-refusal-matrix.test.ts` is the inventory of what keeps it
+shut: 43 surfaces that would have to change for customer payslip data to
+enter, each exercised and refusing today — the thirteen customer and six
+legal dispatchers under the closed runtime and the fail-closed posture with
+none; nine flag rows (customer processing, customer shadow and delivery off by
+default, refused by the durable runtime when on, the durable and hermetic
+runtimes refused under Vercel and with a customer flag, the route and shadow
+flags); the projection builder refusing production mode and remote scope and
+the closed projection enabling 0 of 18; the envelope's literal false on
+customer input and customer material and literal zero real counts; the
+scheduler's `SHADOW_CUSTOMER_INPUT_FORBIDDEN`, the definition schema ahead of
+the control plane's refusal, the internal-ops `OPS_LEGAL_READINESS_BLOCKED`;
+the real-payslip benchmark suites outside the default run, the customer
+evaluation tooling refusing production, the customer and real payslip trees
+untracked; local private storage refusing a public or platform-managed
+configuration. The count and the kinds are pinned.
+
+**L8-7 — Lane B.** Four read-only Haiku agents on this run's guards. Writer
+inventory: three real bypasses — a template whose literal parts spell the
+reference tenant classed by its head's namespace, the object form of a query
+carrying parameters the resolver did not see, `.ts`/`.mjs` files unscanned —
+closed with fixtures; every other mutating governance function joined the
+write list, and a product or controlled-import write in a scanned script is
+undecidable until the resolver learns its shape. Closure: the environment
+compared case-insensitively; the portal route's no-sessions fallback answers
+the product 404; the guard-detection regexes are conservative (a
+differently-shaped import fails the proof rather than passing it) and were
+left. Pension and population: no defect. Refusal matrix and CI: no omission found, no row passing for the wrong reason, the workflow's steps all present and credential-free.
+
+What Lane B did not catch, the DEV run did: L8-3 keyed comparison rows by
+spec and month, which split a composition decision's two specs into rows
+with one branch each — `rest_day_overtime_composition` compared 0/0 on DEV
+where long run 7 compared 5/5. A composition decision is keyed by the month
+alone now, the test pins 5 there and 15 under the pension decision, and the
+DEV run was repeated.
+
+**L8-8 (D7) — report v7, package v12.** The draft shadow on DEV, run `l76.c952e04c`: 54 cases, 151 executions (every
+branch), 106 ran, 40 preparation refusals, 5 executor refusals, 81 deltas
+computed, 25 not applicable, 0 paid refused; 33 draft versions bound — the
+28 of long run 7, the employer and severance shares on both branches, the
+youth 16–17 hourly — 0 active; 106 traces appended on `legal.synthetic.proof`,
+106 replayed byte-identically, 0 failures; audit chain valid over 20 events;
+execution grades verified 30, lexicon 5, declared 35, derived 5, inferred 36.
+Comparison: min_wage_hourly_divisor 4/5 (the youth month binds one published
+figure, so its branches cannot differ, and the row says so),
+pension_2011_2016_precedence 10/15 (the employee and employer shares differ
+on every comparable month; the severance component is 6% on both branches),
+rest_day_overtime_composition 5/5, pension_wage_cap_section 2/5,
+convalescence_2026_rate_period 0/5, working_time_daily_threshold 0/6 (one
+bound branch). Envelope
+`aefbd2913a01dcdf97bebb2d7dbbdffeb47e37ce840b4a23750688300b1d8066`, receipt
+`e145992b13fd8ce835cfa2f138a10e3276d1110076ae69730d6c1f1794b37fa2`.
+
+Report v7 (`decision-sensitivity-run-v7.mts`) is v6's sensitivity run — the P
+line's specs, scenarios and parameters unchanged: 102 attempted, 85 run, 17
+refused, 85 traces replayed, 7/7 topics — with the new shadow beside it, read
+from the receipt and bound by hash, never recomputed:
+`515aaf3a9f71729e6b2f8932c96ec9fac803d70761bcdff3d232d80abdf0bc40`. The
+Hebrew rendering, from v7 and nothing else: Markdown
+`5227a1f5b557f8fd4f91a20e06651fec96bd3b3e77f50c197a055cee806105d6`, PDF
+`748a4845405cac93ff0052c5d1332265c6564437e62b6b7dd24d7794e462b761`. Package
+v12: v11's members rebuilt on v7 with v6 beside it as superseded, 33 files,
+built twice to one manifest hash
+`9d96a71a79fc141a7aee6affcd6be62e4471b62a17a4850ffc9910679a9ac4ff`,
+topics_run 7 against a floor of 7, shadow_cases_run 106 against the previous
+package's 86; a receipt with a replay failure, a finding, a delivery or
+extraction is refused, as before.
+
+**L8-9.** This section, the freeze, the ledger, the resume point,
+`output/next/tracker-delta-v43.md` and tracker v43 regenerated in the
+repository.
+
+### What the matrix caught at this head
+
+- A production build of this branch answered 500 on every guarded route,
+  the public pages included: closed because down. Fixed by the closed
+  projection (L8-1).
+- The build's file tracer copied the whole working directory into the
+  instrumentation trace through two `process.cwd()` spellings (L8-1).
+- L8-1's guard changed the live bytes of `scripts/wave21-controlled-import/verify.mts`,
+  which the v0.4.1 evidence pinned by content hash; the incident diagnostic
+  classed the reference unrecoverable. The exact bytes are preserved in the
+  repository since v0.10.11 under a digest-verified manifest, and the
+  diagnostic recovers from that preservation now.
+- `rest_day_overtime_composition` 0/0 on DEV after L8-3 (above).
+- The Bash tool rewrote `\0`, `\r\n` and `\.` inside heredocs three times;
+  NUL bytes landed in `prove.mts` and were escaped byte by byte; patches went
+  through scratchpad scripts and the editor, as in long runs 6 and 7.
+- A stale `.git/index.lock` from an earlier session blocked the first
+  checkout; no git process was running and the empty lock was removed.
+
+### Lane B, this run
+
+Four read-only Haiku agents, one adversarial pass each on this run's
+guards: the closure proof and entry-point refusal; the writer-inventory
+resolver; the employer, severance and population additions; the refusal
+matrix and the CI files. Applied: the template-literal, object-form and
+extension bypasses in the resolver, each with a fixture; every remaining
+mutating governance function in the write list and product or
+controlled-import writes as undecidable; the case-insensitive environment
+comparison; the portal route's product 404. Recorded and left: the
+guard-detection regexes are conservative (a differently shaped import fails
+the proof rather than passing it); a mis-cased Python `NODE_ENV` is not
+lowered (the JavaScript guard and the runtime are). The pension, population,
+matrix and CI reviews confirmed the work and found nothing; the composition
+regression in the branch comparison was caught by the DEV run instead.
+
+## Freeze — long run 8, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+against the committed head `85885f4`, worktree clean, receipt
+`cf6a467c713962eb6e6b9a6996331bccf49858a8ad48ab0da9e98398401c69d8`: type
+check 0 errors; eslint 0 errors, 0 warnings; vitest **297/297 files, 2163
+passed, 3 skipped, 0 failed** in one run; `next build` compiled; the
+production closure proof **22/22 PASS**, build
+`cd4b5ea24e4d0717…`, receipt
+`9e84e968fd8fcad50d65cb4078d1b00adf97e9de17e45729ca9ef43fddc1d3a3` (the
+proof's second receipt at this head — the first, `677b2082…` at build
+`58b6cc37…`, was taken on L8-1's own tree; a build hash moves with every
+commit, and both are PASS on the same 22 checks). The same steps on the
+scratch regression branch failed on the guard test and nothing else
+(`68a48ab5…`, L8-5).
+
+### DEV, as the runtime roles
+
+Chain 53/53, tail `202609020030` — no migration this run; the static
+migration verification `PASS_STATIC_AND_CONTRACT`. Grant execution **22
+executed, 0 denied, 18 context failures** (as long runs 4–7). Identity
+negative matrix **8/8**. Definer surface **108**, ungated 2 (the known
+bootstrap pair), unexpected 0, reserved-execute 14. Invalidation effects
+**10/10**. Dynamic matrix **14 checks, 10 supported, 10 passed**. RLS force
+**65/65** already forced, unforced 0. Journey **17/17** — the seventeenth
+step reads the shadow summary on the canonical service, now the fifteen-spec
+run.
+
+Governance proofs, all by execution: A7-1 guards passed; parameter-decision
+matrix passed (the visual-confirmation refusals among them); A7-3 withdrawal
+passed; Q draft-binding passed with every slot bound; E3-2/E3-3 supersession
+and synthetic passed at **seven** legal decisions; E3-4 revocation passed
+(one active session, the sanctioned one); L4-7 session recovery **8/8**;
+E2-10 hygiene passed (28 proof fixtures named); L5-1 lexicon **9/9**; A7-2
+dependency-hash invalidation passed. Citation anchors **46 verified, 0
+failed, 6 impossible** (the superseded rows). S-1…S-7: `verify-v010.mts`
+PASS (restart verified, audit 5 events, zero outputs), `shadow/run.mts all`
+PASS (synthetic run and real-blocked run, zero money, zero findings, zero
+reports).
+
+The draft shadow on DEV, `l76.c952e04c`: envelope `aefbd291…`, receipt
+`e145992b…`; 54 cases, 151 executions, 106 ran, 40 preparation refusals, 5
+executor refusals, 81 deltas computed, 25 not applicable, 0 paid refused; 33
+draft versions bound, 0 active; 106 traces, 106 replayed, 0 failures;
+execution grades verified 30, lexicon 5, declared 35, derived 5, inferred 36.
+
+Sensitivity run v7: **102 attempted, 85 run, 17 refused, 85 traces, 85
+replayed**, 7/7 topics; report v7 `515aaf3a…`. Hebrew rendering
+`5227a1f5…`, PDF `748a4845…`. Package v12 `9d96a71a…`, 33 files, built twice
+to one hash, topics_run 7 against a floor of 7, shadow_cases_run 106 against
+the previous package's 86.
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, visual confirmations 0, customer rows 0, customer payslips
+read 0, real payslips read 0, composites opened 0, openai calls 0, provider
+calls 0, extraction used no, deployments 0, remote production migrations 0,
+findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-24 | open, `acquisition_blocked: administrative_source_not_discoverable_on_official_site` | the `administrative` branch of `working_time_daily_threshold` stays named and unbound; the statute branch runs |
+| BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation; the shadow's execution grade marks every case that stands on one (36 of 106 ran `inferred`) |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
+### Retracted
+
+| record | where it stood | what is true |
+|---|---|---|
+| F1 | long run 7's writer inventory: `draft-shadow-run-v1.mts` writes to the synthetic proof tenant | it re-seeds the reference tenant's system-import session through an imported constant; nothing revoked or deleted; the inventory is derived now and both it and `owner-reviewer-identity.mts` are reference writers with reasons |
+| F2 | `synthetic-delta.ts`: "the employer share is not a registered parameter" | `il.pension.employer_contribution_rate` is registered at 2014.2.0 and 2017.1.0 (batch 13) and bound on both precedence branches; the missing thing was the spec, which exists now |
+
 ## Resume point
 
-Refreshed at long run 7. Everything before this point is history; this section
+Refreshed at long run 8. Everything before this point is history; this section
 is the only part a resuming session must read to know where things stand.
 
-**Where the work is.** Pools H, D, S, R, E2, E3, L4, L5, L6 and L7 are
+**Where the work is.** Pools H, D, S, R, E2, E3, L4, L5, L6, L7 and L8 are
 closed. Pool P: 34 of 38 targets registered, 2 blocked on an administrative
 source, 2 retired as a decision; 59 draft versions, 7 superseded, 52 draft, 7
-of them inferred_visual. Pool Q: seven drafts, every slot bound; thirteen
+of them inferred_visual. Pool Q: seven drafts, every slot bound; fifteen
 executable specs. Six legal decisions open (one with an unbound branch), two
 withdrawn. The sensitivity report runs seven topics of seven and grades every
-parameter it binds. The offline shadow runs the seven drafts on 54 synthetic
-payslip months through the product's own fact model and mapping registries,
-inside the durable scheduler, with a synthetic delta per paid component —
-none of it a finding, none of it delivered, no extraction, no provider.
+parameter it binds. The offline shadow runs the fifteen specs on 54 synthetic
+payslip months — their population a fact of the month — through the
+product's own fact model and mapping registries, inside the durable
+scheduler, with a synthetic delta per paid component (the employer and
+severance shares included); none of it a finding, none of it delivered, no
+extraction, no provider.
 
-**What a lawyer could be handed today.** Review package v11 — dossier,
-Hebrew runbook, sensitivity report v6 with v5…v1 beside it, a Hebrew
-rendering of v6 in Markdown and PDF with a section for the shadow and the
+**What is proven about the live site.** A production build of this branch
+is closed by construction: every capability blocked, the legal, shadow,
+portal and operations dispatchers one empty 404, every script entry point
+refusing a production environment, no reference-tenant or Pool P marker in
+any server chunk, no customer material in the deployment trace — the
+closure proof's receipt records the build's own hash. The CI workflow runs
+the type check, the lint, the suites, a build and that proof on every push
+and pull request, without a secret; it was proven locally on a regression
+and has not yet run on GitHub, because this branch has never been pushed.
+The governance writer inventory is derived from the scripts, and a
+customer-data refusal matrix of 43 surfaces refuses today. This branch is not
+deployable as the live business until customer processing is authorized;
+tivdoc.com serves `main`.
+
+**What a lawyer could be handed today.** Review package v12 — dossier,
+Hebrew runbook, sensitivity report v7 with v6…v1 beside it, a Hebrew
+rendering of v7 in Markdown and PDF with a section for the shadow and the
 unbound branch named, the three cited pages with their index, the legal
 decisions, the draft parameters with their binding hashes, the scenario
 fixtures, 102 executions and 85 replayed traces, the shadow receipt, summary,
-branch comparison and corpus index, the batch-16 lexicon receipt, and the
-citation anchors.
+branch comparison and corpus index (106 cases run, 106 traces replayed), the
+batch-16 lexicon receipt, and the citation anchors.
 
 **The one gate that moves 0/7.** The owner runs `owner-reviewer-identity.mts
 keygen` if they have not, then `register --reviewer-id <their.id>` at a
@@ -2892,14 +3223,16 @@ this gate.
 
 **Next engineering work, in order — none of it a human gate:**
 
-1. BL-24: if the owner's browser session finds the 10.6.2018 directive on an
+1. Push the branch, or open the pull request, so `.github/workflows/ci.yml`
+   runs on GitHub for the first time; before that, confirm on the Vercel
+   account that serves tivdoc.com whether branch pushes start preview
+   deployments, and disable them for this repository if they do. The local
+   proof stands until then.
+2. BL-24: if the owner's browser session finds the 10.6.2018 directive on an
    official host, it goes through `legal:sources:acquisition:import` under the
    registered target and binds at administrative grade as the
    `administrative` branch of `working_time_daily_threshold`; otherwise the
    branch stays named and unbound.
-2. The shadow's `sector_population` months run on the general figure because
-   the fact model carries no population path; a population fact and the youth
-   minimum-wage branches would let those months select their own parameter.
 3. The sick-pay total over an absence needs the day-one rate the L5-4
    reading refused to invent; until a reviewer decides day one, the sick delta
    stays `not_applicable` and says why.
