@@ -48,6 +48,9 @@ export const productOfferSchema = z.object({
   }).strict(),
   contact: z.object({
     support_email: z.string().email().nullable(),
+    // Long run 9 / 1.4: the local-format number, for display and tel: links; `whatsapp` stays the
+    // international format wa.me needs. The same physical line, two renderings, both configuration.
+    phone: z.string().regex(/^0[0-9]{8,9}$/u).nullable(),
     whatsapp: z.string().regex(/^\+?[0-9]{9,15}$/u).nullable(),
   }).strict(),
 }).strict();
