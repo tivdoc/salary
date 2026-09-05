@@ -122,6 +122,12 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   { parameter_id: "il.minimum_wage.apprentice.monthly", versions: ["2026.1.0"] },
   { parameter_id: "il.minimum_wage.apprentice.hourly", versions: ["2026.1.0"] },
   { parameter_id: "il.working_time.weekly_overtime_threshold_hours", versions: ["2018.1.0"] },
+  // L13-5 / E2 (long run 10, batch 21): the base rule behind Q4 — §18 puts every supplement the
+  // employer pays into the regular wage that §16 and §17 multiply, so a fixed contractual premium
+  // enters the BASE rather than forming a separate multiplicative composition. No decision and no
+  // branch: it governs the base across every branch of the composition decision. No draft spec binds
+  // it yet, which is why it is declared here and nowhere else — this list is what the census reads.
+  { parameter_id: "il.working_time.regular_wage_includes_fixed_contractual_premiums", versions: ["1951.1.0"] },
   // L7-9 (batch 16 / D6): §2's eight hours, bound through the lexicon. The
   // decision working_time_daily_threshold has one bound branch (statute) and
   // one unbound (administrative, BL-24), so it is carried on the spec and in
