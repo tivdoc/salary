@@ -1,0 +1,68 @@
+# L8-5 / D3. Continuous integration: every push and every pull request runs
+# the type check, the lint, the unit and guard suites, a plain build, and the
+# production closure proof (a build under NODE_ENV=production and
+# VERCEL_ENV=production with no Tivdoc flag, the closed server probed, every
+# script entry point spawned and refusing). Nothing here has a secret, a
+# database connection or a migration: the suites that need the DEV project
+# skip themselves without credentials, and the DEV matrices are not CI.
+#
+# The payments reconciliation workflow beside this one is untouched.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  CI: "true"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and guard suites (no credentials)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Production closure proof (D2)
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/production-closure/prove.mts
+
+      - name: Keep the closure receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-closure-receipt
+          path: |
+            output/next/closure/production-closure-receipt.json
+            output/next/closure/build.log
+            output/next/closure/server.log
+          if-no-files-found: ignore
