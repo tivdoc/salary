@@ -61,7 +61,7 @@ export type DurableLocalProductStartupProof = Readonly<{
   private_storage_root_binding_sha256: string;
   fresh_worker_process_required: true;
   capability_projection_sha256: string;
-  stable_product_dispatchers: 27;
+  stable_product_dispatchers: 33;
   durable_governance_replacements_wired: 4;
   durable_multi_document_intake_wired: true;
   durable_global_dependency_invalidation_wired: true;
@@ -235,7 +235,8 @@ async function buildDurableLocalProductRuntime(): Promise<DurableLocalProductSta
           correlation_id: correlationId,
         }),
     });
-    if (STABLE_PRODUCT_DISPATCHER_ROOTS.length !== 27
+    // UX Run 1 / U0: 26 → 32 Next roots plus the registrar.
+    if (STABLE_PRODUCT_DISPATCHER_ROOTS.length !== 33
         || syntheticReportPipeline.proof().product_reachable_memory_repositories !== 0
         || multiDocumentIntake.product_proof.product_reachable_memory_fallbacks !== 0
         || multiDocumentIntake.product_proof.legal_conclusions_created !== 0
@@ -263,7 +264,7 @@ async function buildDurableLocalProductRuntime(): Promise<DurableLocalProductSta
       private_storage_root_binding_sha256: storageProof.root_binding_sha256,
       fresh_worker_process_required: true,
       capability_projection_sha256: capabilities.projection.projection_sha256,
-      stable_product_dispatchers: 27,
+      stable_product_dispatchers: 33,
       durable_governance_replacements_wired: 4,
       durable_multi_document_intake_wired: true,
       durable_global_dependency_invalidation_wired: true,
