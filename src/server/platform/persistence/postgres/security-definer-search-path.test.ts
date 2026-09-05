@@ -22,7 +22,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // Run 11 / L11-2: 154 -> 158. Migration 202609020031 declares three definers (the
 // resolution guard, record and read) and 202609020032 re-declares the record
 // function in place; each declaration counts.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 158;
+// External review #1, finding 5: 158 -> 161. Migration 202609050004 re-declares the record
+// function and the read function (dropped and created, its return type changed), and
+// 202609050005 re-declares the record function once more (the audit-actor repair).
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 161;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
