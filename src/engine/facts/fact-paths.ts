@@ -3,6 +3,10 @@ import { z } from "zod";
 export const knownFactPaths = [
   "employment.start_date",
   "employment.end_date",
+  // L8-4 / D5: the population the month belongs to — an adult, a working
+  // youth by the 1987 regulations' age band, an apprentice — so a draft whose
+  // parameter differs by population can bind that population's figure.
+  "employment.population",
   "compensation.salary_type",
   "compensation.base_monthly_salary",
   "compensation.hourly_rate",

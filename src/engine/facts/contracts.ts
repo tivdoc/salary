@@ -172,6 +172,15 @@ const factEnvelopeShape = {
   created_at: isoTimestampSchema,
 } as const;
 
+/**
+ * L8-4 / D5. The populations the minimum-wage law distinguishes, shaped as
+ * batch 2 registered the youth and apprentice figures: the 1987 youth
+ * regulations' age bands (§4(a)–(c)) and the apprentice (§5). `general` is an
+ * adult.
+ */
+export const employmentPopulations = ["general", "youth_under_16", "youth_16_17", "youth_17_18", "apprentice"] as const;
+export const employmentPopulationValueSchema = z.object({ population: z.enum(employmentPopulations) }).strict();
+
 function factVariant<TPath extends z.infer<typeof factPathSchema>, TValue extends z.ZodType>(
   path: TPath,
   value: TValue,
@@ -188,6 +197,7 @@ function factVariant<TPath extends z.infer<typeof factPathSchema>, TValue extend
 const canonicalFactUnionSchema = z.discriminatedUnion("path", [
   factVariant("employment.start_date", isoDateSchema),
   factVariant("employment.end_date", isoDateSchema),
+  factVariant("employment.population", employmentPopulationValueSchema),
   factVariant("compensation.salary_type", z.enum(["monthly", "hourly", "mixed"])),
   factVariant("compensation.base_monthly_salary", nonNegativeMoneySchema),
   factVariant("compensation.hourly_rate", nonNegativeMoneySchema),

@@ -7,10 +7,9 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { canonicalSha256 } from "../../../engine/rule-runtime/canonical.ts";
-import { runDraftShadow, type BoundDraftParameter } from "../../../engine/shadow/draft-shadow-run.ts";
-import { DRAFT_SHADOW_SPECS } from "../../../engine/shadow/draft-shadow-specs.ts";
+import { runDraftShadow } from "../../../engine/shadow/draft-shadow-run.ts";
 import { SYNTHETIC_CORPUS, SYNTHETIC_CORPUS_SHA256 } from "../../../engine/shadow/synthetic-corpus.ts";
-import { TEST_PARAMETER_VALUES } from "../../../engine/shadow/test-support.ts";
+import { testBindings } from "../../../engine/shadow/test-support.ts";
 import { DURABLE_SHADOW_ENVELOPE_V011, durableShadowRunEnvelopeSchema } from "./durable-contracts.ts";
 import { DurableOfflineShadowScheduler } from "./durable-scheduler.ts";
 import { LocalFileDurableShadowStateStore, verifySchedulerAuditChain } from "./durable-store.ts";
@@ -20,15 +19,8 @@ import { readOfflineShadowFlags, type OfflineShadowFlags } from "./flags.ts";
 const LIMITS = { max_jobs: 4, max_queued: 4, max_concurrent_leases: 1, max_attempts: 2, max_dataset_bytes: 8_192, max_lease_ms: 60_000 };
 const ENABLED = { enabled: true, synthetic_enabled: true, public_enabled: false } as const;
 
-/** Test bindings: every parameter a draft, graded text_verified, from the test values. */
-const bindings = (spec: (typeof DRAFT_SHADOW_SPECS)[number], branch: string | null): readonly BoundDraftParameter[] =>
-  spec.spec.parameters.map((declaration) => ({
-    ref_id: declaration.ref_id,
-    parameter_version_id: `${declaration.parameter_id}@${spec.branches.find(([name]) => name === branch)?.[1] ?? declaration.parameter_version}`,
-    state: "draft",
-    value: TEST_PARAMETER_VALUES[declaration.ref_id],
-    provenance_grade: "text_verified",
-  }));
+/** Test bindings: every parameter a draft, graded text_verified, from the test values (population-aware since L8-4). */
+const bindings = testBindings;
 
 const roots: string[] = [];
 afterEach(async () => { for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true }); });

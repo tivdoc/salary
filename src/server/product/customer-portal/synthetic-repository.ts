@@ -37,6 +37,7 @@ type IdempotencyRecord<T> = Readonly<{ command_sha256: string; result: T }>;
 const PROMPTS_HE: Readonly<Record<FactPath, string>> = Object.freeze({
   "employment.start_date": "מהו תאריך תחילת העבודה לפי ידיעתך?",
   "employment.end_date": "האם העבודה הסתיימה, ואם כן באיזה תאריך?",
+  "employment.population": "האם את/ה עובד/ת בוגר/ת, נער/ה עובד/ת (ואם כן, באיזה גיל) או חניך/ה?",
   "compensation.salary_type": "כיצד הוגדר אופן תשלום השכר שלך?",
   "compensation.base_monthly_salary": "מהו שכר הבסיס החודשי שהוצהר בפניך?",
   "compensation.hourly_rate": "מהו השכר השעתי שהוצהר בפניך?",

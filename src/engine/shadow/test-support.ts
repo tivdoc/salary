@@ -5,6 +5,8 @@
 // src/ imports this file except tests.
 import type { RuleSpecInputValue } from "../legal-operations/rulespec.ts";
 import type { DraftShadowSpec } from "./draft-shadow-specs.ts";
+import type { BoundDraftParameter } from "./draft-shadow-run.ts";
+import { parameterSlotsFor, POPULATION_ABSENT, type PopulationBinding } from "./population-selection.ts";
 
 const ratio = (numerator: string, denominator = "1") => ({ kind: "rational" as const, numerator, denominator, unit: "ratio" });
 const money = (minorUnits: number) => ({ kind: "money" as const, currency: "ILS", minor_units: minorUnits });
@@ -40,10 +42,24 @@ export const TEST_PARAMETER_VALUES: Readonly<Record<string, RuleSpecInputValue["
   "parameter.days.years.20.and.above": integer(10, "days"),
 });
 
-export function testParametersFor(entry: DraftShadowSpec): RuleSpecInputValue[] {
-  return entry.spec.parameters.map((declaration) => {
-    const value = TEST_PARAMETER_VALUES[declaration.ref_id];
-    if (!value) throw new Error(`test parameter missing: ${declaration.ref_id}`);
-    return { ref_id: declaration.ref_id, value };
+/** L8-4 / D5: the population-selected figures, by parameter version id, as batch 2 registered them. */
+export const TEST_PARAMETER_VALUES_BY_ID: Readonly<Record<string, RuleSpecInputValue["value"]>> = Object.freeze({
+  "il.minimum_wage.youth_under16.hourly@2026.1.0": money(2_607),
+  "il.minimum_wage.youth_16_17.hourly@2026.1.0": money(2_793),
+  "il.minimum_wage.youth_17_18.hourly@2026.1.0": money(3_091),
+  "il.minimum_wage.apprentice.hourly@2026.1.0": money(2_234),
+});
+
+/** Test bindings: every parameter a draft, graded text_verified, the slot's figure by version id when the population selected it, else by ref id. */
+export function testBindings(spec: DraftShadowSpec, branch: string | null, population: PopulationBinding = POPULATION_ABSENT): readonly BoundDraftParameter[] {
+  return parameterSlotsFor(spec, branch, population).map((slot) => {
+    const versionId = `${slot.parameter_id}@${slot.parameter_version}`;
+    const value = slot.selected_by_population ? TEST_PARAMETER_VALUES_BY_ID[versionId] : TEST_PARAMETER_VALUES[slot.ref_id];
+    if (!value) throw new Error(`test parameter missing: ${slot.selected_by_population ? versionId : slot.ref_id}`);
+    return { ref_id: slot.ref_id, parameter_version_id: versionId, state: "draft", value, provenance_grade: "text_verified" };
   });
+}
+
+export function testParametersFor(entry: DraftShadowSpec, branch: string | null = null, population: PopulationBinding = POPULATION_ABSENT): RuleSpecInputValue[] {
+  return testBindings(entry, branch, population).map((parameter) => ({ ref_id: parameter.ref_id, value: parameter.value }));
 }

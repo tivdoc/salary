@@ -19,6 +19,7 @@ import { bridgePreparedInputs } from "./prepared-input-bridge.ts";
 import { SYNTHETIC_CORPUS, SYNTHETIC_CORPUS_SHA256, type SyntheticCase } from "./synthetic-corpus.ts";
 import { computeSyntheticDelta, paidComponentBinding, type SyntheticShadowDelta } from "./synthetic-delta.ts";
 import { SYNTHETIC_PREPARED_AT, SYNTHETIC_PROOF_TENANT } from "./synthetic-payslip-month.ts";
+import { populationOf, type PopulationBinding } from "./population-selection.ts";
 
 export const DRAFT_SHADOW_RUN_SCHEMA = "tivdoc-draft-shadow-run-v1" as const;
 
@@ -31,8 +32,12 @@ export type BoundDraftParameter = Readonly<{
   provenance_grade: ParameterProvenance["provenance_grade"];
 }>;
 
-/** The caller's binding of every spec's parameters, per branch when the spec carries a decision. */
-export type DraftParameterBindings = (spec: DraftShadowSpec, branch: string | null) => readonly BoundDraftParameter[];
+/**
+ * The caller's binding of every spec's parameters, per branch when the spec
+ * carries a decision and per population when a slot is population-selected
+ * (L8-4: `parameterSlotsFor` says which parameter each slot binds).
+ */
+export type DraftParameterBindings = (spec: DraftShadowSpec, branch: string | null, population: PopulationBinding) => readonly BoundDraftParameter[];
 
 export type ShadowExecutionRecord = Readonly<{
   execution_id: string;
@@ -46,6 +51,8 @@ export type ShadowExecutionRecord = Readonly<{
   rule_content_sha256: string;
   decision_id: string | null;
   branch: string | null;
+  /** L8-4 / D5: the population the month declared (or did not), which chose any population-selected parameter. */
+  population: PopulationBinding;
   parameter_version_ids: readonly string[];
   parameter_states: readonly string[];
   snapshot_sha256: string;
@@ -113,6 +120,7 @@ export function executeShadowCase(input: Readonly<{
   entry: SyntheticCase;
   spec: DraftShadowSpec;
   branch: string | null;
+  population: PopulationBinding;
   parameters: readonly BoundDraftParameter[];
   execution_id: string;
   prepared_at?: string;
@@ -120,6 +128,9 @@ export function executeShadowCase(input: Readonly<{
   const preparedAt = input.prepared_at ?? SYNTHETIC_PREPARED_AT;
   const snapshot = createCanonicalRuleInputSnapshot(input.entry.snapshot);
   const prepared: PreparedRuleInputs = prepareRuleInputs(snapshot, input.spec.input_mappings, preparedAt);
+  // A conflicted population is refused before anything runs on it: the
+  // parameter it would have selected is not knowable.
+  const populationRefusal = input.population.source === "conflicted" ? ["population.conflicted"] : [];
   const base = {
     execution_id: input.execution_id,
     case_id: input.entry.case_id,
@@ -132,14 +143,15 @@ export function executeShadowCase(input: Readonly<{
     rule_content_sha256: input.spec.spec.content_sha256,
     decision_id: input.spec.decision_id,
     branch: input.branch,
+    population: input.population,
     parameter_version_ids: input.parameters.map((parameter) => parameter.parameter_version_id),
     parameter_states: input.parameters.map((parameter) => parameter.state),
     snapshot_sha256: input.entry.snapshot_sha256,
     preparation_sha256: prepared.preparation_sha256,
   };
-  if (prepared.result.status !== "ready") {
+  if (prepared.result.status !== "ready" || populationRefusal.length > 0) {
     return Object.freeze({
-      ...base, status: "preparation_refused", rejection_codes: prepared.result.rejection_codes, error_code: null,
+      ...base, status: "preparation_refused", rejection_codes: [...(prepared.result.status !== "ready" ? prepared.result.rejection_codes : []), ...populationRefusal], error_code: null,
       output: null, provenance: null, delta: null, execution_inputs: null, execution_trace: null, trace_sha256: null, result_sha256: null,
     });
   }
@@ -181,13 +193,14 @@ export function runDraftShadow(input: Readonly<{
   const corpus = input.corpus ?? SYNTHETIC_CORPUS;
   const executions: ShadowExecutionRecord[] = [];
   for (const entry of corpus) {
+    const population = populationOf(entry.snapshot);
     for (const shadowId of entry.shadow_ids) {
       const spec = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId);
       if (!spec) throw new Error(`DRAFT_SHADOW_SPEC_UNKNOWN:${shadowId}`);
       for (const branch of branchesOf(spec, policy)) {
-        const parameters = input.bindings(spec, branch);
+        const parameters = input.bindings(spec, branch, population);
         const executionId = `${input.run_id}.${entry.case_id}.${shadowId}${branch ? `.${branch}` : ""}`.replaceAll("_", "-");
-        executions.push(executeShadowCase({ entry, spec, branch, parameters, execution_id: executionId, prepared_at: input.prepared_at }));
+        executions.push(executeShadowCase({ entry, spec, branch, population, parameters, execution_id: executionId, prepared_at: input.prepared_at }));
       }
     }
   }

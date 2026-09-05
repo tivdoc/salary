@@ -26,6 +26,7 @@ import { DRAFT_SHADOW_SPECS, type DraftShadowSpec } from "../../src/engine/shado
 import { compareBranches } from "../../src/engine/shadow/branch-comparison.ts";
 import { runDraftShadow, type BoundDraftParameter, type DraftShadowRunResult, type ShadowExecutionRecord } from "../../src/engine/shadow/draft-shadow-run.ts";
 import { SYNTHETIC_CORPUS, SYNTHETIC_CORPUS_SHA256 } from "../../src/engine/shadow/synthetic-corpus.ts";
+import { parameterSlotsFor, populationOf, type PopulationBinding } from "../../src/engine/shadow/population-selection.ts";
 import { SYNTHETIC_PROOF_TENANT } from "../../src/engine/shadow/synthetic-payslip-month.ts";
 import { DurableOfflineShadowScheduler } from "../../src/server/engine/shadow/durable-scheduler.ts";
 import { LocalFileDurableShadowStateStore, verifySchedulerAuditChain } from "../../src/server/engine/shadow/durable-store.ts";
@@ -117,27 +118,28 @@ async function main(): Promise<void> {
     return read;
   };
 
-  // --- Pre-bind every spec's parameters for every branch, so the run itself is synchronous and pure.
+  // --- Pre-bind every spec's parameters for every branch and every population
+  // the corpus declares (L8-4), so the run itself is synchronous and pure. The
+  // slot's parameter is decided by the engine (`parameterSlotsFor`); this
+  // script only reads the value.
   const bound = new Map<string, readonly BoundDraftParameter[]>();
+  const populations = [...new Map(SYNTHETIC_CORPUS.map((entry) => { const p = populationOf(entry.snapshot); return [`${p.population}|${p.source}`, p] as const; })).values()];
   for (const spec of DRAFT_SHADOW_SPECS) {
     const branches: readonly (string | null)[] = spec.branches.length > 0 ? spec.branches.map(([name]) => name) : [spec.composition_branch];
     for (const branch of branches) {
-      const version = spec.branches.find(([name]) => name === branch)?.[1] ?? null;
-      const parameters: BoundDraftParameter[] = [];
-      for (const declaration of spec.spec.parameters) {
-        const binding = spec.bindings.find((candidate) => candidate.ref_id === declaration.ref_id);
-        if (!binding) throw new Error(`L76_BINDING_MISSING:${spec.shadow_id}:${declaration.ref_id}`);
-        const chosen = binding.parameter_version ?? version;
-        if (!chosen) throw new Error(`L76_VERSION_UNRESOLVED:${spec.shadow_id}:${declaration.ref_id}`);
-        const read = await valueOf(binding.parameter_id, chosen);
-        parameters.push({ ref_id: declaration.ref_id, parameter_version_id: `${binding.parameter_id}@${chosen}`, state: read.state, value: toInput(read.value), provenance_grade: read.provenance_grade });
+      for (const population of populations) {
+        const parameters: BoundDraftParameter[] = [];
+        for (const slot of parameterSlotsFor(spec, branch, population)) {
+          const read = await valueOf(slot.parameter_id, slot.parameter_version);
+          parameters.push({ ref_id: slot.ref_id, parameter_version_id: `${slot.parameter_id}@${slot.parameter_version}`, state: read.state, value: toInput(read.value), provenance_grade: read.provenance_grade });
+        }
+        bound.set(`${spec.shadow_id}|${branch ?? ""}|${population.population}`, Object.freeze(parameters));
       }
-      bound.set(`${spec.shadow_id}|${branch ?? ""}`, Object.freeze(parameters));
     }
   }
-  const bindings = (spec: DraftShadowSpec, branch: string | null) => {
-    const parameters = bound.get(`${spec.shadow_id}|${branch ?? ""}`);
-    if (!parameters) throw new Error(`L76_BOUND_MISSING:${spec.shadow_id}:${branch}`);
+  const bindings = (spec: DraftShadowSpec, branch: string | null, population: PopulationBinding) => {
+    const parameters = bound.get(`${spec.shadow_id}|${branch ?? ""}|${population.population}`);
+    if (!parameters) throw new Error(`L76_BOUND_MISSING:${spec.shadow_id}:${branch}:${population.population}`);
     return parameters;
   };
   const draftVersions = new Set([...bound.values()].flatMap((parameters) => parameters.map((parameter) => parameter.parameter_version_id)));

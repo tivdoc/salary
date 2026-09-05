@@ -11,17 +11,19 @@ import { DRAFT_SHADOW_SPECS, DRAFT_SHADOW_TOPICS } from "./draft-shadow-specs.ts
 import { bridgePreparedInputs } from "./prepared-input-bridge.ts";
 import { SYNTHETIC_CORPUS, SYNTHETIC_CORPUS_SHA256, syntheticCase, type SyntheticCase } from "./synthetic-corpus.ts";
 import { SYNTHETIC_PREPARED_AT, syntheticUuid } from "./synthetic-payslip-month.ts";
+import { populationOf } from "./population-selection.ts";
 import { testParametersFor } from "./test-support.ts";
 
 /** Pinned. A change here is a change to what the shadow runs on, and the state doc must say why. */
 // L8-3 / D4: the severance fact beside the contributions in the six pension months; the low-confidence edge month names four pension specs.
-const CORPUS_SHA256 = "4a7e7549a659e00cea3b793316dfbe6ff9616eda72afcb106736fd084b097b0c";
+// L8-4 / D5: every golden month declares its population as a fact.
+const CORPUS_SHA256 = "aac7753d8b7a6932678e54561293e646476e44381c07b97571a456d418e82534";
 
 function runCase(entry: SyntheticCase, shadowId: string) {
   const spec = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
   const prepared = prepareRuleInputs(createCanonicalRuleInputSnapshot(entry.snapshot), spec.input_mappings, SYNTHETIC_PREPARED_AT);
   const outcome = prepared.result.status === "ready"
-    ? executeRuleSpecAtomic({ rule: spec.spec, facts: bridgePreparedInputs(prepared, spec.input_mappings), parameters: testParametersFor(spec) } as never)
+    ? executeRuleSpecAtomic({ rule: spec.spec, facts: bridgePreparedInputs(prepared, spec.input_mappings), parameters: testParametersFor(spec, null, populationOf(entry.snapshot)) } as never)
     : null;
   return { prepared, outcome };
 }

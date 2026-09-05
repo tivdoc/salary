@@ -14,7 +14,7 @@
 //
 // The scenario families follow the golden set. `missing_conflicted_facts`
 // withholds one fact and conflicts another so the case REFUSES;
-// `sector_population` names a population the fact model does not carry, so
+// `sector_population` names a population — until L8-4 the fact model did not carry it, so
 // the case runs on the general figure and its label says so;
 // `precedence_overlap` is an ordinary month whose specs carry an open
 // decision, run per branch in L7-7; `parameter_rounding_boundary` chooses
@@ -228,11 +228,16 @@ function makeCase(input: Omit<SyntheticCase, "snapshot" | "snapshot_sha256" | "s
 
 function goldenCase(topic: string, scenario: GoldenScenario): SyntheticCase {
   const period = PERIODS[scenario];
-  const facts = [periodFact(`${topic}.${scenario}`, period.start, period.end), ...TOPIC_MONTHS[topic](scenario, period)];
+  // L8-4 / D5: the population is a fact of the month, not a label on the case.
+  const facts = [
+    periodFact(`${topic}.${scenario}`, period.start, period.end),
+    { path: "employment.population" as const, value: { population: POPULATION[scenario] }, source_type: "documented" as const },
+    ...TOPIC_MONTHS[topic](scenario, period),
+  ];
   const expected: SyntheticCaseExpectation = scenario === "missing_conflicted_facts"
     ? { kind: "preparation_refuses", codes: REFUSAL_CODES[topic] }
     : scenario === "sector_population"
-      ? { kind: "runs", note: "population is not a fact path; the month runs on the general figure and the label says which population it stood for" }
+      ? { kind: "runs", note: "the month declares its population (youth_16_17); a spec with a population-selected slot binds that population's registered figure, the rest run as for an adult" }
       : { kind: "runs" };
   return makeCase({ seed: `golden.${topic}.${scenario}`, topic, family: "golden", scenario, shadow_ids: shadowIdsOf(topic), population: POPULATION[scenario], facts, expected });
 }
