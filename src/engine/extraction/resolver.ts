@@ -70,6 +70,8 @@ function documentaryEvidence(field: NormalizedCandidateField): EvidenceReference
   return {
     source_type: "documented",
     source_reference: { kind: "document", document_id: field.source.document_id, locator },
+    // The extractor read it; no person has. The execution grade keeps it off `verified`.
+    reading: "machine",
   };
 }
 
@@ -77,6 +79,7 @@ function documentEvidence(documentId: string): EvidenceReference {
   return {
     source_type: "documented",
     source_reference: { kind: "document", document_id: documentId },
+    reading: "machine",
   };
 }
 

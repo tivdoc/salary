@@ -17,7 +17,9 @@
 //                 an instrument selection — a choice, not a reading)
 //   derived       an input computed from other facts — or, L12-1, a parameter
 //                 derived by arithmetic on cited text plus a declared assumption
-//   inferred      an input produced by an agent, or a parameter read from a
+//   inferred      an input produced by an agent, or a documented input the
+//                 extractor read off the page and no person confirmed (L13T-6:
+//                 evidence `reading: "machine"`), or a parameter read from a
 //                 page image awaiting visual confirmation
 //   administrative a parameter from an administrative source (unbound today)
 //   agreement_interpretation
@@ -62,6 +64,8 @@ export const inputProvenanceSchema = z.object({
   /** Every source type on the fact's evidence, sorted; the worst grades the input. */
   source_types: z.array(factSourceTypeSchema).min(1).readonly(),
   worst_source_type: factSourceTypeSchema,
+  /** L13T-6: true when every documented evidence on the fact was read by the extractor and none by a person. */
+  machine_read: z.boolean().default(false),
   confidence: z.number().min(0).max(1),
   transformation: z.string(),
 }).strict().readonly();
@@ -98,18 +102,27 @@ export function inputProvenance(ref: RuleInputValueRef): InputProvenance {
   const sourceTypes = [...new Set(ref.provenance.map((entry) => entry.source_type))].sort(
     (left, right) => INPUT_SOURCE_ORDER.indexOf(left) - INPUT_SOURCE_ORDER.indexOf(right),
   );
+  const documented = ref.provenance.filter((entry) => entry.source_type === "documented");
+  const machineRead = documented.length > 0 && documented.every((entry) => entry.reading === "machine");
   return inputProvenanceSchema.parse({
     input_id: ref.input_id,
     fact_path: ref.fact_path,
     source_fact_id: ref.source_fact_id,
     source_types: sourceTypes,
     worst_source_type: worstSourceType(sourceTypes),
+    machine_read: machineRead,
     confidence: ref.confidence,
     transformation: ref.transformation ? `${ref.transformation.transformation_id}@${ref.transformation.transformation_version}` : "none",
   });
 }
 
-/** The grade of one execution: the worst of its inputs' source types and its parameters' grades. */
+/** The rung of one input: its worst source type's rung, except that a documented input only the machine read is `inferred`. */
+export function inputRung(input: InputProvenance): ExecutionGrade {
+  if (input.worst_source_type === "documented" && input.machine_read) return "inferred";
+  return INPUT_RUNG[input.worst_source_type];
+}
+
+/** The grade of one execution: the worst of its inputs' rungs and its parameters' grades. */
 export function gradeExecution(
   values: readonly RuleInputValueRef[],
   parameters: readonly ParameterProvenance[],
@@ -119,7 +132,7 @@ export function gradeExecution(
   const worstInput = inputs.length === 0 ? null : worstSourceType(inputs.map((entry) => entry.worst_source_type));
   const worstParameter = sortedParameters.length === 0 ? null : worstProvenance(sortedParameters.map((entry) => entry.provenance_grade));
   const rungs: ExecutionGrade[] = [
-    ...(worstInput === null ? [] : [INPUT_RUNG[worstInput]]),
+    ...inputs.map(inputRung),
     ...(worstParameter === null ? [] : [PARAMETER_RUNG[worstParameter]]),
   ];
   return executionProvenanceSchema.parse({
