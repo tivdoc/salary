@@ -39,7 +39,10 @@ import { TENANT } from "./pool-p-parameter-import.mts";
 // contribution difference beside the base difference, the retired branch and
 // the convalescence rate table; a statement above the tables that no
 // attestation occurred.
-const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v8.json");
+// L12-4 / D4: re-pointed to v9 — the derived daily norm with its assumption
+// slot on the row, the default view of the severity classes, and the
+// default-transition table.
+const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v9.json");
 const DOCS_ROOT = path.join("docs", "legal");
 const RECEIPT_ROOT = path.join("output", "next", "pool-q");
 const MARKDOWN = path.join(DOCS_ROOT, "sensitivity-report.he.md");
@@ -85,7 +88,9 @@ type OpenDecision = Readonly<{
   per_scenario: readonly PerScenario[];
   default_branch?: string | null; default_branch_source?: string; selected_branch?: string | null; selected_branch_bound?: boolean | null;
   resolution?: Resolution | null;
-  gap_severity?: Readonly<{ dimension: string; statutory_figure: string; order_figure: string }> | null;
+  gap_severity?: Readonly<{ dimension: string; statutory_figure: string; order_figure: string; default_view_note_he?: string }> | null;
+  transition?: Readonly<{ previous_default_branch: string | null; new_default_branch: string | null; default_changed: boolean; cases_outcome_changed: number; one_changed_case_id: string | null; classification: string; band_month: string | null; band_month_outcome_changed: boolean | null }> | null;
+  derived_bindings?: ReadonlyArray<Readonly<{ parameter_version_id: string; assumption_slot: string; assumption_statement: string; identity: string; steps: readonly string[]; regular_day: string; short_day: string; invalidated_by: string; competing_reading: string; derivation_sha256: string }>>;
   contribution_rates?: ReadonlyArray<Readonly<{ share: string; parameter_version_id: string; rate: Readonly<{ numerator: string; denominator: string }> }>> | null;
 }>;
 type TopicNotRun = Readonly<{ topic: string; not_run: string; slots: readonly string[]; detail: string }>;
@@ -97,13 +102,14 @@ type Report = Readonly<{
   topics_not_run: readonly TopicNotRun[]; open_decisions: readonly OpenDecision[];
   provenance: Readonly<{
     grades: readonly string[]; counts: Readonly<Record<string, number>>;
-    bound_parameter_versions: ReadonlyArray<Readonly<{ parameter_version_id: string; provenance_grade: string; visual_bindings: ReadonlyArray<Readonly<{ page_pdf_sha256: string; visual_reading: string }>> }>>;
+    bound_parameter_versions: ReadonlyArray<Readonly<{ parameter_version_id: string; provenance_grade: string; visual_bindings: ReadonlyArray<Readonly<{ page_pdf_sha256: string; visual_reading: string }>>; derivation?: Readonly<{ assumption_slot: string; identity: string; regular_day: string; short_day: string }> | null }>>;
   }>;
   executions: readonly Readonly<{ topic: string; scenario: string; branch: string; ran: boolean; output: string | null; refusal: string | null }>[];
   resolutions?: Readonly<{ recorded: number; attested: number; evidence: Readonly<{ legal_opinion_sha256: string; approval_record_sha256: string; approved_on: string }>; items: readonly Resolution[] }>;
   branches_examined_and_rejected?: ReadonlyArray<Readonly<{ decision_id: string; branch: string; reason: string; retired_in: string }>>;
   convalescence_rate_table?: Readonly<{ rows: ReadonlyArray<Readonly<{ havraa_year: number; rate_minor_units: number; valid_from: string; valid_to: string; known_at: string; retroactive: boolean; parameter_version_id: string }>>; retroactive_example: string }>;
   gap_severity?: Readonly<{ sentence_he: string; not_computed: ReadonlyArray<Readonly<{ dimension: string; statutory_figure: string; order_figure: string; reason: string }>> }>;
+  default_transitions?: Readonly<{ previous_run_id: string; current_run_id: string; verdict: string; rows: ReadonlyArray<Readonly<{ decision_id: string; previous_default_branch: string | null; new_default_branch: string | null; default_changed: boolean; cases_outcome_changed: number; one_changed_case_id: string | null; classification: string; band_month: string | null; band_month_outcome_changed: boolean | null }>> }>;
   // L7-10: the offline shadow beside the sensitivity — counts and hashes, no content.
   shadow: Readonly<{
     run_id: string; receipt_sha256: string; execution_mode: string; envelope_sha256: string; corpus_sha256: string;
@@ -118,7 +124,7 @@ const EXECUTION_GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
   verified: "מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט",
   lexicon: "פרמטר שנקרא דרך הלקסיקון",
   declared: "עובדה מוצהרת, או פרמטר בתוך בחירת מסמך",
-  derived: "עובדה נגזרת מעובדות אחרות",
+  derived: "עובדה נגזרת מעובדות אחרות, או פרמטר נגזר — חישוב על טקסט מצוטט בתוספת הנחה מוצהרת (הסף היומי 8.6 / 7.6)",
   inferred: "עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד",
   administrative: "פרמטר ממקור מנהלי",
   agreement_interpretation: "פרמטר מפרשנות של הסכם או צו הרחבה",
@@ -217,7 +223,7 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד");
   out.push("מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.");
   out.push("");
-  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v8.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
+  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v9.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
   out.push("כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.");
   out.push("");
   out.push("הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.");
@@ -272,6 +278,16 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
       out.push(report.gap_severity.sentence_he);
       const shadowDecision = report.shadow.decisions.find((entry) => entry.decision_id === decision.decision_id);
       if (shadowDecision?.gap_severity) out.push(`בריצת הצל: ${Object.entries(shadowDecision.gap_severity.counts).map(([name, count]) => `\`${name}\` — ${count}`).join("; ")}.`);
+      if (decision.gap_severity.default_view_note_he) out.push(`תצוגת ברירת המחדל: ${decision.gap_severity.default_view_note_he}`);
+    }
+    for (const derived of decision.derived_bindings ?? []) {
+      out.push("");
+      out.push(`**נגזר, לא לשון המקור:** \`${derived.parameter_version_id}\` = ${derived.regular_day} (יום רגיל) / ${derived.short_day} (היום המקוצר). ${derived.steps.join("; ")}. **הנחה מחייבת** \`${derived.assumption_slot}\`: ${cell(derived.assumption_statement)} הקריאה המתחרה: \`${derived.competing_reading}\`. עלול להתבטל על ידי: ${cell(derived.invalidated_by)}. (sha256 \`${derived.derivation_sha256.slice(0, 16)}…\`)`);
+    }
+    if (decision.transition) {
+      out.push("");
+      const t = decision.transition;
+      out.push(`מעבר ברירת המחדל: ${t.previous_default_branch ?? "—"} ← ${t.new_default_branch ?? "—"}${t.default_changed ? "" : " (ללא שינוי)"}; חודשים סינתטיים שהתוצאה השתנתה בהם: ${t.cases_outcome_changed}${t.one_changed_case_id ? ` (למשל \`${t.one_changed_case_id}\`)` : ""}; סיווג ${t.classification}${t.band_month ? `; חודש הרצועה \`${t.band_month}\`${t.band_month_outcome_changed ? " — התוצאה בו השתנתה" : " — התוצאה בו לא השתנתה"}` : ""}.`);
     }
     for (const unbound of decision.unbound_branches ?? []) {
       out.push("");
@@ -388,6 +404,21 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
     out.push("");
     section += 1;
   }
+  if (report.default_transitions) {
+    out.push(`## ${section}. מעבר ברירות המחדל — מה השתנה בפועל`);
+    out.push("");
+    out.push(`לכל הכרעה: הענף שרץ כברירת מחדל לפני רישום ההכרעות (הראשון ברשימה), הענף שרץ עכשיו, כמה חודשים סינתטיים שינו את תוצאתם במעבר, ודוגמה אחת. סיווג: a — ברירת המחדל הקודמת כבר הייתה הענף שנבחר; b — הענף השתנה וחודשים השתנו; c — הענף השתנה ואף חודש לא השתנה, ואז נוסף חודש רצועה כדי שההשוואה לא תהיה ריקה. ריצות: \`${report.default_transitions.previous_run_id}\` ← \`${report.default_transitions.current_run_id}\` (${report.default_transitions.verdict}).`);
+    out.push("");
+    out.push("| הכרעה | ברירת מחדל קודמת | חדשה | חודשים שהשתנו | דוגמה | סיווג | חודש רצועה |");
+    out.push("|---|---|---|---|---|---|---|");
+    for (const row of report.default_transitions.rows) {
+      out.push(`| \`${row.decision_id.replace(/^.*decision\./u, "")}\` | ${row.previous_default_branch ?? "—"} | **${row.new_default_branch ?? "—"}** | ${row.cases_outcome_changed} | ${row.one_changed_case_id ? `\`${row.one_changed_case_id}\`` : "—"} | ${row.classification} | ${row.band_month ? `\`${row.band_month}\` (${row.band_month_outcome_changed ? "השתנה" : "לא השתנה"})` : "—"} |`);
+    }
+    out.push("");
+    out.push("---");
+    out.push("");
+    section += 1;
+  }
   if (report.gap_severity && report.gap_severity.not_computed.length > 0) {
     out.push(`## ${section}. ממדים שסיווג החומרה מוגדר להם ואינם מחושבים עדיין`);
     out.push("");
@@ -403,12 +434,13 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("");
   out.push(INFERRED_VISUAL_SENTENCE);
   out.push("");
-  out.push("| פרמטר | דירוג | קריאה חזותית | עמוד (sha256) |");
-  out.push("|---|---|---|---|");
+  out.push("| פרמטר | דירוג | קריאה חזותית | עמוד (sha256) | הנחה (נגזר) |");
+  out.push("|---|---|---|---|---|");
   for (const row of report.provenance.bound_parameter_versions) {
     const readings = row.visual_bindings.map((binding) => binding.visual_reading).join(", ") || "—";
     const pages = row.visual_bindings.map((binding) => `${binding.page_pdf_sha256.slice(0, 16)}…`).join(", ") || "—";
-    out.push(`| \`${row.parameter_version_id}\` | ${cell(gradeLabel(row.provenance_grade))} (\`${row.provenance_grade}\`) | ${cell(readings)} | ${cell(pages)} |`);
+    const assumption = row.derivation ? `\`${row.derivation.assumption_slot}\` — ${row.derivation.identity}` : "—";
+    out.push(`| \`${row.parameter_version_id}\` | ${cell(gradeLabel(row.provenance_grade))} (\`${row.provenance_grade}\`) | ${cell(readings)} | ${cell(pages)} | ${cell(assumption)} |`);
   }
   out.push("");
   out.push(`סיכום: ${Object.entries(report.provenance.counts).map(([grade, count]) => `${gradeLabel(grade)} — ${count}`).join("; ")}.`);
@@ -486,6 +518,9 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
     for (const unbound of decision.unbound_branches ?? []) blocks.push({ kind: "paragraph", text: `ענף שלא נקשר ולא רץ: ${unbound.branch} — ${unbound.reason}` });
     if (decision.default_branch) blocks.push({ kind: "paragraph", text: `ברירת מחדל: ${decision.default_branch} — ${DEFAULT_SOURCE_HEBREW[decision.default_branch_source ?? ""] ?? decision.default_branch_source}${decision.resolution ? ` (${decision.resolution.decision_key}, ${decision.resolution.status})` : " (אין הכרעה רשומה)"}` });
     if (decision.gap_severity && report.gap_severity) blocks.push({ kind: "paragraph", text: report.gap_severity.sentence_he.replaceAll("**", "") });
+    if (decision.gap_severity?.default_view_note_he) blocks.push({ kind: "paragraph", text: `תצוגת ברירת המחדל: ${decision.gap_severity.default_view_note_he}` });
+    for (const derived of decision.derived_bindings ?? []) blocks.push({ kind: "paragraph", text: `נגזר, לא לשון המקור: ${derived.parameter_version_id} = ${derived.regular_day} / ${derived.short_day}. ${derived.steps.join("; ")}. הנחה מחייבת ${derived.assumption_slot}: ${derived.assumption_statement} עלול להתבטל על ידי: ${derived.invalidated_by}.` });
+    if (decision.transition) blocks.push({ kind: "paragraph", text: `מעבר ברירת המחדל: ${decision.transition.previous_default_branch ?? "—"} ← ${decision.transition.new_default_branch ?? "—"}; חודשים שהשתנו: ${decision.transition.cases_outcome_changed}; סיווג ${decision.transition.classification}.` });
     if (decision.contribution_rates) blocks.push({ kind: "paragraph", text: "ההפרש בטבלה הוא הפרש בתקרה; הפרש ההפרשות בשיעורי ההפרשה מוצג בעמודה נפרדת." });
     if (decision.provenance_grade) {
       blocks.push({ kind: "paragraph", text: `דירוג מקור: ${gradeLabel(decision.provenance_grade)} (${decision.provenance_grade})` });
@@ -535,6 +570,11 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
     blocks.push({ kind: "heading", text: "תעריף ההבראה לפי שנת הבראה", level: 2 });
     blocks.push({ kind: "table", columns: ["שנת הבראה", "תעריף ליום", "בתוקף", "ידוע מ־", "רטרואקטיבי"], rows: report.convalescence_rate_table.rows.map((row) => [String(row.havraa_year), money(row.rate_minor_units), `${row.valid_from} – ${row.valid_to}`, row.known_at, row.retroactive ? "כן" : "לא"]) });
     blocks.push({ kind: "paragraph", text: "תקופה מ־1.7.2026 ואילך: התעריף אינו מפורסם והמנוע מסרב (rate_not_published)." });
+    blocks.push({ kind: "rule" });
+  }
+  if (report.default_transitions) {
+    blocks.push({ kind: "heading", text: "מעבר ברירות המחדל — מה השתנה בפועל", level: 2 });
+    blocks.push({ kind: "table", columns: ["הכרעה", "קודמת", "חדשה", "חודשים שהשתנו", "סיווג"], rows: report.default_transitions.rows.map((row) => [row.decision_id.replace(/^.*decision\./u, ""), row.previous_default_branch ?? "—", row.new_default_branch ?? "—", String(row.cases_outcome_changed), row.classification]) });
     blocks.push({ kind: "rule" });
   }
   blocks.push({ kind: "heading", text: "דירוג המקור של כל פרמטר", level: 2 });
@@ -594,8 +634,8 @@ async function main(): Promise<void> {
   writeFileSync(PDF, pdf);
 
   const receipt = {
-    schema_version: "tivdoc-sensitivity-report-hebrew-v0.13.0",
-    unit: "L11-7",
+    schema_version: "tivdoc-sensitivity-report-hebrew-v0.14.0",
+    unit: "L12-4",
     generated_from: REPORT,
     source_report_sha256: report.report_sha256,
     markdown: { path: MARKDOWN, sha256: sha256(body), byte_count: Buffer.byteLength(body) },
@@ -609,6 +649,8 @@ async function main(): Promise<void> {
     resolutions_recorded: report.resolutions?.recorded ?? 0,
     resolutions_attested: report.resolutions?.attested ?? 0,
     attestation_statement_present: body.includes("לא בוצעה אטסטציה"),
+    derived_assumption_present: body.includes("five_day_even_distribution"),
+    transition_table_present: body.includes("מעבר ברירות המחדל"),
     interpretation: "none",
     recommendation: "none",
   };

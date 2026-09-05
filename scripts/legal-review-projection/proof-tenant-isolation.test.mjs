@@ -108,6 +108,7 @@ const EXPECTED = Object.freeze({
   // L8-8: v7 is v6 rebuilt on the fifteen-spec shadow; reads the catalogue, writes its traces to the proof tenant.
   "decision-sensitivity-run-v7.mts": SYNTHETIC,
   "decision-sensitivity-run-v8.mts": SYNTHETIC,
+  "decision-sensitivity-run-v9.mts": SYNTHETIC,
   "draft-shadow-run-v1.mts": REFERENCE,
   "dynamic-matrix.mts": OWN,
   "grant-execution-proof.mts": OWN,

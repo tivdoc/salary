@@ -4,7 +4,7 @@
 תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד
 מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.
 
-המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v8.json` (`2e0f0d0ec4d4b572…`).
+המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v9.json` (`d74c308c4f4e96ee…`).
 כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.
 
 הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.
@@ -16,11 +16,11 @@
 
 | מדד | ערך |
 |---|---|
-| תרחישים שנוסו | 114 |
-| תרחישים שרצו | 95 |
-| תרחישים שסורבו סירוב סגור | 19 |
-| עקבות חישוב שנשמרו | 95 |
-| עקבות ששוחזרו מהמסד בית־בבית | 95 |
+| תרחישים שנוסו | 120 |
+| תרחישים שרצו | 100 |
+| תרחישים שסורבו סירוב סגור | 20 |
+| עקבות חישוב שנשמרו | 100 |
+| עקבות ששוחזרו מהמסד בית־בבית | 100 |
 | נושאים שרצו | 7 מתוך 7 |
 
 ---
@@ -52,7 +52,10 @@
 ברירת מחדל: **182** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **182** (`hourly_wage_divisor`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
 
 סיווג חומרת הפער: **הפרה סטטוטורית** — התשלום נמוך מהזכאות גם לפי הסכום שבחוק וגם לפי הסכום שבצו ההרחבה; **זכות מכוח צו הרחבה** — הפער קיים רק בין הסכום שבחוק לסכום שבצו ההרחבה (ניתנת לתביעה, אינה נאכפת מנהלית). הסיווג הוא שדה על הממצא ואינו מסתיר ממצא.
-בריצת הצל: `no_gap` — 1; `not_comparable` — 2; `order_entitlement` — 2; `statutory_violation` — 2.
+בריצת הצל: `no_gap` — 1; `not_comparable` — 2; `order_entitlement` — 3; `statutory_violation` — 2.
+תצוגת ברירת המחדל: בתצוגת ברירת המחדל (182) תשלום בין 34.64 ל־35.40 לשעה הוא פער מסוג זכות מכוח צו הרחבה; מתחת ל־34.64 — הפרה סטטוטורית.
+
+מעבר ברירת המחדל: 182 ← 182 (ללא שינוי); חודשים סינתטיים שהתוצאה השתנתה בהם: 0; סיווג a; חודש הרצועה `synthetic.minimum_wage.edge.hourly_between_divisors` — התוצאה בו לא השתנתה.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **אומת בטקסט** (`text_verified`).
@@ -73,6 +76,8 @@
 השאלה הפתוחה מפרידה בין **section1** לבין **section2**.
 
 ברירת מחדל: **section2** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **section2** (`pension_wage_cap_source`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+
+מעבר ברירת המחדל: section1 ← section2; חודשים סינתטיים שהתוצאה השתנתה בהם: 3 (למשל `synthetic.pension.edge.wage_between_caps`); סיווג b; חודש הרצועה `synthetic.pension.edge.wage_between_caps` — התוצאה בו השתנתה.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **אומת בטקסט** (`text_verified`).
@@ -98,6 +103,8 @@
 השאלה הפתוחה מפרידה בין **calendar_year_2026** לבין **from_signature_2026_07** לבין **havraa_year**.
 
 ברירת מחדל: **havraa_year** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **havraa_year** (`convalescence_rate_period`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+
+מעבר ברירת המחדל: calendar_year_2026 ← havraa_year; חודשים סינתטיים שהתוצאה השתנתה בהם: 1 (למשל `synthetic.convalescence.edge.havraa_year_2027_rate_not_published`); סיווג b.
 מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **בתוך בחירת מסמך** (`selection`).
@@ -117,29 +124,36 @@
 
 ## 5. שעות עבודה ומנוחה — `legal.reference.il.decision.working_time_daily_threshold`
 
-השאלה הפתוחה מפרידה בין **statute**.
+השאלה הפתוחה מפרידה בין **statute** לבין **administrative**.
 
-ברירת מחדל: **statute** — הענף שנבחר בהכרעה אינו קשור למקור ולכן אינו רץ; רץ הענף הקשור הראשון. הענף שנבחר בהכרעה: **administrative** (`working_time_daily_threshold`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+ברירת מחדל: **administrative** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **administrative** (`working_time_daily_threshold`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
 
 סיווג חומרת הפער: **הפרה סטטוטורית** — התשלום נמוך מהזכאות גם לפי הסכום שבחוק וגם לפי הסכום שבצו ההרחבה; **זכות מכוח צו הרחבה** — הפער קיים רק בין הסכום שבחוק לסכום שבצו ההרחבה (ניתנת לתביעה, אינה נאכפת מנהלית). הסיווג הוא שדה על הממצא ואינו מסתיר ממצא.
-בריצת הצל: `order_figure_unbound` — 8.
+בריצת הצל: `no_gap` — 4; `not_comparable` — 2; `order_entitlement` — 1; `statutory_violation` — 1.
+תצוגת ברירת המחדל: בתצוגת ברירת המחדל (8.6 / 7.6) שעה בין 8.0 ל־8.6 ביום רגיל בשבוע של חמישה ימים אינה פער; לפי ענף החוק (8) היא זכות מכוח צו הרחבה — לא הפרה סטטוטורית.
 
-ענף שלא נקשר ולא רץ: **administrative** — BL-24: the figures — 8.6 hours on four days and 7.6 on the short day of a five-day week, 8 / 7 on a six-day week — come from the steering committee's interpretation of the 42-hour extension order (source steering_committee_2018-04-24) as reported by kolzchut (source kolzchut), not from the Labour Ministry directive of 10.6.2018, which concerns the 182-hour divisor. No official artifact carries them; a non-official page is not acceptable. Unbound; not run; would bind at agreement_interpretation grade (L11-5 / D3.6). Selected as default by the owner-recorded resolution; runs when bound.
-מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
+**נגזר, לא לשון המקור:** `il.working_time.daily_overtime_threshold_hours@2018.1.0` = 8.6 (יום רגיל) / 7.6 (היום המקוצר). weekly_before ÷ days_per_week = 43 ÷ 5 = 8.6; regular_day − reduction = 8.6 − 1 = 7.6; (days_per_week − reduced_days) × regular_day + reduced_days × short_day = 4 × 8.6 + 1 × 7.6 = 42. **הנחה מחייבת** `five_day_even_distribution`: The 43-hour week is spread evenly over the five working days of a five-day week (43 ÷ 5 = 8.6), and the one reduced hour falls on one defined, fixed day (8.6 − 1 = 7.6). The order states the reduction and the fixed day; the even spreading is assumed. הקריאה המתחרה: `nine_hour_day`. עלול להתבטל על ידי: V11 — the lawyer's answer on §5 ministerial approval of the shortened-week agreements (1988/1990/1996/2000/2017) can invalidate the even-distribution assumption; V12 — the 1990 and 2000 orders' wording. (sha256 `c272afa433cfdfd9…`)
+
+**נגזר, לא לשון המקור:** `il.working_time.short_day_overtime_threshold_hours@2018.1.0` = 8.6 (יום רגיל) / 7.6 (היום המקוצר). weekly_before ÷ days_per_week = 43 ÷ 5 = 8.6; regular_day − reduction = 8.6 − 1 = 7.6; (days_per_week − reduced_days) × regular_day + reduced_days × short_day = 4 × 8.6 + 1 × 7.6 = 42. **הנחה מחייבת** `five_day_even_distribution`: The 43-hour week is spread evenly over the five working days of a five-day week (43 ÷ 5 = 8.6), and the one reduced hour falls on one defined, fixed day (8.6 − 1 = 7.6). The order states the reduction and the fixed day; the even spreading is assumed. הקריאה המתחרה: `nine_hour_day`. עלול להתבטל על ידי: V11 — the lawyer's answer on §5 ministerial approval of the shortened-week agreements (1988/1990/1996/2000/2017) can invalidate the even-distribution assumption; V12 — the 1990 and 2000 orders' wording. (sha256 `c272afa433cfdfd9…`)
+
+מעבר ברירת המחדל: statute ← administrative; חודשים סינתטיים שהתוצאה השתנתה בהם: 5 (למשל `synthetic.working_time.golden.current`); סיווג b.
+
+ענף שלא נקשר ולא רץ: **nine_hour_day** — The competing reading of the five-day week — the 1990 order's nine-hour day, 9 × 4 + 7 (accepted in סע"ש 14271-10-17) — is named and not run: the 1990 order's text is not in the corpus (the lawyer's open item V12), and it is not derived here. Listed, never omitted.
+מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
 inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.
 
-הערת היקף: Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24; agreement_interpretation grade if bound). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.
+הערת היקף: Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps. The owner-recorded default, executable since L12-1: the derived five-day norm (43/5 hours on the regular day, 38/5 on the shortened day, grade derived, assumption five_day_even_distribution) on a five-day week, the statute's eight on a six-day week, priced by the same §16(א) tiers over a rational quantity with one rounding. The schedule is a mandatory declared fact. The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.
 
-| תרחיש | statute (ברירת מחדל) | הפרש | הפרש מברירת המחדל |
-|---|---|---|---|
-| מצב רגיל | 165.00 ILS | 0.00 ILS | — |
-| גבול תחולה | 120.00 ILS | 0.00 ILS | — |
-| עובדה חסרה או סותרת | לא רץ | RULESPEC_INPUT_MISSING | — |
-| גבול עיגול או גבול הטבלה | 41.66 ILS | 0.00 ILS | — |
-| חפיפת מקורות | 210.00 ILS | 0.00 ILS | — |
-| ענף ואוכלוסייה | 75.00 ILS | 0.00 ILS | — |
+| תרחיש | statute | administrative (ברירת מחדל) | הפרש | הפרש מברירת המחדל |
+|---|---|---|---|---|
+| מצב רגיל | 165.00 ILS | 138.00 ILS | 27.00 ILS | statute: 27.00 ILS |
+| גבול תחולה | 120.00 ILS | 93.00 ILS | 27.00 ILS | statute: 27.00 ILS |
+| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING | — |
+| גבול עיגול או גבול הטבלה | 41.66 ILS | 16.67 ILS | 24.99 ILS | statute: 24.99 ILS |
+| חפיפת מקורות | 210.00 ILS | 183.00 ILS | 27.00 ILS | statute: 27.00 ILS |
+| ענף ואוכלוסייה | 75.00 ILS | 52.50 ILS | 22.50 ILS | statute: 22.50 ILS |
 
 ---
 
@@ -148,6 +162,8 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 השאלה הפתוחה מפרידה בין **additive**.
 
 ברירת מחדל: **additive** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **additive** (`rest_day_overtime_composition`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+
+מעבר ברירת המחדל: additive ← additive (ללא שינוי); חודשים סינתטיים שהתוצאה השתנתה בהם: 0; סיווג a.
 מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
@@ -194,6 +210,8 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 השאלה הפתוחה מפרידה בין **order_2011_2014_row** לבין **order_2016_2017_rates**.
 
 ברירת מחדל: **order_2016_2017_rates** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **order_2016_2017_rates** (`pension_2011_2016_precedence`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+
+מעבר ברירת המחדל: order_2011_2014_row ← order_2016_2017_rates; חודשים סינתטיים שהתוצאה השתנתה בהם: 10 (למשל `synthetic.pension.golden.current`); סיווג b.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
@@ -220,21 +238,21 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 | מדד | ערך |
 |---|---|
-| ריצה | `l76.7721fd34` |
+| ריצה | `l76.6d0667ad` |
 | מצב ריצה | `draft_parameters_synthetic_inputs` |
-| גרסאות פרמטר בטיוטה שנקשרו | 34 |
+| גרסאות פרמטר בטיוטה שנקשרו | 36 |
 | פרמטרים פעילים | 0 |
-| חודשי תלוש סינתטיים | 56 |
-| הרצות (מקרה × מפרט × ענף) | 157 |
-| רצו | 111 |
-| סורבו בהכנת הקלט | 40 |
+| חודשי תלוש סינתטיים | 58 |
+| הרצות (מקרה × מפרט × ענף) | 169 |
+| רצו | 121 |
+| סורבו בהכנת הקלט | 42 |
 | סורבו במנוע | 6 |
-| הפרשי־צל שחושבו | 86 |
-| ללא רכיב תשלום להשוואה | 25 |
-| עקבות שנשמרו / שוחזרו מהמסד | 111 / 111 |
+| הפרשי־צל שחושבו | 94 |
+| ללא רכיב תשלום להשוואה | 27 |
+| עקבות שנשמרו / שוחזרו מהמסד | 121 / 121 |
 | חילוץ בשימוש | לא |
-| קורפוס (sha256) | `2564a16a01f73e8c…` |
-| קבלה (sha256) | `65a4f9334c93a03d…` |
+| קורפוס (sha256) | `1c7d48541894642d…` |
+| קבלה (sha256) | `c412d56ca81a443d…` |
 
 סירובים לפי סיבה:
 
@@ -243,9 +261,9 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 | מחוץ לטבלת המדרגות (שנה אפס / יום ראשון) (`executor:RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE`) | 6 |
 | ביטחון נמוך מהסף (`preparation:fact.below_confidence_threshold`) | 8 |
 | עובדה סותרת — לא הוכרעה (`preparation:fact.conflicted`) | 4 |
-| עובדה חסרה (`preparation:fact.missing`) | 18 |
+| עובדה חסרה (`preparation:fact.missing`) | 19 |
 | עובדה ישנה מדי (`preparation:fact.stale`) | 1 |
-| עובדה שלא אושרה (`preparation:fact.unconfirmed`) | 3 |
+| עובדה שלא אושרה (`preparation:fact.unconfirmed`) | 4 |
 | preparation:rate_not_published (`preparation:rate_not_published`) | 1 |
 | העובדה אינה בצורה שהמשבצת צורכת (`preparation:transformation.failed`) | 6 |
 
@@ -254,21 +272,21 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 | דירוג | מספר |
 |---|---|
 | עובדה מוצהרת, או פרמטר בתוך בחירת מסמך (`declared`) | 46 |
-| עובדה נגזרת מעובדות אחרות (`derived`) | 5 |
-| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 31 |
+| עובדה נגזרת מעובדות אחרות, או פרמטר נגזר — חישוב על טקסט מצוטט בתוספת הנחה מוצהרת (הסף היומי 8.6 / 7.6) (`derived`) | 5 |
+| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 37 |
 | פרמטר שנקרא דרך הלקסיקון (`lexicon`) | 5 |
-| מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט (`verified`) | 30 |
+| מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט (`verified`) | 34 |
 
 השאלות הפתוחות בצל — לכל שאלה, כמה מקרים הושוו בין הענפים וכמה מהם שונים; אף ענף לא התקבל:
 
 | הכרעה | ענפים | ענף שלא נקשר | הושוו | שונים | לא ניתנים להשוואה |
 |---|---|---|---|---|---|
 | `legal.reference.il.decision.convalescence_2026_rate_period` | calendar_year_2026, from_signature_2026_07, havraa_year | — | 6 | 0 | 3 |
-| `legal.reference.il.decision.min_wage_hourly_divisor` | 182, 186 | — | 5 | 4 | 2 |
+| `legal.reference.il.decision.min_wage_hourly_divisor` | 182, 186 | — | 6 | 5 | 2 |
 | `legal.reference.il.decision.pension_2011_2016_precedence` | order_2011_2014_row, order_2016_2017_rates | — | 15 | 10 | 6 |
-| `legal.reference.il.decision.pension_wage_cap_section` | section1, section2 | — | 5 | 2 | 2 |
+| `legal.reference.il.decision.pension_wage_cap_section` | section1, section2 | — | 6 | 3 | 2 |
 | `legal.reference.il.decision.rest_day_overtime_composition` | additive | — | 5 | 0 | 2 |
-| `legal.reference.il.decision.working_time_daily_threshold` | statute | administrative | 6 | 0 | 2 |
+| `legal.reference.il.decision.working_time_daily_threshold` | administrative, statute | nine_hour_day | 6 | 5 | 2 |
 
 ---
 
@@ -291,55 +309,72 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 12. ממדים שסיווג החומרה מוגדר להם ואינם מחושבים עדיין
+## 12. מעבר ברירות המחדל — מה השתנה בפועל
+
+לכל הכרעה: הענף שרץ כברירת מחדל לפני רישום ההכרעות (הראשון ברשימה), הענף שרץ עכשיו, כמה חודשים סינתטיים שינו את תוצאתם במעבר, ודוגמה אחת. סיווג: a — ברירת המחדל הקודמת כבר הייתה הענף שנבחר; b — הענף השתנה וחודשים השתנו; c — הענף השתנה ואף חודש לא השתנה, ואז נוסף חודש רצועה כדי שההשוואה לא תהיה ריקה. ריצות: `l76.7721fd34` ← `l76.6d0667ad` (PASS).
+
+| הכרעה | ברירת מחדל קודמת | חדשה | חודשים שהשתנו | דוגמה | סיווג | חודש רצועה |
+|---|---|---|---|---|---|---|
+| `convalescence_2026_rate_period` | calendar_year_2026 | **havraa_year** | 1 | `synthetic.convalescence.edge.havraa_year_2027_rate_not_published` | b | — |
+| `min_wage_hourly_divisor` | 182 | **182** | 0 | — | a | `synthetic.minimum_wage.edge.hourly_between_divisors` (לא השתנה) |
+| `pension_2011_2016_precedence` | order_2011_2014_row | **order_2016_2017_rates** | 10 | `synthetic.pension.golden.current` | b | — |
+| `pension_wage_cap_section` | section1 | **section2** | 3 | `synthetic.pension.edge.wage_between_caps` | b | `synthetic.pension.edge.wage_between_caps` (השתנה) |
+| `rest_day_overtime_composition` | additive | **additive** | 0 | — | a | — |
+| `working_time_daily_threshold` | statute | **administrative** | 5 | `synthetic.working_time.golden.current` | b | — |
+
+---
+
+## 13. ממדים שסיווג החומרה מוגדר להם ואינם מחושבים עדיין
 
 - weekly overtime threshold: חוק — 45 hours a week (Hours of Work and Rest Law 1951); צו — 42 hours a week (2018 42-hour extension order; il.working_time.weekly_overtime_threshold_hours@2018.1.0, registered and bound in the working-time draft). no executable spec derives weekly overtime from weekly hours; the 42-hour parameter is registered and the class is defined, the computation is not yet run
 
 ---
 
-## 13. דירוג המקור של כל פרמטר
+## 14. דירוג המקור של כל פרמטר
 
 כל פרמטר שנקשר בדוח נושא דירוג מקור. הדירוג אומר מאין הגיע המספר, לא אם הוא נכון.
 
 inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.
 
-| פרמטר | דירוג | קריאה חזותית | עמוד (sha256) |
-|---|---|---|---|
-| `il.convalescence.daily_rate@2026.1.0` | בתוך בחירת מסמך (`selection`) | — | — |
-| `il.convalescence.daily_rate@2026.2.0` | בתוך בחירת מסמך (`selection`) | — | — |
-| `il.convalescence.daily_rate@2026.3.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.convalescence.days_year_1@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.convalescence.days_years_11_to_15@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.convalescence.days_years_16_to_19@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.convalescence.days_years_2_to_3@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.convalescence.days_years_20_and_above@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.convalescence.days_years_4_to_10@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.minimum_wage.daily_5day@2026.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.minimum_wage.hourly@2026.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.minimum_wage.hourly@2026.2.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.pension.employee_contribution_rate@2014.2.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.pension.employee_contribution_rate@2017.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 6% | bfba6c9e3b55508a… |
-| `il.pension.mandatory_wage_cap@2026.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.pension.mandatory_wage_cap@2026.2.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.sick_pay.accrual_cap_days@1.0.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.sick_pay.accrual_days_per_month@1.0.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.sick_pay.rate_days_2_to_3@1.0.0` | מילה שנקראה דרך הלקסיקון (`lexicon`) | — | — |
-| `il.travel.daily_reimbursement_cap@2016.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.vacation.calendar_days_increment_per_year_from_year_8@1951.1.0` | מילה שנקראה דרך הלקסיקון (`lexicon`) | — | — |
-| `il.vacation.calendar_days_year_6@1951.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.vacation.calendar_days_year_7@1951.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.vacation.calendar_days_years_1_to_5@2017.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.vacation.calendar_days_years_8_and_above_cap@1951.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.working_time.daily_overtime_threshold_hours@1951.1.0` | אומת בטקסט (`text_verified`) | — | — |
-| `il.working_time.overtime_rate_first_tier@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1¼ | 6b41df8306ce4c60… |
-| `il.working_time.overtime_rate_second_tier@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… |
-| `il.working_time.weekly_rest_rate@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… |
+| פרמטר | דירוג | קריאה חזותית | עמוד (sha256) | הנחה (נגזר) |
+|---|---|---|---|---|
+| `il.convalescence.daily_rate@2026.1.0` | בתוך בחירת מסמך (`selection`) | — | — | — |
+| `il.convalescence.daily_rate@2026.2.0` | בתוך בחירת מסמך (`selection`) | — | — | — |
+| `il.convalescence.daily_rate@2026.3.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.convalescence.days_year_1@1988.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.convalescence.days_years_11_to_15@1988.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.convalescence.days_years_16_to_19@1988.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.convalescence.days_years_2_to_3@1988.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.convalescence.days_years_20_and_above@1988.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.convalescence.days_years_4_to_10@1988.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.minimum_wage.daily_5day@2026.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.minimum_wage.hourly@2026.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.minimum_wage.hourly@2026.2.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.pension.employee_contribution_rate@2014.2.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.pension.employee_contribution_rate@2017.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 6% | bfba6c9e3b55508a… | — |
+| `il.pension.mandatory_wage_cap@2026.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.pension.mandatory_wage_cap@2026.2.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.sick_pay.accrual_cap_days@1.0.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.sick_pay.accrual_days_per_month@1.0.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.sick_pay.rate_days_2_to_3@1.0.0` | מילה שנקראה דרך הלקסיקון (`lexicon`) | — | — | — |
+| `il.travel.daily_reimbursement_cap@2016.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.vacation.calendar_days_increment_per_year_from_year_8@1951.1.0` | מילה שנקראה דרך הלקסיקון (`lexicon`) | — | — | — |
+| `il.vacation.calendar_days_year_6@1951.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.vacation.calendar_days_year_7@1951.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.vacation.calendar_days_years_1_to_5@2017.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.vacation.calendar_days_years_8_and_above_cap@1951.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.working_time.daily_overtime_threshold_hours@1951.1.0` | אומת בטקסט (`text_verified`) | — | — | — |
+| `il.working_time.daily_overtime_threshold_hours@2018.1.0` | נגזר — חישוב על טקסט מצוטט בתוספת הנחה מוצהרת; לא לשון המקור (`derived`) | — | — | `five_day_even_distribution` — (days_per_week − reduced_days) × regular_day + reduced_days × short_day = weekly_after |
+| `il.working_time.overtime_rate_first_tier@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1¼ | 6b41df8306ce4c60… | — |
+| `il.working_time.overtime_rate_second_tier@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… | — |
+| `il.working_time.short_day_overtime_threshold_hours@2018.1.0` | נגזר — חישוב על טקסט מצוטט בתוספת הנחה מוצהרת; לא לשון המקור (`derived`) | — | — | `five_day_even_distribution` — (days_per_week − reduced_days) × regular_day + reduced_days × short_day = weekly_after |
+| `il.working_time.weekly_rest_rate@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… | — |
 
-סיכום: בתוך בחירת מסמך — 2; אומת בטקסט — 21; נקרא מתמונת העמוד — ממתין לאימות חזותי — 4; מילה שנקראה דרך הלקסיקון — 2.
+סיכום: בתוך בחירת מסמך — 2; אומת בטקסט — 21; נקרא מתמונת העמוד — ממתין לאימות חזותי — 4; מילה שנקראה דרך הלקסיקון — 2; נגזר — חישוב על טקסט מצוטט בתוספת הנחה מוצהרת; לא לשון המקור — 2.
 
 ---
 
-## 14. נושאים שלא רצו
+## 15. נושאים שלא רצו
 
 כל שבעת הנושאים רצו.
 
@@ -348,7 +383,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 15. החלטות שנמשכו
+## 16. החלטות שנמשכו
 
 שאלות אלה אינן פתוחות עוד. הן מופיעות כאן כדי שהרשימה תהיה מלאה, ולא כדי שיוכרעו.
 
@@ -358,7 +393,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 16. היקף
+## 17. היקף
 
 Differences only, computed. This states what the answer to each open question changes in each scenario. Six questions carry a DEFAULT the owner recorded on 5.9.2026 on a lawyer-approved opinion (status owner_recorded; no reviewer identity; no attestation); the default is what the shadow runs first and what the table names as such, and every other branch is still computed and shown with its difference from the default. Nothing here is reviewed, attested or active; the counters are unchanged.
 
