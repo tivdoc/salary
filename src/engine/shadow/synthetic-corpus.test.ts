@@ -20,7 +20,8 @@ import { testParametersFor } from "./test-support.ts";
 // L11-4 / D3.3 and D3.4: the multiplicative rest-day reading left the set; two convalescence edge months joined it
 // (June 2026 paid at the 2023 rate; a 2027 month whose rate is not published).
 // L12-2 / D2: every working-time month declares its five-day schedule and runs the derived norm.
-const CORPUS_SHA256 = "4a9edd2b5d82151745cf949d2e17e077fd5e77d1e181d279b9240c9eca53c6d4";
+// L12-3 / D3: two band months — a wage between the two pension caps, an hourly rate between the two divisors' floors.
+const CORPUS_SHA256 = "1c7d48541894642d013c7b796441d40fc261b4121ff42145a293827b4ed3ec59";
 
 function runCase(entry: SyntheticCase, shadowId: string) {
   const spec = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
@@ -32,11 +33,11 @@ function runCase(entry: SyntheticCase, shadowId: string) {
 }
 
 describe("the synthetic corpus", () => {
-  it("is forty-two golden months — one per scenario family per topic — and fourteen edge cases", () => {
+  it("is forty-two golden months — one per scenario family per topic — and sixteen edge cases", () => {
     const golden = SYNTHETIC_CORPUS.filter((entry) => entry.family === "golden");
     expect(golden).toHaveLength(DRAFT_SHADOW_TOPICS.length * GOLDEN_SCENARIOS.length);
     expect(golden).toHaveLength(42);
-    expect(SYNTHETIC_CORPUS.filter((entry) => entry.family === "edge")).toHaveLength(14);
+    expect(SYNTHETIC_CORPUS.filter((entry) => entry.family === "edge")).toHaveLength(16);
     expect(new Set(SYNTHETIC_CORPUS.map((entry) => entry.case_id)).size).toBe(SYNTHETIC_CORPUS.length);
     for (const topic of DRAFT_SHADOW_TOPICS) {
       expect(golden.filter((entry) => entry.topic === topic).map((entry) => entry.scenario)).toEqual([...GOLDEN_SCENARIOS]);
@@ -113,7 +114,8 @@ describe("the synthetic corpus", () => {
     }
     // L11-4: minus the retired multiplicative reading (five runs, two refusals), plus two convalescence months that run.
     // L12-2: the derived five-day norm runs on six golden months and one edge month, refuses the unconfirmed wage.
-    expect(ran).toBe(79);
+    // L12-3: two band months, both run.
+    expect(ran).toBe(81);
     expect(refused).toBe(33);
   });
 

@@ -302,6 +302,18 @@ function edgeCases(): readonly SyntheticCase[] {
       [{ path: "employment.start_date", value: startYearsBefore({ start: "2027-01-01", end: "2027-01-31" }, 3), source_type: "declared" }, { path: "convalescence.payment", value: ils(270_900), source_type: "documented" }],
       { kind: "runs", note: "a 2027 payslip: the havraa_year branch refuses rate_not_published before running (the branch guard, not the executor); the calendar branches run" },
       { start: "2027-01-01", end: "2027-01-31" }),
+    // L12-3 / D3: the bands the run-11 resolutions are about, so the default
+    // transition table cannot be vacuous. A pensionable wage between the two
+    // caps: section1 caps it at 13,566.00, section2 leaves it at 13,650.00.
+    month("wage_between_caps", "pension", ["pension.wage.cap.on.wage"],
+      [{ path: "pension.base_salary", value: ils(1_365_000), source_type: "documented" }],
+      { kind: "runs", note: "13,650.00 lies between the §1 cap (13,566) and the §2 cap (13,769): the two branches of pension_wage_cap_section give different capped wages, and the owner-recorded default (section2) changes the outcome" }),
+    // An hourly worker paid between the two divisors' floors: 182 hours at
+    // 35.00 a month is short of the 182-branch floor (35.40 × 182) and above
+    // the 186-branch floor (34.64 × 182) — order_entitlement, not a violation.
+    month("hourly_between_divisors", "minimum_wage", ["minimum.wage.hourly.entitlement"],
+      [{ path: "work.regular_hours", value: hoursPerMonth("182"), source_type: "documented" }, { path: "compensation.gross_salary", value: ils(637_000), source_type: "documented" }],
+      { kind: "runs", note: "35.00 an hour over 182 hours: short under the order's ÷182 floor, met under the statute's ÷186 floor — the band the divisor decision separates; the default was 182 before and after the resolution" }),
     // L7-9 / D6: a day within the eight-hour threshold has no overtime — zero pay, not a refusal.
     month("within_daily_threshold", "working_time", ["working.time.overtime.from.hours.worked", "working.time.overtime.five.day.norm"],
       [{ path: "work.workdays", value: FIVE_DAY_WEEK, source_type: "documented" }, { path: "work.hours_worked_day", value: hoursPerDay("7"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented" }, { path: "compensation.overtime_pay", value: ils(0), source_type: "documented" }],
