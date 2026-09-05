@@ -52,20 +52,28 @@ const ROOT = process.cwd();
 const RECEIPT_ROOT = path.join(ROOT, "output", "next", "closure");
 const sha256 = (value: string | Uint8Array) => createHash("sha256").update(value).digest("hex");
 
-type Check = Readonly<{ name: string; passed: boolean; detail: string }>;
+type VercelEnvironment = "production" | "preview";
+type Check = Readonly<{ environment: VercelEnvironment; name: string; passed: boolean; detail: string }>;
 const checks: Check[] = [];
+// L9-2 / D2. The proof is a matrix over the two environments a deployment can
+// have. `register()` installs the closed projection for VERCEL_ENV=preview as
+// well as production, but long run 8 built and probed only production —
+// and preview is exactly the environment a branch push creates. Every check
+// below runs once per environment, tagged, and the receipt records both.
+const ENVIRONMENTS: readonly VercelEnvironment[] = ["production", "preview"];
+let currentEnvironment: VercelEnvironment = "production";
 const record = (name: string, passed: boolean, detail: unknown) => {
-  checks.push(Object.freeze({ name, passed, detail: typeof detail === "string" ? detail : JSON.stringify(detail) }));
-  process.stdout.write(`${passed ? "PASS" : "FAIL"} ${name} — ${checks.at(-1)!.detail.slice(0, 200)}\n`);
+  checks.push(Object.freeze({ environment: currentEnvironment, name, passed, detail: typeof detail === "string" ? detail : JSON.stringify(detail) }));
+  process.stdout.write(`${passed ? "PASS" : "FAIL"} [${currentEnvironment}] ${name} — ${checks.at(-1)!.detail.slice(0, 200)}\n`);
 };
 
-/** The production environment: the system's own variables and nothing of Tivdoc's. */
-function productionEnvironment(port?: number): NodeJS.ProcessEnv {
+/** The deployment environment: the system's own variables and nothing of Tivdoc's; NODE_ENV=production and the VERCEL_ENV under proof. */
+function productionEnvironment(port?: number, vercelEnv: VercelEnvironment = currentEnvironment): NodeJS.ProcessEnv {
   const kept: NodeJS.ProcessEnv = {};
   for (const key of ["PATH", "SYSTEMROOT", "SystemRoot", "TEMP", "TMP", "WINDIR", "USERPROFILE", "HOME", "APPDATA", "LOCALAPPDATA", "ProgramData", "COMSPEC"]) {
     if (process.env[key]) kept[key] = process.env[key];
   }
-  return { ...kept, NODE_ENV: "production", VERCEL_ENV: "production", ...(port ? { PORT: String(port) } : {}) };
+  return { ...kept, NODE_ENV: "production", VERCEL_ENV: vercelEnv, ...(port ? { PORT: String(port) } : {}) };
 }
 
 function freePort(): Promise<number> {
@@ -102,16 +110,26 @@ async function probe(port: number, route: string, method = "GET"): Promise<{ sta
   }
 }
 
+type EnvironmentResult = Readonly<{ vercel_env: VercelEnvironment; build: ReturnType<typeof buildHash> | null; entry_points_spawned: number }>;
+
 async function main(): Promise<void> {
   mkdirSync(RECEIPT_ROOT, { recursive: true });
   const startedAt = new Date().toISOString();
+  const results: EnvironmentResult[] = [];
+  for (const environment of ENVIRONMENTS) {
+    currentEnvironment = environment;
+    results.push(await runEnvironment(environment));
+  }
+  finish(startedAt, results);
+}
 
-  // --- 1. The build, under the production environment.
+async function runEnvironment(environment: VercelEnvironment): Promise<EnvironmentResult> {
+  // --- 1. The build, under the deployment environment.
   const buildEnvironment = productionEnvironment();
   const build = spawnSync(process.execPath, ["node_modules/next/dist/bin/next", "build"], { cwd: ROOT, env: buildEnvironment, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-  writeFileSync(path.join(RECEIPT_ROOT, "build.log"), `${build.stdout ?? ""}\n${build.stderr ?? ""}`, "utf8");
-  record("build_under_production_environment", build.status === 0, { exit: build.status, tivdoc_flags_in_env: Object.keys(buildEnvironment).filter((key) => key.startsWith("TIVDOC_")).length });
-  if (build.status !== 0) return finish(startedAt, null);
+  writeFileSync(path.join(RECEIPT_ROOT, `build.${environment}.log`), `${build.stdout ?? ""}\n${build.stderr ?? ""}`, "utf8");
+  record("build_under_production_environment", build.status === 0, { exit: build.status, vercel_env: environment, tivdoc_flags_in_env: Object.keys(buildEnvironment).filter((key) => key.startsWith("TIVDOC_")).length });
+  if (build.status !== 0) return { vercel_env: environment, build: null, entry_points_spawned: 0 };
   const hash = buildHash();
   record("build_hash_recorded", /^[a-f0-9]{64}$/u.test(hash.server_tree_sha256), hash);
 
@@ -186,8 +204,8 @@ async function main(): Promise<void> {
       const health = await probe(port, "/api/health");
       if (health.status > 0) up = true; else await delay(1_000);
     }
-    record("server_started_under_production_environment", up, { port });
-    if (!up) return finish(startedAt, hash);
+    record("server_started_under_production_environment", up, { port, vercel_env: environment });
+    if (!up) return { vercel_env: environment, build: hash, entry_points_spawned: 0 };
 
     // Every legal, shadow, portal and operations dispatcher, each with a method it declares.
     const closed = [
@@ -229,7 +247,7 @@ async function main(): Promise<void> {
     server.kill("SIGTERM");
     await delay(500);
     if (!server.killed) server.kill("SIGKILL");
-    writeFileSync(path.join(RECEIPT_ROOT, "server.log"), log.join("").slice(-20_000), "utf8");
+    writeFileSync(path.join(RECEIPT_ROOT, `server.${environment}.log`), log.join("").slice(-20_000), "utf8");
   }
 
   // --- 3. The gates, executed here.
@@ -241,16 +259,16 @@ async function main(): Promise<void> {
   ].every((message) => message === "SHADOW_TEST_OR_OFFLINE_MODE_FORBIDDEN_IN_PRODUCTION"), "three flags, three throws");
   const shadowDefault = readOfflineShadowFlags({}, "production");
   record("shadow_flags_default_off", !shadowDefault.enabled && !shadowDefault.synthetic_enabled && !shadowDefault.public_enabled, shadowDefault);
-  const routeFlags = readStableProductRouteFlags({ VERCEL_ENV: "production", NODE_ENV: "production" });
-  record("product_route_flags_default_off_and_classify_disabled", !Object.values(routeFlags).some(Boolean) && classifyStableProductRuntime({ VERCEL_ENV: "production" }, routeFlags) === "disabled", routeFlags);
-  record("product_route_flags_refuse_vercel_when_on", throws(() => classifyStableProductRuntime({ VERCEL_ENV: "production" }, { portalUi: true, portalApi: true, operationsUi: true, operationsApi: true })) === "STABLE_PRODUCT_REMOTE_RUNTIME_FORBIDDEN", "");
+  const routeFlags = readStableProductRouteFlags({ VERCEL_ENV: environment, NODE_ENV: "production" });
+  record("product_route_flags_default_off_and_classify_disabled", !Object.values(routeFlags).some(Boolean) && classifyStableProductRuntime({ VERCEL_ENV: environment }, routeFlags) === "disabled", routeFlags);
+  record("product_route_flags_refuse_vercel_when_on", throws(() => classifyStableProductRuntime({ VERCEL_ENV: environment }, { portalUi: true, portalApi: true, operationsUi: true, operationsApi: true })) === "STABLE_PRODUCT_REMOTE_RUNTIME_FORBIDDEN", "");
   const opsFlags = readInternalOpsFlags({}, "production");
   record("customer_processing_customer_shadow_and_delivery_default_off", !opsFlags.TIVDOC_CUSTOMER_PROCESSING_ENABLED && !opsFlags.TIVDOC_CUSTOMER_SHADOW_ENABLED && !opsFlags.TIVDOC_PRODUCTION_DELIVERY_ENABLED && !Object.values(opsFlags).some(Boolean), opsFlags);
   record("synthetic_ops_flags_throw_under_production", throws(() => readInternalOpsFlags({ TIVDOC_SYNTHETIC_OPS_ENABLED: "1" }, "production")) !== null, "");
-  record("durable_runtime_refuses_vercel", throws(() => durableLocalProductRuntimeEnabled({ TIVDOC_DURABLE_PRODUCT_RUNTIME_ENABLED: "1", VERCEL_ENV: "production" }, "nodejs")) === "DURABLE_LOCAL_PRODUCT_REMOTE_RUNTIME_FORBIDDEN"
-    && durableLocalProductRuntimeEnabled({ VERCEL_ENV: "production" }, "nodejs") === false, "");
-  record("hermetic_runtime_refuses_vercel", throws(() => hermeticBrowserRuntimeBootstrapEnabled({ TIVDOC_PRODUCT_BROWSER_RUNTIME_ENABLED: "1", NODE_ENV: "test", VERCEL_ENV: "production" }, "nodejs")) === "BROWSER_RUNTIME_BOOTSTRAP_ENVIRONMENT_FORBIDDEN"
-    && hermeticBrowserRuntimeBootstrapEnabled({ VERCEL_ENV: "production" }, "nodejs") === false, "");
+  record("durable_runtime_refuses_vercel", throws(() => durableLocalProductRuntimeEnabled({ TIVDOC_DURABLE_PRODUCT_RUNTIME_ENABLED: "1", VERCEL_ENV: environment }, "nodejs")) === "DURABLE_LOCAL_PRODUCT_REMOTE_RUNTIME_FORBIDDEN"
+    && durableLocalProductRuntimeEnabled({ VERCEL_ENV: environment }, "nodejs") === false, "");
+  record("hermetic_runtime_refuses_vercel", throws(() => hermeticBrowserRuntimeBootstrapEnabled({ TIVDOC_PRODUCT_BROWSER_RUNTIME_ENABLED: "1", NODE_ENV: "test", VERCEL_ENV: environment }, "nodejs")) === "BROWSER_RUNTIME_BOOTSTRAP_ENVIRONMENT_FORBIDDEN"
+    && hermeticBrowserRuntimeBootstrapEnabled({ VERCEL_ENV: environment }, "nodejs") === false, "");
 
   // --- 5. Every script entry point refuses, by execution.
   const entries = listScriptEntryPoints(ROOT);
@@ -270,28 +288,36 @@ async function main(): Promise<void> {
   const notRefused = refusals.filter((row) => !row.refused);
   record("every_entry_point_refuses_by_execution", notRefused.length === 0, { spawned: refusals.length, python_available: pythonAvailable, not_refused: notRefused.slice(0, 20) });
 
-  return finish(startedAt, hash, refusals.length);
+  return { vercel_env: environment, build: hash, entry_points_spawned: refusals.length };
 }
 
-function finish(startedAt: string, hash: ReturnType<typeof buildHash> | null, spawned = 0): void {
+function finish(startedAt: string, results: readonly EnvironmentResult[]): void {
   const failed = checks.filter((check) => !check.passed);
   const content = {
-    schema_version: "tivdoc-production-closure-receipt-v1",
-    unit: "L8-1 / D2",
-    status: failed.length === 0 ? "PASS" : "FAIL",
-    environment: { NODE_ENV: "production", VERCEL_ENV: "production", tivdoc_flags: "none" },
-    build: hash,
+    schema_version: "tivdoc-production-closure-receipt-v2",
+    unit: "L8-1 / D2; L9-2 / D2 (two environments)",
+    status: failed.length === 0 && results.length === ENVIRONMENTS.length ? "PASS" : "FAIL",
+    environments: results.map((result) => ({
+      NODE_ENV: "production", VERCEL_ENV: result.vercel_env, tivdoc_flags: "none",
+      build: result.build,
+      checks_total: checks.filter((check) => check.environment === result.vercel_env).length,
+      checks_failed: checks.filter((check) => check.environment === result.vercel_env && !check.passed).map((check) => check.name),
+      entry_points_spawned: result.entry_points_spawned,
+    })),
+    // The identical posture in both environments: the same check names pass in both, and the two builds are distinct builds.
+    identical_posture: ENVIRONMENTS.every((environment) => checks.filter((check) => check.environment === environment && check.passed).map((check) => check.name).join(",")
+      === checks.filter((check) => check.environment === "production" && check.passed).map((check) => check.name).join(",")),
     checks,
     checks_total: checks.length,
-    checks_failed: failed.map((check) => check.name),
-    entry_points_spawned: spawned,
+    checks_failed: failed.map((check) => `${check.environment}:${check.name}`),
+    entry_points_spawned: results.reduce((sum, result) => sum + result.entry_points_spawned, 0),
     counters: { live_provider_calls: 0, openai_calls: 0, database_connections: 0, deployments: 0 },
     started_at: startedAt,
     finished_at: new Date().toISOString(),
   };
   const receipt = { ...content, receipt_sha256: sha256(JSON.stringify(content)) };
   writeFileSync(path.join(RECEIPT_ROOT, "production-closure-receipt.json"), `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
-  process.stdout.write(`PRODUCTION_CLOSURE ${JSON.stringify({ status: receipt.status, checks: checks.length, failed: failed.map((check) => check.name), build: hash?.server_tree_sha256?.slice(0, 16) ?? null, receipt_sha256: receipt.receipt_sha256 })}\n`);
+  process.stdout.write(`PRODUCTION_CLOSURE ${JSON.stringify({ status: receipt.status, environments: results.map((result) => `${result.vercel_env}:${result.build?.server_tree_sha256?.slice(0, 16) ?? null}`), checks: checks.length, failed: failed.map((check) => `${check.environment}:${check.name}`), identical_posture: content.identical_posture, receipt_sha256: receipt.receipt_sha256 })}\n`);
   if (failed.length > 0) process.exitCode = 1;
 }
 
