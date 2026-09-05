@@ -3807,66 +3807,242 @@ One engineering unit is queued behind a human gate: the resolution
 attestation path (BL-26), to be built when the lawyer's reviewer identity
 exists. Everything else that does not need a person is done.
 
+## Run 12 — L12-1…L12-6: the recorded daily-threshold default made executable, and the defaults proven to have moved
+
+Why this run: run 11 recorded `working_time_daily_threshold = administrative`
+and left the branch unbound — no official artifact carries 8.6 / 7.6 — so the
+shadow silently ran `statute` (8) in its place. A recorded default that cannot
+execute is a default nobody can read; and run 11's "0 cases changed" showed
+that no figure moved, not that any default was wired. Two units fix the
+first, a third proves the second. Nothing else was invented.
+
+**One premise of the brief did not hold, and the record says so.** The brief
+named the 2000 framework order — "העובדים יעברו לשבוע עבודה בן 43 שעות" — as
+an input already in the corpus. It is not (the Lane B survey found "43 שעות"
+only in the 2018 general permit, as a threshold comparison, and no 1990
+order either). The 43 therefore rests on the 2018 order's own text: the week
+"יקוצר בשעה אחת" to 42, so it was 43. The derivation record names that input
+`weekly_before` with origin `derived_step` (42 + 1) and a locator that says
+the 2000 order's sentence is absent; acquiring it through the official path
+is the owner's, and V12 (the 1990 and 2000 orders' wording) is the lawyer's.
+
+**L12-1 (D1) — 8.6 / 7.6 bind as `derived`, not as text.**
+`src/engine/legal-operations/derivation.ts`: a typed record — inputs by chunk
+(`weekly_after` 42 hours and `reduction` 1 hour from the 2018 order's §2.1–2.2,
+cited through the table-aware chunk `#t0001-c383d0ba2158` whose logical-order
+text carries "42 שעות", "בשעה אחת" and "ביום מוגדר וקבוע"; `weekly_before` 43 as
+the derived step), the mandatory assumption slot `five_day_even_distribution`
+(43 ÷ 5 = 8.6; the reduced hour on one fixed day → 7.6; competing reading
+`nine_hour_day`; invalidated by V11 and V12), the steps, and the identity
+4 × 8.6 + 7.6 = 42 — proven at build (`deriveFiveDayDailyNorm`) and
+recomputed by every binder (`verifyDerivation`): a failed identity, a
+tampered output, a missing or renamed assumption slot is a refusal, not a
+binding. The grade `derived` joins both provenance ladders between
+`selection` and `inferred_visual` and maps to the execution rung `derived`;
+the candidate schema pairs the record with the grade both ways; the import
+helper refuses a derivation over a citation weaker than `selection` and a
+value that is not one of the record's outputs. R-8: the record's digest rides
+into the candidate content and into the parameter-set binding dimension when
+present — absent, every earlier hash is exactly what it was (proven in the
+hash test) — so a changed assumption is a changed `candidate_sha256` and a
+changed `bindings_sha256`, and a stale attestation is refused by the definer
+that already compares both. Batch 20 registered
+`il.working_time.daily_overtime_threshold_hours@2018.1.0` (43/5, branch
+`administrative`) and `il.working_time.short_day_overtime_threshold_hours@2018.1.0`
+(38/5), draft, with the corroboration `steering_committee_2018-04-24` and
+`kolzchut` on the record at interpretation grade, never as a citation. The
+draft-binding proof recomputes every derived record it binds (2 checked, 9/9
+cases); the shadow refuses a record that does not reproduce
+(`L76_DERIVATION_INVALID`). The working-time template slot names its decision
+now, with the short day beside it. BL-24 closes as `bound_derived_pending_V11`.
+
+**L12-2 (D2) — the default executes.** The daily-threshold decision is a
+composition now, as the rest-day pair is: the statute's whole-hour tiers
+(`statute`) beside `WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC` (`administrative`),
+which selects the derived norm on a five-day week and the statute's eight on a
+six-day week from a mandatory declared schedule (`fact.days.per.week`, from
+the month's `work.workdays`), prices the rational overtime hours (3.4 for a
+twelve-hour day) by the §16(א) tiers with one rounding — 138.00 at 30.00 an
+hour, 165.00 on a six-day week, nothing at eight hours — and traces the
+weekly identity 4 × 8.6 + 7.6 = 42 beside the output. It authors no figure:
+a rational constant is 0 or 1, the two-hour tier and the four days are
+composed from ones. A month without a five- or six-day schedule is refused
+`schedule_unknown` before it runs; every working-time month declares Sunday to
+Thursday. `nine_hour_day` is named as unbound (V12). `defaultBranchOf` names
+`administrative` as the default (`owner_recorded_resolution`, bound) and a
+composition member asked alone reports its own branch. The severity class
+carries the default view: an hour between 8.0 and 8.6 on a five-day regular
+day is `order_entitlement` in the statute's view and no gap in the default's,
+and the rendering says so in one sentence — never `statutory_violation`.
+
+**L12-3 (D3) — the defaults moved, proven.** The comparison gains the
+per-decision transition table: pre-resolution default (the first listed
+branch, what the primary policy ran before run 11), new default, months whose
+outcome differs between the two in the current run, one such month, and the
+class. Two band months join the corpus so the table cannot be vacuous: a
+pensionable wage between the two caps (13,650.00) and an hourly rate between
+the two divisors' floors (35.00 over 182 hours). The shadow re-ran on DEV —
+`l76.6d0667ad`: 58 months, 169 executions, 121 ran, 121 traces replayed,
+provider and OpenAI calls 0, composites unopened — and against `l76.7721fd34`
+51 months present in both are unchanged, 0 changed (the working-time months
+re-keyed by month as a composition, 8 removed and 10 added by key).
+
+| decision | previous default → new | months changed | one of them | class |
+|---|---|---|---|---|
+| `convalescence_2026_rate_period` | calendar_year_2026 → havraa_year | 1 | `synthetic.convalescence.edge.havraa_year_2027_rate_not_published` (refused under the new default, ran under the old) | b |
+| `min_wage_hourly_divisor` | 182 → 182 | 0 | band month `hourly_between_divisors` present, outcome unchanged by the move | a |
+| `pension_2011_2016_precedence` | order_2011_2014_row → order_2016_2017_rates | 10 | `synthetic.pension.golden.current` | b |
+| `pension_wage_cap_section` | section1 → section2 | 3 | `synthetic.pension.edge.wage_between_caps` (the band month, changed) | b |
+| `rest_day_overtime_composition` | additive → additive | 0 | — | a |
+| `working_time_daily_threshold` | statute → administrative | 5 | `synthetic.working_time.golden.current` | b |
+
+No decision fell into (c): the cap, the brief's candidate for it, had two
+months above both caps and the band month made three. The divisor is (a) —
+its default was 182 before and after — and its band month shows the class the
+band is about, `order_entitlement`, without moving the default.
+
+**L12-4 (D4) — report v9, the Hebrew rendering, package v14.** v9
+(`d74c308c4f4e96eead55ab000492c4a20f9f19d8ab1d1a54816a330f71cf78ce`): 120 scenarios, 100 run, 100
+traces replayed, 7/7 topics, the derived bindings on the decision with the
+assumption slot, the transition table bound to the comparison by hash and to
+the shadow by run id, `resolutions_recorded` 6, `derived` on the grade ladder
+with its meaning. The Hebrew rendering (Markdown `86e00cdc861368bef868290c7bb4a7fa89b7538c69bcb3302470d17a8c051ec6`, PDF
+`fb1d3706c99c5eafaf130d352013897fd743900572724ff30e0311b617758015`) shows the assumption on the derived rows and under the
+decision, the default view of the severity classes, and the transition table.
+Package v14 (manifest `a3e86fbb750345027b4d34db415bbedbad16f2cdc8da94316e4e3cae160ee189`, 51 files, built twice to
+one hash): `parameters/derived-parameters.json` with the record in front,
+the grade and the record on every candidate row, the two comparisons and the
+transition table, batches 16 and 20, v8 beside v9; gates `topics_run` 7 ≥ 7,
+`shadow_cases_run` 121 ≥ 111, `resolutions_recorded` 6 ≥ 6.
+
+**L12-5 (Lane B).** Three read-only haiku surveys at the start (the corpus
+for the two orders — which found the 2000 order absent — the executor's
+rational arithmetic, R-8 and the grade surfaces) and one adversarial pass at
+the end: can a derived binding be mistaken for a text-verified one on the
+row, in the report, in the package or at `/operations`; can the assumption
+slot be dropped without invalidating the binding. Four haiku agents, all read-only; the surveys produced no code finding, the pass produced one, applied. The pass found no surface where a derived binding reads as text-verified: the row carries the grade and the record, report v9 and the rendering print the assumption, the package puts the record in front, and `/operations` renders no parameter grade at all (there is no parameter screen — BL-26). It found one real gap and one non-gap. The gap: the attestation of a derived candidate is bound to its assumption by hash — `candidate_sha256` covers the record, `bindings_sha256` its digest, and the attestation definer compares both byte-exact, so a changed assumption is refused — but the attestation record does not name the assumption it accepts, unlike `visual_confirmed` for a page reading; opened as BL-28, to be built with the attestation screen (BL-26), and the onboarding's new §3א tells a reviewer what attesting a derived row means and that it never promotes the grade. The non-gap: the agent's claim that an attestation written before the record was added could match a later derived candidate does not hold — adding or changing the record changes `candidate_sha256`, which the definer compares. Two things caught while verifying, both fixed before the recorded build: the package's file list carried batch 16 twice, and the execution-rung label in the Hebrew rendering said only "a fact derived from other facts" where a derived parameter now drives the rung too. At the freeze itself, guard 1 of the reference-tenant guards caught two literal tenant ids in the comparison's band-month map; keyed by decision key now, bytes unchanged.
+
+**Not done, by the brief.** No resolution changed status; no reviewer
+identity; no source, parameter, selection or spec left `draft`; no deploy,
+merge or pull request; no repository, Vercel or GitHub setting; no customer
+or real payslip; no composite opened; no provider call; no non-official fetch
+(the 2000 order stays unacquired); nothing copied from the OneDrive folder;
+no `npm install`; no worktree.
+
+## Freeze — run 12, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+at `a67ceca`, receipt `fa5097206c09a7153e0cc9f177db17967425d53bde2c5d077eeac72961424db2`: type check 0 errors; eslint
+0 errors, 0 warnings; vitest **304/304 files, 2223 passed, 3 skipped, 0 failed**; `next build` compiled; the
+closure proof over both environments **48/48 PASS, identical posture, production build `22c938b5…`, preview build `691f6ee1…`, 157 entry points guarded and refusing by execution, receipt `c6b2e441672613d422e767ceff6fb046b789a33903e2bec858fbd2ca8f214f25`**.
+
+### DEV, as the runtime roles
+
+Chain 55/55, tail `202609020032` — no migration this run. Grant execution
+**25 executed, 0 denied, 0 refused by precondition, 0 unexplained (prior state of the fixture session: valid)**. Identity negative matrix **8/8**. Definer surface
+**111, ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute 14**. Invalidation effects **10/10**. Dynamic matrix
+**14 checks, 10 supported, 10 passed, 0 failed, 4 not supported**. RLS force **66 tenant-scoped tables, 0 unforced**. Journey **17/17**.
+
+Governance proofs, all by execution: A7-1 guards passed; parameter-decision
+matrix passed; A7-3 withdrawal passed; Q draft-binding passed with every slot
+bound and **every derived record recomputed (2)**; E3-2/E3-3 supersession
+and synthetic passed at eight legal decisions; E3-4 revocation passed; L4-7
+session recovery **8/8**; E2-10 hygiene passed (resolutions 6 owner_recorded,
+0 attested); L5-1 lexicon **9/9**; A7-2 dependency-hash invalidation passed.
+Citation anchors **48 verified, 0 failed, 6 impossible (the superseded rows)**. Resolutions **22/22 PASS — six recorded on the reference tenant, read-back equal to the registry, decision rows open, attested 0; every refusal on the synthetic proof tenant**. Shadow
+comparison **PASS against `l76.7721fd34` — 51 months in both unchanged, 0 changed, 10 added, 8 removed by re-keying; the default moved in `working_time_daily_threshold` only, `administrative` added, nothing retired; the transition table PASS (b, a, b, b, a, b); the freeze re-run wrote byte-identical bytes to the l123 receipt report v9 binds (`b80e682c…`)**. S-1…S-7: `verify-v010.mts` PASS,
+`shadow/run.mts all` PASS (zero money, zero findings, zero reports).
+
+The draft shadow on DEV is this run's `l76.6d0667ad` (121 ran, 121 replayed;
+receipt `c412d56ca81a443d…`), report v9 `d74c308c…`, Hebrew rendering
+`86e00cdc…` / `fb1d3706…`, package v14 `a3e86fbb…`.
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, resolutions owner_recorded 6, resolutions attested 0,
+reviewer identities registered 0, visual confirmations 0, customer rows 0,
+customer payslips read 0, real payslips read 0, composites opened 0, openai
+calls 0, provider calls 0, extraction used no, deployments 0, remote
+production migrations 0, findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-24 | **closed as `bound_derived_pending_V11`** | the administrative branch is bound at grade `derived` — 43/5 and 38/5 hours from the 2018 order's 42 and its one-hour reduction under the assumption `five_day_even_distribution` — and executes as the recorded default; the lawyer's answer to V11 (§5 ministerial approval) can invalidate the assumption, and V12 (the 1990 and 2000 orders' wording) can move it; no official artifact carries 8.6 / 7.6 and none is claimed |
+| BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation against the pages in package v14 |
+| BL-26 | open, `attestation_path_not_built` | a resolution's `owner_recorded → attested` transition and its /operations screen; built with the registered-identity check when a reviewer identity exists |
+| BL-27 | open, `official_artifact_not_in_corpus` | the 2000 framework extension order (43-hour week) is not in the corpus; the derivation's `weekly_before` is 42 + 1 from the 2018 order until it is acquired through the official path; V12 is the lawyer's |
+| BL-28 | open, `derived_acknowledgment_not_required` | Lane B, run 12: an attestation of a `derived` candidate is bound to its assumption by hash (`candidate_sha256` covers the record, `bindings_sha256` its digest; the definer compares both byte-exact, so a changed assumption is refused) but the attestation record does not name the assumption it accepts, unlike `visual_confirmed` for a page reading; an `assumption_acknowledged` requirement on the attestation definer — demanded for `derived`, refused for every other grade — is built with the attestation screen (BL-26); until then the onboarding (§3א) tells a reviewer what attesting a derived row means |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
+### Backlog
+
+BL-26 and BL-28 behind the lawyer's reviewer identity (one screen, one
+definer change); BL-27 behind the owner's acquisition. Everything else that
+does not need a person is done.
+
 ## Resume point
 
-Refreshed at run 11 — the lawyer-approved decisions recorded, mechanically.
-Everything before this point is history; this section and
-`docs/resume-after-pause.md` are what a resuming session must read.
+Refreshed at run 12 — the recorded daily-threshold default made executable,
+and the defaults proven to have moved. Everything before this point is
+history; this section and `docs/resume-after-pause.md` are what a resuming
+session must read.
 
 **Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`)
 and, up to `677ea92`, in the bundle and evidence archive long run 10 put on
-OneDrive (sha256 `bfb6421a…` and `ee089bf2…`); run 11's commits are on the
-remote only until the next bundle. Pools H, D, S, R, E2, E3, L4–L10 and run
-11 are closed. Pool P: 38 targets, 62 draft versions (batches 17 and 18 added
-three), 7 superseded, 7 inferred_visual. Pool Q: seven drafts, every slot
-bound; fourteen executable shadow specs, seventeen sensitivity specs. Eight
-legal decisions: six carry an owner-recorded resolution (`owner_recorded`,
-0 attested), one is new and open at low confidence
-(`rest_day_daily_threshold`), one is withdrawn; the multiplicative rest-day
-reading is retired. The sensitivity report is v8; the offline shadow is
-`l76.7721fd34` (111 ran, 111 replayed); the review package is v13 (manifest
-`e8584d01…`, 46 files) — none of it a finding, none delivered, no
-extraction, no provider.
+OneDrive (sha256 `bfb6421a…` and `ee089bf2…`); runs 11 and 12 are on the
+remote only until the next bundle. Pools H, D, S, R, E2, E3, L4–L10 and runs
+11–12 are closed. Pool P: 64 draft versions (batch 20 added two derived
+figures), 7 superseded, 7 inferred_visual, 2 derived. Pool Q: seven drafts,
+every slot bound, every derived record recomputed; fifteen executable shadow
+specs, eighteen sensitivity specs. Eight legal decisions: six carry an
+owner-recorded resolution (`owner_recorded`, 0 attested) and every one of the
+six now EXECUTES as the default — the daily threshold at the derived 8.6 / 7.6
+— one is new and open at low confidence (`rest_day_daily_threshold`), one is
+withdrawn. The sensitivity report is v9; the offline shadow is `l76.6d0667ad`
+(121 ran, 121 replayed); the review package is v14 — none of it a finding,
+none delivered, no extraction, no provider.
 
-**What the resolutions are and are not.** Six rows in
-`private.legal_decision_resolutions`, each naming the branch the report and
-the shadow treat as default, on the opinion's sha256 `3ddad7e8…` and the
-approval record's `0258b640…`, both stored as owner evidence (not a source:
-`owner_evidence` is outside the provenance grades). They are not
-attestations: no reviewer identity, no source reviewed, no parameter or rule
-active; the decision rows stay `open`. `attested` is a status nothing can
-set today (BL-26).
+**What the derived binding is and is not.** 8.6 and 7.6 are arithmetic on
+the 2018 order's text (42 hours, one hour reduced on a fixed day) under one
+declared assumption, `five_day_even_distribution`, recorded beside the
+parameter and recomputed by every binder; grade `derived`, never
+text_verified, never administrative; the assumption is on the row, in the
+report, in the Hebrew rendering and in the package, and a changed assumption
+is a changed binding. The 2000 framework order's sentence is not in the
+corpus (BL-27); the 43 is 42 + 1 from the 2018 order until it is acquired.
+The nine-hour reading is named and not run (V12).
 
-**What is proven about the live site.** Unchanged from long run 10: a
-production build and a preview build of this branch are closed by
-construction and serve the product; the differential against `main` is 20
-routes, 0 mismatches; the same proof passes on GitHub's Ubuntu runner.
+**What the transition table says.** Of the six resolutions, four moved the
+default and moved months (convalescence 1, precedence 10, cap 3, daily
+threshold 5); two were already the selected branch (divisor, rest-day
+composition). Two band months exist so the cap's and the divisor's bands are
+exercised. The comparison is `shadow-run-comparison-l123.json`, carried by
+report v9 and package v14.
+
+**What is proven about the live site.** Unchanged from long run 10.
 tivdoc.com serves `main`.
 
 **The human gates, named.**
 
-1. The owner runs `owner-reviewer-identity.mts keygen` then `register
-   --reviewer-id <their.id>` at a keyboard, in an interactive shell, with
-   `TIVDOC_UNATTENDED` unset, after DEV is resumed. Then the lawyer registers
-   a second identity the same way (B-25; `docs/reviewer-onboarding.he.md`),
-   reads `docs/legal/sensitivity-report.he.md`, confirms the seven visual
-   readings against the pages in package v13 (`visual_confirmed: true`, or
-   the database refuses), attests the parameters of the six default branches
-   as the second, independent identity, and answers V1–V13
-   (`decisions/open-items-v1-v13.json` in package v13).
-2. BL-26: once a registered reviewer identity exists, the resolution
-   attestation path (`owner_recorded → attested`, one transition, at the
-   /operations screen) is the one engineering unit queued. Not before.
-3. The three decisions in `docs/merge-readiness.md`: open the pull request
-   into `main` or not; keep the Vercel project's branch previews on or not;
-   keep the repository public or not.
-4. BL-24: an official artifact for the 8.6 / 7.6 daily norm (the steering
-   committee's interpretation of the 42-hour order), if one exists; until
-   then the owner-recorded default of `working_time_daily_threshold` stays
-   unbound and the statute branch runs.
+1. The lawyer: V11 (§5 ministerial approval of the shortened-week
+   agreements) and V5 (the 2016 order's gazette number and the 18% start
+   date) first — V11 can invalidate the derived binding's assumption; then
+   V1–V13 as a whole. Then a reviewer identity (B-25;
+   `docs/reviewer-onboarding.he.md`), the seven visual confirmations against
+   the pages in package v14, and attestation at the screen.
+2. The owner: the 2000 framework order through the official acquisition
+   path (BL-27); then BL-26 with BL-28 once a reviewer identity exists.
+3. The three decisions in `docs/merge-readiness.md`.
 
-**Engineering after this run.** BL-26 only, gated on gate 1. A resuming
-session follows `docs/resume-after-pause.md`: get the tree, run what needs
-nothing, reconnect DEV, regenerate only if the project was reset, run the
-matrix, read this section. The pre-existing corpus-trust generator failure
-and the stale isolated replay database remain out of scope.
+**Engineering after this run.** BL-26 with BL-28 (the attestation screen
+and the derived acknowledgment, one unit) and BL-27, all gated on a person. A
+resuming session follows `docs/resume-after-pause.md`.
