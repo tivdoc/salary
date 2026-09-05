@@ -42,7 +42,7 @@ describe("the product/engine route split (D3)", () => {
       if (entry.half === "product") expect(entry.probes?.length ?? 0, entry.entrypoint_id).toBeGreaterThan(0);
       else expect(entry.probes, entry.entrypoint_id).toBeUndefined();
     }
-    expect(productAssignments()).toHaveLength(20);
+    expect(productAssignments()).toHaveLength(26);
     expect(engineAssignments()).toHaveLength(7);
   });
 
@@ -78,7 +78,15 @@ describe("the differential against main's own route inventory (D4)", () => {
     const byFile = new Map(ROUTE_SPLIT.map((entry) => [entry.route_file, entry]));
     // Nothing added on this branch is product today; a future product route
     // must be named here, with its reason, to pass.
-    const productAddedOnBranch: Record<string, string> = {};
+    // UX Run 1 (S1): the six customer-access routes, product half, each with the reason route-split.ts carries.
+    const productAddedOnBranch: Record<string, string> = {
+      "src/app/case/[token]/page.tsx": "UX Run 1 / D-1.2: the code challenge the sent link opens, and the case view for a verified identity session; it reaches no legal computation.",
+      "src/app/login/page.tsx": "UX Run 1 / D-1.4: phone or email, then a code, then the identity's cases; login and recovery in one route.",
+      "src/app/cases/page.tsx": "UX Run 1 / D-1.5: the identity's case list, rendered only with more than one case; without a session it sends the visitor to /login.",
+      "src/app/api/cases/access/request/route.ts": "UX Run 1 / U2: issues an access code to the channel on file; an empty body is a 400, never a hint about a contact.",
+      "src/app/api/cases/access/verify/route.ts": "UX Run 1 / U2: turns a valid code into a rolling identity session; an empty body is a 400.",
+      "src/app/api/cases/access/resend/route.ts": "UX Run 1 / U5: re-sends the case link for the funnel cookie's case; without the cookie it answers 401.",
+    };
     for (const file of added) {
       const entry = byFile.get(file);
       expect(entry, file).toBeDefined();

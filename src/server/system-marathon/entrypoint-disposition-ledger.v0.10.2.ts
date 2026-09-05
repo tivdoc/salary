@@ -47,9 +47,9 @@ export type EntrypointDispositionRow = Readonly<{
 export type EntrypointDispositionLedger = Readonly<{
   schema_version: typeof ENTRYPOINT_DISPOSITION_LEDGER_SCHEMA_VERSION;
   baseline_schema_version: CanonicalEntrypointInventory["schema_version"];
-  denominator: 95;
-  product_stable_denominator: 84;
-  before_counts: Readonly<{ partial: 28; implemented_not_wired: 18; partial_or_unwired: 46 }>;
+  denominator: 101;
+  product_stable_denominator: 90;
+  before_counts: Readonly<{ partial: 31; implemented_not_wired: 21; partial_or_unwired: 52 }>;
   source_disposition_counts: Readonly<{
     product_stable_partial_or_unwired: number;
     app_routes: number;
@@ -67,9 +67,10 @@ const rows = inventory.entries.map((entry) => dispositionFor(entry));
 export const ENTRYPOINT_DISPOSITION_LEDGER: EntrypointDispositionLedger = deepFreeze({
   schema_version: ENTRYPOINT_DISPOSITION_LEDGER_SCHEMA_VERSION,
   baseline_schema_version: inventory.schema_version,
-  denominator: 95,
-  product_stable_denominator: 84,
-  before_counts: { partial: 28, implemented_not_wired: 18, partial_or_unwired: 46 },
+  // UX Run 1 / U0: CEP-096..CEP-101 joined the denominator (three pages PARTIAL, three API routes IMPLEMENTED_NOT_WIRED).
+  denominator: 101,
+  product_stable_denominator: 90,
+  before_counts: { partial: 31, implemented_not_wired: 21, partial_or_unwired: 52 },
   source_disposition_counts: {
     product_stable_partial_or_unwired: rows.filter((row) => row.product_stable
       && (row.current_status === ("PARTIAL" as EntrypointCurrentStatus)
@@ -89,12 +90,12 @@ export function validateEntrypointDispositionLedger(
 ): readonly string[] {
   const issues: string[] = [];
   if (ledger.schema_version !== ENTRYPOINT_DISPOSITION_LEDGER_SCHEMA_VERSION) issues.push("DISPOSITION_SCHEMA_VERSION_INVALID");
-  if (ledger.denominator !== 95 || ledger.rows.length !== 95) issues.push("DISPOSITION_DENOMINATOR_CHANGED");
-  if (ledger.product_stable_denominator !== 84 || ledger.rows.filter((row) => row.product_stable).length !== 84) {
+  if (ledger.denominator !== 101 || ledger.rows.length !== 101) issues.push("DISPOSITION_DENOMINATOR_CHANGED");
+  if (ledger.product_stable_denominator !== 90 || ledger.rows.filter((row) => row.product_stable).length !== 90) {
     issues.push("DISPOSITION_PRODUCT_STABLE_DENOMINATOR_CHANGED");
   }
-  if (ledger.before_counts.partial !== 28 || ledger.before_counts.implemented_not_wired !== 18
-      || ledger.before_counts.partial_or_unwired !== 46) issues.push("DISPOSITION_BEFORE_COUNTS_CHANGED");
+  if (ledger.before_counts.partial !== 31 || ledger.before_counts.implemented_not_wired !== 21
+      || ledger.before_counts.partial_or_unwired !== 52) issues.push("DISPOSITION_BEFORE_COUNTS_CHANGED");
 
   const ids = new Set<string>();
   for (const entry of inventory.entries) {

@@ -13,14 +13,14 @@ import {
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 describe("V0.10.2 entrypoint before/after disposition ledger", () => {
-  it("preserves all 95 rows, every identity and the starting denominator", () => {
+  it("preserves all 101 rows, every identity and the starting denominator", () => {
     expect(validateEntrypointDispositionLedger()).toEqual([]);
-    expect(ENTRYPOINT_DISPOSITION_LEDGER.rows).toHaveLength(95);
-    expect(ENTRYPOINT_DISPOSITION_LEDGER.product_stable_denominator).toBe(84);
+    expect(ENTRYPOINT_DISPOSITION_LEDGER.rows).toHaveLength(101);
+    expect(ENTRYPOINT_DISPOSITION_LEDGER.product_stable_denominator).toBe(90);
     expect(ENTRYPOINT_DISPOSITION_LEDGER.before_counts).toEqual({
-      partial: 28,
-      implemented_not_wired: 18,
-      partial_or_unwired: 46,
+      partial: 31,
+      implemented_not_wired: 21,
+      partial_or_unwired: 52,
     });
     expect(ENTRYPOINT_DISPOSITION_LEDGER.rows.map((row) => row.entrypoint_id)).toEqual(
       inventoryJson.entries.map((entry) => entry.entrypoint_id),
@@ -30,8 +30,8 @@ describe("V0.10.2 entrypoint before/after disposition ledger", () => {
   it("recomputes the exact source roots without deleting or changing any kind", () => {
     expect(ENTRYPOINT_DISPOSITION_LEDGER.source_disposition_counts).toEqual({
       product_stable_partial_or_unwired: 0,
-      app_routes: 12,
-      api_routes: 14,
+      app_routes: 15,
+      api_routes: 17,
       durable_workers: 5,
       application_services: 19,
       clis: 45,

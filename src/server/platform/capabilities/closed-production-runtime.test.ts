@@ -50,9 +50,10 @@ describe("the closed production projection", () => {
       expect(decision.reason_codes.length, entry.entrypoint_id).toBeGreaterThan(0);
       expect(runtime.servesAsMain(entry.entrypoint_id), entry.entrypoint_id).toBe(false);
     }
-    // The registrar and the six branch routes: seven engine dispatchers, twenty product ones, nothing unassigned.
+    // The registrar and the six branch routes: seven engine dispatchers; twenty product ones from main plus the six
+    // customer-access routes UX Run 1 added on the product half, nothing unassigned.
     expect(engineAssignments()).toHaveLength(7);
-    expect(allowed).toHaveLength(20);
+    expect(allowed).toHaveLength(26);
     // A capability is still enabled nowhere: the product half is served by declaration, not by an enabled capability.
     expect(runtime.projection.enabled_capabilities).toEqual([]);
   });

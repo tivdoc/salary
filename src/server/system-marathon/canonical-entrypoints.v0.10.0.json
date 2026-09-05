@@ -1642,6 +1642,115 @@
         "MANAGED_STORAGE_NOT_PROVEN"
       ],
       "non_claim": "A deterministic reconciliation plan does not execute deletion or prove off-host recovery."
+    },
+    {
+      "entrypoint_id": "CEP-096",
+      "kind": "app_route",
+      "stable_entry": "/case/[token]",
+      "source_path": "src/app/case/[token]/page.tsx",
+      "canonical_contract_id": "route.public.case-access",
+      "canonical_target": "src/app/case/[token]/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/components/case/access-challenge.tsx",
+        "src/server/product/case-access/service.ts"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "UX Run 1 / D-1.2: the link a verified payment sends opens a code challenge on the contact channel on file; the same segment shows a case to a verified identity session. No customer material is processed here."
+    },
+    {
+      "entrypoint_id": "CEP-097",
+      "kind": "app_route",
+      "stable_entry": "/login",
+      "source_path": "src/app/login/page.tsx",
+      "canonical_contract_id": "route.public.login",
+      "canonical_target": "src/app/login/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/components/case/login-form.tsx"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "UX Run 1 / D-1.4: phone or email, then a code, then every case of that identity; login and recovery are one route. No password exists anywhere."
+    },
+    {
+      "entrypoint_id": "CEP-098",
+      "kind": "app_route",
+      "stable_entry": "/cases",
+      "source_path": "src/app/cases/page.tsx",
+      "canonical_contract_id": "route.public.cases",
+      "canonical_target": "src/app/cases/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "UX Run 1 / D-1.5: rendered only when the verified identity holds more than one case; one case redirects to it."
+    },
+    {
+      "entrypoint_id": "CEP-099",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/access/request",
+      "source_path": "src/app/api/cases/access/request/route.ts",
+      "canonical_contract_id": "api.case-access.request",
+      "canonical_target": "src/server/product/case-access/service.ts:caseAccessService",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts"
+      ],
+      "blockers": [
+        "DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "UX Run 1 / U2: issues a six-digit code to the channel on file for a link token or a contact; it never reveals whether a contact exists and never carries the token in a query string."
+    },
+    {
+      "entrypoint_id": "CEP-100",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/access/verify",
+      "source_path": "src/app/api/cases/access/verify/route.ts",
+      "canonical_contract_id": "api.case-access.verify",
+      "canonical_target": "src/server/product/case-access/service.ts:caseAccessService",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts"
+      ],
+      "blockers": [
+        "DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "UX Run 1 / U2: a valid code opens a rolling thirty-day session bound to the identity, not the case; five attempts, ten-minute codes."
+    },
+    {
+      "entrypoint_id": "CEP-101",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/access/resend",
+      "source_path": "src/app/api/cases/access/resend/route.ts",
+      "canonical_contract_id": "api.case-access.resend",
+      "canonical_target": "src/server/product/case-access/service.ts:caseAccessService",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts"
+      ],
+      "blockers": [
+        "DIRECT_SUPABASE_ROUTE_NOT_BOUND_TO_CANONICAL_COMPOSITION",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "UX Run 1 / U5: re-issues the case link from the received screen for the funnel cookie's own case, rate-limited; a failed send never blocks payment verification."
     }
   ]
 }

@@ -11,15 +11,15 @@ const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
 
 describe("stable product dispatcher capability reachability", () => {
-  it("maps the exact 26 live Next roots plus the canonical route registrar", () => {
+  it("maps the exact 32 live Next roots plus the canonical route registrar", () => {
     const nextRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter(
       (entry) => entry.kind === "app_route" || entry.kind === "api_route",
     );
     const registrar = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => entry.entrypoint_id === "CEP-078");
-    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(27);
-    expect(nextRoots).toHaveLength(26);
+    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(33);
+    expect(nextRoots).toHaveLength(32);
     expect(registrar).toHaveLength(1);
-    expect(new Set(STABLE_PRODUCT_DISPATCHER_ROOTS.map((entry) => entry.entrypoint_id)).size).toBe(27);
+    expect(new Set(STABLE_PRODUCT_DISPATCHER_ROOTS.map((entry) => entry.entrypoint_id)).size).toBe(33);
 
     const liveNextRoots = walk(join(repositoryRoot, "src/app"))
       .map((path) => relative(repositoryRoot, path).replaceAll("\\", "/"))
@@ -30,7 +30,7 @@ describe("stable product dispatcher capability reachability", () => {
 
   it("proves every app dispatcher invokes its exact request-time capability guard", () => {
     const appRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => entry.kind === "app_route");
-    expect(appRoots).toHaveLength(12);
+    expect(appRoots).toHaveLength(15);
     for (const entry of appRoots) {
       const source = sourceAt(entry.source_path);
       expect(source.text, entry.entrypoint_id).toContain(`guardStableAppEntrypoint("${entry.entrypoint_id}")`);
@@ -46,7 +46,7 @@ describe("stable product dispatcher capability reachability", () => {
 
   it("proves every exported HTTP method reaches its exact bounded request guard", () => {
     const apiRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => entry.kind === "api_route");
-    expect(apiRoots).toHaveLength(14);
+    expect(apiRoots).toHaveLength(17);
     for (const entry of apiRoots) {
       const source = sourceAt(entry.source_path);
       const expected = `guardStableHttpEntrypoint("${entry.entrypoint_id}"`;
@@ -69,7 +69,7 @@ describe("stable product dispatcher capability reachability", () => {
     }
   });
 
-  it("proves the 27th root installs and immediately verifies the route registrar guard", () => {
+  it("proves the 33rd root installs and immediately verifies the route registrar guard", () => {
     const source = sourceAt("src/server/product/routes/runtime.ts");
     const registrar = source.statements.find((statement): statement is ts.FunctionDeclaration =>
       ts.isFunctionDeclaration(statement) && statement.name?.text === "installCanonicalProductEntrypointCapabilities",

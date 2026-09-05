@@ -134,10 +134,11 @@ describe("durable local product runtime configuration", () => {
 
   it("maps every product dispatcher to an enforced allow or intentional local block", () => {
     const runtime = createStableEntrypointRuntime({ projection: buildDurableLocalProductCapabilityProjection() });
-    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(27);
+    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(33);
     const decisions = STABLE_PRODUCT_DISPATCHER_ROOTS.map((entrypoint) => runtime.evaluate(entrypoint.entrypoint_id));
     expect(decisions.every((decision) => decision.outcome === "ALLOW" || decision.reason_codes.length > 0)).toBe(true);
-    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(14);
+    // UX Run 1 / U0: the six customer-access dispatchers need only postgresql locally, so they are allowed here.
+    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(20);
     expect(decisions.filter((decision) => decision.outcome === "BLOCK")).toHaveLength(13);
   });
 });
