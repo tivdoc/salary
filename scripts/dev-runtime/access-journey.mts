@@ -16,7 +16,8 @@ import pg from "pg";
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { buildRuntimeEnvironment, freePort, probe, startServer, waitForServer } from "./serve.mts";
 
-const WAVE = process.env.TIVDOC_WAVE_OUTPUT ?? "site-s1";
+// Under output/next, which the repository ignores; a wave directory of its own would show up as untracked.
+const WAVE = process.env.TIVDOC_WAVE_OUTPUT ?? "next/site-s1";
 const RECEIPT_ROOT = path.join("output", WAVE);
 const INBOX = path.resolve(RECEIPT_ROOT, "notification-sink.jsonl");
 const CONTACT = "s1-journey@example.invalid";
