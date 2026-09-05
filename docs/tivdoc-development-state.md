@@ -3171,6 +3171,22 @@ findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
 | F1 | long run 7's writer inventory: `draft-shadow-run-v1.mts` writes to the synthetic proof tenant | it re-seeds the reference tenant's system-import session through an imported constant; nothing revoked or deleted; the inventory is derived now and both it and `owner-reviewer-identity.mts` are reference writers with reasons |
 | F2 | `synthetic-delta.ts`: "the employer share is not a registered parameter" | `il.pension.employer_contribution_rate` is registered at 2014.2.0 and 2017.1.0 (batch 13) and bound on both precedence branches; the missing thing was the spec, which exists now |
 
+## Backup — long run 9, L9-1 (D1)
+
+The branch had never been pushed: 412 commits on one disk. Before any other
+unit, a git bundle of the full history (every ref) was written to
+`output/next/backup/salary-0d60c0d-20260905.bundle` at head
+`0d60c0db28c9e9dd78073312df69cf6094e32b20`, verified by `git bundle verify`
+and by cloning it into a temporary directory (restored HEAD `0d60c0db…`,
+branch `claude/v0-10-2b-full-parallel`, 434 commits reachable), and copied
+with its digest to `C:\Users\smart\OneDrive\Рабочий стол\Tivdoc\backup\` — the only write this run makes to
+that folder. A bundle is a file: no remote, no integration, no build; it
+restores with one clone. Its sha256:
+
+```text
+2fd5c3cd837bf04f5842375c8f371ffd0d16f7ca67fd057c90fedf85c53ba714  salary-0d60c0d-20260905.bundle
+```
+
 ## Resume point
 
 Refreshed at long run 8. Everything before this point is history; this section
