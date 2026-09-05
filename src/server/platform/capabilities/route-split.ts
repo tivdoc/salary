@@ -38,13 +38,17 @@ export type RouteAssignment = Readonly<{
   probes?: readonly RouteProbe[];
   /** UX Run 1: a product route this branch added; main never served it, and the closure proof expects it beside main's own. */
   added_on_branch?: true;
+  /** Site S5: a product route main serves that this branch deliberately REWROTE. The "differs only by the guard"
+   *  budget does not apply to it — the redesign is the wave's deliverable — but every other rule still does:
+   *  it stays on the product half, keeps its guard, and imports nothing from the engine. The reason says why. */
+  rewritten_on_branch?: string;
 }>;
 
 const MAIN = "Served by `main` (b963844) today";
 
 export const ROUTE_SPLIT: readonly RouteAssignment[] = Object.freeze([
   // --- The product half: what the live site serves. -------------------------
-  { entrypoint_id: "CEP-001", route_file: "src/app/page.tsx", stable_entry: "/", half: "product", reason: `${MAIN}: the landing page.`, probes: [{ method: "GET", path: "/", expected: "200" }] },
+  { entrypoint_id: "CEP-001", route_file: "src/app/page.tsx", stable_entry: "/", half: "product", rewritten_on_branch: "Site S5: the home page rebuilt on design/landing-v5 direction B. Still main's route, still guarded, still importing nothing from the engine; the diff is the redesign itself.", reason: `${MAIN}: the landing page.`, probes: [{ method: "GET", path: "/", expected: "200" }] },
   { entrypoint_id: "CEP-002", route_file: "src/app/check/page.tsx", stable_entry: "/check", half: "product", reason: `${MAIN}: the questionnaire.`, probes: [{ method: "GET", path: "/check", expected: "200" }] },
   { entrypoint_id: "CEP-003", route_file: "src/app/check/upload/page.tsx", stable_entry: "/check/upload", half: "product", reason: `${MAIN}: the upload page; since UX Run 1 / U7 it answers 307 to /check when no case cookie is present, the redirect the review asked for.`, probes: [{ method: "GET", path: "/check/upload", expected: "307" }] },
   { entrypoint_id: "CEP-004", route_file: "src/app/check/payment/page.tsx", stable_entry: "/check/payment", half: "product", reason: `${MAIN}: the payment hand-off page; since UX Run 1 / U7 it answers 307 to /check when no case cookie is present.`, probes: [{ method: "GET", path: "/check/payment", expected: "307" }] },

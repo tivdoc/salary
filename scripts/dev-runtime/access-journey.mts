@@ -61,7 +61,7 @@ async function main(): Promise<void> {
   const port = await freePort();
   const caseSecret = ["s1", "access", "journey", "secret"].join("-").repeat(2);
   // The runtime environment is frozen; the variables this journey adds ride on a copy.
-  const environment: NodeJS.ProcessEnv = { ...buildRuntimeEnvironment({ port, node_env: "production" }), CASE_TOKEN_SECRET: caseSecret, TIVDOC_NOTIFY_SINK_PATH: INBOX };
+  const environment: NodeJS.ProcessEnv = { ...buildRuntimeEnvironment({ port, node_env: "production" }), CASE_TOKEN_SECRET: caseSecret, TIVDOC_NOTIFY_SINK_PATH: INBOX, DELIVERY_RECIPIENT_ALLOWLIST: [CONTACT, STRANGER].join(",") };
   const origin = `http://${LOOPBACK}:${port}`;
   const json = { "content-type": "application/json", origin };
   const funnelCookie = (caseId: string) => `tivdoc_salary_case=${caseId}.${createHmac("sha256", caseSecret).update(caseId).digest("base64url")}`;
@@ -97,6 +97,9 @@ async function main(): Promise<void> {
 
   process.env.TIVDOC_WEB_POSTGRES_URL = webUrl;
   process.env.TIVDOC_NOTIFY_SINK_PATH = INBOX;
+  // S1.5 / U2: delivery fails closed outside production. The journey names its two
+  // synthetic recipients and nothing else, so a stray send cannot leave the fixture.
+  process.env.DELIVERY_RECIPIENT_ALLOWLIST = [CONTACT, STRANGER].join(",");
   Object.assign(process.env, { CASE_TOKEN_SECRET: caseSecret });
   process.env.TIVDOC_LOCAL_PRODUCT_ALLOWED_ORIGIN = origin;
   const { sweepPendingCaseLinks } = await import("../../src/server/product/case-access/service.ts");
@@ -104,6 +107,17 @@ async function main(): Promise<void> {
   // 2. Before verification: a verified payment sends nothing, and the sweep examines nothing (finding 1).
   const before = await sweepPendingCaseLinks(50);
   record("unverified_contact_gets_no_link", 0, "examined 0, no case_link", before.examined === 0 && inbox().filter((m) => m.template === "case_link").length === 0, JSON.stringify(before));
+
+  // 2b. S1.5 / U2: a recipient outside the allowlist is refused in-process, before any
+  // provider is reached. This is what keeps the seven dummy cases' contacts unreachable.
+  const { sendNotification } = await import("../../src/server/product/case-access/notifications.ts");
+  let providerCalls = 0;
+  const counting = { id: "journey_counting_provider", async send() { providerCalls += 1; return { ok: true as const }; } };
+  const refused = await sendNotification({ template: "case_link", channel: "email", to: "outsider@example.invalid", subject: "s", body: "b" }, counting);
+  const allowed = await sendNotification({ template: "case_link", channel: "email", to: CONTACT, subject: "s", body: "b" }, counting);
+  record("recipient_outside_allowlist_refused_without_a_provider_call", 0, "refused, provider untouched; the allowlisted one goes through",
+    refused.state === "refused" && refused.error_code === "recipient_not_allowlisted" && providerCalls === 1 && allowed.state === "sent",
+    `refused=${refused.state}:${String(refused.error_code)} provider_calls=${providerCalls} allowed=${allowed.state}`);
 
   const { server, log } = startServer("production", environment, port);
   let sessionCookie: string | null = null;

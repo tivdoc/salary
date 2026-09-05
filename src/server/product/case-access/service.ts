@@ -37,7 +37,9 @@ export type LinkPurpose = "payment_verified" | "resend" | "report_ready";
 
 export type SendLinkResult = Readonly<{
   case_id: string;
-  outcome: "sent" | "already_sent" | "send_failed" | "no_contact" | "contact_unverified" | "no_store";
+  // S1.5 / U2: `refused` is not `send_failed` — the recipient is outside the delivery allowlist,
+  // nothing reached a provider, and no resend will ever change that.
+  outcome: "sent" | "already_sent" | "send_failed" | "refused" | "no_contact" | "contact_unverified" | "no_store";
   token_id: string | null;
   provider: string | null;
   error_code: string | null;
@@ -241,7 +243,7 @@ export async function issueAndSendCaseLink(caseId: string, purpose: LinkPurpose 
       const outcome = await deliverLink(store, { caseId, identityId, contact: found.contact, firstName: found.first_name, publicId: found.public_id, token, ttlHours: productOffer().access.link_token_ttl_hours });
       await store.rpc("case_access_token_mark_send", { target_token: reissued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
       await store.rpc("case_access_token_mark_send", { target_token: existing.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
-      return { case_id: caseId, outcome: outcome.state === "sent" ? "sent" : "send_failed", token_id: reissued.token_id, provider: outcome.provider, error_code: outcome.error_code };
+      return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: reissued.token_id, provider: outcome.provider, error_code: outcome.error_code };
     }
   }
 
@@ -253,7 +255,12 @@ export async function issueAndSendCaseLink(caseId: string, purpose: LinkPurpose 
   if (!issued.issued) return { case_id: caseId, outcome: "already_sent", token_id: issued.token_id, provider: null, error_code: null };
   const outcome = await deliverLink(store, { caseId, identityId, contact: found.contact, firstName: found.first_name, publicId: found.public_id, token, ttlHours: productOffer().access.link_token_ttl_hours });
   await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
-  return { case_id: caseId, outcome: outcome.state === "sent" ? "sent" : "send_failed", token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
+  return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
+}
+
+/** S1.5 / U2: a refusal is its own outcome — never folded into a send failure the customer could retry. */
+function mapSendOutcome(state: "sent" | "failed" | "refused"): "sent" | "send_failed" | "refused" {
+  return state === "sent" ? "sent" : state === "refused" ? "refused" : "send_failed";
 }
 
 async function deliverLink(db: CaseAccessDb, input: Readonly<{ caseId: string; identityId: string; contact: NormalizedContact; firstName: string | null; publicId: string; token: string; ttlHours: number }>): Promise<NotificationOutcome> {
@@ -265,9 +272,9 @@ async function deliverLink(db: CaseAccessDb, input: Readonly<{ caseId: string; i
 }
 
 /** U4. The catch-up sweep the reconcile cron runs: every verified payment of a verified contact without a sent link gets exactly one. */
-export async function sweepPendingCaseLinks(limit = 50, db?: CaseAccessDb | null): Promise<Readonly<{ examined: number; sent: number; failed: number; already_sent: number }>> {
+export async function sweepPendingCaseLinks(limit = 50, db?: CaseAccessDb | null): Promise<Readonly<{ examined: number; sent: number; failed: number; refused: number; already_sent: number }>> {
   const store = db ?? await resolveCaseAccessDb();
-  const summary = { examined: 0, sent: 0, failed: 0, already_sent: 0 };
+  const summary = { examined: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 };
   if (!store) return summary;
   const pending = await store.rpc<{ case_id: string }>("case_access_pending_links", { target_limit: limit });
   for (const row of pending) {
@@ -275,6 +282,7 @@ export async function sweepPendingCaseLinks(limit = 50, db?: CaseAccessDb | null
     const result = await issueAndSendCaseLink(row.case_id, "payment_verified", store);
     if (result.outcome === "sent") summary.sent += 1;
     else if (result.outcome === "already_sent") summary.already_sent += 1;
+    else if (result.outcome === "refused") summary.refused += 1;
     else summary.failed += 1;
   }
   return summary;
@@ -309,7 +317,7 @@ export async function sendReportReadyNotification(caseId: string, db?: CaseAcces
   const outcome = await sendNotification({ template: "report_ready", channel: found.contact.channel, to: found.contact.normalized, ...rendered });
   await recordNotification(store, { case_id: caseId, identity_id: identityId, channel: found.contact.channel, template: "report_ready", outcome });
   await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
-  return { case_id: caseId, outcome: outcome.state === "sent" ? "sent" : "send_failed", token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
+  return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
 }
 
 // ---------------------------------------------------------------------------

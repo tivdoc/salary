@@ -5,6 +5,7 @@
 // ceiling holds; an unknown contact answers like a known one; the token is in
 // the message alone.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { productOffer } from "@/lib/product-offer";
 import { hashToken } from "./crypto.ts";
 import { fakeCaseAccessDb, type FakeCase } from "./fake-db.ts";
 import { installNotificationProviderForTests, type NotificationMessage } from "./notifications.ts";
@@ -52,9 +53,17 @@ function tokenFrom(message: NotificationMessage): string {
 beforeEach(() => {
   process.env.CASE_TOKEN_SECRET = ["s1", "test", "secret"].join("-").repeat(3);
   process.env.NEXT_PUBLIC_SITE_URL = "https://tivdoc.example";
+  // S1.5 / U2: delivery fails closed outside production, so a suite that expects a
+  // message to go out has to say which synthetic recipients it is allowed to reach.
+  // Every one of these is a fixture address; none is a real line.
+  process.env.DELIVERY_RECIPIENT_ALLOWLIST = [
+    "dana.test@example.com", "typo.owner@example.com", "real.owner@example.com",
+    "0501234567", "0507654321",
+  ].join(",");
 });
 
 afterEach(() => {
+  delete process.env.DELIVERY_RECIPIENT_ALLOWLIST;
   installNotificationProviderForTests(null);
   vi.restoreAllMocks();
 });
@@ -118,8 +127,8 @@ describe("the case link on a verified payment (U4)", () => {
     const sent = capturingProvider();
     const first = await sweepPendingCaseLinks(50, db);
     const second = await sweepPendingCaseLinks(50, db);
-    expect(first).toEqual({ examined: 1, sent: 1, failed: 0, already_sent: 0 });
-    expect(second).toEqual({ examined: 0, sent: 0, failed: 0, already_sent: 0 });
+    expect(first).toEqual({ examined: 1, sent: 1, failed: 0, refused: 0, already_sent: 0 });
+    expect(second).toEqual({ examined: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 });
     expect(sent).toHaveLength(1);
     expect(sent[0]!.template).toBe("case_link");
     expect(sent[0]!.to).toBe("dana.test@example.com");
@@ -156,7 +165,7 @@ describe("the case link on a verified payment (U4)", () => {
     expect(JSON.stringify(db.calls)).not.toContain(token);
     expect(JSON.stringify(db.tokens)).not.toContain(token);
     expect(db.tokens[0]!.token_hash).toBe(hashToken(token));
-    expect(db.tokens[0]!.expires_at - db.now()).toBe(24 * 3_600 * 1_000);
+    expect(db.tokens[0]!.expires_at - db.now()).toBe(productOffer().access.link_token_ttl_hours * 3_600 * 1_000);
   });
 });
 

@@ -34,7 +34,7 @@
   },
   "second_product_sentence": "בדיקה ראשונית 9.99 ₪. אם יימצאו נקודות לבדיקה, קיים דוח מורחב בתשלום נפרד. המחיר מוצג לפני כל תשלום.",
   "access": {
-    "link_token_ttl_hours": 24,
+    "link_token_ttl_hours": 6,
     "challenge_cookie_minutes": 15,
     "code_ttl_minutes": 10,
     "code_max_attempts": 5,

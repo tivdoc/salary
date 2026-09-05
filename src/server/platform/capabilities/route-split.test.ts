@@ -107,10 +107,18 @@ describe("the differential against main's own route inventory (D4)", () => {
       expect(enginePattern.test(head), file).toBe(false);
       const diff = spawnSync("git", ["diff", "--numstat", MAIN, "HEAD", "--", file], { encoding: "utf8" }).stdout.trim();
       if (diff === "") continue;
-      // The guard: an import or two, the try/catch around the guard call, and for /api/health the runtime constant.
-      const [added, removed] = diff.split(/\s+/u).map(Number);
-      expect(added, `${file}: ${diff}`).toBeLessThanOrEqual(12);
-      expect(removed, `${file}: ${diff}`).toBeLessThanOrEqual(2);
+      // Site S5: a route the split declares REWRITTEN is exempt from the size budget and from
+      // nothing else — it still may not import the engine (asserted above) and still carries its
+      // guard (asserted below). A route without that declaration may differ only by the guard.
+      const rewritten = ROUTE_SPLIT.find((entry) => entry.route_file === file)?.rewritten_on_branch;
+      if (rewritten === undefined) {
+        // The guard: an import or two, the try/catch around the guard call, and for /api/health the runtime constant.
+        const [added, removed] = diff.split(/\s+/u).map(Number);
+        expect(added, `${file}: ${diff}`).toBeLessThanOrEqual(12);
+        expect(removed, `${file}: ${diff}`).toBeLessThanOrEqual(2);
+      } else {
+        expect(rewritten.length, `${file} must say why it was rewritten`).toBeGreaterThan(40);
+      }
       expect(head).toMatch(/guardStable(?:Http|App)Entrypoint\("CEP-\d{3}"/u);
     }
   });

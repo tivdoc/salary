@@ -29,7 +29,7 @@ export type NotificationMessage = Readonly<{
 }>;
 
 export type NotificationOutcome = Readonly<{
-  state: "sent" | "failed";
+  state: "sent" | "failed" | "refused";
   provider: string;
   error_code: string | null;
   payload_sha256: string;
@@ -114,12 +114,62 @@ export function resolveNotificationProvider(): NotificationProvider {
   return noProvider;
 }
 
+/**
+ * Site S1.5 / U2. Outside production, a message may only go to a recipient on
+ * `DELIVERY_RECIPIENT_ALLOWLIST` — a comma-separated list of addresses and
+ * phone numbers.
+ *
+ * Two decisions worth stating. It FAILS CLOSED: in a non-production
+ * environment with the variable unset, every recipient is refused, because the
+ * alternative is a run that quietly reaches whoever happens to be in the
+ * fixture data — the seven dummy cases carry real-looking contacts. And it
+ * refuses BEFORE the provider is touched, so a refusal costs no network call
+ * and cannot appear in a provider's own logs.
+ *
+ * In production the list is not consulted: the recipients there are customers.
+ */
+export function deliveryAllowlist(): readonly string[] {
+  return (process.env.DELIVERY_RECIPIENT_ALLOWLIST ?? "")
+    .split(",")
+    .map((entry) => normalizeRecipient(entry))
+    .filter((entry) => entry.length > 0);
+}
+
+/** Same shape for both channels: lowercase, and for a phone only the digits, so 05x-xxx and +9725x compare equal. */
+function normalizeRecipient(value: string): string {
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed.includes("@")) return trimmed;
+  const digits = trimmed.replace(/[^0-9]/gu, "");
+  // An Israeli number is the same line whether it is written 0585960615 or +972585960615.
+  return digits.startsWith("972") ? `0${digits.slice(3)}` : digits;
+}
+
+export function isProductionDelivery(): boolean {
+  return process.env.VERCEL_ENV === "production" || (process.env.NODE_ENV === "production" && process.env.VERCEL === "1");
+}
+
+/** Why this recipient may not be written to, or null when it may. */
+export function recipientRefusal(to: string): string | null {
+  if (isProductionDelivery()) return null;
+  const allowed = deliveryAllowlist();
+  if (allowed.length === 0) return "delivery_allowlist_not_configured";
+  return allowed.includes(normalizeRecipient(to)) ? null : "recipient_not_allowlisted";
+}
+
 export function payloadDigest(message: NotificationMessage): string {
   return createHash("sha256").update(`${message.template}|${message.channel}|${message.to}|${message.subject}|${message.body}`, "utf8").digest("hex");
 }
 
 export async function sendNotification(message: NotificationMessage, provider: NotificationProvider = resolveNotificationProvider()): Promise<NotificationOutcome> {
   const digest = payloadDigest(message);
+  // U2: the allowlist is checked here, at the one place every send passes
+  // through, and before the provider exists in the story — a refused recipient
+  // costs no network call.
+  const refusal = recipientRefusal(message.to);
+  if (refusal !== null) {
+    console.warn(`delivery refused: ${refusal} template=${message.template} channel=${message.channel}`);
+    return { state: "refused", provider: provider.id, error_code: refusal, payload_sha256: digest };
+  }
   const result = await provider.send(message);
   return result.ok
     ? { state: "sent", provider: provider.id, error_code: null, payload_sha256: digest }

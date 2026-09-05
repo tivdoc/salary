@@ -143,7 +143,7 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
       return found ? [{ case_id: found.id, public_id: found.public_id, email: found.email, phone: found.phone, first_name: found.first_name, payment_verified: found.payment_verified, contact_verified: found.contact_verified_at !== null && found.contact_verified_at !== undefined, contact_verified_channel: found.contact_verified_channel ?? null }] : [];
     },
     case_access_pending_links(a) {
-      return state.cases.filter((found) => found.payment_verified && found.contact_verified_at && !state.tokens.some((token) => token.case_id === found.id && token.purpose === "payment_verified" && token.send_state === "sent"))
+      return state.cases.filter((found) => found.payment_verified && found.contact_verified_at && !state.tokens.some((token) => token.case_id === found.id && token.purpose === "payment_verified" && (token.send_state === "sent" || token.send_state === "refused")))
         .slice(0, n(a.target_limit)).map((found) => ({ case_id: found.id }));
     },
     case_access_token_for_case(a) {
