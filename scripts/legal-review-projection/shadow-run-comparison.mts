@@ -153,9 +153,16 @@ async function main(): Promise<void> {
   });
 
   // 5. L12-3 / D3: the default-transition table, within the current run.
+  // Keyed by the decision's own key (the part after ".decision."), never by
+  // a literal tenant id: the reference tenant is one named constant (guard 1).
   const BAND_MONTHS: Readonly<Record<string, string>> = {
-    "legal.reference.il.decision.pension_wage_cap_section": "synthetic.pension.edge.wage_between_caps",
-    "legal.reference.il.decision.min_wage_hourly_divisor": "synthetic.minimum_wage.edge.hourly_between_divisors",
+    pension_wage_cap_section: "synthetic.pension.edge.wage_between_caps",
+    min_wage_hourly_divisor: "synthetic.minimum_wage.edge.hourly_between_divisors",
+  };
+  const DECISION_SEGMENT = ".decision.";
+  const decisionKeyOf = (decisionId: string): string => {
+    const at = decisionId.lastIndexOf(DECISION_SEGMENT);
+    return at < 0 ? decisionId : decisionId.slice(at + DECISION_SEGMENT.length);
   };
   const transitions = current.comparison.map((after) => {
     const decisionId = after.decision_id;
@@ -172,7 +179,7 @@ async function main(): Promise<void> {
       return outputKey(before) !== outputKey(now);
     });
     const defaultChanged = preResolutionDefault !== newDefault;
-    const bandMonth = BAND_MONTHS[decisionId] ?? null;
+    const bandMonth = BAND_MONTHS[decisionKeyOf(decisionId)] ?? null;
     const bandPresent = bandMonth ? after.cases.some((row) => row.case_id === bandMonth) : false;
     const classification = !defaultChanged ? "a" : changedCases.length > 0 ? "b" : "c";
     if (bandMonth && !bandPresent) failures.push(`band month missing from the corpus: ${decisionId}:${bandMonth}`);
