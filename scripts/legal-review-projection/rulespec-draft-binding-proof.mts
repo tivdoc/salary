@@ -12,6 +12,7 @@
 // read is `private.governance_aggregate_read`, which is what this uses, and
 // which reports the state and — the part that matters — `activation_allowed`.
 import "../production-refusal.mjs";
+import { verifyDerivation } from "../../src/engine/legal-operations/derivation.ts";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -79,6 +80,25 @@ async function main(): Promise<void> {
     record("every_bound_parameter_exists", missing.length === 0, `bound=${bound.length} missing=${missing.join(",") || "none"}`);
     record("every_bound_parameter_is_draft", notDraft.length === 0, notDraft.join(",") || "all draft");
     record("no_bound_parameter_is_activatable", activatable.length === 0, activatable.join(",") || "activation_allowed=false for all");
+
+    // --- L12-1 / D1: every derived figure the drafts bind is recomputed from
+    // its own stored record (inputs, assumption slot, steps, identity); a
+    // record that does not reproduce is a refusal, not a binding.
+    const derivationFailures: string[] = [];
+    let derivationsChecked = 0;
+    for (const id of bound) {
+      const at = id.lastIndexOf("@");
+      const content = await client.query(statement("q_aggregate_content",
+        "select content_json from private.governance_aggregate_read($1,$2,$3,$4)",
+        [TENANT, "parameter_approval", id.slice(0, at), id.slice(at + 1)]));
+      const row = content.rows[0] as unknown as { content_json?: { provenance_grade?: string; derivation?: unknown } } | undefined;
+      const json = row?.content_json;
+      if (!json || (json.provenance_grade !== "derived" && json.derivation === undefined)) continue;
+      derivationsChecked += 1;
+      if (json.provenance_grade !== "derived" || json.derivation === undefined) { derivationFailures.push(`${id}:grade_and_record_unpaired`); continue; }
+      try { verifyDerivation(json.derivation); } catch (error) { derivationFailures.push(`${id}:${(error as Error).message}`); }
+    }
+    record("every_derived_parameter_recomputes_from_its_record", derivationFailures.length === 0, `checked=${derivationsChecked} failed=${derivationFailures.join(",") || "none"}`);
 
     // --- Case 2: every slot the drafts leave unbound really has nothing to bind.
     // An unbound slot whose parameter turned out to exist would mean a draft is

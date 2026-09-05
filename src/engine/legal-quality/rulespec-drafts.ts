@@ -126,7 +126,16 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   // decision working_time_daily_threshold has one bound branch (statute) and
   // one unbound (administrative, BL-24), so it is carried on the spec and in
   // the decision register rather than as a two-branch slot here.
-  { parameter_id: "il.working_time.daily_overtime_threshold_hours", versions: ["1951.1.0"] },
+  // L12-1 / D1 (batch 20): the administrative branch is bound now, to the
+  // derived five-day norm (43/5 hours, grade derived, assumption
+  // five_day_even_distribution), beside the statute's eight; the short day
+  // (38/5) is registered from the same record.
+  {
+    parameter_id: "il.working_time.daily_overtime_threshold_hours", versions: ["1951.1.0", "2018.1.0"],
+    decision_id: "legal.reference.il.decision.working_time_daily_threshold",
+    branches: [["statute", "1951.1.0"], ["administrative", "2018.1.0"]],
+  },
+  { parameter_id: "il.working_time.short_day_overtime_threshold_hours", versions: ["2018.1.0"] },
   {
     parameter_id: "il.pension.mandatory_wage_cap", versions: ["2026.1.0", "2026.2.0"],
     decision_id: "legal.reference.il.decision.pension_wage_cap_section",

@@ -1,3 +1,4 @@
+import { derivationRecordSchema } from "./derivation.ts";
 import { z } from "zod";
 import { isoDateSchema, isoTimestampSchema, moneySchema, versionSchema } from "../domain/primitives.ts";
 import { WAVE3_TOPICS } from "../wave3/contracts.ts";
@@ -194,7 +195,8 @@ export const dependencyBindingsSchema = z.object({
 }).strict().readonly();
 
 // L11-5 / D3.6: agreement_interpretation joins the ladder, below administrative.
-export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative", "agreement_interpretation"] as const;
+// L12-1 / D1: derived joins the ladder between selection and inferred_visual.
+export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "derived", "inferred_visual", "administrative", "agreement_interpretation"] as const;
 export const provenanceGradeSchema = z.enum(PROVENANCE_GRADES);
 export const visualBindingSchema = z.object({
   page_pdf_sha256: legalOperationsSha256Schema,
@@ -230,7 +232,13 @@ export const parameterCandidateSchema = z.object({
   // inferred_visual, and one that says so must carry them.
   provenance_grade: provenanceGradeSchema.optional(),
   visual_bindings: z.array(visualBindingSchema).min(1).readonly().optional(),
+  // L12-1 / D1. A derived figure carries the record it was computed from —
+  // inputs by chunk, the mandatory assumption slot, the steps, the identity —
+  // and is graded `derived`, never anything else. Optional, so every candidate
+  // registered before the field existed keeps its hash.
+  derivation: derivationRecordSchema.optional(),
 }).strict().superRefine((candidate, context) => {
+  if ((candidate.derivation !== undefined) !== (candidate.provenance_grade === "derived")) context.addIssue({ code: "custom", message: "parameter_derivation_grade_unpaired", path: ["derivation"] });
   // Visual bindings travel with any candidate that has a visual citation, and
   // such a candidate's grade is inferred_visual or worse; a candidate that
   // claims the inferred_visual grade must carry them.

@@ -143,6 +143,7 @@ const GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
   lexicon: "מילה שנקראה דרך הלקסיקון",
   selection: "בתוך בחירת מסמך",
   inferred_visual: "נקרא מתמונת העמוד — ממתין לאימות חזותי",
+  derived: "נגזר — חישוב על טקסט מצוטט בתוספת הנחה מוצהרת; לא לשון המקור",
   administrative: "מקור מנהלי",
   agreement_interpretation: "פרשנות של הסכם או צו הרחבה (ועדת היגוי, כל־זכות) — לא מקור רשמי",
 });

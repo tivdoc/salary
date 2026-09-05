@@ -15,7 +15,8 @@
 //   lexicon       a parameter bound through the numeral lexicon
 //   declared      an input declared by the person (or a parameter bound via
 //                 an instrument selection — a choice, not a reading)
-//   derived       an input computed from other facts
+//   derived       an input computed from other facts — or, L12-1, a parameter
+//                 derived by arithmetic on cited text plus a declared assumption
 //   inferred      an input produced by an agent, or a parameter read from a
 //                 page image awaiting visual confirmation
 //   administrative a parameter from an administrative source (unbound today)
@@ -48,6 +49,7 @@ const PARAMETER_RUNG: Readonly<Record<ProvenanceGrade, ExecutionGrade>> = Object
   text_verified: "verified",
   lexicon: "lexicon",
   selection: "declared",
+  derived: "derived",
   inferred_visual: "inferred",
   administrative: "administrative",
   agreement_interpretation: "agreement_interpretation",

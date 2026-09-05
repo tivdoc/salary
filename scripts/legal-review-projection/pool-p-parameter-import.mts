@@ -61,13 +61,14 @@
 // bindings_sha256 across every dependent run, report and grant) stays
 // deferred to Session B; this only makes the hash itself complete.
 import * as fs from "node:fs";
+import { DERIVED_GRADE, derivationSha256, verifyDerivation, type DerivationRecord } from "../../src/engine/legal-operations/derivation.ts";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { assertUsableAnchor, checkCitationAnchor } from "../../src/engine/legal-knowledge/citation-anchor.ts";
 import { bindCompoundThroughLexicon, bindThroughLexicon } from "../../src/engine/legal-knowledge/numeral-lexicon-v1.ts";
-import { buildVisualCitation, visualBindingOf, worstProvenance, type ProvenanceGrade, type VisualCitation, type VisualRegionInput } from "../../src/engine/legal-knowledge/visual-citation-v1.ts";
+import { buildVisualCitation, PROVENANCE_GRADES, visualBindingOf, worstProvenance, type ProvenanceGrade, type VisualCitation, type VisualRegionInput } from "../../src/engine/legal-knowledge/visual-citation-v1.ts";
 import { extractPagePdf, pageMediaBox, renderPageForReading, sha256 as bytesSha256 } from "./visual-page.mts";
 import { frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";
 import { parameterCandidateSchema, type DependencyBindings, type ParameterCandidate } from "../../src/engine/legal-operations/contracts.ts";
@@ -533,6 +534,7 @@ function buildBindings(input: Readonly<{
   value: unknown;
   unit: string;
   rounding_policy: string;
+  derivation_sha256?: string;
 }>): DependencyBindings {
   const sourceRefs = [...new Map(input.citations.map((c) => [`${c.source.source_id}@${c.source.source_version}`, c.source])).values()]
     .sort((a, b) => `${a.source_id}@${a.source_version}`.localeCompare(`${b.source_id}@${b.source_version}`));
@@ -564,7 +566,7 @@ function buildBindings(input: Readonly<{
       // The grade rides into the hash only when it is not the default, so
       // every text-verified candidate registered before grades existed keeps
       // its hash; a lexicon or selection citation already carried its own key.
-      ...(c.provenance === "inferred_visual" || c.provenance === "administrative" || c.provenance === "agreement_interpretation" ? { provenance: c.provenance } : {}),
+      ...(c.provenance === "inferred_visual" || c.provenance === "administrative" || c.provenance === "agreement_interpretation" || c.provenance === "derived" ? { provenance: c.provenance } : {}),
       ...(c.visual ? { visual: c.visual } : {}),
     }));
   return computeElevenDimensionBindings({
@@ -572,6 +574,7 @@ function buildBindings(input: Readonly<{
     value: input.value, unit: input.unit, effective_from: input.effective_from, effective_to: input.effective_to,
     sectors: input.sectors, populations: input.populations,
     parameter_id: input.parameter_id, parameter_version: input.parameter_version, rounding_policy: input.rounding_policy,
+    ...(input.derivation_sha256 ? { derivation_sha256: input.derivation_sha256 } : {}),
   });
 }
 
@@ -590,6 +593,8 @@ export type DraftParameterInput = Readonly<{
   citations: readonly Citation[];
   decision_id?: string | null;
   branch?: string | null;
+  // L12-1 / D1: a derived figure carries the record it was computed from.
+  derivation?: DerivationRecord;
 }>;
 
 function provenanceFields(citations: readonly Citation[]): { provenance_grade?: ProvenanceGrade; visual_bindings?: readonly { page_pdf_sha256: string; visual_reading: string }[] } {
@@ -605,10 +610,24 @@ function provenanceFields(citations: readonly Citation[]): { provenance_grade?: 
 
 export function buildCandidate(input: DraftParameterInput): ParameterCandidate {
   const operativeSourceVersionIds = [...new Set(input.citations.map((c) => `${c.source.source_id}@${c.source.source_version}`))];
+  // L12-1 / D1: a derived figure is recomputed from its own record before it
+  // binds — a failed identity or a missing assumption is a refusal here, not a
+  // row. Its inputs must be text-verified citations: a derivation over a
+  // page-image reading or an administrative figure would launder the grade.
+  const derivation = input.derivation ? verifyDerivation(input.derivation) : null;
+  if (derivation) {
+    const weak = input.citations.filter((c) => PROVENANCE_GRADES.indexOf(c.provenance) > PROVENANCE_GRADES.indexOf("selection"));
+    if (weak.length > 0) throw new Error(`POOL_P_DERIVATION_INPUT_GRADE_TOO_WEAK:${weak.map((c) => c.provenance).join(",")}`);
+    const value = input.value;
+    if (value.kind !== "rational") throw new Error("POOL_P_DERIVED_VALUE_MUST_BE_RATIONAL");
+    const matches = [derivation.outputs.regular_day, derivation.outputs.short_day].some((output) => output.numerator === value.numerator && output.denominator === value.denominator && output.unit === value.unit);
+    if (!matches) throw new Error("POOL_P_DERIVED_VALUE_NOT_AN_OUTPUT_OF_ITS_RECORD");
+  }
   const bindings = buildBindings({
     topic: input.topic, citations: input.citations, effective_from: input.effective_from, effective_to: input.effective_to,
     sectors: input.sectors, populations: input.populations, parameter_id: input.parameter_id,
     parameter_version: input.parameter_version, value: input.value, unit: input.unit, rounding_policy: input.rounding_policy,
+    ...(derivation ? { derivation_sha256: derivationSha256(derivation) } : {}),
   });
   const seed = frozen({
     schema_version: "tivdoc-parameter-candidate-v0.6.0" as const,
@@ -630,7 +649,7 @@ export function buildCandidate(input: DraftParameterInput): ParameterCandidate {
     // L6-2 / D1: the grade and, for a visual reading, what an attestation must
     // confirm. Present only when the grade is below what the text alone gives,
     // so earlier candidates keep their hashes.
-    ...provenanceFields(input.citations),
+    ...(derivation ? { provenance_grade: DERIVED_GRADE, derivation } : provenanceFields(input.citations)),
   });
   return parameterCandidateSchema.parse({ ...seed, candidate_sha256: legalOperationsSha256(seed) });
 }

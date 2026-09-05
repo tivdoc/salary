@@ -125,6 +125,10 @@ export const OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD = "legal.reference.il.
 // L6-5 / D7: which instrument governs the contribution shares — the 2011
 // order's last row (1.1.2014) or the 2016 increase order (1.1.2017).
 export const OPEN_DECISION_PENSION_2011_2016_PRECEDENCE = "legal.reference.il.decision.pension_2011_2016_precedence";
+// L12-1 / D1: the daily threshold carries two bound branches now — the
+// statute's eight hours and the derived five-day norm — so the slot names
+// the decision it always belonged to.
+export const OPEN_DECISION_WORKING_TIME_DAILY_THRESHOLD = "legal.reference.il.decision.working_time_daily_threshold";
 
 const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>> = Object.freeze({
   minimum_wage: [
@@ -138,7 +142,9 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
     { name: "weekly_overtime_threshold", parameter_id: "il.working_time.weekly_overtime_threshold_hours", unit: "hours_per_week" },
     // L7-9 / D6: the day's threshold, §2 of the 1951 law (eight hours). The
     // administrative 8.6 / 7.6 reading is BL-24 and is not a registered branch.
-    { name: "daily_overtime_threshold", parameter_id: "il.working_time.daily_overtime_threshold_hours", unit: "hours" },
+    { name: "daily_overtime_threshold", parameter_id: "il.working_time.daily_overtime_threshold_hours", unit: "hours", decision_id: OPEN_DECISION_WORKING_TIME_DAILY_THRESHOLD },
+    // L12-1 / D1: the shortened day of a five-day week, derived beside the regular day.
+    { name: "short_day_overtime_threshold", parameter_id: "il.working_time.short_day_overtime_threshold_hours", unit: "hours" },
     { name: "overtime_first_tier_rate", parameter_id: "il.working_time.overtime_rate_first_tier", unit: "ratio" },
     // L6-3 / D1: §16(א)'s second tier and §17(א)(1)'s weekly-rest premium.
     { name: "overtime_second_tier_rate", parameter_id: "il.working_time.overtime_rate_second_tier", unit: "ratio" },

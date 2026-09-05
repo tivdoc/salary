@@ -35,7 +35,10 @@ export const PROVENANCE_INFERRED_VISUAL = "inferred_visual" as const;
  * committee's 8.6 / 7.6 daily norm under the 42-hour order, as reported by
  * kolzchut), below an administrative source and above nothing.
  */
-export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative", "agreement_interpretation"] as const;
+// L12-1 / D1: `derived` — arithmetic on cited text plus one declared assumption,
+// recomputed before it binds (src/engine/legal-operations/derivation.ts). Below a
+// selection, above a page-image reading: exact, but resting on an assumption.
+export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "derived", "inferred_visual", "administrative", "agreement_interpretation"] as const;
 export type ProvenanceGrade = typeof PROVENANCE_GRADES[number];
 
 export function worstProvenance(grades: readonly ProvenanceGrade[]): ProvenanceGrade {

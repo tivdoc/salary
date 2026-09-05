@@ -55,6 +55,12 @@ export type ElevenDimensionInput = Readonly<{
   parameter_id: string;
   parameter_version: string;
   rounding_policy: string;
+  // L12-1 / D1 (R-8): a derived parameter's record — inputs, the assumption
+  // slot, the steps, the identity — hashes into the parameter-set dimension,
+  // so a changed assumption is a changed binding and a stale attestation is
+  // refused. Absent for every candidate that is not derived, so their hashes
+  // are exactly what they were.
+  derivation_sha256?: string;
 }>;
 
 export function computeElevenDimensionBindings(input: ElevenDimensionInput): DependencyBindings {
@@ -66,6 +72,7 @@ export function computeElevenDimensionBindings(input: ElevenDimensionInput): Dep
     parameter_set_sha256: legalOperationsSha256({
       parameter_id: input.parameter_id, parameter_version: input.parameter_version,
       value: input.value, unit: input.unit, rounding_policy: input.rounding_policy,
+      ...(input.derivation_sha256 ? { derivation_sha256: input.derivation_sha256 } : {}),
     }),
     rule_spec_sha256: sentinel("rule_spec", input.topic),
     golden_cases_sha256: sentinel("golden_cases", input.topic),

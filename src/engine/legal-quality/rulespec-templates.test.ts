@@ -9,6 +9,7 @@ import {
   OPEN_DECISION_PENSION_WAGE_CAP_SECTION,
   OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
   OPEN_DECISION_PENSION_2011_2016_PRECEDENCE,
+  OPEN_DECISION_WORKING_TIME_DAILY_THRESHOLD,
   assertRuleSpecTemplateBindable,
   buildRuleSpecTemplate,
   buildSevenRuleSpecTemplates,
@@ -111,6 +112,7 @@ describe("R-2 blank RuleSpec templates", () => {
       OPEN_DECISION_PENSION_WAGE_CAP_SECTION,
       OPEN_DECISION_CONVALESCENCE_2026_RATE_PERIOD,
       OPEN_DECISION_PENSION_2011_2016_PRECEDENCE,
+      OPEN_DECISION_WORKING_TIME_DAILY_THRESHOLD,
     ]));
     expect(byTopic.get("minimum_wage")!.parameter_slots.find((slot) => slot.slot_id.endsWith("hourly_floor"))!.decision_id)
       .toBe(OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR);

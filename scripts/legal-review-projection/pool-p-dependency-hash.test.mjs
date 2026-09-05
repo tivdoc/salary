@@ -94,6 +94,12 @@ describe("Addendum 7 A7-2: dependency-hash formula covers all eleven dimensions"
     expect(hashOf({ populations: ["youth_16_17"] })).not.toBe(baseline);
   });
 
+  it("L12-1 / D1 (R-8) — a derived parameter's assumption: the derivation digest moves the hash, and its absence leaves every earlier hash alone", () => {
+    expect(hashOf({ derivation_sha256: "e".repeat(64) })).not.toBe(baseline);
+    expect(hashOf({ derivation_sha256: "f".repeat(64) })).not.toBe(hashOf({ derivation_sha256: "e".repeat(64) }));
+    expect(hashOf({ derivation_sha256: undefined })).toBe(baseline);
+  });
+
   it("dim 10 — dossier SHA-256: a revised research dossier moves the hash", () => {
     expect(hashOf({ dossierSha256: "d".repeat(64) })).not.toBe(baseline);
   });

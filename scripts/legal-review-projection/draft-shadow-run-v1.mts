@@ -16,6 +16,7 @@
 // Nothing here is a finding. Every output is a synthetic_shadow_delta or a
 // refusal; delivery_allowed is false on the envelope, the run and the receipt.
 import "../production-refusal.mjs";
+import { verifyDerivation } from "../../src/engine/legal-operations/derivation.ts";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -50,7 +51,7 @@ const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "tok
 // one run, each direction deliberate (L4-6 / D4, BL-17).
 const PROOF_SESSION = { sid: "session.synthetic.proof.shadow", jti: "token.synthetic.proof.shadow", subject: "system_import" };
 const sha256 = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
-const GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative", "agreement_interpretation"] as const;
+const GRADES = ["text_verified", "lexicon", "selection", "derived", "inferred_visual", "administrative", "agreement_interpretation"] as const;
 type Grade = (typeof GRADES)[number];
 
 function toInput(value: ParameterValue): RuleSpecInputValue["value"] {
@@ -105,8 +106,13 @@ async function main(): Promise<void> {
         "select state, content_json from private.governance_aggregate_read($1,$2,$3,$4)",
         [TENANT, "parameter_approval", parameterId, version]));
       if (row.row_count !== 1) throw new Error(`L76_PARAMETER_MISSING:${key}`);
-      const value = row.rows[0] as unknown as { state: string; content_json: { value: ParameterValue; provenance_grade?: string } };
+      const value = row.rows[0] as unknown as { state: string; content_json: { value: ParameterValue; provenance_grade?: string; derivation?: unknown } };
       const grade = value.content_json.provenance_grade;
+      // L12-1 / D1: a derived figure is recomputed from its record before the
+      // shadow binds it; a record that does not reproduce is not bound.
+      if (grade === "derived" || value.content_json.derivation !== undefined) {
+        try { verifyDerivation(value.content_json.derivation); } catch (error) { throw new Error(`L76_DERIVATION_INVALID:${key}:${(error as Error).message}`); }
+      }
       // A version registered before candidates carried a grade (batches 1–10) is
       // graded by its batch receipt in report v5; here the run reads the grade
       // the report resolved, so the two never disagree.
