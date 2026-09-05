@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { initialCheckPriceNumber } from "./product-offer";
 
 export const META_GRAPH_API_VERSION = "v26.0";
 
@@ -135,5 +136,5 @@ export function isVerifiedMetaPurchase(input: {
   amount: number;
   currency: string;
 }) {
-  return input.status === "verified" && input.amount === 9.99 && input.currency === "ILS";
+  return input.status === "verified" && input.amount === initialCheckPriceNumber() && input.currency === "ILS";
 }

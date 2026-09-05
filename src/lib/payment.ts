@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
+import { initialCheckPriceNumber, productOffer } from "./product-offer";
 
-export const INITIAL_CHECK_PRICE = 9.99;
-export const INITIAL_CHECK_CURRENCY = "ILS";
+// UX Run 1 / U9 (D-4.3): the price is configuration; this constant only names it for the payment provider.
+export const INITIAL_CHECK_PRICE = initialCheckPriceNumber();
+export const INITIAL_CHECK_CURRENCY = productOffer().currency;
 export const INVOICE4U_CHECKOUT_TTL_MS = 10 * 60 * 1000;
 export const PAYMENT_RETURN_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 

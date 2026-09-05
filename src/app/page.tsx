@@ -2,6 +2,7 @@ import { ArrowLeft, ShieldCheck } from "@phosphor-icons/react/dist/ssr";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { TrackedLink } from "@/components/tracked-link";
+import { formatPrice, productOffer } from "@/lib/product-offer";
 import { DocumentLayers } from "@/components/landing/document-layers";
 import { ExampleResult } from "@/components/landing/example-result";
 import { Faq } from "@/components/landing/faq";
@@ -95,7 +96,7 @@ export default async function Home() {
               <p>את התלוש הבא כבר תסתכל עליו אחרת.</p>
               <h2 id="final-title">תבדוק לפני התלוש הבא.</h2>
               <TrackedLink className="button button--primary button--large" href="/check" eventName="start_check">
-                התחל בדיקה <span aria-hidden="true">|</span> 9.99 ₪
+                התחל בדיקה <span aria-hidden="true">|</span> {formatPrice(productOffer().initial_check.price)}
               </TrackedLink>
               <span>תלוש אחד מספיק כדי להתחיל.</span>
             </div>

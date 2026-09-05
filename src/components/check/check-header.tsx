@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { formatPrice, productOffer } from "@/lib/product-offer";
 
 const steps = [
   { path: "/check", label: "כמה פרטים" },
@@ -21,7 +22,7 @@ export function CheckHeader() {
           <span className="wordmark__mark" aria-hidden="true">T</span>
           Tivdoc
         </Link>
-        <span className="check-header__price mono">9.99 ₪</span>
+        <span className="check-header__price mono">{formatPrice(productOffer().initial_check.price)}</span>
       </div>
       <div className="check-shell check-progress" aria-label={`שלב ${current + 1} מתוך ${steps.length}`}>
         {steps.map((step, index) => (

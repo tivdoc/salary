@@ -1,3 +1,5 @@
+import { initialCheckPriceNumber } from "./product-offer";
+
 export type Ga4PurchaseClaim = {
   paymentId: string;
   eventId: string;
@@ -54,7 +56,7 @@ export function buildGa4PurchasePayload(input: Ga4PurchaseEventInput) {
 }
 
 export function isVerifiedGa4Purchase(claim: Ga4PurchaseClaim) {
-  return claim.status === "verified" && claim.amount === 9.99 && claim.currency === "ILS";
+  return claim.status === "verified" && claim.amount === initialCheckPriceNumber() && claim.currency === "ILS";
 }
 
 export async function processVerifiedGa4Purchase(

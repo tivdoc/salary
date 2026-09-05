@@ -1,6 +1,7 @@
 "use client";
 
 import type { MetaConversionEventName, MetaEventDescriptor } from "./meta-events";
+import { initialCheckPriceNumber } from "./product-offer";
 
 type MetaBrowserEventName = MetaConversionEventName | "PageView" | "ViewContent";
 type MetaCustomData = Record<string, string | number>;
@@ -96,7 +97,7 @@ export function metaEventDescriptor(value: unknown): MetaEventDescriptor | null 
   }
   if (
     candidate.eventName === "Purchase" &&
-    (candidate.customData?.value !== 9.99 || candidate.customData.currency !== "ILS")
+    (candidate.customData?.value !== initialCheckPriceNumber() || candidate.customData.currency !== "ILS")
   ) {
     return null;
   }

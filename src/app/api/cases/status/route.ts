@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentVerified } from "@/lib/case-status";
+import { initialCheckPriceNumber, productOffer } from "@/lib/product-offer";
 import { deliverVerifiedMetaPurchase } from "@/lib/meta-purchase";
 import { deliverVerifiedGa4Purchase } from "@/lib/ga4-server";
 import { verifyPendingInvoice4uPayment } from "@/lib/verify-payment";
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
         ? {
             eventName: "Purchase",
             eventId: payment.meta_purchase_event_id,
-            customData: { value: 9.99, currency: "ILS" },
+            customData: { value: initialCheckPriceNumber(), currency: productOffer().currency },
           }
         : null;
     return NextResponse.json(

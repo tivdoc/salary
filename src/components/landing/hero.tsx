@@ -1,4 +1,5 @@
 import { TrackedLink } from "@/components/tracked-link";
+import { formatPrice, productOffer } from "@/lib/product-offer";
 import { SamplePayslip } from "./sample-payslip";
 
 export function Hero() {
@@ -16,7 +17,7 @@ export function Hero() {
           </p>
           <div className="hero__actions">
             <TrackedLink className="button button--primary button--large" href="/check" eventName="start_check">
-              התחל בדיקה <span aria-hidden="true">|</span> 9.99 ₪
+              התחל בדיקה <span aria-hidden="true">|</span> {formatPrice(productOffer().initial_check.price)}
             </TrackedLink>
             <span>תלוש אחד מספיק. לוקח כמה דקות.</span>
           </div>

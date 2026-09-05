@@ -3,6 +3,7 @@ import {
   type MetaCapiEventInput,
   type MetaCustomerData,
 } from "./meta-events";
+import { initialCheckPriceNumber, productOffer } from "./product-offer";
 
 export type MetaPurchaseClaim = {
   paymentId: string;
@@ -49,7 +50,7 @@ export async function processVerifiedMetaPurchase(
       eventId: claim.eventId,
       eventSourceUrl,
       customer: { ...customer, ...requestCustomerData },
-      customData: { value: 9.99, currency: "ILS" },
+      customData: { value: initialCheckPriceNumber(), currency: productOffer().currency },
     });
   } catch (error) {
     await dependencies.release(claim);
