@@ -4749,68 +4749,219 @@ this section's declines, any Cloudflare change, any message to any contact, prin
 secret value, keygen/register of a real identity, attestation, activating any channel, `npm install`,
 a worktree, an import from the engine into `product_runtime`, editing a blocked or superseded record.
 
+## Long run 10 (6.9.2026) — errata remainder, the home page, the delivery allowlist, documents by slot
+
+Five phases in one session: Gate 0, the L13-5 remainder (A), site wave S5 (B), the
+provider-independent half of S1.5 (C), and the core of S2 (D). Phase E did not run.
+
+**Gate 0.** `gh` authenticated; the Vercel CLI is not installed on this machine; `wrangler`
+authenticated. No `.env.local` exists, so 0 of the four production variables and no provider —
+which is what blocks phase E. DNS for tivdoc.com: no MX, no SPF, no DMARC; the apex TXT carries a
+verification UUID and a Facebook record. The owner's statement that domain verification was done
+therefore **disagrees** with what the DNS shows, and the statement that a reviewer identity was
+registered **disagrees** with DEV, which holds 0 identities and 0 attestations. Both are recorded,
+neither is interpreted.
+
+**A correction to the brief's own settled list, because acting on it would destroy data.** The
+brief states that the Supabase project the owner sees as empty (9 tables, 0 rows, 5 migrations) "is
+not the runs' DEV". It is. `TIVDOC_DEV_PROJECT_REF` names `cpzrbidxftzqcfeqqusu`, the same ref the
+owner named, and Gate 0's own check reports `same_project_as_owner_named: true`. That database holds
+86 tables (50 public, 36 private), 62 parameter versions, 8 resolution rows and 25 schema-metadata
+rows. Why it can look empty from the dashboard: the governance tables are in the `private` schema,
+not `public`, and the CLI's `supabase_migrations.schema_migrations` table does not exist here at all
+(this project's chain is applied by `output/next/apply-migration.mjs`, which is why a dashboard
+migration count of five bears no relation to the chain's 63). **If that project is deleted or reset
+as unused, every run's DEV evidence goes with it.**
+
+**A — L13-5's remainder.** E2: the base rule behind Q4 is a real Pool P draft parameter now
+(`il.working_time.regular_wage_includes_fixed_contractual_premiums@1951.1.0`, batch 21), text-bound
+through the table-aware chunk set to §18's own words — `לענין הסעיפים 16 ו-17 "שכר רגיל" כולל כל
+התוספות שמעביד משלם לעובדו`. A deviation from the instruction, stated rather than hidden: E2 said to
+grade it `text_verified` only if bound from the DECISION text and `lexicon` otherwise, assuming the
+judgment would be the only source. The judgment is not in the corpus and cannot be (BL-32), but §18
+states the proposition directly, so it binds to the statute — stronger evidence than the instruction
+anticipated, not weaker. The judgment is named in the locator as interpretive authority, never cited
+as a bound source. One follow-up the batch receipt hid: Gate 0 kept reading 61 versions because the
+census enumerates `REGISTERED_DRAFT_PARAMETERS` and reads each from the database rather than
+enumerating the database — a parameter registered without being declared is invisible to it. Declared;
+Gate 0 reads 62.
+
+E5: **no new candidates, because the work was already done.** The DEV census holds every element of
+§3(א) — years 1-5 (16), year 6 (18), year 7 (21), the 28 ceiling, the +1 per-year increment, both
+accrual thresholds (200 full year / 240 part year), the 2016 interim provision, and the mis-scoped
+`years_1_to_4` row properly superseded. A first draft of a batch 21 for vacation would have
+registered duplicates under new ids; the database census, not the receipt scan, caught it. Recorded
+while there: 22 through 27 are deliberately not registered as text-bound values, because §3(א) states
+an increment and a ceiling and never those numbers — and a digit needle for "22" would match some
+unrelated section of the same chunk, which is the "citation-checked but still wrong" failure batches 7
+and 8 exist to prevent.
+
+E6/E7 and the tag: report **v10** (`f584847f…`) and package **v15** (manifest `4d054bbb…`, 51 items)
+carry `legal_basis: opinion_3ddad7e8 + errata_1_owner_closed`, and the errata table E1-E7 travels in
+the report with what each item did NOT change. The resolutions block no longer claims one basis for
+all six: four rest on the opinion, two are re-recordings under `external_review_correction`, each
+naming the revision it supersedes, and the statement says plainly that no professional reviewed the
+corrected wording. Both generators learned that resolutions are append-only by revision — they read
+the latest per decision and verify every superseded revision still reads back byte-identical. Before
+this they compared row counts and would have refused any re-recording; the guard caught it, not a
+reviewer. The Q6 supersession label is one constant again, the shipped string, per the owner.
+
+**B — site wave S5, the home page.** Rebuilt on the canvas's direction B with the site's own
+components: navy hero, common actions, three steps, what we check, the payroll-controller band,
+pricing, what happens to your payslip, FAQ, final CTA, mobile sticky CTA. Navy #00236A, turquoise
+accents, amber only for the low-certainty marker, Rubik 800 on Heebo, `color-scheme: light`, all
+scoped under `.v5` so the funnel and /operations keep their design. Four canvas sections are **not**
+here and that is the deliverable: the proof strip needs D-11's counters, the video a real file, the
+story the founder's own sentences, the testimonials real reviews with recorded consent. Each is a slot
+in `site-content.json` whose schema refuses an empty string, because `""` is how a placeholder gets in;
+`docs/design/assets-needed.md` says what turns each one on. The hero shows the product's own shape
+instead of the canvas's cut-out photograph — a report frame with the three certainty levels in D-6.2's
+exact sentences and no amount anywhere, since D-6.3 is mechanical and a marketing page is the first
+place it would break. Verified on the running build: nine sections in canvas order, four absent,
+desktop and mobile screenshots, one h1 with ordered headings, every section labelled, no image without
+alt, no link without a name, no duplicate id.
+
+**C — S1.5, the provider-independent half.** U2 is the wave's real work:
+`DELIVERY_RECIPIENT_ALLOWLIST` is checked in `sendNotification`, the one place every send passes
+through, and before the provider exists in the story, so a refused recipient costs no network call. It
+fails closed — outside production with the variable unset every recipient is refused, because the
+alternative is a run that quietly reaches whoever is in the fixture data, and the seven dummy cases
+carry real-looking contacts. `refused` is a state of its own, not a failure, and migration
+`202609060001` makes the database say so: the sweep resends anything not 'sent', which is right for a
+transient failure and wrong for a recipient policy forbids — recorded as 'failed' it would be retried
+forever, each retry another chance to call a provider with an address that must never receive
+anything. U1 stays interface-plus-sink (no provider, no adapter, no install). U4's path-token TTL
+moves 24 → 6 hours, the S1.5 default. **U5 did not run: no provider, no real send, no owner
+confirmation to collect.**
+
+**D — S2's core.** `unique (case_id, document_type)` allowed one payslip per case, so a customer with
+three months either lost two or the second silently overwrote the first — the refund this wave exists
+to prevent. Migration `202609060002` replaces it with a slot (payslip-01..12, contract, attendance,
+unique per case, a payslip slot may only hold a payslip); storage paths, the sign route and the
+completion upsert all key on it. `documents.period_month` records the month a payslip covers and
+`cases.check_period_month` the single month the initial check runs on (D-4.1), defaulted to the last
+complete month and refused unless a payslip was uploaded for it. The upload step is a review screen
+now: preview, PDF page count, an image readability verdict (resolution, blur, orientation, measured on
+the pixels, never OCR, always a warning and never a block), the month per payslip, replace, delete,
+per-file status, real byte progress and a cancel that aborts the transfer. **S2.3 and S2.4 are not
+started**: the post-payment channel needs a new route and its CEP registration, and "I'll find it
+later" needs D-2's blocking thread, which S3 builds. Neither is half-built.
+
+**E — 13-T.** `BLOCKED: env names missing` — all four of `NEXT_PUBLIC_SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OPENAI_EXTRACTION_MODEL`. No `.env.local` exists.
+
+**Four product routes now declare why they differ from main.** The route-split guard compares main to
+HEAD, so S5's and S2's rewrites only became visible to it once committed. `/`, `/check/upload`,
+`/api/documents/sign` and `/api/documents/complete` each carry a `rewritten_on_branch` reason. The
+exemption is from the size budget alone — all four stay on the product half, keep their guard, and
+still import nothing from the engine, both asserted.
+
+## Freeze — long run 10, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs` at `b67e729`, receipt
+`da8eaabd43760f6dd1440328fd703b0a5c4d0821945e86e262c8ba759741d369`: type check 0 errors; eslint 0
+errors, 0 warnings; vitest **310/310 files, 2265 passed, 3 skipped, 0 failed**; `next build`
+compiled; the production closure proof over both environments **48/48 PASS, identical posture,
+production build `40b75001…`, preview build `4047810d…`**.
+
+### DEV, as the runtime roles
+
+Chain 63/63, tail `202609060002` — three migrations this run
+(`202609050004`/`202609050005` for the resolution revisions and their actor repair,
+`202609060001` for the delivery refusal, `202609060002` for the document slots), no new definer name.
+System-session lifetime **9/9**. Tenant guards **6/6**. Grant execution **25 executed, 0 denied, 0
+unexplained**. Identity negative matrix **8/8**. Definer surface **111, ungated 2 (the known
+bootstrap pair), unexpected 0, reserved-execute 14**. Invalidation effects **10/10**. Dynamic matrix
+**14 checks, 10 supported, 10 passed, 4 not supported**. RLS force **66 tenant-scoped tables, 0
+unforced**. Parameter-decision matrix **21/21**. A7-3 withdrawal passed; Q draft-binding passed;
+E3-2/E3-3 supersession passed (eight legal decisions of 55); E3-4 revocation passed; L4-7 session
+recovery **8/8**; E2-10 hygiene passed; L5-1 lexicon **9/9**; A7-2 dependency-hash passed. Citation
+anchors **48 verified, 0 failed, 6 impossible**. Resolutions **28/28 — six decisions, eight rows, two
+at revision 2, history untouched by hash, attested 0**. Shadow comparison **PASS — 51 months in both
+unchanged, 0 changed; the case ledger 58 months, 39 with results, 1 with results and one refusal, 18
+refused for a named reason**. Gate 0 **PASS — 0 identities, 62 parameter versions, 0 dual-attested, 8
+resolution rows, decision draft_shadow; both owner statements inconsistent with what is visible**.
+Production reachability **BLOCKED_PRODUCTION_UNREACHABLE (exit 3 by design) — four variables absent by
+name**. Access journey **26/26**, including the new step proving a recipient outside the allowlist is
+refused with the provider untouched. Operations journey **17/17**, run after the matrix, not beside
+it. S-1…S-7: `verify-v010.mts` PASS, `shadow/run.mts all` PASS.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0 (62 registered, all draft or superseded), rules
+active 0, attestations 0, resolutions owner_recorded 6 decisions / 8 rows, resolutions attested 0,
+reviewer identities registered 0, visual confirmations 0, customer rows 0, **messages to any real
+contact 0** (no provider exists; every send in this run went to the file sink or was refused by the
+allowlist), composites opened 0, openai calls 0, provider calls 0, extraction used no, deployments 0,
+remote production migrations 0, findings 0, approved-opinion file edits 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-31 | open, **a full blocker for the access path in production** | no provider; U5 cannot run and no real message was sent |
+| BL-34 | **opened**, `dev_project_mistaken_for_empty` | the brief records the runs' DEV project as "not the runs' DEV". It is: same ref, 86 tables, 62 parameter versions. Deleting or resetting it as unused would destroy every run's evidence |
+| BL-29 | open, `production_unreachable_from_engineering_machine` | unchanged; phase E blocked on it |
+| BL-30 | open, `owner_statement_not_in_database` | reconfirmed for two more statements: domain verification and a registered reviewer identity, neither visible |
+| BL-32 | open, `source_not_acquirable_through_controlled_path` | unchanged; the §18 rule binds to the statute instead, and V5 stays partial |
+| BL-33 | open, `schedule_facts_not_in_corpus` | unchanged |
+| BL-25, BL-26, BL-27, BL-28, BL-16 | open | unchanged |
+
+### Backlog
+
+S2.3 and S2.4 (post-payment upload channel, "I'll find it later" on D-2's thread); S3 on Opus (the
+three report gates, the case screens, and the thread S2.4 waits for); S4 (hygiene); S6 (operations);
+run 16. S5's omitted sections turn on when their slots are filled. The engine's backlog is closed;
+the product is not complete.
+
 ## Resume point
 
-Refreshed after long run 9. Everything before this point is history; this
-section and `docs/resume-after-pause.md` are what a resuming session must
-read. Long run 9 declined the infrastructure items (repo visibility, DNS/
-email changes, pulling production secrets, real sends) regardless of the
-owner's stated blanket authorization for those categories — see that
-section for why — and did the engine and documentation work that did not
-depend on them: contact config, reviewer onboarding docs, L13-1's target
-and evidence, L13-5's E1, and a correction to the previous run's freeze
-(the errata gate is closed without a lawyer, per the owner's own later
-decision — not a lawyer step still pending).
+Refreshed after long run 10. Everything before this point is history; this
+section and `docs/resume-after-pause.md` are what a resuming session must read.
 
-**Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`)
-and, up to `677ea92`, in the bundle and evidence archive long run 10 put on
-OneDrive; runs 11, 12, 13-T, site run S1 and this run are on the remote only
-until the next bundle. Pools H, D, S, R, E2, E3, L4–L10, runs 11–12, wave S1
-and the review-#1 corrections are closed; run 13-T is closed at Gate 0 with
-D1–D5 blocked (BL-29). Pool P: 61 versions, all `draft` or `superseded`, 0
+**Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`).
+Pools H, D, S, R, E2, E3, L4-L10, runs 11-12, wave S1, the external-review
+corrections, long run 9 and long run 10 are closed; run 13-T is closed at Gate 0
+with D1-D5 blocked (BL-29). Pool P: 62 versions, all draft or superseded, 0
 attestations. Eight legal decisions: six carry an owner-recorded resolution
-(seven rows — the daily threshold is at revision 2, conditional on the
-schedule; revision 1 untouched in history). Report v9 and package v14 stand
-with the errata appendix beside them; shadow `l76.4e1cc1bb — 58 months, 169 executions, 121 ran, 121 traces replayed, provider and OpenAI calls 0; the daily threshold's default administrative with source conditional_on_schedule, figures unchanged`.
+(eight rows — the daily threshold and the pension wage-cap source are each at
+revision 2). Report v10 and package v15 supersede v9/v14 and carry
+`legal_basis: opinion_3ddad7e8 + errata_1_owner_closed`.
 
-**What this run changed, in one sentence.** The channel is verified before
-anything binds; the link is exchanged once in a route handler and never
-rides a query string; the resolutions table is append-only by revision and
-Q6 is re-recorded as conditional on the schedule; a documented reading is
-four fields; every month of the corpus shows a result or a reason; the S1
-"concurrency artifact" is proven to be a one-hour seed that shortened the
-shared session, and no seeder shortens it now; the Q4 wording and the §18
-base rule are on the record; the hosts that carry the excerpt and the
-judgment are refused by name.
+**What long run 10 changed, in one sentence.** The errata are fully recorded
+(the §18 base rule is a real draft parameter, the vacation table was already
+right, the report and package say which basis each resolution rests on), the
+home page is rebuilt with four sections deliberately absent, a delivery
+allowlist refuses any recipient but the owner's two channels before a provider
+is ever called, and a case can hold twelve payslips instead of one.
 
-**What this run could not do, in one sentence.** Select the daily threshold
-per case (the months carry no schedule facts — BL-33); bind the §18 rule or
-verify V5 (the sources are not acquirable through the controlled path —
-BL-32); regenerate report v9 / package v14 (the errata appendix carries the
-corrections); build the three report gates (S3).
+**What it could not do.** Phase E (the seven-case trial): no `.env.local`, so
+none of the four production variables exist. S2.3 and S2.4: one needs a new
+route, the other needs S3's thread. U5: no provider, so no real message and no
+owner confirmation.
 
-**What is proven about the live site.** Unchanged from long run 10.
-tivdoc.com serves `main`; nothing here is deployed; the access path is
-inactive in production until BL-31.
+**Read this before touching Supabase.** The project the owner sees as empty IS
+the runs' DEV (BL-34). Its governance data is in the `private` schema and its
+chain is not recorded in the CLI's migrations table, which is why the dashboard
+shows almost nothing. Resetting or deleting it destroys every run's evidence.
 
-**The waves, in order.** S2 (documents) → S3 (the report contract with its
-three gates, the case screens, Opus) → S6 (operations) → run 16; S4
-(hygiene) any time after S1; S5 (the home page) any time, after the owner
-decides language (§0.11) and hands over assets or approves omitting the
-sections.
+**What is proven about the live site.** Unchanged. tivdoc.com serves `main`;
+nothing here is deployed; the access path stays inactive in production until
+BL-31.
+
+**The waves, in order.** S3 on Opus (the three report gates, the case screens,
+D-2's thread) → S2.3/S2.4 behind it → S6 (operations) → run 16; S4 (hygiene)
+any time.
 
 **The human gates, named.**
 
-1. The owner (section ה' of the response): BL-31 — the SMS and email
-   provider and its credentials; the four production variables (BL-29); two
-   reviewer identities and the approval record (BL-30, B-25); language and
-   assets before S5; the three merge decisions in `docs/merge-readiness.md`;
-   the errata appendix sent to the lawyer; the official records behind BL-32
-   through the controlled path.
-2. The lawyer: the errata appendix (a separate approval; the original
-   approval does not cover it); V11 and V5 first, then V1–V13; a reviewer
-   identity; the seven visual confirmations; attestation at the screen.
+1. The owner: BL-31 — the SMS and email provider and its credentials; the four
+   production variables (BL-29); two reviewer identities at a keyboard
+   (`docs/reviewer-onboarding/`); the official records behind BL-32; the assets
+   in `docs/design/assets-needed.md` that turn S5's four omitted sections on;
+   and the DNS work for `info@tivdoc.com`, which today cannot receive mail.
+2. No lawyer step exists anywhere: errata #1 is owner-closed.
 
-**Engineering after this run.** S2 next session. A resuming session follows
-`docs/resume-after-pause.md`; the governance proofs need no re-seeding
-before them any more — the shared session is not shortened by any script.
+**Engineering after this run.** S3 next session, on Opus.
