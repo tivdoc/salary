@@ -1,127 +1,170 @@
-// L4-6 / D4 (BL-17). Proof rows belong on the synthetic proof tenant, and this
-// is the check that keeps them there.
+// L4-6 / D4 (BL-17), rebuilt by L8-2 / D1. Proof rows belong on the synthetic
+// proof tenant, and this is the check that keeps them there.
 //
 // The rule is not "no script mentions the reference tenant" — several must, and
 // one of them exists precisely to prove that the reference tenant refuses
-// things. The rule is an inventory: every script that writes governance state
-// is listed here with the tenant it writes to and, when that tenant is the real
-// catalogue, the reason it cannot be anywhere else. A script that starts
-// writing, or changes which tenant it writes to, fails this test until someone
-// edits the list — and editing the list is the review.
+// things. The rule is an inventory: every script that writes governance state,
+// the tenant it writes to and, when that tenant is the real catalogue, the
+// reason it cannot be anywhere else.
 //
-// Why an inventory rather than a cleverer analysis: the tenant a call ends up
-// using is decided at run time through a session, several frames from any
-// literal. Anything inferring it statically would be guessing, and a guard that
-// guesses eventually waves something through.
-import { readdirSync, readFileSync } from "node:fs";
+// Until long run 8 the tenant column was hand-written beside the reason, and
+// the checks read only what was hand-written. That let a false pass stand:
+// `draft-shadow-run-v1.mts` re-seeds the reference tenant's system session
+// through an imported constant, and the inventory said `synthetic-proof`. The
+// original comment here argued that inferring the tenant statically "would be
+// guessing". It was half right: a guard that guesses waves things through, and
+// so does a guard that asks the author. So the tenant column is now DERIVED —
+// `writer-inventory.mjs` follows every write to the tenant expression and that
+// expression through one import hop — and a tenant it cannot decide fails the
+// suite instead of being filed under whatever the author believed. Only the
+// reason stays hand-written, because a reason is a judgement.
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
+import {
+  OWN, PARAMETERISED, REFERENCE, SYNTHETIC, UNDECIDABLE,
+  deriveWriterInventory, inventoryFindings,
+} from "./writer-inventory.mjs";
 
 const DIRECTORY = path.join("scripts", "legal-review-projection");
 
-/** Any call that changes durable governance state. */
-const WRITE_MARKERS = [
-  "importPoolPBatch(", "importCandidate(",
-  "governance_parameter_import", "governance_parameter_supersede",
-  "governance_parameter_attestation_append",
-  "governance_legal_open_decision_register", "governance_legal_open_decision_withdraw",
-  "governance_legal_open_decision_mark_synthetic", "governance_legal_open_decision_annotate",
-  "legal_operations_execution_trace_append",
-  // L5-5: instrument selections are governance state too.
-  "governance_legal_instrument_selection_register", "governance_legal_instrument_selection_supersede",
-  "governance_reviewer_append", "governance_key_challenge_append",
-  "governance_trust_organization_append", "governance_trust_policy_append",
-  "governance_reviewer_key_register", "product_session_revoke",
-  // The same writes through the repository objects rather than raw SQL.
-  "appendOrganization(", "appendPolicy(", "appendReviewer(", "appendKeyChallenge(",
-  "registerProvenKey(", ".enqueue(",
-];
-
-const REFERENCE = "reference";
-const SYNTHETIC = "synthetic-proof";
-const OWN = "own-per-run-tenant";
-
 /**
- * Every governance writer, and where it writes. `REFERENCE` entries carry the
- * reason; the others do not need one.
+ * Why each reference-tenant writer cannot move. This is the only hand-written
+ * column: which files write to the reference tenant is derived, and a file
+ * that starts doing so fails the suite until a reason is written here.
  */
-const WRITERS = Object.freeze({
-  "decision-sensitivity-run.mts": [REFERENCE,
-    "Superseded by v3 and kept unchanged as the artifact that produced report v2. It is not re-run."],
-  "decision-sensitivity-run-v3.mts": [SYNTHETIC, ""],
-  "decision-sensitivity-run-v4.mts": [SYNTHETIC, ""],
-  "decision-sensitivity-run-v5.mts": [SYNTHETIC, ""],
-  "decision-sensitivity-run-v6.mts": [SYNTHETIC, ""],
-  // L7-6: the draft shadow run appends one trace per executed synthetic case.
-  "draft-shadow-run-v1.mts": [SYNTHETIC, ""],
-  "grant-execution-proof.mts": [OWN, ""],
-  "ground-truth-matrix.mts": [OWN, ""],
-  "ground-truth-queue-map.mts": [OWN, ""],
-  "identity-negative-matrix.mts": [OWN, ""],
-  "identity-session-recovery.mts": [REFERENCE,
-    "Rewrites the reference tenant's own system-import session idempotently, which is the recovery procedure it documents."],
-  "instrument-selection.mts": [REFERENCE,
-    "Registers real draft instrument selections on the reference tenant: the boundary a selected figure's citation carries and its attestation attests."],
-  "identity-session-revocation.mts": [REFERENCE,
-    "Revokes residue sessions on the reference tenant. The residue is there; revoking it elsewhere would revoke nothing."],
-  "legal-open-decision-withdrawal.mts": [REFERENCE,
-    "Carries one real record — the vacation withdrawal and its correction — alongside its synthetic cases."],
-  "legal-reference-tenant-guards.mts": [REFERENCE,
-    "Exists to prove the reference tenant refuses things. Moving it would delete the guard it checks."],
-  "parameter-decision-matrix.mts": [OWN, ""],
-  "parameter-supersession-proof.mts": [REFERENCE,
-    "Supersedes real Pool P rows and counts the real legal decisions. Its synthetic fixtures are flagged at registration."],
-  "pool-p-batch-1-minimum-wage.mts": [REFERENCE, "Real draft parameters, the minimum-wage catalogue."],
-  "pool-p-batch-2-youth.mts": [REFERENCE, "Real draft parameters, the youth and apprentice rates."],
-  "pool-p-batch-3-working-time.mts": [REFERENCE, "Real draft parameters, the working-time thresholds."],
-  "pool-p-batch-4-pension-travel.mts": [REFERENCE, "Real draft parameters, the pension cap and the travel cap."],
-  "pool-p-batch-5-convalescence-vacation-sick.mts": [REFERENCE, "Real draft parameters for convalescence, vacation and sick pay."],
-  "pool-p-batch-6-vacation-current-table.mts": [REFERENCE, "Real draft parameters, the current vacation table."],
-  "pool-p-batch-7-vacation-amendment-15-scope.mts": [REFERENCE, "Real draft parameters, Amendment 15's scope correction."],
-  "pool-p-batch-8-table-aware.mts": [REFERENCE,
-    "Real draft parameters, and the supersession of three real revisions whose citations moved to the table-aware chunks."],
-  "pool-p-batch-9-lexicon.mts": [REFERENCE, "Real draft parameters, the figures the law states as words, bound through the numeral lexicon."],
-  "pool-p-batch-11-visual.mts": [REFERENCE, "Real draft parameters, the 1951 premiums read from the page image (inferred_visual)."],
-  "pool-p-batch-12-composition-decision.mts": [REFERENCE, "One real open decision, the rest-day overtime composition; no parameters."],
-  "pool-p-batch-13-pension-visual.mts": [REFERENCE,
-    "Real draft parameters, the 2016 pension order's shares read from the page image, the 2014 rows re-registered on the precedence decision, and the supersession of the 2014.1.0 rows."],
-  "pool-p-batch-14-convalescence-bands.mts": [REFERENCE, "Real draft parameters, the 1988 order's seniority bands."],
-  "pool-p-batch-15-threshold-visual.mts": [REFERENCE, "Real draft parameter, the 2025 threshold read from the typeset page (inferred_visual)."],
-  "pool-p-batch-16-daily-threshold.mts": [REFERENCE, "Real draft parameter, §2's eight hours through the lexicon, and the daily-threshold decision (L7-9 / D6)."],
-  "pool-p-batch-10-selections.mts": [REFERENCE, "Real draft parameters, the figures inside the three instrument selections."],
-  "pool-p-dependency-hash-invalidation-proof.mts": [SYNTHETIC, ""],
-  "pool-p-parameter-import.mts": [REFERENCE,
-    "Owns the reference tenant constant and the import path. Every real draft parameter and open decision goes through it."],
-  "reviewer-registration.mts": [SYNTHETIC, ""],
-  "rulespec-trace-replay.mts": [REFERENCE,
-    "R-14's durable trace proof, whose fixtures predate the synthetic tenant and whose ids are already recorded in the frozen matrix."],
+const REASONS = Object.freeze({
+  "decision-sensitivity-run.mts":
+    "Superseded by v3 and kept unchanged as the artifact that produced report v2. It is not re-run.",
+  // L8-2: reclassified. The false pass long run 7 recorded — listed synthetic,
+  // derived reference — is corrected here, not by editing the script.
+  "draft-shadow-run-v1.mts":
+    "Re-seeds the reference tenant's own system-import session idempotently before executing, the recovery procedure identity-session-recovery.mts documents; its traces go to the synthetic proof tenant.",
+  "identity-session-recovery.mts":
+    "Rewrites the reference tenant's own system-import session idempotently, which is the recovery procedure it documents.",
+  "instrument-selection.mts":
+    "Registers real draft instrument selections on the reference tenant: the boundary a selected figure's citation carries and its attestation attests.",
+  "identity-session-revocation.mts":
+    "Revokes residue sessions on the reference tenant. The residue is there; revoking it elsewhere would revoke nothing.",
+  "legal-open-decision-withdrawal.mts":
+    "Carries one real record — the vacation withdrawal and its correction — alongside its synthetic cases.",
+  "legal-reference-tenant-guards.mts":
+    "Exists to prove the reference tenant refuses things. Moving it would delete the guard it checks.",
+  // L8-2: the second inventory gap. `register` creates the owner's real
+  // reviewer identity on the reference tenant, at a keyboard only; `prove`
+  // runs the same path on the synthetic proof tenant.
+  "owner-reviewer-identity.mts":
+    "Its register command creates the owner's real reviewer identity on the reference tenant, at a keyboard only; keygen and prove create nothing real.",
+  "parameter-supersession-proof.mts":
+    "Supersedes real Pool P rows and counts the real legal decisions. Its synthetic fixtures are flagged at registration.",
+  "pool-p-batch-1-minimum-wage.mts": "Real draft parameters, the minimum-wage catalogue.",
+  "pool-p-batch-2-youth.mts": "Real draft parameters, the youth and apprentice rates.",
+  "pool-p-batch-3-working-time.mts": "Real draft parameters, the working-time thresholds.",
+  "pool-p-batch-4-pension-travel.mts": "Real draft parameters, the pension cap and the travel cap.",
+  "pool-p-batch-5-convalescence-vacation-sick.mts": "Real draft parameters for convalescence, vacation and sick pay.",
+  "pool-p-batch-6-vacation-current-table.mts": "Real draft parameters, the current vacation table.",
+  "pool-p-batch-7-vacation-amendment-15-scope.mts": "Real draft parameters, Amendment 15's scope correction.",
+  "pool-p-batch-8-table-aware.mts":
+    "Real draft parameters, and the supersession of three real revisions whose citations moved to the table-aware chunks.",
+  "pool-p-batch-9-lexicon.mts": "Real draft parameters, the figures the law states as words, bound through the numeral lexicon.",
+  "pool-p-batch-10-selections.mts": "Real draft parameters, the figures inside the three instrument selections.",
+  "pool-p-batch-11-visual.mts": "Real draft parameters, the 1951 premiums read from the page image (inferred_visual).",
+  "pool-p-batch-12-composition-decision.mts": "One real open decision, the rest-day overtime composition; no parameters.",
+  "pool-p-batch-13-pension-visual.mts":
+    "Real draft parameters, the 2016 pension order's shares read from the page image, the 2014 rows re-registered on the precedence decision, and the supersession of the 2014.1.0 rows.",
+  "pool-p-batch-14-convalescence-bands.mts": "Real draft parameters, the 1988 order's seniority bands.",
+  "pool-p-batch-15-threshold-visual.mts": "Real draft parameter, the 2025 threshold read from the typeset page (inferred_visual).",
+  "pool-p-batch-16-daily-threshold.mts": "Real draft parameter, §2's eight hours through the lexicon, and the daily-threshold decision (L7-9 / D6).",
+  "pool-p-parameter-import.mts":
+    "Owns the reference tenant constant and the import path. Every real draft parameter and open decision goes through it, as its default target.",
+  "rulespec-trace-replay.mts":
+    "R-14's durable trace proof, whose fixtures predate the synthetic tenant and whose ids are already recorded in the frozen matrix.",
 });
 
-function governanceWriters() {
-  return readdirSync(DIRECTORY)
-    .filter((name) => name.endsWith(".mts"))
-    .map((name) => ({ name, source: readFileSync(path.join(DIRECTORY, name), "utf8") }))
-    .filter((entry) => entry.source.split("\n").some((line) =>
-      !line.trimStart().startsWith("//") && !line.trimStart().startsWith("*")
-      && WRITE_MARKERS.some((marker) => line.includes(marker))))
-    .map((entry) => entry.name)
-    .sort();
-}
+/**
+ * The derived classification, pinned. A file that changes class — a proof
+ * that starts reaching the catalogue, a batch that stops — fails here until
+ * the pin is moved, and moving the pin is the review.
+ */
+const EXPECTED = Object.freeze({
+  "decision-sensitivity-run.mts": REFERENCE,
+  "decision-sensitivity-run-v3.mts": SYNTHETIC,
+  "decision-sensitivity-run-v4.mts": SYNTHETIC,
+  "decision-sensitivity-run-v5.mts": SYNTHETIC,
+  "decision-sensitivity-run-v6.mts": SYNTHETIC,
+  "draft-shadow-run-v1.mts": REFERENCE,
+  "dynamic-matrix.mts": OWN,
+  "grant-execution-proof.mts": OWN,
+  "ground-truth-matrix.mts": OWN,
+  "ground-truth-queue-map.mts": OWN,
+  "identity-negative-matrix.mts": OWN,
+  "identity-session-recovery.mts": REFERENCE,
+  "identity-session-revocation.mts": REFERENCE,
+  "instrument-selection.mts": REFERENCE,
+  "legal-open-decision-withdrawal.mts": REFERENCE,
+  "legal-reference-tenant-guards.mts": REFERENCE,
+  "observation-supersede.mts": OWN,
+  "owner-reviewer-identity.mts": REFERENCE,
+  "parameter-decision-matrix.mts": OWN,
+  "parameter-supersession-proof.mts": REFERENCE,
+  "pool-p-batch-1-minimum-wage.mts": REFERENCE,
+  "pool-p-batch-2-youth.mts": REFERENCE,
+  "pool-p-batch-3-working-time.mts": REFERENCE,
+  "pool-p-batch-4-pension-travel.mts": REFERENCE,
+  "pool-p-batch-5-convalescence-vacation-sick.mts": REFERENCE,
+  "pool-p-batch-6-vacation-current-table.mts": REFERENCE,
+  "pool-p-batch-7-vacation-amendment-15-scope.mts": REFERENCE,
+  "pool-p-batch-8-table-aware.mts": REFERENCE,
+  "pool-p-batch-9-lexicon.mts": REFERENCE,
+  "pool-p-batch-10-selections.mts": REFERENCE,
+  "pool-p-batch-11-visual.mts": REFERENCE,
+  "pool-p-batch-12-composition-decision.mts": REFERENCE,
+  "pool-p-batch-13-pension-visual.mts": REFERENCE,
+  "pool-p-batch-14-convalescence-bands.mts": REFERENCE,
+  "pool-p-batch-15-threshold-visual.mts": REFERENCE,
+  "pool-p-batch-16-daily-threshold.mts": REFERENCE,
+  "pool-p-dependency-hash-invalidation-proof.mts": SYNTHETIC,
+  "pool-p-parameter-import.mts": REFERENCE,
+  "project.mts": OWN,
+  "reviewer-registration.mts": PARAMETERISED,
+  "rulespec-trace-replay.mts": REFERENCE,
+});
+
+const { inventory, findings } = inventoryFindings(DIRECTORY, REASONS);
 
 describe("proof rows stay off the reference tenant", () => {
-  it("the inventory names every governance writer and nothing else", () => {
-    expect(governanceWriters()).toEqual(Object.keys(WRITERS).sort());
+  it("the derived inventory has no finding: no undecidable tenant, every reference writer with its reason", () => {
+    expect(findings).toEqual([]);
   });
 
-  it("every reference-tenant writer states why it cannot move", () => {
-    for (const [name, [tenant, reason]] of Object.entries(WRITERS)) {
-      if (tenant !== REFERENCE) {
-        expect(reason, `${name} is not on the reference tenant and needs no excuse`).toBe("");
-        continue;
-      }
-      expect(reason.length, name).toBeGreaterThan(40);
-      expect(reason.endsWith("."), name).toBe(true);
+  it("the derived classification is the pinned one, file by file", () => {
+    const derived = Object.fromEntries(Object.entries(inventory).map(([name, entry]) => [name, entry.classification]));
+    expect(derived).toEqual(EXPECTED);
+  });
+
+  it("the false pass is closed: the draft shadow run reaches the reference tenant through an import, and the inventory says so", () => {
+    const entry = inventory["draft-shadow-run-v1.mts"];
+    expect(entry.classification).toBe(REFERENCE);
+    const seed = entry.sites.filter((site) => site.kind === "helper" && site.name === "seedSessions");
+    expect(seed.map((site) => site.tenant).sort()).toEqual([REFERENCE, SYNTHETIC]);
+    // The file never spells the tenant; the resolver followed `TENANT` to the file that owns it.
+    expect(readFileSync(path.join(DIRECTORY, "draft-shadow-run-v1.mts"), "utf8")).not.toContain('"legal.reference.il"');
+  });
+
+  it("the second gap is closed: the owner identity command is a reference writer through registerReviewerIdentity", () => {
+    const entry = inventory["owner-reviewer-identity.mts"];
+    expect(entry.classification).toBe(REFERENCE);
+    expect(entry.sites.filter((site) => site.tenant === REFERENCE).map((site) => site.name)).toEqual(["registerReviewerIdentity"]);
+  });
+
+  it("every batch reaches the reference tenant through the import path's default target, not a literal", () => {
+    for (const [name, entry] of Object.entries(inventory)) {
+      if (!name.startsWith("pool-p-batch-")) continue;
+      expect(entry.sites.some((site) => site.name === "importPoolPBatch" && site.tenant === REFERENCE), name).toBe(true);
     }
+    expect(inventory["pool-p-parameter-import.mts"].sites.some((site) => site.kind === "default_parameter" && site.tenant === REFERENCE)).toBe(true);
+    expect(inventory["pool-p-dependency-hash-invalidation-proof.mts"].sites.map((site) => site.tenant)).toEqual([SYNTHETIC]);
   });
 
   it("the synthetic proof tenant is one constant, exported once", () => {
@@ -136,17 +179,112 @@ describe("proof rows stay off the reference tenant", () => {
     // that defines it and the guard that must name it to refuse it are the only
     // places the string may appear in a writer.
     const allowed = new Set(["pool-p-parameter-import.mts", "legal-reference-tenant-guards.mts"]);
-    const offenders = governanceWriters()
+    const offenders = Object.keys(inventory)
       .filter((name) => !allowed.has(name))
       .filter((name) => readFileSync(path.join(DIRECTORY, name), "utf8").split("\n")
         .some((line) => line.includes('"legal.reference.il"') && !line.trimStart().startsWith("//")));
     expect(offenders).toEqual([]);
   });
+});
 
-  it("every synthetic writer really reaches the synthetic constant", () => {
-    for (const [name, [tenant]] of Object.entries(WRITERS)) {
-      if (tenant !== SYNTHETIC) continue;
-      expect(readFileSync(path.join(DIRECTORY, name), "utf8"), name).toContain("SYNTHETIC_PROOF_TENANT");
-    }
+/**
+ * The guard proven by breaking it. A directory of fixture writers, built the
+ * way the real ones are built: a file owns the constant, a helper takes the
+ * tenant, writers reach the constant by import, by re-export, by the helper's
+ * default, and by nothing the resolver can follow.
+ */
+describe("the derived inventory, proven by breaking it", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "tivdoc-writer-inventory-"));
+  afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+  function fixture(name, files) {
+    const directory = path.join(root, name);
+    mkdirSync(directory, { recursive: true });
+    for (const [file, text] of Object.entries(files)) writeFileSync(path.join(directory, file), text);
+    return directory;
+  }
+
+  const OWNER = 'export const TENANT = "legal.reference.il";\nexport const SYNTHETIC_PROOF_TENANT = "legal.synthetic.proof";\n';
+  const HELPERS = 'export async function seedSessions(tenant: string, orgId: string, sessions: unknown[]): Promise<void> { void tenant; void orgId; void sessions; }\n'
+    + 'import { TENANT } from "./owner.mts";\n'
+    + 'export async function importPoolPBatch(batch: unknown, candidates: unknown[], open: unknown[] = [], target = { tenant: TENANT, session: "s", subject: "a" }): Promise<void> { void batch; void candidates; void open; void target; }\n';
+
+  it("a writer reaching the reference tenant through an import is a reference writer, and fails without a reason", () => {
+    const directory = fixture("import", {
+      "owner.mts": OWNER,
+      "helpers.mts": HELPERS,
+      "writer.mts": 'import { TENANT } from "./owner.mts";\nimport { seedSessions } from "./helpers.mts";\nawait seedSessions(TENANT, `${TENANT}.org`, []);\n',
+    });
+    const { inventory: derived, findings: found } = inventoryFindings(directory, {});
+    expect(derived["writer.mts"].classification).toBe(REFERENCE);
+    expect(found).toEqual(["writer.mts: reference writer without a reason — helper:seedSessions@3"]);
+    expect(inventoryFindings(directory, { "writer.mts": "A reason of more than forty characters that ends with a full stop, as the rule requires." }).findings).toEqual([]);
+  });
+
+  it("a re-export is one more hop, and still reaches the constant", () => {
+    const directory = fixture("reexport", {
+      "owner.mts": OWNER,
+      "hop.mts": 'export { TENANT as REFERENCE_TENANT } from "./owner.mts";\n',
+      "helpers.mts": HELPERS,
+      "writer.mts": 'import { REFERENCE_TENANT } from "./hop.mts";\nimport { seedSessions } from "./helpers.mts";\nawait seedSessions(REFERENCE_TENANT, "org", []);\n',
+    });
+    const { inventory: derived, findings: found } = inventoryFindings(directory, {});
+    expect(derived["writer.mts"].classification).toBe(REFERENCE);
+    expect(found).toHaveLength(1);
+  });
+
+  it("a helper's default target binds the caller that omits it", () => {
+    const directory = fixture("default", {
+      "owner.mts": OWNER,
+      "helpers.mts": HELPERS,
+      "batch.mts": 'import { importPoolPBatch } from "./helpers.mts";\nawait importPoolPBatch({}, []);\n',
+      "proof.mts": 'import { importPoolPBatch } from "./helpers.mts";\nimport { SYNTHETIC_PROOF_TENANT } from "./owner.mts";\nawait importPoolPBatch({}, [], [], { tenant: SYNTHETIC_PROOF_TENANT, session: "s", subject: "a" });\n',
+    });
+    const { inventory: derived } = inventoryFindings(directory, { "batch.mts": "The batch reaches the catalogue through the helper's default target, as the real ones do." });
+    expect(derived["batch.mts"].classification).toBe(REFERENCE);
+    expect(derived["proof.mts"].classification).toBe(SYNTHETIC);
+  });
+
+  it("a tenant the resolver cannot follow is undecidable, and undecidable fails", () => {
+    const directory = fixture("undecidable", {
+      "owner.mts": OWNER,
+      "helpers.mts": HELPERS,
+      "writer.mts": 'import { seedSessions } from "./helpers.mts";\nawait seedSessions(process.env.TENANT ?? "x", "org", []);\n',
+    });
+    const { inventory: derived, findings: found } = inventoryFindings(directory, {});
+    expect(derived["writer.mts"].classification).toBe(UNDECIDABLE);
+    expect(found).toEqual(["writer.mts: undecidable — helper:seedSessions@2"]);
+  });
+
+  it("a session write takes its tenant from the connection context set before it", () => {
+    const directory = fixture("session", {
+      "owner.mts": OWNER,
+      "revoker.mts": 'import { TENANT } from "./owner.mts";\nasync function main(client: { query(sql: string, params?: unknown[]): Promise<unknown> }) {\n'
+        + "  await client.query(\"select set_config('tivdoc.tenant_id', $1, false)\", [TENANT]);\n"
+        + '  await client.query("select private.product_session_revoke($1, now())", ["session.x"]);\n}\nvoid main;\n',
+      "drill.mts": 'import { SYNTHETIC_PROOF_TENANT } from "./owner.mts";\nasync function main(client: { query(sql: string, params?: unknown[]): Promise<unknown> }) {\n'
+        + "  await client.query(\"select set_config('tivdoc.tenant_id', $1, false)\", [SYNTHETIC_PROOF_TENANT]);\n"
+        + '  await client.query("select private.product_session_revoke($1, now())", ["session.y"]);\n}\nvoid main;\n',
+    });
+    const { inventory: derived } = inventoryFindings(directory, { "revoker.mts": "Revokes a session on the reference tenant, which is where the residue is and nowhere else." });
+    expect(derived["revoker.mts"].classification).toBe(REFERENCE);
+    expect(derived["drill.mts"].classification).toBe(SYNTHETIC);
+  });
+
+  it("a reason on a file that does not write to the reference tenant is itself a finding", () => {
+    const directory = fixture("stale-reason", {
+      "owner.mts": OWNER,
+      "helpers.mts": HELPERS,
+      "proof.mts": 'import { SYNTHETIC_PROOF_TENANT } from "./owner.mts";\nimport { seedSessions } from "./helpers.mts";\nawait seedSessions(SYNTHETIC_PROOF_TENANT, "org", []);\n',
+    });
+    const { findings: found } = inventoryFindings(directory, { "proof.mts": "A reason that is not needed because this file writes to the proof tenant only.", "ghost.mts": "A reason for a file that is not a writer at all, so it is stale." });
+    expect(found).toEqual([
+      "proof.mts: carries a reason but does not write to the reference tenant (synthetic-proof)",
+      "ghost.mts: listed with a reason but is not a writer",
+    ]);
+  });
+
+  it("the real directory derives with the resolver the fixtures just exercised", () => {
+    expect(Object.keys(deriveWriterInventory(DIRECTORY)).length).toBeGreaterThan(30);
   });
 });
