@@ -51,13 +51,22 @@ export const evidenceReferenceSchema = z.discriminatedUnion("source_type", [
           locator: documentLocatorSchema.optional(),
         })
         .strict(),
-      // L13T-6 (Lane B, run 13-T): who read the figure off the document.
-      // "machine" is the extractor; "person" is a human reading the page;
-      // absent asserts neither and is how fixtures and older facts arrive.
+      // L13T-6 (Lane B, run 13-T), split by the external review #1 (finding
+      // 7) into the four questions a reading answers, each its own field:
+      //   source      — where the figure comes from: `source_type` above
+      //                 (documented / declared / derived / inferred);
+      //   read_by     — who read it off the page: "machine" (the extractor)
+      //                 or "person"; absent asserts neither and is how
+      //                 fixtures and older facts arrive;
+      //   verified    — whether a person confirmed the reading against the
+      //                 page (true only when a confirmation step says so;
+      //                 absent asserts nothing);
+      //   confidence  — the fact's own `confidence`, on the fact, not here.
       // A documented fact is a document reference, not a verified reading —
-      // the execution grade uses this to keep a machine-read number off the
+      // the execution grade keeps a machine-read, unconfirmed number off the
       // rung a person's reading or a text-verified parameter earns.
-      reading: z.enum(["machine", "person"]).optional(),
+      read_by: z.enum(["machine", "person"]).optional(),
+      verified: z.boolean().optional(),
     })
     .strict(),
   z

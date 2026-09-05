@@ -18,8 +18,9 @@
 //   derived       an input computed from other facts — or, L12-1, a parameter
 //                 derived by arithmetic on cited text plus a declared assumption
 //   inferred      an input produced by an agent, or a documented input the
-//                 extractor read off the page and no person confirmed (L13T-6:
-//                 evidence `reading: "machine"`), or a parameter read from a
+//                 extractor read off the page and no person confirmed (L13T-6,
+//                 split by the external review #1: evidence `read_by:
+//                 "machine"` without `verified: true`), or a parameter read from a
 //                 page image awaiting visual confirmation
 //   administrative a parameter from an administrative source (unbound today)
 //   agreement_interpretation
@@ -64,8 +65,11 @@ export const inputProvenanceSchema = z.object({
   /** Every source type on the fact's evidence, sorted; the worst grades the input. */
   source_types: z.array(factSourceTypeSchema).min(1).readonly(),
   worst_source_type: factSourceTypeSchema,
-  /** L13T-6: true when every documented evidence on the fact was read by the extractor and none by a person. */
-  machine_read: z.boolean().default(false),
+  /** External review #1, finding 7: who read the documented evidence — "machine" when every documented entry says the
+   *  extractor and none a person; "person" when a person read at least one; "unstated" when no entry says. */
+  read_by: z.enum(["machine", "person", "unstated"]).default("unstated"),
+  /** True when some documented entry carries a person's confirmation (`verified: true`). */
+  verified: z.boolean().default(false),
   confidence: z.number().min(0).max(1),
   transformation: z.string(),
 }).strict().readonly();
@@ -103,22 +107,25 @@ export function inputProvenance(ref: RuleInputValueRef): InputProvenance {
     (left, right) => INPUT_SOURCE_ORDER.indexOf(left) - INPUT_SOURCE_ORDER.indexOf(right),
   );
   const documented = ref.provenance.filter((entry) => entry.source_type === "documented");
-  const machineRead = documented.length > 0 && documented.every((entry) => entry.reading === "machine");
+  const readBy = documented.some((entry) => entry.read_by === "person") ? "person"
+    : documented.length > 0 && documented.every((entry) => entry.read_by === "machine") ? "machine" : "unstated";
+  const verified = documented.some((entry) => entry.verified === true);
   return inputProvenanceSchema.parse({
     input_id: ref.input_id,
     fact_path: ref.fact_path,
     source_fact_id: ref.source_fact_id,
     source_types: sourceTypes,
     worst_source_type: worstSourceType(sourceTypes),
-    machine_read: machineRead,
+    read_by: readBy,
+    verified,
     confidence: ref.confidence,
     transformation: ref.transformation ? `${ref.transformation.transformation_id}@${ref.transformation.transformation_version}` : "none",
   });
 }
 
-/** The rung of one input: its worst source type's rung, except that a documented input only the machine read is `inferred`. */
+/** The rung of one input: its worst source type's rung, except that a documented input only the machine read, and no person confirmed, is `inferred`. */
 export function inputRung(input: InputProvenance): ExecutionGrade {
-  if (input.worst_source_type === "documented" && input.machine_read) return "inferred";
+  if (input.worst_source_type === "documented" && input.read_by === "machine" && !input.verified) return "inferred";
   return INPUT_RUNG[input.worst_source_type];
 }
 

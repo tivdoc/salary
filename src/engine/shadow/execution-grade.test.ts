@@ -54,34 +54,43 @@ describe("the execution grade", () => {
     }
   });
 
-  // L13T-6 (Lane B, run 13-T): a documented figure the extractor read off the
-  // page is a document reference, not a verified reading. It grades `inferred`
-  // — the rung the page-image parameter sits on — until a person reads it.
-  it("keeps a machine-read documented input off the verified rung", () => {
+  // L13T-6 (Lane B, run 13-T), fields split by the external review #1
+  // (finding 7): a documented figure the extractor read off the page is a
+  // document reference, not a verified reading. It grades `inferred` — the
+  // rung the page-image parameter sits on — until a person reads it or
+  // confirms the machine's reading.
+  it("keeps a machine-read, unconfirmed documented input off the verified rung", () => {
     const parameters = [parameter("parameter.rate.first", "text_verified"), parameter("parameter.rate.second", "text_verified")];
     const values = preparedWith("documented", "documented").result.values;
-    const withReading = (reading: "machine" | "person" | null, index: number) => values.map((ref, at) => (at !== index || reading === null ? ref : {
+    const withReading = (read_by: "machine" | "person" | null, index: number, verified?: boolean) => values.map((ref, at) => (at !== index || read_by === null ? ref : {
       ...ref,
-      provenance: ref.provenance.map((entry) => (entry.source_type === "documented" ? { ...entry, reading } : entry)),
+      provenance: ref.provenance.map((entry) => (entry.source_type === "documented" ? { ...entry, read_by, ...(verified === undefined ? {} : { verified }) } : entry)),
     }));
     // Unmarked evidence is what every fixture and every older fact carries: unchanged, verified.
     expect(gradeExecution(values, parameters).execution_grade).toBe("verified");
-    expect(inputProvenance(values[0]!).machine_read).toBe(false);
+    expect(inputProvenance(values[0]!).read_by).toBe("unstated");
+    expect(inputProvenance(values[0]!).verified).toBe(false);
     // The extractor's reading on one input grades the execution inferred, and says which input.
     const machine = withReading("machine", 0);
     const graded = gradeExecution(machine, parameters);
-    expect(inputProvenance(machine[0]!).machine_read).toBe(true);
+    expect(inputProvenance(machine[0]!).read_by).toBe("machine");
+    expect(inputProvenance(machine[0]!).verified).toBe(false);
     expect(graded.worst_input_source_type).toBe("documented");
     expect(graded.execution_grade).toBe("inferred");
-    // A person's reading is not the machine's.
+    // A person's reading is not the machine's; and the machine's reading a person confirmed is verified, too.
     expect(gradeExecution(withReading("person", 0), parameters).execution_grade).toBe("verified");
+    const confirmed = withReading("machine", 0, true);
+    expect(inputProvenance(confirmed[0]!)).toMatchObject({ read_by: "machine", verified: true });
+    expect(gradeExecution(confirmed, parameters).execution_grade).toBe("verified");
+    // `verified: false` written out is what the resolver writes: still inferred.
+    expect(gradeExecution(withReading("machine", 0, false), parameters).execution_grade).toBe("inferred");
     // The same fact read by both: not only the machine, so not machine-read.
     const both = values.map((ref, at) => (at !== 0 ? ref : {
       ...ref,
-      provenance: [...ref.provenance.map((entry) => (entry.source_type === "documented" ? { ...entry, reading: "machine" as const } : entry)),
-        ...ref.provenance.filter((entry) => entry.source_type === "documented").map((entry) => ({ ...entry, reading: "person" as const }))],
+      provenance: [...ref.provenance.map((entry) => (entry.source_type === "documented" ? { ...entry, read_by: "machine" as const } : entry)),
+        ...ref.provenance.filter((entry) => entry.source_type === "documented").map((entry) => ({ ...entry, read_by: "person" as const }))],
     }));
-    expect(inputProvenance(both[0]!).machine_read).toBe(false);
+    expect(inputProvenance(both[0]!).read_by).toBe("person");
   });
 
   it("is the worst parameter when the inputs are documented", () => {
