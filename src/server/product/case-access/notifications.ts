@@ -40,7 +40,7 @@ export type NotificationProvider = Readonly<{
   send(message: NotificationMessage): Promise<Readonly<{ ok: true } | { ok: false; error_code: string }>>;
 }>;
 
-export function renderCaseLink(input: Readonly<{ firstName: string | null; publicId: string; linkUrl: string; expiresInDays: number }>): Pick<NotificationMessage, "subject" | "body"> {
+export function renderCaseLink(input: Readonly<{ firstName: string | null; publicId: string; linkUrl: string; expiresInHours: number }>): Pick<NotificationMessage, "subject" | "body"> {
   const name = input.firstName ? ` ${input.firstName}` : "";
   return {
     subject: `Tivdoc — הקישור לתיק ${input.publicId}`,
@@ -48,7 +48,7 @@ export function renderCaseLink(input: Readonly<{ firstName: string | null; publi
       `שלום${name},`,
       `התשלום אומת והבדיקה של תיק ${input.publicId} התקבלה.`,
       `הקישור לתיק שלך: ${input.linkUrl}`,
-      `בפתיחת הקישור נשלח קוד בן 6 ספרות לערוץ הזה. הקישור תקף ${input.expiresInDays} ימים; אחריו אפשר להיכנס עם הטלפון או האימייל שמסרת.`,
+      `הקישור נפתח פעם אחת ותקף ${input.expiresInHours} שעות; בפתיחתו נשלח קוד בן 6 ספרות לערוץ הזה. אחר כך, ובכל רגע, אפשר להיכנס עם הטלפון או האימייל שאימתת.`,
       "Tivdoc בודקת, לא קובעת: הדוח מציג נקודות לבדיקה ורמת ודאות, לא קביעה משפטית.",
     ].join("\n"),
   };

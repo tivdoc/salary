@@ -29,7 +29,9 @@ export const productOfferSchema = z.object({
   full_report: z.object({ price: moneySchema, delivery: durationSchema }).strict(),
   second_product_sentence: z.string().min(20),
   access: z.object({
-    link_token_ttl_days: z.number().int().positive(),
+    // External review #1, finding 8: the path token lives hours, not days; the session keeps its thirty days.
+    link_token_ttl_hours: z.number().int().positive(),
+    challenge_cookie_minutes: z.number().int().positive(),
     code_ttl_minutes: z.number().int().positive(),
     code_max_attempts: z.number().int().min(1).max(10),
     session_ttl_days: z.number().int().positive(),

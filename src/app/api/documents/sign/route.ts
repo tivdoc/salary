@@ -34,9 +34,10 @@ export async function POST(request: Request) {
     const supabase = getSupabaseAdmin();
     const { data: salaryCase, error: caseError } = await supabase
       .from("cases")
-      .select("id")
+      .select("id,contact_verified_at")
       .eq("id", caseId)
       .single();
+    if (!caseError && salaryCase && !salaryCase.contact_verified_at) return NextResponse.json({ error: "צריך לאמת את הטלפון או האימייל לפני העלאת מסמכים", code: "contact_unverified" }, { status: 409 });
     if (caseError || !salaryCase) {
       return NextResponse.json({ error: "תיק הבדיקה לא נמצא" }, { status: 404 });
     }

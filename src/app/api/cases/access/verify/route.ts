@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { verifyAccessCode } from "@/server/product/case-access/service";
-import { setCaseSessionCookie } from "@/server/product/case-access/session-cookie";
+import { readCaseIdFromCookie } from "@/lib/case-cookie";
+import { verifyAccessCode, verifyChallengeCode, verifyFunnelCode } from "@/server/product/case-access/service";
+import { clearCaseChallengeCookie, readCaseChallengeCookie, setCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { refusedEntrypoint, strictJsonObject } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
@@ -16,9 +17,11 @@ const CODE_STATUS: Readonly<Record<string, Readonly<{ status: number; code: stri
   request_invalid: { status: 400, code: "access_request_invalid", error: "לא הצלחנו לקרוא את הבקשה" },
 });
 
-// UX Run 1 / U2 (D-1.2, D-1.3): a valid code opens the rolling identity
-// session; the cookie is the whole "account". The sixth attempt is refused
-// before the digits are looked at.
+// UX Run 1 / U2 (D-1.2, D-1.3), corrected by the external review #1: a valid
+// code opens the rolling identity session. Three modes — `funnel` (the case
+// cookie's contact: the verification that links identity to case and lets
+// the funnel continue), `challenge` (the cookie the link exchange set) and
+// a typed `contact`. The sixth attempt is refused before the digits are read.
 export async function POST(request: Request) {
   try {
     await guardStableHttpEntrypoint("CEP-100", request);
@@ -26,16 +29,26 @@ export async function POST(request: Request) {
     return refusedEntrypoint(error);
   }
   const body = await strictJsonObject(request, 4_096);
-  if (!body || typeof body.code !== "string" || (typeof body.token !== "string" && typeof body.contact !== "string")) {
+  if (!body || typeof body.code !== "string" || (body.funnel !== true && body.challenge !== true && typeof body.contact !== "string")) {
     return NextResponse.json({ error: "לא הצלחנו לקרוא את הבקשה", code: "access_request_invalid" }, { status: 400 });
   }
   try {
-    const result = await verifyAccessCode({ token: body.token, contact: body.contact, code: body.code });
+    let result;
+    if (body.funnel === true) {
+      const caseId = await readCaseIdFromCookie();
+      if (!caseId) return NextResponse.json({ error: "לא נמצא תיק בדיקה בדפדפן הזה", code: "case_not_found" }, { status: 401 });
+      result = await verifyFunnelCode({ caseId, code: body.code });
+    } else if (body.challenge === true) {
+      result = await verifyChallengeCode({ challenge: await readCaseChallengeCookie(), code: body.code });
+    } else {
+      result = await verifyAccessCode({ contact: body.contact, code: body.code });
+    }
     if (result.outcome !== "ok") {
       const answer = CODE_STATUS[result.outcome] ?? CODE_STATUS.none!;
       return NextResponse.json({ error: answer.error, code: answer.code }, { status: answer.status, headers: { "Cache-Control": "no-store" } });
     }
     await setCaseSessionCookie(result.session, result.session_ttl_seconds);
+    if (body.challenge === true) await clearCaseChallengeCookie();
     return NextResponse.json({ ok: true, next: result.next }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Case access code verification failed", error instanceof Error ? error.name : "error");

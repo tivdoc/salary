@@ -34,6 +34,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ resumePath: null });
     }
 
+    // External review #1, finding 1: an unverified contact resumes at the verification step, nowhere further.
+    const verified = await supabase.from("cases").select("contact_verified_at").eq("id", caseId).maybeSingle();
+    if (!verified.data?.contact_verified_at) return NextResponse.json({ resumePath: "/check?verify=1", contactVerified: false }, { headers: { "Cache-Control": "no-store" } });
     let resumePath = "/check/upload";
     if (["verified", "paid"].includes(salaryCase.data.payment_status)) {
       resumePath = "/check/received";

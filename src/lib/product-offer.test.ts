@@ -14,7 +14,7 @@ describe("the product offer configuration", () => {
     expect(formatDuration(offer.initial_check.delivery.automatic)).toBe("15 דקות");
     expect(formatDuration(offer.initial_check.delivery.human)).toBe("יום עסקים אחד");
     expect(formatDuration(offer.full_report.delivery)).toBe("3 ימי עסקים");
-    expect(offer.access).toMatchObject({ link_token_ttl_days: 30, code_ttl_minutes: 10, code_max_attempts: 5, session_ttl_days: 30 });
+    expect(offer.access).toMatchObject({ link_token_ttl_hours: 24, challenge_cookie_minutes: 15, code_ttl_minutes: 10, code_max_attempts: 5, session_ttl_days: 30 });
   });
 
   it("no component or landing page carries the price as a literal any more", () => {

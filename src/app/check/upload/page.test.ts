@@ -22,6 +22,8 @@ vi.mock("@/server/platform/capabilities/stable-next-entrypoint", () => ({
 
 vi.mock("@/components/check/upload-form", () => ({ UploadForm: () => null }));
 
+const caseId = "22222222-2222-4222-8222-222222222222";
+
 describe("/check/upload without a case", () => {
   beforeEach(() => {
     cookieJar.clear();
@@ -33,12 +35,26 @@ describe("/check/upload without a case", () => {
     await expect(UploadPage()).rejects.toThrow("REDIRECT:/check");
   });
 
-  it("renders when a signed case cookie is present", async () => {
+  // External review #1, finding 1: a case whose contact was never verified is sent to the verification step, not to the picker.
+  it("redirects an unverified contact to the verification step", async () => {
     const { createHmac } = await import("node:crypto");
-    const caseId = "22222222-2222-4222-8222-222222222222";
-    const signature = createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url");
-    cookieJar.set("tivdoc_salary_case", `${caseId}.${signature}`);
+    const { fakeCaseAccessDb } = await import("@/server/product/case-access/fake-db");
+    const { installCaseAccessDbForTests } = await import("@/server/product/case-access/db");
+    installCaseAccessDbForTests(fakeCaseAccessDb([{ id: caseId, public_id: "TV-UPLOAD01", email: "u@example.com", phone: null, first_name: null, status: "questionnaire_completed", payment_status: "not_started", created_at: "2026-09-05T09:00:00.000Z", payment_verified: false }]));
+    cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
+    const { default: UploadPage } = await import("./page.tsx");
+    await expect(UploadPage()).rejects.toThrow("REDIRECT:/check?verify=1");
+    installCaseAccessDbForTests(null);
+  });
+
+  it("renders when a signed case cookie names a verified case", async () => {
+    const { createHmac } = await import("node:crypto");
+    const { fakeCaseAccessDb } = await import("@/server/product/case-access/fake-db");
+    const { installCaseAccessDbForTests } = await import("@/server/product/case-access/db");
+    installCaseAccessDbForTests(fakeCaseAccessDb([{ id: caseId, public_id: "TV-UPLOAD01", email: "u@example.com", phone: null, first_name: null, status: "questionnaire_completed", payment_status: "not_started", created_at: "2026-09-05T09:00:00.000Z", payment_verified: false, contact_verified_at: Date.now(), contact_verified_channel: "email" }]));
+    cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
     const { default: UploadPage } = await import("./page.tsx");
     await expect(UploadPage()).resolves.toBeDefined();
+    installCaseAccessDbForTests(null);
   });
 });

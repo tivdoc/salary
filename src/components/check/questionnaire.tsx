@@ -8,6 +8,8 @@ import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-
 import { currentFirstTouch } from "@/lib/attribution";
 import { metaEventDescriptor, trackMetaBrowserEventOnce } from "@/lib/meta-browser";
 import { questionnaireSchema } from "@/lib/validation";
+import { AccessChallenge } from "@/components/case/access-challenge";
+import { productOffer } from "@/lib/product-offer";
 
 type FormState = {
   stillEmployed: boolean | null;
@@ -89,6 +91,9 @@ export function Questionnaire() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activeCase, setActiveCase] = useState<string | null>(null);
+  // External review #1, finding 1: the contact is verified by a code before any document binds and before any payment.
+  const [verification, setVerification] = useState<{ to: string | null; channel: "email" | "phone" | null } | null>(null);
+  const [caseCreated, setCaseCreated] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -118,9 +123,17 @@ export function Questionnaire() {
     void fetch("/api/cases/resume", { cache: "no-store" })
       .then(async (response) => (response.ok ? response.json() : null))
       .then((result) => {
+        if (result?.contactVerified === false) {
+          // A case exists in this browser whose contact was never verified: the verification step is where it resumes.
+          setCaseCreated(true);
+          if (new URLSearchParams(window.location.search).get("verify") === "1") void requestVerification();
+          else setActiveCase("/check?verify=1");
+          return;
+        }
         if (typeof result?.resumePath === "string") setActiveCase(result.resumePath);
       })
       .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -185,8 +198,38 @@ export function Questionnaire() {
     moveTo(Math.min(stepTitles.length - 1, step + 1));
   }
 
+  async function requestVerification(contact?: string) {
+    setError("");
+    try {
+      const response = await fetch("/api/cases/access/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contact ? { funnel: true, contact, channel: "email" } : { funnel: true }),
+      });
+      if (!response.ok) throw new Error(await customerErrorFromResponse(response, "access_send_failed"));
+      const result = (await response.json()) as { to?: string | null; channel?: "email" | "phone" | null; already_verified?: boolean };
+      if (result.already_verified) {
+        router.push("/check/upload");
+        return;
+      }
+      setActiveCase(null);
+      setVerification({ to: result.to ?? null, channel: result.channel ?? null });
+    } catch (caught) {
+      setError(customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "access_send_failed"));
+      setSubmitting(false);
+    }
+  }
+
   async function submit() {
     markStarted();
+    if (caseCreated) {
+      // The contact fields were corrected after the case was opened: the case's contact is replaced (while unverified) and a code goes to it.
+      if (!form.email.trim()) { setError("צריך אימייל כדי לשלוח קוד."); return; }
+      setSubmitting(true);
+      await requestVerification(form.email.trim());
+      setSubmitting(false);
+      return;
+    }
     const validationError = validateCurrentStep();
     if (validationError) {
       setError(validationError);
@@ -218,11 +261,29 @@ export function Questionnaire() {
       if (metaEvent) trackMetaBrowserEventOnce(metaEvent);
       trackEvent("questionnaire_step_completed", { step_number: step + 1 });
       trackEvent("questionnaire_completed");
-      router.push("/check/upload");
+      setCaseCreated(true);
+      await requestVerification();
+      setSubmitting(false);
     } catch (caught) {
       setError(customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "case_create_failed"));
       setSubmitting(false);
     }
+  }
+
+  if (verification) {
+    return (
+      <div className="questionnaire">
+        <AccessChallenge
+          mode="funnel"
+          publicId={null}
+          maskedTo={verification.to}
+          channel={verification.channel}
+          codeTtlMinutes={productOffer().access.code_ttl_minutes}
+          onVerified={(next) => router.push(next)}
+          onChangeContact={() => { setVerification(null); setStep(6); }}
+        />
+      </div>
+    );
   }
 
   return (
@@ -344,7 +405,7 @@ export function Questionnaire() {
             </div>
             <div className="questionnaire__trust">
               <span><LockKey weight="duotone" aria-hidden="true" /> פרטי ומאובטח</span>
-              <span><Timer weight="duotone" aria-hidden="true" /> נשאר רק להעלות תלוש</span>
+              <span><Timer weight="duotone" aria-hidden="true" /> נשלח קוד אימות, ואז מעלים תלוש</span>
             </div>
           </div>
         )}
@@ -364,7 +425,7 @@ export function Questionnaire() {
           </button>
         ) : (
           <button className="button button--primary" type="button" disabled={submitting} onClick={submit}>
-            {submitting ? "פותחים את הבדיקה..." : "פתיחת תיק והעלאת תלוש"}
+            {submitting ? (caseCreated ? "שולחים קוד..." : "פותחים את הבדיקה...") : caseCreated ? "עדכון ושליחת קוד" : "פתיחת תיק ושליחת קוד אימות"}
             <ArrowLeft aria-hidden="true" />
           </button>
         )}

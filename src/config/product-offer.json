@@ -3,19 +3,39 @@
   "note": "UX Run 1 / U9 (D-4.3, D-7.3): price, delivery estimate and access limits are configuration, read by every screen and every analytics event; nothing in a component carries a figure of its own. Values marked default in the design authority v1.1 are marked default here too.",
   "currency": "ILS",
   "initial_check": {
-    "price": { "amount": "9.99", "currency": "ILS" },
+    "price": {
+      "amount": "9.99",
+      "currency": "ILS"
+    },
     "delivery": {
-      "automatic": { "value": 15, "unit": "minutes", "default": true },
-      "human": { "value": 1, "unit": "business_days", "default": true }
+      "automatic": {
+        "value": 15,
+        "unit": "minutes",
+        "default": true
+      },
+      "human": {
+        "value": 1,
+        "unit": "business_days",
+        "default": true
+      }
     }
   },
   "full_report": {
-    "price": { "amount": "149.00", "currency": "ILS", "default": true },
-    "delivery": { "value": 3, "unit": "business_days", "default": true }
+    "price": {
+      "amount": "149.00",
+      "currency": "ILS",
+      "default": true
+    },
+    "delivery": {
+      "value": 3,
+      "unit": "business_days",
+      "default": true
+    }
   },
   "second_product_sentence": "בדיקה ראשונית 9.99 ₪. אם יימצאו נקודות לבדיקה, קיים דוח מורחב בתשלום נפרד. המחיר מוצג לפני כל תשלום.",
   "access": {
-    "link_token_ttl_days": 30,
+    "link_token_ttl_hours": 24,
+    "challenge_cookie_minutes": 15,
     "code_ttl_minutes": 10,
     "code_max_attempts": 5,
     "session_ttl_days": 30,

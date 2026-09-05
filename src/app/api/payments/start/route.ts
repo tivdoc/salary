@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     const [caseResult, documentResult] = await Promise.all([
       supabase
         .from("cases")
-        .select("id,public_id,first_name,email,phone,status,payment_status")
+        .select("id,public_id,first_name,email,phone,status,payment_status,contact_verified_at")
         .eq("id", caseId)
         .single(),
       supabase
@@ -104,6 +104,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "תיק הבדיקה לא נמצא" }, { status: 404 });
     }
 
+    if (!salaryCase.contact_verified_at) return NextResponse.json({ error: "צריך לאמת את הטלפון או האימייל לפני התשלום", code: "contact_unverified" }, { status: 409 });
     if (["paid", "verified"].includes(salaryCase.payment_status)) {
       return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
     }
