@@ -8,6 +8,7 @@ import {
   REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC,
   REST_DAY_THRESHOLD_STATUTE_8_SPEC,
   REST_DAY_THRESHOLD_WORKER_NORM_SPEC,
+  WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC,
   SENSITIVITY_SPECS,
   WORKING_TIME_DAILY_THRESHOLD_DECISION,
   WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC,
@@ -81,7 +82,11 @@ describe("overtime on the weekly rest: one decision, two computations (D2)", () 
     // L11-4 / D3.3: the multiplicative reading is retired from the set (its spec
     // above is the regression fixture); D3.5 adds the rest-day threshold pair.
     const entries = SENSITIVITY_SPECS.filter((entry) => entry.composition_branch !== undefined);
+    // L12-2 / D2: the daily threshold is a composition too — the statute's whole-hour
+    // tiers and the derived five-day norm are two computations under one decision.
     expect(entries.map((entry) => [entry.decision_id, entry.composition_branch])).toEqual([
+      ["legal.reference.il.decision.working_time_daily_threshold", "statute"],
+      ["legal.reference.il.decision.working_time_daily_threshold", "administrative"],
       ["legal.reference.il.decision.rest_day_overtime_composition", "additive"],
       ["legal.reference.il.decision.rest_day_daily_threshold", "worker_daily_norm"],
       ["legal.reference.il.decision.rest_day_daily_threshold", "statute_8"],
@@ -112,19 +117,19 @@ describe("L7-9 / D6: a day's overtime derived from hours worked and the daily th
     expect(trace.find(([id]) => id === "overtime.hours")?.[1]).toEqual({ kind: "integer", value: 0, unit: "hours" });
   });
 
-  it("carries the daily-threshold decision with one bound branch and one unbound, named", () => {
-    const entry = SENSITIVITY_SPECS.find((candidate) => candidate.spec === WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC)!;
-    expect(entry.decision_id).toBe(WORKING_TIME_DAILY_THRESHOLD_DECISION);
-    expect(entry.branches).toEqual([["statute", "1951.1.0"]]);
-    expect(entry.unbound_branches).toEqual([expect.objectContaining({ branch: "administrative" })]);
-    // L11-5 / D3.6: the attribution is the steering committee's reading (24.4.2018) via kolzchut, at agreement_interpretation; the 10.6.2018 directive is the 182 divisor's.
-    const reason = entry.unbound_branches![0].reason;
-    expect(reason).toContain("steering_committee_2018-04-24");
-    expect(reason).toContain("kolzchut");
-    expect(reason).toContain("agreement_interpretation");
-    expect(reason).toContain("182-hour divisor");
-    expect(reason).not.toMatch(/would bind at administrative/u);
-    expect(entry.unbound_branches?.[0].reason).toContain("BL-24");
+  it("L12-2 / D2: carries the daily-threshold decision as two bound computations, the statute's and the derived norm's, and names the nine-hour reading as unbound", () => {
+    const statute = SENSITIVITY_SPECS.find((candidate) => candidate.spec === WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC)!;
+    expect(statute.decision_id).toBe(WORKING_TIME_DAILY_THRESHOLD_DECISION);
+    expect(statute.branches).toEqual([]);
+    expect(statute.composition_branch).toBe("statute");
+    const derived = SENSITIVITY_SPECS.find((candidate) => candidate.spec === WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC)!;
+    expect(derived.decision_id).toBe(WORKING_TIME_DAILY_THRESHOLD_DECISION);
+    expect(derived.composition_branch).toBe("administrative");
+    expect(derived.bindings.find((binding) => binding.ref_id === "parameter.daily.threshold.five.day")).toMatchObject({ parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "2018.1.0" });
+    expect(derived.unbound_branches).toEqual([expect.objectContaining({ branch: "nine_hour_day", reason: expect.stringContaining("V12") })]);
+    const reason = derived.unbound_branches![0].reason;
+    expect(reason).toContain("not derived here");
+    expect(reason).not.toContain("BL-24");
   });
 });
 
@@ -155,5 +160,47 @@ describe("L11-4 / D3.5: the rest day's own threshold, two computations at low co
       expect(JSON.stringify(spec)).not.toMatch(/175|200|1\.75|\b7\/4\b|\b9\/4\b|15\/8/u);
       expect(spec.nodes.some((node) => node.operation === "multiply")).toBe(false);
     }
+  });
+});
+
+describe("L12-2 / D2: the derived five-day norm runs — 8.6 on a five-day week, the statute's eight on a six-day week", () => {
+  const FIVE_DAY = [
+    { ref_id: "parameter.daily.threshold.five.day", value: { kind: "rational" as const, numerator: "43", denominator: "5", unit: "hours" } },
+    { ref_id: "parameter.short.day.threshold", value: { kind: "rational" as const, numerator: "38", denominator: "5", unit: "hours" } },
+    { ref_id: "parameter.daily.threshold.statute", value: hours(8) },
+    ...PARAMETERS.slice(0, 2),
+  ];
+  const run = (worked: number, days: number, wageMinor: number) => executeRuleSpecAtomic({
+    rule: WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC,
+    facts: [
+      { ref_id: "fact.hours.worked.day", value: hours(worked) },
+      { ref_id: "fact.days.per.week", value: { kind: "integer", value: days, unit: "days_per_week" } },
+      { ref_id: "fact.regular.hourly.wage", value: wage(wageMinor) },
+    ],
+    parameters: FIVE_DAY,
+  } as never);
+
+  it("twelve hours on a five-day week are 3.4 overtime hours: 2 × 1¼ + 1.4 × 1½ = 4.6 hours at 30.00 = 138.00, one rounding", () => {
+    expect(money(run(12, 5, 3_000))).toBe("13800");
+    const trace = run(12, 5, 3_000).execution?.trace.map((step) => [step.step_id, step.result]) ?? [];
+    expect(trace.find(([id]) => id === "daily.threshold")?.[1]).toEqual({ kind: "rational", numerator: "43", denominator: "5", unit: "hours" });
+    expect(trace.find(([id]) => id === "overtime.hours")?.[1]).toEqual({ kind: "rational", numerator: "17", denominator: "5", unit: "hours" });
+    // The derivation's weekly identity, traced beside the output: 4 × 8.6 + 7.6 = 42.
+    expect(trace.find(([id]) => id === "weekly.hours.from.daily")?.[1]).toEqual({ kind: "rational", numerator: "42", denominator: "1", unit: "hours" });
+  });
+
+  it("the same twelve hours on a six-day week are the statute's four: 165.00 — unchanged from the statute's own text", () => {
+    expect(money(run(12, 6, 3_000))).toBe("16500");
+  });
+
+  it("a day within the norm has no overtime: eight hours on a five-day week pay nothing; 8.6 is the threshold, not 8", () => {
+    expect(money(run(8, 5, 3_000))).toBe("0");
+    expect(money(run(7, 5, 3_000))).toBe("0");
+  });
+
+  it("authors no figure: every rational constant is 0 or 1, the two-hour tier and the four days are composed from ones", () => {
+    const constants = WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC.nodes.filter((node) => node.operation === "constant.rational");
+    expect(constants.every((node) => (node as { value: string }).value === "0" || (node as { value: string }).value === "1")).toBe(true);
+    expect(JSON.stringify(WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC.nodes)).not.toMatch(/8\.6|7\.6|43|38/u);
   });
 });

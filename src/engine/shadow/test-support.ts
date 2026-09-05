@@ -34,6 +34,10 @@ export const TEST_PARAMETER_VALUES: Readonly<Record<string, RuleSpecInputValue["
   "parameter.rate.second": ratio("3", "2"),
   "parameter.rate.rest": ratio("3", "2"),
   "parameter.daily.threshold": integer(8, "hours"),
+  // L12-2 / D2: the derived five-day norm and its inputs.
+  "parameter.daily.threshold.five.day": { kind: "rational", numerator: "43", denominator: "5", unit: "hours" },
+  "parameter.short.day.threshold": { kind: "rational", numerator: "38", denominator: "5", unit: "hours" },
+  "parameter.daily.threshold.statute": integer(8, "hours"),
   "parameter.days.year.1": integer(5, "days"),
   "parameter.days.years.2.to.3": integer(6, "days"),
   "parameter.days.years.4.to.10": integer(7, "days"),

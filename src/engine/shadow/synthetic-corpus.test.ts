@@ -19,7 +19,8 @@ import { testParametersFor } from "./test-support.ts";
 // L8-4 / D5: every golden month declares its population as a fact.
 // L11-4 / D3.3 and D3.4: the multiplicative rest-day reading left the set; two convalescence edge months joined it
 // (June 2026 paid at the 2023 rate; a 2027 month whose rate is not published).
-const CORPUS_SHA256 = "2564a16a01f73e8c56d3ab2f06efe4b57979c713a41b1cc1d67cc9075c09e061";
+// L12-2 / D2: every working-time month declares its five-day schedule and runs the derived norm.
+const CORPUS_SHA256 = "4a9edd2b5d82151745cf949d2e17e077fd5e77d1e181d279b9240c9eca53c6d4";
 
 function runCase(entry: SyntheticCase, shadowId: string) {
   const spec = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
@@ -111,8 +112,9 @@ describe("the synthetic corpus", () => {
       expect([...seen.get(entry.case_id)!].sort(), entry.case_id).toEqual([...entry.expected.codes].sort());
     }
     // L11-4: minus the retired multiplicative reading (five runs, two refusals), plus two convalescence months that run.
-    expect(ran).toBe(73);
-    expect(refused).toBe(31);
+    // L12-2: the derived five-day norm runs on six golden months and one edge month, refuses the unconfirmed wage.
+    expect(ran).toBe(79);
+    expect(refused).toBe(33);
   });
 
   it("finds a case by id and refuses an unknown one", () => {

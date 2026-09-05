@@ -19,6 +19,7 @@
 // way a value reaches the executor. A slot whose fact is missing, conflicted,
 // unconfirmed, stale or of the wrong shape is a rejection, and the case does
 // not run.
+import type { EmploymentSnapshot } from "../facts/snapshot.ts";
 import { havraaBranchGuard } from "../legal-quality/convalescence-rate-table.ts";
 import { buildBlankGoldenCaseTemplates } from "../legal-quality/golden-case-templates.ts";
 import {
@@ -35,6 +36,7 @@ import {
   TRAVEL_DAILY_CAP_SPEC,
   VACATION_SENIORITY_BAND_SPEC,
   WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC,
+  WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC,
   WORKING_TIME_OVERTIME_SPEC,
   type SensitivityBinding,
   type SensitivitySpec,
@@ -214,6 +216,8 @@ const INPUT_SOURCES: Readonly<Record<string, InputSource>> = Object.freeze({
   "fact.hours.worked.day": { fact_path: "work.hours_worked_day", transformation_id: "canonical.hours.per.day.integer" },
   "fact.rest.day.overtime.hours.day": { fact_path: "work.rest_day_overtime_hours", transformation_id: "canonical.hours.per.day.integer" },
   "fact.regular.hourly.wage": { fact_path: "compensation.hourly_rate", transformation_id: "canonical.money.identity" },
+  // L12-2 / D2: the weekly schedule, from the month's declared workdays.
+  "fact.days.per.week": { fact_path: "work.workdays", transformation_id: "canonical.workdays.per.week" },
 });
 
 const MINIMUM_CONFIDENCE = 0.8;
@@ -285,7 +289,7 @@ export type DraftShadowSpec = Readonly<{
    * the havraa_year branch refuses a month whose convalescence year has no
    * published rate (`rate_not_published`). Null means run.
    */
-  branch_guard?: (input: Readonly<{ branch: string | null; period: Readonly<{ start: string; end: string }> | null }>) => string | null;
+  branch_guard?: (input: Readonly<{ branch: string | null; period: Readonly<{ start: string; end: string }> | null; snapshot: EmploymentSnapshot }>) => string | null;
 }>;
 
 function sensitivityOf(spec: RuleSpecPackage): SensitivitySpec {
@@ -365,16 +369,29 @@ const CONVALESCENCE_PAY_BINDINGS: readonly SensitivityBinding[] = [
 ];
 
 /**
- * The executable set, in the order the report lists topics. Fourteen specs
- * over seven topics; nine are the sensitivity specs verbatim, three are shadow
+ * The executable set, in the order the report lists topics. Fifteen specs
+ * over seven topics; ten are the sensitivity specs verbatim, three are shadow
  * forms whose inputs are payslip facts, two (L8-3) run under the pension
  * precedence decision with no sensitivity counterpart. L11-4 / D3.3 retired
  * the multiplicative rest-day reading from the set.
  */
+
+/** L12-2 / D2: the five-day norm needs a declared schedule of five or six days; anything else is refused by name. */
+export function scheduleGuard(input: Readonly<{ branch: string | null; period: Readonly<{ start: string; end: string }> | null; snapshot: EmploymentSnapshot }>): string | null {
+  const fact = input.snapshot.facts.find((entry) => entry.path === "work.workdays");
+  const days = (fact?.value as { days?: readonly string[] } | null | undefined)?.days;
+  if (!Array.isArray(days)) return "schedule_unknown";
+  return days.length === 5 || days.length === 6 ? null : "schedule_unknown";
+}
+
 export const DRAFT_SHADOW_SPECS: readonly DraftShadowSpec[] = Object.freeze([
   fromSensitivity(MINIMUM_WAGE_HOURLY_SPEC),
   fromSensitivity(WORKING_TIME_OVERTIME_SPEC),
   fromSensitivity(WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC),
+  // L12-2 / D2: the derived five-day norm runs beside the statute's eight under
+  // the same decision; a month without a declared schedule, or with one that
+  // is neither five nor six days, is refused schedule_unknown before it runs.
+  { ...fromSensitivity(WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC), branch_guard: scheduleGuard },
   { ...fromSensitivity(REST_DAY_OVERTIME_ADDITIVE_SPEC), decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION },
   shadowForm(PENSION_WAGE_CAP_SHADOW_SPEC, PENSION_WAGE_CAP_SPEC, sensitivityOf(PENSION_WAGE_CAP_SPEC).bindings),
   shadowForm(PENSION_CONTRIBUTION_SHADOW_SPEC, PENSION_CONTRIBUTION_SPEC, sensitivityOf(PENSION_CONTRIBUTION_SPEC).bindings),

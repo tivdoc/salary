@@ -41,7 +41,7 @@ describe("the draft shadow run", () => {
     expect(first.result_sha256).toBe(second.result_sha256);
     expect(first.execution_mode).toBe("draft_parameters_synthetic_inputs");
     expect(first.corpus_sha256).toBe(SYNTHETIC_CORPUS_SHA256);
-    expect(first.counts).toMatchObject({ cases: SYNTHETIC_CORPUS.length, executions: 104, ran: 72, preparation_refused: 28, executor_refused: 4, active_real_parameter_count: 0, monetary_output_count: 0, finding_count: 0, customer_report_count: 0 });
+    expect(first.counts).toMatchObject({ cases: SYNTHETIC_CORPUS.length, executions: 112, ran: 78, preparation_refused: 30, executor_refused: 4, active_real_parameter_count: 0, monetary_output_count: 0, finding_count: 0, customer_report_count: 0 });
     expect(first.counts.deltas_computed + first.counts.deltas_not_applicable + first.counts.deltas_paid_refused).toBe(first.counts.ran);
     expect(first.counts.deltas_paid_refused).toBe(0);
     for (const execution of first.executions) {
@@ -72,7 +72,7 @@ describe("the draft shadow run", () => {
     }
     expect([...byDecision.entries()].map(([id, branches]) => [id.replace(/^legal\.reference\.il\.decision\./u, ""), [...branches].sort()])).toEqual([
       ["min_wage_hourly_divisor", ["182", "186"]],
-      ["working_time_daily_threshold", ["statute"]],
+      ["working_time_daily_threshold", ["administrative", "statute"]],
       ["rest_day_overtime_composition", ["additive"]],
       ["pension_wage_cap_section", ["section1", "section2"]],
       ["pension_2011_2016_precedence", ["order_2011_2014_row", "order_2016_2017_rates"]],

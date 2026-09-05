@@ -50,6 +50,9 @@ const PARAMETER_VALUES: Readonly<Record<string, RuleSpecInputValue["value"]>> = 
   "parameter.rate.second": ratio("3", "2"),
   "parameter.rate.rest": ratio("3", "2"),
   "parameter.daily.threshold": integer(8, "hours"),
+  "parameter.daily.threshold.five.day": { kind: "rational", numerator: "43", denominator: "5", unit: "hours" },
+  "parameter.short.day.threshold": { kind: "rational", numerator: "38", denominator: "5", unit: "hours" },
+  "parameter.daily.threshold.statute": integer(8, "hours"),
   "parameter.days.year.1": integer(5, "days"),
   "parameter.days.years.2.to.3": integer(6, "days"),
   "parameter.days.years.4.to.10": integer(7, "days"),
@@ -66,6 +69,7 @@ const MONTH_FACTS: readonly SyntheticFactSeed[] = [
   { path: "employment.start_date", value: "2023-03-01", source_type: "declared" },
   { path: "work.regular_hours", value: { amount: "182", unit: "hours_per_month" }, source_type: "documented" },
   { path: "work.overtime_hours", value: { amount: "4", unit: "hours_per_day" }, source_type: "documented" },
+  { path: "work.workdays", value: { days: ["sunday", "monday", "tuesday", "wednesday", "thursday"] }, source_type: "documented" },
   { path: "work.hours_worked_day", value: { amount: "12", unit: "hours_per_day" }, source_type: "documented" },
   { path: "work.rest_day_overtime_hours", value: { amount: "3", unit: "hours_per_day" }, source_type: "declared" },
   { path: "work.workdays_in_month", value: { days: 22 }, source_type: "derived" },
@@ -98,15 +102,15 @@ function outputOf(outcome: ReturnType<typeof executeRuleSpecAtomic> | null): unk
 }
 
 describe("the draft shadow set", () => {
-  it("covers the seven topics with fourteen specs (L11-4 retired the multiplicative rest-day reading), three of them shadow forms and two under the pension decision alone", () => {
+  it("covers the seven topics with fifteen specs (L11-4 retired the multiplicative rest-day reading; L12-2 added the derived five-day norm), three of them shadow forms and two under the pension decision alone", () => {
     expect(DRAFT_SHADOW_TOPICS).toEqual(["minimum_wage", "working_time", "pension", "travel", "convalescence", "vacation", "sick_leave"]);
-    expect(DRAFT_SHADOW_SPECS).toHaveLength(14);
+    expect(DRAFT_SHADOW_SPECS).toHaveLength(15);
     expect(DRAFT_SHADOW_SPECS.filter((entry) => entry.shadow_form_of !== null).map((entry) => entry.shadow_id)).toEqual([
       "pension.wage.cap.on.wage",
       "pension.employee.contribution.on.wage",
       "convalescence.pay.by.seniority",
     ]);
-    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(14);
+    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(15);
     expect(DRAFT_SHADOW_SPECS.some((entry) => entry.shadow_id === "working.time.rest.day.overtime.multiplicative")).toBe(false);
     // L8-3 / D4: the employer and severance specs run under the precedence decision, both branches, no sensitivity counterpart.
     for (const shadowId of ["pension.employer.contribution.on.wage", "pension.severance.contribution.on.wage"]) {
@@ -123,8 +127,8 @@ describe("the draft shadow set", () => {
     const slots = boundInputSlots();
     const declared = DRAFT_SHADOW_SPECS.reduce((sum, entry) => sum + entry.spec.facts.length, 0);
     expect(slots).toHaveLength(declared);
-    // L11-4 / D3.3: the retired multiplicative reading declared two of the nineteen.
-    expect(slots).toHaveLength(17);
+    // L11-4 / D3.3: the retired multiplicative reading declared two of the nineteen; L12-2 / D2 declares three more.
+    expect(slots).toHaveLength(20);
     for (const entry of DRAFT_SHADOW_SPECS) {
       expect(entry.input_mappings.registry.mappings.map((mapping) => mapping.input_id).sort()).toEqual(entry.spec.facts.map((fact) => fact.ref_id).sort());
       expect(entry.input_mappings.registry.registry_version).toBe("2.0.0");
@@ -157,6 +161,8 @@ describe("the draft shadow set", () => {
     expect(outputs.get("minimum.wage.hourly.entitlement")).toEqual(money(631_176));
     // 4 overtime hours on 40.00: 2 × 1.25 + 2 × 1.5 = 5.5 hours.
     expect(outputs.get("working.time.overtime.pay")).toEqual(money(22_000));
+    // 12 hours worked over the derived 8.6-hour threshold on a five-day week: 3.4 hours, 2 × 1.25 + 1.4 × 1.5 = 4.6 hours at 40.00.
+    expect(outputs.get("working.time.overtime.five.day.norm")).toEqual(money(18_400));
     // 12 hours worked over an 8-hour threshold: the same 4 overtime hours, derived.
     expect(outputs.get("working.time.overtime.from.hours.worked")).toEqual(money(22_000));
     // A 15,000 wage capped at 13,788; 6% of it.

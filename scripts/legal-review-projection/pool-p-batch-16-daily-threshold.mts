@@ -70,9 +70,12 @@ async function main(): Promise<void> {
       // committee's reading of the 42-hour order (24.4.2018) via kolzchut; the
       // 10.6.2018 directive concerns the 182 divisor. The row itself carries the
       // correction as an annotation (bl24-attribution-annotation.mts).
-      administrative: { bound: false, reason: "BL-24: the 8.6 / 7.6 daily figures come from the steering committee's interpretation of the 42-hour extension order (24.4.2018) as reported by kolzchut, not from the 10.6.2018 directive (the 182 divisor); no official artifact carries them; non-official pages not acceptable; no fetch", would_bind_at: "agreement_interpretation", sources: ["steering_committee_2018-04-24", "kolzchut"] },
+      // L12-1 / D1: bound as a derived figure (batch 20): 43/5 hours from the 2018
+      // order's 42 and its one-hour reduction under the assumption
+      // five_day_even_distribution; grade derived, never text or administrative.
+      administrative: { bound: true, parameter_version_id: "il.working_time.daily_overtime_threshold_hours@2018.1.0", grade: "derived", derivation: "batch-20-derived-daily-norm", assumption_slot: "five_day_even_distribution", rule_spec_id: "il.rulespec.working.time.overtime.five.day.norm", corroboration: ["steering_committee_2018-04-24", "kolzchut"] },
     },
-    blocked_ledger: "BL-24 stays open with the corrected attribution; P-15/P-16 stay blocked at agreement_interpretation; the statute branch is what the shadow runs; the owner-recorded resolution selects the administrative branch as default, unbound",
+    blocked_ledger: "BL-24 closes as bound_derived_pending_V11: the administrative branch is bound at grade derived on a stated assumption V11 can invalidate; no official artifact carries 8.6 / 7.6 and none is claimed; the owner-recorded default now executes",
   };
   writeFileSync(path.join(RECEIPT_ROOT, "batch-16-daily-threshold.json"), `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
   console.log(`L7_9_BATCH16 ${JSON.stringify({ registered: 1, decisions: 1, grade: "text_verified" })}`);

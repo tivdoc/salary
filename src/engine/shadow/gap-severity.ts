@@ -34,6 +34,8 @@ export type GapSeverityDecision = Readonly<{
   order_branch: string;
   statutory_figure: string;
   order_figure: string;
+  /** L12-2 / D2: what the class means in the DEFAULT view, in one Hebrew sentence. */
+  default_view_note_he: string;
 }>;
 
 const DECISION = "legal.reference.il.decision";
@@ -46,6 +48,7 @@ export const GAP_SEVERITY_DECISIONS: readonly GapSeverityDecision[] = Object.fre
     order_branch: "182",
     statutory_figure: "the monthly minimum wage ÷ 186 (Minimum Wage Law §6)",
     order_figure: "the monthly minimum wage ÷ 182 (2018 42-hour extension order; Labour Ministry directive of 10.6.2018)",
+    default_view_note_he: "בתצוגת ברירת המחדל (182) תשלום בין 34.64 ל־35.40 לשעה הוא פער מסוג זכות מכוח צו הרחבה; מתחת ל־34.64 — הפרה סטטוטורית.",
   },
   {
     decision_id: `${DECISION}.working_time_daily_threshold`,
@@ -53,7 +56,8 @@ export const GAP_SEVERITY_DECISIONS: readonly GapSeverityDecision[] = Object.fre
     statutory_branch: "statute",
     order_branch: "administrative",
     statutory_figure: "8 hours a day (§2(א), Hours of Work and Rest Law 1951)",
-    order_figure: "8.6 hours a day on a five-day week, 7.6 on its short day (steering-committee interpretation of the 42-hour order, 24.4.2018; unbound, BL-24)",
+    order_figure: "8.6 hours a day on the regular day of a five-day week, 7.6 on its shortened day — derived (43 ÷ 5; 4 × 8.6 + 7.6 = 42) from the 2018 order under the assumption five_day_even_distribution, grade derived, bound since L12-1",
+    default_view_note_he: "בתצוגת ברירת המחדל (8.6 / 7.6) שעה בין 8.0 ל־8.6 ביום רגיל בשבוע של חמישה ימים אינה פער; לפי ענף החוק (8) היא זכות מכוח צו הרחבה — לא הפרה סטטוטורית.",
   },
 ]);
 
@@ -76,6 +80,9 @@ export type GapSeverity = Readonly<{
   gap_under: readonly ("statute" | "order")[];
   statutory_delta: string | null;
   order_delta: string | null;
+  /** L12-2 / D2: the default view — which branch is the default and whether the month is short under it. */
+  default_branch?: string | null;
+  gap_under_default?: boolean | null;
 }>;
 
 export function gapSeverityDecision(decisionId: string): GapSeverityDecision | null {

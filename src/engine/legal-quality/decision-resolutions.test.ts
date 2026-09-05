@@ -93,9 +93,18 @@ describe("L11-2 / D2: the default branch — the one thing a resolution changes"
     expect(defaultBranchOf(hourly)).toMatchObject({ branch: "182", source: "owner_recorded_resolution", selected_bound: true });
   });
 
+  it("L12-2 / D2: the daily threshold's selected branch is bound and executes as the default; a composition member asked alone reports its own branch", () => {
+    const entries = SENSITIVITY_SPECS.filter((entry) => entry.decision_id?.endsWith("working_time_daily_threshold"));
+    const siblings = entries.map((entry) => entry.composition_branch).filter((name): name is string => typeof name === "string");
+    expect(siblings).toEqual(["statute", "administrative"]);
+    expect(defaultBranchOf(entries[0], { composition_branches: siblings })).toMatchObject({ branch: "administrative", source: "owner_recorded_resolution", selected_branch: "administrative", selected_bound: true });
+    expect(defaultBranchOf(entries[0])).toMatchObject({ branch: "statute", source: "composition_member", selected_branch: "administrative", selected_bound: null });
+    expect(defaultBranchOf(entries[1])).toMatchObject({ branch: "administrative", source: "owner_recorded_resolution", selected_bound: true });
+  });
+
   it("runs the first bound branch and says so when the selected branch is named but unbound", () => {
-    const threshold = SENSITIVITY_SPECS.find((entry) => entry.decision_id?.endsWith("working_time_daily_threshold"))!;
-    expect(defaultBranchOf(threshold)).toMatchObject({ branch: "statute", source: "first_bound_fallback", selected_branch: "administrative", selected_bound: false });
+    const shape = { decision_id: "legal.reference.il.decision.working_time_daily_threshold", branches: [["statute", "1951.1.0"]] as ReadonlyArray<readonly [string, string]>, unbound_branches: [{ branch: "administrative", reason: "a shape for the test: the branch named and not bound" }] };
+    expect(defaultBranchOf(shape)).toMatchObject({ branch: "statute", source: "first_bound_fallback", selected_branch: "administrative", selected_bound: false });
   });
 
   it("falls back to the first listed branch only where no resolution exists, and to nothing where there is no decision", () => {

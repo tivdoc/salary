@@ -39,6 +39,7 @@ describe("paid components", () => {
       "minimum.wage.hourly.entitlement",
       "working.time.overtime.pay",
       "working.time.overtime.from.hours.worked",
+      "working.time.overtime.five.day.norm",
       "working.time.rest.day.overtime.additive",
       "pension.employee.contribution.on.wage",
       "pension.employer.contribution.on.wage",

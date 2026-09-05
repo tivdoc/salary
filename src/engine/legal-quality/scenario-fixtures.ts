@@ -71,10 +71,12 @@ const MONTHS = (numerator: string, denominator = "1") => ({ kind: "rational" as 
 const DAYS = (value: number) => ({ kind: "integer" as const, value, unit: "days" });
 /** L6-3. A count of hours in a day, for the overtime tiers. */
 const HOURS = (value: number) => ({ kind: "integer" as const, value, unit: "hours" });
+/** L12-2. The weekly schedule as a count of working days: five here, the statute's six elsewhere. */
+const DAYS_PER_WEEK = (value: number) => ({ kind: "integer" as const, value, unit: "days_per_week" });
 /** L6-3. A money fact — a regular hourly wage the premium scales. Synthetic, like every other value here. */
 const MONEY = (minorUnits: number) => ({ kind: "money" as const, currency: "ILS", minor_units: minorUnits });
 
-type SeedValue = ReturnType<typeof RATIO> | ReturnType<typeof YEARS> | ReturnType<typeof MONTHS> | ReturnType<typeof DAYS> | ReturnType<typeof HOURS> | ReturnType<typeof MONEY>;
+type SeedValue = ReturnType<typeof RATIO> | ReturnType<typeof YEARS> | ReturnType<typeof MONTHS> | ReturnType<typeof DAYS> | ReturnType<typeof HOURS> | ReturnType<typeof MONEY> | ReturnType<typeof DAYS_PER_WEEK>;
 /**
  * A topic supplies one input per fact its specs declare. Most topics have one;
  * sick_leave has two because its entitlement is two computations — how many
@@ -177,6 +179,16 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
           current: HOURS(9), effective_date_boundary: HOURS(9), sector_population: HOURS(8),
           missing_conflicted_facts: HOURS(9), precedence_overlap: HOURS(9),
           parameter_rounding_boundary: HOURS(8),
+        },
+      },
+      // L12-2 / D2: every sensitivity scenario is a five-day week, so the derived
+      // norm applies; the six-day case (the statute's eight) is a unit test.
+      {
+        ref_id: "fact.days.per.week",
+        per_scenario: {
+          current: DAYS_PER_WEEK(5), effective_date_boundary: DAYS_PER_WEEK(5), sector_population: DAYS_PER_WEEK(5),
+          missing_conflicted_facts: DAYS_PER_WEEK(5), precedence_overlap: DAYS_PER_WEEK(5),
+          parameter_rounding_boundary: DAYS_PER_WEEK(5),
         },
       },
     ],

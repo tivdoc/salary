@@ -34,7 +34,7 @@ describe("the branch comparison", () => {
       ["pension_2011_2016_precedence", ["order_2011_2014_row", "order_2016_2017_rates"]],
       ["pension_wage_cap_section", ["section1", "section2"]],
       ["rest_day_overtime_composition", ["additive"]],
-      ["working_time_daily_threshold", ["statute"]],
+      ["working_time_daily_threshold", ["administrative", "statute"]],
     ]);
   });
 
@@ -51,12 +51,12 @@ describe("the branch comparison", () => {
     expect(pension.cases_compared).toBe(15);
   });
 
-  it("a decision with an unbound branch names it, with its reason, and runs only the bound one", () => {
+  it("L12-2 / D2: the daily threshold runs both bound computations, names the nine-hour reading as unbound, and separates the branches wherever the day exceeds eight hours", () => {
     const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
-    expect(threshold.branches).toEqual(["statute"]);
-    expect(threshold.unbound_branches).toEqual([expect.objectContaining({ branch: "administrative", reason: expect.stringContaining("BL-24") })]);
-    expect(threshold.cases_differing).toBe(0);
-    expect(threshold.cases.every((entry) => entry.by_branch.length === 1)).toBe(true);
+    expect(threshold.branches).toEqual(["administrative", "statute"]);
+    expect(threshold.unbound_branches).toEqual([expect.objectContaining({ branch: "nine_hour_day", reason: expect.stringContaining("V12") })]);
+    expect(threshold.cases_differing).toBeGreaterThan(0);
+    expect(threshold.cases.filter((entry) => entry.comparable).every((entry) => entry.by_branch.length === 2)).toBe(true);
   });
 
   it("states a difference per case, exact and in the output's unit, and never accepts a branch", () => {
@@ -100,7 +100,7 @@ describe("the branch comparison", () => {
       expect(entry.by_branch.filter((row) => !row.is_default).every((row) => row.difference_from_default !== null)).toBe(true);
     }
     const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
-    expect(threshold).toMatchObject({ default_branch: "statute", default_branch_source: "first_bound_fallback", selected_branch: "administrative", selected_branch_bound: false });
+    expect(threshold).toMatchObject({ default_branch: "administrative", default_branch_source: "owner_recorded_resolution", selected_branch: "administrative", selected_branch_bound: true });
     const composition = comparison.find((entry) => entry.decision_id.endsWith("rest_day_overtime_composition"))!;
     expect(composition.default_branch).toBe("additive");
   });
@@ -111,12 +111,19 @@ describe("the branch comparison", () => {
     for (const entry of wage.cases) {
       const statutory = entry.by_branch.find((row) => row.branch === "186")?.delta ?? null;
       const order = entry.by_branch.find((row) => row.branch === "182")?.delta ?? null;
-      expect(entry.gap_severity).toEqual(classifyGapFromDeltas({ statutory_delta: statutory, order_delta: order, order_bound: true }));
+      expect(entry.gap_severity).toMatchObject(classifyGapFromDeltas({ statutory_delta: statutory, order_delta: order, order_bound: true }));
+      expect(entry.gap_severity?.default_branch).toBe("182");
       expect(entry.gap_severity?.class).not.toBe("order_figure_unbound");
     }
     expect(Object.values(wage.gap_severity!.counts).reduce((a, b) => a + b, 0)).toBe(wage.cases.length);
+    // L12-2 / D2: the order figure is bound now. A month paid for the statute's
+    // eight-hour day but short under nothing else is order_entitlement in the
+    // statute's view and no gap in the default view — never statutory_violation.
     const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
-    expect(threshold.cases.every((entry) => entry.gap_severity?.class === "order_figure_unbound")).toBe(true);
+    expect(threshold.cases.every((entry) => entry.gap_severity?.class !== "order_figure_unbound")).toBe(true);
+    const current = threshold.cases.find((entry) => entry.case_id === "synthetic.working_time.golden.current")!;
+    expect(current.gap_severity).toMatchObject({ class: "order_entitlement", gap_under: ["statute"], default_branch: "administrative", gap_under_default: false });
+    expect(current.gap_severity?.class).not.toBe("statutory_violation");
     const cap = comparison.find((entry) => entry.decision_id.endsWith("pension_wage_cap_section"))!;
     expect(cap.gap_severity).toBeNull();
     expect(cap.cases.every((entry) => entry.gap_severity === null)).toBe(true);

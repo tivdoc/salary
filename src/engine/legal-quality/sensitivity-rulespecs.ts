@@ -436,6 +436,82 @@ export const WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC: RuleSpecPackage = cre
   resource_policy: { max_steps: 8, max_depth: 4, max_aggregate_items: 8, max_integer_digits: 32 },
 });
 
+// --- L12-2 / D2: the five-day daily norm, executable -----------------------
+//
+// The administrative branch of working_time_daily_threshold, bound in L12-1
+// as a derived figure (43/5 hours on the regular day of a five-day week, 38/5
+// on the shortened day), runs here as its own computation beside the
+// statute's. The day's threshold is the derived norm on a five-day week and
+// the statute's eight on a six-day week (8 / 7, unchanged, from the statute's
+// own text); the schedule is a mandatory declared fact — without it the
+// shadow refuses `schedule_unknown` rather than assume; and the overtime
+// hours, a rational now (3.4 for a twelve-hour day), are priced by the §16(א)
+// tiers with one rounding at the end, as tiered.rate does for whole hours.
+// The shortened day's threshold and the identity 4 × 8.6 + 7.6 = 42 are
+// traced beside the output, so a reader of the trace sees the weekly check
+// the derivation record makes at binding. Nothing here is text: the grade of
+// the two derived parameters is `derived`, and the trace says so.
+export const WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC: RuleSpecPackage = createRuleSpecPackage({
+  schema_version: "tivdoc-rulespec-v0.6.0",
+  rule_spec_id: "il.rulespec.working.time.overtime.five.day.norm",
+  rule_spec_version: "1.0.0",
+  topic: "working_time",
+  catalog_boundary: "real_inactive",
+  source_version_ids: ["IL_HOURS_WORK_REST_LAW@discovery-v0", "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018@discovery-v0.1"],
+  effective_period: { from: "2018-04-01", to: null },
+  sectors: ["general"],
+  populations: ["general"],
+  facts: [
+    { ref_id: "fact.hours.worked.day", value_kind: "integer", unit: "hours" },
+    { ref_id: "fact.days.per.week", value_kind: "integer", unit: "days_per_week" },
+    { ref_id: "fact.regular.hourly.wage", value_kind: "money", unit: "currency.ils" },
+  ],
+  parameters: [
+    { ref_id: "parameter.daily.threshold.five.day", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "2018.1.0", value_kind: "rational", unit: "hours" },
+    { ref_id: "parameter.short.day.threshold", parameter_id: "il.working_time.short_day_overtime_threshold_hours", parameter_version: "2018.1.0", value_kind: "rational", unit: "hours" },
+    { ref_id: "parameter.daily.threshold.statute", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "1951.1.0", value_kind: "integer", unit: "hours" },
+    { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+    { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+  ],
+  nodes: [
+    // Shape only: a constant may be 0 or 1. The two-hour tier boundary and the
+    // four regular days are composed from ones, never authored as figures.
+    { node_id: "one", operation: "constant.rational", value: "1", unit: "ratio" },
+    { node_id: "one.b", operation: "constant.rational", value: "1", unit: "ratio" },
+    { node_id: "one.c", operation: "constant.rational", value: "1", unit: "ratio" },
+    { node_id: "one.d", operation: "constant.rational", value: "1", unit: "ratio" },
+    { node_id: "one.hour", operation: "constant.rational", value: "1", unit: "hours" },
+    { node_id: "one.hour.b", operation: "constant.rational", value: "1", unit: "hours" },
+    { node_id: "zero.hours", operation: "constant.rational", value: "0", unit: "hours" },
+    { node_id: "two.hours", operation: "add", refs: ["one.hour", "one.hour.b"] },
+    { node_id: "six.days", operation: "constant.integer", value: 6, unit: "days_per_week" },
+    { node_id: "four", operation: "add", refs: ["one", "one.b", "one.c", "one.d"] },
+    // The statute's eight as a rational, so the two thresholds can be selected between.
+    { node_id: "statute.threshold.rational", operation: "divide", left_ref: "parameter.daily.threshold.statute", right_ref: "one" },
+    // Six days or more: the statute's day. Five: the derived norm.
+    { node_id: "is.six.day.week", operation: "compare.gte", left_ref: "fact.days.per.week", right_ref: "six.days" },
+    { node_id: "daily.threshold", operation: "select", condition_ref: "is.six.day.week", when_true_ref: "statute.threshold.rational", when_false_ref: "parameter.daily.threshold.five.day" },
+    { node_id: "hours.worked.rational", operation: "divide", left_ref: "fact.hours.worked.day", right_ref: "one" },
+    { node_id: "hours.over.threshold", operation: "subtract", left_ref: "hours.worked.rational", right_ref: "daily.threshold" },
+    { node_id: "overtime.hours", operation: "max", refs: ["hours.over.threshold", "zero.hours"] },
+    // The §16(א) tiers over a rational quantity: the first two hours, the rest.
+    { node_id: "first.tier.hours", operation: "min", refs: ["overtime.hours", "two.hours"] },
+    { node_id: "second.tier.hours", operation: "subtract", left_ref: "overtime.hours", right_ref: "first.tier.hours" },
+    { node_id: "first.tier.ratio", operation: "divide", left_ref: "first.tier.hours", right_ref: "one.hour" },
+    { node_id: "second.tier.ratio", operation: "divide", left_ref: "second.tier.hours", right_ref: "one.hour" },
+    { node_id: "first.tier.weighted", operation: "multiply", left_ref: "first.tier.ratio", right_ref: "parameter.rate.first" },
+    { node_id: "second.tier.weighted", operation: "multiply", left_ref: "second.tier.ratio", right_ref: "parameter.rate.second" },
+    { node_id: "overtime.ratio", operation: "add", refs: ["first.tier.weighted", "second.tier.weighted"] },
+    // Traced, not on the output path: the derivation's weekly identity.
+    { node_id: "four.regular.days", operation: "multiply", left_ref: "parameter.daily.threshold.five.day", right_ref: "four" },
+    { node_id: "weekly.hours.from.daily", operation: "add", refs: ["four.regular.days", "parameter.short.day.threshold"] },
+    { node_id: "overtime.pay", operation: "money.scale", money_ref: "fact.regular.hourly.wage", rational_ref: "overtime.ratio", rounding: "half_up" },
+  ],
+  output_ref: "overtime.pay",
+  golden_case_set_sha256: blankGoldenSetSha256("working_time"),
+  resource_policy: { max_steps: 40, max_depth: 12, max_aggregate_items: 8, max_integer_digits: 32 },
+});
+
 // --- L6-4 / D2: overtime on the weekly rest — a composition, not a figure ---
 //
 // §17(א)(1) states 1½ for rest-day hours; §16(א) states 1¼ and 1½ for
@@ -760,13 +836,32 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
       { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
     ],
     decision_id: WORKING_TIME_DAILY_THRESHOLD_DECISION,
-    branches: [["statute", "1951.1.0"]],
+    // L12-2 / D2: two computations under one decision now — the statute's
+    // whole-hour tiers here, the derived five-day norm in the spec below — so
+    // the decision is a composition, as the rest-day pair is.
+    branches: [],
+    composition_branch: "statute",
+    narrower_than_draft:
+      "Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.",
+  },
+  {
+    spec: WORKING_TIME_OVERTIME_FIVE_DAY_NORM_SPEC,
+    bindings: [
+      { ref_id: "parameter.daily.threshold.five.day", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "2018.1.0" },
+      { ref_id: "parameter.short.day.threshold", parameter_id: "il.working_time.short_day_overtime_threshold_hours", parameter_version: "2018.1.0" },
+      { ref_id: "parameter.daily.threshold.statute", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
+    ],
+    decision_id: WORKING_TIME_DAILY_THRESHOLD_DECISION,
+    branches: [],
+    composition_branch: "administrative",
     unbound_branches: [{
-      branch: "administrative",
-      reason: "BL-24: the figures — 8.6 hours on four days and 7.6 on the short day of a five-day week, 8 / 7 on a six-day week — come from the steering committee's interpretation of the 42-hour extension order (source steering_committee_2018-04-24) as reported by kolzchut (source kolzchut), not from the Labour Ministry directive of 10.6.2018, which concerns the 182-hour divisor. No official artifact carries them; a non-official page is not acceptable. Unbound; not run; would bind at agreement_interpretation grade (L11-5 / D3.6). Selected as default by the owner-recorded resolution; runs when bound.",
+      branch: "nine_hour_day",
+      reason: "The competing reading of the five-day week — the 1990 order's nine-hour day, 9 × 4 + 7 (accepted in סע\"ש 14271-10-17) — is named and not run: the 1990 order's text is not in the corpus (the lawyer's open item V12), and it is not derived here. Listed, never omitted.",
     }],
     narrower_than_draft:
-      "Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24; agreement_interpretation grade if bound). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.",
+      "The owner-recorded default, executable since L12-1: the derived five-day norm (43/5 hours on the regular day, 38/5 on the shortened day, grade derived, assumption five_day_even_distribution) on a five-day week, the statute's eight on a six-day week, priced by the same §16(א) tiers over a rational quantity with one rounding. The schedule is a mandatory declared fact. The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.",
   },
   // L6-4: overtime on the weekly rest, one decision, two computations.
   {

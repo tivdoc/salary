@@ -147,7 +147,7 @@ export type BranchShape = Readonly<{
 export type DefaultBranch = Readonly<{
   /** The branch that runs as default: null for a spec with no decision and no named branch. */
   branch: string | null;
-  source: "single" | "first_listed" | "owner_recorded_resolution" | "first_bound_fallback";
+  source: "single" | "first_listed" | "owner_recorded_resolution" | "first_bound_fallback" | "composition_member";
   /** What the resolution selected, when there is one. */
   selected_branch: string | null;
   /** Whether the selected branch is bound (runs) — null without a resolution. */
@@ -174,6 +174,11 @@ export function defaultBranchOf(spec: BranchShape, options: Readonly<{ compositi
   }
   const selected = resolution.selected_branch;
   if (names.includes(selected)) return { branch: selected, source: "owner_recorded_resolution", selected_branch: selected, selected_bound: true, resolution };
+  // L12-2: a composition member asked on its own (no sibling list) reports its
+  // own branch; whether the selected branch is bound is its siblings' business.
+  if (composition !== null && options.composition_branches === undefined && !unbound.includes(selected)) {
+    return { branch: composition, source: "composition_member", selected_branch: selected, selected_bound: null, resolution };
+  }
   if (unbound.includes(selected)) {
     if (names.length === 0) throw new Error(`RESOLUTION_NO_BOUND_BRANCH:${spec.decision_id}`);
     return { branch: names[0], source: "first_bound_fallback", selected_branch: selected, selected_bound: false, resolution };

@@ -151,7 +151,7 @@ export function executeShadowCase(input: Readonly<{
   const populationRefusal = input.population.source === "conflicted" ? ["population.conflicted"] : [];
   const period = periodOf(input.entry.snapshot);
   // L11-4 / D3.4: a branch may refuse the month by a code before it runs.
-  const guardRefusal = input.spec.branch_guard ? input.spec.branch_guard({ branch: input.branch, period }) : null;
+  const guardRefusal = input.spec.branch_guard ? input.spec.branch_guard({ branch: input.branch, period, snapshot: input.entry.snapshot }) : null;
   const base = {
     execution_id: input.execution_id,
     case_id: input.entry.case_id,

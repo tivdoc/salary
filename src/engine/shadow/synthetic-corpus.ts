@@ -89,6 +89,8 @@ function absence(period: Period, days: number): { start_date: string; end_date: 
 const ils = (minorUnits: number) => ({ currency: "ILS", minor_units: minorUnits });
 const hoursPerMonth = (amount: string) => ({ amount, unit: "hours_per_month" as const });
 const hoursPerDay = (amount: string) => ({ amount, unit: "hours_per_day" as const });
+/** L12-2. A five-day week, Sunday to Thursday: the schedule the derived daily norm needs. */
+const FIVE_DAY_WEEK = Object.freeze({ days: ["sunday", "monday", "tuesday", "wednesday", "thursday"] as const });
 const days = (amount: string) => ({ amount, unit: "days" as const });
 
 const CONFLICTED: Pick<SyntheticFactSeed, "value" | "status"> = { value: null, status: "conflicted" };
@@ -114,8 +116,12 @@ const TOPIC_MONTHS: Readonly<Record<string, TopicMonth>> = Object.freeze({
     // the statute's eight — so the derived overtime agrees with the declared.
     const worked: Record<GoldenScenario, string> = { current: "12", effective_date_boundary: "11", sector_population: "10", missing_conflicted_facts: "12", precedence_overlap: "13", parameter_rounding_boundary: "9" };
     const wage = scenario === "parameter_rounding_boundary" ? 3_333 : 4_000;
+    // L12-2 / D2: every working-time month declares its five-day schedule, so
+    // the derived norm applies; a month without one is refused schedule_unknown.
+    const schedule = { path: "work.workdays" as const, value: FIVE_DAY_WEEK, source_type: "documented" as const };
     if (scenario === "missing_conflicted_facts") {
       return [
+        schedule,
         { path: "work.overtime_hours", ...CONFLICTED, source_type: "documented" },
         { path: "work.hours_worked_day", value: hoursPerDay(worked[scenario]), source_type: "documented" },
         { path: "work.rest_day_overtime_hours", value: hoursPerDay(rest[scenario]), source_type: "declared" },
@@ -125,6 +131,7 @@ const TOPIC_MONTHS: Readonly<Record<string, TopicMonth>> = Object.freeze({
       ];
     }
     return [
+      schedule,
       { path: "work.overtime_hours", value: hoursPerDay(overtime[scenario]), source_type: "documented" },
       { path: "work.hours_worked_day", value: hoursPerDay(worked[scenario]), source_type: "documented" },
       { path: "work.rest_day_overtime_hours", value: hoursPerDay(rest[scenario]), source_type: "declared" },
@@ -278,8 +285,8 @@ function edgeCases(): readonly SyntheticCase[] {
     month("stale_workdays", "travel", ["travel.daily.cap.entitlement"],
       [{ path: "work.workdays_in_month", value: { days: 22 }, source_type: "derived", created_at: "2024-01-01T00:00:00.000Z" }],
       { kind: "preparation_refuses", codes: ["fact.stale"] }),
-    month("unconfirmed_wage", "working_time", ["working.time.overtime.pay", "working.time.overtime.from.hours.worked", "working.time.rest.day.overtime.additive"],
-      [{ path: "work.overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "work.hours_worked_day", value: hoursPerDay("10"), source_type: "documented" }, { path: "work.rest_day_overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented", status: "needs_confirmation" }],
+    month("unconfirmed_wage", "working_time", ["working.time.overtime.pay", "working.time.overtime.from.hours.worked", "working.time.overtime.five.day.norm", "working.time.rest.day.overtime.additive"],
+      [{ path: "work.workdays", value: FIVE_DAY_WEEK, source_type: "documented" }, { path: "work.overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "work.hours_worked_day", value: hoursPerDay("10"), source_type: "documented" }, { path: "work.rest_day_overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented", status: "needs_confirmation" }],
       { kind: "preparation_refuses", codes: ["fact.unconfirmed"] }),
     // L11-4 / D3.4: June 2026, six convalescence days paid at the 2023 rate
     // (418.00). Under the havraa_year branch the month is short 6 × 33.50, and
@@ -296,8 +303,8 @@ function edgeCases(): readonly SyntheticCase[] {
       { kind: "runs", note: "a 2027 payslip: the havraa_year branch refuses rate_not_published before running (the branch guard, not the executor); the calendar branches run" },
       { start: "2027-01-01", end: "2027-01-31" }),
     // L7-9 / D6: a day within the eight-hour threshold has no overtime — zero pay, not a refusal.
-    month("within_daily_threshold", "working_time", ["working.time.overtime.from.hours.worked"],
-      [{ path: "work.hours_worked_day", value: hoursPerDay("7"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented" }, { path: "compensation.overtime_pay", value: ils(0), source_type: "documented" }],
+    month("within_daily_threshold", "working_time", ["working.time.overtime.from.hours.worked", "working.time.overtime.five.day.norm"],
+      [{ path: "work.workdays", value: FIVE_DAY_WEEK, source_type: "documented" }, { path: "work.hours_worked_day", value: hoursPerDay("7"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented" }, { path: "compensation.overtime_pay", value: ils(0), source_type: "documented" }],
       { kind: "runs", note: "seven hours worked over an eight-hour threshold: zero overtime hours, zero pay, a zero delta" }),
   ].map((entry) => (entry.scenario === "period_unconfirmed"
     ? { ...entry, snapshot: unconfirmPeriod(entry.snapshot), snapshot_sha256: canonicalSha256(unconfirmPeriod(entry.snapshot)) }

@@ -93,6 +93,7 @@ export function havraaRateFor(havraaYear: number): HavraaRateLookup {
 
 /** The shadow's guard for the havraa_year branch: a refusal code, or null when the month's rate is known. */
 export function havraaBranchGuard(input: Readonly<{ branch: string | null; period: Readonly<{ start: string; end: string }> | null }>): string | null {
+  // The snapshot a caller may pass beside the period is not needed here.
   if (input.branch !== HAVRAA_YEAR_BRANCH || input.period === null) return null;
   const lookup = havraaRateFor(havraaYearPaidFor(input.period.start));
   return lookup.status === "known" ? null : lookup.refusal;

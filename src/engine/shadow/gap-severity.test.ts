@@ -44,7 +44,7 @@ describe("L11-3 / D3.2: gap severity is a class on the finding, never a suppress
     expect(GAP_SEVERITY_DECISIONS.map((entry) => entry.decision_id.replace(/^.*decision\./u, ""))).toEqual(["min_wage_hourly_divisor", "working_time_daily_threshold"]);
     for (const entry of GAP_SEVERITY_DECISIONS) {
       const specs = SENSITIVITY_SPECS.filter((spec) => spec.decision_id === entry.decision_id);
-      const known = new Set(specs.flatMap((spec) => [...spec.branches.map(([branch]) => branch), ...(spec.unbound_branches ?? []).map((unbound) => unbound.branch)]));
+      const known = new Set(specs.flatMap((spec) => [...spec.branches.map(([branch]) => branch), ...(spec.composition_branch ? [spec.composition_branch] : []), ...(spec.unbound_branches ?? []).map((unbound) => unbound.branch)]));
       expect(known.has(entry.statutory_branch), entry.statutory_branch).toBe(true);
       expect(known.has(entry.order_branch), entry.order_branch).toBe(true);
       expect(gapSeverityDecision(entry.decision_id)).toBe(entry);

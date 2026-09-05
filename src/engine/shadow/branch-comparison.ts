@@ -50,11 +50,16 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
     const severity = gapSeverityDecision(decisionId);
     const severityOf = (rows: ReadonlyArray<Readonly<{ branch: string; delta: string | null }>>): GapSeverity | null => {
       if (!severity) return null;
-      return classifyGapFromDeltas({
+      const classed = classifyGapFromDeltas({
         statutory_delta: rows.find((row) => row.branch === severity.statutory_branch)?.delta ?? null,
         order_delta: rows.find((row) => row.branch === severity.order_branch)?.delta ?? null,
         order_bound: branches.includes(severity.order_branch),
       });
+      // L12-2 / D2: the default view — a month short under the default branch
+      // is a gap in the default view; short under the other reading only, it
+      // is not, whatever the class says about the other reading.
+      const defaultDelta = rows.find((row) => row.branch === defaultBranch)?.delta ?? null;
+      return { ...classed, default_branch: defaultBranch, gap_under_default: defaultDelta === null ? null : BigInt(defaultDelta) > BigInt(0) };
     };
     const keyOf = (execution: ShadowExecutionRecord) => (composition ? `*|${execution.case_id}` : `${execution.shadow_id}|${execution.case_id}`);
     const caseKeys = [...new Set(mine.map(keyOf))].sort();
@@ -102,7 +107,8 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
     });
     // L7-9: a branch named on the decision but not bound is listed, with its
     // reason, and counted as not run — never as agreement.
-    const unbound = DRAFT_SHADOW_SPECS.find((spec) => spec.decision_id === decisionId)?.unbound_branches ?? [];
+    // L12-2: every spec under the decision may name an unbound branch; the union, once each.
+    const unbound = [...new Map(DRAFT_SHADOW_SPECS.filter((spec) => spec.decision_id === decisionId).flatMap((spec) => spec.unbound_branches).map((entry) => [entry.branch, entry] as const)).values()];
     return {
       decision_id: decisionId,
       branches,
