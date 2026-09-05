@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, LockKey, Timer } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
+import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
 import { currentFirstTouch } from "@/lib/attribution";
 import { metaEventDescriptor, trackMetaBrowserEventOnce } from "@/lib/meta-browser";
 import { questionnaireSchema } from "@/lib/validation";
@@ -87,6 +88,7 @@ export function Questionnaire() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [activeCase, setActiveCase] = useState<string | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -111,13 +113,15 @@ export function Questionnaire() {
       hydrated.current = true;
     });
 
+    // UX Run 1 / U6: an active check is offered, never forced. A paying customer opening a second check
+    // (another employer, another period) is a second case; the first is not disturbed.
     void fetch("/api/cases/resume", { cache: "no-store" })
       .then(async (response) => (response.ok ? response.json() : null))
       .then((result) => {
-        if (result?.resumePath) router.replace(result.resumePath);
+        if (typeof result?.resumePath === "string") setActiveCase(result.resumePath);
       })
       .catch(() => undefined);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (!hydrated.current) return;
@@ -204,8 +208,8 @@ export function Questionnaire() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),
       });
+      if (!response.ok) throw new Error(await customerErrorFromResponse(response, "case_create_failed"));
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "פתיחת הבדיקה נכשלה");
       sessionStorage.setItem("tivdoc-public-id", result.publicId);
       localStorage.setItem("tivdoc:active-case", result.publicId);
       localStorage.removeItem(DRAFT_KEY);
@@ -216,13 +220,23 @@ export function Questionnaire() {
       trackEvent("questionnaire_completed");
       router.push("/check/upload");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "משהו השתבש. אפשר לנסות שוב.");
+      setError(customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "case_create_failed"));
       setSubmitting(false);
     }
   }
 
   return (
     <div className="questionnaire" onFocusCapture={markStarted}>
+      {activeCase && (
+        <div className="check-resume-banner" role="status">
+          <b>יש לך בדיקה פעילה.</b>
+          <span>אפשר להמשיך אותה מהמקום שבו עצרת, או לפתוח בדיקה חדשה — למשל למעסיק אחר או לתקופה אחרת. הבדיקה הקיימת נשמרת.</span>
+          <div className="check-resume-banner__actions">
+            <button type="button" className="button button--primary" onClick={() => router.push(activeCase)}>המשך אליה</button>
+            <button type="button" className="button button--secondary" onClick={() => setActiveCase(null)}>פתח בדיקה חדשה</button>
+          </div>
+        </div>
+      )}
       <div className="questionnaire__meter" aria-hidden="true">
         <span style={{ width: `${((step + 1) / stepTitles.length) * 100}%` }} />
       </div>

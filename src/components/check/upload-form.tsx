@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileArrowUp, FilePdf, Image as ImageIcon, X } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
+import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { validateUploadDescriptor } from "@/lib/validation";
 
@@ -61,8 +62,8 @@ export function UploadForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(manifest),
       });
+      if (!signResponse.ok) throw new Error(await customerErrorFromResponse(signResponse, "upload_prepare_failed"));
       const signResult = await signResponse.json();
-      if (!signResponse.ok) throw new Error(signResult.error || "הכנת ההעלאה נכשלה");
 
       const supabase = getSupabaseBrowser();
       for (const upload of signResult.uploads as Array<{ documentType: FileKey; path: string; token: string }>) {
@@ -74,7 +75,11 @@ export function UploadForm() {
             cacheControl: "0",
             contentType: file.type,
           });
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          // UX Run 1 / U8: the storage provider's English never reaches the customer; the code is kept for the console.
+          console.warn("Document upload failed", (uploadError as { name?: string }).name ?? "upload_error");
+          throw new Error(customerErrorMessage({}, "upload_transfer_failed"));
+        }
         setProgress((current) => ({ ...current, completed: current.completed + 1 }));
       }
 
@@ -83,12 +88,11 @@ export function UploadForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(manifest),
       });
-      const result = await completeResponse.json();
-      if (!completeResponse.ok) throw new Error(result.error || "שמירת הקבצים נכשלה");
+      if (!completeResponse.ok) throw new Error(await customerErrorFromResponse(completeResponse, "upload_complete_failed"));
       trackEvent("payslip_uploaded", { document_count: Object.keys(files).length });
       router.push("/check/payment");
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "לא הצלחנו להעלות את הקבצים";
+      const message = customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "upload_transfer_failed");
       setError(message);
       setStatus("idle");
       trackEvent("upload_error", { reason: message });
