@@ -4367,53 +4367,325 @@ after S1), S5 (the home page; waits on the owner's language decision and
 assets), then S3 on Opus, then S6. BL-31 is the owner's before S2's
 post-payment upload channel can notify anyone.
 
+## External review #1 (GPT, 5.9.2026) — the corrections
+
+Why this run: an external reviewer read report v9, package v14 and the S1
+wave and returned ten findings with instructions (the owner's response of
+5.9.2026, section ד'). Every finding is answered here by a change, a proof,
+or a written refusal with its reason; nothing is answered by prose alone.
+The approved opinion file was not edited — its hash and the approval
+record's hash stand — and the corrections to it live in an errata appendix
+(`docs/legal/errata-external-review-1.he.md`) that goes to the lawyer for a
+separate approval. D-6.4 is withdrawn; the three report gates of S3.2 replace
+it (finding 4, recorded for S3 below).
+
+**Finding 1 — the channel is verified before anything binds (S1.5).**
+Verifying a channel proved nothing about a payslip already bound to a typed
+contact: a mistyped address would have handed someone else's case to whoever
+owns that address. Migration `202609050003` (chain 57 → 58, applied to DEV):
+a case carries `contact_verified_at` and `contact_verified_channel`; an
+identity is linked to a case only by a verification; a link is issued only
+to a verified contact and the sweep skips the rest; `/login` reaches only
+cases so linked. In the funnel: the questionnaire opens the case, a code goes
+to the typed contact, and the code entered with the case cookie marks the
+case, links the identity and opens the session — before any upload, before
+any payment. The upload, payment and received pages and the payment-start
+and document-sign routes refuse an unverified contact (307 to
+`/check?verify=1`; 409 `contact_unverified`); a typo is corrected only while
+unverified. Documents uploaded before verification stay under the case
+cookie's temporary session; only verification transfers ownership. Tested at
+three levels: the service against an in-memory mirror of the SQL functions
+(the owner of a wrong address logs in and sees no case; verification links
+and opens the session; a typo is corrected only unverified), the upload page
+suite, and the boundary journey (below).
+
+**Finding 8 (the path token) — exchanged once, in a route handler, never in a
+query string.** `/case/[token]` no longer opens the case. A live token
+renders nothing but a client component that POSTs `{ exchange, token }` to
+the request route; the route spends the token, sends the code, sets a
+fifteen-minute httpOnly challenge cookie and answers the case path; the
+component replaces the URL with `/case/[id]`. A used or expired token gets
+the invalid-link screen from a read-only peek; a second exchange answers
+410. The token lives 24 hours (`link_token_ttl_hours`, configuration); the
+session keeps its thirty days. The first cut exchanged in the page's render
+and answered 500 at the boundary (a page cannot set a cookie); the journey
+caught it. The report's claim is now the narrow one the reviewer asked for —
+**not in a query parameter and not in the application logs** — and the
+journey's receipt names the log layers it checked (the product server's
+stdout and stderr, every `case_access_*` row, the funnel table's redacted
+landing URL) and the two it cannot check from here (Vercel access logs — no
+deployment in this run; a browser's Referer after the exchange — the case
+screens carry `referrer no-referrer` and the exchange redirects before any
+page renders).
+
+**The boundary journey, rewritten for the new flow — 25/25 by execution
+against the running production build and DEV.** A verified payment on an
+unverified contact sends nothing and the sweep examines nothing; the upload
+page refuses (locally 404 before the guard — the page suite proves the 307,
+the closure probe the 307 without a cookie); the payment start refuses; a
+stranger who types the case's address is answered 202 and sees no case; the
+funnel code arrives, verifies, links and opens the session; then one link
+under two sweeps; the link page carries no content and not the case id; the
+exchange once (202, challenge cookie, the case path); the used link refused
+twice (the screen, then 410); the challenge screen at the case id; five wrong
+codes then the sixth refused; the fresh code opens the session; the session
+alone sees the case; no session is sent to `/login`; the one-case list
+redirects; an unknown contact gets no code; twenty requests from one fresh
+address then the twenty-first refused; the token and the challenge absent
+from the server log; every store row a hash, the contact verified. Two
+harness corrections: the per-IP step now uses a fresh address per run (the
+ledger outlives the fixture; a fixed address arrived already full on the
+second run), and the funnel-page step accepts the local 404 as a refusal,
+never a 200.
+
+**Finding 3 — BL-31 stays the owner's.** No email or SMS provider exists in
+the repository; until the owner names one and places its credentials where
+the loader reads them, the access path is inactive in production: a verified
+payment records a failed send and the received screen offers a resend. This
+run added no provider and made no call.
+
+**Finding 4 — the three report gates (S3.2), recorded for S3.** The report
+contract will carry `activation: active | awaiting_verification`,
+`applicability: applicable | refused:<fact>`, and `certainty` only when
+active ∧ applicable; `awaiting_verification` renders as "ממתין לאימות בסיום
+הפיתוח". D-6.4 (the single "verified" flag) is withdrawn. This is S3's unit
+on Opus; nothing of it is built here.
+
+**Finding 5 — Q6 re-recorded as conditional on the schedule, append-only.**
+The resolutions table could hold one row per decision and refused every
+update and delete — correct, and it left no way to re-record. Migration
+`202609050004` (with `202609050005`, its forward repair — 004 rebuilt the
+record function from 031's text and lost 032's audit-actor repair; the proof
+caught it on the first fresh recording) makes the table append-only by
+revision: a supersession names the revision it supersedes and its basis and
+is inserted as the next revision; a bare second resolution is still refused;
+a supersession that does not name the latest revision is refused; the read
+returns every revision in order. Chain 58 → 60, applied to DEV.
+`working_time_daily_threshold`, revision 2: `conditional_on_schedule`, basis
+`external_review_correction`, evidence the errata appendix by hash, the
+owner's instruction hashed canonically as the approval record (no file
+carries it; the hash is reproducible from the text in code). Revision 1 —
+the opinion's "administrative" — is untouched in the table and in
+`RESOLUTION_HISTORY`, same hash, and the row that supersedes it carries
+`superseded_by_external_review_2026-09-05`. The selection: days per week and
+the regular day's length select the branch — 8 hours (six-day week, §2(א))
+→ statute; 8.6 / 7.6 (five-day week, the 2018 order as the steering
+committee read it) → administrative; a nine-hour pattern → a refusal (no
+branch registered); any other schedule or missing facts → a refusal, never
+a default. **What is not wired yet:** the synthetic months carry no schedule
+facts, so the comparison cannot select per case; until they do, the
+superseded selection runs where it is bound, the default's source says
+`conditional_on_schedule` in the receipt and the Hebrew report, and the
+shadow's figures do not move. Resolutions proof **28/28** on DEV: six
+decisions, seven rows; the fixture's chain (not-latest refused, no-basis
+refused, revision 2 recorded, bare third refused, both revisions read back
+in order); history untouched by hash. The frozen package scripts (v13, v14)
+compare the registry against the rows by count and would now disagree by
+one; they are history, and a v15 would read the latest revision.
+
+**Finding 6 — Q4's wording and the §18 base rule.** The rejected
+multiplicative branch's reason was "no source of any grade supports it". It
+now says what the opinion applies: multiplicative is not a separate
+composition; the fixed contractual premium enters the base of the rest-day
+and overtime rates under §18 of the Hours of Work and Rest Law (ע"ע
+38313-03-18). That base rule, `regular_wage_includes_fixed_contractual_premiums`,
+is registered (`BASE_RULES`) as a textual rule with its citation; it becomes
+a bound textual parameter only when the judgment enters the corpus through
+the controlled path — and it cannot today (finding 9). Report v9 and package
+v14 are not regenerated; the errata appendix carries the corrected wording,
+as section ג' of the response allows.
+
+**Finding 7 — the reading split into four fields.** `reading: machine |
+person` (L13T-6) became four questions, each a field: `source` (the fact's
+`source_type`), `read_by` (machine or person), `verified` (a person confirmed
+the reading against the page), `confidence` (the fact's own). The resolver
+writes `read_by: "machine", verified: false`; the execution grade's input
+provenance carries `read_by` and `verified`; a documented input only the
+machine read and no person confirmed is `inferred`; the machine's reading a
+person confirmed is `verified`, as a person's own reading is. Suites 90 across
+facts, extraction and shadow.
+
+**Finding 8 (the comparison) — every month accounted for, and the source of
+the S1 failures.** The shadow-run comparison now reads the run file beside
+the receipt and writes a case ledger: each of the **58** months (the review
+counted 59; the receipt counts 58) with, per execution, a result or the
+refusal reason — 39 months with results everywhere, 1 with results and one
+refusal (`rate_not_published`), 18 refused everywhere for a named reason
+(`fact.missing`, `fact.conflicted`, `fact.below_confidence_threshold`,
+`fact.unconfirmed`, `fact.stale`, `transformation.failed`,
+`RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE`); 169 executions, 121 results, 48
+refusals; a month with no result and no reason fails the run. And the
+"concurrency conflict": S1 recorded the three governance proofs' 42501
+failures as an artifact of running the matrix beside the operations journey.
+The timestamps refute that — the journey ended at 21:08, the proofs failed
+at ~21:11. The mechanism, proven by `system-session-lifetime-proof.mts`
+(**9/9** on DEV): the one shared session every governance proof runs under
+was written by the Pool P import (a year) and by Gate 0 (an hour), through
+an upsert that overwrote the expiry; Gate 0's 13-T run at 19:31 shortened the
+year-long session to an hour, and every consumer that ran after 20:31 was
+refused `RUNTIME_CONTEXT_SESSION_NOT_CURRENT` from a plpgsql RAISE (routine
+`exec_stmt_raise`, the routine the S1 matrix log recorded); the matrix's own
+Gate 0 at 21:11 re-seeded it, so the manual re-runs passed. A same-token seed
+issued while another connection holds the row under `for share` waits on the
+lock (55P03 under a timeout) and cannot refuse; the census also found the
+shared seeder helper (`reviewer-registration.mts`, thirteen callers) doing
+the same overwrite. Both seeders now keep the longer expiry and the earlier
+validity start; the proof asserts no seeder shortens the row. At the time of
+the first proof the reference row was again expired — the artifact live, not
+historical. The S1 freeze note is corrected by this section; the S1 section
+itself is history and stands as written.
+
+**Finding 9 — V5 stays partially verified, by a refusal with a name.** The
+י"פ 7287 excerpt the reviewer named sits on a law firm's site and the §18
+judgment on court and legal-database sites; none is an official source host,
+and the controlled path refuses them by host before any byte — tested for
+goldfarb.com, a court mirror and a legal database. The header line of the
+excerpt was read from an image the owner supplied, not from an official
+record the path acquired, and the errata row says so. The owner brings the
+official record (Reshumot on gov.il) through the path, or V5 stays partial.
+
+**Finding 10 — vacation in the corpus.** Pool P's vacation parameters were
+already the statute's (16 / 18 / 21 / +1 to 28 by §3(א); 200 days for a full
+year, 240 for a partial one); the research dossier's table and its 200/240
+wording were wrong and are corrected in the dossier and in the errata; the
+lawyer's question on it is withdrawn. No parameter moved.
+
+**Lane B.** Two read-only surveys at the start (the access model after S1;
+the resolutions and shadow default path) and the adversarial pass's one
+material finding was the exchange-in-render 500, caught by the journey and
+fixed in the route handler.
+
+**Not done, by name.** Per-case conditional selection in the comparison
+(the schedule facts are not in the corpus — BL-33); the §18 base rule as a
+bound parameter and V5 as verified (the sources are not acquirable through
+the controlled path — BL-32); report v9 / package v14 regeneration (the
+errata appendix carries the corrections; a v15 reads the latest revision);
+the three report gates (S3).
+
+## Freeze — external review #1 corrections, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+at `de7cf7f`, receipt `5f94b8787996460fee18f3a1d559533688562e492f75f8c3d9054a2589cc4082`: type check 0 errors; eslint
+0 errors, 0 warnings; vitest **308/308 files, 2251 passed, 3 skipped, 0 failed**; `next build` compiled; the
+closure proof over both environments **48/48 PASS, identical posture, production build `ecbfc8ca…`, preview build `abf3f5a0…`, receipt `5f2d4f4ee7a08fea4af6fed2f92d654fccdc97cf32214e7e0f6ce9df3365e947`**.
+
+### DEV, as the runtime roles
+
+Chain 60/60, tail `202609050005` — three migrations this run
+(`202609050003_contact_verification_and_challenge`,
+`202609050004_legal_decision_resolution_revisions`,
+`202609050005_legal_decision_resolution_revisions_actor_repair`), the record
+and read functions of the resolutions replaced in place, no new definer.
+System-session lifetime **9/9 — census: three seeder paths (Gate 0, the Pool P import, the shared helper with thirteen callers), 33 consumers, none shortens the row; the reference row read only; clock skew within the seed margin; an expired row refused by RAISE (routine exec_stmt_raise); a re-seed recovers; a same-token seed under a held share lock waits (55P03), never refuses; the overwriting upsert shortens a year to an hour, the greatest form keeps the year**. Grant execution **25 executed, 0 denied, 0 refused by precondition, 0 unexplained (prior state of the fixture session: expired, re-seeded)**.
+Identity negative matrix **8/8**. Definer surface **111, ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute 14**.
+Invalidation effects **10/10**. Dynamic matrix **14 checks, 10 supported, 10 passed, 0 failed, 4 not supported**. RLS
+force **66 tenant-scoped tables, 0 unforced**. Governance proofs, all by execution, in sequence, none
+re-run: tenant guards 6/6 (the matrix's first pass caught the lifetime proof's own tenant literal — guard 1 doing its job; replaced by the exported constant at `97b2193`, re-run 6/6); parameter-decision matrix
+21/21; A7-3 withdrawal passed (7); Q draft-binding
+passed (9 cases, every slot bound); E3-2/E3-3 supersession passed (10; eight legal decisions of 53, the rest synthetic); E3-4 revocation
+passed (6; exactly one active session remains, the sanctioned one); L4-7 session recovery 8/8; E2-10 hygiene passed (resolutions 6 decisions / 7 rows owner_recorded, 0 attested; direct reads denied);
+L5-1 lexicon 9/9; A7-2 dependency-hash invalidation
+passed (1/1); citation anchors 48 verified, 0 failed, 6 impossible (the superseded rows). Resolutions
+**28/28 PASS — six decisions, seven rows on the reference tenant; revision 2 of the daily threshold recorded; the fixture's supersession chain (not-latest refused, no-basis refused, revision 2 recorded, bare third refused, both revisions read back in order); read-back equals the registry at the latest revision; history untouched by hash; attested 0**. Shadow comparison **PASS against `l76.7721fd34` — 51 months in both unchanged, 0 changed; the transition table PASS; the case ledger 58 months: 39 with results everywhere, 1 with results and one refusal, 18 refused everywhere for a named reason; 169 executions, 121 results, 48 refusals**. Gate 0 attestation
+reality check **PASS by execution — 0 identities, 0 of 61 dual-attested, 0 RuleSpec approvals, 7 resolution rows (6 decisions), 0/7 eligible, decision draft_shadow; the owner statement still not consistent (BL-30)**. Production reachability **BLOCKED_PRODUCTION_UNREACHABLE by execution (exit 3 by design) — the four variables absent by name; unchanged**.
+Access journey **25/25 by execution against the running production build and DEV at `de7cf7f`**. Operations journey **17/17** —
+run after the matrix, not beside it. S-1…S-7: `verify-v010.mts`
+PASS, `shadow/run.mts all` PASS (zero money, zero findings, zero reports).
+
+Shadow on DEV re-run after the resolution change: `l76.4e1cc1bb — 58 months, 169 executions, 121 ran, 121 traces replayed, provider and OpenAI calls 0; the daily threshold's default administrative with source conditional_on_schedule, figures unchanged`.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, resolutions owner_recorded 6 decisions / 7 rows (revision 2
+on one), resolutions attested 0, reviewer identities registered 0, visual
+confirmations 0, customer rows 0, messages to any real contact 0 (the only
+channel is the file sink; the journey's contacts were synthetic and deleted),
+composites opened 0, openai calls 0, provider calls 0, extraction used no,
+deployments 0, remote production migrations 0, findings 0,
+HUMAN_GROUND_TRUTH_LOCKED 0, approved opinion file edits 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-32 | **opened**, `source_not_acquirable_through_controlled_path` | the י"פ 7287 excerpt (goldfarb.com) and the §18 judgment (ע"ע 38313-03-18; court and legal-database hosts) are refused by host, by design; V5 stays partially verified and the base rule `regular_wage_includes_fixed_contractual_premiums` stays a cited, unbound textual rule until the owner brings the official records (Reshumot on gov.il) through the path |
+| BL-33 | **opened**, `schedule_facts_not_in_corpus` | the conditional selection of the daily threshold (8 / 8.6-7.6 / 9 by days per week and the regular day's length) is a pure function with tests; the synthetic months carry no schedule facts, so the comparison cannot select per case — until they do, the superseded selection runs and the default's source says so |
+| BL-31 | open, `outbound_channel_provider_not_configured` | **a full blocker for the access path in production** (finding 3): no provider, no link, no code; the owner names the provider and places its credentials |
+| BL-29 | open, `production_unreachable_from_engineering_machine` | unchanged |
+| BL-30 | open, `owner_statement_not_in_database` | unchanged |
+| BL-25 | open, `visual_verification_required` | unchanged |
+| BL-26 | open, `attestation_path_not_built` | unchanged |
+| BL-27 | open, `official_artifact_not_in_corpus` | unchanged; BL-32 names two more artifacts under the same rule |
+| BL-28 | open, `derived_acknowledgment_not_required` | unchanged |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
+### Backlog
+
+The engineering backlog is closed as the review brief defines it; **the
+product is incomplete** — the waves remain: S2 (documents), S4 (hygiene),
+S5 (home page, after the owner's language and assets), S3 on Opus (the
+three report gates, the case screens), S6 (operations), run 16. The lawyer's
+separate approval of the errata appendix; a v15 package that reads the
+latest resolution revision and carries the corrected Q4 wording.
+
 ## Resume point
 
-Refreshed at site run S1 — a paying customer reaches the case from any
-device. Everything before this point is history; this section and
-`docs/resume-after-pause.md` are what a resuming session must read.
+Refreshed after the external review #1 corrections. Everything before this
+point is history; this section and `docs/resume-after-pause.md` are what a
+resuming session must read.
 
 **Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`)
 and, up to `677ea92`, in the bundle and evidence archive long run 10 put on
-OneDrive; runs 11, 12, 13-T and site run S1 are on the remote only until the
-next bundle. Pools H, D, S, R, E2, E3, L4–L10, runs 11–12 and wave S1 are
-closed; run 13-T is closed at Gate 0 with D1–D5 blocked (BL-29). Pool P: 61
-versions, all `draft` or `superseded`, 0 attestations. Eight legal
-decisions: six carry an owner-recorded resolution, every one executing as the
-default. Report v9, shadow `l76.6d0667ad`, package v14 — unchanged by S1.
+OneDrive; runs 11, 12, 13-T, site run S1 and this run are on the remote only
+until the next bundle. Pools H, D, S, R, E2, E3, L4–L10, runs 11–12, wave S1
+and the review-#1 corrections are closed; run 13-T is closed at Gate 0 with
+D1–D5 blocked (BL-29). Pool P: 61 versions, all `draft` or `superseded`, 0
+attestations. Eight legal decisions: six carry an owner-recorded resolution
+(seven rows — the daily threshold is at revision 2, conditional on the
+schedule; revision 1 untouched in history). Report v9 and package v14 stand
+with the errata appendix beside them; shadow `l76.4e1cc1bb — 58 months, 169 executions, 121 ran, 121 traces replayed, provider and OpenAI calls 0; the daily threshold's default administrative with source conditional_on_schedule, figures unchanged`.
 
-**What S1 built, in one sentence.** One access system for a case: a
-verified payment sends an opaque link to the channel on file, the link opens
-a six-digit code, the code opens a rolling identity session, `/login` is
-login and recovery in one, `/cases` lists more than one case, the received
-screen names the estimate and the way back, a second check is possible, the
-funnel pages guard themselves, no component renders a raw error, and the
-price and the estimate are configuration.
+**What this run changed, in one sentence.** The channel is verified before
+anything binds; the link is exchanged once in a route handler and never
+rides a query string; the resolutions table is append-only by revision and
+Q6 is re-recorded as conditional on the schedule; a documented reading is
+four fields; every month of the corpus shows a result or a reason; the S1
+"concurrency artifact" is proven to be a one-hour seed that shortened the
+shared session, and no seeder shortens it now; the Q4 wording and the §18
+base rule are on the record; the hosts that carry the excerpt and the
+judgment are refused by name.
 
-**What S1 could not build, in one sentence.** The channel itself: no email
-or SMS provider exists in the repository, so until the owner names one
-(BL-31) a verified payment in production records a failed send and the
-customer's way back is `/login`.
+**What this run could not do, in one sentence.** Select the daily threshold
+per case (the months carry no schedule facts — BL-33); bind the §18 rule or
+verify V5 (the sources are not acquirable through the controlled path —
+BL-32); regenerate report v9 / package v14 (the errata appendix carries the
+corrections); build the three report gates (S3).
 
 **What is proven about the live site.** Unchanged from long run 10.
-tivdoc.com serves `main`; nothing here is deployed.
+tivdoc.com serves `main`; nothing here is deployed; the access path is
+inactive in production until BL-31.
 
-**The waves, in order.** S2 (documents) → S3 (the report contract and the
-case screens, Opus) → S6 (operations) → run 16; S4 (hygiene) any time after
-S1; S5 (the home page) any time, after the owner decides language (§0.11)
-and hands over assets or approves omitting the sections
-(`docs/design/assets-needed.md` is written by S5).
+**The waves, in order.** S2 (documents) → S3 (the report contract with its
+three gates, the case screens, Opus) → S6 (operations) → run 16; S4
+(hygiene) any time after S1; S5 (the home page) any time, after the owner
+decides language (§0.11) and hands over assets or approves omitting the
+sections.
 
 **The human gates, named.**
 
-1. The owner: BL-31 — name the outbound channel provider and place its
-   credentials where the loader reads them; BL-29 — production reachability
-   for the seven-case trial; the language decision and the assets before S5;
-   BL-30 — if two people reviewed, it enters through the governance path or
-   it does not count.
-2. The lawyer: V11 and V5 first, then V1–V13; a reviewer identity (B-25);
-   the seven visual confirmations; attestation at the screen.
-3. The three decisions in `docs/merge-readiness.md`.
+1. The owner (section ה' of the response): BL-31 — the SMS and email
+   provider and its credentials; the four production variables (BL-29); two
+   reviewer identities and the approval record (BL-30, B-25); language and
+   assets before S5; the three merge decisions in `docs/merge-readiness.md`;
+   the errata appendix sent to the lawyer; the official records behind BL-32
+   through the controlled path.
+2. The lawyer: the errata appendix (a separate approval; the original
+   approval does not cover it); V11 and V5 first, then V1–V13; a reviewer
+   identity; the seven visual confirmations; attestation at the screen.
 
-**Engineering after this wave.** S2 next session. A resuming session follows
-`docs/resume-after-pause.md`.
+**Engineering after this run.** S2 next session. A resuming session follows
+`docs/resume-after-pause.md`; the governance proofs need no re-seeding
+before them any more — the shared session is not shortened by any script.
