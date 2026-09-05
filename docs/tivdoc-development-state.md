@@ -4631,11 +4631,136 @@ three report gates, the case screens), S6 (operations), run 16. The lawyer's
 separate approval of the errata appendix; a v15 package that reads the
 latest resolution revision and carries the corrected Q4 wording.
 
+## Unattended consolidated pass (5.9.2026) — the owner's brief named it "Long Run 9"
+
+*A naming note first: this document already has a section called "Long run 9" (line ~3174, an
+earlier session's disk/branch consolidation, unrelated). The owner's 5.9.2026 brief for this session
+also said "Long Run 9". The two are different work; this section is titled to avoid the collision
+rather than silently overwrite the earlier meaning of that name.*
+
+Why this run: an owner brief authorized broad autonomous action across infrastructure, the legal
+engine and the site, with no owner present. Several items in that brief fall outside what this
+assistant performs regardless of stated authorization — repo visibility and DNS/email-authentication
+changes to the live domain (system/security settings), pulling or relaying production secrets from
+Vercel or copying the OpenAI key from a file (credential handling this project's own standing rules
+already rule out), and sending real SMS/email (needs a live per-action confirmation, and is moot here
+since the provider credentials were never fetched). Those items, and everything that depends on them,
+are `PENDING_OWNER` below, named honestly as declined rather than as a missing credential.
+
+**0 — inventory (read-only).** `gh auth status`: logged in, `skyviewcoil`. `vercel whoami`: the CLI
+is not installed on this machine. `wrangler whoami`: logged in, `skyview.co.il@gmail.com`. No
+`CLOUDFLARE_*`/`CF_*`/`GH_*`/`GITHUB_*`/`VERCEL_*` names in the process environment. DNS for
+`tivdoc.com` via public DoH: no MX; the apex TXT carries a verification UUID and a Facebook
+domain-verification record, no `v=spf1`; `_dmarc` absent; `_vercel` present for both `tivdoc.com` and
+`www.tivdoc.com`. DEV (`cpzrbidxftzqcfeqqusu`, from this run's own freeze): 0 reviewer identities, 61
+parameter versions, 0 dual-attested, 8 resolution rows. The live site's Supabase project (the seven
+dummy cases, its own identity/attestation counts) was not checked — that needs the production
+credentials this run does not fetch. `scripts/env-names.mjs` added: prints only variable names from
+an env file or the process environment, for inspecting any credential file without a `cat`/`type`/
+`Get-Content` that would print values.
+
+**1 — infrastructure.** 1.1 (GitHub repo visibility), 1.2 (pulling production secrets from Vercel,
+copying the OpenAI key from a OneDrive file, testing it live), 1.3 (Cloudflare DNS, email routing,
+SPF/DKIM/DMARC) are declined for the reasons above — `PENDING_OWNER`, each with the exact step in the
+original brief. 1.4 done: `contact.support_email`, `contact.phone` (new field, local format) and
+`contact.whatsapp` filled into the existing `product-offer.json` config already read by the received
+screen — no separate file needed, one already existed. grep-proof: the digits and address appear
+nowhere else in source.
+
+**2.1 — reviewer onboarding, no key created.** `docs/reviewer-onboarding/vladimir-kremen.he.md` and
+`leo-kremen.he.md`: the exact `keygen`/`register` commands, why each refuses under
+`TIVDOC_UNATTENDED` or without an interactive terminal (a key or identity an automated run created
+would permanently invalidate every attestation it later signs), and the fact this is not a public
+link — registration writes to DEV directly and needs `~/.tivdoc-dev/credentials.env`, i.e. access to
+this machine or an equivalent. Zero identities registered.
+
+**2.2 — 13-T re-run.** `BLOCKED`: depends on the four production variables (1.2), not fetched. Gate 0's
+census (reused from this run's own freeze, not re-run against a different database): 0 identities, 61
+versions, 0 dual-attested — unchanged from run 13-T and from the external-review-corrections run.
+
+**A correction to the previous run's freeze.** Reading `tivdoc-legal-opinion-approval-record.md` and
+`tivdoc-external-review-1-response.md` in full for the first time (both OneDrive, read-only reference)
+surfaced that the owner decided, later the same day as the previous run's brief (5.9.2026), to close
+the errata **without a lawyer at all**: "סעיף ג תסגור ללא עורך דין." The previous freeze's "the
+lawyer's separate approval of the errata appendix" is stale — there is no lawyer step pending; the
+binding record is `tivdoc-legal-opinion-approval-record.md` §7 (owner-recorded, `basis:
+external_review_correction`, no attestation), which is what L13-5 implements. Nothing in the shipped
+code from that run was wrong; only that one line of the freeze's forward-looking gate list no longer
+applies.
+
+**Two owner statements checked against independent evidence, as instructed.** The owner stated
+domain verification was completed and a reviewer identity was registered. Neither is visible here:
+`tivdoc.com`'s public DNS carries no MX, SPF, DKIM or DMARC record (checked above), and DEV carries
+zero rows in every `private.governance_legal_review_*` table. This disagreement is recorded, not
+resolved — consistent with BL-30's existing pattern (owner statements not independently visible in
+the systems this assistant can check).
+
+**A naming inconsistency, flagged rather than resolved.** The approval record's §7 (E3) states the
+superseded Q6 resolution should carry `supersedes_by: external_review_1_owner_closed_2026-09-05`; the
+owner's direct chat brief in the previous run specified `superseded_by_external_review_2026-09-05`
+verbatim, and that is what shipped, tested and is now on DEV. Both strings are recorded in code
+(`SUPERSEDED_BY_EXTERNAL_REVIEW_1`, `EXTERNAL_REVIEW_1_OWNER_CLOSED`) with a comment pointing at this
+note; nothing was renamed unilaterally.
+
+**2.3 — L13-1 (BL-27, the 2000 framework order).** Fetched directly from `www.gov.il` (sha256
+`449b8259901b4404d4ffa634ee57eb38f4150ebc4c281bfe371f55106cf9817a`) and read: the 43-hour week clause,
+the 186-hour monthly divisor and the employer's-discretion-over-hours clause are present verbatim.
+Registered as an acquisition target (`browser_outcome: discovered`, not an owner-attested import — that
+attestation, `unchanged_original`/`used_print_to_pdf: false`, is the owner's to make); the sanctioned
+handoff package (request, receipt template, README) is generated. Two provenance notes left on the
+target for whoever performs the import: the served file is a 5-page bundle (pages 1-2 the order's
+text, captured as a "Print Version" from the old moital.gov.il CMS, dated in its own footer
+2015-03-09; pages 3-5 unrelated Reshumot notices from the same gazette issue), and the extracted text
+shows the order's own effective-date clause (28 Sivan 5760 / 1 July 2000) rather than a signature line
+with the cited 7.6.2000 date. `PENDING_OWNER`: the download, hash confirmation and receipt.
+
+**L13-2 (V12, the 1990 order).** One attempt: a direct browser navigation to gov.il's legislation
+search was denied, and two probe requests to plausible search endpoints returned 403/301 with no
+usable link. No official host is known. `acquisition_blocked`, as the pending unit anticipates; the
+`nine_hour_day` branch stays named and unrun.
+
+**V5 (the 2016 pension order, י"פ 7287).** Unchanged from this run's own freeze earlier the same day:
+goldfarb.com is refused by the controlled-import host allowlist, tested. V5 stays partially verified.
+
+**L13-5 (errata, owner-closed, no lawyer).** E3 (Q6) and E2's citation/base-rule (Q4) were already
+built in the previous run under the direct chat brief — see the correction above for the one naming
+discrepancy. **E1 done this run:** `pension_wage_cap_source` revision 2, `source_downgraded:
+cma_draft_2025-01-26` — the opinion's cited "27.5.2025 clarification" is a 26.1.2025 draft on
+income-tax regulations and new pension funds that never mentions the pension order; the branch and the
+2026 value (13,769) are unchanged, only the proof grade for the 2025 figure specifically is
+downgraded. Proof 8/8 rows on DEV. **Not done this run, and why:** E2 as an actual Pool P draft
+parameter (today it is a citation-only `BASE_RULES` entry, not a bound draft version — real import
+work, its own verification cycle); E5's Pool P parameter re-verification against §3(א)'s table (the
+dossier prose is already corrected; whether the Pool P candidates match exactly was not re-checked
+this run); E6/E7 and a package v15 / report v10 regeneration (the wording already appears in this
+run's and the previous run's freeze notes; a new package/report was not built). Each is real,
+bounded, engine work that deserves its own verification cycle rather than a rushed pass at the end of
+an already very long run.
+
+**Section 3 (S5 home page, S1.5 delivery, S2 documents) — not started.** Each is, by this
+engagement's own established convention, one full wave per session (S1 alone was a complete run with
+its own freeze, matrix and journey). Attempting any of them in the remaining span of this run risked
+shipping unverified product or legal-parameter changes. They are queued, in the order the site brief
+already sets: S1.5 (blocked on BL-31, the owner's provider) → S2 → S5 (blocked on the owner's
+language decision) → S3 → S6.
+
+**Not authorized / not attempted, by design:** deploy, merge, PR, any GitHub/Vercel setting beyond
+this section's declines, any Cloudflare change, any message to any contact, printing or copying a
+secret value, keygen/register of a real identity, attestation, activating any channel, `npm install`,
+a worktree, an import from the engine into `product_runtime`, editing a blocked or superseded record.
+
 ## Resume point
 
-Refreshed after the external review #1 corrections. Everything before this
-point is history; this section and `docs/resume-after-pause.md` are what a
-resuming session must read.
+Refreshed after long run 9. Everything before this point is history; this
+section and `docs/resume-after-pause.md` are what a resuming session must
+read. Long run 9 declined the infrastructure items (repo visibility, DNS/
+email changes, pulling production secrets, real sends) regardless of the
+owner's stated blanket authorization for those categories — see that
+section for why — and did the engine and documentation work that did not
+depend on them: contact config, reviewer onboarding docs, L13-1's target
+and evidence, L13-5's E1, and a correction to the previous run's freeze
+(the errata gate is closed without a lawyer, per the owner's own later
+decision — not a lawyer step still pending).
 
 **Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`)
 and, up to `677ea92`, in the bundle and evidence archive long run 10 put on
