@@ -4,7 +4,7 @@
 תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד
 מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.
 
-המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v6.json` (`a094717b3c12c1ac…`).
+המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v7.json` (`515aaf3a9f71729e…`).
 כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.
 
 הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.
@@ -156,30 +156,30 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 | מדד | ערך |
 |---|---|
-| ריצה | `l76.8b299e74` |
+| ריצה | `l76.c952e04c` |
 | מצב ריצה | `draft_parameters_synthetic_inputs` |
-| גרסאות פרמטר בטיוטה שנקשרו | 28 |
+| גרסאות פרמטר בטיוטה שנקשרו | 33 |
 | פרמטרים פעילים | 0 |
 | חודשי תלוש סינתטיים | 54 |
-| הרצות (מקרה × מפרט × ענף) | 123 |
-| רצו | 86 |
-| סורבו בהכנת הקלט | 32 |
+| הרצות (מקרה × מפרט × ענף) | 151 |
+| רצו | 106 |
+| סורבו בהכנת הקלט | 40 |
 | סורבו במנוע | 5 |
-| הפרשי־צל שחושבו | 61 |
+| הפרשי־צל שחושבו | 81 |
 | ללא רכיב תשלום להשוואה | 25 |
-| עקבות שנשמרו / שוחזרו מהמסד | 86 / 86 |
+| עקבות שנשמרו / שוחזרו מהמסד | 106 / 106 |
 | חילוץ בשימוש | לא |
-| קורפוס (sha256) | `84bb020558d557be…` |
-| קבלה (sha256) | `b56f5086627f19e7…` |
+| קורפוס (sha256) | `aac7753d8b7a6932…` |
+| קבלה (sha256) | `e145992b13fd8ce8…` |
 
 סירובים לפי סיבה:
 
 | סיבה | מספר |
 |---|---|
 | מחוץ לטבלת המדרגות (שנה אפס / יום ראשון) (`executor:RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE`) | 5 |
-| ביטחון נמוך מהסף (`preparation:fact.below_confidence_threshold`) | 4 |
+| ביטחון נמוך מהסף (`preparation:fact.below_confidence_threshold`) | 8 |
 | עובדה סותרת — לא הוכרעה (`preparation:fact.conflicted`) | 4 |
-| עובדה חסרה (`preparation:fact.missing`) | 14 |
+| עובדה חסרה (`preparation:fact.missing`) | 18 |
 | עובדה ישנה מדי (`preparation:fact.stale`) | 1 |
 | עובדה שלא אושרה (`preparation:fact.unconfirmed`) | 4 |
 | העובדה אינה בצורה שהמשבצת צורכת (`preparation:transformation.failed`) | 6 |
@@ -188,19 +188,19 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 | דירוג | מספר |
 |---|---|
-| עובדה מוצהרת, או פרמטר בתוך בחירת מסמך (`declared`) | 33 |
+| עובדה מוצהרת, או פרמטר בתוך בחירת מסמך (`declared`) | 35 |
 | עובדה נגזרת מעובדות אחרות (`derived`) | 5 |
-| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 26 |
+| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 36 |
 | פרמטר שנקרא דרך הלקסיקון (`lexicon`) | 5 |
-| מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט (`verified`) | 22 |
+| מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט (`verified`) | 30 |
 
 השאלות הפתוחות בצל — לכל שאלה, כמה מקרים הושוו בין הענפים וכמה מהם שונים; אף ענף לא התקבל:
 
 | הכרעה | ענפים | ענף שלא נקשר | הושוו | שונים | לא ניתנים להשוואה |
 |---|---|---|---|---|---|
 | `legal.reference.il.decision.convalescence_2026_rate_period` | calendar_year_2026, from_signature_2026_07 | — | 5 | 0 | 2 |
-| `legal.reference.il.decision.min_wage_hourly_divisor` | 182, 186 | — | 5 | 5 | 2 |
-| `legal.reference.il.decision.pension_2011_2016_precedence` | order_2011_2014_row, order_2016_2017_rates | — | 5 | 5 | 2 |
+| `legal.reference.il.decision.min_wage_hourly_divisor` | 182, 186 | — | 5 | 4 | 2 |
+| `legal.reference.il.decision.pension_2011_2016_precedence` | order_2011_2014_row, order_2016_2017_rates | — | 15 | 10 | 6 |
 | `legal.reference.il.decision.pension_wage_cap_section` | section1, section2 | — | 5 | 2 | 2 |
 | `legal.reference.il.decision.rest_day_overtime_composition` | additive, multiplicative | — | 5 | 5 | 2 |
 | `legal.reference.il.decision.working_time_daily_threshold` | statute | administrative | 6 | 0 | 2 |
