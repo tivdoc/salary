@@ -56,8 +56,10 @@ async function main() {
     const started = Date.now();
     process.stdout.write(`STEP ${step.name}: ${step.run}\n`);
     const result = spawnSync(step.run, { cwd: ROOT, shell: true, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", maxBuffer: 64 * 1024 * 1024, env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1", CI: "true" } });
-    const tail = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim().split(/\r?\n/u).slice(-12);
-    results.push({ name: step.name, run: step.run, exit: result.status, seconds: Math.round((Date.now() - started) / 1000), tail });
+    const lines = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim().split(/\r?\n/u);
+    // The lines that name what failed: vitest's failed-test markers, tsc and eslint errors, the proof's FAIL rows.
+    const failures = lines.filter((line) => /^\s*(?:×|FAIL |PRODUCTION_CLOSURE|✖)/u.test(line) || /error TS\d+/u.test(line)).slice(0, 40);
+    results.push({ name: step.name, run: step.run, exit: result.status, seconds: Math.round((Date.now() - started) / 1000), failures, tail: lines.slice(-12) });
     process.stdout.write(`  exit=${result.status} (${Math.round((Date.now() - started) / 1000)}s)\n`);
     if (result.status !== 0) { failed = step.name; break; }
   }

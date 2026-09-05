@@ -45,7 +45,9 @@ describe("durable local product startup root", () => {
   });
 
   it("keeps the ordinary instrumentation import Node-only and mutually exclusive from hermetic mode", () => {
-    const source = readFileSync(resolve(process.cwd(), "src/instrumentation.ts"), "utf8");
+    // Read line-ending agnostic: git's autocrlf rewrites the file with CRLF on
+    // a Windows checkout, and the assertion is about structure, not bytes.
+    const source = readFileSync(resolve(process.cwd(), "src/instrumentation.ts"), "utf8").replaceAll("\r\n", "\n");
     const register = source.slice(source.indexOf("export async function register"));
     expect(register).toContain('process.env.NEXT_RUNTIME === "nodejs"');
     expect(register).toContain("PRODUCT_RUNTIME_BOOTSTRAP_MODE_CONFLICT");
