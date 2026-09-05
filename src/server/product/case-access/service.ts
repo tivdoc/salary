@@ -350,6 +350,14 @@ export async function exchangeLinkToken(input: Readonly<{ token: unknown; reques
   return { outcome: "challenge", challenge, challenge_ttl_seconds: offer.challenge_cookie_minutes * 60, public_id: resolved.public_id };
 }
 
+/** Read-only: may this token still be exchanged? For the page's used-or-expired screen; the exchange itself is the route handler's. */
+export async function peekLinkToken(token: unknown, db?: CaseAccessDb | null): Promise<Readonly<{ valid: boolean; public_id: string | null }>> {
+  const store = db ?? await resolveCaseAccessDb();
+  if (!store || !isOpaqueToken(token)) return { valid: false, public_id: null };
+  const resolved = await resolveToken(store, token);
+  return resolved?.valid ? { valid: true, public_id: resolved.public_id } : { valid: false, public_id: null };
+}
+
 export async function describeChallenge(challenge: string | null, db?: CaseAccessDb | null): Promise<Readonly<{ live: boolean; public_id: string | null; masked_to: string | null; channel: ContactChannel | null }>> {
   const store = db ?? await resolveCaseAccessDb();
   if (!store || !challenge || !isOpaqueToken(challenge)) return { live: false, public_id: null, masked_to: null, channel: null };
@@ -490,6 +498,6 @@ export async function listIdentityCases(identityId: string, db?: CaseAccessDb | 
 export const caseAccessService = Object.freeze({
   requestFunnelCode, verifyFunnelCode, funnelCaseState,
   issueAndSendCaseLink, sweepPendingCaseLinks, resendCaseLink, sendReportReadyNotification,
-  exchangeLinkToken, describeChallenge, resendChallengeCode, verifyChallengeCode,
+  exchangeLinkToken, peekLinkToken, describeChallenge, resendChallengeCode, verifyChallengeCode,
   requestAccessCode, verifyAccessCode, resolveIdentitySession, listIdentityCases,
 });

@@ -1,19 +1,20 @@
-import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { AccessChallenge } from "@/components/case/access-challenge";
 import { CaseShell } from "@/components/case/case-shell";
 import { CaseView } from "@/components/case/case-view";
 import { productOffer } from "@/lib/product-offer";
 import { isOpaqueToken } from "@/server/product/case-access/crypto";
-import { describeChallenge, exchangeLinkToken, listIdentityCases, resolveIdentitySession } from "@/server/product/case-access/service";
-import { readCaseChallengeCookie, readCaseSessionCookie, setCaseChallengeCookie } from "@/server/product/case-access/session-cookie";
+import { LinkExchange } from "@/components/case/link-exchange";
+import { describeChallenge, listIdentityCases, peekLinkToken, resolveIdentitySession } from "@/server/product/case-access/service";
+import { readCaseChallengeCookie, readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
 // UX Run 1 / U3 (D-1.2, D-1.5), corrected by the external review #1,
 // finding 8. One segment, two readings. A 22-character link token is
-// exchanged ONCE: marked used, its code sent, a short challenge cookie set,
-// and the customer redirected to the case id — so the token appears in
-// exactly one request and in no later Referer. A case id shows the case to a
+// exchanged ONCE by the request route (token spent, code sent, a short
+// challenge cookie set) and the customer moved to the case id — so the token
+// appears in the link's request and the exchange's body, in no query string,
+// and in no later Referer. A case id shows the case to a
 // verified identity session, the code screen to a live challenge cookie,
 // and sends everyone else to /login. The token is never placed in a query
 // string and never logged.
@@ -23,10 +24,10 @@ export default async function CaseAccessPage({ params }: { params: Promise<{ tok
   const offer = productOffer();
 
   if (isOpaqueToken(token)) {
-    const requestHeaders = await headers();
-    const request = new Request(`${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost"}/case/exchange`, { headers: requestHeaders });
-    const exchanged = await exchangeLinkToken({ token, request });
-    if (exchanged.outcome !== "challenge") {
+    // The exchange itself happens in the request route (a cookie cannot be set while a page renders): this page shows
+    // the used-or-expired screen from a read-only peek, or nothing but the component that performs the exchange.
+    const peeked = await peekLinkToken(token);
+    if (!peeked.valid) {
       return (
         <CaseShell eyebrow="כניסה לתיק">
           <div className="received-card received-card--error">
@@ -37,8 +38,12 @@ export default async function CaseAccessPage({ params }: { params: Promise<{ tok
         </CaseShell>
       );
     }
-    await setCaseChallengeCookie(exchanged.challenge, exchanged.challenge_ttl_seconds);
-    redirect(`/case/${exchanged.public_id}`);
+    return (
+      <CaseShell eyebrow="כניסה לתיק">
+        <meta name="referrer" content="no-referrer" />
+        <LinkExchange token={token} fallbackHref="/login" />
+      </CaseShell>
+    );
   }
 
   if (!/^TV-[A-Z0-9]{8}$/u.test(token)) notFound();

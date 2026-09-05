@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readCaseIdFromCookie } from "@/lib/case-cookie";
-import { requestAccessCode, requestFunnelCode, resendChallengeCode } from "@/server/product/case-access/service";
-import { readCaseChallengeCookie } from "@/server/product/case-access/session-cookie";
+import { exchangeLinkToken, requestAccessCode, requestFunnelCode, resendChallengeCode } from "@/server/product/case-access/service";
+import { readCaseChallengeCookie, setCaseChallengeCookie } from "@/server/product/case-access/session-cookie";
 import { refusedEntrypoint, strictJsonObject } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
@@ -21,10 +21,18 @@ export async function POST(request: Request) {
     return refusedEntrypoint(error);
   }
   const body = await strictJsonObject(request, 4_096);
-  if (!body || (body.funnel !== true && body.challenge !== true && typeof body.contact !== "string")) {
+  if (!body || (body.funnel !== true && body.challenge !== true && body.exchange !== true && typeof body.contact !== "string")) {
     return NextResponse.json({ error: "לא הצלחנו לקרוא את הבקשה", code: "access_request_invalid" }, { status: 400 });
   }
   try {
+    if (body.exchange === true) {
+      // Finding 8: the link's one-time exchange — token spent, code sent, challenge cookie set, the case path answered. A cookie can
+      // only be set here, in a route handler; the page that received the link renders nothing but the component that calls this.
+      const exchanged = await exchangeLinkToken({ token: body.token, request });
+      if (exchanged.outcome !== "challenge") return NextResponse.json({ error: "הקישור אינו תקף", code: "access_link_invalid" }, { status: 410, headers: { "Cache-Control": "no-store" } });
+      await setCaseChallengeCookie(exchanged.challenge, exchanged.challenge_ttl_seconds);
+      return NextResponse.json({ accepted: true, next: `/case/${exchanged.public_id}` }, { status: 202, headers: { "Cache-Control": "no-store" } });
+    }
     if (body.funnel === true) {
       const caseId = await readCaseIdFromCookie();
       if (!caseId) return NextResponse.json({ error: "לא נמצא תיק בדיקה בדפדפן הזה", code: "case_not_found" }, { status: 401 });

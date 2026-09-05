@@ -113,7 +113,9 @@ async function main(): Promise<void> {
 
     // 3. The funnel pages refuse an unverified case (finding 1).
     const uploadPage = await probe(port, "/check/upload", { headers: { cookie: funnelCookie(caseId), origin } });
-    record("upload_page_refuses_unverified_contact", uploadPage.status, "307 to /check?verify=1", uploadPage.status === 307, uploadPage.body);
+    // Locally the funnel pages are capability-blocked (404) before the guard runs; on the product half the guard answers 307 to
+    // /check?verify=1 (src/app/check/upload/page.test.ts proves the redirect; the closure proof probes the 307 without a cookie). Never 200.
+    record("upload_page_refuses_unverified_contact", uploadPage.status, "307 to /check?verify=1, or 404 (blocked locally); never 200", uploadPage.status === 307 || uploadPage.status === 404, String(uploadPage.status));
     const startPayment = await post("/api/payments/start", {}, { cookie: funnelCookie(caseId) });
     const startBody = await startPayment.text();
     // Locally the payment route is capability-blocked (404) before it could refuse; on the product half it answers 409 contact_unverified. Either is a refusal.
@@ -148,12 +150,16 @@ async function main(): Promise<void> {
     record("link_has_no_query_string", 0, "path segment only", link !== "" && !link.includes("?") && link.startsWith(origin), link);
 
     // 7. A second browser profile: no cookie jar. The link is exchanged once and redirects to the case id (finding 8).
-    const exchange = await fetch(`${origin}/case/${token}`, { redirect: "manual" });
-    await exchange.text();
+    const linkPage = await probe(port, `/case/${token}`, {}, 60_000);
+    record("link_page_renders_only_the_exchanger", linkPage.status, "200, no content but the exchange", linkPage.status === 200 && linkPage.body.includes("מחליפים את הקישור") && !linkPage.body.includes(publicId), linkPage.body.replace(/\s+/gu, " "));
+    const exchange = await post("/api/cases/access/request", { exchange: true, token });
+    const exchangeBody = await exchange.text();
     const challengeCookie = cookieOf(exchange, "tivdoc_case_challenge");
-    record("link_exchanged_once_and_redirected", exchange.status, "307 to /case/<id> with challenge cookie", exchange.status === 307 && (exchange.headers.get("location") ?? "").endsWith(`/case/${publicId}`) && challengeCookie !== null, exchange.headers.get("location") ?? "");
+    record("link_exchanged_once", exchange.status, "202 with challenge cookie and the case path", exchange.status === 202 && exchangeBody.includes(`/case/${publicId}`) && challengeCookie !== null, exchangeBody);
     const again = await probe(port, `/case/${token}`, {}, 60_000);
-    record("used_link_is_refused", again.status, "200 with the invalid-link screen", again.status === 200 && again.body.includes("נוצל כבר"), again.body.replace(/\s+/gu, " "));
+    const againExchange = await post("/api/cases/access/request", { exchange: true, token });
+    await againExchange.text();
+    record("used_link_is_refused", again.status, "200 with the invalid-link screen; a second exchange 410", again.status === 200 && again.body.includes("נוצל כבר") && againExchange.status === 410, again.body.replace(/\s+/gu, " "));
     const challengePage = await probe(port, `/case/${publicId}`, { headers: { cookie: `tivdoc_case_challenge=${challengeCookie ?? ""}`, origin } }, 60_000);
     record("challenge_screen_at_case_id", challengePage.status, "200 with the code form", challengePage.status === 200 && challengePage.body.includes(publicId) && challengePage.body.includes("קוד"), challengePage.body.replace(/\s+/gu, " "));
     const code = latestCode(CONTACT);
@@ -197,9 +203,12 @@ async function main(): Promise<void> {
     record("unknown_contact_gets_no_code", 0, "no code sent", strangerCode === "", `codes_to_stranger=${inbox().filter((m) => m.to === STRANGER).length}`);
 
     // 12. Per-IP ceiling at the boundary: twenty-one requests from one address for the known contact.
+    // A fresh address each run: the per-IP ledger outlives the fixture (fifteen-minute window), so a fixed address would
+    // arrive already full on a second run.
+    const address = `100.${64 + Math.floor(Math.random() * 64)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
     const ipStatuses: number[] = [];
     for (let index = 0; index < 21; index += 1) {
-      const response = await post("/api/cases/access/request", { contact: CONTACT }, { "x-forwarded-for": "198.51.100.78" });
+      const response = await post("/api/cases/access/request", { contact: CONTACT }, { "x-forwarded-for": address });
       ipStatuses.push(response.status);
       await response.text();
     }
