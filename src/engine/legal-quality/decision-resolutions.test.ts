@@ -7,10 +7,12 @@ import { branchesOf } from "../shadow/draft-shadow-run.ts";
 import {
   defaultBranchOf,
   OWNER_RECORDED_RESOLUTIONS,
+  APPROVAL_RECORD_ERRATA_SHA256,
   BASE_RULES,
   CONDITIONAL_ON_SCHEDULE,
   ERRATA_EXTERNAL_REVIEW_1_SHA256,
   EXTERNAL_REVIEW_1_INSTRUCTION_SHA256,
+  EXTERNAL_REVIEW_1_RESPONSE_SHA256,
   RESOLUTION_HISTORY,
   conditionalSelection,
   REJECTED_BRANCHES,
@@ -55,13 +57,20 @@ describe("L11-2 / D2: six owner-recorded resolutions, each a default and nothing
 
   it("rests on the stored evidence by hash, is owner_recorded, and carries no approver", () => {
     for (const resolution of OWNER_RECORDED_RESOLUTIONS) {
-      if ((resolution.revision ?? 1) > 1) {
-        // Finding 5: a re-recorded revision rests on the errata appendix and the owner's instruction, and names its lineage.
+      if (resolution.decision_key === "working_time_daily_threshold" && (resolution.revision ?? 1) > 1) {
+        // Finding 5: re-recorded from the owner's direct chat brief, hashed as an instruction (no file carries it).
         expect(resolution.basis).toBe("external_review_correction");
         expect(resolution.evidence_sha256).toBe(ERRATA_EXTERNAL_REVIEW_1_SHA256);
         expect(resolution.approval_record_sha256).toBe(EXTERNAL_REVIEW_1_INSTRUCTION_SHA256);
         expect(resolution.supersedes_revision).toBe((resolution.revision ?? 1) - 1);
         expect(resolution.supersession_basis).toBe("superseded_by_external_review_2026-09-05");
+      } else if (resolution.decision_key === "pension_wage_cap_source" && (resolution.revision ?? 1) > 1) {
+        // Long run 9 / L13-5 E1: re-recorded from the review's own response file and the approval record's errata section — both real files, referenced by hash.
+        expect(resolution.basis).toBe("external_review_correction");
+        expect(resolution.evidence_sha256).toBe(EXTERNAL_REVIEW_1_RESPONSE_SHA256);
+        expect(resolution.approval_record_sha256).toBe(APPROVAL_RECORD_ERRATA_SHA256);
+        expect(resolution.supersedes_revision).toBe((resolution.revision ?? 1) - 1);
+        expect(resolution.supersession_basis).toBe("source_downgraded_cma_draft_2025-01-26");
       } else {
         expect(resolution.basis).toBe("lawyer_approved_opinion");
         expect(resolution.evidence_sha256).toBe(LEGAL_OPINION_SHA256);
@@ -170,12 +179,22 @@ describe("L11-2 / D2: the default branch — the one thing a resolution changes"
 
 describe("external review #1, finding 5: the daily threshold re-recorded as conditional on the schedule, append-only", () => {
   it("keeps revision 1 in history exactly as recorded — same selection, same hash fields, never edited", () => {
-    expect(RESOLUTION_HISTORY).toHaveLength(1);
-    const first = RESOLUTION_HISTORY[0]!;
+    expect(RESOLUTION_HISTORY).toHaveLength(2);
+    const first = RESOLUTION_HISTORY.find((entry) => entry.decision_key === "working_time_daily_threshold")!;
     expect(first).toMatchObject({ decision_key: "working_time_daily_threshold", selected_branch: "administrative", revision: 1, basis: "lawyer_approved_opinion" });
     expect(first.supersedes_revision).toBeUndefined();
     // Its hash is the one the database stored on 5.9.2026: the lineage fields do not enter a first revision's hash.
     expect(resolutionSha256(first)).toBe(resolutionSha256({ ...first, revision: undefined }));
+  });
+
+  it("L13-5 / E1: pension_wage_cap_source revision 2 downgrades the 2025 source, leaves the branch and the 2026 value untouched", () => {
+    const latest = OWNER_RECORDED_RESOLUTIONS.find((entry) => entry.decision_key === "pension_wage_cap_source")!;
+    const past = RESOLUTION_HISTORY.find((entry) => entry.decision_key === "pension_wage_cap_source")!;
+    expect(latest).toMatchObject({ selected_branch: "section2", revision: 2, supersedes_revision: 1, basis: "external_review_correction", supersession_basis: "source_downgraded_cma_draft_2025-01-26" });
+    expect(past).toMatchObject({ selected_branch: "section2", revision: 1, basis: "lawyer_approved_opinion" });
+    expect(latest.selected_branch).toBe(past.selected_branch);
+    expect(latest.mapping_note).toContain("source_downgraded");
+    expect(resolutionSha256(latest)).not.toBe(resolutionSha256(past));
   });
 
   it("hashes a re-recorded revision with its lineage, so two revisions can never share a hash", () => {

@@ -38,6 +38,17 @@ export const EXTERNAL_REVIEW_1_INSTRUCTION_SHA256 = canonicalSha256({
 /** The sentinel a resolution selects when the branch depends on the case's schedule facts (finding 5). */
 export const CONDITIONAL_ON_SCHEDULE = "conditional_on_schedule" as const;
 export const SUPERSEDED_BY_EXTERNAL_REVIEW_1 = "superseded_by_external_review_2026-09-05" as const;
+// Long run 9 / 2.3 (L13-5, E1). The external review's own response file (tivdoc-external-review-1-response.md,
+// section ג', 5.9.2026) and the approval record's errata section (tivdoc-legal-opinion-approval-record.md §7,
+// closed by the owner without a lawyer — "סעיף ג תסגור ללא עורך דין"), both OneDrive files, referenced by hash
+// only, exactly as LEGAL_OPINION_SHA256 and APPROVAL_RECORD_SHA256 already are. Neither is copied into the repo.
+export const EXTERNAL_REVIEW_1_RESPONSE_SHA256 = "907f463b83876297ef4bee09124da025cfede8936c21af32d6e6a4f3e170f6e6" as const;
+export const APPROVAL_RECORD_ERRATA_SHA256 = "39257edce50c25ead7488c7059c3f2ae861261a4e0d8022c6630e07077355ef6" as const;
+/** §7's own supersession string for a re-recorded resolution — distinct from SUPERSEDED_BY_EXTERNAL_REVIEW_1,
+ *  which is what the owner's direct chat brief (external review response, section ד', item 5) specified verbatim
+ *  and what Q6's revision 2 already carries, shipped and tested. The two owner documents disagree on the exact
+ *  string; nothing here silently picks one for Q6 — see the state doc's note on this run for both, unresolved. */
+export const EXTERNAL_REVIEW_1_OWNER_CLOSED = "external_review_1_owner_closed_2026-09-05" as const;
 export const LEGAL_DECISION_RESOLUTION_SCHEMA = "tivdoc-legal-decision-resolution-v0" as const;
 
 const DECISION = "legal.reference.il.decision";
@@ -88,13 +99,28 @@ export const OWNER_RECORDED_RESOLUTIONS: readonly OwnerRecordedResolution[] = Ob
       "The opinion's order_182 is the register's branch 182 (il.minimum_wage.hourly@2026.1.0: the monthly rate ÷ 182, from 1.4.2018; ÷ 186 before that date). Branch 186 (2026.2.0) stays computed as the statutory floor: a gap between the two figures is classed order_entitlement, a gap below the 186 figure statutory_violation (D3.2).",
   },
   {
-    ...common,
+    // Long run 9 / 2.3 (L13-5, E1). Revision 1 (below, in RESOLUTION_HISTORY) is the opinion's own
+    // citation, "הבהרת רשות שוק ההון 27.5.2025" — external review #1 read the actual PDF: it is a
+    // draft dated 26.1.2025 about income-tax regulations and new pension funds, and it does not
+    // address the pension extension order at all. The selected branch and the 2026 value (13,769)
+    // are unchanged — they rest on the order's own text (§2(b), §6(c)), not on that document — but
+    // the proof grade for choosing "benefits" over "wage" for 2025 specifically is downgraded to low.
     decision_key: "pension_wage_cap_source",
     decision_id: `${DECISION}.pension_wage_cap_section`,
     selected_branch: "section2",
     opinion_branch_label: "nii_section_2_benefits",
+    basis: RESOLUTION_BASIS_EXTERNAL_REVIEW,
+    evidence_sha256: EXTERNAL_REVIEW_1_RESPONSE_SHA256,
+    approval_record_sha256: APPROVAL_RECORD_ERRATA_SHA256,
+    approved_on: "2026-09-05",
+    approver_identity: null,
+    status: RESOLUTION_STATUS_OWNER_RECORDED,
+    recorded_by: RESOLUTION_RECORDED_BY,
+    revision: 2,
+    supersedes_revision: 1,
+    supersession_basis: "source_downgraded_cma_draft_2025-01-26",
     mapping_note:
-      "The opinion's nii_section_2_benefits — the National Insurance Law 'סעיף 2 – לעניין גמלאות' figure, 13,769 for 2026 (the opinion states 12,536 and 13,316 for 2024 and 2025; those years are not registered here) — is the register's branch section2 (il.pension.mandatory_wage_cap@2026.2.0). Branch section1 (2026.1.0, 13,566) stays computed; the minimum-wage base is the §1 figure (D3.1).",
+      "source_downgraded: cma_draft_2025-01-26. The binding source for section2 (13,769, 2026) is the 2011 pension order §2(b), §6(c) alone; the cited 27.5.2025 clarification is a 26.1.2025 draft on income-tax regulations and new pension funds that never mentions the extension order, so it cannot support choosing the \"benefits\" column over \"wage\" for the 2025 figure — that choice now rests on an analogy to the draft and the chamber of commerce's own reading of it, both weak. Nothing in the register's branch or the 2026 value moves.",
   },
   {
     ...common,
@@ -151,6 +177,16 @@ export const OWNER_RECORDED_RESOLUTIONS: readonly OwnerRecordedResolution[] = Ob
  * superseded row is never edited; its hash is the hash it was stored with.
  */
 export const RESOLUTION_HISTORY: readonly OwnerRecordedResolution[] = Object.freeze([
+  {
+    ...common,
+    decision_key: "pension_wage_cap_source",
+    decision_id: `${DECISION}.pension_wage_cap_section`,
+    selected_branch: "section2",
+    opinion_branch_label: "nii_section_2_benefits",
+    revision: 1,
+    mapping_note:
+      "The opinion's nii_section_2_benefits — the National Insurance Law 'סעיף 2 – לעניין גמלאות' figure, 13,769 for 2026 (the opinion states 12,536 and 13,316 for 2024 and 2025; those years are not registered here) — is the register's branch section2 (il.pension.mandatory_wage_cap@2026.2.0). Branch section1 (2026.1.0, 13,566) stays computed; the minimum-wage base is the §1 figure (D3.1).",
+  },
   {
     ...common,
     decision_key: "working_time_daily_threshold",
