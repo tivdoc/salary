@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Check out (full history: the split test and the closure proof read main's own route inventory)
+      - name: "Check out, full history (the split test and the closure proof read main's own route inventory)"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0

@@ -13,26 +13,36 @@
 //
 // The only step skipped is `npm ci`: the tree already carries its lockfile's
 // modules, and installing is not an action this tree takes.
+//
+// Long run 9 pushed the branch after proving the preview environment closed
+// (L9-2, L9-7); the workflow runs on GitHub since. This runner remains the
+// local freeze and the regression proof, and parses the workflow with the
+// YAML parser GitHub's own parser agrees with.
 import "../production-refusal.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import yaml from "js-yaml";
 
 const ROOT = process.cwd();
 const WORKFLOW = path.join(ROOT, ".github", "workflows", "ci.yml");
 const RECEIPT_ROOT = path.join(ROOT, "output", "next", "ci");
 
-/** The workflow's steps: `- name:` followed by a single-line `run:`; `uses:` steps have no command here. */
+/**
+ * The workflow's steps, from the YAML as GitHub parses it (js-yaml, the
+ * parser the repository already carries): a file GitHub would reject —
+ * long run 9's first push carried an unquoted colon in a step name and the
+ * run failed with zero jobs — fails here first. `uses:` steps have no
+ * command; a multi-line `run: |` is one command.
+ */
 export function workflowSteps(text) {
+  const document = yaml.load(text);
+  const jobs = document && typeof document === "object" ? document.jobs ?? {} : {};
   const steps = [];
-  let current = null;
-  for (const raw of text.split(/\r?\n/u)) {
-    const name = /^\s+- name: (.+)$/u.exec(raw);
-    if (name) { current = { name: name[1].trim(), run: null }; steps.push(current); continue; }
-    const run = /^\s+run: (.+)$/u.exec(raw);
-    if (run && current) current.run = run[1].trim();
+  for (const job of Object.values(jobs)) {
+    for (const step of job.steps ?? []) steps.push({ name: String(step.name ?? step.uses ?? step.run ?? ""), run: typeof step.run === "string" ? step.run.trim() : null });
   }
   return steps;
 }
@@ -48,6 +58,10 @@ function sha256(text) {
 async function main() {
   const label = process.argv[2] ?? "run";
   const workflowText = readFileSync(WORKFLOW, "utf8");
+  if (label === "--parse-only") {
+    process.stdout.write(`${JSON.stringify(workflowSteps(workflowText), null, 2)}\n`);
+    return;
+  }
   const steps = workflowSteps(workflowText).filter((step) => step.run !== null && !step.run.startsWith("npm ci"));
   const results = [];
   let failed = null;
