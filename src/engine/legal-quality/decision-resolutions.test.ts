@@ -7,6 +7,7 @@ import { branchesOf } from "../shadow/draft-shadow-run.ts";
 import {
   defaultBranchOf,
   OWNER_RECORDED_RESOLUTIONS,
+  REJECTED_BRANCHES,
   resolutionFor,
   resolutionSha256,
   RESOLUTION_STATUS_OWNER_RECORDED,
@@ -16,11 +17,20 @@ import { SENSITIVITY_SPECS } from "./sensitivity-rulespecs.ts";
 const decisionIds = [...new Set(SENSITIVITY_SPECS.map((entry) => entry.decision_id).filter((id): id is string => id !== null))];
 
 describe("L11-2 / D2: six owner-recorded resolutions, each a default and nothing more", () => {
-  it("names exactly the six open decisions the sensitivity set carries, once each", () => {
+  it("names six of the sensitivity set's decisions once each; the seventh (L11-4 / D3.5, rest_day_daily_threshold) is open and unresolved", () => {
     expect(OWNER_RECORDED_RESOLUTIONS).toHaveLength(6);
     expect(new Set(OWNER_RECORDED_RESOLUTIONS.map((entry) => entry.decision_id)).size).toBe(6);
     expect(new Set(OWNER_RECORDED_RESOLUTIONS.map((entry) => entry.decision_key)).size).toBe(6);
-    expect([...OWNER_RECORDED_RESOLUTIONS.map((entry) => entry.decision_id)].sort()).toEqual([...decisionIds].sort());
+    const resolved = new Set(OWNER_RECORDED_RESOLUTIONS.map((entry) => entry.decision_id));
+    for (const id of resolved) expect(decisionIds).toContain(id);
+    expect(decisionIds.filter((id) => !resolved.has(id))).toEqual(["legal.reference.il.decision.rest_day_daily_threshold"]);
+    expect(resolutionFor("legal.reference.il.decision.rest_day_daily_threshold")).toBeNull();
+  });
+
+  it("lists the retired multiplicative branch once, with its reason, its regression guard and no place in the sensitivity set", () => {
+    expect(REJECTED_BRANCHES).toEqual([expect.objectContaining({ decision_id: "legal.reference.il.decision.rest_day_overtime_composition", branch: "multiplicative", reason: "no source of any grade supports it" })]);
+    expect(SENSITIVITY_SPECS.some((entry) => entry.composition_branch === "multiplicative")).toBe(false);
+    expect(SENSITIVITY_SPECS.filter((entry) => entry.decision_id?.endsWith("rest_day_overtime_composition")).map((entry) => entry.composition_branch)).toEqual(["additive"]);
   });
 
   it("selects a branch the decision's specs know — bound, composition, or named unbound — never one they do not", () => {

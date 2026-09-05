@@ -4,6 +4,7 @@
 // `human_review_required: true` and `automatic_acceptance: false`; nothing
 // here accepts a branch, weights one, or hides a case that did not run.
 import type { ShadowExecutionRecord } from "./draft-shadow-run.ts";
+import { HAVRAA_YEAR_BRANCH, havraaRateFor, havraaYearPaidFor, retroactiveTag } from "../legal-quality/convalescence-rate-table.ts";
 import { defaultBranchOf } from "../legal-quality/decision-resolutions.ts";
 import { DRAFT_SHADOW_SPECS } from "./draft-shadow-specs.ts";
 import { classifyGapFromDeltas, gapSeverityDecision, type GapSeverity } from "./gap-severity.ts";
@@ -15,6 +16,11 @@ function comparable(output: Record<string, unknown> | null): Comparable | null {
   if (output.kind === "money") return { amount: BigInt(String(output.minor_units)), unit: String(output.currency), kind: "money" };
   if (output.kind === "integer") return { amount: BigInt(String(output.value)), unit: String(output.unit), kind: "integer" };
   return null;
+}
+
+function retroactiveTagFor(paymentPeriodStart: string): string | null {
+  const lookup = havraaRateFor(havraaYearPaidFor(paymentPeriodStart));
+  return lookup.status === "known" ? retroactiveTag(paymentPeriodStart, lookup.row) : null;
 }
 
 export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
@@ -64,6 +70,12 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
           status: row?.status ?? "not_run",
           output: row?.output ?? null,
           delta: row?.delta?.status === "computed" ? row.delta.delta : null,
+          period: row?.period ?? null,
+          // L11-4 / D3.4: a shortfall on the havraa_year branch in a month paid
+          // before the rate was known carries the retroactive tag.
+          retroactive_tag: row?.branch === HAVRAA_YEAR_BRANCH && row.delta?.status === "computed" && BigInt(row.delta.delta) > BigInt(0) && row.period
+            ? retroactiveTagFor(row.period.start)
+            : null,
           execution_grade: row?.provenance?.execution_grade ?? null,
           refusal: row ? (row.rejection_codes.length > 0 ? row.rejection_codes.join(",") : row.error_code) : "not_run",
         };

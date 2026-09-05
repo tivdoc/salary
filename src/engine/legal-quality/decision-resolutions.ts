@@ -180,3 +180,28 @@ export function defaultBranchOf(spec: BranchShape, options: Readonly<{ compositi
   }
   throw new Error(`RESOLUTION_BRANCH_UNKNOWN:${spec.decision_id}:${selected}`);
 }
+
+/**
+ * L11-4 / D3.3. Branches examined and rejected: named once, with the reason,
+ * kept out of the sensitivity table and the shadow, kept as a regression
+ * fixture so the computation cannot silently return.
+ */
+export type RejectedBranch = Readonly<{
+  decision_id: string;
+  branch: string;
+  reason: string;
+  retired_in: string;
+  regression_guard: string;
+  rule_spec_id: string;
+}>;
+
+export const REJECTED_BRANCHES: readonly RejectedBranch[] = Object.freeze([
+  {
+    decision_id: `${DECISION}.rest_day_overtime_composition`,
+    branch: "multiplicative",
+    reason: "no source of any grade supports it",
+    retired_in: "run 11 / D3.3, on the lawyer-approved opinion of 5.9.2026 (question 4)",
+    regression_guard: "src/engine/legal-quality/working-time-spec.test.ts",
+    rule_spec_id: "il.rulespec.working.time.rest.day.overtime.multiplicative",
+  },
+]);

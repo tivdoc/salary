@@ -29,11 +29,11 @@ describe("the branch comparison", () => {
 
   it("covers every open decision the specs carry, with both branches of each", () => {
     expect(comparison.map((entry) => [entry.decision_id.replace(/^legal\.reference\.il\.decision\./u, ""), entry.branches])).toEqual([
-      ["convalescence_2026_rate_period", ["calendar_year_2026", "from_signature_2026_07"]],
+      ["convalescence_2026_rate_period", ["calendar_year_2026", "from_signature_2026_07", "havraa_year"]],
       ["min_wage_hourly_divisor", ["182", "186"]],
       ["pension_2011_2016_precedence", ["order_2011_2014_row", "order_2016_2017_rates"]],
       ["pension_wage_cap_section", ["section1", "section2"]],
-      ["rest_day_overtime_composition", ["additive", "multiplicative"]],
+      ["rest_day_overtime_composition", ["additive"]],
       ["working_time_daily_threshold", ["statute"]],
     ]);
   });
@@ -42,9 +42,10 @@ describe("the branch comparison", () => {
     // L8-3 regression (caught on DEV): keying rows by spec and month made the
     // composition decision's two specs two rows with one branch each — 0/0.
     const composition = comparison.find((entry) => entry.decision_id.endsWith("rest_day_overtime_composition"))!;
-    expect(composition.branches).toEqual(["additive", "multiplicative"]);
+    // L11-4 / D3.3: the multiplicative reading is retired; one branch, still keyed by the month.
+    expect(composition.branches).toEqual(["additive"]);
     expect(composition.cases_compared).toBe(5);
-    expect(composition.cases.filter((entry) => entry.comparable).every((entry) => entry.shadow_id === null && entry.by_branch.map((row) => row.shadow_id).sort().join(",") === "working.time.rest.day.overtime.additive,working.time.rest.day.overtime.multiplicative")).toBe(true);
+    expect(composition.cases.filter((entry) => entry.comparable).every((entry) => entry.shadow_id === null && entry.by_branch.map((row) => row.shadow_id).sort().join(",") === "working.time.rest.day.overtime.additive")).toBe(true);
     const pension = comparison.find((entry) => entry.decision_id.endsWith("pension_2011_2016_precedence"))!;
     expect(new Set(pension.cases.map((entry) => entry.shadow_id))).toEqual(new Set(["pension.employee.contribution.on.wage", "pension.employer.contribution.on.wage", "pension.severance.contribution.on.wage"]));
     expect(pension.cases_compared).toBe(15);
@@ -119,6 +120,19 @@ describe("the branch comparison", () => {
     const cap = comparison.find((entry) => entry.decision_id.endsWith("pension_wage_cap_section"))!;
     expect(cap.gap_severity).toBeNull();
     expect(cap.cases.every((entry) => entry.gap_severity === null)).toBe(true);
+  });
+
+  it("L11-4 / D3.4: the havraa_year branch refuses a 2027 month as rate_not_published and tags a June 2026 shortfall as retroactive", () => {
+    const convalescence = comparison.find((entry) => entry.decision_id.endsWith("convalescence_2026_rate_period"))!;
+    expect(convalescence.default_branch).toBe("havraa_year");
+    const unpublished = convalescence.cases.find((entry) => entry.case_id === "synthetic.convalescence.edge.havraa_year_2027_rate_not_published")!;
+    expect(unpublished.comparable).toBe(false);
+    expect(unpublished.by_branch.find((row) => row.branch === "havraa_year")).toMatchObject({ status: "preparation_refused", refusal: "rate_not_published" });
+    expect(unpublished.by_branch.filter((row) => row.branch !== "havraa_year").every((row) => row.status === "ran")).toBe(true);
+    const previous = convalescence.cases.find((entry) => entry.case_id === "synthetic.convalescence.edge.paid_at_previous_rate")!;
+    const tagged = previous.by_branch.find((row) => row.branch === "havraa_year")!;
+    expect(tagged).toMatchObject({ status: "ran", delta: "20100", retroactive_tag: "retroactive_update_2026-08-18", period: { start: "2026-06-01", end: "2026-06-30" } });
+    expect(previous.by_branch.filter((row) => row.branch !== "havraa_year").every((row) => row.retroactive_tag === null)).toBe(true);
   });
 
   it("is deterministic in execution order", () => {

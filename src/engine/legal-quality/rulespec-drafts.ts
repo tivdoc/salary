@@ -192,9 +192,10 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
   // convalescence rate carries a period decision; the figure is the same on
   // both branches.
   {
-    parameter_id: "il.convalescence.daily_rate", versions: ["2023.1.0", "2026.1.0", "2026.2.0"],
+    // L11-4 / D3.4: 2026.3.0 is the convalescence-year reading, the owner-recorded default.
+    parameter_id: "il.convalescence.daily_rate", versions: ["2023.1.0", "2026.1.0", "2026.2.0", "2026.3.0"],
     decision_id: "legal.reference.il.decision.convalescence_2026_rate_period",
-    branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"]],
+    branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"], ["havraa_year", "2026.3.0"]],
   },
   { parameter_id: "il.working_time.daily_hours_cap_including_overtime", versions: ["2018.1.0"] },
   { parameter_id: "il.working_time.weekly_overtime_hours_cap", versions: ["2018.1.0"] },

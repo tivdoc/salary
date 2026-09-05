@@ -159,6 +159,26 @@ const TOPIC_MULTIPLIER: Readonly<Record<Wave3Topic, Seed>> = Object.freeze({
           parameter_rounding_boundary: HOURS(9),
         },
       },
+      // L11-4 / D3.5: the hours worked ON the rest day and the worker's declared
+      // daily norm, for the rest-day threshold decision. Over the statute's
+      // eight the derived overtime equals the declared rest-day overtime above;
+      // over the declared norm it is one hour less where the norm is nine.
+      {
+        ref_id: "fact.hours.worked.rest.day",
+        per_scenario: {
+          current: HOURS(11), effective_date_boundary: HOURS(10), sector_population: HOURS(9),
+          missing_conflicted_facts: HOURS(11), precedence_overlap: HOURS(12),
+          parameter_rounding_boundary: HOURS(9),
+        },
+      },
+      {
+        ref_id: "fact.worker.daily.norm.hours",
+        per_scenario: {
+          current: HOURS(9), effective_date_boundary: HOURS(9), sector_population: HOURS(8),
+          missing_conflicted_facts: HOURS(9), precedence_overlap: HOURS(9),
+          parameter_rounding_boundary: HOURS(8),
+        },
+      },
     ],
   },
   // L6-6: convalescence also carries the years of service, for the 1988

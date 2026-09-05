@@ -74,6 +74,8 @@ const REASONS = Object.freeze({
   "pool-p-batch-9-lexicon.mts": "Real draft parameters, the figures the law states as words, bound through the numeral lexicon.",
   "pool-p-batch-10-selections.mts": "Real draft parameters, the figures inside the three instrument selections.",
   "pool-p-batch-17-average-wage.mts": "Real draft parameters, the two average-wage figures: §1 for the minimum-wage base, §2 benefits for the pension cap.",
+  "pool-p-batch-18-havraa-year.mts": "Real draft parameter, the convalescence-year reading of the 2026 rate as its own version and branch.",
+  "pool-p-batch-19-rest-day-daily-threshold.mts": "Registers one real open decision on the reference tenant, the rest day's own threshold, with no parameter.",
   "pool-p-batch-11-visual.mts": "Real draft parameters, the 1951 premiums read from the page image (inferred_visual).",
   "pool-p-batch-12-composition-decision.mts": "One real open decision, the rest-day overtime composition; no parameters.",
   "pool-p-batch-13-pension-visual.mts":
@@ -127,6 +129,8 @@ const EXPECTED = Object.freeze({
   "pool-p-batch-9-lexicon.mts": REFERENCE,
   "pool-p-batch-10-selections.mts": REFERENCE,
   "pool-p-batch-17-average-wage.mts": REFERENCE,
+  "pool-p-batch-18-havraa-year.mts": REFERENCE,
+  "pool-p-batch-19-rest-day-daily-threshold.mts": REFERENCE,
   "pool-p-batch-11-visual.mts": REFERENCE,
   "pool-p-batch-12-composition-decision.mts": REFERENCE,
   "pool-p-batch-13-pension-visual.mts": REFERENCE,

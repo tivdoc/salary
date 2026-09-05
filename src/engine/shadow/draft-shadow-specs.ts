@@ -19,6 +19,7 @@
 // way a value reaches the executor. A slot whose fact is missing, conflicted,
 // unconfirmed, stale or of the wrong shape is a rejection, and the case does
 // not run.
+import { havraaBranchGuard } from "../legal-quality/convalescence-rate-table.ts";
 import { buildBlankGoldenCaseTemplates } from "../legal-quality/golden-case-templates.ts";
 import {
   CONVALESCENCE_DAILY_RATE_SPEC,
@@ -28,7 +29,6 @@ import {
   PENSION_WAGE_CAP_SPEC,
   REST_DAY_OVERTIME_ADDITIVE_SPEC,
   REST_DAY_OVERTIME_COMPOSITION_DECISION,
-  REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC,
   SENSITIVITY_SPECS,
   SICK_PAY_ACCRUAL_SPEC,
   SICK_PAY_DAILY_RATE_SPEC,
@@ -280,6 +280,12 @@ export type DraftShadowSpec = Readonly<{
   /** L7-9: branches named on the decision but not bound — never run, always shown. */
   unbound_branches: ReadonlyArray<Readonly<{ branch: string; reason: string }>>;
   input_mappings: RegisteredRuleInputMappingRegistry;
+  /**
+   * L11-4 / D3.4: a branch may refuse a month before it runs, by a code —
+   * the havraa_year branch refuses a month whose convalescence year has no
+   * published rate (`rate_not_published`). Null means run.
+   */
+  branch_guard?: (input: Readonly<{ branch: string | null; period: Readonly<{ start: string; end: string }> | null }>) => string | null;
 }>;
 
 function sensitivityOf(spec: RuleSpecPackage): SensitivitySpec {
@@ -359,24 +365,26 @@ const CONVALESCENCE_PAY_BINDINGS: readonly SensitivityBinding[] = [
 ];
 
 /**
- * The executable set, in the order the report lists topics. Fifteen specs
- * over seven topics; ten are the sensitivity specs verbatim, three are shadow
+ * The executable set, in the order the report lists topics. Fourteen specs
+ * over seven topics; nine are the sensitivity specs verbatim, three are shadow
  * forms whose inputs are payslip facts, two (L8-3) run under the pension
- * precedence decision with no sensitivity counterpart.
+ * precedence decision with no sensitivity counterpart. L11-4 / D3.3 retired
+ * the multiplicative rest-day reading from the set.
  */
 export const DRAFT_SHADOW_SPECS: readonly DraftShadowSpec[] = Object.freeze([
   fromSensitivity(MINIMUM_WAGE_HOURLY_SPEC),
   fromSensitivity(WORKING_TIME_OVERTIME_SPEC),
   fromSensitivity(WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC),
   { ...fromSensitivity(REST_DAY_OVERTIME_ADDITIVE_SPEC), decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION },
-  { ...fromSensitivity(REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC), decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION },
   shadowForm(PENSION_WAGE_CAP_SHADOW_SPEC, PENSION_WAGE_CAP_SPEC, sensitivityOf(PENSION_WAGE_CAP_SPEC).bindings),
   shadowForm(PENSION_CONTRIBUTION_SHADOW_SPEC, PENSION_CONTRIBUTION_SPEC, sensitivityOf(PENSION_CONTRIBUTION_SPEC).bindings),
   shadowUnderDecision(PENSION_EMPLOYER_CONTRIBUTION_SHADOW_SPEC, PENSION_CONTRIBUTION_SPEC, PENSION_EMPLOYER_BINDINGS),
   shadowUnderDecision(PENSION_SEVERANCE_CONTRIBUTION_SHADOW_SPEC, PENSION_CONTRIBUTION_SPEC, PENSION_SEVERANCE_BINDINGS),
   fromSensitivity(TRAVEL_DAILY_CAP_SPEC),
   fromSensitivity(CONVALESCENCE_DAYS_SPEC),
-  shadowForm(CONVALESCENCE_PAY_SHADOW_SPEC, CONVALESCENCE_DAILY_RATE_SPEC, CONVALESCENCE_PAY_BINDINGS),
+  // L11-4 / D3.4: the havraa_year branch refuses a month whose convalescence
+  // year has no published rate, before anything runs on it.
+  { ...shadowForm(CONVALESCENCE_PAY_SHADOW_SPEC, CONVALESCENCE_DAILY_RATE_SPEC, CONVALESCENCE_PAY_BINDINGS), branch_guard: havraaBranchGuard },
   fromSensitivity(VACATION_SENIORITY_BAND_SPEC),
   fromSensitivity(SICK_PAY_ACCRUAL_SPEC),
   fromSensitivity(SICK_PAY_DAILY_RATE_SPEC),

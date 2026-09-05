@@ -52,6 +52,8 @@ export type ShadowExecutionRecord = Readonly<{
   rule_content_sha256: string;
   decision_id: string | null;
   branch: string | null;
+  /** L11-4: the payslip month, so a branch guard and the comparison can read it. */
+  period: Readonly<{ start: string; end: string }> | null;
   /** L8-4 / D5: the population the month declared (or did not), which chose any population-selected parameter. */
   population: PopulationBinding;
   parameter_version_ids: readonly string[];
@@ -100,6 +102,14 @@ export type DraftShadowRunResult = Readonly<{
   result_sha256: string;
 }>;
 
+function periodOf(snapshot: SyntheticCase["snapshot"]): Readonly<{ start: string; end: string }> | null {
+  const fact = snapshot.facts.find((entry) => entry.path === "documents.period");
+  const value = fact?.value as { period?: { start_date?: string; end_date?: string } } | null | undefined;
+  const start = value?.period?.start_date;
+  const end = value?.period?.end_date;
+  return typeof start === "string" && typeof end === "string" ? { start, end } : null;
+}
+
 function wire(value: unknown): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value, (_key, item) => (typeof item === "bigint" ? `bigint:${item}` : item))) as Record<string, unknown>;
 }
@@ -139,6 +149,9 @@ export function executeShadowCase(input: Readonly<{
   // A conflicted population is refused before anything runs on it: the
   // parameter it would have selected is not knowable.
   const populationRefusal = input.population.source === "conflicted" ? ["population.conflicted"] : [];
+  const period = periodOf(input.entry.snapshot);
+  // L11-4 / D3.4: a branch may refuse the month by a code before it runs.
+  const guardRefusal = input.spec.branch_guard ? input.spec.branch_guard({ branch: input.branch, period }) : null;
   const base = {
     execution_id: input.execution_id,
     case_id: input.entry.case_id,
@@ -151,15 +164,16 @@ export function executeShadowCase(input: Readonly<{
     rule_content_sha256: input.spec.spec.content_sha256,
     decision_id: input.spec.decision_id,
     branch: input.branch,
+    period,
     population: input.population,
     parameter_version_ids: input.parameters.map((parameter) => parameter.parameter_version_id),
     parameter_states: input.parameters.map((parameter) => parameter.state),
     snapshot_sha256: input.entry.snapshot_sha256,
     preparation_sha256: prepared.preparation_sha256,
   };
-  if (prepared.result.status !== "ready" || populationRefusal.length > 0) {
+  if (prepared.result.status !== "ready" || populationRefusal.length > 0 || guardRefusal !== null) {
     return Object.freeze({
-      ...base, status: "preparation_refused", rejection_codes: [...(prepared.result.status !== "ready" ? prepared.result.rejection_codes : []), ...populationRefusal], error_code: null,
+      ...base, status: "preparation_refused", rejection_codes: [...(prepared.result.status !== "ready" ? prepared.result.rejection_codes : []), ...populationRefusal, ...(guardRefusal ? [guardRefusal] : [])], error_code: null,
       output: null, provenance: null, delta: null, execution_inputs: null, execution_trace: null, trace_sha256: null, result_sha256: null,
     });
   }

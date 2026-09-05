@@ -98,15 +98,16 @@ function outputOf(outcome: ReturnType<typeof executeRuleSpecAtomic> | null): unk
 }
 
 describe("the draft shadow set", () => {
-  it("covers the seven topics with fifteen specs, three of them shadow forms and two under the pension decision alone", () => {
+  it("covers the seven topics with fourteen specs (L11-4 retired the multiplicative rest-day reading), three of them shadow forms and two under the pension decision alone", () => {
     expect(DRAFT_SHADOW_TOPICS).toEqual(["minimum_wage", "working_time", "pension", "travel", "convalescence", "vacation", "sick_leave"]);
-    expect(DRAFT_SHADOW_SPECS).toHaveLength(15);
+    expect(DRAFT_SHADOW_SPECS).toHaveLength(14);
     expect(DRAFT_SHADOW_SPECS.filter((entry) => entry.shadow_form_of !== null).map((entry) => entry.shadow_id)).toEqual([
       "pension.wage.cap.on.wage",
       "pension.employee.contribution.on.wage",
       "convalescence.pay.by.seniority",
     ]);
-    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(15);
+    expect(new Set(DRAFT_SHADOW_SPECS.map((entry) => entry.shadow_id)).size).toBe(14);
+    expect(DRAFT_SHADOW_SPECS.some((entry) => entry.shadow_id === "working.time.rest.day.overtime.multiplicative")).toBe(false);
     // L8-3 / D4: the employer and severance specs run under the precedence decision, both branches, no sensitivity counterpart.
     for (const shadowId of ["pension.employer.contribution.on.wage", "pension.severance.contribution.on.wage"]) {
       const entry = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
@@ -122,7 +123,8 @@ describe("the draft shadow set", () => {
     const slots = boundInputSlots();
     const declared = DRAFT_SHADOW_SPECS.reduce((sum, entry) => sum + entry.spec.facts.length, 0);
     expect(slots).toHaveLength(declared);
-    expect(slots).toHaveLength(19);
+    // L11-4 / D3.3: the retired multiplicative reading declared two of the nineteen.
+    expect(slots).toHaveLength(17);
     for (const entry of DRAFT_SHADOW_SPECS) {
       expect(entry.input_mappings.registry.mappings.map((mapping) => mapping.input_id).sort()).toEqual(entry.spec.facts.map((fact) => fact.ref_id).sort());
       expect(entry.input_mappings.registry.registry_version).toBe("2.0.0");

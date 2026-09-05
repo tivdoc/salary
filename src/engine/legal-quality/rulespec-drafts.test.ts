@@ -56,11 +56,12 @@ describe("Q-1..Q-7 draft RuleSpecs", () => {
     for (const slot of decisionSlots) {
       expect(slot.bound, slot.slot_id).toBe(true);
       if (!slot.bound) continue;
-      expect(slot.decision_branches, slot.slot_id).toHaveLength(2);
-      // Two distinct branches, two distinct parameter versions. One branch, or
-      // two branches pointing at the same version, would be a decision made.
-      expect(new Set(slot.decision_branches.map((entry) => entry.branch)).size).toBe(2);
-      expect(new Set(slot.decision_branches.map((entry) => entry.parameter_version_id)).size).toBe(2);
+      // L11-4 / D3.4: the convalescence slot carries three branches; every slot at least two.
+      expect(slot.decision_branches.length, slot.slot_id).toBeGreaterThanOrEqual(2);
+      // Distinct branches, distinct parameter versions. One branch, or two
+      // branches pointing at the same version, would be a decision made.
+      expect(new Set(slot.decision_branches.map((entry) => entry.branch)).size).toBe(slot.decision_branches.length);
+      expect(new Set(slot.decision_branches.map((entry) => entry.parameter_version_id)).size).toBe(slot.decision_branches.length);
       // Every branch's version is one this slot actually binds.
       for (const entry of slot.decision_branches) {
         expect(slot.parameter_version_ids, entry.branch).toContain(entry.parameter_version_id);

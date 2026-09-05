@@ -98,7 +98,7 @@ export const PAID_COMPONENTS: Readonly<Record<string, PaidSource>> = Object.free
   "working.time.overtime.pay": { ...MONEY, input_id: "paid.overtime.pay", fact_path: "compensation.overtime_pay" },
   "working.time.overtime.from.hours.worked": { ...MONEY, input_id: "paid.overtime.pay", fact_path: "compensation.overtime_pay" },
   "working.time.rest.day.overtime.additive": { ...MONEY, input_id: "paid.weekly.rest.pay", fact_path: "compensation.weekly_rest_pay" },
-  "working.time.rest.day.overtime.multiplicative": { ...MONEY, input_id: "paid.weekly.rest.pay", fact_path: "compensation.weekly_rest_pay" },
+  // L11-4 / D3.3: the multiplicative rest-day reading is retired from the set; its paid component went with it.
   "pension.wage.cap.on.wage": { not_applicable: "a capped pensionable wage is a base, not a paid line" },
   // L8-3 / D4 retracts what stood here: "the employer share is not a
   // registered parameter". It is — `il.pension.employer_contribution_rate` at

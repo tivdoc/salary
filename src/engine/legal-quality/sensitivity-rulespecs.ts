@@ -496,6 +496,73 @@ export const REST_DAY_OVERTIME_ADDITIVE_SPEC: RuleSpecPackage = restDayCompositi
 export const REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC: RuleSpecPackage = restDayCompositionSpec("multiplicative");
 export const REST_DAY_OVERTIME_COMPOSITION_DECISION = "legal.reference.il.decision.rest_day_overtime_composition";
 
+// --- L11-4 / D3.5: the rest day's own threshold ---------------------------
+//
+// The lawyer-approved opinion (5.9.2026, question 4) resolved the composition
+// above to the additive reading and named, at low confidence, a smaller
+// question it left open: beyond how many hours worked ON the rest day is an
+// hour overtime — the worker's own declared daily norm (its default), or the
+// statute's eight? Two computations over the same facts: the rest day's hours
+// worked and the regular wage; the worker_daily_norm branch takes the norm as
+// a declared fact, the statute_8 branch binds §2(א)'s eight hours. Both price
+// the derived hours by the additive composition — the resolved default — so
+// the branches differ in the hours, never in the rates.
+export const REST_DAY_DAILY_THRESHOLD_DECISION = "legal.reference.il.decision.rest_day_daily_threshold";
+
+function restDayThresholdSpec(branch: "worker_daily_norm" | "statute_8"): RuleSpecPackage {
+  const thresholdRef = branch === "worker_daily_norm" ? "fact.worker.daily.norm.hours" : "parameter.daily.threshold";
+  return createRuleSpecPackage({
+    schema_version: "tivdoc-rulespec-v0.6.0",
+    rule_spec_id: `il.rulespec.working.time.rest.day.overtime.from.hours.worked.${branch === "worker_daily_norm" ? "worker.daily.norm" : "statute.eight"}`,
+    rule_spec_version: "1.0.0",
+    topic: "working_time",
+    catalog_boundary: "real_inactive",
+    source_version_ids: ["IL_HOURS_WORK_REST_LAW@discovery-v0"],
+    effective_period: { from: "1951-09-27", to: null },
+    sectors: ["general"],
+    populations: ["general"],
+    facts: [
+      { ref_id: "fact.hours.worked.rest.day", value_kind: "integer", unit: "hours" },
+      ...(branch === "worker_daily_norm" ? [{ ref_id: "fact.worker.daily.norm.hours", value_kind: "integer" as const, unit: "hours" }] : []),
+      { ref_id: "fact.regular.hourly.wage", value_kind: "money", unit: "currency.ils" },
+    ],
+    parameters: [
+      ...(branch === "statute_8"
+        ? [{ ref_id: "parameter.daily.threshold", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "1951.1.0", value_kind: "integer" as const, unit: "hours" }]
+        : []),
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+      { ref_id: "parameter.rate.rest", parameter_id: "il.working_time.weekly_rest_rate", parameter_version: "1951.1.0", value_kind: "rational", unit: "ratio" },
+    ],
+    nodes: [
+      { node_id: "zero.hours", operation: "constant.integer", value: 0, unit: "hours" },
+      { node_id: "hours.over.threshold", operation: "subtract", left_ref: "fact.hours.worked.rest.day", right_ref: thresholdRef },
+      { node_id: "rest.day.overtime.hours", operation: "max", refs: ["hours.over.threshold", "zero.hours"] },
+      { node_id: "one", operation: "constant.rational", value: "1", unit: "ratio" },
+      { node_id: "increment.first", operation: "subtract", left_ref: "parameter.rate.first", right_ref: "one" },
+      { node_id: "increment.second", operation: "subtract", left_ref: "parameter.rate.second", right_ref: "one" },
+      { node_id: "rest.rate.first", operation: "add", refs: ["parameter.rate.rest", "increment.first"] },
+      { node_id: "rest.rate.second", operation: "add", refs: ["parameter.rate.rest", "increment.second"] },
+      {
+        node_id: "rest.day.overtime.pay",
+        operation: "tiered.rate",
+        input_ref: "rest.day.overtime.hours",
+        base_ref: "fact.regular.hourly.wage",
+        tiers: [
+          { from_inclusive: 0, to_exclusive: 2, rate_ref: "rest.rate.first" },
+          { from_inclusive: 2, to_exclusive: null, rate_ref: "rest.rate.second" },
+        ],
+        rounding: "half_up",
+      },
+    ],
+    output_ref: "rest.day.overtime.pay",
+    golden_case_set_sha256: blankGoldenSetSha256("working_time"),
+    resource_policy: { max_steps: 14, max_depth: 6, max_aggregate_items: 8, max_integer_digits: 32 },
+  });
+}
+export const REST_DAY_THRESHOLD_WORKER_NORM_SPEC: RuleSpecPackage = restDayThresholdSpec("worker_daily_norm");
+export const REST_DAY_THRESHOLD_STATUTE_8_SPEC: RuleSpecPackage = restDayThresholdSpec("statute_8");
+
 
 // --- L6-5 / D7: the employee's contribution, under the precedence decision -
 //
@@ -659,18 +726,13 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     spec: CONVALESCENCE_DAILY_RATE_SPEC,
     bindings: [{ ref_id: "parameter.daily.rate", parameter_id: "il.convalescence.daily_rate", parameter_version: null }],
     decision_id: "legal.reference.il.decision.convalescence_2026_rate_period",
-    branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"]],
-    // L11-2 / D2: the branch the owner-recorded resolution selects is neither
-    // of the two above — the rate is for the convalescence YEAR 2026, 1.7.2025
-    // to 30.6.2026, known from 18.8.2026. Named here so the resolution points
-    // at a branch the decision knows; bound by D3.4 (L11-4) to a version that
-    // carries that period, with the rate table's knowledge time beside it.
-    unbound_branches: [{
-      branch: "havraa_year",
-      reason: "L11-2: selected by the owner-recorded resolution; its version (il.convalescence.daily_rate@2026.3.0, valid 1.7.2025–30.6.2026, known 18.8.2026) is registered by D3.4 in L11-4. Until then it is listed and not run; the first bound branch runs as default.",
-    }],
+    // L11-4 / D3.4: the third branch is the owner-recorded default — the rate
+    // is for the convalescence YEAR 2026 (1.7.2025–30.6.2026), known from the
+    // order's publication on 18.8.2026 and retroactive. Its version carries
+    // that period; the knowledge time is in convalescence-rate-table.ts.
+    branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"], ["havraa_year", "2026.3.0"]],
     narrower_than_draft:
-      "The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and both branches carry the same figure, so no scenario separates them in amount. The full draft also needs the seniority-band day counts, which are not in the corpus.",
+      "The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and all three branches carry the same figure, so no scenario separates them in amount; they differ in period (the calendar year, from the signature, or the convalescence year 1.7.2025–30.6.2026, the owner-recorded default) and in knowledge time, which the rate table states. The full draft also needs the seniority-band day counts, which are not in the corpus.",
   },
   // L6-3: working time runs — both §16(א) premiums are visual citations.
   {
@@ -714,17 +776,38 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     composition_branch: "additive",
     narrower_than_draft: "The additive reading: the rest premium plus the overtime increment. 175% and 200% appear as outputs of the executor, never as figures in a source.",
   },
+  // L11-4 / D3.3: the multiplicative reading is retired from the sensitivity
+  // set. No source of any grade supports it; it is listed once under branches
+  // examined and rejected (REJECTED_BRANCHES in decision-resolutions.ts) and
+  // its spec stays exported above as a regression fixture, never run here.
+  // L11-4 / D3.5: the rest day's own threshold — a new decision, two
+  // computations over the same rest-day scenarios, low confidence stated.
   {
-    spec: REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC,
+    spec: REST_DAY_THRESHOLD_WORKER_NORM_SPEC,
     bindings: [
       { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0" },
       { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
       { ref_id: "parameter.rate.rest", parameter_id: "il.working_time.weekly_rest_rate", parameter_version: "1951.1.0" },
     ],
-    decision_id: REST_DAY_OVERTIME_COMPOSITION_DECISION,
+    decision_id: REST_DAY_DAILY_THRESHOLD_DECISION,
     branches: [],
-    composition_branch: "multiplicative",
-    narrower_than_draft: "The multiplicative reading: the rest premium times the overtime premium — 187.5% and 225%, again outputs and not figures.",
+    composition_branch: "worker_daily_norm",
+    narrower_than_draft:
+      "The opinion's default, at low confidence: on the weekly rest, overtime begins beyond the worker's own declared daily norm (a fact of the payslip or the attendance record — 9 where a nine-hour day is declared; a fractional norm such as 8.6 would need the rational-hours path and is not run here). Priced by the additive composition the owner-recorded resolution selects. Not in the offline shadow: no canonical fact path carries the rest day's hours worked or the declared norm.",
+  },
+  {
+    spec: REST_DAY_THRESHOLD_STATUTE_8_SPEC,
+    bindings: [
+      { ref_id: "parameter.daily.threshold", parameter_id: "il.working_time.daily_overtime_threshold_hours", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.first", parameter_id: "il.working_time.overtime_rate_first_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.second", parameter_id: "il.working_time.overtime_rate_second_tier", parameter_version: "1951.1.0" },
+      { ref_id: "parameter.rate.rest", parameter_id: "il.working_time.weekly_rest_rate", parameter_version: "1951.1.0" },
+    ],
+    decision_id: REST_DAY_DAILY_THRESHOLD_DECISION,
+    branches: [],
+    composition_branch: "statute_8",
+    narrower_than_draft:
+      "The alternative: on the weekly rest, overtime begins beyond the statute's eight hours (§2(א), bound through the lexicon), the same threshold as an ordinary day. Priced by the additive composition. Low confidence, as the opinion states for both branches.",
   },
   // L6-5 / D7: the pension precedence, both branches executed.
   {

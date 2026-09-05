@@ -17,7 +17,9 @@ import { testParametersFor } from "./test-support.ts";
 /** Pinned. A change here is a change to what the shadow runs on, and the state doc must say why. */
 // L8-3 / D4: the severance fact beside the contributions in the six pension months; the low-confidence edge month names four pension specs.
 // L8-4 / D5: every golden month declares its population as a fact.
-const CORPUS_SHA256 = "aac7753d8b7a6932678e54561293e646476e44381c07b97571a456d418e82534";
+// L11-4 / D3.3 and D3.4: the multiplicative rest-day reading left the set; two convalescence edge months joined it
+// (June 2026 paid at the 2023 rate; a 2027 month whose rate is not published).
+const CORPUS_SHA256 = "2564a16a01f73e8c56d3ab2f06efe4b57979c713a41b1cc1d67cc9075c09e061";
 
 function runCase(entry: SyntheticCase, shadowId: string) {
   const spec = DRAFT_SHADOW_SPECS.find((candidate) => candidate.shadow_id === shadowId)!;
@@ -29,11 +31,11 @@ function runCase(entry: SyntheticCase, shadowId: string) {
 }
 
 describe("the synthetic corpus", () => {
-  it("is forty-two golden months — one per scenario family per topic — and twelve edge cases", () => {
+  it("is forty-two golden months — one per scenario family per topic — and fourteen edge cases", () => {
     const golden = SYNTHETIC_CORPUS.filter((entry) => entry.family === "golden");
     expect(golden).toHaveLength(DRAFT_SHADOW_TOPICS.length * GOLDEN_SCENARIOS.length);
     expect(golden).toHaveLength(42);
-    expect(SYNTHETIC_CORPUS.filter((entry) => entry.family === "edge")).toHaveLength(12);
+    expect(SYNTHETIC_CORPUS.filter((entry) => entry.family === "edge")).toHaveLength(14);
     expect(new Set(SYNTHETIC_CORPUS.map((entry) => entry.case_id)).size).toBe(SYNTHETIC_CORPUS.length);
     for (const topic of DRAFT_SHADOW_TOPICS) {
       expect(golden.filter((entry) => entry.topic === topic).map((entry) => entry.scenario)).toEqual([...GOLDEN_SCENARIOS]);
@@ -108,8 +110,9 @@ describe("the synthetic corpus", () => {
       if (entry.expected.kind !== "preparation_refuses") continue;
       expect([...seen.get(entry.case_id)!].sort(), entry.case_id).toEqual([...entry.expected.codes].sort());
     }
-    expect(ran).toBe(76);
-    expect(refused).toBe(33);
+    // L11-4: minus the retired multiplicative reading (five runs, two refusals), plus two convalescence months that run.
+    expect(ran).toBe(73);
+    expect(refused).toBe(31);
   });
 
   it("finds a case by id and refuses an unknown one", () => {

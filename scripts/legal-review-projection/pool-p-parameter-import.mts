@@ -134,6 +134,14 @@ function selectBuildRecord(sourceId: string, sourceVersion: string, artifactSha2
   return record;
 }
 
+/** Whether the build record for this artifact carries the instrument selection reservation. */
+function isSelectionReserved(sourceId: string, sourceVersion: string, artifactSha256: string): boolean {
+  const record = buildState.records.find((entry) =>
+    entry.source_id === sourceId && entry.source_version === sourceVersion && entry.artifact_sha256 === artifactSha256) as
+    (typeof buildState.records[number] & { safe_error_code?: string | null }) | undefined;
+  return record?.safe_error_code === "instrument_selection_draft";
+}
+
 function selectObservation(sourceId: string, sourceVersion: string) {
   const source = manifest.sources.find((entry) => entry.source_id === sourceId && entry.source_version === sourceVersion);
   if (!source) throw new Error(`POOL_P_UNKNOWN_SOURCE:${sourceId}@${sourceVersion}`);
@@ -401,6 +409,28 @@ function selectBuildRecordForImageOnly(sourceId: string, sourceVersion: string, 
 /** The sources every citation for which is an image-only visual citation. */
 const IMAGE_ONLY_SOURCES = new Set<string>();
 
+/**
+ * L11-4 / D3.4. A source whose build record is parsed with the instrument
+ * selection reservation (`safe_error_code: instrument_selection_draft`) may
+ * be cited only through selectionCitation(); a candidate whose every citation
+ * of that source IS a selection citation stands on that record — exactly the
+ * record batch 10 stood on when it registered the 2023 and 2026 rates, before
+ * the reservation rule was added to selectBuildRecord(). A whole-artifact
+ * citation of a reserved record is still refused there.
+ */
+function selectBuildRecordForSelection(sourceId: string, sourceVersion: string, artifactSha256: string) {
+  const record = buildState.records.find((entry) =>
+    entry.source_id === sourceId && entry.source_version === sourceVersion && entry.artifact_sha256 === artifactSha256) as
+    (typeof buildState.records[number] & { safe_error_code?: string | null; instrument_selection?: unknown }) | undefined;
+  if (!record || record.parse_status !== "parsed" || !record.parsed_version_id || !record.parser_version || !record.normalizer_version) {
+    throw new Error(`POOL_P_BUILD_RECORD_MISSING:${sourceId}@${sourceVersion}`);
+  }
+  if (record.safe_error_code !== "instrument_selection_draft" || !record.instrument_selection) {
+    throw new Error(`POOL_P_SELECTION_RECORD_EXPECTED:${sourceId}@${sourceVersion}:${record.safe_error_code ?? "none"}`);
+  }
+  return record;
+}
+
 /** The page span of a table-aware chunk, read from its sidecar. */
 function tableAwareSidecarEntry(sourceId: string, sourceVersion: string, chunksPath: string, chunkId: string): { page_from: number; page_to: number } {
   const dir = path.dirname(path.resolve(chunksPath));
@@ -512,9 +542,13 @@ function buildBindings(input: Readonly<{
   const sourceSet = sourceRefs.map((ref) => `${ref.source_id}@${ref.source_version}`);
   const sources = sourceRefs.map((ref) => {
     const observation = selectObservation(ref.source_id, ref.source_version);
-    const build = IMAGE_ONLY_SOURCES.has(`${ref.source_id}@${ref.source_version}`)
+    const key = `${ref.source_id}@${ref.source_version}`;
+    const citedOnlyBySelection = input.citations.filter((c) => `${c.source.source_id}@${c.source.source_version}` === key).every((c) => c.selection !== undefined);
+    const build = IMAGE_ONLY_SOURCES.has(key)
       ? selectBuildRecordForImageOnly(ref.source_id, ref.source_version, observation.artifact_sha256)
-      : selectBuildRecord(ref.source_id, ref.source_version, observation.artifact_sha256);
+      : citedOnlyBySelection && isSelectionReserved(ref.source_id, ref.source_version, observation.artifact_sha256)
+        ? selectBuildRecordForSelection(ref.source_id, ref.source_version, observation.artifact_sha256)
+        : selectBuildRecord(ref.source_id, ref.source_version, observation.artifact_sha256);
     return {
       ...ref,
       artifact_sha256: observation.artifact_sha256,

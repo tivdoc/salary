@@ -6,6 +6,8 @@ import { executeRuleSpecAtomic } from "../legal-operations/rulespec.ts";
 import {
   REST_DAY_OVERTIME_ADDITIVE_SPEC,
   REST_DAY_OVERTIME_MULTIPLICATIVE_SPEC,
+  REST_DAY_THRESHOLD_STATUTE_8_SPEC,
+  REST_DAY_THRESHOLD_WORKER_NORM_SPEC,
   SENSITIVITY_SPECS,
   WORKING_TIME_DAILY_THRESHOLD_DECISION,
   WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC,
@@ -76,10 +78,13 @@ describe("overtime on the weekly rest: one decision, two computations (D2)", () 
       expect(constants.map((node) => (node as { value: string | number }).value)).toEqual(spec === REST_DAY_OVERTIME_ADDITIVE_SPEC ? ["1"] : []);
       expect(JSON.stringify(spec)).not.toMatch(/175|200|1\.75|\b7\/4\b|\b9\/4\b|15\/8/u);
     }
+    // L11-4 / D3.3: the multiplicative reading is retired from the set (its spec
+    // above is the regression fixture); D3.5 adds the rest-day threshold pair.
     const entries = SENSITIVITY_SPECS.filter((entry) => entry.composition_branch !== undefined);
     expect(entries.map((entry) => [entry.decision_id, entry.composition_branch])).toEqual([
       ["legal.reference.il.decision.rest_day_overtime_composition", "additive"],
-      ["legal.reference.il.decision.rest_day_overtime_composition", "multiplicative"],
+      ["legal.reference.il.decision.rest_day_daily_threshold", "worker_daily_norm"],
+      ["legal.reference.il.decision.rest_day_daily_threshold", "statute_8"],
     ]);
   });
 });
@@ -113,5 +118,35 @@ describe("L7-9 / D6: a day's overtime derived from hours worked and the daily th
     expect(entry.branches).toEqual([["statute", "1951.1.0"]]);
     expect(entry.unbound_branches).toEqual([expect.objectContaining({ branch: "administrative" })]);
     expect(entry.unbound_branches?.[0].reason).toContain("BL-24");
+  });
+});
+
+describe("L11-4 / D3.5: the rest day's own threshold, two computations at low confidence", () => {
+  const run = (spec: typeof REST_DAY_THRESHOLD_WORKER_NORM_SPEC, worked: number, norm: number | null, wageMinor: number) => money(executeRuleSpecAtomic({
+    rule: spec,
+    facts: [
+      { ref_id: "fact.hours.worked.rest.day", value: hours(worked) },
+      ...(norm === null ? [] : [{ ref_id: "fact.worker.daily.norm.hours", value: hours(norm) }]),
+      { ref_id: "fact.regular.hourly.wage", value: wage(wageMinor) },
+    ],
+    parameters: spec === REST_DAY_THRESHOLD_STATUTE_8_SPEC ? [{ ref_id: "parameter.daily.threshold", value: hours(8) }, ...PARAMETERS] : PARAMETERS,
+  } as never));
+
+  it("worker_daily_norm: eleven hours over a declared nine-hour norm are two overtime hours at 1¾", () => {
+    // 30.00: 2 × 52.50 = 105.00
+    expect(run(REST_DAY_THRESHOLD_WORKER_NORM_SPEC, 11, 9, 3_000)).toBe("10500");
+  });
+
+  it("statute_8: the same eleven hours over the statute's eight are three — two at 1¾ and one at 2", () => {
+    // 30.00: 2 × 52.50 + 1 × 60.00 = 165.00, the additive figure for three hours
+    expect(run(REST_DAY_THRESHOLD_STATUTE_8_SPEC, 11, null, 3_000)).toBe("16500");
+    expect(run(REST_DAY_THRESHOLD_STATUTE_8_SPEC, 8, null, 3_000)).toBe("0");
+  });
+
+  it("both price by the additive composition and author no figure of their own", () => {
+    for (const spec of [REST_DAY_THRESHOLD_WORKER_NORM_SPEC, REST_DAY_THRESHOLD_STATUTE_8_SPEC]) {
+      expect(JSON.stringify(spec)).not.toMatch(/175|200|1\.75|\b7\/4\b|\b9\/4\b|15\/8/u);
+      expect(spec.nodes.some((node) => node.operation === "multiply")).toBe(false);
+    }
   });
 });

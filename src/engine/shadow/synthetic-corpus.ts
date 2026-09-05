@@ -245,8 +245,8 @@ function goldenCase(topic: string, scenario: GoldenScenario): SyntheticCase {
 /** The edge cases: what each spec refuses, one month each. */
 function edgeCases(): readonly SyntheticCase[] {
   const period = PERIODS.current;
-  const month = (name: string, topic: string, shadowIds: readonly string[], facts: readonly SyntheticFactSeed[], expected: SyntheticCaseExpectation) =>
-    makeCase({ seed: `edge.${topic}.${name}`, topic, family: "edge", scenario: name, shadow_ids: shadowIds, population: "general", facts: [periodFact(`${topic}.${name}`, period.start, period.end), ...facts], expected });
+  const month = (name: string, topic: string, shadowIds: readonly string[], facts: readonly SyntheticFactSeed[], expected: SyntheticCaseExpectation, own: Period = period) =>
+    makeCase({ seed: `edge.${topic}.${name}`, topic, family: "edge", scenario: name, shadow_ids: shadowIds, population: "general", facts: [periodFact(`${topic}.${name}`, own.start, own.end), ...facts], expected });
   return [
     month("fractional_overtime_hour", "working_time", ["working.time.overtime.pay"],
       [{ path: "work.overtime_hours", value: hoursPerDay("2.5"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented" }],
@@ -278,9 +278,23 @@ function edgeCases(): readonly SyntheticCase[] {
     month("stale_workdays", "travel", ["travel.daily.cap.entitlement"],
       [{ path: "work.workdays_in_month", value: { days: 22 }, source_type: "derived", created_at: "2024-01-01T00:00:00.000Z" }],
       { kind: "preparation_refuses", codes: ["fact.stale"] }),
-    month("unconfirmed_wage", "working_time", ["working.time.overtime.pay", "working.time.overtime.from.hours.worked", "working.time.rest.day.overtime.additive", "working.time.rest.day.overtime.multiplicative"],
+    month("unconfirmed_wage", "working_time", ["working.time.overtime.pay", "working.time.overtime.from.hours.worked", "working.time.rest.day.overtime.additive"],
       [{ path: "work.overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "work.hours_worked_day", value: hoursPerDay("10"), source_type: "documented" }, { path: "work.rest_day_overtime_hours", value: hoursPerDay("2"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented", status: "needs_confirmation" }],
       { kind: "preparation_refuses", codes: ["fact.unconfirmed"] }),
+    // L11-4 / D3.4: June 2026, six convalescence days paid at the 2023 rate
+    // (418.00). Under the havraa_year branch the month is short 6 × 33.50, and
+    // the shortfall carries the retroactive tag: the rate became known on
+    // 18.8.2026, after the payment.
+    month("paid_at_previous_rate", "convalescence", ["convalescence.pay.by.seniority"],
+      [{ path: "employment.start_date", value: startYearsBefore(period, 3), source_type: "declared" }, { path: "convalescence.payment", value: ils(250_800), source_type: "documented" }],
+      { kind: "runs", note: "six days paid at 418.00 in June 2026: under havraa_year the delta is 6 × 33.50 = 201.00, tagged retroactive_update_2026-08-18; the two calendar branches see the same shortfall untagged" }),
+    // L11-4 / D3.4: January 2027 pays for convalescence year 2027, whose rate
+    // is not published. The havraa_year branch refuses it (rate_not_published)
+    // in the shadow run; the two calendar branches run on their own figure.
+    month("havraa_year_2027_rate_not_published", "convalescence", ["convalescence.pay.by.seniority"],
+      [{ path: "employment.start_date", value: startYearsBefore({ start: "2027-01-01", end: "2027-01-31" }, 3), source_type: "declared" }, { path: "convalescence.payment", value: ils(270_900), source_type: "documented" }],
+      { kind: "runs", note: "a 2027 payslip: the havraa_year branch refuses rate_not_published before running (the branch guard, not the executor); the calendar branches run" },
+      { start: "2027-01-01", end: "2027-01-31" }),
     // L7-9 / D6: a day within the eight-hour threshold has no overtime — zero pay, not a refusal.
     month("within_daily_threshold", "working_time", ["working.time.overtime.from.hours.worked"],
       [{ path: "work.hours_worked_day", value: hoursPerDay("7"), source_type: "documented" }, { path: "compensation.hourly_rate", value: ils(4_000), source_type: "documented" }, { path: "compensation.overtime_pay", value: ils(0), source_type: "documented" }],

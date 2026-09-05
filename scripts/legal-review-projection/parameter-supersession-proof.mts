@@ -169,7 +169,8 @@ async function main(): Promise<void> {
   // period); L6-4 a fifth (rest-day overtime composition); L6-5 a sixth
   // (the 2011/2016 pension precedence).
   // L7-9: seven — the daily-threshold decision joined the six of long run 6.
-  record("exactly_seven_legal_decisions_remain", legal.length === 7,
+  // L11-4 / D3.5: eight — the rest day's own threshold, at low confidence.
+  record("exactly_eight_legal_decisions_remain", legal.length === 8,
     `legal=${legal.length} of ${afterRows.length}: ${legal.map((row) => `${row.decision_id}=${row.resolution_state}`).join(" ")}`);
 
   // --- The flag is one-way. A fixture must never be laundered into a legal

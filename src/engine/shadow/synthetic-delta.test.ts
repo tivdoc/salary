@@ -40,7 +40,6 @@ describe("paid components", () => {
       "working.time.overtime.pay",
       "working.time.overtime.from.hours.worked",
       "working.time.rest.day.overtime.additive",
-      "working.time.rest.day.overtime.multiplicative",
       "pension.employee.contribution.on.wage",
       "pension.employer.contribution.on.wage",
       "pension.severance.contribution.on.wage",
