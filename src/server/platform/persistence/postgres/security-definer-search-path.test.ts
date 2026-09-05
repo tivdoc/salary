@@ -19,7 +19,10 @@ import { describe, expect, it } from "vitest";
 const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 
 /** Definition count, not distinct names: `create or replace` redefines. */
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 154;
+// Run 11 / L11-2: 154 -> 158. Migration 202609020031 declares three definers (the
+// resolution guard, record and read) and 202609020032 re-declares the record
+// function in place; each declaration counts.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 158;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
