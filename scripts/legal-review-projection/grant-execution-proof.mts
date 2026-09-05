@@ -44,6 +44,11 @@ const COMMANDS = Object.freeze([
   ["operations", "governance_legal_review_projection_accounting_v2", "select * from private.governance_legal_review_projection_accounting_v2($1)", [TENANT]],
   ["operations", "governance_legal_review_observation_supersession_append", "select private.governance_legal_review_observation_supersession_append($1,$2,$3,$4,$5,$6,$7,$8,$9::timestamptz)", [TENANT, "PROBE:ONLY", "PROBE:PACKET", "0".repeat(64), "0".repeat(64), "probe-parser", "probe-normalizer", false, new Date().toISOString()]],
   ["worker", "governance_legal_review_projection_accounting_v2", "select * from private.governance_legal_review_projection_accounting_v2($1)", [TENANT]],
+  // L11-2 / D2: the owner-resolution record (operations only; an empty payload
+  // is refused by validation, which is an execution) and its read (both roles).
+  ["operations", "governance_legal_decision_resolution_record", "select * from private.governance_legal_decision_resolution_record($1,$2::jsonb,$3,$4,$5::timestamptz)", [TENANT, "{}", "k", "0".repeat(64), new Date().toISOString()]],
+  ["operations", "legal_decision_resolution_read", "select * from private.legal_decision_resolution_read($1)", [TENANT]],
+  ["worker", "legal_decision_resolution_read", "select * from private.legal_decision_resolution_read($1)", [TENANT]],
   ["operations", "governance_legal_observation_import", "select * from private.governance_legal_observation_import($1,$2::jsonb,$3,$4,$5::timestamptz)", [TENANT, "{}", "k", "0".repeat(64), new Date().toISOString()]],
   ["operations", "governance_parameter_import", "select * from private.governance_parameter_import($1,$2::jsonb,$3,$4,$5::timestamptz)", [TENANT, "{}", "k", "0".repeat(64), new Date().toISOString()]],
   ["operations", "governance_golden_case_set_import", "select * from private.governance_golden_case_set_import($1,$2::jsonb,$3,$4,$5::timestamptz)", [TENANT, "{}", "k", "0".repeat(64), new Date().toISOString()]],

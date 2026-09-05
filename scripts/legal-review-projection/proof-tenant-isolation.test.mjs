@@ -47,6 +47,10 @@ const REASONS = Object.freeze({
     "Registers real draft instrument selections on the reference tenant: the boundary a selected figure's citation carries and its attestation attests.",
   "identity-session-revocation.mts":
     "Revokes residue sessions on the reference tenant. The residue is there; revoking it elsewhere would revoke nothing.",
+  // L11-2 / D2: the six owner-recorded resolutions are real rows on the
+  // reference tenant; every refusal case runs on the synthetic proof tenant.
+  "legal-decision-resolutions.mts":
+    "Records the six owner-recorded resolutions on the reference tenant from the lawyer-approved opinion's pinned hashes; its refusal cases run on the synthetic proof tenant.",
   "legal-open-decision-withdrawal.mts":
     "Carries one real record — the vacation withdrawal and its correction — alongside its synthetic cases.",
   "legal-reference-tenant-guards.mts":
@@ -104,6 +108,7 @@ const EXPECTED = Object.freeze({
   "identity-session-recovery.mts": REFERENCE,
   "identity-session-revocation.mts": REFERENCE,
   "instrument-selection.mts": REFERENCE,
+  "legal-decision-resolutions.mts": REFERENCE,
   "legal-open-decision-withdrawal.mts": REFERENCE,
   "legal-reference-tenant-guards.mts": REFERENCE,
   "observation-supersede.mts": OWN,

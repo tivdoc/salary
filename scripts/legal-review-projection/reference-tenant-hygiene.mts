@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   try {
     for (const table of [
       "governance_parameter_versions", "governance_parameter_attestations",
-      "legal_open_decisions", "legal_operations_execution_traces", "governance_aggregate_snapshots",
+      "legal_open_decisions", "legal_decision_resolutions", "legal_operations_execution_traces", "governance_aggregate_snapshots",
     ]) {
       await operations.query("begin");
       try {
@@ -81,6 +81,7 @@ async function main(): Promise<void> {
   });
   const client = await factory.acquire();
   let decisions: Array<Record<string, string | null>> = [];
+  let resolutions: Array<Record<string, string | boolean | null>> = [];
   const candidates: Array<{ id: string; state: string; activation_allowed: boolean }> = [];
   try {
     await client.query(statement("e210_begin", "begin", []));
@@ -89,6 +90,10 @@ async function main(): Promise<void> {
     const decisionRows = await client.query(statement("e210_decisions",
       "select * from private.legal_open_decision_read($1)", [TENANT]));
     decisions = decisionRows.rows as unknown as Array<Record<string, string | null>>;
+    // L11-2 / D2: the owner-recorded resolutions, through their own read.
+    const resolutionRows = await client.query(statement("e210_resolutions",
+      "select * from private.legal_decision_resolution_read($1)", [TENANT]));
+    resolutions = resolutionRows.rows as unknown as Array<Record<string, string | boolean | null>>;
     const declared = [
       ...REGISTERED_DRAFT_PARAMETERS.flatMap((entry) => entry.versions.map((version) => `${entry.parameter_id}@${version}`)),
       // The superseded-by-scope rows are counted too: they exist, and a census
@@ -193,6 +198,17 @@ async function main(): Promise<void> {
       proof_fixtures: proofFixtureDecisions.length,
       proof_fixtures_note:
         "Throwaway rows from A7-3's withdrawal proof. legal_open_decisions is append-only with no delete path, so they are permanent. Named rather than counted as legal questions.",
+    },
+
+    // L11-2 / D2: resolutions are owner-recorded defaults, never attestations.
+    // `attested` is 0 by construction until the /operations path exists.
+    resolutions: {
+      total: resolutions.length,
+      legal: resolutions.filter((row) => row.synthetic !== true).length,
+      owner_recorded: resolutions.filter((row) => row.status === "owner_recorded").length,
+      attested: resolutions.filter((row) => row.status === "attested").length,
+      with_approver_identity: resolutions.filter((row) => row.approver_identity !== null).length,
+      note: "One per resolved-by-owner decision, on the lawyer-approved opinion's hash. The decision rows they name stay open; nothing here is reviewed, attested or active.",
     },
 
     identity_sessions: {

@@ -660,6 +660,15 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     bindings: [{ ref_id: "parameter.daily.rate", parameter_id: "il.convalescence.daily_rate", parameter_version: null }],
     decision_id: "legal.reference.il.decision.convalescence_2026_rate_period",
     branches: [["calendar_year_2026", "2026.1.0"], ["from_signature_2026_07", "2026.2.0"]],
+    // L11-2 / D2: the branch the owner-recorded resolution selects is neither
+    // of the two above — the rate is for the convalescence YEAR 2026, 1.7.2025
+    // to 30.6.2026, known from 18.8.2026. Named here so the resolution points
+    // at a branch the decision knows; bound by D3.4 (L11-4) to a version that
+    // carries that period, with the rate table's knowledge time beside it.
+    unbound_branches: [{
+      branch: "havraa_year",
+      reason: "L11-2: selected by the owner-recorded resolution; its version (il.convalescence.daily_rate@2026.3.0, valid 1.7.2025–30.6.2026, known 18.8.2026) is registered by D3.4 in L11-4. Until then it is listed and not run; the first bound branch runs as default.",
+    }],
     narrower_than_draft:
       "The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and both branches carry the same figure, so no scenario separates them in amount. The full draft also needs the seniority-band day counts, which are not in the corpus.",
   },

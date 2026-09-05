@@ -13,6 +13,7 @@ import { executeRuleSpecAtomic, type RuleSpecInputValue } from "../legal-operati
 import { prepareRuleInputs, type PreparedRuleInputs } from "../rule-input/preparation.ts";
 import { createCanonicalRuleInputSnapshot } from "../rule-input/snapshot.ts";
 import { canonicalSha256 } from "../rule-runtime/canonical.ts";
+import { defaultBranchOf } from "../legal-quality/decision-resolutions.ts";
 import { DRAFT_SHADOW_SPECS, type DraftShadowSpec } from "./draft-shadow-specs.ts";
 import { gradeExecution, type ExecutionProvenance, type ParameterProvenance } from "./execution-grade.ts";
 import { bridgePreparedInputs } from "./prepared-input-bridge.ts";
@@ -109,11 +110,18 @@ function count(values: readonly string[]): Record<string, number> {
   return counts;
 }
 
-/** The branches a spec runs under: its decision's branches, or a single unnamed one. */
+/**
+ * The branches a spec runs under: its decision's branches, or a single unnamed
+ * one. L11-2 / D2: under the primary policy the branch that runs is the
+ * DEFAULT — the owner-recorded resolution's selected branch where one exists
+ * and is bound, the first listed branch otherwise. A composition spec always
+ * runs its own branch; whether that branch is the default is the comparison's
+ * business, not the run's.
+ */
 export function branchesOf(spec: DraftShadowSpec, policy: "primary" | "all"): readonly (string | null)[] {
   if (spec.branches.length === 0) return [spec.composition_branch];
   const names = spec.branches.map(([branch]) => branch);
-  return policy === "all" ? names : [names[0]];
+  return policy === "all" ? names : [defaultBranchOf(spec).branch];
 }
 
 export function executeShadowCase(input: Readonly<{

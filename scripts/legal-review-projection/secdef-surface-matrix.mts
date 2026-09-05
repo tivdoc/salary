@@ -49,6 +49,11 @@ const BOOTSTRAP_SITES = Object.freeze([
 /**
  * The surface may not grow silently; a new definer function updates this.
  *
+ * 108 -> 111 at run 11 (L11-2 / D2): governance_legal_decision_resolution_record,
+ * legal_decision_resolution_read and the table's guard
+ * governance_legal_decision_resolution_guard; 202609020032 replaces the record
+ * function in place and adds nothing.
+ *
  * 101 -> 104 at long run 3: governance_parameter_supersede,
  * governance_legal_open_decision_mark_synthetic and
  * governance_legal_open_decision_annotate.
@@ -61,7 +66,7 @@ const BOOTSTRAP_SITES = Object.freeze([
  * without revoking its default PUBLIC grant, exactly as 018 had, fixed forward
  * in 025.
  */
-const EXPECTED_TOTAL = 108;
+const EXPECTED_TOTAL = 111;
 
 // Definer functions a Supabase reserved role may still execute, each because
 // something real reaches it that way.
