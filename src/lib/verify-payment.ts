@@ -7,6 +7,7 @@ import {
 } from "./payment-verification";
 import { getSupabaseAdmin } from "./supabase-admin";
 import { recordCaseFunnelEvent } from "./funnel-server";
+import { issueAndSendCaseLink } from "@/server/product/case-access/service";
 
 export type PaymentVerificationResult =
   | "verified"
@@ -103,5 +104,12 @@ export async function verifyPendingInvoice4uPayment(
     return "rejected";
   }
   await recordCaseFunnelEvent(caseId, "payment_verified");
+  // UX Run 1 / U4 (D-1.2): the case link goes out on the verified payment, exactly once per case; a failed
+  // send is recorded and offered again from the received screen, and never blocks the verification itself.
+  try {
+    await issueAndSendCaseLink(caseId, "payment_verified");
+  } catch (error) {
+    console.error("Case link send after verification failed", error instanceof Error ? error.name : "error");
+  }
   return newlyVerified ? "verified" : "already_verified";
 }

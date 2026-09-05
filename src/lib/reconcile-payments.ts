@@ -3,6 +3,7 @@ import { deliverVerifiedGa4Purchase } from "./ga4-server";
 import { deliverVerifiedMetaPurchase } from "./meta-purchase";
 import { getSupabaseAdmin } from "./supabase-admin";
 import { verifyPendingInvoice4uPayment } from "./verify-payment";
+import { sweepPendingCaseLinks } from "@/server/product/case-access/service";
 
 export type ReconciliationSummary = {
   scanned: number;
@@ -13,6 +14,10 @@ export type ReconciliationSummary = {
   failed: number;
   analyticsScanned: number;
   analyticsFailed: number;
+  /** UX Run 1 / U4: verified payments whose case link had not been sent, and what the sweep did about them. */
+  linksExamined: number;
+  linksSent: number;
+  linksFailed: number;
 };
 
 export async function reconcilePendingPayments(limit = 50): Promise<ReconciliationSummary> {
@@ -26,6 +31,9 @@ export async function reconcilePendingPayments(limit = 50): Promise<Reconciliati
     failed: 0,
     analyticsScanned: 0,
     analyticsFailed: 0,
+    linksExamined: 0,
+    linksSent: 0,
+    linksFailed: 0,
   };
 
   const { data: payments, error } = await supabase
@@ -100,5 +108,15 @@ export async function reconcilePendingPayments(limit = 50): Promise<Reconciliati
     }
   }
 
+  // UX Run 1 / U4: the catch-up sweep — exactly one link per verified payment, retried while a send fails,
+  // never a second send once one went out; the cron running twice sends once.
+  try {
+    const links = await sweepPendingCaseLinks(limit);
+    summary.linksExamined = links.examined;
+    summary.linksSent = links.sent;
+    summary.linksFailed = links.failed;
+  } catch (error) {
+    console.error("Case link sweep failed", error instanceof Error ? error.name : "error");
+  }
   return summary;
 }
