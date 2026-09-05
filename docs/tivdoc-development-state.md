@@ -4168,56 +4168,252 @@ Run 13-T's D1–D6 exactly as briefed, once BL-29 is cleared: one unit, no
 redesign. BL-26 with BL-28 behind the lawyer's reviewer identity; BL-27
 behind the owner's acquisition.
 
+## Site run — wave S1 (UX Run 1): a paying customer reaches the case from any device, knows when the answer comes, and can buy again
+
+Why this wave: the review of 5.9.2026 found the product's worst fault in one
+line — a customer pays and gets no address for the purchase. Access was a
+fourteen-day httpOnly cookie in one browser; a phone that paid and a laptop
+that looked had nothing in common; a cleared cookie was a lost case; the
+received screen went silent after thirty-two seconds; a paid customer could
+not open a second check. The design authority v1.1 replaced two access worlds
+with one (D-1.1..D-1.5): a link on the verified payment, a code on the
+channel on file, a rolling session bound to the contact identity, no
+password, no activation screen. This wave builds exactly that, units U0–U9 of
+`tivdoc-ux-run-1.md`, plus the site brief's one addition to U4.
+
+**U0 — the entry-point inventory grew before any route logic existed.**
+Six entries, `CEP-096`..`CEP-101` — `/case/[token]`, `/login`, `/cases`,
+`POST /api/cases/access/request`, `/verify`, `/resend` — each with its
+contract, target, blockers and non-claim; the frozen denominators moved once
+(95 → 101 entries, 84 → 90 product-stable, 26 → 32 Next roots plus the
+registrar, app 12 → 15, api 14 → 17, product assignments 20 → 26, local
+ALLOW 14 → 20) in the runtime, the disposition ledger, the route split and
+every pinned test; guard-only stubs carried their ids so the reachability and
+closure suites saw real files. The closure suite was green on the new
+denominator (21 files, 129 tests) before U1 began. The API entries do not carry
+`CUSTOMER_PROCESSING_DISABLED`: they issue codes and sessions and process no
+customer material, and that is what lets the local runtime serve them.
+
+**U1 — storage.** Migration `202609050001_case_access_identity` (chain 55 →
+56, applied to DEV): `case_identities` (a contact channel, hashed and
+normalized, and its cases), `case_access_tokens` (the opaque 128-bit link,
+hashed, thirty days; exactly one per case for purpose `payment_verified` by a
+partial unique index; a send state for the retry sweep), `case_access_codes`
+(six digits hashed with the identity, ten minutes, five attempts; the request
+row is the per-identity and per-IP rate-limit ledger), `case_access_sessions`
+(rolling thirty days, bound to the identity), `case_notifications` (template,
+channel, provider, outcome and a payload digest — never a token or a code).
+Eighteen `SECURITY INVOKER` functions carry every operation, so production
+(PostgREST as the service role) and the local runtime (pg as the web role)
+run one SQL; RLS is on for every table, the runtime roles get permissive
+policies on the new tables and a read policy on `cases` and `payments`,
+which the MVP had granted to the service role only. Smoked on DEV in a
+rolled-back transaction: issue once, resolve, lock on the fifth wrong code,
+re-issue, verify, the identity limit, the session roll. One correction while
+smoking: a re-issued code supersedes every unconsumed code, locked ones too,
+and the live code is ordered by id after time so a single transaction cannot
+tie.
+
+**U2 — the access API.** `request` issues a code for a link token or a
+contact and never reveals whether a contact exists — an unknown contact, an
+invalid link and a silently rate-limited identity all answer 202; only the
+per-IP ceiling answers 429, uniformly. `verify` turns a valid code into the
+session and sets the httpOnly cookie `tivdoc_case_session`; the sixth attempt
+is refused before the digits are read. `resend` re-issues the link for the
+funnel cookie's own case, limited per case. The token lives in the message
+and the link's path segment; the store holds its hash; no log line and no
+query string carries it. The store is one adapter — PostgREST in production,
+pg on the local runtime, a fake in tests — so the service never knows which.
+The sender resolves a provider by configuration; the only providers that
+exist are a file sink for the local runtime and tests (refused on a
+deployment) and "none", which fails every send in a recorded way. **No email
+or SMS provider exists in this repository and this wave added none**: the
+first real channel is a configuration and an adapter, not a change to any
+caller, and until it exists a verified payment in production records a failed
+send and the received screen offers a resend.
+
+**U3 — the screens.** `/case/[token]` opens the code challenge the sent link
+points at (the code goes out on load; six digits open the case; the token
+travels in the request body) and, for a case id, shows the case to a verified
+session or sends everyone else to `/login`; `/login` is one route for login
+and recovery; `/cases` renders only with more than one case. No password; no
+`/activate`. Focus moves to the heading on every phase change.
+
+**U4 — the link on the verified payment, and the second template.**
+`verify-payment.ts` issues and sends the link after the verification
+transition, once per case, never throwing into the payment path; the
+reconcile job sweeps every verified payment without a sent link, retrying a
+failed send and never sending twice, so the five-minute cron running twice
+sends one link. The site brief's addition — "הדוח מוכן", the same channel, a
+second template — exists as `sendReportReadyNotification`; its trigger is the
+`report_published` event on the S3.2 contract, which does not exist yet, and
+the manual trigger from `/operations` is S6's QA queue; nothing fires it in
+this wave, by design.
+
+**U5 — `/check/received` is an answer.** The delivery estimate from
+configuration; the link named as the way back, with a resend; an explicit
+re-check with the time of the last check; after the configured seconds
+without verification a named state with a contact path instead of the silent
+stop at eight attempts.
+
+**U6 — a second check is possible.** The unconditional `router.replace`
+became a banner — יש לך בדיקה פעילה → המשך אליה / פתח בדיקה חדשה — and a new
+case leaves the first untouched.
+
+**U7 — funnel guards.** The three funnel pages check for a case on load and
+redirect to `/check`; nobody reaches a file picker to be told afterwards that
+the case is missing. Each page's diff against `main` stayed inside the
+guard-only budget the route-split test enforces.
+
+**U8 — error copy.** No component renders a raw error: the questionnaire,
+the upload form (the storage provider's English included) and the payment
+hand-off map by code to Hebrew customer copy and log the technical detail;
+the payment hand-off shows the second-product sentence before the first
+payment (D-5.1).
+
+**U9 — configuration.** `src/config/product-offer.json`, validated by
+`src/lib/product-offer.ts` and read by server and client alike: price,
+currency, delivery estimate, access limits, the second-product sentence. The
+five hardcoded 9.99 sites are gone; every analytics `value` and every
+provider-amount comparison reads it; a test greps the screens for the literal.
+
+**Acceptance.** The five items the spec demanded, each PASS: (1) the journey — a case that paid receives the link, a second browser profile with no cookies opens it, enters the code and sees the case — `scripts/dev-runtime/access-journey.mts`, 14/14 at the boundary; (2) the token in no analytics payload, no query string and no log line — proven at the service (the token is only in the message and the link's path; the store holds its hash; console output and every store call are searched) and at the boundary (the server log and every store row searched); the funnel's first-touch capture redacts the access segment (Lane B); (3) the reconcile cron running twice sends exactly one link — the sweep twice at the service and on DEV; (4) `/check/upload` with no case cookie redirects rather than rendering the picker — a page test with the cookie store mocked; (5) the sixth code attempt refused and the per-IP ceiling enforced — at the service and at the boundary. Beside them: the customer copy never renders a technical string; the offer configuration is valid and no screen carries the price literal; the local runtime's startup proof and every entry-point pin moved once.
+
+**Lane B.** Three read-only haiku surveys at the start (the entry-point inventory and closure mechanics; the case, payment, session and messaging model; the funnel UI, configuration and test harness) and one adversarial pass at the end over the whole access system. The pass found four things, all applied in one commit: the funnel's first-touch capture stored the landing path, so a case link opened as a first page view would have put its token into the funnel table — the `/case/<token>` segment is now redacted before anything is stored, tested; a typed contact's code request answered with the masked channel, which revealed existence — only a link token, possession proven, earns the hint now, and by contact a known identity without a live code answers like a wrong code; a request with no forwarding header escaped the per-IP ledger — it shares one bucket instead; the file sink refused only a deployment that named its environment — it refuses any Vercel deployment now. Two things the pass raised were left as designed and are written down: a link stays valid for its thirty days and every use asks for a fresh code (`used_at` records the first use); there is no logout yet — the account sheet is S3/S4. Under concurrent verifications the pass confirmed exactly one link is sent (the partial unique index), and no product module imports the engine.
+
+**Not done, by the brief.** No import from the engine, the shadow or the
+legal surface into `product_runtime` (the closure proof re-ran); no number,
+testimonial or name without a source; no hardcoded price or SLA; no message
+to a dummy case's contact (the only channel is the file sink, refused on a
+deployment); no deploy, merge or pull request; no repository or Vercel
+setting; no `npm install`; no worktree. Out of scope and untouched: the
+document review screen, multiple payslips, the post-payment upload channel
+(S2); the report contract and the case screens (S3); the full report, the
+portal and the operations surfaces; the legal engine.
+
+## Freeze — site run S1, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+at `3269eec`, receipt `3a45e1c9d58750fd0dfa4c11710cdac15ce7ac80138848ee2b76be6cad737b05`: type check 0 errors; eslint
+0 errors, 0 warnings; vitest **308/308 files, 2240 passed, 3 skipped, 0 failed**; `next build` compiled; the
+closure proof over both environments **48/48 PASS, identical posture, production build `123d0c42…`, preview build `b24e2fe6…`, 160 entry points guarded and refusing by execution, receipt `64cc32ddea46df78b0fe2ed8369620f82d1d3aad3bb9a6c8fd41091e084518a9`** — the six new product
+routes probed on the production build (GET /case/<token-shaped> 200, GET /login 200, GET /cases 307, POST request 400, POST verify 400, POST resend 401; the three funnel pages 307 without a cookie, as declared), and no server bundle
+carries a marker of the Pool P import path, the selection registrar, the
+shadow runner, the sensitivity runners or the reference tenant.
+
+### DEV, as the runtime roles
+
+Chain 57/57, tail `202609050002` — two migrations this wave
+(`202609050001_case_access_identity`, `202609050002_case_access_request_ledger`),
+no definer among them. Grant execution **25 executed, 0 denied, 0 refused by precondition, 0 unexplained (prior state of the fixture session: expired, re-seeded)**. Identity negative
+matrix **8/8**. Definer surface **111, ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute 14**. Invalidation effects
+**10/10**. Dynamic matrix **14 checks, 10 supported, 10 passed, 0 failed, 4 not supported**. RLS force **66 tenant-scoped tables, 0 unforced (the six new tables carry no tenant column and are policy-scoped to the runtime roles)**.
+Journey **17/17**. **Access journey 14/14 by execution against the running production build and DEV at `dbcb0df` — one link under two sweeps; a second profile with no cookies opens the link (200 with the case id), requests the code (202), the code arrives on the channel, five wrong codes then the right one refused (401,401,401,401,429 then 429 `access_code_locked`), a fresh code opens the session (200 + httpOnly cookie), the session alone sees the case (200), no session is sent to `/login` (307), the one-case list redirects to the case (307), `/login` renders, twenty requests from one address then the twenty-first refused (202 ×20, 429), the token absent from the server log and from every store row; the fixture deleted after. The DEV matrix ran at `dbcb0df`; the two commits after it change the closure proof's data and the route-split declarations only**.
+
+Governance proofs, all by execution: A7-1 guards passed (6/6); parameter-decision
+matrix passed; A7-3 withdrawal passed; Q draft-binding passed with every slot
+bound and every derived record recomputed (2); E3-2/E3-3 supersession and
+synthetic passed at eight legal decisions — these three were re-run
+sequentially after the matrix's first pass ran them beside the operations
+journey, whose session seeding made the system-import session non-current
+under them (42501 by execution, an ordering artifact of running the two
+concurrently for the first time, not a regression; the sequential pass
+passed 7, 9/9 and 10); E3-4 revocation passed; L4-7
+session recovery **8/8**; E2-10 hygiene passed (resolutions 6 owner_recorded,
+0 attested); L5-1 lexicon **9/9**; A7-2 dependency-hash invalidation passed.
+Citation anchors **48 verified, 0 failed, 6 impossible (the superseded rows)**. Resolutions **22/22 PASS — six recorded on the reference tenant, read-back equal to the registry, decision rows open, attested 0; every refusal on the synthetic proof tenant**. Shadow
+comparison **PASS against `l76.7721fd34` — 51 months in both unchanged, 0 changed; the transition table PASS (b, a, b, b, a, b); byte-identical to the l123 receipt report v9 binds (`b80e682c…`)**. Gate 0 attestation reality check
+**PASS by execution — 0 identities, 0 of 61 dual-attested, 0 RuleSpec approvals, 6 resolutions, 0/7 eligible (unchanged since run 13-T)**. Production reachability **BLOCKED_PRODUCTION_UNREACHABLE by execution (exit 3 by design) — unchanged**. S-1…S-7:
+`verify-v010.mts` PASS, `shadow/run.mts all` PASS (zero money, zero
+findings, zero reports).
+
+The legal engine, the draft shadow (`l76.6d0667ad`), report v9, the Hebrew
+rendering and package v14 are untouched by this wave.
+
+Two observations outside this wave's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, resolutions owner_recorded 6, resolutions attested 0,
+reviewer identities registered 0, visual confirmations 0, customer rows 0,
+messages to any real contact 0 (the only channel is the file sink; the
+journey's fixture was a synthetic contact, deleted after the run), composites
+opened 0, openai calls 0, provider calls 0, extraction used no, deployments
+0, remote production migrations 0, findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-31 | **opened**, `outbound_channel_provider_not_configured` | no email or SMS provider exists in the repository; the sender resolves one by configuration and, absent one, records every send as failed and offers a resend — until the owner names a provider (and its credentials land where the loader reads them), a verified payment in production sends nothing and the customer's way back is `/login` |
+| BL-29 | open, `production_unreachable_from_engineering_machine` | unchanged |
+| BL-30 | open, `owner_statement_not_in_database` | unchanged |
+| BL-25 | open, `visual_verification_required` | unchanged |
+| BL-26 | open, `attestation_path_not_built` | unchanged |
+| BL-27 | open, `official_artifact_not_in_corpus` | unchanged |
+| BL-28 | open, `derived_acknowledgment_not_required` | unchanged |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
+### Backlog
+
+Wave S2 (documents: review before payment, several payslips, the
+post-payment upload channel, "אמצא אחר כך"), S4 (funnel hygiene; any time
+after S1), S5 (the home page; waits on the owner's language decision and
+assets), then S3 on Opus, then S6. BL-31 is the owner's before S2's
+post-payment upload channel can notify anyone.
+
 ## Resume point
 
-Refreshed at run 13-T — the trial run on the seven owner dummy cases, which
-settled its gate and stopped at the machine's edge. Everything before this
-point is history; this section and `docs/resume-after-pause.md` are what a
-resuming session must read.
+Refreshed at site run S1 — a paying customer reaches the case from any
+device. Everything before this point is history; this section and
+`docs/resume-after-pause.md` are what a resuming session must read.
 
 **Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`)
 and, up to `677ea92`, in the bundle and evidence archive long run 10 put on
-OneDrive; runs 11, 12 and 13-T are on the remote only until the next bundle.
-Pools H, D, S, R, E2, E3, L4–L10 and runs 11–12 are closed; run 13-T is
-closed at Gate 0 with D1–D5 blocked (BL-29). Pool P: 61 versions on the
-tenant, all `draft` or `superseded`, 0 attestations. Pool Q: seven drafts
-in the repository, every slot bound. Eight legal decisions: six carry an
-owner-recorded resolution (`owner_recorded`, 0 attested), every one of the
-six executes as the default. The sensitivity report is v9; the offline shadow
-is `l76.6d0667ad`; the review package is v14 — none of it a finding, none
-delivered, no extraction, no provider (`OPENAI_CALLS` and
-`LIVE_PROVIDER_CALLS` have never been non-zero).
+OneDrive; runs 11, 12, 13-T and site run S1 are on the remote only until the
+next bundle. Pools H, D, S, R, E2, E3, L4–L10, runs 11–12 and wave S1 are
+closed; run 13-T is closed at Gate 0 with D1–D5 blocked (BL-29). Pool P: 61
+versions, all `draft` or `superseded`, 0 attestations. Eight legal
+decisions: six carry an owner-recorded resolution, every one executing as the
+default. Report v9, shadow `l76.6d0667ad`, package v14 — unchanged by S1.
 
-**What Gate 0 says, in one sentence.** On the only DEV project — the one the
-owner named, `cpzrbidxftzqcfeqqusu` — there are 0 reviewer identities, 0
-attestations on 61 parameter versions, 0 RuleSpec approvals and 0 locked
-golden cases; the owner's "two people attested" is not in the database, so
-nothing is pre-authorised for activation, and the dashboard's "5 migrations"
-is the CLI's absent ledger, not the repository's 55-file chain.
+**What S1 built, in one sentence.** One access system for a case: a
+verified payment sends an opaque link to the channel on file, the link opens
+a six-digit code, the code opens a rolling identity session, `/login` is
+login and recovery in one, `/cases` lists more than one case, the received
+screen names the estimate and the way back, a second check is possible, the
+funnel pages guard themselves, no component renders a raw error, and the
+price and the estimate are configuration.
 
-**What blocks the trial, in one sentence.** Production is unreachable from
-this machine: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
-`OPENAI_API_KEY`, `OPENAI_EXTRACTION_MODEL` exist nowhere here, and the
-brief forbids guessing or copying them (BL-29).
+**What S1 could not build, in one sentence.** The channel itself: no email
+or SMS provider exists in the repository, so until the owner names one
+(BL-31) a verified payment in production records a failed send and the
+customer's way back is `/login`.
 
 **What is proven about the live site.** Unchanged from long run 10.
-tivdoc.com serves `main`.
+tivdoc.com serves `main`; nothing here is deployed.
+
+**The waves, in order.** S2 (documents) → S3 (the report contract and the
+case screens, Opus) → S6 (operations) → run 16; S4 (hygiene) any time after
+S1; S5 (the home page) any time, after the owner decides language (§0.11)
+and hands over assets or approves omitting the sections
+(`docs/design/assets-needed.md` is written by S5).
 
 **The human gates, named.**
 
-1. The owner, first: clear BL-29 — either place the two production
-   variables (and the two extraction variables) in a sanctioned store on
-   this machine that the loader reads without printing, or export the seven
-   cases with their documents as a bundle by hash; then re-run run 13-T's
-   brief as written, D1–D6, one unit. Second: BL-30 — if two people did
-   review, their review must enter through the governance path
-   (`docs/reviewer-onboarding.he.md`: identity at a keyboard, claim,
-   attest); nothing else counts.
+1. The owner: BL-31 — name the outbound channel provider and place its
+   credentials where the loader reads them; BL-29 — production reachability
+   for the seven-case trial; the language decision and the assets before S5;
+   BL-30 — if two people reviewed, it enters through the governance path or
+   it does not count.
 2. The lawyer: V11 and V5 first, then V1–V13; a reviewer identity (B-25);
-   the seven visual confirmations against the pages in package v14;
-   attestation at the screen.
+   the seven visual confirmations; attestation at the screen.
 3. The three decisions in `docs/merge-readiness.md`.
 
-**Engineering after this run.** Run 13-T's D1–D6 once BL-29 is cleared;
-BL-26 with BL-28 and BL-27, gated on a person. A resuming session follows
+**Engineering after this wave.** S2 next session. A resuming session follows
 `docs/resume-after-pause.md`.
