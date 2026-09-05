@@ -3989,60 +3989,235 @@ BL-26 and BL-28 behind the lawyer's reviewer identity (one screen, one
 definer change); BL-27 behind the owner's acquisition. Everything else that
 does not need a person is done.
 
+## Run 13-T — L13T-0…L13T-7: the trial run on the seven owner dummy cases — Gate 0 settled, production unreachable from this machine
+
+Why this run: the owner said two things on 5.9.2026 — "בדיקה של שני אנשים
+בוצעה ויש אישור להמשיך" (two humans attested; permission to continue) and
+"באתר יש 7 קייסים של לקוחות דמה עם מידע מלא — תעשה הרצת נסיון" (seven dummy
+cases with full data on the site; run a trial). The brief put a gate before
+everything: settle the first statement against the real DEV, then read the
+seven cases from production read-only, extract with the configured provider
+(counted, the first non-zero ever by owner approval), run the draft shadow on
+the extracted facts, write seven draft Hebrew reports, and cross-check two of
+them against the manual worksheet. Nothing to any of the seven contacts.
+
+What happened: Gate 0 ran and settled the first statement — the database and
+the statement disagree, and the run says so plainly below. The second
+statement could not be acted on: the product's production project is not
+reachable from this machine by any sanctioned path, and the brief's own rule
+for that case is to stop with the variable names, guess nothing and copy no
+key. D1–D5 are blocked on that one fact, not on any engineering. Lane B ran
+its pass regardless, statically.
+
+**L13T-0 (Gate 0) — the attestation reality check, on the real DEV.**
+`scripts/legal-review-projection/attestation-reality-check.mts`, read-only:
+it re-seeds the reference tenant's system-import session for one hour (the
+same row every proof seeds; it had expired), reads through the definers under
+it, rolls the transaction back, and records every direct read the connectable
+roles are denied. First, which database: the credential store on this
+machine names project ref `cpzrbidxftzqcfeqqusu` — **the same ref the owner
+named** as the cloud project holding "v0.10.3, 5 migrations, 0 review
+actions, 0 identities". It is the database runs 11–12 wrote to: its
+`engine_schema_metadata` holds 25 component rows, the last
+`202609020031_legal_decision_resolutions` installed 5.9.2026, and the six
+owner-recorded resolutions read back through their definer. What the owner's
+dashboard cannot show is why the views disagree: the repository applies its
+55-file chain with its own helper and records it per component, and the
+Supabase CLI's `supabase_migrations.schema_migrations` does not exist on the
+project (42P01), so the dashboard's migration view shows nothing of the
+chain; the governance tables are RLS-forced, so even the admin role sees zero
+rows in every one of them — zero rows there is not zero rows, as the six
+resolutions prove. The census:
+
+| what | count | path |
+|---|---|---|
+| distinct registered reviewer identities | **0** | no list definer exists and every direct read is denied (42501, nine tables, operations role under the session); counted through attestation reviewer ids (none), reviewer-trust work items (none) and the tenant's identity sessions (two: the system-import session and one revoked guard-proof residue; none for a reviewer) — an identity that never acted and holds no session would not appear here, and the census says so |
+| parameter versions on the tenant | **61** (minimum_wage 17, working_time 10, pension 9, travel 1, convalescence 12, vacation 9, sick_leave 3) | `governance_aggregate_read(parameter_approval)` per registered draft version, plus the superseded-by-scope row |
+| versions with two attestations from two distinct identities | **0 / 61** (one attestation: 0) | `attestation_count` on every aggregate is 0; every state is `draft` (60) or `superseded` (1); `activation_allowed` true on 0 |
+| RuleSpec approvals | **0** | no RuleSpec version exists on DEV — the seven drafts live in the repository at draft_version 0.8.0; the `rulespec_approval` work queue is empty |
+| golden cases locked | **0** | the `ground_truth` work queue is empty; `HUMAN_GROUND_TRUTH_LOCKED` stays 0 |
+| owner-recorded resolutions | 6 `owner_recorded`, 0 `attested` | `legal_decision_resolution_read` |
+| topics `activation_eligible` | **0 / 7** | two identities on every parameter of the topic plus an approved RuleSpec: no topic has either |
+
+The brief's own figure for the parameter population was 52; the tenant holds
+61 versions (batches 17–20 added nine after the figure was written), and the
+count is against 61. **Owner statement 1 is NOT consistent with the
+database**: no reviewer identity was ever registered, no attestation was ever
+appended, no RuleSpec was ever approved, on the only DEV project there is.
+Whatever the two people did, they did not do it through the governance path
+— there is nothing for "אישור להמשיך" to pre-authorise, and this run
+activated nothing. Per the gate's rule, the run continues in draft shadow —
+the mode long run 7 built for synthetic facts under the 2026-09-03 ruling —
+because the seven cases are owner-synthetic, not customers. Nothing in this
+run created, edited or backdated an attestation or an identity; the only row
+touched is the session row, and it expires within the hour.
+
+**L13T-1 (D1) — BLOCKED_PRODUCTION_UNREACHABLE.**
+`scripts/legal-review-projection/trial-13t-production-reachability.mts`
+checks, by name only, the places a credential may legitimately live on this
+machine: the process environment, the repository's `.env*` files (none
+besides `.env.example`), the `~/.tivdoc-*` credential stores (two files, DEV
+only), and a Vercel link directory (none). The product runtime reads
+`public.cases`, `questionnaire_responses`, `documents`, `payments` and the
+`salary-documents` bucket through `getSupabaseAdmin()`, which needs exactly
+two variables; extraction needs two more. Missing, exactly:
+
+| variable | needed by | present anywhere on the machine |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | D1 — the production project URL | no |
+| `SUPABASE_SERVICE_ROLE_KEY` | D1 — the server-side read of `public.*` and the bucket | no |
+| `OPENAI_API_KEY` | D2 — the configured extraction provider | no |
+| `OPENAI_EXTRACTION_MODEL` | D2 — the model the report must name per call | no |
+
+No value was read, printed or copied; the production project's ref is not
+even known to this repository. The Vercel connector this session has was not
+used to pull them: the brief says "on the machine", and pulling a service-role
+key out of a deployment into a session is copying a key. The seven cases were
+therefore not read, no document was stored, no provider was called
+(`OPENAI_CALLS 0`, `LIVE_PROVIDER_CALLS 0` — still never non-zero), no
+shadow ran on extracted facts, no draft report exists, no cross-check ran.
+L13T-2, L13T-3, L13T-4 and L13T-5 are blocked by dependency on L13T-1, each
+with nothing partial to show: a report with no facts is not a draft.
+
+**L13T-6 (Lane B).** Three read-only haiku surveys at the start (the
+production schema and its read path; the governance tables for Gate 0; the
+shadow pipeline on real facts, the extractor and the worksheet) and one
+adversarial pass at the end: can anything in this run reach a delivery
+channel for the seven contacts; can an extracted fact be read as
+`text_verified`. Four haiku agents, all read-only; the pass produced one finding, applied. Question 1, delivery: no path. There is no email or SMS sender in the codebase; the portal's messages and report objects, the invoice4u checkout, return and reconcile calls, the Meta CAPI and GA4 server events and the outbox consumers all live under `src/lib` and `src/server/product`, none is imported by `src/engine/shadow` or by any script under `scripts/legal-review-projection`, every shadow envelope is built `delivery_allowed: false`, the shadow refuses under `NODE_ENV=production`, and `TIVDOC_PRODUCTION_DELIVERY_ENABLED` stays 0 — a script in this run could not have reached one of the seven contacts without a code change, and none was made. Question 2, an extracted fact read as text-verified: yes, before this run. The resolver turns every extractor field into a `documented` fact, and the rung map sent every documented input to `verified` — the rung of a `text_verified` parameter — labelled מאומת in the rendering; a payslip figure the model read off an image would have been graded and labelled verified. Applied: the documented evidence reference carries an optional `reading` ("machine" or "person"; fixtures and older facts carry nothing and are unchanged), the resolver marks every extractor fact `machine`, an input whose documented evidence is only machine-read grades `inferred` — the rung the page-image parameter sits on — and the rendering's labels for verified and inferred say so. Tested in the rung suite (unmarked stays verified; machine reads inferred; a person's reading is not the machine's; both readings is not only the machine's); report v9's grade counts are unchanged because no fixture is machine-read.
+
+**What the surveys established for the next attempt, so it is not re-derived.**
+The product's case is a questionnaire payload (salary type, typical hours a
+day, workdays a week, Friday/Saturday, still employed, payslip available), at
+most three documents (payslip required, contract, attendance; PDF/JPEG/PNG,
+one per type, bytes at `cases/{caseId}/{type}.{ext}` in the private bucket)
+and a payment row; the extractor returns 22 payslip fields with a
+high/medium/low confidence each, the resolver turns them into `documented`
+facts, and the fifteen shadow specs read twelve fact paths. The manual
+worksheet is not in the repository (it is on the owner's desk) and its 42
+`in_*` names were not copied; D4's `facts.json` schema is therefore still to
+be taken from the worksheet when the run can actually happen.
+
+**Not done, by the brief.** No message to any of the seven contacts; no
+write to a production table or bucket; no attestation or identity created,
+edited or backdated; no activation; nothing left `draft`; no deploy, merge or
+pull request; no settings change; no provider call; no credential copied from
+any file or service; no `npm install`; no worktree.
+
+## Freeze — run 13-T, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+at `5e9a68f`, receipt `9ddf855caf86315648292c57a164414f4825f98bc965d84c3e824a5b4531c529`: type check 0 errors; eslint
+0 errors, 0 warnings; vitest **304/304 files, 2224 passed, 3 skipped, 0 failed**; `next build` compiled; the
+closure proof over both environments **48/48 PASS, identical posture, production build `1839ef37…`, preview build `9995e52e…`, 159 entry points guarded and refusing by execution, receipt `7db23617274e2f1f3c570b61cb263b09ccd321d03d00c2fd0d55970ccd190503`**.
+
+### DEV, as the runtime roles
+
+Chain 55/55, tail `202609020032` — no migration this run. Grant execution
+**25 executed, 0 denied, 0 refused by precondition, 0 unexplained (prior state of the fixture session: expired, re-seeded)**. Identity negative matrix **8/8**. Definer surface
+**111, ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute 14**. Invalidation effects **10/10**. Dynamic matrix
+**14 checks, 10 supported, 10 passed, 0 failed, 4 not supported**. RLS force **66 tenant-scoped tables, 0 unforced**. Journey **17/17**.
+
+Governance proofs, all by execution: A7-1 guards passed (6/6); parameter-decision
+matrix passed; A7-3 withdrawal passed; Q draft-binding passed with every slot
+bound and every derived record recomputed (2); E3-2/E3-3 supersession and
+synthetic passed at eight legal decisions; E3-4 revocation passed; L4-7
+session recovery **8/8**; E2-10 hygiene passed (resolutions 6 owner_recorded,
+0 attested); L5-1 lexicon **9/9**; A7-2 dependency-hash invalidation passed.
+Citation anchors **48 verified, 0 failed, 6 impossible (the superseded rows)**. Resolutions **22/22 PASS — six recorded on the reference tenant, read-back equal to the registry, decision rows open, attested 0; every refusal on the synthetic proof tenant**. Shadow
+comparison **PASS against `l76.7721fd34` — 51 months in both unchanged, 0 changed; the transition table PASS (b, a, b, b, a, b); byte-identical to the l123 receipt report v9 binds (`b80e682c…`)**. **Gate 0 attestation reality check
+PASS by execution — project ref equal to the owner's, 61 versions, 0 identities, 0 dual-attested, 0 RuleSpec approvals, 0 golden cases locked, 6 resolutions, 0/7 topics eligible, decision draft_shadow, every direct read denied 42501**. **Production reachability BLOCKED_PRODUCTION_UNREACHABLE by execution (exit 3 by design) — the four variables absent by name in every place checked**. S-1…S-7:
+`verify-v010.mts` PASS, `shadow/run.mts all` PASS (zero money, zero
+findings, zero reports).
+
+The draft shadow on DEV is still run 12's `l76.6d0667ad`; report v9, the
+Hebrew rendering and package v14 are unchanged — D6 said rebuild only if D3
+changed a receipt, and D3 did not run.
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7 (shadow only: 0 activated), sources active 0, parameters active
+0, rules active 0, attestations 0, resolutions owner_recorded 6, resolutions
+attested 0, reviewer identities registered 0, visual confirmations 0,
+customer rows 0, owner_synthetic_case rows read 0, customer payslips read 0,
+real payslips read 0, documents stored 0, composites opened 0, openai calls
+0, provider calls 0, extraction used no, deployments 0, remote production
+migrations 0, findings 0, deliveries 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-29 | **opened**, `production_unreachable_from_engineering_machine` | D1 of run 13-T: `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (and for D2 `OPENAI_API_KEY`, `OPENAI_EXTRACTION_MODEL`) exist nowhere on this machine; the trial on the seven owner cases cannot start until the owner places them in a sanctioned store the loader reads without printing, or exports the seven cases and their documents as a bundle by hash — the owner's call, not this run's |
+| BL-30 | **opened**, `owner_statement_not_in_database` | "two people attested" has no trace on the only DEV project: 0 identities, 0 attestations, 0 RuleSpec approvals; whatever was done was not done through the governance path, so it authorises nothing; the onboarding (`docs/reviewer-onboarding.he.md`) is the path |
+| BL-25 | open, `visual_verification_required` | unchanged; package v14 |
+| BL-26 | open, `attestation_path_not_built` | unchanged |
+| BL-27 | open, `official_artifact_not_in_corpus` | unchanged |
+| BL-28 | open, `derived_acknowledgment_not_required` | unchanged |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
+### Backlog
+
+Run 13-T's D1–D6 exactly as briefed, once BL-29 is cleared: one unit, no
+redesign. BL-26 with BL-28 behind the lawyer's reviewer identity; BL-27
+behind the owner's acquisition.
+
 ## Resume point
 
-Refreshed at run 12 — the recorded daily-threshold default made executable,
-and the defaults proven to have moved. Everything before this point is
-history; this section and `docs/resume-after-pause.md` are what a resuming
-session must read.
+Refreshed at run 13-T — the trial run on the seven owner dummy cases, which
+settled its gate and stopped at the machine's edge. Everything before this
+point is history; this section and `docs/resume-after-pause.md` are what a
+resuming session must read.
 
 **Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`)
 and, up to `677ea92`, in the bundle and evidence archive long run 10 put on
-OneDrive (sha256 `bfb6421a…` and `ee089bf2…`); runs 11 and 12 are on the
-remote only until the next bundle. Pools H, D, S, R, E2, E3, L4–L10 and runs
-11–12 are closed. Pool P: 64 draft versions (batch 20 added two derived
-figures), 7 superseded, 7 inferred_visual, 2 derived. Pool Q: seven drafts,
-every slot bound, every derived record recomputed; fifteen executable shadow
-specs, eighteen sensitivity specs. Eight legal decisions: six carry an
-owner-recorded resolution (`owner_recorded`, 0 attested) and every one of the
-six now EXECUTES as the default — the daily threshold at the derived 8.6 / 7.6
-— one is new and open at low confidence (`rest_day_daily_threshold`), one is
-withdrawn. The sensitivity report is v9; the offline shadow is `l76.6d0667ad`
-(121 ran, 121 replayed); the review package is v14 — none of it a finding,
-none delivered, no extraction, no provider.
+OneDrive; runs 11, 12 and 13-T are on the remote only until the next bundle.
+Pools H, D, S, R, E2, E3, L4–L10 and runs 11–12 are closed; run 13-T is
+closed at Gate 0 with D1–D5 blocked (BL-29). Pool P: 61 versions on the
+tenant, all `draft` or `superseded`, 0 attestations. Pool Q: seven drafts
+in the repository, every slot bound. Eight legal decisions: six carry an
+owner-recorded resolution (`owner_recorded`, 0 attested), every one of the
+six executes as the default. The sensitivity report is v9; the offline shadow
+is `l76.6d0667ad`; the review package is v14 — none of it a finding, none
+delivered, no extraction, no provider (`OPENAI_CALLS` and
+`LIVE_PROVIDER_CALLS` have never been non-zero).
 
-**What the derived binding is and is not.** 8.6 and 7.6 are arithmetic on
-the 2018 order's text (42 hours, one hour reduced on a fixed day) under one
-declared assumption, `five_day_even_distribution`, recorded beside the
-parameter and recomputed by every binder; grade `derived`, never
-text_verified, never administrative; the assumption is on the row, in the
-report, in the Hebrew rendering and in the package, and a changed assumption
-is a changed binding. The 2000 framework order's sentence is not in the
-corpus (BL-27); the 43 is 42 + 1 from the 2018 order until it is acquired.
-The nine-hour reading is named and not run (V12).
+**What Gate 0 says, in one sentence.** On the only DEV project — the one the
+owner named, `cpzrbidxftzqcfeqqusu` — there are 0 reviewer identities, 0
+attestations on 61 parameter versions, 0 RuleSpec approvals and 0 locked
+golden cases; the owner's "two people attested" is not in the database, so
+nothing is pre-authorised for activation, and the dashboard's "5 migrations"
+is the CLI's absent ledger, not the repository's 55-file chain.
 
-**What the transition table says.** Of the six resolutions, four moved the
-default and moved months (convalescence 1, precedence 10, cap 3, daily
-threshold 5); two were already the selected branch (divisor, rest-day
-composition). Two band months exist so the cap's and the divisor's bands are
-exercised. The comparison is `shadow-run-comparison-l123.json`, carried by
-report v9 and package v14.
+**What blocks the trial, in one sentence.** Production is unreachable from
+this machine: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`OPENAI_API_KEY`, `OPENAI_EXTRACTION_MODEL` exist nowhere here, and the
+brief forbids guessing or copying them (BL-29).
 
 **What is proven about the live site.** Unchanged from long run 10.
 tivdoc.com serves `main`.
 
 **The human gates, named.**
 
-1. The lawyer: V11 (§5 ministerial approval of the shortened-week
-   agreements) and V5 (the 2016 order's gazette number and the 18% start
-   date) first — V11 can invalidate the derived binding's assumption; then
-   V1–V13 as a whole. Then a reviewer identity (B-25;
-   `docs/reviewer-onboarding.he.md`), the seven visual confirmations against
-   the pages in package v14, and attestation at the screen.
-2. The owner: the 2000 framework order through the official acquisition
-   path (BL-27); then BL-26 with BL-28 once a reviewer identity exists.
+1. The owner, first: clear BL-29 — either place the two production
+   variables (and the two extraction variables) in a sanctioned store on
+   this machine that the loader reads without printing, or export the seven
+   cases with their documents as a bundle by hash; then re-run run 13-T's
+   brief as written, D1–D6, one unit. Second: BL-30 — if two people did
+   review, their review must enter through the governance path
+   (`docs/reviewer-onboarding.he.md`: identity at a keyboard, claim,
+   attest); nothing else counts.
+2. The lawyer: V11 and V5 first, then V1–V13; a reviewer identity (B-25);
+   the seven visual confirmations against the pages in package v14;
+   attestation at the screen.
 3. The three decisions in `docs/merge-readiness.md`.
 
-**Engineering after this run.** BL-26 with BL-28 (the attestation screen
-and the derived acknowledgment, one unit) and BL-27, all gated on a person. A
-resuming session follows `docs/resume-after-pause.md`.
+**Engineering after this run.** Run 13-T's D1–D6 once BL-29 is cleared;
+BL-26 with BL-28 and BL-27, gated on a person. A resuming session follows
+`docs/resume-after-pause.md`.
