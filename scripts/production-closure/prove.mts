@@ -47,6 +47,7 @@ import { durableLocalProductRuntimeEnabled } from "../../src/server/product/runt
 import { hermeticBrowserRuntimeBootstrapEnabled } from "../../src/instrumentation.ts";
 import { PRODUCT_HTTP_HEADERS } from "../../src/server/product/routes/http-common.ts";
 import { guardPosition, listScriptEntryPoints, PRODUCTION_REFUSAL_CODE } from "./entry-points.mjs";
+import { ROUTE_FILE_PATTERN, engineAssignments, productAssignments } from "../../src/server/platform/capabilities/route-split.ts";
 
 const ROOT = process.cwd();
 const RECEIPT_ROOT = path.join(ROOT, "output", "next", "closure");
@@ -99,7 +100,7 @@ function buildHash(): { build_id: string; server_tree_sha256: string; server_fil
   return { build_id: buildId, server_tree_sha256: digest.digest("hex"), server_files: files.length };
 }
 
-async function probe(port: number, route: string, method = "GET"): Promise<{ status: number; body: string; headers: Record<string, string> }> {
+async function probe_(port: number, route: string, method = "GET"): Promise<{ status: number; body: string; headers: Record<string, string> }> {
   try {
     const response = await fetch(`http://127.0.0.1:${port}${route}`, { method, redirect: "manual", signal: AbortSignal.timeout(20_000) });
     const headers: Record<string, string> = {};
@@ -201,7 +202,7 @@ async function runEnvironment(environment: VercelEnvironment): Promise<Environme
   try {
     let up = false;
     for (let attempt = 0; attempt < 120 && !up; attempt += 1) {
-      const health = await probe(port, "/api/health");
+      const health = await probe_(port, "/api/health");
       if (health.status > 0) up = true; else await delay(1_000);
     }
     record("server_started_under_production_environment", up, { port, vercel_env: environment });
@@ -214,7 +215,7 @@ async function runEnvironment(environment: VercelEnvironment): Promise<Environme
       ["/api/operations/session", "POST"], ["/api/operations/session", "DELETE"],
       ["/api/portal/session", "POST"], ["/api/portal/session", "DELETE"], ["/api/portal/cases", "GET"], ["/api/portal/anything-at-all", "POST"],
     ] as const;
-    const responses = await Promise.all(closed.map(async ([route, method]) => ({ route, method, ...(await probe(port, route, method)) })));
+    const responses = await Promise.all(closed.map(async ([route, method]) => ({ route, method, ...(await probe_(port, route, method)) })));
     const shapes = new Set(responses.map((response) => JSON.stringify({ status: response.status, body: response.body, headers: response.headers })));
     record("closed_api_routes_answer_one_404_shape", responses.every((response) => response.status === 404 && response.body === "") && shapes.size === 1,
       { routes: responses.map((response) => `${response.method} ${response.route}=${response.status}:${response.body.length}b`), distinct_shapes: shapes.size, headers: responses[0]?.headers ?? {} });
@@ -225,24 +226,45 @@ async function runEnvironment(environment: VercelEnvironment): Promise<Environme
     const productHeadersSeen = Object.keys(PRODUCT_HTTP_HEADERS).filter((key) => responses[0]?.headers[key] !== undefined);
     record("closed_api_routes_carry_refusal_headers", productHeadersSeen.length === Object.keys(PRODUCT_HTTP_HEADERS).length, { present: productHeadersSeen, merged: responses[0]?.headers ?? {} });
     // Paths outside the app's routes answer the framework's own 404, recorded for completeness.
-    const unrouted = await Promise.all(["/api/portal-v07/cases", "/api/internal-ops-v07/cases"].map(async (route) => ({ route, ...(await probe(port, route)) })));
+    const unrouted = await Promise.all(["/api/portal-v07/cases", "/api/internal-ops-v07/cases"].map(async (route) => ({ route, ...(await probe_(port, route)) })));
     record("paths_outside_the_app_answer_the_framework_404", unrouted.every((response) => response.status === 404), unrouted.map((response) => `${response.route}=${response.status}:${response.body.length}b`));
 
-    const pages = await Promise.all(["/operations", "/portal", "/internal-ops-v07"].map(async (route) => ({ route, ...(await probe(port, route)) })));
+    const pages = await Promise.all(["/operations", "/portal", "/internal-ops-v07"].map(async (route) => ({ route, ...(await probe_(port, route)) })));
     record("legal_pages_answer_404", pages.every((page) => page.status === 404), pages.map((page) => `${page.route}=${page.status}`));
-    const open = await Promise.all(["/", "/privacy", "/terms", "/robots.txt", "/sitemap.xml", "/api/health"].map(async (route) => ({ route, ...(await probe(port, route)) })));
+    const open = await Promise.all(["/", "/privacy", "/terms", "/robots.txt", "/sitemap.xml", "/api/health"].map(async (route) => ({ route, ...(await probe_(port, route)) })));
     record("the_public_pages_and_health_still_answer", open.every((page) => page.status === 200), open.map((page) => `${page.route}=${page.status}`));
-    // The customer funnel and the payments routes are CUSTOMER_PROCESSING_DISABLED on this
-    // branch by the inventory's own classification: closed, with the same 404, never 500.
-    // tivdoc.com serves main; this branch is not deployable as the live business until
-    // customer processing is authorised, and this check records that rather than hiding it.
-    const business = await Promise.all(([
-      ["/check", "GET"], ["/check/upload", "GET"], ["/api/cases", "POST"], ["/api/cases/resume", "GET"], ["/api/cases/status", "GET"],
-      ["/api/documents/sign", "POST"], ["/api/documents/complete", "POST"], ["/api/funnel/session", "POST"],
-      ["/api/payments/start", "POST"], ["/api/payments/return", "GET"], ["/api/payments/reconcile", "POST"],
-    ] as const).map(async ([route, method]) => ({ route, method, ...(await probe(port, route, method)) })));
-    record("customer_processing_and_payments_are_closed_on_this_branch", business.every((row) => row.status === 404),
-      { routes: business.map((row) => `${row.method} ${row.route}=${row.status}`), deployable_as_live_site: false, reason: "CUSTOMER_PROCESSING_DISABLED; tivdoc.com serves main" });
+    // --- L9-5 / D4. The differential against main's own route inventory. The
+    // product half is what main serves: every route file `git ls-tree main`
+    // carries must be product-classified, and a production build of this
+    // branch must answer each of main's routes with the status main's own
+    // handler answers with when nothing is configured and nothing is sent —
+    // never the engine's 404, never 500. The engine half answers 404.
+    const mainTree = spawnSync("git", ["ls-tree", "-r", "main", "--name-only"], { cwd: ROOT, encoding: "utf8" });
+    const mainRouteFiles = (mainTree.stdout ?? "").split(/\r?\n/u).filter((line) => ROUTE_FILE_PATTERN.test(line)).sort();
+    const productFiles = productAssignments().map((entry) => entry.route_file).filter((file): file is string => file !== null).sort();
+    record("every_route_main_serves_is_product_classified", mainTree.status === 0 && mainRouteFiles.length > 0 && JSON.stringify(mainRouteFiles) === JSON.stringify(productFiles),
+      { main_route_files: mainRouteFiles.length, product_assignments: productFiles.length, only_on_main: mainRouteFiles.filter((file) => !productFiles.includes(file)), only_in_split: productFiles.filter((file) => !mainRouteFiles.includes(file)) });
+    const statusClass = (status: number) => `${Math.floor(status / 100)}xx`;
+    const productProbes = productAssignments().flatMap((entry) => (entry.probes ?? []).map((probe) => ({ entrypoint_id: entry.entrypoint_id, ...probe })));
+    const productResponses = await Promise.all(productProbes.map(async (probe) => {
+      const response = await probe_(port, probe.path, probe.method);
+      const matches = /^\d{3}$/u.test(probe.expected) ? String(response.status) === probe.expected : statusClass(response.status) === probe.expected;
+      return { ...probe, status: response.status, matches };
+    }));
+    const mismatches = productResponses.filter((row) => !row.matches);
+    record("product_routes_answer_as_main_answers", mismatches.length === 0 && productResponses.length >= mainRouteFiles.length,
+      { probes: productResponses.map((row) => `${row.method} ${row.path}=${row.status} (main: ${row.expected})`), mismatches: mismatches.map((row) => `${row.method} ${row.path}=${row.status}≠${row.expected}`) });
+    // Each engine dispatcher with a method it declares: an API route answers the
+    // product's empty 404; a page answers 404 with the framework's not-found page.
+    const engineProbes = engineAssignments().filter((entry) => entry.route_file !== null).map((entry) => ({
+      entrypoint_id: entry.entrypoint_id,
+      page: entry.route_file!.endsWith("page.tsx"),
+      method: entry.stable_entry.endsWith("/session") ? "POST" : "GET",
+      path: entry.stable_entry.replace(/\/\*$/u, "/differential-probe"),
+    }));
+    const engineResponses = await Promise.all(engineProbes.map(async (probe) => ({ ...probe, ...(await probe_(port, probe.path, probe.method)) })));
+    record("engine_routes_answer_the_product_404", engineResponses.every((row) => row.status === 404 && (row.page || row.body === "")),
+      { routes: engineResponses.map((row) => `${row.entrypoint_id} ${row.method} ${row.path}=${row.status}:${row.page ? "page" : `${row.body.length}b`}`) });
   } finally {
     server.kill("SIGTERM");
     await delay(500);
