@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "tivdoc-s5", "runtimeExecutable": "npx", "runtimeArgs": ["next", "start", "-p", "3210"], "port": 3210 }
+  ]
+}
