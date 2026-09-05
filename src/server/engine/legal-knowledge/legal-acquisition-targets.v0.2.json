@@ -522,6 +522,23 @@
       "existing_source_version": null,
       "browser_outcome": "partial",
       "browser_safe_error_code": "not_discoverable_on_gov_il_search_two_queries_2026_09_04"
+    },
+    {
+      "target_id": "ACQ-V02-FRAMEWORK-EXTENSION-ORDER-2000",
+      "source_id": "IL_43_HOUR_FRAMEWORK_EXTENSION_ORDER_2000",
+      "instrument_id": "INSTRUMENT:IL:43-HOUR-FRAMEWORK-EXTENSION-ORDER-2000",
+      "target_kind": "artifact",
+      "canonical_landing_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/framework-agreement-2000/he/framework-agreement-2000.pdf",
+      "artifact_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/framework-agreement-2000/he/framework-agreement-2000.pdf",
+      "allowlisted_hosts": [
+        "www.gov.il"
+      ],
+      "expected_document_title": "Framework extension order — 43-hour work week, hourly rate over 186 hours/month, employer sets work-hour arrangement (2000; BL-27, L13-1)",
+      "recommended_filename": "framework-extension-order-2000.pdf",
+      "required": true,
+      "existing_source_version": null,
+      "browser_outcome": "discovered",
+      "browser_safe_error_code": null
     }
   ]
 }
