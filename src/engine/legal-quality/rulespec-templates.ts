@@ -130,6 +130,9 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
   minimum_wage: [
     { name: "monthly_floor", parameter_id: "il.minimum_wage.monthly", unit: "currency.ils" },
     { name: "hourly_floor", parameter_id: "il.minimum_wage.hourly", unit: "currency.ils", decision_id: OPEN_DECISION_MIN_WAGE_HOURLY_DIVISOR },
+    // L11-3 / D3.1: the average wage the monthly floor is 47.5% of — the §1
+    // figure of the National Insurance Law, by name, not the §2 one.
+    { name: "average_wage_base", parameter_id: "il.average_wage.nii_s1", unit: "currency.ils" },
   ],
   working_time: [
     { name: "weekly_overtime_threshold", parameter_id: "il.working_time.weekly_overtime_threshold_hours", unit: "hours_per_week" },
@@ -144,6 +147,9 @@ const PARAMETER_SLOTS_BY_TOPIC: Readonly<Record<Wave3Topic, readonly SlotSeed[]>
   pension: [
     { name: "mandatory_wage_cap", parameter_id: "il.pension.mandatory_wage_cap", unit: "currency.ils", decision_id: OPEN_DECISION_PENSION_WAGE_CAP_SECTION },
     { name: "employee_contribution_rate", parameter_id: "il.pension.employee_contribution_rate", unit: "ratio", decision_id: OPEN_DECISION_PENSION_2011_2016_PRECEDENCE },
+    // L11-3 / D3.1: the average wage the cap is read from — the §2 benefits
+    // figure (the owner-recorded resolution's branch), by name.
+    { name: "average_wage_benefits", parameter_id: "il.average_wage.nii_s2_benefits", unit: "currency.ils" },
   ],
   travel: [
     { name: "daily_cap", parameter_id: "il.travel.daily_reimbursement_cap", unit: "currency.ils" },

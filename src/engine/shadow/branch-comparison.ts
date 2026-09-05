@@ -6,6 +6,7 @@
 import type { ShadowExecutionRecord } from "./draft-shadow-run.ts";
 import { defaultBranchOf } from "../legal-quality/decision-resolutions.ts";
 import { DRAFT_SHADOW_SPECS } from "./draft-shadow-specs.ts";
+import { classifyGapFromDeltas, gapSeverityDecision, type GapSeverity } from "./gap-severity.ts";
 
 type Comparable = Readonly<{ amount: bigint; unit: string; kind: string }>;
 
@@ -37,6 +38,18 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
       composition_branches: decisionSpecs.map((spec) => spec.composition_branch).filter((name): name is string => name !== null),
     });
     const defaultBranch = chosen.branch ?? "single";
+    // L11-3 / D3.2: where the decision separates a statutory figure from an
+    // extension-order figure, each case is classed by the sign of its two
+    // deltas. The class is a field; every case stays in the comparison.
+    const severity = gapSeverityDecision(decisionId);
+    const severityOf = (rows: ReadonlyArray<Readonly<{ branch: string; delta: string | null }>>): GapSeverity | null => {
+      if (!severity) return null;
+      return classifyGapFromDeltas({
+        statutory_delta: rows.find((row) => row.branch === severity.statutory_branch)?.delta ?? null,
+        order_delta: rows.find((row) => row.branch === severity.order_branch)?.delta ?? null,
+        order_bound: branches.includes(severity.order_branch),
+      });
+    };
     const keyOf = (execution: ShadowExecutionRecord) => (composition ? `*|${execution.case_id}` : `${execution.shadow_id}|${execution.case_id}`);
     const caseKeys = [...new Set(mine.map(keyOf))].sort();
     const cases = caseKeys.map((caseKey) => {
@@ -67,13 +80,13 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
         return { ...row, is_default: row.branch === defaultBranch, difference_from_default: difference };
       });
       if (ran.length !== branches.length || values.some((value) => value === null)) {
-        return { case_id: caseId, shadow_id: shadowId, ran: ran.length === branches.length, comparable: false, differs: false, by_branch: withDefault, difference: null };
+        return { case_id: caseId, shadow_id: shadowId, ran: ran.length === branches.length, comparable: false, differs: false, by_branch: withDefault, difference: null, gap_severity: severityOf(withDefault) };
       }
       const amounts = values as Comparable[];
       const low = amounts.reduce((a, b) => (a.amount < b.amount ? a : b));
       const high = amounts.reduce((a, b) => (a.amount > b.amount ? a : b));
       const difference = high.amount - low.amount;
-      return { case_id: caseId, shadow_id: shadowId, ran: true, comparable: true, differs: difference !== BigInt(0), by_branch: withDefault, difference: { amount: difference.toString(), unit: low.unit, kind: low.kind } };
+      return { case_id: caseId, shadow_id: shadowId, ran: true, comparable: true, differs: difference !== BigInt(0), by_branch: withDefault, gap_severity: severityOf(withDefault), difference: { amount: difference.toString(), unit: low.unit, kind: low.kind } };
     });
     // L7-9: a branch named on the decision but not bound is listed, with its
     // reason, and counted as not run — never as agreement.
@@ -87,6 +100,12 @@ export function compareBranches(executions: readonly ShadowExecutionRecord[]) {
       selected_branch: chosen.selected_branch,
       selected_branch_bound: chosen.selected_bound,
       resolution_status: chosen.resolution?.status ?? null,
+      gap_severity: severity ? {
+        dimension: severity.dimension,
+        statutory_branch: severity.statutory_branch, order_branch: severity.order_branch,
+        statutory_figure: severity.statutory_figure, order_figure: severity.order_figure,
+        counts: Object.fromEntries([...new Set(cases.map((entry) => entry.gap_severity?.class ?? "not_comparable"))].sort().map((name) => [name, cases.filter((entry) => (entry.gap_severity?.class ?? "not_comparable") === name).length])),
+      } : null,
       cases_compared: cases.filter((entry) => entry.comparable).length,
       cases_differing: cases.filter((entry) => entry.differs).length,
       cases_not_comparable: cases.filter((entry) => !entry.comparable).length,

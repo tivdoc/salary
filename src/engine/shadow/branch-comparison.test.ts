@@ -2,6 +2,7 @@
 // case, and no automatic acceptance anywhere.
 import { describe, expect, it } from "vitest";
 import { compareBranches } from "./branch-comparison.ts";
+import { classifyGapFromDeltas } from "./gap-severity.ts";
 import { runDraftShadow, type BoundDraftParameter } from "./draft-shadow-run.ts";
 import { DRAFT_SHADOW_SPECS } from "./draft-shadow-specs.ts";
 import { TEST_PARAMETER_VALUES } from "./test-support.ts";
@@ -86,6 +87,38 @@ describe("the branch comparison", () => {
     const convalescence = comparison.find((entry) => entry.decision_id.endsWith("convalescence_2026_rate_period"))!;
     expect(convalescence.cases_differing).toBe(0);
     expect(convalescence.cases_compared).toBeGreaterThan(0);
+  });
+
+  it("L11-2 / D2: names the default branch on every decision and each branch's difference from it", () => {
+    const cap = comparison.find((entry) => entry.decision_id.endsWith("pension_wage_cap_section"))!;
+    expect(cap).toMatchObject({ default_branch: "section2", default_branch_source: "owner_recorded_resolution", selected_branch: "section2", selected_branch_bound: true, resolution_status: "owner_recorded" });
+    for (const entry of cap.cases.filter((row) => row.comparable)) {
+      const defaultRow = entry.by_branch.find((row) => row.is_default)!;
+      expect(defaultRow.branch).toBe("section2");
+      expect(defaultRow.difference_from_default).toEqual({ amount: "0", unit: "ILS" });
+      expect(entry.by_branch.filter((row) => !row.is_default).every((row) => row.difference_from_default !== null)).toBe(true);
+    }
+    const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
+    expect(threshold).toMatchObject({ default_branch: "statute", default_branch_source: "first_bound_fallback", selected_branch: "administrative", selected_branch_bound: false });
+    const composition = comparison.find((entry) => entry.decision_id.endsWith("rest_day_overtime_composition"))!;
+    expect(composition.default_branch).toBe("additive");
+  });
+
+  it("L11-3 / D3.2: classes every hourly-wage case by its two deltas, and states the daily threshold's order figure as unbound", () => {
+    const wage = comparison.find((entry) => entry.decision_id.endsWith("min_wage_hourly_divisor"))!;
+    expect(wage.gap_severity).toMatchObject({ statutory_branch: "186", order_branch: "182" });
+    for (const entry of wage.cases) {
+      const statutory = entry.by_branch.find((row) => row.branch === "186")?.delta ?? null;
+      const order = entry.by_branch.find((row) => row.branch === "182")?.delta ?? null;
+      expect(entry.gap_severity).toEqual(classifyGapFromDeltas({ statutory_delta: statutory, order_delta: order, order_bound: true }));
+      expect(entry.gap_severity?.class).not.toBe("order_figure_unbound");
+    }
+    expect(Object.values(wage.gap_severity!.counts).reduce((a, b) => a + b, 0)).toBe(wage.cases.length);
+    const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
+    expect(threshold.cases.every((entry) => entry.gap_severity?.class === "order_figure_unbound")).toBe(true);
+    const cap = comparison.find((entry) => entry.decision_id.endsWith("pension_wage_cap_section"))!;
+    expect(cap.gap_severity).toBeNull();
+    expect(cap.cases.every((entry) => entry.gap_severity === null)).toBe(true);
   });
 
   it("is deterministic in execution order", () => {

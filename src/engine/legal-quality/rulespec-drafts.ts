@@ -106,6 +106,11 @@ export const REGISTERED_DRAFT_PARAMETERS: readonly Registration[] = Object.freez
     decision_id: "legal.reference.il.decision.min_wage_hourly_divisor",
     branches: [["182", "2026.1.0"], ["186", "2026.2.0"]],
   },
+  // L11-3 / D3.1 (batch 17): the two average-wage figures, each its own
+  // parameter with its own citation — §1 for the minimum-wage base, §2
+  // benefits for the pension cap's source.
+  { parameter_id: "il.average_wage.nii_s1", versions: ["2026.1.0"] },
+  { parameter_id: "il.average_wage.nii_s2_benefits", versions: ["2026.1.0"] },
   { parameter_id: "il.minimum_wage.daily_6day", versions: ["2026.1.0"] },
   { parameter_id: "il.minimum_wage.daily_5day", versions: ["2026.1.0"] },
   { parameter_id: "il.minimum_wage.youth_under16.monthly", versions: ["2026.1.0"] },

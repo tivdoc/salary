@@ -172,3 +172,19 @@ describe("Q-1..Q-7 draft RuleSpecs", () => {
     expect(reasons.map((slot) => slot.parameter_id).sort()).toEqual([]);
   });
 });
+
+describe("L11-3 / D3.1: the two average-wage parameters bind by name", () => {
+  it("the minimum-wage draft binds the §1 figure and the pension draft the §2 benefits figure — neither the other", () => {
+    const wage = buildRuleSpecDraft("minimum_wage");
+    const pension = buildRuleSpecDraft("pension");
+    const boundIds = (draft: ReturnType<typeof buildRuleSpecDraft>) => draft.parameter_slots.flatMap((slot) => (slot.bound ? slot.parameter_version_ids : []));
+    expect(boundIds(wage)).toContain("il.average_wage.nii_s1@2026.1.0");
+    expect(boundIds(wage)).not.toContain("il.average_wage.nii_s2_benefits@2026.1.0");
+    expect(boundIds(pension)).toContain("il.average_wage.nii_s2_benefits@2026.1.0");
+    expect(boundIds(pension)).not.toContain("il.average_wage.nii_s1@2026.1.0");
+    const base = wage.parameter_slots.find((slot) => slot.slot_id === "slot.minimum_wage.average_wage_base");
+    const benefits = pension.parameter_slots.find((slot) => slot.slot_id === "slot.pension.average_wage_benefits");
+    expect(base).toMatchObject({ bound: true, decision_id: null });
+    expect(benefits).toMatchObject({ bound: true, decision_id: null });
+  });
+});

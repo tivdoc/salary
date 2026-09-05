@@ -73,6 +73,7 @@ const REASONS = Object.freeze({
     "Real draft parameters, and the supersession of three real revisions whose citations moved to the table-aware chunks.",
   "pool-p-batch-9-lexicon.mts": "Real draft parameters, the figures the law states as words, bound through the numeral lexicon.",
   "pool-p-batch-10-selections.mts": "Real draft parameters, the figures inside the three instrument selections.",
+  "pool-p-batch-17-average-wage.mts": "Real draft parameters, the two average-wage figures: §1 for the minimum-wage base, §2 benefits for the pension cap.",
   "pool-p-batch-11-visual.mts": "Real draft parameters, the 1951 premiums read from the page image (inferred_visual).",
   "pool-p-batch-12-composition-decision.mts": "One real open decision, the rest-day overtime composition; no parameters.",
   "pool-p-batch-13-pension-visual.mts":
@@ -125,6 +126,7 @@ const EXPECTED = Object.freeze({
   "pool-p-batch-8-table-aware.mts": REFERENCE,
   "pool-p-batch-9-lexicon.mts": REFERENCE,
   "pool-p-batch-10-selections.mts": REFERENCE,
+  "pool-p-batch-17-average-wage.mts": REFERENCE,
   "pool-p-batch-11-visual.mts": REFERENCE,
   "pool-p-batch-12-composition-decision.mts": REFERENCE,
   "pool-p-batch-13-pension-visual.mts": REFERENCE,
