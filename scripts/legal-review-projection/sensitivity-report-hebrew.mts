@@ -34,8 +34,12 @@ import { NodePostgresConnectionFactory } from "../../src/server/platform/persist
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { TENANT } from "./pool-p-parameter-import.mts";
 
-// L8-8: re-pointed to v7.
-const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v7.json");
+// L8-8: re-pointed to v7. L11-7 / D4: re-pointed to v8 — the owner-recorded
+// defaults, their alternatives with differences, the gap severity sentence, the
+// contribution difference beside the base difference, the retired branch and
+// the convalescence rate table; a statement above the tables that no
+// attestation occurred.
+const REPORT = path.join("output", "next", "pool-q", "decision-sensitivity-report-v8.json");
 const DOCS_ROOT = path.join("docs", "legal");
 const RECEIPT_ROOT = path.join("output", "next", "pool-q");
 const MARKDOWN = path.join(DOCS_ROOT, "sensitivity-report.he.md");
@@ -65,8 +69,13 @@ const SCENARIO_HEBREW: Readonly<Record<string, string>> = Object.freeze({
 
 type PerScenario = Readonly<{
   scenario: string; ran: boolean; differs: boolean; comparable?: boolean;
-  by_branch?: readonly Readonly<{ branch: string; output: string }>[];
+  by_branch?: readonly Readonly<{ branch: string; output: string; is_default?: boolean; difference_from_default?: string | null }>[];
   difference?: string; reason?: string;
+  base_difference?: string; contribution_difference?: string; contribution_rate_sum?: Readonly<{ numerator: string; denominator: string }>;
+}>;
+type Resolution = Readonly<{
+  decision_key: string; selected_branch: string; opinion_branch_label: string; basis: string; evidence_sha256: string;
+  approval_record_sha256: string; approved_on: string; status: string; approver_identity: null; mapping_note: string;
 }>;
 type OpenDecision = Readonly<{
   provenance_grade?: string;
@@ -74,6 +83,10 @@ type OpenDecision = Readonly<{
   decision_id: string; topic: string; rule_spec_id: string; branches: readonly string[];
   narrower_than_draft: string | null; scenarios_run: number; scenarios_differing: number;
   per_scenario: readonly PerScenario[];
+  default_branch?: string | null; default_branch_source?: string; selected_branch?: string | null; selected_branch_bound?: boolean | null;
+  resolution?: Resolution | null;
+  gap_severity?: Readonly<{ dimension: string; statutory_figure: string; order_figure: string }> | null;
+  contribution_rates?: ReadonlyArray<Readonly<{ share: string; parameter_version_id: string; rate: Readonly<{ numerator: string; denominator: string }> }>> | null;
 }>;
 type TopicNotRun = Readonly<{ topic: string; not_run: string; slots: readonly string[]; detail: string }>;
 type Report = Readonly<{
@@ -87,13 +100,17 @@ type Report = Readonly<{
     bound_parameter_versions: ReadonlyArray<Readonly<{ parameter_version_id: string; provenance_grade: string; visual_bindings: ReadonlyArray<Readonly<{ page_pdf_sha256: string; visual_reading: string }>> }>>;
   }>;
   executions: readonly Readonly<{ topic: string; scenario: string; branch: string; ran: boolean; output: string | null; refusal: string | null }>[];
+  resolutions?: Readonly<{ recorded: number; attested: number; evidence: Readonly<{ legal_opinion_sha256: string; approval_record_sha256: string; approved_on: string }>; items: readonly Resolution[] }>;
+  branches_examined_and_rejected?: ReadonlyArray<Readonly<{ decision_id: string; branch: string; reason: string; retired_in: string }>>;
+  convalescence_rate_table?: Readonly<{ rows: ReadonlyArray<Readonly<{ havraa_year: number; rate_minor_units: number; valid_from: string; valid_to: string; known_at: string; retroactive: boolean; parameter_version_id: string }>>; retroactive_example: string }>;
+  gap_severity?: Readonly<{ sentence_he: string; not_computed: ReadonlyArray<Readonly<{ dimension: string; statutory_figure: string; order_figure: string; reason: string }>> }>;
   // L7-10: the offline shadow beside the sensitivity — counts and hashes, no content.
   shadow: Readonly<{
     run_id: string; receipt_sha256: string; execution_mode: string; envelope_sha256: string; corpus_sha256: string;
     draft_input_pin: Readonly<{ draft_parameter_versions: number; synthetic_inputs: number; active_real_parameter_count: number; extraction_used: boolean; tenant_id: string }>;
     counts: Readonly<Record<string, number>>; refusals_by_reason: Readonly<Record<string, number>>; grades: Readonly<Record<string, number>>;
     traces_included: number; traces_replayed_from_database: number;
-    decisions: ReadonlyArray<Readonly<{ decision_id: string; branches: readonly string[]; unbound_branches: ReadonlyArray<Readonly<{ branch: string; reason: string }>>; cases_compared: number; cases_differing: number; cases_not_comparable: number }>>;
+    decisions: ReadonlyArray<Readonly<{ decision_id: string; branches: readonly string[]; unbound_branches: ReadonlyArray<Readonly<{ branch: string; reason: string }>>; default_branch?: string | null; gap_severity?: Readonly<{ counts: Readonly<Record<string, number>> }> | null; cases_compared: number; cases_differing: number; cases_not_comparable: number }>>;
   }>;
 }>;
 
@@ -131,6 +148,13 @@ const GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
 });
 const INFERRED_VISUAL_SENTENCE = "inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.";
 const gradeLabel = (grade: string) => GRADE_HEBREW[grade] ?? grade;
+const DEFAULT_SOURCE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
+  owner_recorded_resolution: "נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת",
+  first_bound_fallback: "הענף שנבחר בהכרעה אינו קשור למקור ולכן אינו רץ; רץ הענף הקשור הראשון",
+  first_listed: "ללא הכרעה רשומה — הענף הראשון ברשימה",
+  single: "ענף יחיד",
+});
+const money = (minorUnits: number) => `${(minorUnits / 100).toFixed(2)} ILS`;
 const scenarioLabel = (name: string) => SCENARIO_HEBREW[name] ?? name;
 const topicLabel = (name: string) => TOPIC_HEBREW[name] ?? name;
 
@@ -192,7 +216,7 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד");
   out.push("מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.");
   out.push("");
-  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v7.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
+  out.push(`המסמך נוצר אוטומטית מ־\`decision-sensitivity-report-v8.json\` (\`${report.report_sha256.slice(0, 16)}…\`).`);
   out.push("כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.");
   out.push("");
   out.push("הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.");
@@ -214,11 +238,40 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("---");
   out.push("");
 
+  if (report.resolutions) {
+    out.push("## ברירות מחדל שנרשמו על ידי הבעלים — לא אטסטציה");
+    out.push("");
+    out.push(`שש מן ההכרעות הפתוחות שלהלן נושאות **ברירת מחדל שנרשמה על ידי הבעלים** ביום ${report.resolutions.evidence.approved_on}, על יסוד חוות דעת משפטית שאושרה על ידי עורך/ת דין לדיני עבודה`);
+    out.push(`(sha256 \`${report.resolutions.evidence.legal_opinion_sha256.slice(0, 16)}…\`; רשומת האישור \`${report.resolutions.evidence.approval_record_sha256.slice(0, 16)}…\`). מעמד כל רישום: \`owner_recorded\`.`);
+    out.push("");
+    out.push("**לא בוצעה אטסטציה.** לעורך/ת הדין אין זהות בודק/ת רשומה; אף מקור לא נסקר, אף פרמטר לא יצא ממצב טיוטה, אף כלל לא הופעל, והמונים נותרו 0/7.");
+    out.push("רישום ברירת מחדל משנה דבר אחד בלבד: איזה ענף הדוח וריצת הצל מריצים כברירת מחדל. כל ענף אחר ממשיך להיות מחושב ומוצג, וההפרש ממנו לברירת המחדל מצוין בטבלה.");
+    out.push(`רישומים: ${report.resolutions.recorded}; אטסטציות: ${report.resolutions.attested}.`);
+    out.push("");
+    out.push("| הכרעה | הענף שנבחר (בלשון חוות הדעת) | בסיס | מעמד |");
+    out.push("|---|---|---|---|");
+    for (const item of report.resolutions.items) out.push(`| \`${item.decision_key}\` | **${item.selected_branch}** (${item.opinion_branch_label}) | ${cell(item.basis)} | \`${item.status}\` |`);
+    out.push("");
+    out.push("---");
+    out.push("");
+  }
+
   let section = 2;
   for (const decision of report.open_decisions) {
     out.push(`## ${section}. ${topicLabel(decision.topic)} — \`${decision.decision_id}\``);
     out.push("");
     out.push(`השאלה הפתוחה מפרידה בין ${decision.branches.map((branch) => `**${branch}**`).join(" לבין ")}.`);
+    if (decision.default_branch) {
+      out.push("");
+      const source = DEFAULT_SOURCE_HEBREW[decision.default_branch_source ?? ""] ?? decision.default_branch_source;
+      out.push(`ברירת מחדל: **${decision.default_branch}** — ${source}.${decision.resolution ? ` הענף שנבחר בהכרעה: **${decision.resolution.selected_branch}** (\`${decision.resolution.decision_key}\`), מעמד \`${decision.resolution.status}\`, ללא זהות מאשר/ת.` : " אין הכרעה רשומה לשאלה זו; ביטחון נמוך."}`);
+    }
+    if (decision.gap_severity && report.gap_severity) {
+      out.push("");
+      out.push(report.gap_severity.sentence_he);
+      const shadowDecision = report.shadow.decisions.find((entry) => entry.decision_id === decision.decision_id);
+      if (shadowDecision?.gap_severity) out.push(`בריצת הצל: ${Object.entries(shadowDecision.gap_severity.counts).map(([name, count]) => `\`${name}\` — ${count}`).join("; ")}.`);
+    }
     for (const unbound of decision.unbound_branches ?? []) {
       out.push("");
       out.push(`ענף שלא נקשר ולא רץ: **${unbound.branch}** — ${cell(unbound.reason)}`);
@@ -233,17 +286,27 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
       out.push("");
       out.push(`הערת היקף: ${decision.narrower_than_draft}`);
     }
+    const capDecision = decision.contribution_rates != null;
     out.push("");
-    out.push(`| תרחיש | ${decision.branches.join(" | ")} | הפרש |`);
-    out.push(`|---|${decision.branches.map(() => "---|").join("")}---|`);
+    if (capDecision) out.push("ההפרש בטבלה הוא הפרש **בתקרה** (בסיס). הסכום שבו מדובר הוא הפרש **ההפרשות** על התקרה בשיעורי ההפרשה, ומוצג בעמודה נפרדת.");
+    out.push(`| תרחיש | ${decision.branches.map((branch) => branch === decision.default_branch ? `${branch} (ברירת מחדל)` : branch).join(" | ")} | הפרש${capDecision ? " (בסיס)" : ""} | הפרש מברירת המחדל${capDecision ? " | הפרש הפרשות" : ""} |`);
+    out.push(`|---|${decision.branches.map(() => "---|").join("")}---|---|${capDecision ? "---|" : ""}`);
     for (const row of decision.per_scenario) {
       if (!row.ran) {
-        out.push(`| ${cell(scenarioLabel(row.scenario))} | ${decision.branches.map(() => "לא רץ").join(" | ")} | ${cell(row.reason ?? "לא רץ")} |`);
+        out.push(`| ${cell(scenarioLabel(row.scenario))} | ${decision.branches.map(() => "לא רץ").join(" | ")} | ${cell(row.reason ?? "לא רץ")} | — |${capDecision ? " — |" : ""}`);
         continue;
       }
       const byBranch = decision.branches.map((branch) =>
         row.by_branch?.find((entry) => entry.branch === branch)?.output ?? "—");
-      out.push(`| ${cell(scenarioLabel(row.scenario))} | ${byBranch.map(cell).join(" | ")} | ${cell(row.difference ?? "לא ניתן להשוואה")} |`);
+      const fromDefault = decision.branches.filter((branch) => branch !== decision.default_branch).map((branch) => {
+        const entry = row.by_branch?.find((item) => item.branch === branch);
+        return `${branch}: ${entry?.difference_from_default ?? "—"}`;
+      }).join("; ") || "—";
+      out.push(`| ${cell(scenarioLabel(row.scenario))} | ${byBranch.map(cell).join(" | ")} | ${cell(row.difference ?? "לא ניתן להשוואה")} | ${cell(fromDefault)} |${capDecision ? ` ${cell(row.contribution_difference ?? "—")} |` : ""}`);
+    }
+    if (capDecision && decision.contribution_rates) {
+      out.push("");
+      out.push(`שיעורי ההפרשה (ברירת המחדל של הכרעת הקדימות): ${decision.contribution_rates.map((rate) => `${rate.share} \`${rate.parameter_version_id}\` = ${rate.rate.numerator}/${rate.rate.denominator}`).join("; ")}.`);
     }
     out.push("");
     out.push("---");
@@ -299,6 +362,40 @@ function markdown(report: Report, withdrawn: ReadonlyArray<Record<string, string
   out.push("");
   section += 1;
 
+  if (report.branches_examined_and_rejected && report.branches_examined_and_rejected.length > 0) {
+    out.push(`## ${section}. ענפים שנבחנו ונדחו`);
+    out.push("");
+    out.push("| הכרעה | ענף | סיבה | הוצא מהטבלה ב־ |");
+    out.push("|---|---|---|---|");
+    for (const row of report.branches_examined_and_rejected) out.push(`| \`${row.decision_id}\` | **${row.branch}** | ${cell(row.reason)} | ${cell(row.retired_in)} |`);
+    out.push("");
+    out.push("---");
+    out.push("");
+    section += 1;
+  }
+  if (report.convalescence_rate_table) {
+    out.push(`## ${section}. תעריף ההבראה לפי שנת הבראה — זמן תוקף וזמן ידיעה`);
+    out.push("");
+    out.push("| שנת הבראה | תעריף ליום | בתוקף מ־ | עד | ידוע מ־ | רטרואקטיבי | גרסת פרמטר |");
+    out.push("|---|---|---|---|---|---|---|");
+    for (const row of report.convalescence_rate_table.rows) out.push(`| ${row.havraa_year} | ${money(row.rate_minor_units)} | ${row.valid_from} | ${row.valid_to} | ${row.known_at} | ${row.retroactive ? "כן" : "לא"} | \`${row.parameter_version_id}\` |`);
+    out.push("");
+    out.push("תקופה מ־1.7.2026 ואילך: התעריף אינו מפורסם — המנוע מסרב (`rate_not_published`), לא 418 ולא 451.50 כברירת מחדל.");
+    out.push(`דוגמה: ${cell(report.convalescence_rate_table.retroactive_example)}`);
+    out.push("");
+    out.push("---");
+    out.push("");
+    section += 1;
+  }
+  if (report.gap_severity && report.gap_severity.not_computed.length > 0) {
+    out.push(`## ${section}. ממדים שסיווג החומרה מוגדר להם ואינם מחושבים עדיין`);
+    out.push("");
+    for (const row of report.gap_severity.not_computed) out.push(`- ${cell(row.dimension)}: חוק — ${cell(row.statutory_figure)}; צו — ${cell(row.order_figure)}. ${cell(row.reason)}`);
+    out.push("");
+    out.push("---");
+    out.push("");
+    section += 1;
+  }
   out.push(`## ${section}. דירוג המקור של כל פרמטר`);
   out.push("");
   out.push("כל פרמטר שנקשר בדוח נושא דירוג מקור. הדירוג אומר מאין הגיע המספר, לא אם הוא נכון.");
@@ -360,6 +457,13 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
     { kind: "heading", text: "דוח רגישות — מה כל תשובה משנה", level: 1 },
     { kind: "paragraph", text: "מסמך זה אינו מכריע באף שאלה משפטית ואינו ממליץ על תשובה. הוא מציג, לכל תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן." },
     { kind: "paragraph", text: "כל הנתונים הם סביבת בדיקה. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל." },
+    ...(report.resolutions ? [
+      { kind: "heading", text: "ברירות מחדל שנרשמו על ידי הבעלים — לא אטסטציה", level: 2 } as RtlBlock,
+      { kind: "paragraph", text: `שש מן ההכרעות הפתוחות נושאות ברירת מחדל שנרשמה על ידי הבעלים ביום ${report.resolutions.evidence.approved_on} על יסוד חוות דעת משפטית מאושרת. מעמד כל רישום: owner_recorded. לא בוצעה אטסטציה: לעורך/ת הדין אין זהות בודק/ת רשומה; אף מקור לא נסקר, אף פרמטר לא יצא ממצב טיוטה, אף כלל לא הופעל. רישום ברירת מחדל משנה רק איזה ענף רץ כברירת מחדל; כל ענף אחר מחושב ומוצג.` } as RtlBlock,
+      { kind: "hash", label: "legal opinion sha256", value: report.resolutions.evidence.legal_opinion_sha256 } as RtlBlock,
+      { kind: "hash", label: "approval record sha256", value: report.resolutions.evidence.approval_record_sha256 } as RtlBlock,
+      { kind: "table", columns: ["הכרעה", "הענף שנבחר", "מעמד"], rows: report.resolutions.items.map((item) => [item.decision_key, item.selected_branch, item.status]) } as RtlBlock,
+    ] : []),
     { kind: "rule" },
     {
       kind: "table",
@@ -379,17 +483,20 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
     blocks.push({ kind: "heading", text: topicLabel(decision.topic), level: 2 });
     blocks.push({ kind: "hash", label: "decision", value: decision.decision_id });
     for (const unbound of decision.unbound_branches ?? []) blocks.push({ kind: "paragraph", text: `ענף שלא נקשר ולא רץ: ${unbound.branch} — ${unbound.reason}` });
+    if (decision.default_branch) blocks.push({ kind: "paragraph", text: `ברירת מחדל: ${decision.default_branch} — ${DEFAULT_SOURCE_HEBREW[decision.default_branch_source ?? ""] ?? decision.default_branch_source}${decision.resolution ? ` (${decision.resolution.decision_key}, ${decision.resolution.status})` : " (אין הכרעה רשומה)"}` });
+    if (decision.gap_severity && report.gap_severity) blocks.push({ kind: "paragraph", text: report.gap_severity.sentence_he.replaceAll("**", "") });
+    if (decision.contribution_rates) blocks.push({ kind: "paragraph", text: "ההפרש בטבלה הוא הפרש בתקרה; הפרש ההפרשות בשיעורי ההפרשה מוצג בעמודה נפרדת." });
     if (decision.provenance_grade) {
       blocks.push({ kind: "paragraph", text: `דירוג מקור: ${gradeLabel(decision.provenance_grade)} (${decision.provenance_grade})` });
       if (decision.provenance_grade === "inferred_visual") blocks.push({ kind: "paragraph", text: INFERRED_VISUAL_SENTENCE });
     }
     blocks.push({
       kind: "table",
-      columns: ["תרחיש", ...decision.branches, "הפרש"],
+      columns: ["תרחיש", ...decision.branches.map((branch) => branch === decision.default_branch ? `${branch} (ברירת מחדל)` : branch), "הפרש", ...(decision.contribution_rates ? ["הפרש הפרשות"] : [])],
       rows: decision.per_scenario.map((row) => row.ran
         ? [scenarioLabel(row.scenario), ...decision.branches.map((branch) =>
-          row.by_branch?.find((entry) => entry.branch === branch)?.output ?? "—"), row.difference ?? "—"]
-        : [scenarioLabel(row.scenario), ...decision.branches.map(() => "לא רץ"), row.reason ?? "לא רץ"]),
+          row.by_branch?.find((entry) => entry.branch === branch)?.output ?? "—"), row.difference ?? "—", ...(decision.contribution_rates ? [row.contribution_difference ?? "—"] : [])]
+        : [scenarioLabel(row.scenario), ...decision.branches.map(() => "לא רץ"), row.reason ?? "לא רץ", ...(decision.contribution_rates ? ["—"] : [])]),
     });
     blocks.push({ kind: "rule" });
   }
@@ -418,6 +525,17 @@ function pdfBlocks(report: Report, withdrawn: ReadonlyArray<Record<string, strin
   });
   blocks.push({ kind: "hash", label: "shadow receipt sha256", value: report.shadow.receipt_sha256 });
   blocks.push({ kind: "rule" });
+  if (report.branches_examined_and_rejected && report.branches_examined_and_rejected.length > 0) {
+    blocks.push({ kind: "heading", text: "ענפים שנבחנו ונדחו", level: 2 });
+    blocks.push({ kind: "table", columns: ["הכרעה", "ענף", "סיבה"], rows: report.branches_examined_and_rejected.map((row) => [row.decision_id, row.branch, row.reason]) });
+    blocks.push({ kind: "rule" });
+  }
+  if (report.convalescence_rate_table) {
+    blocks.push({ kind: "heading", text: "תעריף ההבראה לפי שנת הבראה", level: 2 });
+    blocks.push({ kind: "table", columns: ["שנת הבראה", "תעריף ליום", "בתוקף", "ידוע מ־", "רטרואקטיבי"], rows: report.convalescence_rate_table.rows.map((row) => [String(row.havraa_year), money(row.rate_minor_units), `${row.valid_from} – ${row.valid_to}`, row.known_at, row.retroactive ? "כן" : "לא"]) });
+    blocks.push({ kind: "paragraph", text: "תקופה מ־1.7.2026 ואילך: התעריף אינו מפורסם והמנוע מסרב (rate_not_published)." });
+    blocks.push({ kind: "rule" });
+  }
   blocks.push({ kind: "heading", text: "דירוג המקור של כל פרמטר", level: 2 });
   blocks.push({ kind: "paragraph", text: INFERRED_VISUAL_SENTENCE });
   blocks.push({
@@ -475,8 +593,8 @@ async function main(): Promise<void> {
   writeFileSync(PDF, pdf);
 
   const receipt = {
-    schema_version: "tivdoc-sensitivity-report-hebrew-v0.11.0",
-    unit: "L7-10",
+    schema_version: "tivdoc-sensitivity-report-hebrew-v0.13.0",
+    unit: "L11-7",
     generated_from: REPORT,
     source_report_sha256: report.report_sha256,
     markdown: { path: MARKDOWN, sha256: sha256(body), byte_count: Buffer.byteLength(body) },
@@ -487,6 +605,9 @@ async function main(): Promise<void> {
     withdrawn_decisions: withdrawn.length,
     shadow_receipt_sha256: report.shadow.receipt_sha256,
     shadow_cases_run: report.shadow.counts.ran,
+    resolutions_recorded: report.resolutions?.recorded ?? 0,
+    resolutions_attested: report.resolutions?.attested ?? 0,
+    attestation_statement_present: body.includes("לא בוצעה אטסטציה"),
     interpretation: "none",
     recommendation: "none",
   };

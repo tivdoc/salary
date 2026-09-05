@@ -4,7 +4,7 @@
 תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד
 מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.
 
-המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v7.json` (`515aaf3a9f71729e…`).
+המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v8.json` (`2e0f0d0ec4d4b572…`).
 כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.
 
 הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.
@@ -16,70 +16,102 @@
 
 | מדד | ערך |
 |---|---|
-| תרחישים שנוסו | 102 |
-| תרחישים שרצו | 85 |
-| תרחישים שסורבו סירוב סגור | 17 |
-| עקבות חישוב שנשמרו | 85 |
-| עקבות ששוחזרו מהמסד בית־בבית | 85 |
+| תרחישים שנוסו | 114 |
+| תרחישים שרצו | 95 |
+| תרחישים שסורבו סירוב סגור | 19 |
+| עקבות חישוב שנשמרו | 95 |
+| עקבות ששוחזרו מהמסד בית־בבית | 95 |
 | נושאים שרצו | 7 מתוך 7 |
+
+---
+
+## ברירות מחדל שנרשמו על ידי הבעלים — לא אטסטציה
+
+שש מן ההכרעות הפתוחות שלהלן נושאות **ברירת מחדל שנרשמה על ידי הבעלים** ביום 2026-09-05, על יסוד חוות דעת משפטית שאושרה על ידי עורך/ת דין לדיני עבודה
+(sha256 `3ddad7e8c9fd81ec…`; רשומת האישור `0258b6400040b156…`). מעמד כל רישום: `owner_recorded`.
+
+**לא בוצעה אטסטציה.** לעורך/ת הדין אין זהות בודק/ת רשומה; אף מקור לא נסקר, אף פרמטר לא יצא ממצב טיוטה, אף כלל לא הופעל, והמונים נותרו 0/7.
+רישום ברירת מחדל משנה דבר אחד בלבד: איזה ענף הדוח וריצת הצל מריצים כברירת מחדל. כל ענף אחר ממשיך להיות מחושב ומוצג, וההפרש ממנו לברירת המחדל מצוין בטבלה.
+רישומים: 6; אטסטציות: 0.
+
+| הכרעה | הענף שנבחר (בלשון חוות הדעת) | בסיס | מעמד |
+|---|---|---|---|
+| `hourly_wage_divisor` | **182** (order_182) | lawyer_approved_opinion | `owner_recorded` |
+| `pension_wage_cap_source` | **section2** (nii_section_2_benefits) | lawyer_approved_opinion | `owner_recorded` |
+| `pension_2011_2016_precedence` | **order_2016_2017_rates** (overlay) | lawyer_approved_opinion | `owner_recorded` |
+| `rest_day_overtime_composition` | **additive** (additive) | lawyer_approved_opinion | `owner_recorded` |
+| `convalescence_rate_period` | **havraa_year** (havraa_year) | lawyer_approved_opinion | `owner_recorded` |
+| `working_time_daily_threshold` | **administrative** (administrative) | lawyer_approved_opinion | `owner_recorded` |
 
 ---
 
 ## 2. שכר מינימום — `legal.reference.il.decision.min_wage_hourly_divisor`
 
 השאלה הפתוחה מפרידה בין **182** לבין **186**.
+
+ברירת מחדל: **182** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **182** (`hourly_wage_divisor`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+
+סיווג חומרת הפער: **הפרה סטטוטורית** — התשלום נמוך מהזכאות גם לפי הסכום שבחוק וגם לפי הסכום שבצו ההרחבה; **זכות מכוח צו הרחבה** — הפער קיים רק בין הסכום שבחוק לסכום שבצו ההרחבה (ניתנת לתביעה, אינה נאכפת מנהלית). הסיווג הוא שדה על הממצא ואינו מסתיר ממצא.
+בריצת הצל: `no_gap` — 1; `not_comparable` — 2; `order_entitlement` — 2; `statutory_violation` — 2.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **אומת בטקסט** (`text_verified`).
 
-| תרחיש | 182 | 186 | הפרש |
-|---|---|---|---|
-| מצב רגיל | 6442.80 ILS | 6304.48 ILS | 138.32 ILS |
-| גבול תחולה | 6442.80 ILS | 6304.48 ILS | 138.32 ILS |
-| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING |
-| גבול עיגול או גבול הטבלה | 5057.14 ILS | 4948.57 ILS | 108.57 ILS |
-| חפיפת מקורות | 6584.40 ILS | 6443.04 ILS | 141.36 ILS |
-| ענף ואוכלוסייה | 3221.40 ILS | 3152.24 ILS | 69.16 ILS |
+| תרחיש | 182 (ברירת מחדל) | 186 | הפרש | הפרש מברירת המחדל |
+|---|---|---|---|---|
+| מצב רגיל | 6442.80 ILS | 6304.48 ILS | 138.32 ILS | 186: -138.32 ILS |
+| גבול תחולה | 6442.80 ILS | 6304.48 ILS | 138.32 ILS | 186: -138.32 ILS |
+| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING | — |
+| גבול עיגול או גבול הטבלה | 5057.14 ILS | 4948.57 ILS | 108.57 ILS | 186: -108.57 ILS |
+| חפיפת מקורות | 6584.40 ILS | 6443.04 ILS | 141.36 ILS | 186: -141.36 ILS |
+| ענף ואוכלוסייה | 3221.40 ILS | 3152.24 ILS | 69.16 ILS | 186: -69.16 ILS |
 
 ---
 
 ## 3. פנסיה — `legal.reference.il.decision.pension_wage_cap_section`
 
 השאלה הפתוחה מפרידה בין **section1** לבין **section2**.
+
+ברירת מחדל: **section2** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **section2** (`pension_wage_cap_source`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **אומת בטקסט** (`text_verified`).
 
 הערת היקף: Binds only the mandatory wage cap. The full pension draft also needs il.pension.employee_contribution_rate — registered at 2014.1.0 in L4-1 from the 2011 order's own table, but that instrument's last row is 2014 and whether a later instrument governs is the open precedence question, so this spec does not reach for it.
 
-| תרחיש | section1 | section2 | הפרש |
-|---|---|---|---|
-| מצב רגיל | 13566.00 ILS | 13769.00 ILS | 203.00 ILS |
-| גבול תחולה | 13566.00 ILS | 13769.00 ILS | 203.00 ILS |
-| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING |
-| גבול עיגול או גבול הטבלה | 4522.00 ILS | 4589.67 ILS | 67.67 ILS |
-| חפיפת מקורות | 13566.00 ILS | 13769.00 ILS | 203.00 ILS |
-| ענף ואוכלוסייה | 6783.00 ILS | 6884.50 ILS | 101.50 ILS |
+ההפרש בטבלה הוא הפרש **בתקרה** (בסיס). הסכום שבו מדובר הוא הפרש **ההפרשות** על התקרה בשיעורי ההפרשה, ומוצג בעמודה נפרדת.
+| תרחיש | section1 | section2 (ברירת מחדל) | הפרש (בסיס) | הפרש מברירת המחדל | הפרש הפרשות |
+|---|---|---|---|---|---|
+| מצב רגיל | 13566.00 ILS | 13769.00 ILS | 203.00 ILS | section1: -203.00 ILS | 37.56 ILS |
+| גבול תחולה | 13566.00 ILS | 13769.00 ILS | 203.00 ILS | section1: -203.00 ILS | 37.56 ILS |
+| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING | — | — |
+| גבול עיגול או גבול הטבלה | 4522.00 ILS | 4589.67 ILS | 67.67 ILS | section1: -67.67 ILS | 12.52 ILS |
+| חפיפת מקורות | 13566.00 ILS | 13769.00 ILS | 203.00 ILS | section1: -203.00 ILS | 37.56 ILS |
+| ענף ואוכלוסייה | 6783.00 ILS | 6884.50 ILS | 101.50 ILS | section1: -101.50 ILS | 18.78 ILS |
+
+שיעורי ההפרשה (ברירת המחדל של הכרעת הקדימות): employee `il.pension.employee_contribution_rate@2017.1.0` = 3/50; employer `il.pension.employer_contribution_rate@2017.1.0` = 13/200; severance `il.pension.severance_contribution_rate@2017.1.0` = 3/50.
 
 ---
 
 ## 4. דמי הבראה — `legal.reference.il.decision.convalescence_2026_rate_period`
 
-השאלה הפתוחה מפרידה בין **calendar_year_2026** לבין **from_signature_2026_07**.
+השאלה הפתוחה מפרידה בין **calendar_year_2026** לבין **from_signature_2026_07** לבין **havraa_year**.
+
+ברירת מחדל: **havraa_year** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **havraa_year** (`convalescence_rate_period`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
 מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **בתוך בחירת מסמך** (`selection`).
 
-הערת היקף: The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and both branches carry the same figure, so no scenario separates them in amount. The full draft also needs the seniority-band day counts, which are not in the corpus.
+הערת היקף: The day rate the 2026 order states, 451.50, cited into the instrument selection over the 2026 gazette issue; the 2023 order's 418 is registered beside it from its own selection. The open decision is the period the 2026 rate covers — the order says 'for the convalescence year 2026' and is signed in July — and all three branches carry the same figure, so no scenario separates them in amount; they differ in period (the calendar year, from the signature, or the convalescence year 1.7.2025–30.6.2026, the owner-recorded default) and in knowledge time, which the rate table states. The full draft also needs the seniority-band day counts, which are not in the corpus.
 
-| תרחיש | calendar_year_2026 | from_signature_2026_07 | הפרש |
-|---|---|---|---|
-| מצב רגיל | 2257.50 ILS | 2257.50 ILS | 0.00 ILS |
-| גבול תחולה | 2257.50 ILS | 2257.50 ILS | 0.00 ILS |
-| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING |
-| גבול עיגול או גבול הטבלה | 752.50 ILS | 752.50 ILS | 0.00 ILS |
-| חפיפת מקורות | 3160.50 ILS | 3160.50 ILS | 0.00 ILS |
-| ענף ואוכלוסייה | 2709.00 ILS | 2709.00 ILS | 0.00 ILS |
+| תרחיש | calendar_year_2026 | from_signature_2026_07 | havraa_year (ברירת מחדל) | הפרש | הפרש מברירת המחדל |
+|---|---|---|---|---|---|
+| מצב רגיל | 2257.50 ILS | 2257.50 ILS | 2257.50 ILS | 0.00 ILS | calendar_year_2026: 0.00 ILS; from_signature_2026_07: 0.00 ILS |
+| גבול תחולה | 2257.50 ILS | 2257.50 ILS | 2257.50 ILS | 0.00 ILS | calendar_year_2026: 0.00 ILS; from_signature_2026_07: 0.00 ILS |
+| עובדה חסרה או סותרת | לא רץ | לא רץ | לא רץ | RULESPEC_INPUT_MISSING | — |
+| גבול עיגול או גבול הטבלה | 752.50 ILS | 752.50 ILS | 752.50 ILS | 0.00 ILS | calendar_year_2026: 0.00 ILS; from_signature_2026_07: 0.00 ILS |
+| חפיפת מקורות | 3160.50 ILS | 3160.50 ILS | 3160.50 ILS | 0.00 ILS | calendar_year_2026: 0.00 ILS; from_signature_2026_07: 0.00 ILS |
+| ענף ואוכלוסייה | 2709.00 ILS | 2709.00 ILS | 2709.00 ILS | 0.00 ILS | calendar_year_2026: 0.00 ILS; from_signature_2026_07: 0.00 ILS |
 
 ---
 
@@ -87,49 +119,81 @@
 
 השאלה הפתוחה מפרידה בין **statute**.
 
-ענף שלא נקשר ולא רץ: **administrative** — BL-24: the Labour Ministry directive of 10.6.2018 (8.6 hours on a five-day week, 7.6 on a six-day week) is not discoverable on an official host; a copy on a non-official site is a mirror and is not acceptable. Unbound; not run; would bind at administrative grade.
+ברירת מחדל: **statute** — הענף שנבחר בהכרעה אינו קשור למקור ולכן אינו רץ; רץ הענף הקשור הראשון. הענף שנבחר בהכרעה: **administrative** (`working_time_daily_threshold`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+
+סיווג חומרת הפער: **הפרה סטטוטורית** — התשלום נמוך מהזכאות גם לפי הסכום שבחוק וגם לפי הסכום שבצו ההרחבה; **זכות מכוח צו הרחבה** — הפער קיים רק בין הסכום שבחוק לסכום שבצו ההרחבה (ניתנת לתביעה, אינה נאכפת מנהלית). הסיווג הוא שדה על הממצא ואינו מסתיר ממצא.
+בריצת הצל: `order_figure_unbound` — 8.
+
+ענף שלא נקשר ולא רץ: **administrative** — BL-24: the figures — 8.6 hours on four days and 7.6 on the short day of a five-day week, 8 / 7 on a six-day week — come from the steering committee's interpretation of the 42-hour extension order (source steering_committee_2018-04-24) as reported by kolzchut (source kolzchut), not from the Labour Ministry directive of 10.6.2018, which concerns the 182-hour divisor. No official artifact carries them; a non-official page is not acceptable. Unbound; not run; would bind at agreement_interpretation grade (L11-5 / D3.6). Selected as default by the owner-recorded resolution; runs when bound.
 מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
 inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.
 
-הערת היקף: Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.
+הערת היקף: Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24; agreement_interpretation grade if bound). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.
 
-| תרחיש | statute | הפרש |
-|---|---|---|
-| מצב רגיל | 165.00 ILS | 0.00 ILS |
-| גבול תחולה | 120.00 ILS | 0.00 ILS |
-| עובדה חסרה או סותרת | לא רץ | RULESPEC_INPUT_MISSING |
-| גבול עיגול או גבול הטבלה | 41.66 ILS | 0.00 ILS |
-| חפיפת מקורות | 210.00 ILS | 0.00 ILS |
-| ענף ואוכלוסייה | 75.00 ILS | 0.00 ILS |
+| תרחיש | statute (ברירת מחדל) | הפרש | הפרש מברירת המחדל |
+|---|---|---|---|
+| מצב רגיל | 165.00 ILS | 0.00 ILS | — |
+| גבול תחולה | 120.00 ILS | 0.00 ILS | — |
+| עובדה חסרה או סותרת | לא רץ | RULESPEC_INPUT_MISSING | — |
+| גבול עיגול או גבול הטבלה | 41.66 ILS | 0.00 ILS | — |
+| חפיפת מקורות | 210.00 ILS | 0.00 ILS | — |
+| ענף ואוכלוסייה | 75.00 ILS | 0.00 ILS | — |
 
 ---
 
 ## 6. שעות עבודה ומנוחה — `legal.reference.il.decision.rest_day_overtime_composition`
 
-השאלה הפתוחה מפרידה בין **additive** לבין **multiplicative**.
-מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
+השאלה הפתוחה מפרידה בין **additive**.
+
+ברירת מחדל: **additive** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **additive** (`rest_day_overtime_composition`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+מתוך 6 תרחישים רצו 5, ומהם 0 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
 inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.
 
-הערת היקף: The additive reading: the rest premium plus the overtime increment. 175% and 200% appear as outputs of the executor, never as figures in a source. The multiplicative reading: the rest premium times the overtime premium — 187.5% and 225%, again outputs and not figures.
+הערת היקף: The additive reading: the rest premium plus the overtime increment. 175% and 200% appear as outputs of the executor, never as figures in a source.
 
-| תרחיש | additive | multiplicative | הפרש |
+| תרחיש | additive (ברירת מחדל) | הפרש | הפרש מברירת המחדל |
 |---|---|---|---|
-| מצב רגיל | 165.00 ILS | 180.00 ILS | 15.00 ILS |
-| גבול תחולה | 105.00 ILS | 112.50 ILS | 7.50 ILS |
-| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING |
-| גבול עיגול או גבול הטבלה | 58.33 ILS | 62.49 ILS | 4.16 ILS |
-| חפיפת מקורות | 225.00 ILS | 247.50 ILS | 22.50 ILS |
-| ענף ואוכלוסייה | 52.50 ILS | 56.25 ILS | 3.75 ILS |
+| מצב רגיל | 165.00 ILS | 0.00 ILS | — |
+| גבול תחולה | 105.00 ILS | 0.00 ILS | — |
+| עובדה חסרה או סותרת | לא רץ | RULESPEC_INPUT_MISSING | — |
+| גבול עיגול או גבול הטבלה | 58.33 ILS | 0.00 ILS | — |
+| חפיפת מקורות | 225.00 ILS | 0.00 ILS | — |
+| ענף ואוכלוסייה | 52.50 ILS | 0.00 ILS | — |
 
 ---
 
-## 7. פנסיה — `legal.reference.il.decision.pension_2011_2016_precedence`
+## 7. שעות עבודה ומנוחה — `legal.reference.il.decision.rest_day_daily_threshold`
+
+השאלה הפתוחה מפרידה בין **worker_daily_norm** לבין **statute_8**.
+
+ברירת מחדל: **worker_daily_norm** — ללא הכרעה רשומה — הענף הראשון ברשימה. אין הכרעה רשומה לשאלה זו; ביטחון נמוך.
+מתוך 6 תרחישים רצו 5, ומהם 3 מפרידים בין האפשרויות.
+
+דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
+inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.
+
+הערת היקף: The opinion's default, at low confidence: on the weekly rest, overtime begins beyond the worker's own declared daily norm (a fact of the payslip or the attendance record — 9 where a nine-hour day is declared; a fractional norm such as 8.6 would need the rational-hours path and is not run here). Priced by the additive composition the owner-recorded resolution selects. Not in the offline shadow: no canonical fact path carries the rest day's hours worked or the declared norm. The alternative: on the weekly rest, overtime begins beyond the statute's eight hours (§2(א), bound through the lexicon), the same threshold as an ordinary day. Priced by the additive composition. Low confidence, as the opinion states for both branches.
+
+| תרחיש | worker_daily_norm (ברירת מחדל) | statute_8 | הפרש | הפרש מברירת המחדל |
+|---|---|---|---|---|
+| מצב רגיל | 105.00 ILS | 165.00 ILS | 60.00 ILS | statute_8: 60.00 ILS |
+| גבול תחולה | 52.50 ILS | 105.00 ILS | 52.50 ILS | statute_8: 52.50 ILS |
+| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING | — |
+| גבול עיגול או גבול הטבלה | 58.33 ILS | 58.33 ILS | 0.00 ILS | statute_8: 0.00 ILS |
+| חפיפת מקורות | 165.00 ILS | 225.00 ILS | 60.00 ILS | statute_8: 60.00 ILS |
+| ענף ואוכלוסייה | 52.50 ILS | 52.50 ILS | 0.00 ILS | statute_8: 0.00 ILS |
+
+---
+
+## 8. פנסיה — `legal.reference.il.decision.pension_2011_2016_precedence`
 
 השאלה הפתוחה מפרידה בין **order_2011_2014_row** לבין **order_2016_2017_rates**.
+
+ברירת מחדל: **order_2016_2017_rates** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **order_2016_2017_rates** (`pension_2011_2016_precedence`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
 מתוך 6 תרחישים רצו 5, ומהם 5 מפרידים בין האפשרויות.
 
 דירוג מקור של הפרמטרים בשאלה זו: **נקרא מתמונת העמוד — ממתין לאימות חזותי** (`inferred_visual`).
@@ -137,18 +201,18 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 הערת היקף: Binds the employee share under the precedence decision and pins the wage cap to its section-1 version so the spec carries one decision; the cap's own decision runs in the cap spec. The 2017 share is a visual citation of an image-only scan (inferred_visual).
 
-| תרחיש | order_2011_2014_row | order_2016_2017_rates | הפרש |
-|---|---|---|---|
-| מצב רגיל | 746.13 ILS | 813.96 ILS | 67.83 ILS |
-| גבול תחולה | 746.13 ILS | 813.96 ILS | 67.83 ILS |
-| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING |
-| גבול עיגול או גבול הטבלה | 248.71 ILS | 271.32 ILS | 22.61 ILS |
-| חפיפת מקורות | 746.13 ILS | 813.96 ILS | 67.83 ILS |
-| ענף ואוכלוסייה | 373.07 ILS | 406.98 ILS | 33.91 ILS |
+| תרחיש | order_2011_2014_row | order_2016_2017_rates (ברירת מחדל) | הפרש | הפרש מברירת המחדל |
+|---|---|---|---|---|
+| מצב רגיל | 746.13 ILS | 813.96 ILS | 67.83 ILS | order_2011_2014_row: -67.83 ILS |
+| גבול תחולה | 746.13 ILS | 813.96 ILS | 67.83 ILS | order_2011_2014_row: -67.83 ILS |
+| עובדה חסרה או סותרת | לא רץ | לא רץ | RULESPEC_INPUT_MISSING | — |
+| גבול עיגול או גבול הטבלה | 248.71 ILS | 271.32 ILS | 22.61 ILS | order_2011_2014_row: -22.61 ILS |
+| חפיפת מקורות | 746.13 ILS | 813.96 ILS | 67.83 ILS | order_2011_2014_row: -67.83 ILS |
+| ענף ואוכלוסייה | 373.07 ILS | 406.98 ILS | 33.91 ILS | order_2011_2014_row: -33.91 ILS |
 
 ---
 
-## 8. הצל הלא־מקוון — טיוטות על עובדות סינתטיות
+## 9. הצל הלא־מקוון — טיוטות על עובדות סינתטיות
 
 ריצת הצל מריצה את הטיוטות על ערכי פרמטרים בטיוטה ועל עובדות סינתטיות שהוצהרו לפי תבנית,
 דרך מודל העובדות הקנוני ורשמי המיפוי, בתוך המתזמן הלא־מקוון. שום פלט כאן אינו ממצא:
@@ -156,41 +220,42 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 | מדד | ערך |
 |---|---|
-| ריצה | `l76.c952e04c` |
+| ריצה | `l76.7721fd34` |
 | מצב ריצה | `draft_parameters_synthetic_inputs` |
-| גרסאות פרמטר בטיוטה שנקשרו | 33 |
+| גרסאות פרמטר בטיוטה שנקשרו | 34 |
 | פרמטרים פעילים | 0 |
-| חודשי תלוש סינתטיים | 54 |
-| הרצות (מקרה × מפרט × ענף) | 151 |
-| רצו | 106 |
+| חודשי תלוש סינתטיים | 56 |
+| הרצות (מקרה × מפרט × ענף) | 157 |
+| רצו | 111 |
 | סורבו בהכנת הקלט | 40 |
-| סורבו במנוע | 5 |
-| הפרשי־צל שחושבו | 81 |
+| סורבו במנוע | 6 |
+| הפרשי־צל שחושבו | 86 |
 | ללא רכיב תשלום להשוואה | 25 |
-| עקבות שנשמרו / שוחזרו מהמסד | 106 / 106 |
+| עקבות שנשמרו / שוחזרו מהמסד | 111 / 111 |
 | חילוץ בשימוש | לא |
-| קורפוס (sha256) | `aac7753d8b7a6932…` |
-| קבלה (sha256) | `e145992b13fd8ce8…` |
+| קורפוס (sha256) | `2564a16a01f73e8c…` |
+| קבלה (sha256) | `65a4f9334c93a03d…` |
 
 סירובים לפי סיבה:
 
 | סיבה | מספר |
 |---|---|
-| מחוץ לטבלת המדרגות (שנה אפס / יום ראשון) (`executor:RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE`) | 5 |
+| מחוץ לטבלת המדרגות (שנה אפס / יום ראשון) (`executor:RULESPEC_BAND_LOOKUP_INPUT_OUT_OF_RANGE`) | 6 |
 | ביטחון נמוך מהסף (`preparation:fact.below_confidence_threshold`) | 8 |
 | עובדה סותרת — לא הוכרעה (`preparation:fact.conflicted`) | 4 |
 | עובדה חסרה (`preparation:fact.missing`) | 18 |
 | עובדה ישנה מדי (`preparation:fact.stale`) | 1 |
-| עובדה שלא אושרה (`preparation:fact.unconfirmed`) | 4 |
+| עובדה שלא אושרה (`preparation:fact.unconfirmed`) | 3 |
+| preparation:rate_not_published (`preparation:rate_not_published`) | 1 |
 | העובדה אינה בצורה שהמשבצת צורכת (`preparation:transformation.failed`) | 6 |
 
 דירוג הריצות — הגרוע מבין דירוגי העובדות והפרמטרים של כל הרצה:
 
 | דירוג | מספר |
 |---|---|
-| עובדה מוצהרת, או פרמטר בתוך בחירת מסמך (`declared`) | 35 |
+| עובדה מוצהרת, או פרמטר בתוך בחירת מסמך (`declared`) | 46 |
 | עובדה נגזרת מעובדות אחרות (`derived`) | 5 |
-| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 36 |
+| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 31 |
 | פרמטר שנקרא דרך הלקסיקון (`lexicon`) | 5 |
 | מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט (`verified`) | 30 |
 
@@ -198,16 +263,41 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 | הכרעה | ענפים | ענף שלא נקשר | הושוו | שונים | לא ניתנים להשוואה |
 |---|---|---|---|---|---|
-| `legal.reference.il.decision.convalescence_2026_rate_period` | calendar_year_2026, from_signature_2026_07 | — | 5 | 0 | 2 |
+| `legal.reference.il.decision.convalescence_2026_rate_period` | calendar_year_2026, from_signature_2026_07, havraa_year | — | 6 | 0 | 3 |
 | `legal.reference.il.decision.min_wage_hourly_divisor` | 182, 186 | — | 5 | 4 | 2 |
 | `legal.reference.il.decision.pension_2011_2016_precedence` | order_2011_2014_row, order_2016_2017_rates | — | 15 | 10 | 6 |
 | `legal.reference.il.decision.pension_wage_cap_section` | section1, section2 | — | 5 | 2 | 2 |
-| `legal.reference.il.decision.rest_day_overtime_composition` | additive, multiplicative | — | 5 | 5 | 2 |
+| `legal.reference.il.decision.rest_day_overtime_composition` | additive | — | 5 | 0 | 2 |
 | `legal.reference.il.decision.working_time_daily_threshold` | statute | administrative | 6 | 0 | 2 |
 
 ---
 
-## 9. דירוג המקור של כל פרמטר
+## 10. ענפים שנבחנו ונדחו
+
+| הכרעה | ענף | סיבה | הוצא מהטבלה ב־ |
+|---|---|---|---|
+| `legal.reference.il.decision.rest_day_overtime_composition` | **multiplicative** | no source of any grade supports it | run 11 / D3.3, on the lawyer-approved opinion of 5.9.2026 (question 4) |
+
+---
+
+## 11. תעריף ההבראה לפי שנת הבראה — זמן תוקף וזמן ידיעה
+
+| שנת הבראה | תעריף ליום | בתוקף מ־ | עד | ידוע מ־ | רטרואקטיבי | גרסת פרמטר |
+|---|---|---|---|---|---|---|
+| 2026 | 451.50 ILS | 2025-07-01 | 2026-06-30 | 2026-08-18 | כן | `il.convalescence.daily_rate@2026.3.0` |
+
+תקופה מ־1.7.2026 ואילך: התעריף אינו מפורסם — המנוע מסרב (`rate_not_published`), לא 418 ולא 451.50 כברירת מחדל.
+דוגמה: a payslip of June, July or August 2026 that paid 418.00 a day is short 33.50 a day, tagged retroactive_update_2026-08-18 (the shadow's paid_at_previous_rate month)
+
+---
+
+## 12. ממדים שסיווג החומרה מוגדר להם ואינם מחושבים עדיין
+
+- weekly overtime threshold: חוק — 45 hours a week (Hours of Work and Rest Law 1951); צו — 42 hours a week (2018 42-hour extension order; il.working_time.weekly_overtime_threshold_hours@2018.1.0, registered and bound in the working-time draft). no executable spec derives weekly overtime from weekly hours; the 42-hour parameter is registered and the class is defined, the computation is not yet run
+
+---
+
+## 13. דירוג המקור של כל פרמטר
 
 כל פרמטר שנקשר בדוח נושא דירוג מקור. הדירוג אומר מאין הגיע המספר, לא אם הוא נכון.
 
@@ -217,6 +307,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 |---|---|---|---|
 | `il.convalescence.daily_rate@2026.1.0` | בתוך בחירת מסמך (`selection`) | — | — |
 | `il.convalescence.daily_rate@2026.2.0` | בתוך בחירת מסמך (`selection`) | — | — |
+| `il.convalescence.daily_rate@2026.3.0` | אומת בטקסט (`text_verified`) | — | — |
 | `il.convalescence.days_year_1@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
 | `il.convalescence.days_years_11_to_15@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
 | `il.convalescence.days_years_16_to_19@1988.1.0` | אומת בטקסט (`text_verified`) | — | — |
@@ -244,11 +335,11 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 | `il.working_time.overtime_rate_second_tier@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… |
 | `il.working_time.weekly_rest_rate@1951.1.0` | נקרא מתמונת העמוד — ממתין לאימות חזותי (`inferred_visual`) | 1½ | 6b41df8306ce4c60… |
 
-סיכום: בתוך בחירת מסמך — 2; אומת בטקסט — 20; נקרא מתמונת העמוד — ממתין לאימות חזותי — 4; מילה שנקראה דרך הלקסיקון — 2.
+סיכום: בתוך בחירת מסמך — 2; אומת בטקסט — 21; נקרא מתמונת העמוד — ממתין לאימות חזותי — 4; מילה שנקראה דרך הלקסיקון — 2.
 
 ---
 
-## 10. נושאים שלא רצו
+## 14. נושאים שלא רצו
 
 כל שבעת הנושאים רצו.
 
@@ -257,7 +348,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 11. החלטות שנמשכו
+## 15. החלטות שנמשכו
 
 שאלות אלה אינן פתוחות עוד. הן מופיעות כאן כדי שהרשימה תהיה מלאה, ולא כדי שיוכרעו.
 
@@ -267,7 +358,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ---
 
-## 12. היקף
+## 16. היקף
 
-Differences only, computed. This states what the answer to each open question changes in each scenario; it does not answer any of them, and nothing here is reviewed, attested or active.
+Differences only, computed. This states what the answer to each open question changes in each scenario. Six questions carry a DEFAULT the owner recorded on 5.9.2026 on a lawyer-approved opinion (status owner_recorded; no reviewer identity; no attestation); the default is what the shadow runs first and what the table names as such, and every other branch is still computed and shown with its difference from the default. Nothing here is reviewed, attested or active; the counters are unchanged.
 
