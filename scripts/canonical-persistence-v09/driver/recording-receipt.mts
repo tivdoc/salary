@@ -1,3 +1,4 @@
+import "../../production-refusal.mjs";
 import { StrictRecordingPostgresDriver } from "../../../src/server/platform/persistence/postgres/runtime/recording-driver.ts";
 import { CanonicalPostgresTransactionManager } from "../../../src/server/platform/persistence/postgres/runtime/transaction-manager.ts";
 import { statement } from "../../../src/server/platform/persistence/postgres/contracts.ts";

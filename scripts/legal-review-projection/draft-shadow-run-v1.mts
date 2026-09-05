@@ -15,6 +15,7 @@
 //
 // Nothing here is a finding. Every output is a synthetic_shadow_delta or a
 // refusal; delivery_allowed is false on the envelope, the run and the receipt.
+import "../production-refusal.mjs";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

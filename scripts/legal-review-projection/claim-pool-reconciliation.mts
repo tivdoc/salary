@@ -28,6 +28,7 @@
 //   R4  judge the symbol the record names, not the module it lives in.
 //   R5  the restatements — records whose blocker had genuinely gone stale.
 
+import "../production-refusal.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

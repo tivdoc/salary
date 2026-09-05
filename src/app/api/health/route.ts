@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured } from "@/lib/supabase-admin";
+import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  await guardStableHttpEntrypoint("CEP-019", request);
+  try {
+    await guardStableHttpEntrypoint("CEP-019", request);
+  } catch (error) {
+    return refusedEntrypoint(error);
+  }
   return NextResponse.json(
     {
       ok: true,

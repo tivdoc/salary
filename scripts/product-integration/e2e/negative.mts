@@ -1,3 +1,4 @@
+import "../../production-refusal.mjs";
 import { readFileSync } from "node:fs";
 
 import {

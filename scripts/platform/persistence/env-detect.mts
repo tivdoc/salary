@@ -1,3 +1,4 @@
+import "../../production-refusal.mjs";
 import { detectPersistenceEnvironment } from "../../../src/server/platform/persistence/isolated-environment.ts";
 
 const receipt = detectPersistenceEnvironment();

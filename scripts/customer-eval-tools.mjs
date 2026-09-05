@@ -1,3 +1,4 @@
+import "./production-refusal.mjs";
 import { spawnSync } from "node:child_process";
 import {
   copyFile,

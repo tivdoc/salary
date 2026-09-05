@@ -62,6 +62,7 @@
 // verification port. "Enforced in the database" is true of identity
 // distinctness and trust windows, and not of signature authenticity.
 
+import "../production-refusal.mjs";
 import { createHash, createPublicKey, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

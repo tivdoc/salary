@@ -16,6 +16,7 @@
 // active session remains, it is the named system-import session, and every
 // other session on this tenant is revoked. The unrecreatability of that one
 // session is recorded as a finding rather than acted on.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import pg from "pg";

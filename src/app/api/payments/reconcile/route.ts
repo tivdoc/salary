@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { reconcilePendingPayments } from "@/lib/reconcile-payments";
+import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
@@ -18,7 +19,11 @@ function authorized(request: Request) {
 }
 
 export async function POST(request: Request) {
-  await guardStableHttpEntrypoint("CEP-024", request);
+  try {
+    await guardStableHttpEntrypoint("CEP-024", request);
+  } catch (error) {
+    return refusedEntrypoint(error);
+  }
   if (!authorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

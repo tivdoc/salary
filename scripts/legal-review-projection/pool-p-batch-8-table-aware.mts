@@ -26,6 +26,7 @@
 //
 // Everything registered stays `draft`, zero attestations, activation refused at
 // the database. Nothing here reviews a source or activates a rate.
+import "../production-refusal.mjs";
 import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

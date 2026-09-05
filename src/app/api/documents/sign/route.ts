@@ -6,12 +6,17 @@ import {
   storageBaseName,
   uploadManifestSchema,
 } from "@/lib/validation";
+import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  await guardStableHttpEntrypoint("CEP-016", request);
+  try {
+    await guardStableHttpEntrypoint("CEP-016", request);
+  } catch (error) {
+    return refusedEntrypoint(error);
+  }
   const caseId = await readCaseIdFromCookie();
   if (!caseId) {
     return NextResponse.json({ error: "תיק הבדיקה לא נמצא. יש להתחיל מחדש." }, { status: 401 });

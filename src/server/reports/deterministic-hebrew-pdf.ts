@@ -86,7 +86,12 @@ export function renderCanonicalHebrewPdf(
 }
 
 function readPinnedFont(): Uint8Array {
-  const fontPath = path.resolve(process.cwd(), HEBREW_REPORT_FONT.file);
+  // L8-1 / D2. The path is spelled as literals here, and not read from the
+  // frozen constant above, because the build's file tracer can only follow a
+  // literal: `resolve(cwd(), <expression>)` made it copy the whole repository
+  // (docs, scripts, assets) into the instrumentation trace. The constant still
+  // names the file for the report's own provenance block; the test pins the two.
+  const fontPath = path.join(process.cwd(), "assets", "fonts", "DejaVuSans.ttf");
   const bytes = readFileSync(fontPath);
   const actual = createHash("sha256").update(bytes).digest("hex");
   if (actual !== HEBREW_REPORT_FONT.sha256) throw new Error("HEBREW_REPORT_FONT_HASH_MISMATCH");

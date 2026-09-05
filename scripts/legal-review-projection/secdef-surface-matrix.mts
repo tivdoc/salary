@@ -31,6 +31,7 @@
 // there would deadlock the identity layer against itself. They are named here
 // so that a third one cannot appear without this failing.
 
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

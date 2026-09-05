@@ -35,6 +35,21 @@ export function hermeticBrowserRuntimeBootstrapEnabled(
   return true;
 }
 
+/**
+ * L8-1 / D2. A production or preview deployment — VERCEL_ENV says so, or
+ * NODE_ENV=production with no Tivdoc runtime mode requested — is closed by
+ * construction: it installs the projection in which every capability is
+ * blocked, so the public pages answer, every legal, shadow, portal and
+ * operations dispatcher answers the product's one 404, and nothing can be
+ * turned on by a request. Any other environment without a runtime mode keeps
+ * the V0.10.10 posture: nothing installed, every dispatcher fails closed.
+ */
+export function closedProductionEnvironment(environment: RuntimeEnvironment = process.env): boolean {
+  const vercelEnvironment = runtimeEnvironmentValue(environment, "VERCEL_ENV");
+  const nodeEnvironment = runtimeEnvironmentValue(environment, "NODE_ENV");
+  return vercelEnvironment === "production" || vercelEnvironment === "preview" || nodeEnvironment === "production";
+}
+
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const durableRequested = enabled(process.env.TIVDOC_DURABLE_PRODUCT_RUNTIME_ENABLED);
@@ -43,6 +58,11 @@ export async function register(): Promise<void> {
       throw new Error("PRODUCT_RUNTIME_BOOTSTRAP_MODE_CONFLICT");
     }
     const hermeticEnabled = hermeticRequested && hermeticBrowserRuntimeBootstrapEnabled();
+    if (!durableRequested && !hermeticRequested && closedProductionEnvironment()) {
+      const { installClosedProductionRuntime } = await import("./server/platform/capabilities/closed-production-runtime");
+      installClosedProductionRuntime();
+      return;
+    }
     if (durableRequested) {
       const { initializeDurableLocalProductRuntime } = await import(
         "./server/product/runtime/durable-local-runtime"

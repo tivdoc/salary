@@ -15,6 +15,7 @@ import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
 import { metaEventId, type MetaEventDescriptor } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { recordCaseFunnelEvent } from "@/lib/funnel-server";
+import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
@@ -73,7 +74,11 @@ async function deliverCheckoutMeta(
 }
 
 export async function POST(request: Request) {
-  await guardStableHttpEntrypoint("CEP-022", request);
+  try {
+    await guardStableHttpEntrypoint("CEP-022", request);
+  } catch (error) {
+    return refusedEntrypoint(error);
+  }
   const caseId = await readCaseIdFromCookie();
   if (!caseId) {
     return NextResponse.json({ error: "תיק הבדיקה לא נמצא. יש להתחיל מחדש." }, { status: 401 });

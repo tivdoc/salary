@@ -23,6 +23,7 @@
 // report uses — the same pinned font, the same glyph subset, the same
 // byte serialiser — so the document a lawyer is handed can be checked against
 // its hash rather than trusted.
+import "../production-refusal.mjs";
 import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

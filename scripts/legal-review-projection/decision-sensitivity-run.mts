@@ -4,6 +4,7 @@
 //
 // This replaces the "not run" report. Both hashes are recorded so the two are
 // comparable rather than one quietly overwriting the other.
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";

@@ -26,6 +26,7 @@
 //
 // 175% and 200% for overtime on the weekly rest are not figures in the law
 // and are not registered; D2 composes the two sections under an open decision.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { buildCandidate, importPoolPBatch, TABLE_AWARE_CITATIONS, TENANT, VISUAL_CITATIONS, visualCitation } from "./pool-p-parameter-import.mts";

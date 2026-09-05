@@ -17,6 +17,7 @@
 // enqueued `pending_review` with `activation_allowed` constrained false by the
 // table itself, and every artifact keeps `review_state: needs_review`.
 
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";

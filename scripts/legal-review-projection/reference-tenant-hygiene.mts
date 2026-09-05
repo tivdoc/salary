@@ -13,6 +13,7 @@
 // table at all (permission denied, not empty), so every governance count comes
 // through a named definer function. The `public.*` census uses the admin
 // connection, which is the only identity that can see those rows.
+import "../production-refusal.mjs";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

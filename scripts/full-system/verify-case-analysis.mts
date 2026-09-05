@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "../production-refusal.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createServer } from "vite";

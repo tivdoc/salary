@@ -5,6 +5,7 @@
 // records what it observed, or is recorded `not_supported_by_managed_platform`
 // with the reason — never a pass by assumption.
 
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";

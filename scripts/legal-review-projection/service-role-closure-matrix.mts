@@ -14,6 +14,7 @@
 // effective privilege per role per table with `has_table_privilege` rather than
 // reading grants, and reports the exposure that actually exists.
 
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

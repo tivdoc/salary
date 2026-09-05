@@ -13,6 +13,7 @@
 // product reachability of one produced thirteen false mismatches on the first
 // pass. CLI records are asked about evidence reachability instead.
 
+import "../production-refusal.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

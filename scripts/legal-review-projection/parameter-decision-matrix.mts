@@ -6,6 +6,7 @@
 // nothing ever reaches activation_allowed: true — every receipt this script
 // reads back carries activation_allowed: false, which the type system pins
 // as a literal, not merely a convention.
+import "../production-refusal.mjs";
 import { createHash, createPublicKey, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

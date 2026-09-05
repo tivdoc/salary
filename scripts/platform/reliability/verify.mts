@@ -1,3 +1,4 @@
+import "../../production-refusal.mjs";
 import { createServer } from "vite";
 
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: "custom", logLevel: "error" });

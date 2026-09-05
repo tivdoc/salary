@@ -19,6 +19,7 @@
 // decision makes — read from the governance database through the sanctioned
 // path, in BigInt minor units, with no floating point anywhere. That is a real
 // number a lawyer can act on, and it is labelled for exactly what it is.
+import "../production-refusal.mjs";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

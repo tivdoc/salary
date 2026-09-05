@@ -17,6 +17,7 @@
 // on the synthetic proof tenant, where losing a session costs nothing. The
 // reference tenant's own row is never deleted here; what it gets is the same
 // idempotent write, which is exactly what recovery would do.
+import "../production-refusal.mjs";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

@@ -1,3 +1,4 @@
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { copyFile, lstat, mkdir, readFile, readdir, writeFile } from "node:fs/promises";

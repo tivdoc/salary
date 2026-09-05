@@ -1,3 +1,4 @@
+import "../../production-refusal.mjs";
 import { randomBytes } from "node:crypto";
 
 import { createOwnershipMarker } from "../../../src/server/platform/persistence/isolated-environment.ts";

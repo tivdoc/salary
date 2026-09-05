@@ -26,6 +26,7 @@
 //                                spec carries it as constant.rational 1.
 //
 // Everything registered stays draft, zero attestations.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { buildCandidate, importPoolPBatch, lexiconCitation, TABLE_AWARE_CITATIONS, TENANT } from "./pool-p-parameter-import.mts";

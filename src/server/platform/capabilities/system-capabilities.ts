@@ -45,8 +45,8 @@ export type CapabilityDeclaration = Readonly<{
 
 export type SystemCapabilityProjection = Readonly<{
   schema_version: typeof SYSTEM_CAPABILITY_SCHEMA_VERSION;
-  runtime_mode: "test" | "development";
-  execution_scope: "local_only";
+  runtime_mode: "test" | "development" | "production_closed";
+  execution_scope: "local_only" | "remote_closed";
   fixture_mode: "none" | "synthetic_test";
   capabilities: Readonly<Record<SystemCapabilityName, CapabilityDeclaration>>;
   enabled_capabilities: readonly SystemCapabilityName[];
@@ -80,6 +80,42 @@ export const SYSTEM_CAPABILITY_PREREQUISITES: Readonly<Record<SystemCapabilityNa
   customer_processing: ["identity", "session", "postgresql", "storage", "parser", "extraction", "legal_review", "parameter_approval", "rulespec_approval", "analysis"],
   delivery: ["identity", "session", "storage", "export", "download", "customer_processing"],
 });
+
+/**
+ * L8-1 / D2. The projection a production or preview deployment installs when
+ * no Tivdoc runtime mode is requested — which is every deployment of the
+ * live site. Every capability is `blocked`: the legal engine, the shadow, the
+ * portal and the operations panel by `PRODUCTION_LEGAL_ENGINE_CLOSED`; the
+ * customer-processing funnel and delivery by `CUSTOMER_PROCESSING_DISABLED`,
+ * which is the inventory's own classification of those routes on this branch.
+ * A dispatcher that needs no capability — the public pages, health, robots —
+ * still answers; every other dispatcher refuses with the product's one 404.
+ * Nothing in it is enabled, so nothing in it can be turned on by a request.
+ */
+export const PRODUCTION_LEGAL_ENGINE_CLOSED = "PRODUCTION_LEGAL_ENGINE_CLOSED" as const;
+export const PRODUCTION_CUSTOMER_PROCESSING_DISABLED = "CUSTOMER_PROCESSING_DISABLED" as const;
+
+export function buildClosedProductionCapabilityProjection(): SystemCapabilityProjection {
+  const capabilities = Object.fromEntries(CAPABILITY_ORDER.map((name): [SystemCapabilityName, CapabilityDeclaration] => [name, deepFreeze({
+    state: "blocked",
+    provider_target: null,
+    provider_id: null,
+    provider_schema_version: null,
+    prerequisite_capabilities: SYSTEM_CAPABILITY_PREREQUISITES[name],
+    blocker_codes: [name === "customer_processing" || name === "delivery" ? PRODUCTION_CUSTOMER_PROCESSING_DISABLED : PRODUCTION_LEGAL_ENGINE_CLOSED],
+    evidence_codes: [],
+  } satisfies CapabilityDeclaration) as CapabilityDeclaration])) as Record<SystemCapabilityName, CapabilityDeclaration>;
+  const unsigned = {
+    schema_version: SYSTEM_CAPABILITY_SCHEMA_VERSION,
+    runtime_mode: "production_closed" as const,
+    execution_scope: "remote_closed" as const,
+    fixture_mode: "none" as const,
+    capabilities,
+    enabled_capabilities: [] as SystemCapabilityName[],
+    blocked_capabilities: [...CAPABILITY_ORDER],
+  };
+  return deepFreeze({ ...unsigned, projection_sha256: canonicalSha256(unsigned) });
+}
 
 export type CapabilityStartupInput = Readonly<{
   schema_version: string;
@@ -243,7 +279,7 @@ export class BoundedAdmissionController {
   readonly #cases = new Map<string, number>();
   #total = 0;
 
-  constructor(input: Readonly<{ limits?: SystemLimits; id_factory?: () => string; runtime_mode: "test" | "development" }>) {
+  constructor(input: Readonly<{ limits?: SystemLimits; id_factory?: () => string; runtime_mode: "test" | "development" | "production_closed" }>) {
     this.#limits = systemLimitsSchema.parse(input.limits ?? LOCAL_SYSTEM_LIMITS);
     if (input.id_factory && input.runtime_mode !== "test") throw new Error("CAPABILITY_DETERMINISTIC_ID_FACTORY_TEST_ONLY");
     this.#idFactory = input.id_factory ?? randomUUID;

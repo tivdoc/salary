@@ -17,6 +17,7 @@
 // fixture is the opposite of what this repository enforces everywhere else, so
 // the receipt names what remains instead of pretending it was cleaned.
 
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

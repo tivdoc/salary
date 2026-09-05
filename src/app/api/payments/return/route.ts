@@ -6,13 +6,18 @@ import { deliverVerifiedMetaPurchase } from "@/lib/meta-purchase";
 import { deliverVerifiedGa4Purchase } from "@/lib/ga4-server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { verifyPendingInvoice4uPayment } from "@/lib/verify-payment";
+import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  await guardStableHttpEntrypoint("CEP-023", request);
+  try {
+    await guardStableHttpEntrypoint("CEP-023", request);
+  } catch (error) {
+    return refusedEntrypoint(error);
+  }
   const destination = paymentReturnDestination(request.url);
   const paymentReturnToken = new URL(request.url).searchParams.get("payment_return");
   if (!isPaymentReturnToken(paymentReturnToken)) {

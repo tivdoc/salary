@@ -1,3 +1,4 @@
+import "../../production-refusal.mjs";
 import { authorizeIsolatedTeardown, createOwnershipMarker, ISOLATED_POSTGRES_ENV_KEYS } from "../../../src/server/platform/persistence/isolated-environment.ts";
 
 const targetId = process.env[ISOLATED_POSTGRES_ENV_KEYS.target_id];

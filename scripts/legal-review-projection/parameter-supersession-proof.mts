@@ -8,6 +8,7 @@
 //
 // D3: proof fixtures are segregated by a flag on the row, not by a string
 // prefix convention living in one report generator.
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

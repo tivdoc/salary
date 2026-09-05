@@ -1,3 +1,4 @@
+import "../production-refusal.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ContentAddressedIdPort, Sha256CanonicalHashPort, canonicalJson } from "../../src/engine/case-operations/canonical.ts";

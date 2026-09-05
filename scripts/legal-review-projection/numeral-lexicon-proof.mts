@@ -9,6 +9,7 @@
 // tier stated as a word — `מחצית דמי מחלה` — binds through the lexicon from its
 // own chunk, with the surface form recorded, which is the whole reason the
 // table exists.
+import "../production-refusal.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { checkCitationAnchor } from "../../src/engine/legal-knowledge/citation-anchor.ts";

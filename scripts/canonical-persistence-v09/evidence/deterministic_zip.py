@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+# L8-1 / D2: scripts refuse a production environment, before anything else.
+import os as _tivdoc_os, sys as _tivdoc_sys
+if _tivdoc_os.environ.get("NODE_ENV") == "production" or _tivdoc_os.environ.get("VERCEL_ENV") in ("production", "preview"):
+    _tivdoc_sys.stderr.write("PRODUCTION_ENVIRONMENT_REFUSED\n")
+    _tivdoc_sys.exit(2)
+
 import pathlib
 import sys
 import zipfile

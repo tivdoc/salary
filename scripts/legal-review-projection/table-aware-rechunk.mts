@@ -14,6 +14,7 @@
 // whose text is numbers and nothing else — no Hebrew, no words — which is
 // exactly the chunk shape that cannot carry a citation anchor and cannot tell
 // you which column a figure came from.
+import "../production-refusal.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";

@@ -407,9 +407,14 @@ async function writeStartupReceipt(
     missing_evidence: ["source_reference", "acquisition_date", "explicit_reuse_license", "immutable_fixture_sha256"],
   }));
   const lane = process.env.TIVDOC_PRODUCT_E2E_LANE === "negative" ? "negative" : "synthetic";
+  // L8-1 / D2. `path.resolve(x)` resolves a relative x against the working
+  // directory, so this is the same root as before; it no longer spells
+  // `process.cwd()` beside an unknown value, which the build's file tracer read
+  // as "the whole working directory" and copied the repository into the
+  // instrumentation trace.
   const evidenceRoot = process.env.TIVDOC_PRODUCT_EVIDENCE_ROOT
-    ? path.resolve(process.cwd(), process.env.TIVDOC_PRODUCT_EVIDENCE_ROOT)
-    : path.resolve(process.cwd(), "output", "product-integration-v0.8.0");
+    ? path.resolve(process.env.TIVDOC_PRODUCT_EVIDENCE_ROOT)
+    : path.resolve("output", "product-integration-v0.8.0");
   const outputRoot = path.join(evidenceRoot, "e2e", lane);
   await mkdir(outputRoot, { recursive: true });
   const receipt = Object.freeze({

@@ -24,6 +24,7 @@
 // carrying, not a better one, because reachability computed against a
 // different tree is an answer about a different tree.
 
+import "../production-refusal.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";

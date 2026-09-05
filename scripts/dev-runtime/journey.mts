@@ -10,6 +10,7 @@
 // The negative matrix runs against the same live server, because a refusal that
 // is only proven in a unit test is not proven at the boundary.
 
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

@@ -15,6 +15,7 @@
 // deliberately not here: they compare rows rather than refusing outright, and
 // proving those needs a fixture per trigger rather than one forbidden write.
 
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

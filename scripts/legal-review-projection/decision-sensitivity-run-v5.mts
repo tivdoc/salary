@@ -45,6 +45,7 @@
 // outputs by their declared kind instead of assuming one.
 //
 // v2 is kept beside v3, as v1 was kept beside v2. Nothing is overwritten.
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

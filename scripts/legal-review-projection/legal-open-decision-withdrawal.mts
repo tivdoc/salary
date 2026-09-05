@@ -4,6 +4,7 @@
 // primary source directly (Annual Vacation Law §3(b)/(c), the "200 vs 240
 // days" question) as a proper withdrawn record, so it carries the same
 // evidence trail A7-3 asks for instead of only living in prose.
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

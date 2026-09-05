@@ -9,6 +9,7 @@
 // parser or normalizer version is blocked on exactly those fields; it is never
 // completed with a synthesized hash or version to get past validation.
 
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "./production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";

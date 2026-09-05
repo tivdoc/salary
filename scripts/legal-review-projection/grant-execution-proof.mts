@@ -7,6 +7,7 @@
 // A missing GRANT is the one thing that cannot be discovered any other way, and
 // it has now shipped twice.
 
+import "../production-refusal.mjs";
 import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 

@@ -19,6 +19,7 @@
 // parse failure — `document_sanity_minimum_content_failed`, no normalized text
 // on disk, a 64 KB PDF with no text layer — and D4 says: record the class and
 // stop. It is recorded in the receipt under `not_selected`.
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

@@ -1,3 +1,4 @@
+import "../production-refusal.mjs";
 import { runTopicReadinessCommand, type TopicReadinessCommand } from "../../src/engine/wave2/evidence-audit/topic-readiness-command.ts";
 
 function option(name: string) {

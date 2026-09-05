@@ -26,6 +26,7 @@
 // bands; which instrument governs today is the convalescence draft's
 // precedence slot, which stays unbound. Registered against 1988 as that
 // instrument's own figures.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { buildCandidate, importPoolPBatch, TABLE_AWARE_CITATIONS, TENANT, tableAwareCitation } from "./pool-p-parameter-import.mts";

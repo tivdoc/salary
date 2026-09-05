@@ -1,3 +1,4 @@
+import "../../production-refusal.mjs";
 import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";

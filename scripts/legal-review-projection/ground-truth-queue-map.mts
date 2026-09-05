@@ -29,6 +29,7 @@
 // what the /operations panel shows.
 //
 // Zero ground-truth content is produced. HUMAN_GROUND_TRUTH_LOCKED stays 0.
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";

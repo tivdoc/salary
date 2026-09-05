@@ -1,3 +1,4 @@
+import "../production-refusal.mjs";
 import path from "node:path";
 import { parseCliOptions, writeJsonAtomic } from "../../src/engine/wave2/evidence-audit/common.ts";
 import { scanFullChangedFileRange } from "../../src/engine/wave2/evidence-audit/full-diff-scan.ts";

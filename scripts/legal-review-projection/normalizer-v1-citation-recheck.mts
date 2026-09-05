@@ -9,6 +9,7 @@
 // there.
 //
 // The v1 artifacts are written under the git-ignored eval tree, never over v0.
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

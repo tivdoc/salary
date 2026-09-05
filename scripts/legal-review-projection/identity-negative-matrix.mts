@@ -5,6 +5,7 @@
 // case, and each observes the row afterwards rather than trusting a return
 // value: an effect asserter has to assert the effect.
 
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

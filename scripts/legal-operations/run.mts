@@ -1,3 +1,4 @@
+import "../production-refusal.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { bytesSha256, canonicalLegalOperationsJson, frozen, legalOperationsSha256 } from "../../src/engine/legal-operations/canonical.ts";

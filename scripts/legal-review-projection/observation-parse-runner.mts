@@ -28,6 +28,7 @@
 // Reordering is a semantic decision about a legal text and is not one this
 // script is entitled to make, so each artifact says which order it is in.
 
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";

@@ -17,6 +17,7 @@
 // host it goes through the acquisition import and binds at administrative
 // grade. Nothing here reads a document; the citation is checked against the
 // normalized chunk the corpus already holds.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { WORKING_TIME_DAILY_THRESHOLD_DECISION } from "../../src/engine/legal-quality/sensitivity-rulespecs.ts";

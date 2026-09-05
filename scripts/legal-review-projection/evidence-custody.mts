@@ -24,6 +24,7 @@
 // capability report here is the code's own, unchanged.
 //
 // Nothing here touches customer data, the database, or any network.
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";

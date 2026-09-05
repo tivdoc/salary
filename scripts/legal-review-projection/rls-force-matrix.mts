@@ -18,6 +18,7 @@
 // Every measurement happens inside a transaction that is rolled back, so no
 // table's setting changes here and nothing is written.
 
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

@@ -13,6 +13,7 @@
 // RuleSpec over the same three registered parameters; no figure 175 or 200 is
 // authored anywhere, and the sensitivity report shows both on the rest-day
 // scenarios.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { REST_DAY_OVERTIME_COMPOSITION_DECISION } from "../../src/engine/legal-quality/sensitivity-rulespecs.ts";

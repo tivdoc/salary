@@ -11,6 +11,7 @@
 // parameter directly. That is the control working, not a gap. The sanctioned
 // read is `private.governance_aggregate_read`, which is what this uses, and
 // which reports the state and — the part that matters — `activation_allowed`.
+import "../production-refusal.mjs";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

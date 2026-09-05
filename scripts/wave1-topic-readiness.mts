@@ -1,3 +1,4 @@
+import "./production-refusal.mjs";
 import { evaluateWave1TopicReadiness } from "../src/engine/legal-knowledge/wave1-topic-readiness.ts";
 import {
   wave1SyntheticInactiveEvidence,

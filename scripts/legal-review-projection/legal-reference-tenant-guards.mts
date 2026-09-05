@@ -1,6 +1,7 @@
 // Addendum 7 A7-1. Proves the three reference-tenant guards by execution
 // against DEV, as the actual runtime roles the guards are about — not as
 // the admin/migrator connection.
+import "../production-refusal.mjs";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

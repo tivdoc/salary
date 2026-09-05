@@ -27,6 +27,7 @@
 // citations batch 8 made (same table-aware chunk, same anchors, same figures),
 // and 2014.1.0 is superseded naming its replacement — the same mechanism L4-1
 // used when a citation moved. Nothing about any figure changes.
+import "../production-refusal.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

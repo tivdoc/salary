@@ -11,6 +11,7 @@
 // If one does succeed, it is recorded as a succeeded observation with the
 // bytes' hash — and NOT registered as a source. Registration is an acquisition
 // unit with its own rules; this is a probe.
+import "../production-refusal.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";

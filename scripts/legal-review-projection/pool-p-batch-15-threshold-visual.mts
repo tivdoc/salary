@@ -18,6 +18,7 @@
 // It pairs with the 2024 threshold (6,000, batch 5, text_verified) in the
 // convalescence draft: two slots, one per year, so a reader sees both grades
 // side by side.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { buildCandidate, importPoolPBatch, TABLE_AWARE_CITATIONS, TENANT, VISUAL_CITATIONS, visualCitation } from "./pool-p-parameter-import.mts";

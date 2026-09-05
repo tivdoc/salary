@@ -17,6 +17,7 @@
 // versions, OCR binary and model data, each with its digest where the file is
 // addressable — so the closing environment can be procured against real
 // digests rather than names.
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";

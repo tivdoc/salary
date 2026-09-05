@@ -26,6 +26,7 @@
 // and the parameter's effective date is the signature date the text spells out
 // in words, 11 September 2023. The same collapse produces `3062024` for the
 // end date; it is likewise recorded, not read.
+import "../production-refusal.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { buildCandidate, importPoolPBatch, selectionCitation, TABLE_AWARE_CITATIONS, TENANT } from "./pool-p-parameter-import.mts";

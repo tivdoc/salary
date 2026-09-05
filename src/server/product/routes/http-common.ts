@@ -1,3 +1,4 @@
+import { isCapabilityBlockedError } from "../../platform/capabilities/stable-entrypoint-runtime.ts";
 import "./server-boundary.ts";
 
 export const PRODUCT_HTTP_HEADERS = Object.freeze({
@@ -20,6 +21,7 @@ export const PRODUCT_HTTP_HEADERS = Object.freeze({
  * path, an identifier, an actor or any part of a request.
  */
 export const PRODUCT_NOT_FOUND_REASONS = Object.freeze([
+  "CAPABILITY_BLOCKED",
   "SURFACE_DISABLED",
   "SERVICE_ABSENT",
   "SESSION_BOUNDARY_ABSENT",
@@ -43,6 +45,16 @@ export function readProductNotFoundLog(): readonly Readonly<{ reason: ProductNot
 
 export function clearProductNotFoundLog(): void {
   notFoundLog.length = 0;
+}
+
+/**
+ * L8-1 / D2. The one answer a blocked dispatcher gives: the product 404, the
+ * same shape as every other refusal, with the cause logged server-side only.
+ * Any other error is not the guard's business and is rethrown.
+ */
+export function refusedEntrypoint(error: unknown): Response {
+  if (isCapabilityBlockedError(error)) return productNotFound("CAPABILITY_BLOCKED");
+  throw error;
 }
 
 export function productNotFound(reason: ProductNotFoundReason = "UNSPECIFIED"): Response {

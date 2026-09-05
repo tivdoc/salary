@@ -186,6 +186,11 @@ export function installStableEntrypointRuntime(runtime: StableEntrypointRuntime)
   runtimeGlobal().__tivdocStableEntrypointRuntime = runtime;
 }
 
+/** True for the one error `assert` throws when a capability the entry point needs is not enabled. */
+export function isCapabilityBlockedError(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith("CAPABILITY_ENTRYPOINT_BLOCKED:");
+}
+
 export function resolveStableEntrypointRuntime(): StableEntrypointRuntime {
   const runtime = runtimeGlobal().__tivdocStableEntrypointRuntime;
   if (!runtime) throw new Error("CAPABILITY_RUNTIME_NOT_INSTALLED");

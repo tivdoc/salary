@@ -13,6 +13,7 @@
 // v0.3 package uses, and the helper builds it twice and refuses to report a
 // hash unless both builds match byte for byte.
 
+import "../production-refusal.mjs";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";

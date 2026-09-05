@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  await guardStableHttpEntrypoint("CEP-014", request);
+  try {
+    await guardStableHttpEntrypoint("CEP-014", request);
+  } catch (error) {
+    return refusedEntrypoint(error);
+  }
   const caseId = await readCaseIdFromCookie();
   if (!caseId) return NextResponse.json({ resumePath: null });
 
