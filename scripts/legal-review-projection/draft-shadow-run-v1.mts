@@ -50,7 +50,7 @@ const SYSTEM_SESSION = { sid: "session.legal.reference.system-import", jti: "tok
 // one run, each direction deliberate (L4-6 / D4, BL-17).
 const PROOF_SESSION = { sid: "session.synthetic.proof.shadow", jti: "token.synthetic.proof.shadow", subject: "system_import" };
 const sha256 = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
-const GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative"] as const;
+const GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative", "agreement_interpretation"] as const;
 type Grade = (typeof GRADES)[number];
 
 function toInput(value: ParameterValue): RuleSpecInputValue["value"] {

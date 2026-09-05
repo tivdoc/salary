@@ -564,7 +564,7 @@ function buildBindings(input: Readonly<{
       // The grade rides into the hash only when it is not the default, so
       // every text-verified candidate registered before grades existed keeps
       // its hash; a lexicon or selection citation already carried its own key.
-      ...(c.provenance === "inferred_visual" || c.provenance === "administrative" ? { provenance: c.provenance } : {}),
+      ...(c.provenance === "inferred_visual" || c.provenance === "administrative" || c.provenance === "agreement_interpretation" ? { provenance: c.provenance } : {}),
       ...(c.visual ? { visual: c.visual } : {}),
     }));
   return computeElevenDimensionBindings({
@@ -599,7 +599,7 @@ function provenanceFields(citations: readonly Citation[]): { provenance_grade?: 
   // worst grade is — an administrative citation beside a visual one does not
   // make the visual one confirmable by nobody.
   if (visual.length > 0) return { provenance_grade: grade, visual_bindings: visual };
-  if (grade === "administrative") return { provenance_grade: grade };
+  if (grade === "administrative" || grade === "agreement_interpretation") return { provenance_grade: grade };
   return {};
 }
 

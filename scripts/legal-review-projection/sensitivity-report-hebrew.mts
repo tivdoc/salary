@@ -104,6 +104,7 @@ const EXECUTION_GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
   derived: "עובדה נגזרת מעובדות אחרות",
   inferred: "עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד",
   administrative: "פרמטר ממקור מנהלי",
+  agreement_interpretation: "פרמטר מפרשנות של הסכם או צו הרחבה",
 });
 const executionGradeLabel = (grade: string) => EXECUTION_GRADE_HEBREW[grade] ?? grade;
 const REFUSAL_HEBREW: Readonly<Record<string, string>> = Object.freeze({
@@ -126,6 +127,7 @@ const GRADE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
   selection: "בתוך בחירת מסמך",
   inferred_visual: "נקרא מתמונת העמוד — ממתין לאימות חזותי",
   administrative: "מקור מנהלי",
+  agreement_interpretation: "פרשנות של הסכם או צו הרחבה (ועדת היגוי, כל־זכות) — לא מקור רשמי",
 });
 const INFERRED_VISUAL_SENTENCE = "inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משום ששכבת הטקסט של המסמך מעורפלת או חסרה; הוא ממתין לאימות חזותי של אדם מול אותו עמוד, ולא ניתן לאשרו בלי אימות כזה.";
 const gradeLabel = (grade: string) => GRADE_HEBREW[grade] ?? grade;

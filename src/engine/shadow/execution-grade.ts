@@ -19,6 +19,9 @@
 //   inferred      an input produced by an agent, or a parameter read from a
 //                 page image awaiting visual confirmation
 //   administrative a parameter from an administrative source (unbound today)
+//   agreement_interpretation
+//                 a parameter from a party's reading of an agreement or
+//                 extension order (L11-5 / D3.6; unbound today)
 //
 // The grade is displayed, never used to decide: nothing here suppresses,
 // rounds, or weights an output by its grade.
@@ -27,7 +30,7 @@ import { factSourceTypeSchema, type FactSourceType } from "../facts/contracts.ts
 import { PROVENANCE_GRADES, worstProvenance, type ProvenanceGrade } from "../legal-knowledge/visual-citation-v1.ts";
 import type { RuleInputValueRef } from "../wave2/contracts.ts";
 
-export const EXECUTION_GRADES = ["verified", "lexicon", "declared", "derived", "inferred", "administrative"] as const;
+export const EXECUTION_GRADES = ["verified", "lexicon", "declared", "derived", "inferred", "administrative", "agreement_interpretation"] as const;
 export const executionGradeSchema = z.enum(EXECUTION_GRADES);
 export type ExecutionGrade = z.infer<typeof executionGradeSchema>;
 
@@ -47,6 +50,7 @@ const PARAMETER_RUNG: Readonly<Record<ProvenanceGrade, ExecutionGrade>> = Object
   selection: "declared",
   inferred_visual: "inferred",
   administrative: "administrative",
+  agreement_interpretation: "agreement_interpretation",
 });
 
 export const inputProvenanceSchema = z.object({

@@ -91,5 +91,7 @@ describe("legal-visual-citation-v1 (L6-2, D1)", () => {
     expect(worstProvenance(["text_verified", "lexicon"])).toBe("lexicon");
     expect(worstProvenance(["selection", "inferred_visual", "text_verified"])).toBe("inferred_visual");
     expect(worstProvenance(["administrative", "inferred_visual"])).toBe("administrative");
+    // L11-5 / D3.6: an agreement interpretation ranks below an administrative source.
+    expect(worstProvenance(["agreement_interpretation", "administrative", "text_verified"])).toBe("agreement_interpretation");
   });
 });

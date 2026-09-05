@@ -193,7 +193,8 @@ export const dependencyBindingsSchema = z.object({
   reviewer_decisions_sha256: legalOperationsSha256Schema,
 }).strict().readonly();
 
-export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative"] as const;
+// L11-5 / D3.6: agreement_interpretation joins the ladder, below administrative.
+export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative", "agreement_interpretation"] as const;
 export const provenanceGradeSchema = z.enum(PROVENANCE_GRADES);
 export const visualBindingSchema = z.object({
   page_pdf_sha256: legalOperationsSha256Schema,
@@ -233,7 +234,7 @@ export const parameterCandidateSchema = z.object({
   // Visual bindings travel with any candidate that has a visual citation, and
   // such a candidate's grade is inferred_visual or worse; a candidate that
   // claims the inferred_visual grade must carry them.
-  if (candidate.visual_bindings !== undefined && candidate.provenance_grade !== "inferred_visual" && candidate.provenance_grade !== "administrative") context.addIssue({ code: "custom", message: "parameter_visual_bindings_grade_unpaired", path: ["visual_bindings"] });
+  if (candidate.visual_bindings !== undefined && candidate.provenance_grade !== "inferred_visual" && candidate.provenance_grade !== "administrative" && candidate.provenance_grade !== "agreement_interpretation") context.addIssue({ code: "custom", message: "parameter_visual_bindings_grade_unpaired", path: ["visual_bindings"] });
   if (candidate.visual_bindings === undefined && candidate.provenance_grade === "inferred_visual") context.addIssue({ code: "custom", message: "parameter_visual_bindings_grade_unpaired", path: ["visual_bindings"] });
   if (candidate.effective_to !== null && candidate.effective_to < candidate.effective_from) context.addIssue({ code: "custom", message: "parameter_interval_inverted", path: ["effective_to"] });
   if (candidate.value.kind === "money" && candidate.unit !== `currency.${candidate.value.value.currency.toLowerCase()}`) context.addIssue({ code: "custom", message: "parameter_money_unit_mismatch", path: ["unit"] });

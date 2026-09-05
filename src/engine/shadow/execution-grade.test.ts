@@ -22,7 +22,7 @@ const parameter = (refId: string, grade: ParameterProvenance["provenance_grade"]
 
 describe("the execution grade", () => {
   it("is one ladder, best first", () => {
-    expect(EXECUTION_GRADES).toEqual(["verified", "lexicon", "declared", "derived", "inferred", "administrative"]);
+    expect(EXECUTION_GRADES).toEqual(["verified", "lexicon", "declared", "derived", "inferred", "administrative", "agreement_interpretation"]);
     expect(worstExecutionGrade([])).toBe("verified");
     expect(worstExecutionGrade(["verified", "derived", "lexicon"])).toBe("derived");
     expect(worstSourceType(["documented", "inferred", "declared"])).toBe("inferred");

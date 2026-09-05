@@ -66,9 +66,13 @@ async function main(): Promise<void> {
     open_decisions: [WORKING_TIME_DAILY_THRESHOLD_DECISION],
     branches: {
       statute: { bound: true, parameter_version_id: "il.working_time.daily_overtime_threshold_hours@1951.1.0", rule_spec_id: "il.rulespec.working.time.overtime.from.hours.worked" },
-      administrative: { bound: false, reason: "BL-24: Labour Ministry directive of 10.6.2018 not discoverable on an official host; mirror copies not acceptable; no fetch", would_bind_at: "administrative" },
+      // L11-5 / D3.6: attribution corrected — the figures are the steering
+      // committee's reading of the 42-hour order (24.4.2018) via kolzchut; the
+      // 10.6.2018 directive concerns the 182 divisor. The row itself carries the
+      // correction as an annotation (bl24-attribution-annotation.mts).
+      administrative: { bound: false, reason: "BL-24: the 8.6 / 7.6 daily figures come from the steering committee's interpretation of the 42-hour extension order (24.4.2018) as reported by kolzchut, not from the 10.6.2018 directive (the 182 divisor); no official artifact carries them; non-official pages not acceptable; no fetch", would_bind_at: "agreement_interpretation", sources: ["steering_committee_2018-04-24", "kolzchut"] },
     },
-    blocked_ledger: "BL-24 stays open; P-15/P-16 stay blocked; the statute branch is what the shadow runs",
+    blocked_ledger: "BL-24 stays open with the corrected attribution; P-15/P-16 stay blocked at agreement_interpretation; the statute branch is what the shadow runs; the owner-recorded resolution selects the administrative branch as default, unbound",
   };
   writeFileSync(path.join(RECEIPT_ROOT, "batch-16-daily-threshold.json"), `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
   console.log(`L7_9_BATCH16 ${JSON.stringify({ registered: 1, decisions: 1, grade: "text_verified" })}`);

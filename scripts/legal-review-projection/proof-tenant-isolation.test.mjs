@@ -49,6 +49,10 @@ const REASONS = Object.freeze({
     "Revokes residue sessions on the reference tenant. The residue is there; revoking it elsewhere would revoke nothing.",
   // L11-2 / D2: the six owner-recorded resolutions are real rows on the
   // reference tenant; every refusal case runs on the synthetic proof tenant.
+  // L11-5 / D3.6: the BL-24 attribution correction is an annotation appended
+  // against the real daily-threshold decision on the reference tenant.
+  "bl24-attribution-annotation.mts":
+    "Appends the corrected BL-24 attribution against the real working_time_daily_threshold decision on the reference tenant, through the annotate path.",
   "legal-decision-resolutions.mts":
     "Records the six owner-recorded resolutions on the reference tenant from the lawyer-approved opinion's pinned hashes; its refusal cases run on the synthetic proof tenant.",
   "legal-open-decision-withdrawal.mts":
@@ -111,6 +115,7 @@ const EXPECTED = Object.freeze({
   "identity-session-recovery.mts": REFERENCE,
   "identity-session-revocation.mts": REFERENCE,
   "instrument-selection.mts": REFERENCE,
+  "bl24-attribution-annotation.mts": REFERENCE,
   "legal-decision-resolutions.mts": REFERENCE,
   "legal-open-decision-withdrawal.mts": REFERENCE,
   "legal-reference-tenant-guards.mts": REFERENCE,

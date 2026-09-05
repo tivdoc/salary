@@ -117,6 +117,13 @@ describe("L7-9 / D6: a day's overtime derived from hours worked and the daily th
     expect(entry.decision_id).toBe(WORKING_TIME_DAILY_THRESHOLD_DECISION);
     expect(entry.branches).toEqual([["statute", "1951.1.0"]]);
     expect(entry.unbound_branches).toEqual([expect.objectContaining({ branch: "administrative" })]);
+    // L11-5 / D3.6: the attribution is the steering committee's reading (24.4.2018) via kolzchut, at agreement_interpretation; the 10.6.2018 directive is the 182 divisor's.
+    const reason = entry.unbound_branches![0].reason;
+    expect(reason).toContain("steering_committee_2018-04-24");
+    expect(reason).toContain("kolzchut");
+    expect(reason).toContain("agreement_interpretation");
+    expect(reason).toContain("182-hour divisor");
+    expect(reason).not.toMatch(/would bind at administrative/u);
     expect(entry.unbound_branches?.[0].reason).toContain("BL-24");
   });
 });

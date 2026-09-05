@@ -28,8 +28,14 @@ import { containsOcrAmbiguousFraction } from "./numeral-lexicon-v1.ts";
 export const LEGAL_VISUAL_CITATION_VERSION = "legal-visual-citation-v1" as const;
 export const PROVENANCE_INFERRED_VISUAL = "inferred_visual" as const;
 
-/** Provenance grades, best first. A candidate's grade is the worst of its citations'. */
-export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative"] as const;
+/**
+ * Provenance grades, best first. A candidate's grade is the worst of its citations'.
+ * L11-5 / D3.6: `agreement_interpretation` — a figure that rests on a party's
+ * reading of a collective agreement or extension order (the steering
+ * committee's 8.6 / 7.6 daily norm under the 42-hour order, as reported by
+ * kolzchut), below an administrative source and above nothing.
+ */
+export const PROVENANCE_GRADES = ["text_verified", "lexicon", "selection", "inferred_visual", "administrative", "agreement_interpretation"] as const;
 export type ProvenanceGrade = typeof PROVENANCE_GRADES[number];
 
 export function worstProvenance(grades: readonly ProvenanceGrade[]): ProvenanceGrade {

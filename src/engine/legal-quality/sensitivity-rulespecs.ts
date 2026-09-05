@@ -382,11 +382,16 @@ export const WORKING_TIME_OVERTIME_SPEC: RuleSpecPackage = createRuleSpecPackage
 // overtime of a day is the hours worked beyond that threshold; the L6-3 spec
 // above prices overtime hours it is GIVEN, this one derives them. The
 // threshold is an open decision with two readings: the statute's eight hours
-// (bound, through the lexicon from the word שמונה on page 1), and the Labour
-// Ministry directive of 10.6.2018 — 8.6 hours on a five-day week, 7.6 on a
-// six-day week — whose official text is not discoverable (BL-24) and which
-// is therefore an UNBOUND branch, named and not run. A copy of the directive
-// on a non-official site is a mirror and is not acceptable as a source.
+// (bound, through the lexicon from the word שמונה on page 1), and the
+// administrative reading — 8.6 hours on four days and 7.6 on the short day of
+// a five-day week, 8 / 7 on a six-day week — which L11-5 / D3.6 attributes
+// correctly: not to the Labour Ministry directive of 10.6.2018 (that directive
+// concerns the 182-hour divisor of the hourly minimum wage) but to the
+// steering committee's interpretation of the 42-hour extension order
+// (24.4.2018) as reported by kolzchut — grade agreement_interpretation. No
+// official artifact carries the figures (BL-24), so the branch is UNBOUND,
+// named and not run; a non-official page is not acceptable as a source. The
+// owner-recorded resolution selects it as the default; it runs when bound.
 export const WORKING_TIME_DAILY_THRESHOLD_DECISION = "legal.reference.il.decision.working_time_daily_threshold";
 
 export const WORKING_TIME_OVERTIME_FROM_HOURS_WORKED_SPEC: RuleSpecPackage = createRuleSpecPackage({
@@ -758,10 +763,10 @@ export const SENSITIVITY_SPECS: readonly SensitivitySpec[] = Object.freeze([
     branches: [["statute", "1951.1.0"]],
     unbound_branches: [{
       branch: "administrative",
-      reason: "BL-24: the Labour Ministry directive of 10.6.2018 (8.6 hours on a five-day week, 7.6 on a six-day week) is not discoverable on an official host; a copy on a non-official site is a mirror and is not acceptable. Unbound; not run; would bind at administrative grade.",
+      reason: "BL-24: the figures — 8.6 hours on four days and 7.6 on the short day of a five-day week, 8 / 7 on a six-day week — come from the steering committee's interpretation of the 42-hour extension order (source steering_committee_2018-04-24) as reported by kolzchut (source kolzchut), not from the Labour Ministry directive of 10.6.2018, which concerns the 182-hour divisor. No official artifact carries them; a non-official page is not acceptable. Unbound; not run; would bind at agreement_interpretation grade (L11-5 / D3.6). Selected as default by the owner-recorded resolution; runs when bound.",
     }],
     narrower_than_draft:
-      "Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.",
+      "Derives the day's overtime from hours worked and the daily threshold, then prices it by the §16(א) tiers. The statute branch binds eight hours from §2(א) through the lexicon (text_verified); the administrative branch is unbound (BL-24; agreement_interpretation grade if bound). The full draft also carries the 42-hour weekly threshold and the 2018 permit's caps.",
   },
   // L6-4: overtime on the weekly rest, one decision, two computations.
   {
