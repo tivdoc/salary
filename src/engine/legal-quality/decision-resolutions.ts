@@ -44,11 +44,6 @@ export const SUPERSEDED_BY_EXTERNAL_REVIEW_1 = "superseded_by_external_review_20
 // only, exactly as LEGAL_OPINION_SHA256 and APPROVAL_RECORD_SHA256 already are. Neither is copied into the repo.
 export const EXTERNAL_REVIEW_1_RESPONSE_SHA256 = "907f463b83876297ef4bee09124da025cfede8936c21af32d6e6a4f3e170f6e6" as const;
 export const APPROVAL_RECORD_ERRATA_SHA256 = "39257edce50c25ead7488c7059c3f2ae861261a4e0d8022c6630e07077355ef6" as const;
-/** §7's own supersession string for a re-recorded resolution — distinct from SUPERSEDED_BY_EXTERNAL_REVIEW_1,
- *  which is what the owner's direct chat brief (external review response, section ד', item 5) specified verbatim
- *  and what Q6's revision 2 already carries, shipped and tested. The two owner documents disagree on the exact
- *  string; nothing here silently picks one for Q6 — see the state doc's note on this run for both, unresolved. */
-export const EXTERNAL_REVIEW_1_OWNER_CLOSED = "external_review_1_owner_closed_2026-09-05" as const;
 export const LEGAL_DECISION_RESOLUTION_SCHEMA = "tivdoc-legal-decision-resolution-v0" as const;
 
 const DECISION = "legal.reference.il.decision";
@@ -348,7 +343,9 @@ export type BaseRule = Readonly<{
   citation: Readonly<{ law: string; section: string; judgment: string; judgment_in_corpus: false }>;
   parameter_kind: "textual";
   parameter_version_id: string | null;
-  binding_status: "unbound_source_not_acquirable_through_controlled_path";
+  /** Long run 10 / L13-5 E2: the rule is a registered draft parameter now, bound to §18's own words
+   *  in the corpus. The judgment stays out of the corpus (BL-32) and is named as authority only. */
+  binding_status: "bound_draft_parameter_statutory_text" | "unbound_source_not_acquirable_through_controlled_path";
 }>;
 
 export const BASE_RULES: readonly BaseRule[] = Object.freeze([
@@ -359,8 +356,8 @@ export const BASE_RULES: readonly BaseRule[] = Object.freeze([
     statement_en: "The regular wage from which the rest-day and overtime rates are derived includes a fixed contractual premium (§18 of the Hours of Work and Rest Law; ע\"ע 38313-03-18).",
     citation: { law: "חוק שעות עבודה ומנוחה, התשי\"א-1951", section: "18", judgment: "ע\"ע 38313-03-18", judgment_in_corpus: false },
     parameter_kind: "textual",
-    parameter_version_id: null,
-    binding_status: "unbound_source_not_acquirable_through_controlled_path",
+    parameter_version_id: "il.working_time.regular_wage_includes_fixed_contractual_premiums@1951.1.0",
+    binding_status: "bound_draft_parameter_statutory_text",
   },
 ]);
 

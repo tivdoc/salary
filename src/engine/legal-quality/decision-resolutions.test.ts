@@ -162,15 +162,18 @@ describe("L11-2 / D2: the default branch — the one thing a resolution changes"
     expect(resolutionFor(cap.decision_id)?.selected_branch).toBe("section2");
   });
   // External review #1, finding 6: the base rule under Q4, named and cited, unbound until its judgment is in the corpus.
-  it("registers the §18 base rule as a textual rule with its citation, unbound while the judgment is outside the corpus", () => {
+  it("registers the §18 base rule and binds it to the draft parameter §18's own words support; the judgment stays outside the corpus", () => {
     expect(BASE_RULES).toHaveLength(1);
     const rule = BASE_RULES[0]!;
     expect(rule.rule_id).toBe("regular_wage_includes_fixed_contractual_premiums");
     expect(rule.decision_id).toBe("legal.reference.il.decision.rest_day_overtime_composition");
     expect(rule.citation).toEqual({ law: expect.stringContaining("שעות עבודה ומנוחה"), section: "18", judgment: "ע\"ע 38313-03-18", judgment_in_corpus: false });
     expect(rule.parameter_kind).toBe("textual");
-    expect(rule.parameter_version_id).toBeNull();
-    expect(rule.binding_status).toBe("unbound_source_not_acquirable_through_controlled_path");
+    // Long run 10 / L13-5 E2: registered in Pool P as a draft parameter, text-bound to §18 in the
+    // corpus. The judgment is still not in the corpus (BL-32) and is named as authority only.
+    expect(rule.parameter_version_id).toBe("il.working_time.regular_wage_includes_fixed_contractual_premiums@1951.1.0");
+    expect(rule.binding_status).toBe("bound_draft_parameter_statutory_text");
+    expect(rule.citation.judgment_in_corpus).toBe(false);
     // The rejected multiplicative branch names the same rule as the reason it is not a separate composition.
     expect(REJECTED_BRANCHES[0]!.reason).toContain(rule.rule_id);
     expect(REJECTED_BRANCHES[0]!.reason).toContain("§18");
