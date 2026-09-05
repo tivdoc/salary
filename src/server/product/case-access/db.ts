@@ -4,8 +4,6 @@
 // service role, exactly as the MVP's payment functions are called; on the
 // local runtime it is a `pg` call as the web runtime role. The service never
 // sees which, and a test hands it a fake.
-import "server-only";
-
 export type CaseAccessDb = Readonly<{
   provider: "supabase" | "postgres" | "fake";
   rpc<T = Record<string, unknown>>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]>;
@@ -39,7 +37,7 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
       if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const names = Object.keys(args);
-      for (const name of names) if (!/^[a-z_]+$/u.test(name)) throw new Error(`CASE_ACCESS_DB_ARGUMENT_UNKNOWN:${name}`);
+      for (const name of names) if (!/^[a-z_][a-z0-9_]*$/u.test(name)) throw new Error(`CASE_ACCESS_DB_ARGUMENT_UNKNOWN:${name}`);
       const placeholders = names.map((name, index) => `${name} => $${index + 1}`).join(", ");
       const result = await pool.query(`select * from public.${fn}(${placeholders})`, names.map((name) => args[name]));
       return result.rows.map((row) => {
@@ -80,7 +78,7 @@ export function installCaseAccessDbForTests(db: CaseAccessDb | null): void {
 export async function resolveCaseAccessDb(): Promise<CaseAccessDb | null> {
   if (override) return override;
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const { getSupabaseAdmin } = await import("@/lib/supabase-admin");
+    const { getSupabaseAdmin } = await import("../../../lib/supabase-admin.ts");
     return supabaseCaseAccessDb(getSupabaseAdmin());
   }
   const url = process.env.TIVDOC_WEB_POSTGRES_URL;

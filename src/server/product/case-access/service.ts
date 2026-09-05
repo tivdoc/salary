@@ -9,8 +9,8 @@
 // per-identity limit is enforced silently. The token appears in the message
 // and in the link's path segment, and nowhere else — not in a log line, not
 // in a query string, not in an analytics payload; the store holds its hash.
-import "server-only";
-import { productOffer } from "@/lib/product-offer";
+// Relative imports only: scripts/dev-runtime/access-journey.mts runs this module under node, where no alias exists.
+import { productOffer } from "../../../lib/product-offer.ts";
 import {
   ACCESS_CODE_PATTERN, createAccessCode, createOpaqueToken, hashAccessCode, hashRequesterIp, hashSession, hashToken,
   isOpaqueToken, normalizeContact, type ContactChannel, type NormalizedContact,
@@ -258,14 +258,14 @@ export async function requestAccessCode(input: Readonly<{ token?: unknown; conta
     }
   }
   if (!identityId || !contact) {
-    // Nothing to send to. The per-IP ceiling still applies to an unknown contact (identity_limit 0 stops the call before any row is written), so an enumeration is throttled like a real request and answered the same.
-    if (ipHash) {
-      const recent = await store.rpc<{ code_id: string | null; refused: string | null }>("case_access_code_issue", {
-        target_identity: null, target_token: null, target_code_hash: "0".repeat(64), target_ttl_seconds: 1, target_max_attempts: 1, target_ip_hash: ipHash,
-        identity_limit: 0, identity_window_seconds: 1, ip_limit: offer.request_limit_per_ip, ip_window_seconds: offer.request_window_minutes * 60,
-      }).catch(() => [] as ReadonlyArray<{ code_id: string | null; refused: string | null }>);
-      if (recent[0]?.refused === "ip_rate_limited") return { ...accepted, refused: "ip_rate_limited" };
-    }
+    // Nothing to send to. The request is still written to the ledger and the per-IP ceiling still applies, so an
+    // enumeration pays the same price as a real request and is answered the same (refused 'unknown_identity' inside).
+    const noted = (await store.rpc<{ code_id: string | null; refused: string | null }>("case_access_code_issue", {
+      target_identity: null, target_token: null, target_code_hash: "0".repeat(64), target_ttl_seconds: offer.code_ttl_minutes * 60, target_max_attempts: offer.code_max_attempts, target_ip_hash: ipHash,
+      identity_limit: offer.request_limit_per_identity, identity_window_seconds: offer.request_window_minutes * 60,
+      ip_limit: offer.request_limit_per_ip, ip_window_seconds: offer.request_window_minutes * 60,
+    }))[0];
+    if (noted?.refused === "ip_rate_limited") return { ...accepted, refused: "ip_rate_limited" };
     return accepted;
   }
   const code = createAccessCode();
