@@ -39,10 +39,10 @@ import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "n
 import path from "node:path";
 
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
+import { TENANT as REFERENCE_TENANT } from "./pool-p-parameter-import.mts";
 import { SYNTHETIC_PROOF_TENANT } from "./reviewer-registration.mts";
 
 const RECEIPT_ROOT = path.join("output", "next", "pool-p");
-const REFERENCE_TENANT = "legal.reference.il";
 const SYSTEM_SID = "session.legal.reference.system-import";
 const SCRIPT_ROOTS = ["scripts/legal-review-projection", "scripts/dev-runtime", "scripts/shadow"];
 const sha256 = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
