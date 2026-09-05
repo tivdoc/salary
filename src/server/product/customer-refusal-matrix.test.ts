@@ -17,6 +17,7 @@ import { readOfflineShadowFlags } from "../engine/shadow/flags.ts";
 import { OfflineShadowControlPlane } from "../engine/shadow/control-plane.ts";
 import { buildSyntheticShadowDefinition, SyntheticMechanicsShadowEvaluator } from "../engine/shadow/synthetic-fixtures.ts";
 import { installClosedProductionRuntime } from "../platform/capabilities/closed-production-runtime.ts";
+import { routeAssignmentOf } from "../platform/capabilities/route-split.ts";
 import { resetStableEntrypointRuntimeForTests, resolveStableEntrypointRuntime } from "../platform/capabilities/stable-entrypoint-runtime.ts";
 import { buildSystemCapabilityProjection, SYSTEM_CAPABILITY_SCHEMA_VERSION } from "../platform/capabilities/system-capabilities.ts";
 import { LocalRuntimePrivateBlobProvider } from "../platform/storage/local-runtime/private-blob-provider.ts";
@@ -83,11 +84,25 @@ function closedRuntimeDecision(entrypointId: string, blocker: string): string {
 
 const MATRIX: readonly Row[] = [
   // --- Routes: under the closed production runtime every customer dispatcher is BLOCK with the product's 404; without any runtime, fail-closed.
+  // L9-4 / D3: these thirteen are the product half — what main serves — and
+  // under the closed runtime they are served as main serves them. Customer
+  // payslip data enters the PRODUCT's own store through them today, as it
+  // does on tivdoc.com; it reaches no legal computation. What refuses here is
+  // the boundary: the route's module imports nothing from the engine, and no
+  // capability is enabled for it to reach one.
   ...CUSTOMER_ROUTES.map(([id, method, route]): Row => ({
-    id: `route.${id}`, kind: "route", surface: `${method} ${route}`,
-    would_have_to_change: "A runtime that enables customer_processing (and delivery for payments) would have to be installed; the closed production projection enables nothing.",
-    refuses: () => closedRuntimeDecision(id, "CUSTOMER_PROCESSING_DISABLED"),
-    expected: "BLOCK:CUSTOMER_PROCESSING_DISABLED:404",
+    id: `route.${id}`, kind: "route", surface: `${method} ${route} (product half, served as main)`,
+    would_have_to_change: "The route's module would have to import the engine (it imports nothing from it) and a capability would have to be enabled for it (the closed projection enables none); the split would have to be edited to move it.",
+    refuses: () => {
+      resetStableEntrypointRuntimeForTests();
+      const runtime = installClosedProductionRuntime();
+      const decision = runtime.evaluate(id);
+      const file = routeAssignmentOf(id)?.route_file ?? "";
+      const enginePattern = /from\s+"(?:@\/server\/engine|@\/engine|@\/server\/product\/(?:operations|portal|internal-ops|legal|durable-governance)|\.\.\/.*(?:legal|shadow|operations|portal|ground-truth))/u;
+      const engineImport = enginePattern.test(readFileSync(file, "utf8"));
+      return `${decision.outcome}:${decision.external_reason_codes.join(",")}:${runtime.projection.enabled_capabilities.length}:${engineImport ? "engine-import" : "no-engine-import"}`;
+    },
+    expected: "ALLOW:SERVED_AS_MAIN:0:no-engine-import",
   })),
   ...LEGAL_ROUTES.map(([id, route]): Row => ({
     id: `route.${id}`, kind: "route", surface: route,

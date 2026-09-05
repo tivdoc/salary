@@ -9,6 +9,7 @@ import { guardStableHttpEntrypoint } from "./stable-http-entrypoint.ts";
 import { STABLE_PRODUCT_DISPATCHER_ROOTS, isCapabilityBlockedError, resetStableEntrypointRuntimeForTests, resolveStableEntrypointRuntime } from "./stable-entrypoint-runtime.ts";
 import { PRODUCTION_LEGAL_ENGINE_CLOSED, SYSTEM_CAPABILITY_SCHEMA_VERSION, buildClosedProductionCapabilityProjection, buildSystemCapabilityProjection, systemCapabilityNameSchema } from "./system-capabilities.ts";
 import { refusedEntrypoint } from "../../product/routes/http-common.ts";
+import { engineAssignments, productAssignments } from "./route-split.ts";
 
 afterEach(() => resetStableEntrypointRuntimeForTests());
 
@@ -34,15 +35,34 @@ describe("the closed production projection", () => {
     expect(() => buildSystemCapabilityProjection({ schema_version: SYSTEM_CAPABILITY_SCHEMA_VERSION, runtime_mode: "production_closed", execution_scope: "remote_closed", fixture_mode: "none", declarations: {} })).toThrow("CAPABILITY_RUNTIME_MODE_UNSAFE");
   });
 
-  it("allows only the dispatchers that need no capability, and blocks every legal, shadow, portal, operations and customer route", () => {
+  it("serves the product half as main serves it, and blocks every engine dispatcher (L9-4 / D3)", () => {
     const runtime = createClosedProductionRuntime();
-    const allowed = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => runtime.evaluate(entry.entrypoint_id).outcome === "ALLOW").map((entry) => entry.entrypoint_id);
-    expect(allowed).toEqual(["CEP-001", "CEP-008", "CEP-009", "CEP-010", "CEP-011", "CEP-012", "CEP-019", "CEP-078"]);
-    for (const id of ["CEP-006", "CEP-007", "CEP-020", "CEP-021", "CEP-025", "CEP-026", "CEP-013", "CEP-022", "CEP-024"]) {
-      const decision = runtime.evaluate(id);
-      expect(decision.outcome, id).toBe("BLOCK");
-      expect(decision.reason_codes.length, id).toBeGreaterThan(0);
+    const allowed = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => runtime.evaluate(entry.entrypoint_id).outcome === "ALLOW").map((entry) => entry.entrypoint_id).sort();
+    expect(allowed).toEqual(productAssignments().map((entry) => entry.entrypoint_id).sort());
+    for (const entry of productAssignments()) {
+      const decision = runtime.evaluate(entry.entrypoint_id);
+      expect(decision, entry.entrypoint_id).toMatchObject({ outcome: "ALLOW", reason_codes: [], blocked_capabilities: [], external_reason_codes: ["SERVED_AS_MAIN"] });
+      expect(runtime.servesAsMain(entry.entrypoint_id), entry.entrypoint_id).toBe(true);
     }
+    for (const entry of engineAssignments()) {
+      const decision = runtime.evaluate(entry.entrypoint_id);
+      expect(decision.outcome, entry.entrypoint_id).toBe("BLOCK");
+      expect(decision.reason_codes.length, entry.entrypoint_id).toBeGreaterThan(0);
+      expect(runtime.servesAsMain(entry.entrypoint_id), entry.entrypoint_id).toBe(false);
+    }
+    // The registrar and the six branch routes: seven engine dispatchers, twenty product ones, nothing unassigned.
+    expect(engineAssignments()).toHaveLength(7);
+    expect(allowed).toHaveLength(20);
+    // A capability is still enabled nowhere: the product half is served by declaration, not by an enabled capability.
+    expect(runtime.projection.enabled_capabilities).toEqual([]);
+  });
+
+  it("a product dispatcher passes the HTTP guard without a body read or a limit, an engine one is refused with the product 404", async () => {
+    installClosedProductionRuntime();
+    const oversized = new Request("http://127.0.0.1/api/payments/reconcile", { method: "POST", headers: { "content-length": String(10 * 1024 * 1024) }, body: "x" });
+    await expect(guardStableHttpEntrypoint("CEP-024", oversized)).resolves.toMatchObject({ outcome: "ALLOW", external_reason_codes: ["SERVED_AS_MAIN"] });
+    expect(oversized.bodyUsed).toBe(false);
+    await expect(guardStableHttpEntrypoint("CEP-020", new Request("http://127.0.0.1/api/operations/shadow/summary"))).rejects.toThrow("CAPABILITY_ENTRYPOINT_BLOCKED:CEP-020");
   });
 
   it("installs once through the verified path, and a blocked API dispatcher answers the product 404", async () => {

@@ -63,7 +63,11 @@ describe("V0.10.10 product runtime installation gate", () => {
       expect(runtime.projection.enabled_capabilities).toEqual([]);
       expect(runtime.evaluate("CEP-020").outcome).toBe("BLOCK");
       expect(runtime.evaluate("CEP-007").outcome).toBe("BLOCK");
-      expect(runtime.evaluate("CEP-013").outcome).toBe("BLOCK");
+      // L9-4: the product half is served as main serves it; the engine half stays BLOCK.
+      expect(runtime.evaluate("CEP-013")).toMatchObject({ outcome: "ALLOW", external_reason_codes: ["SERVED_AS_MAIN"] });
+      expect(runtime.evaluate("CEP-024")).toMatchObject({ outcome: "ALLOW", external_reason_codes: ["SERVED_AS_MAIN"] });
+      expect(runtime.servesAsMain("CEP-024")).toBe(true);
+      expect(runtime.servesAsMain("CEP-020")).toBe(false);
       expect(runtime.evaluate("CEP-001").outcome).toBe("ALLOW");
       expect(runtime.evaluate("CEP-019").outcome).toBe("ALLOW");
     }

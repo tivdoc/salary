@@ -57,6 +57,13 @@ export type StableEntrypointRuntime = Readonly<{
   evaluate(entrypointId: string): EntrypointCapabilityDecision;
   assert(entrypointId: string): EntrypointCapabilityDecision;
   assertRequest(entrypointId: string, request: Parameters<typeof assertRequestWithinSystemLimits>[0]): EntrypointCapabilityDecision;
+  /**
+   * L9-4 / D3. True for a dispatcher this runtime serves as `main` serves it:
+   * no capability is consulted and no limit is applied, because the route's
+   * own code — the live site's — decides. Only the closed production runtime
+   * declares any; the local runtimes declare none.
+   */
+  servesAsMain(entrypointId: string): boolean;
 }>;
 
 export const STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS: readonly StableEntrypointCapabilityRequirement[] = deepFreeze(
@@ -104,10 +111,16 @@ export function validateStableEntrypointCapabilityRequirements(): readonly strin
   return deepFreeze(issues);
 }
 
+export const SERVED_AS_MAIN = "SERVED_AS_MAIN" as const;
+
 export function createStableEntrypointRuntime(input: Readonly<{
   projection: SystemCapabilityProjection;
   limits?: SystemLimits;
   admission?: BoundedAdmissionController;
+  /** The dispatchers served as `main` serves them (the product half of a closed deployment); absent means none. */
+  served_as_main?: (entrypointId: string) => boolean;
+  /** The dispatchers blocked by declaration whatever they need — the engine half of a closed deployment — with the reason code; absent means none. */
+  blocked_by_declaration?: (entrypointId: string) => string | null;
 }>): StableEntrypointRuntime {
   const issues = validateStableEntrypointCapabilityRequirements();
   if (issues.length > 0) throw new Error(`CAPABILITY_ENTRYPOINT_REGISTRY_INVALID:${issues.join(",")}`);
@@ -115,11 +128,29 @@ export function createStableEntrypointRuntime(input: Readonly<{
   const limits = systemLimitsSchema.parse(input.limits ?? LOCAL_SYSTEM_LIMITS);
   const admission = input.admission ?? new BoundedAdmissionController({ runtime_mode: input.projection.runtime_mode, limits });
 
+  const servesAsMain = (entrypointId: string): boolean => {
+    if (!requirementById.has(entrypointId)) throw new Error(`CAPABILITY_ENTRYPOINT_UNKNOWN:${entrypointId}`);
+    return input.served_as_main?.(entrypointId) === true;
+  };
+
   const evaluate = (entrypointId: string): EntrypointCapabilityDecision => {
     const requirement = requirementById.get(entrypointId);
     if (!requirement) throw new Error(`CAPABILITY_ENTRYPOINT_UNKNOWN:${entrypointId}`);
+    if (servesAsMain(entrypointId)) {
+      return deepFreeze({
+        schema_version: STABLE_ENTRYPOINT_CAPABILITY_SCHEMA_VERSION,
+        entrypoint_id: entrypointId,
+        projection_sha256: input.projection.projection_sha256,
+        outcome: "ALLOW",
+        reason_codes: [],
+        external_reason_codes: [SERVED_AS_MAIN],
+        blocked_capabilities: [],
+      });
+    }
     const blockedCapabilities: SystemCapabilityName[] = [];
     const reasonCodes: string[] = [];
+    const declaredBlock = input.blocked_by_declaration?.(entrypointId) ?? null;
+    if (declaredBlock !== null) reasonCodes.push(declaredBlock);
     for (const capability of requirement.required_capabilities) {
       const declaration = input.projection.capabilities[capability];
       const fixtureAllowed = declaration.state === "test_only"
@@ -162,9 +193,10 @@ export function createStableEntrypointRuntime(input: Readonly<{
     assert,
     assertRequest(entrypointId, request) {
       const decision = assert(entrypointId);
-      assertRequestWithinSystemLimits({ ...request, limits });
+      if (!servesAsMain(entrypointId)) assertRequestWithinSystemLimits({ ...request, limits });
       return decision;
     },
+    servesAsMain,
   });
   createdRuntimes.add(runtime);
   return runtime;

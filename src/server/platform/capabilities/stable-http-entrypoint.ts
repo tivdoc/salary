@@ -27,6 +27,8 @@ export async function guardStableHttpEntrypoint(
 ): Promise<EntrypointCapabilityDecision> {
   const runtime = resolveStableEntrypointRuntime();
   const decision = runtime.assert(entrypointId);
+  // L9-4 / D3: the product half is served as `main` serves it — the route's own code decides, nothing is read here.
+  if (runtime.servesAsMain(entrypointId)) return decision;
   const contentLength = parseContentLength(request.headers.get("content-length"));
   assertRequestWithinSystemLimits({
     limits: runtime.limits,
