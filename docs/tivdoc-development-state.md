@@ -3408,76 +3408,224 @@ HUMAN_GROUND_TRUTH_LOCKED 0.
 | BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation against the pages in package v12 |
 | BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
 
+## Long run 10 — L10-1…L10-6: the last engineering run before the human gates
+
+Deliberately short. The engineering backlog was exhausted at long run 9 —
+the legal track complete to attestation, the shadow on seven topics of
+synthetic months, production and preview closure proven, CI green on GitHub,
+the history on the remote and in a verified bundle. What remained was one
+unexplained number, one decision dossier, and the hygiene that makes a
+months-long human pause safe. No unit was invented to fill a floor.
+
+**L10-1 (D1) — the grant matrix's number has a cause.** Runs 4–8 recorded
+`22 executed, 0 denied, 18 context failures`; run 9 recorded `22 / 0 / 0`;
+this run's first re-run at HEAD, `22 / 0 / 0` again; and the proof file is
+byte-identical between `0d60c0d` and HEAD, so no bisect over it could name a
+commit. The receipts' own timestamps named the cause instead. The operations
+and worker rows install a runtime context against the wave1 projection
+fixture session (`session.projection.wave1` on `tenant.synthetic.001`), which
+`dynamic-matrix.mts` and `project.mts` seed with a one-hour window — and the
+dynamic matrix runs four proofs *after* the grant proof in every freeze. Run
+7's matrix seeded it at 02:08; run 8's grant proof ran at 10:28 and found it
+lapsed (18: every non-identity row); run 8's matrix re-seeded it at 10:30;
+run 9's grant proof ran at 11:16, 46 minutes later, and found it valid (0).
+Environmental and deterministic, never a grant, never a code change: run 9
+was simply the first freeze that started within an hour of the previous one.
+
+The proof now establishes the precondition itself — the same idempotent
+upsert the dynamic matrix performs — and records the session's prior state
+beside it (valid, expired with the seconds since, revoked, absent). Every row
+is classified `executed`, `denied`, `refused_by_precondition` or
+`unexplained`, and any denied, refused or unexplained count above zero fails
+the proof. Proven both ways at this head: with the session valid, 22
+executed (receipt `l101-grant-execution-proof.json`); with the session
+expired on purpose, prior state `expired`, 44 seconds past, 22 executed
+(receipt sha256 `4ad7cebebe6d0b042954f28833ed5a4672b662f10b99752c8982dbbf11d71744`).
+Receipt schema v2.
+
+**L10-2 (D2) — `docs/merge-readiness.md`.** One page: what a merge of this
+branch into `main` would change for the live site (the split, the closed
+projection, the guard on each of `main`'s 20 route files and nothing else,
+four runtime dependencies, the instrumentation trace's 61 tracked files, the
+new workflow, 53 migrations a deploy never applies), what it would not (the
+20 routes answering as `main` answers, 0 mismatches, receipts `98f1066f…`
+here and `635a8cd4…` on GitHub), what a rollback is (`git revert -m 1`;
+`b963844` an ancestor of everything), what stays gated and by what no deploy
+sets, what is not proven, and the three decisions that are the owner's. A
+hash beside every claim.
+
+**L10-3 (D3) — the DEV project's pause.** `cpzrbidxftzqcfeqqusu`, free plan,
+`ACTIVE_HEALTHY` at this head, read through the platform's project API. What
+pausing it would lose: nothing unique. The schema regenerates from the 53
+migrations; the 59 draft versions, the decisions and the selections from the
+Pool P scripts and their cited artifacts; the fixtures and the traces from
+their scripts; and there is no real identity, attestation, active parameter
+or rule to lose. What was *not* in the repository or the bundle was the
+evidence the receipts and the lawyer's copy depend on — `eval/legal-knowledge/`
+and `output/next/` lived on this disk alone. They are one archive now,
+`evidence-19ccf7d-20260905.tar.gz`, sha256
+`ee089bf2361dcb24ca720538dcde6c5776cf94d14647c9434db2f9c477fc18e4`, 982
+members, beside the bundle on OneDrive. The credentials file stays on this
+machine by design and is re-issued on resume.
+
+**L10-4 (D3) — `docs/resume-after-pause.md`, and the bundle refreshed.**
+Six steps a session can follow in November without the run sections: get
+the tree, run what needs nothing, reconnect DEV, regenerate only if reset,
+run the matrix, read the resume point. The bundle at `677ea92`:
+`salary-677ea92-20260905.bundle`, sha256
+`bfb6421af3b8cc8d27cbbd2789032182e020c164f5c60586220a56f827604fb3`, 444
+commits, restore verified by clone and `fsck`, in `output/next/backup/` and
+in the OneDrive backup folder; the digest is in both documents. The commits
+after `677ea92` are this record, the tracker and the freeze.
+
+**L10-5 — Lane B.** Three read-only Haiku agents: the split and the closure
+proof (a product route reaching an engine capability), the CI workflow (a
+step that passes when its command is absent), and the DEV project's state
+(what would be lost). Applied: vitest `passWithNoTests: false` — a run that
+finds no test file cannot pass. Recorded and left: the capability runtime
+imports two pure helpers (`deepFreeze`, `canonicalSha256`) from
+`src/engine/rule-runtime/canonical.ts`, a module with no import but
+`node:crypto` — a boundary crossed by a hash function, not by data; the
+workflow pins actions by major tag; `cancel-in-progress` cancels an earlier
+run of the same ref by design. Every product route was traced to its imports'
+depth and reaches no engine data, tenant, governance function or shadow
+runner; the closure proof cannot pass with a failed server, a missing `main`
+or zero checks. The DEV survey is L10-3.
+
+**L10-6.** This section, the freeze, the ledger, the resume point,
+`output/next/tracker-delta-v45.md` and tracker v45 regenerated in the
+repository. Report v7 and package v12 stand: D1 changed a proof's receipt,
+not one the package carries.
+
+### What the matrix caught at this head
+
+- The 18 context failures: the fixture session's one-hour window against the
+  freeze's proof order (above). The proof seeds what it needs now.
+- The Bash tool's inline `--input-type=module` script could not import a
+  `.mts` module; the fixture-expiry step and the session probe went through
+  files under `output/next/`.
+- A `check` constraint on `product_identity_sessions` refuses an expiry
+  before `valid_after`; the deliberate expiry sets it one second after.
+
+### Lane B, this run
+
+Three agents, one pass each, launched in the first minute (above). One
+finding applied, three recorded, nothing hidden.
+
+## Freeze — long run 10, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`
+at the code head `677ea92` (the receipt names `0dd535c`, the docs
+commit that landed while it ran; no code moved between them), receipt
+`fce28e74c503b239375de6b0b2ab7709177a2c294be3b171551fb016c173eaab`: type check 0 errors; eslint 0 errors, 0 warnings; vitest
+**298/298 files, 2172 passed, 3 skipped, 0 failed**; `next build` compiled; the closure proof over both
+environments **48/48 PASS, identical posture, production build `79b2af5d…`, preview build `dfc69c42…`, receipt `b7894395924ef7c13dc5a4a10b2aafb9ed9ff8fa83621f553c673b8701311bb0`**.
+
+### DEV, as the runtime roles
+
+Chain 53/53, tail `202609020030` — no migration this run. Grant execution
+**22 executed, 0 denied, 0 refused by precondition, 0 unexplained (prior state of the fixture session: valid)** — the receipt's new classes, and the fixture session's prior
+state recorded beside them. Identity negative matrix **8/8**.
+Definer surface **108, ungated 2 (the known bootstrap pair), unexpected 0, reserved-execute 14**. Invalidation effects **10/10**.
+Dynamic matrix **14 checks, 10 supported, 10 passed**. RLS force **65/65 already forced, unforced 0**. Journey **17/17**.
+
+Governance proofs, all by execution: A7-1 guards passed; parameter-decision
+matrix passed; A7-3 withdrawal passed; Q draft-binding passed with every
+slot bound; E3-2/E3-3 supersession and synthetic passed at **seven** legal
+decisions; E3-4 revocation passed; L4-7 session recovery **8/8**; E2-10
+hygiene passed; L5-1 lexicon **9/9**; A7-2 dependency-hash invalidation
+passed. Citation anchors **46 verified, 0 failed, 6 impossible (the superseded rows)**. S-1…S-7: `verify-v010.mts` PASS,
+`shadow/run.mts all` PASS (zero money, zero findings, zero reports).
+
+The draft shadow on DEV is long run 8's `l76.c952e04c` (106 ran, 106
+replayed), report v7 `515aaf3a…` and package v12 `9d96a71a…` unchanged.
+
+Two observations outside this run's scope, unchanged since long run 5: the
+isolated chain-replay runner's stale replay database, and the Wave 2.3
+corpus-trust evidence generator's pre-existing failure.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0, rules active 0,
+attestations 0, visual confirmations 0, customer rows 0, customer payslips
+read 0, real payslips read 0, composites opened 0, openai calls 0, provider
+calls 0, extraction used no, deployments 0, remote production migrations 0,
+findings 0, HUMAN_GROUND_TRUTH_LOCKED 0.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-24 | open, `acquisition_blocked: administrative_source_not_discoverable_on_official_site` | unchanged |
+| BL-25 | open, `visual_verification_required` | seven inferred_visual versions await a person's visual confirmation against the pages in package v12 |
+| BL-16 | open, unchanged | the mis-flagged vacation withdrawal, permanent |
+
+### Backlog
+
+Exhausted. Every unit that does not need a person is done; what remains is
+the human gate the resume point names, and the three decisions in
+`docs/merge-readiness.md`.
+
 ## Resume point
 
-Refreshed at long run 9. Everything before this point is history; this section
-is the only part a resuming session must read to know where things stand.
+Refreshed at long run 10 — the last engineering run before the human gates.
+Everything before this point is history; this section and
+`docs/resume-after-pause.md` are what a resuming session must read.
 
-**Where the work is.** On the remote, for the first time:
-`origin/claude/v0-10-2b-full-parallel` at this run's head, and a git bundle
-of the full history (sha256 `2fd5c3cd…`) in `output/next/backup/` and in the
-OneDrive backup folder. Pools H, D, S, R, E2, E3, L4, L5, L6, L7, L8 and L9
-are closed. Pool P: 34 of 38 targets registered, 2 blocked on an
-administrative source, 2 retired as a decision; 59 draft versions, 7
-superseded, 52 draft, 7 of them inferred_visual. Pool Q: seven drafts, every
-slot bound; fifteen executable specs. Six legal decisions open (one with an
-unbound branch), two withdrawn. The sensitivity report runs seven topics of
-seven and grades every parameter it binds; the offline shadow runs the
-fifteen specs on 54 synthetic payslip months with their population a fact —
-none of it a finding, none of it delivered, no extraction, no provider.
+**Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`),
+in a bundle of every ref at `677ea92` (sha256 `bfb6421a…`, 444 commits,
+restore verified) and in an evidence archive of the git-ignored trees the
+receipts depend on (sha256 `ee089bf2…`), both in `output/next/backup/` and
+the OneDrive backup folder. Pools H, D, S, R, E2, E3, L4, L5, L6, L7, L8, L9
+and L10 are closed; the engineering backlog is exhausted. Pool P: 34 of 38
+targets registered, 2 blocked on an administrative source, 2 retired as a
+decision; 59 draft versions, 7 superseded, 52 draft, 7 inferred_visual.
+Pool Q: seven drafts, every slot bound; fifteen executable specs. Six legal
+decisions open (one with an unbound branch), two withdrawn. The sensitivity
+report (v7) runs seven topics of seven; the offline shadow runs the fifteen
+specs on 54 synthetic months (106 ran, 106 traces replayed) — none of it a
+finding, none delivered, no extraction, no provider.
 
-**What is proven about the live site.** A production build of this branch,
-and a preview build, are closed by construction and serve the product: the
-27 dispatcher roots are split once, as data, into the 20 that `main` serves
-today (served as `main` serves them — no capability consulted, the route's
-own code deciding) and the 7 this branch added (blocked, the product's empty
-404). The closure proof runs over both environments and carries the
-differential against `main`'s own route inventory: the 20 route files
-`main` carries are all product; every product route answers the status
-`main`'s handler answers; every engine route answers 404; no capability is
-enabled anywhere; every script entry point refuses a deployment environment.
-Three properties the project never had at once — on the remote, closed in
-production and preview, able to serve what the live site serves — and none
-of them changes what runs today: tivdoc.com serves `main`. The branch push
-started a Vercel preview deployment on the tivdoc.com project, which the
-platform protects behind its login (every path answers a 302 to it), and
-the CI workflow runs on GitHub (green on the head of this run's code, run 33954823347).
+**What is proven about the live site.** A production build and a preview
+build of this branch are closed by construction and serve the product: 20
+dispatchers served as `main` serves them, 7 engine dispatchers blocked,
+nothing unassigned, no capability enabled; the differential against `main`'s
+own route inventory is 20 routes, 0 mismatches; every script entry point
+refuses a deployment environment; the same proof passes on GitHub's Ubuntu
+runner. The grant matrix is readable again: 22 executed, 0 denied, 0 refused
+by its named precondition, 0 unexplained, whatever its fixture session's
+prior state. `docs/merge-readiness.md` says what a merge into `main` would
+and would not change, with a hash beside every claim. tivdoc.com serves
+`main`.
 
-**What a lawyer could be handed today.** Review package v12 — unchanged by
-this run: dossier, Hebrew runbook, sensitivity report v7 with v6…v1 beside
-it, the Hebrew rendering of v7 in Markdown and PDF, the three cited pages,
-the legal decisions, the draft parameters with their binding hashes, the
-scenario fixtures, 102 executions and 85 replayed traces, the shadow receipt
-(106 cases run, 106 traces replayed), the batch-16 lexicon receipt, and the
-citation anchors.
+**What a lawyer could be handed today.** Review package v12 (manifest
+`9d96a71a…`, 33 files): dossier, Hebrew runbook, sensitivity report v7 with
+v6…v1 beside it, the Hebrew rendering of v7 in Markdown and PDF, the three
+cited pages, the legal decisions, the draft parameters with their binding
+hashes, the scenario fixtures, executions and traces, the shadow receipt,
+summary, comparison and corpus index, the batch-16 lexicon receipt, the
+citation anchors. It is inside the evidence archive.
 
-**The one gate that moves 0/7.** The owner runs `owner-reviewer-identity.mts
-keygen` if they have not, then `register --reviewer-id <their.id>` at a
-keyboard, in an interactive shell, with `TIVDOC_UNATTENDED` unset. Then a labour
-lawyer reads `docs/legal/sensitivity-report.he.md`, confirms the seven visual
-readings against the pages in the package (`visual_confirmed: true` in the
-attestation, or the database refuses), decides the six open questions, and
-attests as the second, independent identity. Nothing engineering-side blocks
-this gate.
+**The human gates, named.**
 
-**Next engineering work, in order — none of it a human gate:**
+1. The owner runs `owner-reviewer-identity.mts keygen` if they have not,
+   then `register --reviewer-id <their.id>` at a keyboard, in an interactive
+   shell, with `TIVDOC_UNATTENDED` unset — after DEV is resumed, never before
+   a pause. Then a labour lawyer reads `docs/legal/sensitivity-report.he.md`,
+   confirms the seven visual readings against the pages in package v12
+   (`visual_confirmed: true` in the attestation, or the database refuses),
+   decides the six open questions, and attests as the second, independent
+   identity. Nothing engineering-side blocks this gate.
+2. The three decisions in `docs/merge-readiness.md`: open the pull request
+   into `main` or not; keep the Vercel project's branch previews on or not;
+   keep the repository public or not.
+3. BL-24: the 10.6.2018 directive on an official host, if the owner's
+   browser session finds one.
 
-1. The pull request from `claude/v0-10-2b-full-parallel` into `main` is
-   the owner's to open, not this branch's: it would put a build on
-   tivdoc.com that serves the product as `main` does and carries the engine
-   closed. Before it, the owner decides whether the preview deployments the
-   Vercel project creates for branch pushes should stay on (they are
-   protected today) and whether the repository should stay public.
-2. BL-24: if the owner's browser session finds the 10.6.2018 directive on an
-   official host, it goes through `legal:sources:acquisition:import` under the
-   registered target and binds at administrative grade as the
-   `administrative` branch of `working_time_daily_threshold`; otherwise the
-   branch stays named and unbound.
-3. The sick-pay total over an absence needs the day-one rate the L5-4
-   reading refused to invent; until a reviewer decides day one, the sick delta
-   stays `not_applicable` and says why.
-4. The interim 1.7.2016 pension shares and the precedence slots (1988 order
-   versus 1998 agreement; 2011 versus 2016) are unchanged: open decisions for
-   the reviewer, nothing engineering answers.
-5. The pre-existing corpus-trust generator failure and the stale isolated
-   replay database, unchanged and out of scope.
+**Engineering after the pause.** None is queued. A resuming session follows
+`docs/resume-after-pause.md`: get the tree, run what needs nothing,
+reconnect DEV, regenerate only if the project was reset, run the matrix,
+read this section. The pre-existing corpus-trust generator failure and the
+stale isolated replay database remain out of scope.
