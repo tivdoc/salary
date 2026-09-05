@@ -455,6 +455,21 @@ describe("receipt, request, URL, media and identity binding", () => {
     expect(() => validateArtifactUrlOverride(acquisitionRequest, "https://www.gov.il/other.pdf")).toThrow("artifact_url_override_not_exactly_allowlisted");
   });
 
+  // External review #1, findings 6 and 9. The י"פ 7287 excerpt the reviewer
+  // named sits on a law firm's site and the §18 judgment on court and legal
+  // database sites; none is an official source host, and the controlled path
+  // refuses them by name before any byte is fetched. V5 therefore stays
+  // "partially verified" and the base rule stays unbound until the owner
+  // brings the official record through the path (Reshumot on gov.il).
+  it.each([
+    ["the law firm's excerpt of י\"פ 7287", "https://www.goldfarb.com/wp-content/uploads/2016/06/yalkut-7287.pdf"],
+    ["the court's judgment page", "https://www.gov.il.court-mirror.example/verdicts/38313-03-18.pdf"],
+    ["a legal database's copy", "https://www.nevo.co.il/psika_html/avoda/A-38313-03-18.htm"],
+  ])("refuses %s as a host that is not allowlisted", (_label, url) => {
+    const acquisitionRequest = request(validPdf());
+    expect(() => validateArtifactUrlOverride(acquisitionRequest, url)).toThrow("artifact_url_override_host_not_allowlisted");
+  });
+
   it("rejects a wrong receipt file selection", async () => {
     const item = await fixture();
     await writeFile(path.join(item.inbox, "alternate.json"), JSON.stringify(receipt(item.bytes)));

@@ -7,6 +7,7 @@ import { branchesOf } from "../shadow/draft-shadow-run.ts";
 import {
   defaultBranchOf,
   OWNER_RECORDED_RESOLUTIONS,
+  BASE_RULES,
   REJECTED_BRANCHES,
   resolutionFor,
   resolutionSha256,
@@ -28,7 +29,7 @@ describe("L11-2 / D2: six owner-recorded resolutions, each a default and nothing
   });
 
   it("lists the retired multiplicative branch once, with its reason, its regression guard and no place in the sensitivity set", () => {
-    expect(REJECTED_BRANCHES).toEqual([expect.objectContaining({ decision_id: "legal.reference.il.decision.rest_day_overtime_composition", branch: "multiplicative", reason: "no source of any grade supports it" })]);
+    expect(REJECTED_BRANCHES).toEqual([expect.objectContaining({ decision_id: "legal.reference.il.decision.rest_day_overtime_composition", branch: "multiplicative", reason: "multiplicative — not a separate composition: the fixed contractual premium enters the base of the rest-day and overtime rates under §18 of the Hours of Work and Rest Law (ע\"ע 38313-03-18); the base rule regular_wage_includes_fixed_contractual_premiums carries it" })]);
     expect(SENSITIVITY_SPECS.some((entry) => entry.composition_branch === "multiplicative")).toBe(false);
     expect(SENSITIVITY_SPECS.filter((entry) => entry.decision_id?.endsWith("rest_day_overtime_composition")).map((entry) => entry.composition_branch)).toEqual(["additive"]);
   });
@@ -132,5 +133,19 @@ describe("L11-2 / D2: the default branch — the one thing a resolution changes"
     const cap = DRAFT_SHADOW_SPECS.find((spec) => spec.decision_id?.endsWith("pension_wage_cap_section"))!;
     expect(branchesOf(cap, "primary")).toEqual(["section2"]);
     expect(resolutionFor(cap.decision_id)?.selected_branch).toBe("section2");
+  });
+  // External review #1, finding 6: the base rule under Q4, named and cited, unbound until its judgment is in the corpus.
+  it("registers the §18 base rule as a textual rule with its citation, unbound while the judgment is outside the corpus", () => {
+    expect(BASE_RULES).toHaveLength(1);
+    const rule = BASE_RULES[0]!;
+    expect(rule.rule_id).toBe("regular_wage_includes_fixed_contractual_premiums");
+    expect(rule.decision_id).toBe("legal.reference.il.decision.rest_day_overtime_composition");
+    expect(rule.citation).toEqual({ law: expect.stringContaining("שעות עבודה ומנוחה"), section: "18", judgment: "ע\"ע 38313-03-18", judgment_in_corpus: false });
+    expect(rule.parameter_kind).toBe("textual");
+    expect(rule.parameter_version_id).toBeNull();
+    expect(rule.binding_status).toBe("unbound_source_not_acquirable_through_controlled_path");
+    // The rejected multiplicative branch names the same rule as the reason it is not a separate composition.
+    expect(REJECTED_BRANCHES[0]!.reason).toContain(rule.rule_id);
+    expect(REJECTED_BRANCHES[0]!.reason).toContain("§18");
   });
 });

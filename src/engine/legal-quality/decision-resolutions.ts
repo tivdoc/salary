@@ -93,7 +93,7 @@ export const OWNER_RECORDED_RESOLUTIONS: readonly OwnerRecordedResolution[] = Ob
     selected_branch: "additive",
     opinion_branch_label: "additive",
     mapping_note:
-      "Same name in the opinion and the register. The multiplicative branch is retired (D3.3): kept as a regression fixture, removed from the sensitivity table, listed once under branches examined and rejected — no source of any grade supports it.",
+      "Same name in the opinion and the register. The multiplicative branch is retired (D3.3): kept as a regression fixture, removed from the sensitivity table, listed once under branches examined and rejected — multiplicative — not a separate composition: the fixed contractual premium enters the base of the rest-day and overtime rates under §18 of the Hours of Work and Rest Law (ע\"ע 38313-03-18); the base rule regular_wage_includes_fixed_contractual_premiums carries it.",
   },
   {
     ...common,
@@ -204,9 +204,45 @@ export const REJECTED_BRANCHES: readonly RejectedBranch[] = Object.freeze([
   {
     decision_id: `${DECISION}.rest_day_overtime_composition`,
     branch: "multiplicative",
-    reason: "no source of any grade supports it",
+    reason: "multiplicative — not a separate composition: the fixed contractual premium enters the base of the rest-day and overtime rates under §18 of the Hours of Work and Rest Law (ע\"ע 38313-03-18); the base rule regular_wage_includes_fixed_contractual_premiums carries it",
     retired_in: "run 11 / D3.3, on the lawyer-approved opinion of 5.9.2026 (question 4)",
     regression_guard: "src/engine/legal-quality/working-time-spec.test.ts",
     rule_spec_id: "il.rulespec.working.time.rest.day.overtime.multiplicative",
   },
 ]);
+
+/**
+ * External review #1, finding 6. A base rule the opinion applies without
+ * naming as a parameter: the regular wage that the rest-day and overtime
+ * rates multiply includes a fixed contractual premium (§18 of the Hours of
+ * Work and Rest Law, as read in ע"ע 38313-03-18). It is registered here as a
+ * textual rule with its citation; it becomes a bound textual parameter only
+ * when the judgment enters the corpus through the controlled path — which
+ * refuses the hosts that carry it (court and law-firm sites are not
+ * allowlisted; see controlled-import-security.test.ts, finding 9). Until
+ * then the rule is named, cited and unbound, and the report says so.
+ */
+export type BaseRule = Readonly<{
+  rule_id: string;
+  decision_id: string;
+  statement_he: string;
+  statement_en: string;
+  citation: Readonly<{ law: string; section: string; judgment: string; judgment_in_corpus: false }>;
+  parameter_kind: "textual";
+  parameter_version_id: string | null;
+  binding_status: "unbound_source_not_acquirable_through_controlled_path";
+}>;
+
+export const BASE_RULES: readonly BaseRule[] = Object.freeze([
+  {
+    rule_id: "regular_wage_includes_fixed_contractual_premiums",
+    decision_id: `${DECISION}.rest_day_overtime_composition`,
+    statement_he: "השכר הרגיל שממנו נגזרים תעריפי המנוחה השבועית והשעות הנוספות כולל תוספת חוזית קבועה (סעיף 18 לחוק שעות עבודה ומנוחה; ע\"ע 38313-03-18).",
+    statement_en: "The regular wage from which the rest-day and overtime rates are derived includes a fixed contractual premium (§18 of the Hours of Work and Rest Law; ע\"ע 38313-03-18).",
+    citation: { law: "חוק שעות עבודה ומנוחה, התשי\"א-1951", section: "18", judgment: "ע\"ע 38313-03-18", judgment_in_corpus: false },
+    parameter_kind: "textual",
+    parameter_version_id: null,
+    binding_status: "unbound_source_not_acquirable_through_controlled_path",
+  },
+]);
+
