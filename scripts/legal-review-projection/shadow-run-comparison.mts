@@ -19,6 +19,15 @@
 //      added to the corpus, are listed by name, never folded into "changed".
 //   4. The counters are read from the current receipt: live provider calls 0,
 //      OpenAI calls 0, composites opened 0.
+//   6. External review #1, finding 8: the case ledger. Every month of the
+//      corpus — not only the months a decision compares — is listed once with
+//      what became of each of its executions: a result (the output) or the
+//      refusal reason (the preparation's rejection codes or the executor's
+//      error code). A month with no result anywhere says so. The ledger is
+//      read from the run file beside the receipt (`--current-run`), whose
+//      run id must equal the receipt's, and its month count must equal the
+//      receipt's `counts.cases`. A month the run file names and the ledger
+//      cannot account for fails the run.
 //   5. L12-3 / D3: the default-transition table. For each decision, the branch
 //      the shadow ran as default BEFORE run 11's resolutions (the first listed),
 //      the branch it runs now, the number of months whose outcome differs
@@ -46,6 +55,11 @@ const sha256 = (value: string) => createHash("sha256").update(value, "utf8").dig
 type BranchRow = Readonly<{ branch: string; shadow_id: string | null; status: string; output: Record<string, unknown> | null; delta: string | null; refusal: string | null; retroactive_tag?: string | null }>;
 type CaseRow = Readonly<{ case_id: string; shadow_id: string | null; ran: boolean; comparable: boolean; differs: boolean; by_branch: readonly BranchRow[] }>;
 type DecisionRow = Readonly<{ decision_id: string; branches: readonly string[]; default_branch?: string; default_branch_source?: string; selected_branch?: string | null; selected_branch_bound?: boolean | null; cases: readonly CaseRow[] }>;
+type ExecutionRow = Readonly<{
+  execution_id: string; case_id: string; topic: string; scenario: string; family: string; shadow_id: string; decision_id: string | null; branch: string | null;
+  status: string; rejection_codes: readonly string[]; error_code: string | null; output: Record<string, unknown> | null; delta: string | null;
+}>;
+type RunFile = Readonly<{ run_id: string; counts: Record<string, number>; executions: readonly ExecutionRow[] }>;
 type Receipt = Readonly<{
   run_id: string; receipt_sha256: string; corpus_sha256: string; code_sha256: string;
   counts: Record<string, number>; counters: Record<string, number>; comparison: readonly DecisionRow[];
@@ -55,6 +69,52 @@ type Receipt = Readonly<{
 function argument(name: string, fallback: string): string {
   const index = process.argv.indexOf(name);
   return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback;
+}
+
+/** One line per execution: what the month got — a result, or the reason it got none. */
+function executionOutcome(row: ExecutionRow): Readonly<{ shadow_id: string; branch: string | null; decision_id: string | null; status: string; result: string | null; refusal_reason: string | null }> {
+  const output = row.output;
+  const result = row.status === "ran" && output
+    ? (output.kind === "money" && typeof output.minor_units === "number" ? `${output.currency ?? "ILS"} ${(output.minor_units / 100).toFixed(2)}` : JSON.stringify(output))
+    : null;
+  const refusal = row.status === "ran" ? null
+    : row.status === "preparation_refused" ? `preparation: ${row.rejection_codes.length > 0 ? row.rejection_codes.join(", ") : "unstated"}`
+      : row.status === "executor_refused" ? `executor: ${row.error_code ?? "unstated"}`
+        : `${row.status}: ${row.error_code ?? (row.rejection_codes.join(", ") || "unstated")}`;
+  return { shadow_id: row.shadow_id, branch: row.branch, decision_id: row.decision_id, status: row.status, result, refusal_reason: refusal };
+}
+
+function caseLedger(run: RunFile, receiptCases: number, failures: string[]) {
+  const byCase = new Map<string, ExecutionRow[]>();
+  for (const row of run.executions) byCase.set(row.case_id, [...(byCase.get(row.case_id) ?? []), row]);
+  const months = [...byCase.keys()].sort().map((caseId) => {
+    const rows = byCase.get(caseId) ?? [];
+    const outcomes = rows.map(executionOutcome);
+    const withResult = outcomes.filter((entry) => entry.result !== null).length;
+    const refused = outcomes.filter((entry) => entry.refusal_reason !== null);
+    const reasons = [...new Set(refused.map((entry) => entry.refusal_reason as string))].sort();
+    const outcome = withResult > 0 && refused.length === 0 ? "result" : withResult > 0 ? "result_and_refusals" : "refused";
+    if (outcome !== "result" && reasons.length === 0) failures.push(`case ledger: ${caseId} has no result and no refusal reason`);
+    return {
+      case_id: caseId, topic: rows[0]?.topic ?? null, family: rows[0]?.family ?? null, scenario: rows[0]?.scenario ?? null,
+      executions: outcomes.length, with_result: withResult, refused: refused.length, outcome, refusal_reasons: reasons, by_execution: outcomes,
+    };
+  });
+  if (months.length !== receiptCases) failures.push(`case ledger: ${months.length} months in the run file, ${receiptCases} in the receipt`);
+  if (run.counts.cases !== undefined && run.counts.cases !== months.length) failures.push(`case ledger: run file counts.cases=${run.counts.cases}, months listed ${months.length}`);
+  const reasonTotals: Record<string, number> = {};
+  for (const month of months) for (const entry of month.by_execution) if (entry.refusal_reason) reasonTotals[entry.refusal_reason] = (reasonTotals[entry.refusal_reason] ?? 0) + 1;
+  return {
+    months_total: months.length,
+    months_with_result: months.filter((month) => month.outcome === "result").length,
+    months_with_result_and_refusals: months.filter((month) => month.outcome === "result_and_refusals").length,
+    months_refused_everywhere: months.filter((month) => month.outcome === "refused").length,
+    executions_total: run.executions.length,
+    executions_with_result: months.reduce((sum, month) => sum + month.with_result, 0),
+    executions_refused: months.reduce((sum, month) => sum + month.refused, 0),
+    refusal_reasons: Object.fromEntries(Object.entries(reasonTotals).sort()),
+    months,
+  };
 }
 
 function outputKey(row: BranchRow | undefined): string {
@@ -67,11 +127,15 @@ async function main(): Promise<void> {
   const previousPath = argument("--previous", path.join(RECEIPT_ROOT, "previous-l76.c952e04c", "draft-shadow-receipt-v1.json"));
   const currentPath = argument("--current", path.join(RECEIPT_ROOT, "draft-shadow-receipt-v1.json"));
   const outPath = argument("--out", OUT_DEFAULT);
+  const currentRunPath = argument("--current-run", path.join(path.dirname(currentPath), "draft-shadow-run-v1.json"));
   const previousText = readFileSync(previousPath, "utf8");
   const currentText = readFileSync(currentPath, "utf8");
+  const currentRunText = readFileSync(currentRunPath, "utf8");
   const previous = JSON.parse(previousText) as Receipt;
   const current = JSON.parse(currentText) as Receipt;
+  const currentRun = JSON.parse(currentRunText) as RunFile;
   if (previous.run_id === current.run_id) throw new Error("L116_SAME_RUN");
+  if (currentRun.run_id !== current.run_id) throw new Error(`L116_RUN_FILE_MISMATCH:${currentRun.run_id}!=${current.run_id}`);
   if (current.is_finding !== false || current.delivery_allowed !== false || current.extraction_used !== false) throw new Error("L116_RECEIPT_INVARIANT");
 
   const failures: string[] = [];
@@ -209,6 +273,9 @@ async function main(): Promise<void> {
     if (row.classification === "c" && !row.band_month_present) failures.push(`default moved and nothing changed, no band month: ${row.decision_id}`);
   }
 
+  // 6. External review #1, finding 8: every month, a result or a reason.
+  const ledger = caseLedger(currentRun, current.counts.cases ?? 0, failures);
+
   // 4. The counters.
   const counters = current.counters ?? {};
   for (const [name, expected] of [["live_provider_calls", 0], ["openai_calls", 0], ["customer_payslips_read", 0], ["real_payslips_read", 0], ["findings", 0], ["deliveries", 0], ["active_parameters", 0]] as const) {
@@ -230,7 +297,9 @@ async function main(): Promise<void> {
     unit: "L11-6 / D6",
     previous: { path: previousPath.replaceAll("\\", "/"), run_id: previous.run_id, receipt_sha256: previous.receipt_sha256, file_sha256: sha256(previousText), corpus_sha256: previous.corpus_sha256, code_sha256: previous.code_sha256, counts: previous.counts },
     current: { path: currentPath.replaceAll("\\", "/"), run_id: current.run_id, receipt_sha256: current.receipt_sha256, file_sha256: sha256(currentText), corpus_sha256: current.corpus_sha256, code_sha256: current.code_sha256, counts: current.counts },
-    rule: "every branch present in both runs computes the same output; the default's output moves only where the owner-recorded resolution moved the default branch and the branches differ; added and retired branches and months are listed, not folded; the transition table states, per decision, the pre-resolution default, the new default, and the months whose outcome the move changed",
+    current_run: { path: currentRunPath.replaceAll("\\", "/"), run_id: currentRun.run_id, file_sha256: sha256(currentRunText) },
+    rule: "every branch present in both runs computes the same output; the default's output moves only where the owner-recorded resolution moved the default branch and the branches differ; added and retired branches and months are listed, not folded; the transition table states, per decision, the pre-resolution default, the new default, and the months whose outcome the move changed; every month of the corpus is listed in the case ledger with a result or a refusal reason per execution",
+    case_ledger: ledger,
     transitions,
     totals,
     per_decision: perDecision,
@@ -240,6 +309,8 @@ async function main(): Promise<void> {
   };
   writeFileSync(outPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
   console.log(`L11_6_COMPARISON ${JSON.stringify({ verdict: receipt.verdict, ...totals, failures: failures.length })}`);
+  console.log(`CASE_LEDGER months=${ledger.months_total} result=${ledger.months_with_result} result_and_refusals=${ledger.months_with_result_and_refusals} refused_everywhere=${ledger.months_refused_everywhere} executions=${ledger.executions_total} (${ledger.executions_with_result} results, ${ledger.executions_refused} refusals)`);
+  for (const month of ledger.months) console.log(`  ${month.outcome.padEnd(20)} ${month.case_id} — ${month.with_result}/${month.executions} results${month.refusal_reasons.length > 0 ? `; refused: ${month.refusal_reasons.join(" | ")}` : ""}`);
   for (const row of transitions) console.log(`TRANSITION ${row.decision_id.replace(/^.*decision\./u, "")}: ${row.previous_default_branch} -> ${row.new_default_branch} [${row.classification}] changed=${row.cases_outcome_changed}${row.one_changed_case_id ? ` e.g. ${row.one_changed_case_id}` : ""}${row.band_month ? ` band=${row.band_month}(${row.band_month_outcome_changed ? "changed" : "unchanged"})` : ""}`);
   for (const failure of failures) console.log(`FAIL ${failure}`);
   if (failures.length > 0) process.exitCode = 1;

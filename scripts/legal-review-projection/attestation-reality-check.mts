@@ -52,7 +52,13 @@ function sha256(value: string): string { return createHash("sha256").update(valu
 
 async function seedSystemSession(adminUrl: string): Promise<void> {
   // The same row the import path seeds, for one hour rather than a year: the
-  // read below needs a current session and nothing after it does.
+  // read below needs a current session and nothing after it does. External
+  // review #1, finding 8: the upsert must never SHORTEN the row — this one
+  // did, and every governance proof that ran more than an hour after a Gate
+  // 0 (with no import in between) was refused RUNTIME_CONTEXT_SESSION_NOT_
+  // CURRENT, the S1 matrix's three failures among them (proven in
+  // system-session-lifetime-proof.mts). The expiry keeps the longer of the
+  // two; the validity start keeps the earlier.
   const admin = new pg.Client({ connectionString: adminUrl, connectionTimeoutMillis: 20_000 });
   await admin.connect();
   try {
@@ -65,8 +71,8 @@ async function seedSystemSession(adminUrl: string): Promise<void> {
        ) values ($1,$2,$3,$4,1,to_timestamp($5),to_timestamp($6),null,$8,$7,to_timestamp($5))
        on conflict (tenant_id, sid) do update set
          subject = excluded.subject, session_sha256 = excluded.session_sha256,
-         current_jti = excluded.current_jti, valid_after = excluded.valid_after,
-         expires_at = excluded.expires_at, reviewer_org_id = excluded.reviewer_org_id`,
+         current_jti = excluded.current_jti, valid_after = least(public.product_identity_sessions.valid_after, excluded.valid_after),
+         expires_at = greatest(public.product_identity_sessions.expires_at, excluded.expires_at), reviewer_org_id = excluded.reviewer_org_id`,
       [TENANT, SYSTEM_SESSION.sid, SYSTEM_SESSION.subject, SYSTEM_SESSION.jti, now - 5, now + 3_600,
         sha256(`${TENANT}|${SYSTEM_SESSION.sid}|${SYSTEM_SESSION.subject}|${SYSTEM_SESSION.jti}`), `${TENANT}.no-attestation-placeholder`],
     );
