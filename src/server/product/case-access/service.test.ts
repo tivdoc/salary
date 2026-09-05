@@ -147,7 +147,8 @@ describe("the code challenge and the session (U2)", () => {
     const unknown = await requestAccessCode({ contact: "nobody@example.com", request: requestWithIp("198.51.100.1") }, db);
     expect(unknown).toEqual({ accepted: true, masked_channel: null, masked_to: null, refused: null });
     const known = await requestAccessCode({ contact: "dana.test@example.com", request: requestWithIp("198.51.100.2") }, db);
-    expect(known.accepted).toBe(true);
+    // Lane B: a typed contact — known or not — gets the very same answer; only a link token earns the masked channel.
+    expect(known).toEqual(unknown);
     // Twenty requests from one address are the ceiling; the twenty-first is refused for everyone the same way.
     for (let index = 0; index < 20; index += 1) {
       const result = await requestAccessCode({ contact: "dana.test@example.com", request: requestWithIp("198.51.100.3") }, db);

@@ -13,7 +13,6 @@
 // The database row a send leaves carries the template, the channel, the
 // provider, the outcome and a digest of the payload — never the payload: the
 // token and the code exist in the message and nowhere else.
-import "server-only";
 import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
@@ -82,7 +81,7 @@ export function fileSinkProvider(sinkPath: string): NotificationProvider {
     id: "file_sink",
     async send(message: NotificationMessage) {
       const vercelEnv = process.env.VERCEL_ENV?.toLowerCase();
-      if (vercelEnv === "production" || vercelEnv === "preview") return { ok: false as const, error_code: "sink_refused_on_deployment" };
+      if (process.env.VERCEL === "1" || vercelEnv === "production" || vercelEnv === "preview") return { ok: false as const, error_code: "sink_refused_on_deployment" };
       try {
         mkdirSync(path.dirname(sinkPath), { recursive: true });
         appendFileSync(sinkPath, `${JSON.stringify({ at: new Date().toISOString(), ...message })}\n`, "utf8");

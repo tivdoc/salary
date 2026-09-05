@@ -62,11 +62,14 @@ export function normalizeContact(raw: unknown): NormalizedContact | null {
   return { channel: "phone", normalized: phone, hash: sha256Hex(`phone|${phone}`) };
 }
 
-/** A requester's IP as the rate-limit ledger stores it: hashed with the product secret, never the address. */
-export function hashRequesterIp(request: Request, secret: string): string | null {
+/**
+ * A requester's IP as the rate-limit ledger stores it: hashed with the product secret, never the address. A
+ * request with no forwarding header at all (the platform always sets one; the local runtime does not) shares one
+ * bucket, so the ceiling applies rather than disappearing (Lane B).
+ */
+export function hashRequesterIp(request: Request, secret: string): string {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = forwarded || request.headers.get("x-real-ip")?.trim() || null;
-  if (!ip) return null;
+  const ip = forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
   return sha256Hex(`case-access-ip|${secret}|${ip}`);
 }
 

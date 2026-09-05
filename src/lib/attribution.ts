@@ -50,10 +50,17 @@ export function gaClientIdFromCookie(cookie: string | null) {
   return match?.[1] ?? null;
 }
 
+/** `/case/<22-character token>` becomes `/case/[token]`; a case id (TV-…) is not a secret and stays. */
+export function redactAccessSegments(pathname: string): string {
+  return pathname.replace(/\/case\/[A-Za-z0-9_-]{22}(?=\/|$)/gu, "/case/[token]");
+}
+
 function safeLocation(raw: string) {
   try {
     const url = new URL(raw);
-    return `${url.origin}${url.pathname}`.slice(0, 500);
+    // UX Run 1 (Lane B): a case link opened as a first page view would put its token into the funnel table;
+    // the access segment is redacted before anything is stored.
+    return `${url.origin}${redactAccessSegments(url.pathname)}`.slice(0, 500);
   } catch {
     return "";
   }

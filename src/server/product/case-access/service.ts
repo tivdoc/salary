@@ -276,11 +276,13 @@ export async function requestAccessCode(input: Readonly<{ token?: unknown; conta
     ip_limit: offer.request_limit_per_ip, ip_window_seconds: offer.request_window_minutes * 60,
   }))[0];
   if (issued?.refused === "ip_rate_limited") return { ...accepted, refused: "ip_rate_limited" };
-  if (issued?.refused || !issued?.code_id) return { ...accepted, masked_channel: contact.channel, masked_to: maskContact(contact) };
+  // Lane B: only a link token — possession proven — earns the masked channel; a typed contact never learns whether it exists.
+  const hint = tokenId ? { masked_channel: contact.channel, masked_to: maskContact(contact) } : {};
+  if (issued?.refused || !issued?.code_id) return { ...accepted, ...hint };
   const rendered = renderAccessCode({ code, expiresInMinutes: offer.code_ttl_minutes });
   const outcome = await sendNotification({ template: "access_code", channel: contact.channel, to: contact.normalized, ...rendered });
   await recordNotification(store, { case_id: null, identity_id: identityId, channel: contact.channel, template: "access_code", outcome });
-  return { ...accepted, masked_channel: contact.channel, masked_to: maskContact(contact) };
+  return { ...accepted, ...hint };
 }
 
 /** U2. A code becomes a session. The session is opaque; the store holds its hash. */
@@ -305,11 +307,14 @@ export async function verifyAccessCode(input: Readonly<{ token?: unknown; contac
     if (!found) return { outcome: "invalid" };
     identityId = found.identity_id;
   }
+  const byContact = !isOpaqueToken(input.token);
   const verified = (await store.rpc<{ outcome: "ok" | "invalid" | "expired" | "locked" | "none"; code_id: string | null; token_id: string | null }>("case_access_code_verify", {
     target_identity: identityId, target_code_hash: hashAccessCode(identityId, input.code),
   }))[0];
   if (!verified || verified.outcome !== "ok") {
     const outcome = verified?.outcome;
+    // Lane B: by contact, "no live code" answers like a wrong code, so a known identity without a code is not told apart from an unknown one.
+    if (byContact && (outcome === undefined || outcome === "none")) return { outcome: "invalid" };
     return { outcome: outcome === undefined || outcome === "ok" ? "none" : outcome };
   }
   const offer = productOffer().access;

@@ -50,3 +50,14 @@ describe("enrichFirstTouch", () => {
     });
   });
 });
+
+// UX Run 1 (Lane B): a case link opened as a first page view never puts its token into the funnel table.
+describe("redactAccessSegments", () => {
+  it("replaces a 22-character case link token in the path and leaves a case id alone", async () => {
+    const { redactAccessSegments } = await import("./attribution");
+    expect(redactAccessSegments("/case/kBvqvJ9VFXlrqdoV8gTU7Q")).toBe("/case/[token]");
+    expect(redactAccessSegments("/case/kBvqvJ9VFXlrqdoV8gTU7Q/")).toBe("/case/[token]/");
+    expect(redactAccessSegments("/case/TV-BD42135D")).toBe("/case/TV-BD42135D");
+    expect(redactAccessSegments("/check/upload")).toBe("/check/upload");
+  });
+});
