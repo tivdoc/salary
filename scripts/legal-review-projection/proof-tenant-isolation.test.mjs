@@ -81,6 +81,7 @@ const REASONS = Object.freeze({
   "pool-p-batch-18-havraa-year.mts": "Real draft parameter, the convalescence-year reading of the 2026 rate as its own version and branch.",
   "pool-p-batch-19-rest-day-daily-threshold.mts": "Registers one real open decision on the reference tenant, the rest day's own threshold, with no parameter.",
   "pool-p-batch-20-derived-daily-norm.mts": "Real draft parameters, the derived five-day daily norm (8.6 / 7.6) with its derivation record and assumption slot.",
+  "pool-p-batch-21-regular-wage-base-rule.mts": "One real draft parameter on the reference tenant: the §18 base rule that puts a fixed contractual premium into the regular wage.",
   "pool-p-batch-11-visual.mts": "Real draft parameters, the 1951 premiums read from the page image (inferred_visual).",
   "pool-p-batch-12-composition-decision.mts": "One real open decision, the rest-day overtime composition; no parameters.",
   "pool-p-batch-13-pension-visual.mts":
@@ -108,6 +109,7 @@ const EXPECTED = Object.freeze({
   // L8-8: v7 is v6 rebuilt on the fifteen-spec shadow; reads the catalogue, writes its traces to the proof tenant.
   "decision-sensitivity-run-v7.mts": SYNTHETIC,
   "decision-sensitivity-run-v8.mts": SYNTHETIC,
+  "decision-sensitivity-run-v10.mts": SYNTHETIC,
   "decision-sensitivity-run-v9.mts": SYNTHETIC,
   "draft-shadow-run-v1.mts": REFERENCE,
   "dynamic-matrix.mts": OWN,
@@ -140,6 +142,7 @@ const EXPECTED = Object.freeze({
   "pool-p-batch-18-havraa-year.mts": REFERENCE,
   "pool-p-batch-19-rest-day-daily-threshold.mts": REFERENCE,
   "pool-p-batch-20-derived-daily-norm.mts": REFERENCE,
+  "pool-p-batch-21-regular-wage-base-rule.mts": REFERENCE,
   "pool-p-batch-11-visual.mts": REFERENCE,
   "pool-p-batch-12-composition-decision.mts": REFERENCE,
   "pool-p-batch-13-pension-visual.mts": REFERENCE,

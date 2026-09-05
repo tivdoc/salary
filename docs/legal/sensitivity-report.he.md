@@ -4,7 +4,7 @@
 תרחיש, מה כל אחת מהאפשרויות מחשבת ומה ההפרש ביניהן. שום מספר כאן לא הוקלד
 מחדש: כולם נלקחים מקובץ ה־JSON שממנו נוצר המסמך.
 
-המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v9.json` (`d74c308c4f4e96ee…`).
+המסמך נוצר אוטומטית מ־`decision-sensitivity-report-v10.json` (`f584847f6007ccd8…`).
 כל הנתונים הם סביבת DEV. אין כאן נתוני לקוחות, אין מקור מאושר ואין פרמטר פעיל.
 
 הערות ההנדסה מצוטטות באנגלית כלשונן, בדיוק כפי שהן מופיעות בקובץ המקור.
@@ -37,11 +37,11 @@
 | הכרעה | הענף שנבחר (בלשון חוות הדעת) | בסיס | מעמד |
 |---|---|---|---|
 | `hourly_wage_divisor` | **182** (order_182) | lawyer_approved_opinion | `owner_recorded` |
-| `pension_wage_cap_source` | **section2** (nii_section_2_benefits) | lawyer_approved_opinion | `owner_recorded` |
+| `pension_wage_cap_source` | **section2** (nii_section_2_benefits) | external_review_correction | `owner_recorded` |
 | `pension_2011_2016_precedence` | **order_2016_2017_rates** (overlay) | lawyer_approved_opinion | `owner_recorded` |
 | `rest_day_overtime_composition` | **additive** (additive) | lawyer_approved_opinion | `owner_recorded` |
 | `convalescence_rate_period` | **havraa_year** (havraa_year) | lawyer_approved_opinion | `owner_recorded` |
-| `working_time_daily_threshold` | **administrative** (administrative) | lawyer_approved_opinion | `owner_recorded` |
+| `working_time_daily_threshold` | **conditional_on_schedule** (administrative (the opinion); conditional on the schedule (external review #1)) | external_review_correction | `owner_recorded` |
 
 ---
 
@@ -126,7 +126,7 @@
 
 השאלה הפתוחה מפרידה בין **statute** לבין **administrative**.
 
-ברירת מחדל: **administrative** — נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת. הענף שנבחר בהכרעה: **administrative** (`working_time_daily_threshold`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
+ברירת מחדל: **administrative** — מותנה בסידור העבודה (ביקורת חיצונית #1, גרסה 2 של ההכרעה): ימי העבודה בשבוע ואורך היום הרגיל קובעים את הענף — 8 / 8.6–7.6 / 9; ללא העובדות — סירוב. עד לחיבור עובדות התיק רץ הענף שנבחר בגרסה הקודמת. הענף שנבחר בהכרעה: **conditional_on_schedule** (`working_time_daily_threshold`), מעמד `owner_recorded`, ללא זהות מאשר/ת.
 
 סיווג חומרת הפער: **הפרה סטטוטורית** — התשלום נמוך מהזכאות גם לפי הסכום שבחוק וגם לפי הסכום שבצו ההרחבה; **זכות מכוח צו הרחבה** — הפער קיים רק בין הסכום שבחוק לסכום שבצו ההרחבה (ניתנת לתביעה, אינה נאכפת מנהלית). הסיווג הוא שדה על הממצא ואינו מסתיר ממצא.
 בריצת הצל: `no_gap` — 4; `not_comparable` — 2; `order_entitlement` — 1; `statutory_violation` — 1.
@@ -238,7 +238,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 | מדד | ערך |
 |---|---|
-| ריצה | `l76.6d0667ad` |
+| ריצה | `l76.4e1cc1bb` |
 | מצב ריצה | `draft_parameters_synthetic_inputs` |
 | גרסאות פרמטר בטיוטה שנקשרו | 36 |
 | פרמטרים פעילים | 0 |
@@ -252,7 +252,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 | עקבות שנשמרו / שוחזרו מהמסד | 121 / 121 |
 | חילוץ בשימוש | לא |
 | קורפוס (sha256) | `1c7d48541894642d…` |
-| קבלה (sha256) | `c412d56ca81a443d…` |
+| קבלה (sha256) | `f8fc5077306c7d6f…` |
 
 סירובים לפי סיבה:
 
@@ -273,9 +273,9 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 |---|---|
 | עובדה מוצהרת, או פרמטר בתוך בחירת מסמך (`declared`) | 46 |
 | עובדה נגזרת מעובדות אחרות, או פרמטר נגזר — חישוב על טקסט מצוטט בתוספת הנחה מוצהרת (הסף היומי 8.6 / 7.6) (`derived`) | 5 |
-| עובדה שהפיק סוכן, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 37 |
+| עובדה שהפיק סוכן, עובדה שהמחלץ קרא מהמסמך ואיש לא אישר, או פרמטר שנקרא מתמונת העמוד (`inferred`) | 37 |
 | פרמטר שנקרא דרך הלקסיקון (`lexicon`) | 5 |
-| מאומת — עובדות מתועדות ופרמטרים מאומתים בטקסט (`verified`) | 34 |
+| מאומת — עובדות מתועדות שלא נקראו במכונה, ופרמטרים מאומתים בטקסט (`verified`) | 34 |
 
 השאלות הפתוחות בצל — לכל שאלה, כמה מקרים הושוו בין הענפים וכמה מהם שונים; אף ענף לא התקבל:
 
@@ -294,7 +294,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 | הכרעה | ענף | סיבה | הוצא מהטבלה ב־ |
 |---|---|---|---|
-| `legal.reference.il.decision.rest_day_overtime_composition` | **multiplicative** | no source of any grade supports it | run 11 / D3.3, on the lawyer-approved opinion of 5.9.2026 (question 4) |
+| `legal.reference.il.decision.rest_day_overtime_composition` | **multiplicative** | multiplicative — not a separate composition: the fixed contractual premium enters the base of the rest-day and overtime rates under §18 of the Hours of Work and Rest Law (ע"ע 38313-03-18); the base rule regular_wage_includes_fixed_contractual_premiums carries it | run 11 / D3.3, on the lawyer-approved opinion of 5.9.2026 (question 4) |
 
 ---
 
@@ -311,7 +311,7 @@ inferred_visual: המספר נקרא מתמונת העמוד הסרוק, משו�
 
 ## 12. מעבר ברירות המחדל — מה השתנה בפועל
 
-לכל הכרעה: הענף שרץ כברירת מחדל לפני רישום ההכרעות (הראשון ברשימה), הענף שרץ עכשיו, כמה חודשים סינתטיים שינו את תוצאתם במעבר, ודוגמה אחת. סיווג: a — ברירת המחדל הקודמת כבר הייתה הענף שנבחר; b — הענף השתנה וחודשים השתנו; c — הענף השתנה ואף חודש לא השתנה, ואז נוסף חודש רצועה כדי שההשוואה לא תהיה ריקה. ריצות: `l76.7721fd34` ← `l76.6d0667ad` (PASS).
+לכל הכרעה: הענף שרץ כברירת מחדל לפני רישום ההכרעות (הראשון ברשימה), הענף שרץ עכשיו, כמה חודשים סינתטיים שינו את תוצאתם במעבר, ודוגמה אחת. סיווג: a — ברירת המחדל הקודמת כבר הייתה הענף שנבחר; b — הענף השתנה וחודשים השתנו; c — הענף השתנה ואף חודש לא השתנה, ואז נוסף חודש רצועה כדי שההשוואה לא תהיה ריקה. ריצות: `l76.7721fd34` ← `l76.4e1cc1bb` (PASS).
 
 | הכרעה | ברירת מחדל קודמת | חדשה | חודשים שהשתנו | דוגמה | סיווג | חודש רצועה |
 |---|---|---|---|---|---|---|
