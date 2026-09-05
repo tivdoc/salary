@@ -23,8 +23,21 @@ import { canonicalSha256 } from "../rule-runtime/canonical.ts";
 import { APPROVAL_RECORD_SHA256, APPROVED_ON, LEGAL_OPINION_SHA256 } from "../legal-knowledge/owner-evidence.ts";
 
 export const RESOLUTION_BASIS = "lawyer_approved_opinion" as const;
+/** External review #1, finding 5: the basis a re-recorded revision may carry. */
+export const RESOLUTION_BASIS_EXTERNAL_REVIEW = "external_review_correction" as const;
 export const RESOLUTION_STATUS_OWNER_RECORDED = "owner_recorded" as const;
 export const RESOLUTION_RECORDED_BY = "owner_action" as const;
+/** The errata appendix (docs/legal/errata-external-review-1.he.md), LF-normalised sha256: the evidence a revision-2 resolution rests on. */
+export const ERRATA_EXTERNAL_REVIEW_1_SHA256 = "49b06b078ecdbb6d61e2ad0306a3c7b18e9bf5b3b62e513e001fb8ff3bec77f5" as const;
+/** The owner's instruction as received (external review #1 response, 5.9.2026, section ד' item 5), hashed canonically: no file carries it. */
+export const EXTERNAL_REVIEW_1_INSTRUCTION_SHA256 = canonicalSha256({
+  source: "external review #1 response, 5.9.2026, section ד', item 5",
+  instruction: "re-record working_time_daily_threshold as conditional_on_schedule (applicability facts: days per week, regular day length; known patterns 8 / 8.6-7.6 / 9; otherwise refusal); the previous resolution stays in history with basis superseded_by_external_review_2026-09-05; append-only, never edited",
+  received_as: "chat message; recorded by the engineer as a draft",
+});
+/** The sentinel a resolution selects when the branch depends on the case's schedule facts (finding 5). */
+export const CONDITIONAL_ON_SCHEDULE = "conditional_on_schedule" as const;
+export const SUPERSEDED_BY_EXTERNAL_REVIEW_1 = "superseded_by_external_review_2026-09-05" as const;
 export const LEGAL_DECISION_RESOLUTION_SCHEMA = "tivdoc-legal-decision-resolution-v0" as const;
 
 const DECISION = "legal.reference.il.decision";
@@ -38,14 +51,20 @@ export type OwnerRecordedResolution = Readonly<{
   selected_branch: string;
   /** The branch as the opinion names it. */
   opinion_branch_label: string;
-  basis: typeof RESOLUTION_BASIS;
-  evidence_sha256: typeof LEGAL_OPINION_SHA256;
-  approval_record_sha256: typeof APPROVAL_RECORD_SHA256;
-  approved_on: typeof APPROVED_ON;
+  basis: typeof RESOLUTION_BASIS | typeof RESOLUTION_BASIS_EXTERNAL_REVIEW;
+  evidence_sha256: string;
+  approval_record_sha256: string;
+  approved_on: string;
   approver_identity: null;
   status: typeof RESOLUTION_STATUS_OWNER_RECORDED;
   recorded_by: typeof RESOLUTION_RECORDED_BY;
   mapping_note: string;
+  /** Finding 5: absent or 1 on a first resolution; a re-recording names the revision it supersedes and why. */
+  revision?: number;
+  supersedes_revision?: number;
+  supersession_basis?: string;
+  /** For a conditional selection: the branch that runs until the case's schedule facts are wired in (the superseded selection). */
+  fallback_branch?: string;
 }>;
 
 const common = {
@@ -105,11 +124,40 @@ export const OWNER_RECORDED_RESOLUTIONS: readonly OwnerRecordedResolution[] = Ob
       "The opinion's havraa_year — 451.50 is the rate for the convalescence year 2026, 1.7.2025 to 30.6.2026, known from the order's publication on 18.8.2026 and retroactive — is neither registered branch (calendar_year_2026 at 2026.1.0, from_signature_2026_07 at 2026.2.0). It is a new branch of the same decision, bound in D3.4 to il.convalescence.daily_rate@2026.3.0 beside a rate table keyed by convalescence year with knowledge time; while unbound it is listed as selected and unbound and the first bound branch runs. Both earlier branches stay computed.",
   },
   {
+    // External review #1, finding 5: revision 2. Revision 1 (the opinion's
+    // "administrative") is in RESOLUTION_HISTORY below, untouched.
+    decision_key: "working_time_daily_threshold",
+    decision_id: `${DECISION}.working_time_daily_threshold`,
+    selected_branch: CONDITIONAL_ON_SCHEDULE,
+    opinion_branch_label: "administrative (the opinion); conditional on the schedule (external review #1)",
+    basis: RESOLUTION_BASIS_EXTERNAL_REVIEW,
+    evidence_sha256: ERRATA_EXTERNAL_REVIEW_1_SHA256,
+    approval_record_sha256: EXTERNAL_REVIEW_1_INSTRUCTION_SHA256,
+    approved_on: "2026-09-05",
+    approver_identity: null,
+    status: RESOLUTION_STATUS_OWNER_RECORDED,
+    recorded_by: RESOLUTION_RECORDED_BY,
+    revision: 2,
+    supersedes_revision: 1,
+    supersession_basis: SUPERSEDED_BY_EXTERNAL_REVIEW_1,
+    fallback_branch: "administrative",
+    mapping_note:
+      "Re-recorded after the external review #1 (5.9.2026): the daily overtime threshold is not one branch for every worker but a function of the schedule — the applicability facts are days per week and the regular day's length; known patterns are 8 hours (six-day week, §2(א) of the 1951 law), 8.6 on the regular day and 7.6 on the short day (five-day week under the 2018 42-hour order as the steering committee read it) and 9 hours (a nine-hour pattern, no branch registered); any other schedule, or missing facts, is a refusal rather than a default. Until the case's schedule facts are wired into the comparison, the branch the superseded revision selected (administrative) runs where it is bound and the report says so. Revision 1 stays in history with basis superseded_by_external_review_2026-09-05.",
+  },
+]);
+
+/**
+ * Finding 5: the superseded revisions, exactly as they were recorded. A
+ * superseded row is never edited; its hash is the hash it was stored with.
+ */
+export const RESOLUTION_HISTORY: readonly OwnerRecordedResolution[] = Object.freeze([
+  {
     ...common,
     decision_key: "working_time_daily_threshold",
     decision_id: `${DECISION}.working_time_daily_threshold`,
     selected_branch: "administrative",
     opinion_branch_label: "administrative",
+    revision: 1,
     mapping_note:
       "Same name in the opinion and the register. The branch is unbound (BL-24): its figures — 8.6 hours on four days and 7.6 on the short day of a five-day week, 8 / 7 on a six-day week, weekly threshold 42 with 45 as the statutory floor — come from the 24.4.2018 steering-committee interpretation of the 42-hour order as reported by kolzchut (grade agreement_interpretation after D3.6, not administrative), and no official artifact carries them, so it does not run. The statute branch (8, §2(א) of the 1951 law) stays computed and is the statutory floor.",
   },
@@ -129,7 +177,27 @@ export function resolutionSha256(resolution: OwnerRecordedResolution): string {
     approver_identity: null,
     status: resolution.status,
     recorded_by: resolution.recorded_by,
+    // Finding 5: a re-recorded revision hashes its lineage too; a first revision hashes exactly what it always did.
+    ...((resolution.revision ?? 1) > 1 ? { revision: resolution.revision, supersedes_revision: resolution.supersedes_revision, supersession_basis: resolution.supersession_basis } : {}),
   });
+}
+
+/** Finding 5: the schedule facts a conditional selection needs, and what each known pattern selects. */
+export type ScheduleFacts = Readonly<{ days_per_week: number | null; regular_day_hours: number | null }>;
+export type ConditionalSelection = Readonly<{ branch: string | null; pattern: "8" | "8.6-7.6" | "9" | null; refusal: string | null }>;
+export const CONDITIONAL_SCHEDULE_PATTERNS = Object.freeze([
+  { pattern: "8", days_per_week: 6, regular_day_hours: 8, branch: "statute", note: "six-day week: 8 hours a day, §2(א) of the Hours of Work and Rest Law 1951" },
+  { pattern: "8.6-7.6", days_per_week: 5, regular_day_hours: 8.6, branch: "administrative", note: "five-day week: 8.6 on the regular day and 7.6 on the short day, the 2018 42-hour order as the steering committee read it" },
+  { pattern: "9", days_per_week: 5, regular_day_hours: 9, branch: null, note: "nine-hour pattern: no branch registered; a refusal until one is" },
+] as const);
+
+/** Which branch a conditional selection resolves to for a case, or why it refuses. Pure; the facts come from the case. */
+export function conditionalSelection(facts: ScheduleFacts): ConditionalSelection {
+  if (facts.days_per_week === null || facts.regular_day_hours === null) return { branch: null, pattern: null, refusal: "schedule_facts_missing" };
+  const hit = CONDITIONAL_SCHEDULE_PATTERNS.find((entry) => entry.days_per_week === facts.days_per_week && Math.abs(entry.regular_day_hours - (facts.regular_day_hours ?? 0)) < 0.05);
+  if (!hit) return { branch: null, pattern: null, refusal: `schedule_pattern_unknown:${facts.days_per_week}d/${facts.regular_day_hours}h` };
+  if (hit.branch === null) return { branch: null, pattern: hit.pattern, refusal: `branch_not_registered:${hit.pattern}` };
+  return { branch: hit.branch, pattern: hit.pattern, refusal: null };
 }
 
 export function resolutionFor(decisionId: string | null): OwnerRecordedResolution | null {
@@ -147,7 +215,7 @@ export type BranchShape = Readonly<{
 export type DefaultBranch = Readonly<{
   /** The branch that runs as default: null for a spec with no decision and no named branch. */
   branch: string | null;
-  source: "single" | "first_listed" | "owner_recorded_resolution" | "first_bound_fallback" | "composition_member";
+  source: "single" | "first_listed" | "owner_recorded_resolution" | "first_bound_fallback" | "composition_member" | "conditional_on_schedule";
   /** What the resolution selected, when there is one. */
   selected_branch: string | null;
   /** Whether the selected branch is bound (runs) — null without a resolution. */
@@ -173,6 +241,20 @@ export function defaultBranchOf(spec: BranchShape, options: Readonly<{ compositi
     return { branch: names[0], source: "first_listed", selected_branch: null, selected_bound: null, resolution: null };
   }
   const selected = resolution.selected_branch;
+  // Finding 5: a conditional selection has no single default. The branch the
+  // superseded revision selected runs where it is bound (the first bound
+  // branch otherwise), the source says the default is conditional, and the
+  // case-level selection is conditionalSelection()'s — wired in by the
+  // comparison as the schedule facts become available.
+  if (selected === CONDITIONAL_ON_SCHEDULE) {
+    if (composition !== null && options.composition_branches === undefined) {
+      return { branch: composition, source: "composition_member", selected_branch: selected, selected_bound: null, resolution };
+    }
+    const bound = names.filter((name) => !unbound.includes(name));
+    if (bound.length === 0) throw new Error(`RESOLUTION_NO_BOUND_BRANCH:${spec.decision_id}`);
+    const fallback = resolution.fallback_branch !== undefined && bound.includes(resolution.fallback_branch) ? resolution.fallback_branch : bound[0];
+    return { branch: fallback, source: "conditional_on_schedule", selected_branch: selected, selected_bound: false, resolution };
+  }
   if (names.includes(selected)) return { branch: selected, source: "owner_recorded_resolution", selected_branch: selected, selected_bound: true, resolution };
   // L12-2: a composition member asked on its own (no sibling list) reports its
   // own branch; whether the selected branch is bound is its siblings' business.

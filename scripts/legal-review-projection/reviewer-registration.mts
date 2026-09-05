@@ -83,6 +83,7 @@ export function ownerPrivateKey(pem: string): KeyObject {
  * tenant outright (the A7-1 guard), and because a session is infrastructure
  * rather than an identity claim — the identity claim is the reviewer record.
  */
+// External review #1, finding 8: this upsert never SHORTENS a session (it used to; see system-session-lifetime-proof.mts).
 export async function seedSessions(tenant: string, organizationId: string, sessions: readonly SessionRef[]): Promise<void> {
   const env = readDevEnvFile();
   const adminUrl = env.get("TIVDOC_DEV_DATABASE_URL");
@@ -100,8 +101,8 @@ export async function seedSessions(tenant: string, organizationId: string, sessi
          ) values ($1,$2,$3,$4,1,to_timestamp($5),to_timestamp($6),null,$7,$8,to_timestamp($5))
          on conflict (tenant_id, sid) do update set
            subject = excluded.subject, session_sha256 = excluded.session_sha256,
-           current_jti = excluded.current_jti, valid_after = excluded.valid_after,
-           expires_at = excluded.expires_at, reviewer_org_id = excluded.reviewer_org_id`,
+           current_jti = excluded.current_jti, valid_after = least(public.product_identity_sessions.valid_after, excluded.valid_after),
+           expires_at = greatest(public.product_identity_sessions.expires_at, excluded.expires_at), reviewer_org_id = excluded.reviewer_org_id`,
         [tenant, session.sid, session.subject, session.jti,
           Math.floor(now.getTime() / 1_000) - 5, Math.floor(now.getTime() / 1_000) + 3_600,
           organizationId, sha256(`${tenant}|${session.sid}|${session.subject}|${session.jti}`)],

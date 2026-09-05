@@ -159,6 +159,7 @@ const DEFAULT_SOURCE_HEBREW: Readonly<Record<string, string>> = Object.freeze({
   owner_recorded_resolution: "נרשמה על ידי הבעלים על יסוד חוות הדעת המאושרת",
   first_bound_fallback: "הענף שנבחר בהכרעה אינו קשור למקור ולכן אינו רץ; רץ הענף הקשור הראשון",
   first_listed: "ללא הכרעה רשומה — הענף הראשון ברשימה",
+  conditional_on_schedule: "מותנה בסידור העבודה (ביקורת חיצונית #1, גרסה 2 של ההכרעה): ימי העבודה בשבוע ואורך היום הרגיל קובעים את הענף — 8 / 8.6–7.6 / 9; ללא העובדות — סירוב. עד לחיבור עובדות התיק רץ הענף שנבחר בגרסה הקודמת",
   single: "ענף יחיד",
 });
 const money = (minorUnits: number) => `${(minorUnits / 100).toFixed(2)} ILS`;

@@ -28,7 +28,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import pg from "pg";
-import { OWNER_RECORDED_RESOLUTIONS, resolutionSha256, type OwnerRecordedResolution } from "../../src/engine/legal-quality/decision-resolutions.ts";
+import { OWNER_RECORDED_RESOLUTIONS, RESOLUTION_HISTORY, resolutionSha256, type OwnerRecordedResolution } from "../../src/engine/legal-quality/decision-resolutions.ts";
 import { readDevEnvFile } from "../supabase-dev-guard/dev-credential.mts";
 import { TENANT } from "./pool-p-parameter-import.mts";
 import { seedSessions, SYNTHETIC_PROOF_TENANT } from "./reviewer-registration.mts";
@@ -57,6 +57,8 @@ function payloadOf(resolution: OwnerRecordedResolution, synthetic: boolean): Rec
     mapping_note: resolution.mapping_note,
     resolution_sha256: resolutionSha256(resolution),
     synthetic,
+    // Finding 5: a re-recorded revision names its lineage; a first revision sends none.
+    ...((resolution.revision ?? 1) > 1 ? { supersedes_revision: resolution.supersedes_revision, supersession_basis: resolution.supersession_basis } : {}),
   };
 }
 
@@ -134,6 +136,35 @@ async function main(): Promise<void> {
       record("second_resolution_of_same_decision_refused", false, "accepted");
     } catch (error) {
       record("second_resolution_of_same_decision_refused", refusalOf(error).includes("GOVERNANCE_LEGAL_DECISION_RESOLUTION_EXISTS"), refusalOf(error));
+    }
+    // 3b. Finding 5: a supersession that does not name the latest revision is refused; one without a basis is refused;
+    //     one that names it records as revision 2; after that a bare third resolution is still refused.
+    const revised: OwnerRecordedResolution = { ...fixture, selected_branch: "b", basis: "external_review_correction", revision: 2, supersedes_revision: 1, supersession_basis: "superseded_by_external_review_2026-09-05" };
+    try {
+      await recordResolution(proof.tenant, proof.session, { ...payloadOf(revised, true), supersedes_revision: 3 }, `${fixtureKey}.r2.wrong`, sha256(`resolve-r2-wrong:${fixtureId}`));
+      record("supersession_of_not_latest_refused", false, "accepted");
+    } catch (error) {
+      record("supersession_of_not_latest_refused", refusalOf(error).includes("SUPERSEDES_NOT_LATEST"), refusalOf(error));
+    }
+    try {
+      const withoutBasis = Object.fromEntries(Object.entries(payloadOf(revised, true)).filter(([field]) => field !== "supersession_basis"));
+      await recordResolution(proof.tenant, proof.session, withoutBasis, `${fixtureKey}.r2.nobasis`, sha256(`resolve-r2-nobasis:${fixtureId}`));
+      record("supersession_without_basis_refused", false, "accepted");
+    } catch (error) {
+      record("supersession_without_basis_refused", refusalOf(error).includes("RESOLUTION_INVALID"), refusalOf(error));
+    }
+    try {
+      const result = await recordResolution(proof.tenant, proof.session, payloadOf(revised, true), `${fixtureKey}.r2`, resolutionSha256(revised));
+      const row = result.rows[0] as { state?: string; idempotent_replay?: boolean };
+      record("supersession_records_as_revision_two", row?.state === "owner_recorded" && row.idempotent_replay === false, `state=${row?.state}`);
+    } catch (error) {
+      record("supersession_records_as_revision_two", false, `unexpected refusal ${refusalOf(error)}`);
+    }
+    try {
+      await recordResolution(proof.tenant, proof.session, { ...fixturePayload, selected_branch: "c" }, `${fixtureKey}.third`, sha256(`resolve-third:${fixtureId}`));
+      record("bare_third_resolution_still_refused", false, "accepted");
+    } catch (error) {
+      record("bare_third_resolution_still_refused", refusalOf(error).includes("GOVERNANCE_LEGAL_DECISION_RESOLUTION_EXISTS"), refusalOf(error));
     }
     // 4. A decision that does not exist is refused.
     try {
@@ -230,11 +261,17 @@ async function main(): Promise<void> {
         const decisions = await client.query("select * from private.legal_open_decision_read($1)", [proof.tenant]);
         return { resolutions: resolutions.rows as Array<Record<string, unknown>>, decisions: decisions.rows as Array<Record<string, unknown>> };
       });
-      const mine = rows.resolutions.find((row) => row.decision_id === fixtureId);
+      const revisions = rows.resolutions.filter((row) => row.decision_id === fixtureId).sort((a, b) => Number(a.revision) - Number(b.revision));
+      const mine = revisions.at(-1);
       const decision = rows.decisions.find((row) => row.decision_id === fixtureId);
       record("proof_row_reads_back_owner_recorded_without_approver",
         mine?.status === "owner_recorded" && mine?.approver_identity === null && mine?.synthetic === true,
         `status=${mine?.status} approver=${mine?.approver_identity} synthetic=${mine?.synthetic}`);
+      // Finding 5: both revisions read back, the first untouched, the second naming it.
+      record("proof_revisions_read_back_in_order",
+        revisions.length === 2 && revisions[0]?.revision === 1 && revisions[0]?.selected_branch === "a" && revisions[0]?.supersedes_revision === null
+          && revisions[1]?.revision === 2 && revisions[1]?.selected_branch === "b" && revisions[1]?.supersedes_revision === 1 && revisions[1]?.supersession_basis === "superseded_by_external_review_2026-09-05",
+        revisions.map((row) => `r${String(row.revision)}=${String(row.selected_branch)}<-${String(row.supersedes_revision)}`).join(" "));
       record("resolved_decision_row_stays_open", decision?.resolution_state === "open" && decision?.resolved_branch === null,
         `resolution_state=${decision?.resolution_state} resolved_branch=${decision?.resolved_branch}`);
     } catch (error) {
@@ -246,7 +283,7 @@ async function main(): Promise<void> {
     // -------------------------------------------------------------------
     const recorded: Array<Record<string, unknown>> = [];
     for (const resolution of OWNER_RECORDED_RESOLUTIONS) {
-      const key = `l112.resolution.${resolution.decision_key}`;
+      const key = `l112.resolution.${resolution.decision_key}${(resolution.revision ?? 1) > 1 ? `.r${resolution.revision}` : ""}`;
       try {
         const result = await recordResolution(TENANT, SYSTEM_SESSION, payloadOf(resolution, false), key, resolutionSha256(resolution));
         const row = result.rows[0] as { state?: string; idempotent_replay?: boolean; content_sha256?: string };
@@ -267,9 +304,12 @@ async function main(): Promise<void> {
     });
     const legal = readBack.resolutions.filter((row) => row.synthetic !== true);
     const mismatches: string[] = [];
+    // Finding 5: the registry is the LATEST revision per decision; the history is checked beside it.
+    const latestOf = (decisionId: string) => legal.filter((entry) => entry.decision_id === decisionId).sort((a, b) => Number(b.revision) - Number(a.revision))[0];
     for (const resolution of OWNER_RECORDED_RESOLUTIONS) {
-      const row = legal.find((entry) => entry.decision_id === resolution.decision_id);
+      const row = latestOf(resolution.decision_id);
       if (!row) { mismatches.push(`${resolution.decision_key}:missing`); continue; }
+      if (Number(row.revision) !== (resolution.revision ?? 1)) mismatches.push(`${resolution.decision_key}:revision=${String(row.revision)}`);
       for (const [field, expected] of [
         ["decision_key", resolution.decision_key], ["selected_branch", resolution.selected_branch], ["basis", resolution.basis],
         ["evidence_sha256", resolution.evidence_sha256], ["approval_record_sha256", resolution.approval_record_sha256],
@@ -290,7 +330,17 @@ async function main(): Promise<void> {
     record("six_decision_rows_still_open", mismatches.filter((entry) => entry.includes("decision_")).length === 0, "resolution_state=open, resolved_branch=null for all six");
     const attested = readBack.resolutions.filter((row) => row.status === "attested").length;
     record("attested_is_zero", attested === 0, `attested=${attested}`);
-    record("legal_resolutions_are_six", legal.length === 6, `legal=${legal.length} synthetic=${readBack.resolutions.length - legal.length}`);
+    record("legal_resolutions_are_six", new Set(legal.map((row) => row.decision_id)).size === 6, `decisions=${new Set(legal.map((row) => row.decision_id)).size} rows=${legal.length} synthetic=${readBack.resolutions.length - legal.length}`);
+    // Finding 5: the superseded revision is in history, untouched — same branch, same hash the database stored on 5.9.2026.
+    const historyMismatches: string[] = [];
+    for (const past of RESOLUTION_HISTORY) {
+      const row = legal.find((entry) => entry.decision_id === past.decision_id && Number(entry.revision) === (past.revision ?? 1));
+      if (!row) { historyMismatches.push(`${past.decision_key}:r${past.revision}:missing`); continue; }
+      if (row.selected_branch !== past.selected_branch) historyMismatches.push(`${past.decision_key}:selected_branch=${String(row.selected_branch)}`);
+      if (row.resolution_sha256 !== resolutionSha256(past)) historyMismatches.push(`${past.decision_key}:sha256`);
+      if (row.supersedes_revision !== null) historyMismatches.push(`${past.decision_key}:supersedes=${String(row.supersedes_revision)}`);
+    }
+    record("history_revision_untouched", historyMismatches.length === 0, historyMismatches.join(", ") || `history=${RESOLUTION_HISTORY.length} rows=${legal.length}`);
 
     const failed = results.filter((row) => row.outcome === "fail");
     const receipt = {

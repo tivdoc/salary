@@ -64,12 +64,15 @@ function census(): readonly SeederRow[] {
       const text = readFileSync(file, "utf8");
       if (!text.includes(SYSTEM_SID)) continue;
       const installs = (text.match(/runtime_context_install/gu) ?? []).length;
-      const seeds = (text.match(/insert into public\.product_identity_sessions/gu) ?? []).length;
+      // A seed is the insert itself, or a call to the shared helper (reviewer-registration.mts) whose window is read from the helper.
+      const helperCalls = (text.match(/\bseedSessions\(/gu) ?? []).length;
+      const seeds = (text.match(/insert into public\.product_identity_sessions/gu) ?? []).length + (file.endsWith("reviewer-registration.mts") ? 0 : helperCalls);
       if (seeds === 0) { rows.push({ script: file.replaceAll("\\", "/"), role: installs > 0 ? "consumer" : "names_only", installs, window_seconds: null, never_shortens: null }); continue; }
       // The window: the seconds added to `now` on the seed's expiry argument.
-      const window = /now(?:\s*-\s*5)?,\s*now\s*\+\s*([0-9_]+(?:\s*\*\s*[0-9_]+)*)/u.exec(text);
+      const helper = helperCalls > 0 && !text.includes("insert into public.product_identity_sessions") ? readFileSync("scripts/legal-review-projection/reviewer-registration.mts", "utf8") : text;
+      const window = /now(?:\s*-\s*5)?,\s*now\s*\+\s*([0-9_]+(?:\s*\*\s*[0-9_]+)*)/u.exec(helper) ?? /\/ 1_000\) \+ ([0-9_]+)/u.exec(helper);
       const seconds = window ? window[1].split("*").map((part) => Number(part.replace(/_/gu, "").trim())).reduce((a, b) => a * b, 1) : null;
-      const neverShortens = /expires_at\s*=\s*greatest\(/u.test(text);
+      const neverShortens = /expires_at\s*=\s*greatest\(/u.test(helper);
       rows.push({ script: file.replaceAll("\\", "/"), role: "seeder", installs, window_seconds: seconds, never_shortens: neverShortens });
     }
   }
@@ -92,7 +95,7 @@ async function main(): Promise<void> {
   const rows = census();
   const seeders = rows.filter((row) => row.role === "seeder");
   const consumers = rows.filter((row) => row.role === "consumer");
-  record("census_two_seeders_many_consumers", seeders.length === 2 && consumers.length >= 20,
+  record("census_seeders_and_consumers", seeders.length >= 2 && consumers.length >= 20,
     `seeders=${seeders.map((row) => `${path.basename(row.script)}:${row.window_seconds ?? "?"}s`).join(",")} consumers=${consumers.length}`);
   const shortener = seeders.filter((row) => (row.window_seconds ?? 0) < 3_600 * 24 * 365 && !row.never_shortens);
   record("no_seeder_shortens_the_shared_session", shortener.length === 0,

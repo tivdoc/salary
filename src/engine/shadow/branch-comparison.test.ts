@@ -100,7 +100,8 @@ describe("the branch comparison", () => {
       expect(entry.by_branch.filter((row) => !row.is_default).every((row) => row.difference_from_default !== null)).toBe(true);
     }
     const threshold = comparison.find((entry) => entry.decision_id.endsWith("working_time_daily_threshold"))!;
-    expect(threshold).toMatchObject({ default_branch: "administrative", default_branch_source: "owner_recorded_resolution", selected_branch: "administrative", selected_branch_bound: true });
+    // External review #1, finding 5: the resolution is conditional on the schedule; the superseded selection (administrative) runs as the default until the case facts are wired in, and the source says so.
+    expect(threshold).toMatchObject({ default_branch: "administrative", default_branch_source: "conditional_on_schedule", selected_branch: "conditional_on_schedule", selected_branch_bound: false });
     const composition = comparison.find((entry) => entry.decision_id.endsWith("rest_day_overtime_composition"))!;
     expect(composition.default_branch).toBe("additive");
   });

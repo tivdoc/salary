@@ -8,6 +8,11 @@ import {
   defaultBranchOf,
   OWNER_RECORDED_RESOLUTIONS,
   BASE_RULES,
+  CONDITIONAL_ON_SCHEDULE,
+  ERRATA_EXTERNAL_REVIEW_1_SHA256,
+  EXTERNAL_REVIEW_1_INSTRUCTION_SHA256,
+  RESOLUTION_HISTORY,
+  conditionalSelection,
   REJECTED_BRANCHES,
   resolutionFor,
   resolutionSha256,
@@ -42,15 +47,26 @@ describe("L11-2 / D2: six owner-recorded resolutions, each a default and nothing
         ...(entry.composition_branch ? [entry.composition_branch] : []),
         ...(entry.unbound_branches ?? []).map((entry) => entry.branch),
       ]));
-      expect(known.has(resolution.selected_branch), `${resolution.decision_key} → ${resolution.selected_branch}`).toBe(true);
+      // Finding 5: a conditional selection names no branch itself; its fallback must be one the specs know.
+      const named = resolution.selected_branch === CONDITIONAL_ON_SCHEDULE ? resolution.fallback_branch ?? "" : resolution.selected_branch;
+      expect(known.has(named), `${resolution.decision_key} → ${named}`).toBe(true);
     }
   });
 
   it("rests on the stored evidence by hash, is owner_recorded, and carries no approver", () => {
     for (const resolution of OWNER_RECORDED_RESOLUTIONS) {
-      expect(resolution.basis).toBe("lawyer_approved_opinion");
-      expect(resolution.evidence_sha256).toBe(LEGAL_OPINION_SHA256);
-      expect(resolution.approval_record_sha256).toBe(APPROVAL_RECORD_SHA256);
+      if ((resolution.revision ?? 1) > 1) {
+        // Finding 5: a re-recorded revision rests on the errata appendix and the owner's instruction, and names its lineage.
+        expect(resolution.basis).toBe("external_review_correction");
+        expect(resolution.evidence_sha256).toBe(ERRATA_EXTERNAL_REVIEW_1_SHA256);
+        expect(resolution.approval_record_sha256).toBe(EXTERNAL_REVIEW_1_INSTRUCTION_SHA256);
+        expect(resolution.supersedes_revision).toBe((resolution.revision ?? 1) - 1);
+        expect(resolution.supersession_basis).toBe("superseded_by_external_review_2026-09-05");
+      } else {
+        expect(resolution.basis).toBe("lawyer_approved_opinion");
+        expect(resolution.evidence_sha256).toBe(LEGAL_OPINION_SHA256);
+        expect(resolution.approval_record_sha256).toBe(APPROVAL_RECORD_SHA256);
+      }
       expect(resolution.approved_on).toBe("2026-09-05");
       expect(resolution.status).toBe(RESOLUTION_STATUS_OWNER_RECORDED);
       expect(resolution.approver_identity).toBeNull();
@@ -77,7 +93,9 @@ describe("L11-2 / D2: six owner-recorded resolutions, each a default and nothing
     expect(byKey.rest_day_overtime_composition.selected_branch).toBe("additive");
     expect(byKey.convalescence_rate_period.decision_id).toBe("legal.reference.il.decision.convalescence_2026_rate_period");
     expect(byKey.convalescence_rate_period.selected_branch).toBe("havraa_year");
-    expect(byKey.working_time_daily_threshold.selected_branch).toBe("administrative");
+    expect(byKey.working_time_daily_threshold.selected_branch).toBe("conditional_on_schedule");
+    expect(byKey.working_time_daily_threshold.revision).toBe(2);
+    expect(byKey.working_time_daily_threshold.fallback_branch).toBe("administrative");
   });
 });
 
@@ -98,14 +116,14 @@ describe("L11-2 / D2: the default branch — the one thing a resolution changes"
     const entries = SENSITIVITY_SPECS.filter((entry) => entry.decision_id?.endsWith("working_time_daily_threshold"));
     const siblings = entries.map((entry) => entry.composition_branch).filter((name): name is string => typeof name === "string");
     expect(siblings).toEqual(["statute", "administrative"]);
-    expect(defaultBranchOf(entries[0], { composition_branches: siblings })).toMatchObject({ branch: "administrative", source: "owner_recorded_resolution", selected_branch: "administrative", selected_bound: true });
-    expect(defaultBranchOf(entries[0])).toMatchObject({ branch: "statute", source: "composition_member", selected_branch: "administrative", selected_bound: null });
-    expect(defaultBranchOf(entries[1])).toMatchObject({ branch: "administrative", source: "owner_recorded_resolution", selected_bound: true });
+    expect(defaultBranchOf(entries[0], { composition_branches: siblings })).toMatchObject({ branch: "administrative", source: "conditional_on_schedule", selected_branch: "conditional_on_schedule", selected_bound: false });
+    expect(defaultBranchOf(entries[0])).toMatchObject({ branch: "statute", source: "composition_member", selected_branch: "conditional_on_schedule", selected_bound: null });
+    expect(defaultBranchOf(entries[1])).toMatchObject({ branch: "administrative", source: "composition_member", selected_branch: "conditional_on_schedule", selected_bound: null });
   });
 
   it("runs the first bound branch and says so when the selected branch is named but unbound", () => {
     const shape = { decision_id: "legal.reference.il.decision.working_time_daily_threshold", branches: [["statute", "1951.1.0"]] as ReadonlyArray<readonly [string, string]>, unbound_branches: [{ branch: "administrative", reason: "a shape for the test: the branch named and not bound" }] };
-    expect(defaultBranchOf(shape)).toMatchObject({ branch: "statute", source: "first_bound_fallback", selected_branch: "administrative", selected_bound: false });
+    expect(defaultBranchOf(shape)).toMatchObject({ branch: "statute", source: "conditional_on_schedule", selected_branch: "conditional_on_schedule", selected_bound: false });
   });
 
   it("falls back to the first listed branch only where no resolution exists, and to nothing where there is no decision", () => {
@@ -147,5 +165,34 @@ describe("L11-2 / D2: the default branch — the one thing a resolution changes"
     // The rejected multiplicative branch names the same rule as the reason it is not a separate composition.
     expect(REJECTED_BRANCHES[0]!.reason).toContain(rule.rule_id);
     expect(REJECTED_BRANCHES[0]!.reason).toContain("§18");
+  });
+});
+
+describe("external review #1, finding 5: the daily threshold re-recorded as conditional on the schedule, append-only", () => {
+  it("keeps revision 1 in history exactly as recorded — same selection, same hash fields, never edited", () => {
+    expect(RESOLUTION_HISTORY).toHaveLength(1);
+    const first = RESOLUTION_HISTORY[0]!;
+    expect(first).toMatchObject({ decision_key: "working_time_daily_threshold", selected_branch: "administrative", revision: 1, basis: "lawyer_approved_opinion" });
+    expect(first.supersedes_revision).toBeUndefined();
+    // Its hash is the one the database stored on 5.9.2026: the lineage fields do not enter a first revision's hash.
+    expect(resolutionSha256(first)).toBe(resolutionSha256({ ...first, revision: undefined }));
+  });
+
+  it("hashes a re-recorded revision with its lineage, so two revisions can never share a hash", () => {
+    const latest = OWNER_RECORDED_RESOLUTIONS.find((entry) => entry.decision_key === "working_time_daily_threshold")!;
+    expect(resolutionSha256(latest)).not.toBe(resolutionSha256(RESOLUTION_HISTORY[0]!));
+    expect(resolutionSha256(latest)).not.toBe(resolutionSha256({ ...latest, supersession_basis: "something_else" }));
+    expect(latest.evidence_sha256).toBe(ERRATA_EXTERNAL_REVIEW_1_SHA256);
+    expect(latest.approval_record_sha256).toBe(EXTERNAL_REVIEW_1_INSTRUCTION_SHA256);
+    expect(latest.approval_record_sha256).toMatch(/^[a-f0-9]{64}$/u);
+  });
+
+  it("selects by the schedule facts: 8 for a six-day week, 8.6-7.6 for a five-day week, a refusal for the nine-hour pattern and for missing or unknown facts", () => {
+    expect(conditionalSelection({ days_per_week: 6, regular_day_hours: 8 })).toEqual({ branch: "statute", pattern: "8", refusal: null });
+    expect(conditionalSelection({ days_per_week: 5, regular_day_hours: 8.6 })).toEqual({ branch: "administrative", pattern: "8.6-7.6", refusal: null });
+    expect(conditionalSelection({ days_per_week: 5, regular_day_hours: 9 })).toEqual({ branch: null, pattern: "9", refusal: "branch_not_registered:9" });
+    expect(conditionalSelection({ days_per_week: null, regular_day_hours: 8 })).toEqual({ branch: null, pattern: null, refusal: "schedule_facts_missing" });
+    expect(conditionalSelection({ days_per_week: 4, regular_day_hours: 10 })).toEqual({ branch: null, pattern: null, refusal: "schedule_pattern_unknown:4d/10h" });
+    expect(CONDITIONAL_ON_SCHEDULE).toBe("conditional_on_schedule");
   });
 });
