@@ -6,6 +6,20 @@
 // to run and then rejected its arguments, which is exactly the proof wanted.
 // A missing GRANT is the one thing that cannot be discovered any other way, and
 // it has now shipped twice.
+//
+// L10-1 / D1. Runs 4–8 recorded 18 "context failures" and run 9 recorded 0,
+// with nothing in any commit touching this proof. The receipts' own timestamps
+// gave the cause: the operations and worker rows install a runtime context
+// against the wave1 projection fixture session, which `dynamic-matrix.mts`
+// and `project.mts` seed with a one-hour window — and the dynamic matrix runs
+// four proofs AFTER this one in every freeze. A freeze started more than an
+// hour after the previous one found the session lapsed and counted 18
+// context failures (every non-identity row); run 9 started 46 minutes after
+// run 8's matrix and found it valid. Environmental, deterministic, never a
+// grant. So the proof now establishes its own precondition — the same
+// idempotent upsert the dynamic matrix does, recorded with the session's
+// prior state — and classifies every row: executed, denied, refused by the
+// named precondition, or unexplained. Denied or unexplained above zero fails.
 
 import "../production-refusal.mjs";
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -48,6 +62,10 @@ const COMMANDS = Object.freeze([
   ["identity", "product_session_revoke", "select private.product_session_revoke($1,$2::timestamptz)", [IDENTITY_SID, new Date().toISOString()]],
 ] as const);
 
+const FIXTURE_SESSION = Object.freeze({
+  tenant: TENANT, sid: SESSION_ID, jti: TOKEN_ID, subject: "actor.projection.wave1", organization: "review_org_00001", window_seconds: 3_600,
+});
+
 const URL_FOR: Readonly<Record<string, string>> = Object.freeze({
   operations: "TIVDOC_OPERATIONS_POSTGRES_URL",
   worker: "TIVDOC_WORKER_POSTGRES_URL",
@@ -65,16 +83,73 @@ const ESTABLISH_CONTEXT: Readonly<Record<string, Readonly<{ sql: string; params:
     identity: { sql: "select set_config('tivdoc.tenant_id', $1, true)", params: [TENANT] },
   });
 
+type RowClass = "executed" | "denied" | "refused_by_precondition" | "unexplained";
+
+/** The fixture session's state as found, then as established: the precondition, named. */
+async function establishPrecondition(env: ReturnType<typeof readDevEnvFile>, pg: typeof import("pg")): Promise<Record<string, unknown>> {
+  const { createHash } = await import("node:crypto");
+  const adminUrl = env.get("TIVDOC_DEV_DATABASE_URL");
+  if (!adminUrl) throw new Error("GRANT_PROOF_ENV_MISSING:admin");
+  const admin = new pg.default.Client({ connectionString: adminUrl, connectionTimeoutMillis: 20_000 });
+  await admin.connect();
+  try {
+    await admin.query("select set_config('tivdoc.tenant_id', $1, false)", [FIXTURE_SESSION.tenant]);
+    const before = await admin.query(
+      "select extract(epoch from expires_at)::bigint as expires_at_epoch, revoked_at is not null as revoked from public.product_identity_sessions where tenant_id = $1 and sid = $2",
+      [FIXTURE_SESSION.tenant, FIXTURE_SESSION.sid],
+    );
+    const now = Math.floor(Date.now() / 1_000);
+    const prior = before.rowCount === 0 ? "absent"
+      : before.rows[0].revoked ? "revoked"
+      : Number(before.rows[0].expires_at_epoch) <= now ? "expired" : "valid";
+    const priorExpiry = before.rowCount === 0 ? null : Number(before.rows[0].expires_at_epoch);
+    // The same idempotent upsert the dynamic matrix performs: fixture upkeep on the synthetic tenant, never a governance row.
+    await admin.query(
+      `insert into public.product_identity_sessions(
+         tenant_id, sid, subject, current_jti, rotation_counter, valid_after,
+         expires_at, revoked_at, reviewer_org_id, session_sha256, created_at
+       ) values ($1,$2,$3,$4,1,to_timestamp($5),to_timestamp($6),null,$7,$8,to_timestamp($5))
+       on conflict (tenant_id, sid) do update set
+         current_jti = excluded.current_jti,
+         valid_after = excluded.valid_after,
+         expires_at = excluded.expires_at,
+         revoked_at = null`,
+      [FIXTURE_SESSION.tenant, FIXTURE_SESSION.sid, FIXTURE_SESSION.subject, FIXTURE_SESSION.jti, now - 5, now + FIXTURE_SESSION.window_seconds,
+        FIXTURE_SESSION.organization, createHash("sha256").update(`${FIXTURE_SESSION.tenant}|${FIXTURE_SESSION.sid}|${FIXTURE_SESSION.subject}|${FIXTURE_SESSION.jti}`).digest("hex")],
+    );
+    return {
+      name: "wave1_projection_fixture_session_valid",
+      statement: `runtime_context_install resolves ${FIXTURE_SESSION.sid} on ${FIXTURE_SESSION.tenant}; the session lives ${FIXTURE_SESSION.window_seconds}s from its last seed (dynamic-matrix.mts, project.mts, or this proof)`,
+      prior_state: prior,
+      prior_expires_at_epoch: priorExpiry,
+      seconds_since_prior_expiry: prior === "expired" && priorExpiry !== null ? now - priorExpiry : null,
+      established_at_epoch: now,
+      expires_at_epoch: now + FIXTURE_SESSION.window_seconds,
+    };
+  } finally {
+    await admin.end().catch(() => undefined);
+  }
+}
+
+function classify(row: Readonly<{ sqlstate: string; context_failure: string | null }>): RowClass {
+  if (row.context_failure !== null) return "refused_by_precondition";
+  if (row.sqlstate === "42501") return "denied";
+  // The statement ran: either it succeeded (rolled back) or it rejected its arguments with a validation SQLSTATE.
+  if (row.sqlstate === "none" || /^(P0001|22|23|42883|42P01|42703|0A000)/u.test(row.sqlstate)) return "executed";
+  return "unexplained";
+}
+
 async function main(): Promise<void> {
   mkdirSync(RECEIPT_ROOT, { recursive: true });
   const env = readDevEnvFile();
-  const { default: pg } = await import("pg");
+  const pg = await import("pg");
+  const precondition = await establishPrecondition(env, pg);
   const results: Record<string, unknown>[] = [];
 
   for (const role of Object.keys(URL_FOR)) {
     const connectionString = env.get(URL_FOR[role] as string);
     if (!connectionString) throw new Error(`GRANT_PROOF_ENV_MISSING:${role}`);
-    const client = new pg.Client({ connectionString, connectionTimeoutMillis: 20_000 });
+    const client = new pg.default.Client({ connectionString, connectionTimeoutMillis: 20_000 });
     await client.connect();
     try {
       for (const [commandRole, name, sql, params] of COMMANDS) {
@@ -101,9 +176,11 @@ async function main(): Promise<void> {
           await client.query("rollback").catch(() => undefined);
           sqlstate = String((error as { code?: string }).code ?? "unknown");
         }
+        const row = { role, command: name, sqlstate, context_failure: contextFailure };
         results.push({
-          role, command: name, sqlstate, context_failure: contextFailure,
+          ...row,
           permission_denied: sqlstate === "42501" && contextFailure === null,
+          class: classify(row),
         });
       }
     } finally {
@@ -113,12 +190,23 @@ async function main(): Promise<void> {
 
   const denied = results.filter((row) => row.permission_denied === true);
   const contextFailures = results.filter((row) => row.context_failure !== null);
+  const byClass = (cls: RowClass) => results.filter((row) => row.class === cls);
+  const counts = {
+    executed: byClass("executed").length,
+    denied: byClass("denied").length,
+    refused_by_precondition: byClass("refused_by_precondition").length,
+    unexplained: byClass("unexplained").length,
+  };
   const receipt = Object.freeze({
-    schema_version: "tivdoc-grant-execution-proof-wave1",
+    schema_version: "tivdoc-grant-execution-proof-wave1-v2",
     commands_executed: results.length,
     permission_denied: denied.length,
     context_failures: contextFailures.length,
     context_failure_detail: [...new Set(contextFailures.map((row) => String(row.context_failure)))],
+    // L10-1: every row in exactly one class; the precondition named and established before the rows ran.
+    counts,
+    precondition,
+    unexplained: byClass("unexplained").map((row) => `${row.role}:${row.command}:${row.sqlstate}`),
     denied,
     results,
   });
@@ -126,8 +214,10 @@ async function main(): Promise<void> {
     `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
   process.stdout.write(`executed=${results.length} permission_denied=${denied.length}`
     + ` context_failures=${contextFailures.length}`
+    + ` classes=executed:${counts.executed}/denied:${counts.denied}/refused_by_precondition:${counts.refused_by_precondition}/unexplained:${counts.unexplained}`
+    + ` precondition_prior_state=${String(precondition.prior_state)}`
     + `${denied.length > 0 ? ` ${denied.map((d) => `${d.role}:${d.command}`).join(",")}` : ""}\n`);
-  if (denied.length > 0 || contextFailures.length > 0) process.exitCode = 1;
+  if (counts.denied > 0 || counts.unexplained > 0 || counts.refused_by_precondition > 0) process.exitCode = 1;
 }
 
 await main();

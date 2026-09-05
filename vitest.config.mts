@@ -9,6 +9,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // L10-5 (Lane B): a run that finds no test file must fail, not pass.
+    passWithNoTests: false,
     include: ["src/**/*.test.ts", "scripts/**/*.test.mjs"],
     exclude: [
       ...configDefaults.exclude,
