@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CHAIN_REPLAY_SCHEMA, discoverMigrationFiles, replayMigrationChain } from "./chain-replay.mts";
@@ -31,7 +34,10 @@ describe("V0.10.9 byte-pinned chain replay", () => {
       const pinned = EXPECTED_MIGRATION_SHA256[file.name];
       // The pin must match the bytes on disk under one of the two conventions
       // the repository actually uses; neither matching means the file drifted.
-      expect([file.sha256_raw, file.sha256_lf], file.name).toContain(pinned);
+      // L9-7: a Linux checkout carries LF only; the CRLF convention the pin may
+      // have been taken under is recomputed here so the check is host-neutral.
+      const crlf = createHash("sha256").update(readFileSync(path.join(MIGRATIONS, file.name), "utf8").replaceAll("\r\n", "\n").replaceAll("\n", "\r\n"), "utf8").digest("hex");
+      expect([file.sha256_raw, file.sha256_lf, crlf], file.name).toContain(pinned);
     }
   });
 

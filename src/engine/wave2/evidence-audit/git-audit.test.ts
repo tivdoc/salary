@@ -6,8 +6,9 @@ import {
   generateWave1GitAudit,
   WAVE1_WORKERS,
 } from "./git-audit.ts";
+import { localArtifacts } from "../../../test-support/host.ts";
 
-describe("Wave 1 Git evidence audit", () => {
+describe.skipIf(!(localArtifacts(["C:/dev/tivdoc-wave1-working-time-permits/output/legal-knowledge/wave1-working-time-permits"])).holds)("Wave 1 Git evidence audit", () => {
   // H-2. `generateWave1GitAudit` spawns roughly 90 synchronous `git`
   // subprocesses (per-commit `show`/`diff-tree` for the 9-commit
   // first-parent chain, plus per-worker `show`/`patch-id`/`merge-base`/

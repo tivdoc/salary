@@ -17,7 +17,8 @@ afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe("V0.9.1 trusted Git foundation", () => {
+// L9-7: the V0.9.1 foundation pins the Windows Git toolchain and the working copy's bytes by design; on another host it says so and skips.
+describe.skipIf(process.platform !== "win32")("V0.9.1 trusted Git foundation", () => {
   it("pins the exact Git toolchain and physical repository", () => {
     const receipt = assertTrustedGitRepository(process.cwd());
     expect(receipt).toMatchObject({

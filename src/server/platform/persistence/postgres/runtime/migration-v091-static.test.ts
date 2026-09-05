@@ -13,10 +13,10 @@ describe("V0.9.1 plain-PostgreSQL forward hardening migration", () => {
   it("pins the portability-amended predecessor chain byte-for-byte", () => {
     expect(digest("supabase/migrations/202608290001_engine_persistence_foundation.sql", true))
       .toBe("e4e036fd3c01134a7e449cf50d586d4bf6790c0e00a4f62ad0a898acfec31373");
-    expect(digest("supabase/migrations/202608310001_engine_platform_persistence.sql"))
-      .toBe("74e0615c6375b8cb87da5a09c6a8a29d4e27fe503793b14d767a2199d92c4460");
-    expect(digest("supabase/migrations/202608310002_canonical_postgresql_composition.sql"))
-      .toBe("27e6163ff8e4caf6512925c96bcb8ead398f47da85e152a52beadcbcaad132a2");
+    expect(digest("supabase/migrations/202608310001_engine_platform_persistence.sql", true))
+      .toBe("3174a97ef2b13ca705d8a620f686b470649e6b768421b0a0347816088941cc25");
+    expect(digest("supabase/migrations/202608310002_canonical_postgresql_composition.sql", true))
+      .toBe("bf9100dc11d3f0a73afa93274be72debf348f97dcff122a2237df28c69c759e9");
   });
 
   it("permits canonical metadata backfill without weakening legacy history", () => {
@@ -89,6 +89,7 @@ describe("V0.9.1 plain-PostgreSQL forward hardening migration", () => {
   });
 });
 
+// L9-7: pinned on the repository's bytes (LF, as git stores them), not the working copy's — a Windows checkout carries CRLF and a Linux one does not.
 function digest(relativePath: string, normalizeLineEndings = false): string {
   const bytes = readFileSync(path.resolve(process.cwd(), relativePath));
   const content = normalizeLineEndings ? Buffer.from(bytes.toString("utf8").replace(/\r\n/gu, "\n"), "utf8") : bytes;

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -9,6 +9,7 @@ import {
   type LiveReference,
   type LossRecord,
 } from "./reference-partition.ts";
+import { localArtifacts, resolvePython } from "../../../test-support/host.ts";
 
 const ledger = JSON.parse(readFileSync(path.resolve(
   "src", "engine", "wave23", "evidence-incident", "reference-disposition.v0.10.11.json",
@@ -19,12 +20,9 @@ const losses = JSON.parse(readFileSync(path.resolve(
 ), "utf8")) as { records: LossRecord[] };
 
 function pythonRuntime() {
-  const bundled = process.env.USERPROFILE
-    ? path.join(process.env.USERPROFILE, ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "python", "python.exe")
-    : "";
-  return bundled && existsSync(bundled)
-    ? { command: bundled, prefix: [] as string[] }
-    : { command: "py", prefix: ["-3"] };
+  const runtime = resolvePython();
+  if (!runtime) throw new Error("PYTHON_3_NOT_ON_HOST");
+  return { command: runtime.command, prefix: [...runtime.prefix] };
 }
 
 function runIncidentCommand(command: "diagnostic" | "self-test") {
@@ -40,7 +38,7 @@ function runIncidentCommand(command: "diagnostic" | "self-test") {
   ], { encoding: "utf8", windowsHide: true, timeout: 600_000 });
 }
 
-describe("Wave 2.3 cross-package incident registry", () => {
+describe.skipIf(!(localArtifacts(["output/parallel-wave-2.3/workers/w1-evidence-incident/cross-package-incident-registry.json"])).holds)("Wave 2.3 cross-package incident registry", () => {
   it("freezes all four V0.4.1 mismatches and binds exact historical identities", () => {
     const declaration = JSON.parse(readFileSync(path.resolve(
       "src", "engine", "wave23", "evidence-incident", "incident-declaration.v0.5.0.json",

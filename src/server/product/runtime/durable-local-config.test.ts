@@ -9,6 +9,7 @@ import {
   durableLocalProductRuntimeEnabled,
   readDurableLocalProductRuntimeConfig,
 } from "./durable-local-config.ts";
+import path from "node:path";
 
 const publicKey = generateKeyPairSync("rsa", { modulusLength: 2_048 }).publicKey
   .export({ format: "pem", type: "spki" }).toString();
@@ -93,7 +94,8 @@ describe("durable local product runtime configuration", () => {
     expect(projection.capabilities.shadow).toMatchObject({ state: "blocked", blocker_codes: ["CUSTOMER_SHADOW_NOT_AUTHORIZED"] });
     // L7-8: the offline-shadow summary root is optional and must be absolute; the customer-shadow block above is unrelated to it.
     expect(config.offline_shadow_state_root).toBeNull();
-    expect(readDurableLocalProductRuntimeConfig({ ...env, TIVDOC_OFFLINE_SHADOW_STATE_ROOT: "C:/ignored/shadow/state" }).offline_shadow_state_root).toBe("C:/ignored/shadow/state");
+    const absoluteRoot = path.resolve("/ignored/shadow/state");
+    expect(readDurableLocalProductRuntimeConfig({ ...env, TIVDOC_OFFLINE_SHADOW_STATE_ROOT: absoluteRoot }).offline_shadow_state_root).toBe(absoluteRoot);
     expect(() => readDurableLocalProductRuntimeConfig({ ...env, TIVDOC_OFFLINE_SHADOW_STATE_ROOT: "output/next/shadow/state" })).toThrow("DURABLE_LOCAL_PRODUCT_SHADOW_STATE_ROOT_INVALID");
     expect(buildDurableLocalInternalOpsFlags()).toEqual({
       TIVDOC_INTERNAL_OPS_UI_ENABLED: true,

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -10,7 +10,8 @@ import {
 
 const GRAPH_PATH = "output/product-integration-v0.8.0/reachability/source-import-graph.json";
 
-describe("V0.10.5 scanner finding diagnostic", () => {
+// L9-7: the diagnostic reads the reachability graph the V0.8 integration wrote under output/; absent on a clean checkout, the suite says so and skips.
+describe.skipIf(!existsSync(GRAPH_PATH))("V0.10.5 scanner finding diagnostic", () => {
   it("is diagnostic only and closes nothing", () => {
     const diagnostic = buildScannerFindingDiagnostic([], []);
     expect(diagnostic.schema_version).toBe(SCANNER_FINDING_DIAGNOSTIC_SCHEMA);

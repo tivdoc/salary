@@ -239,11 +239,12 @@ async function runEnvironment(environment: VercelEnvironment): Promise<Environme
     // branch must answer each of main's routes with the status main's own
     // handler answers with when nothing is configured and nothing is sent —
     // never the engine's 404, never 500. The engine half answers 404.
-    const mainTree = spawnSync("git", ["ls-tree", "-r", "main", "--name-only"], { cwd: ROOT, encoding: "utf8" });
+    const mainRef = ["main", "origin/main"].find((candidate) => spawnSync("git", ["rev-parse", "--verify", "--quiet", `${candidate}^{commit}`], { cwd: ROOT, encoding: "utf8" }).status === 0) ?? "main";
+    const mainTree = spawnSync("git", ["ls-tree", "-r", mainRef, "--name-only"], { cwd: ROOT, encoding: "utf8" });
     const mainRouteFiles = (mainTree.stdout ?? "").split(/\r?\n/u).filter((line) => ROUTE_FILE_PATTERN.test(line)).sort();
     const productFiles = productAssignments().map((entry) => entry.route_file).filter((file): file is string => file !== null).sort();
     record("every_route_main_serves_is_product_classified", mainTree.status === 0 && mainRouteFiles.length > 0 && JSON.stringify(mainRouteFiles) === JSON.stringify(productFiles),
-      { main_route_files: mainRouteFiles.length, product_assignments: productFiles.length, only_on_main: mainRouteFiles.filter((file) => !productFiles.includes(file)), only_in_split: productFiles.filter((file) => !mainRouteFiles.includes(file)) });
+      { main_ref: mainRef, main_route_files: mainRouteFiles.length, product_assignments: productFiles.length, only_on_main: mainRouteFiles.filter((file) => !productFiles.includes(file)), only_in_split: productFiles.filter((file) => !mainRouteFiles.includes(file)) });
     const statusClass = (status: number) => `${Math.floor(status / 100)}xx`;
     const productProbes = productAssignments().flatMap((entry) => (entry.probes ?? []).map((probe) => ({ entrypoint_id: entry.entrypoint_id, ...probe })));
     const productResponses = await Promise.all(productProbes.map(async (probe) => {

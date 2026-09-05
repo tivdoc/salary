@@ -8,8 +8,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ROUTE_FILE_PATTERN, ROUTE_SPLIT, engineAssignments, productAssignments, routeHalfOf, unassignedDispatcherRoots } from "./route-split.ts";
 import { STABLE_PRODUCT_DISPATCHER_ROOTS } from "./stable-entrypoint-runtime.ts";
+import { resolveMainRef } from "../../../test-support/host.ts";
 
-const MAIN = "main";
+const MAIN = resolveMainRef();
 
 function routeFilesOf(revision: string): string[] {
   const result = spawnSync("git", ["ls-tree", "-r", revision, "--name-only"], { encoding: "utf8" });

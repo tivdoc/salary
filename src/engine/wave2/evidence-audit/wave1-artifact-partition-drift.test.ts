@@ -8,6 +8,7 @@ import {
   serializeWave1ArtifactPartition,
 } from "./wave1-artifact-partition-builder.ts";
 import { WAVE1_PARTITION_SCOPE_SOURCE_VERSION_IDS } from "./wave1-partition-scope.ts";
+import { localArtifacts } from "../../../test-support/host.ts";
 
 // B-0 drift guard. The committed partition had no builder and no guard: the
 // only way to move it was to edit it, and its own tamper test then failed. Now
@@ -17,7 +18,7 @@ import { WAVE1_PARTITION_SCOPE_SOURCE_VERSION_IDS } from "./wave1-partition-scop
 
 const REPO_ROOT = path.resolve(".");
 
-describe("Wave 1 artifact partition is derived, not hand-edited (B-0)", () => {
+describe.skipIf(!(localArtifacts(["eval/legal-knowledge/manifests/fetch-state.json"])).holds)("Wave 1 artifact partition is derived, not hand-edited (B-0)", () => {
   it("rebuilds byte-identical to the committed file", async () => {
     const rebuilt = serializeWave1ArtifactPartition(await buildWave1ArtifactPartitionDocument(REPO_ROOT));
     const committed = (await readFile(path.join(REPO_ROOT, WAVE1_ARTIFACT_PARTITION_RELATIVE_PATH), "utf8"))

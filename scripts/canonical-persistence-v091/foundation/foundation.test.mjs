@@ -51,7 +51,8 @@ function ownedTarget() {
   });
 }
 
-describe("V0.9.1 dynamic PostgreSQL foundation", () => {
+// L9-7: the V0.9.1 foundation pins the Windows Git toolchain and the working copy's bytes by design; on another host it says so and skips.
+describe.skipIf(process.platform !== "win32")("V0.9.1 dynamic PostgreSQL foundation", () => {
   it("rejects decoded JSON credential forms and provider tokens in evidence", () => {
     expect(() => assertCredentialFreeEvidence('{"note":"postgresql:\\/\\/user:password@127.0.0.1/test"}'))
       .toThrow("DYNAMIC_EVIDENCE_CREDENTIAL_PATTERN_REJECTED");

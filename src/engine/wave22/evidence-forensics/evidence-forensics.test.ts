@@ -1,16 +1,16 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { pythonHost, resolvePython } from "../../../test-support/host.ts";
 
 function python() {
-  const bundled = process.env.USERPROFILE
-    ? path.join(process.env.USERPROFILE, ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "python", "python.exe")
-    : "";
-  return bundled && existsSync(bundled) ? { command: bundled, prefix: [] as string[] } : { command: "py", prefix: ["-3"] };
+  const runtime = resolvePython();
+  if (!runtime) throw new Error("PYTHON_3_NOT_ON_HOST");
+  return { command: runtime.command, prefix: [...runtime.prefix] };
 }
 
-describe("Wave 2.2 immutable V0.4 erratum", () => {
+describe.skipIf(!(pythonHost()).holds)("Wave 2.2 immutable V0.4 erratum", () => {
   it("freezes all 11 original references and keeps unrecovered claims failed", () => {
     const declaration = JSON.parse(readFileSync(path.resolve(
       "src", "engine", "wave22", "evidence-forensics", "v0.4-erratum.v0.4.2.json",

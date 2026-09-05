@@ -5,8 +5,9 @@ import { dirname } from "node:path";
 import { pendingDependencies, NO_ELIGIBLE_PUBLIC_FIXTURE } from "./dependency-seams";
 import { assertP8ReadyReceipt, runP8ReadyIntegration } from "./ready-integration";
 import { createP8Harness, opsEnvelope, opsRequest, verifiedSyntheticActor } from "./ready-harness";
+import { localArtifacts } from "../../../test-support/host.ts";
 
-describe("V0.7 P8 ready integration", () => {
+describe.skipIf(!(localArtifacts(["eval/legal-knowledge/manifests/build-state.json"])).holds)("V0.7 P8 ready integration", () => {
   it("runs actual P1-P7 and canonical CaseAnalysis services with declared external skips", async () => {
     const receipt = await runP8ReadyIntegration();
     assertP8ReadyReceipt(receipt);

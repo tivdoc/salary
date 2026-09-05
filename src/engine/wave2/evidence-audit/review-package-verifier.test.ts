@@ -1,17 +1,16 @@
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { WAVE1_REVIEW_ZIP_SHA256 } from "./common.ts";
+import { localArtifacts, resolvePython } from "../../../test-support/host.ts";
 
 function pythonExecutable() {
-  const bundled = process.env.USERPROFILE
-    ? path.join(process.env.USERPROFILE, ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "python", "python.exe")
-    : "";
-  return bundled && existsSync(bundled) ? bundled : "py";
+  const runtime = resolvePython();
+  if (!runtime) throw new Error("PYTHON_3_NOT_ON_HOST");
+  return runtime.prefix.length > 0 ? "py" : runtime.command;
 }
 
-describe("Wave 1 V0.3 review-package verifier", () => {
+describe.skipIf(!(localArtifacts(["C:/dev/tivdoc/salary/output/parallel-wave-1/review-package-v0.3.zip"])).holds)("Wave 1 V0.3 review-package verifier", () => {
   it("rebuilds twice and rejects corrupt, stale, interrupted and unsafe variants", () => {
     const script = path.resolve("scripts", "wave2-evidence-audit", "review_package_verifier.py");
     const source = "C:\\dev\\tivdoc\\salary\\output\\parallel-wave-1\\review-package-v0.3.zip";

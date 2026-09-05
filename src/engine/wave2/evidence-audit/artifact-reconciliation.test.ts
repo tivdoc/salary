@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildWave1ArtifactReconciliation } from "./artifact-reconciliation.ts";
+import { localArtifacts } from "../../../test-support/host.ts";
 
 const RECONCILIATION_PATHS = {
   repo_root: path.resolve("."),
@@ -10,7 +11,7 @@ const RECONCILIATION_PATHS = {
   source_pack_root: "C:\\dev\\tivdoc-wave1-working-time-permits\\output\\legal-knowledge\\wave1-working-time-permits",
 } as const;
 
-describe("Wave 1 artifact reconciliation", () => {
+describe.skipIf(!(localArtifacts(["C:/dev/tivdoc-wave1-working-time-permits/output/legal-knowledge/wave1-working-time-permits"])).holds)("Wave 1 artifact reconciliation", () => {
   it("reconciles source-pack, corpus, quarantine and ledger counts without conflation", async () => {
     const report = await buildWave1ArtifactReconciliation(RECONCILIATION_PATHS);
     expect(report.count_meaning).toMatchObject({
