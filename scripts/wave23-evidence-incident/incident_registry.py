@@ -244,21 +244,29 @@ def known_recovered_candidates(
     claimed_count: int,
     historical_blob_oid: str,
 ) -> list[dict[str, Any]]:
+    # L8-1 changed every script entry point in the live working tree (the
+    # production-environment guard is its first import), so a reference whose
+    # exact bytes were, until then, the live file itself is no longer
+    # recoverable from a worktree. V0.10.11 preserved those bytes in the
+    # repository under a digest-verified manifest; that preservation is a
+    # recovery source here, validated exactly like the others.
     roots = [
-        historical_root / "output/parallel-wave-2.2/workers/w1-evidence-forensics/recovered-bytes",
-        historical_root / "output/parallel-wave-2.2/workers/w1-integration-verification/recovered-bytes",
+        (historical_root / "output/parallel-wave-2.2/workers/w1-evidence-forensics/recovered-bytes", "*.recovered.bin", False),
+        (historical_root / "output/parallel-wave-2.2/workers/w1-integration-verification/recovered-bytes", "*.recovered.bin", False),
+        (repo / "src/engine/wave23/evidence-incident/preserved-bytes", "*.preserved.bin", True),
     ]
     values = []
-    for root in roots:
+    for root, pattern, preserved in roots:
         if not root.is_dir():
             continue
-        for candidate in sorted(root.rglob("*.recovered.bin")):
+        for candidate in sorted(root.rglob(pattern)):
             data = candidate.read_bytes()
             if len(data) != claimed_count or sha256(data) != claimed_sha:
                 continue
             normalized = run(repo, ["hash-object", f"--path={relative}", "--stdin"], data).stdout.decode().strip()
             values.append({
                 "path": str(candidate),
+                "preserved_v0_10_11": preserved,
                 "sha256": sha256(data),
                 "byte_count": len(data),
                 "git_clean_filter_blob_oid": normalized,
