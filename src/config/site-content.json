@@ -1,0 +1,16 @@
+{
+  "schema_version": "tivdoc-site-content-v1",
+  "note": "Site S5 (D-11, brief §4). Every section of the home page that needs an asset or real data reads its slot here. A slot that is null renders NOTHING — the section is omitted, not filled with a placeholder, and not filled by the model. Filling a slot turns its section on with no code change. docs/design/assets-needed.md says exactly what each slot needs.",
+  "assets": {
+    "founder_photo": null,
+    "video": null,
+    "video_poster": null,
+    "payroll_controller_photo": null,
+    "checks_illustration": null
+  },
+  "content": {
+    "story": null,
+    "testimonials": [],
+    "proof_strip": null
+  }
+}

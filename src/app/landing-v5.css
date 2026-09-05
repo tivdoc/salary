@@ -1,0 +1,407 @@
+/* Site S5 — the home page, direction B, from design/landing-v5 (canvas read as
+   reference; no markup copied). Everything here is scoped under `.v5` so the
+   funnel, the case screens and /operations keep the design they already have —
+   this wave redesigns the home page, not the product. */
+
+.v5 {
+  color-scheme: light;
+  --v5-navy: #00236a;
+  --v5-navy-deep: #101b33;
+  --v5-teal: #12b5a8;
+  --v5-teal-soft: #7fd9d0;
+  --v5-teal-wash: #e6f7f5;
+  --v5-amber: #f0b429;
+  --v5-slate: #5c6780;
+  --v5-slate-deep: #3e4a66;
+  --v5-line: #e4e8ef;
+  --v5-line-strong: #c9d3ea;
+  --v5-wash: #f7f8fa;
+  --v5-white: #ffffff;
+  --v5-radius: 14px;
+  background: var(--v5-white);
+  color: var(--v5-navy-deep);
+  font-family: var(--font-body), var(--font-sans), Arial, sans-serif;
+}
+
+.v5 h1,
+.v5 h2,
+.v5 h3,
+.v5 .v5-plan__price {
+  font-family: var(--font-display), var(--font-body), var(--font-sans), Arial, sans-serif;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.v5-shell {
+  width: min(1160px, calc(100% - 2.5rem));
+  margin-inline: auto;
+}
+
+.v5-section-title {
+  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.5rem);
+  margin-bottom: 1.5rem;
+}
+
+.v5 section {
+  padding-block: clamp(3rem, 2rem + 4vw, 5.5rem);
+}
+
+.v5-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- hero ------------------------------------------------------------- */
+
+.v5-hero {
+  background: var(--v5-navy);
+  color: var(--v5-white);
+}
+
+.v5-hero__grid {
+  display: grid;
+  gap: clamp(2rem, 1rem + 4vw, 3.5rem);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .v5-hero__grid { grid-template-columns: 1.05fr 0.95fr; }
+}
+
+.v5-hero h1 { font-size: clamp(2.3rem, 1.5rem + 3.6vw, 4rem); }
+
+.v5-hero__lede {
+  color: #dbe4f6;
+  font-size: clamp(1.02rem, 0.95rem + 0.4vw, 1.2rem);
+  max-width: 34rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.v5-hero__second-product {
+  color: #c9d3ea;
+  font-size: 0.92rem;
+  max-width: 34rem;
+  margin-top: 1.25rem;
+}
+
+.v5 .v5-cta {
+  background: var(--v5-teal);
+  border-color: var(--v5-teal);
+  color: #04302c;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.v5 .v5-cta:hover,
+.v5 .v5-cta:focus-visible {
+  background: var(--v5-teal-soft);
+  border-color: var(--v5-teal-soft);
+}
+
+/* the report frame that stands in for the canvas's photograph of a person */
+
+.v5-hero__visual { margin: 0; }
+
+.v5-report {
+  background: var(--v5-white);
+  border-radius: var(--v5-radius);
+  color: var(--v5-navy-deep);
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 20, 60, 0.35);
+}
+
+.v5-report__bar {
+  align-items: center;
+  background: var(--v5-wash);
+  border-bottom: 1px solid var(--v5-line);
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.v5-report__bar p { font-size: 0.9rem; font-weight: 600; margin: 0; }
+
+.v5-report__dot {
+  background: var(--v5-teal);
+  border-radius: 50%;
+  height: 0.6rem;
+  width: 0.6rem;
+  flex: none;
+}
+
+.v5-report__rows { list-style: none; margin: 0; padding: 0; }
+
+.v5-report__row {
+  border-bottom: 1px solid var(--v5-line);
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.9rem 1.1rem;
+  border-inline-start: 4px solid var(--v5-line-strong);
+}
+
+.v5-report__row--high { border-inline-start-color: var(--v5-teal); }
+.v5-report__row--medium { border-inline-start-color: var(--v5-teal-soft); }
+.v5-report__row--low { border-inline-start-color: var(--v5-amber); }
+
+.v5-report__level { font-weight: 700; }
+.v5-report__shows { color: var(--v5-slate-deep); font-size: 0.92rem; }
+.v5-report__sentence { color: var(--v5-slate); font-size: 0.86rem; }
+
+.v5-report__note {
+  color: var(--v5-slate);
+  font-size: 0.82rem;
+  margin: 0;
+  padding: 0.85rem 1.1rem;
+}
+
+/* --- tiles ------------------------------------------------------------ */
+
+.v5-actions__grid,
+.v5-testimonials__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.v5-tile {
+  background: var(--v5-white);
+  border: 1px solid var(--v5-line);
+  border-radius: var(--v5-radius);
+  display: grid;
+  gap: 0.35rem;
+  height: 100%;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.v5-tile:hover,
+.v5-tile:focus-visible { border-color: var(--v5-teal); transform: translateY(-2px); }
+.v5-tile strong { font-size: 1.05rem; }
+.v5-tile span { color: var(--v5-slate); font-size: 0.9rem; }
+.v5-tile--primary { background: var(--v5-teal-wash); border-color: var(--v5-teal-soft); }
+
+.v5-actions__price-note { color: var(--v5-slate); font-size: 0.9rem; margin-top: 1.25rem; }
+
+/* --- steps ------------------------------------------------------------ */
+
+.v5-steps { background: var(--v5-wash); }
+
+.v5-steps__list {
+  counter-reset: none;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.v5-steps__list li {
+  background: var(--v5-white);
+  border: 1px solid var(--v5-line);
+  border-radius: var(--v5-radius);
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: auto 1fr;
+  padding: 1.4rem;
+}
+
+.v5-steps__number { color: var(--v5-teal); font-weight: 800; }
+.v5-steps__list h3 { font-size: 1.05rem; }
+.v5-steps__list p { color: var(--v5-slate); margin: 0.35rem 0 0; font-size: 0.94rem; }
+
+.v5-steps__certainty {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+}
+
+.v5-steps__certainty li {
+  background: var(--v5-white);
+  border: 1px solid var(--v5-line);
+  border-inline-start: 4px solid var(--v5-teal);
+  border-radius: 10px;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.v5-steps__certainty li:nth-child(2) { border-inline-start-color: var(--v5-teal-soft); }
+.v5-steps__certainty li:nth-child(3) { border-inline-start-color: var(--v5-amber); }
+.v5-steps__certainty span { color: var(--v5-slate); font-size: 0.9rem; }
+
+/* --- checks ----------------------------------------------------------- */
+
+.v5-checks__grid { display: grid; gap: 2rem; grid-template-columns: 1fr; align-items: start; }
+
+@media (min-width: 900px) {
+  .v5-checks__grid { grid-template-columns: 1.1fr 0.9fr; }
+}
+
+.v5-checks__list {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.v5-checks__list li {
+  border-bottom: 1px solid var(--v5-line);
+  padding-block: 0.55rem;
+  font-size: 0.98rem;
+}
+
+.v5-checks__image { border-radius: var(--v5-radius); height: auto; max-width: 100%; }
+
+/* --- navy band, story, testimonials ----------------------------------- */
+
+.v5-band { background: var(--v5-navy); color: var(--v5-white); }
+.v5-band__grid { display: grid; gap: 2rem; grid-template-columns: 1fr; align-items: center; }
+
+@media (min-width: 900px) {
+  .v5-band__grid { grid-template-columns: 1.2fr 0.8fr; }
+}
+
+.v5-band__eyebrow { color: var(--v5-teal-soft); font-weight: 700; margin: 0 0 0.5rem; }
+.v5-band h2 { font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.2rem); }
+.v5-band p { color: #dbe4f6; margin: 1rem 0 0; }
+.v5-band__photo { border-radius: var(--v5-radius); height: auto; max-width: 100%; }
+
+.v5-story__grid { display: grid; gap: 2rem; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .v5-story__grid { grid-template-columns: 1.1fr 0.9fr; } }
+.v5-story__photo { border-radius: var(--v5-radius); height: auto; max-width: 100%; }
+.v5-story__attribution { color: var(--v5-slate); font-weight: 600; }
+
+.v5-testimonials { background: var(--v5-wash); }
+.v5-testimonials__grid li { background: var(--v5-white); border: 1px solid var(--v5-line); border-radius: var(--v5-radius); padding: 1.25rem; }
+.v5-testimonials blockquote { margin: 0; }
+.v5-testimonials__by { color: var(--v5-slate); font-size: 0.9rem; margin-bottom: 0; }
+
+.v5-proof__grid { align-items: baseline; display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+.v5-proof__figure { margin: 0; }
+.v5-proof__figure strong { font-size: 2.2rem; font-weight: 800; margin-inline-end: 0.5rem; }
+.v5-proof__source { color: var(--v5-slate); font-size: 0.85rem; margin: 0; }
+
+.v5-video__player { border-radius: var(--v5-radius); max-width: 100%; width: 100%; }
+
+/* --- pricing ---------------------------------------------------------- */
+
+.v5-pricing__grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+.v5-plan {
+  background: var(--v5-white);
+  border: 1px solid var(--v5-line);
+  border-radius: var(--v5-radius);
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 1.6rem;
+}
+
+.v5-plan--primary { border-color: var(--v5-teal); box-shadow: 0 10px 30px rgba(18, 181, 168, 0.12); }
+.v5-plan__price { font-size: 2rem; margin: 0; }
+.v5-plan__price span { color: var(--v5-slate); font-size: 0.9rem; font-weight: 500; }
+.v5-plan__when { color: var(--v5-slate-deep); font-size: 0.92rem; margin: 0; }
+.v5-plan ul { color: var(--v5-slate-deep); display: grid; gap: 0.4rem; margin: 0.4rem 0 0; padding-inline-start: 1.1rem; }
+.v5-plan__note { color: var(--v5-slate); font-size: 0.88rem; margin: 0; }
+.v5-pricing__second-product { color: var(--v5-slate); font-size: 0.9rem; margin-top: 1.5rem; }
+
+/* --- journey, faq, final --------------------------------------------- */
+
+.v5-journey { background: var(--v5-wash); }
+.v5-journey__list { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); list-style: none; margin: 0; padding: 0; }
+.v5-journey__list li { background: var(--v5-white); border: 1px solid var(--v5-line); border-radius: var(--v5-radius); display: grid; gap: 0.4rem; padding: 1.25rem; }
+.v5-journey__list strong { font-size: 1.02rem; }
+.v5-journey__list span { color: var(--v5-slate); font-size: 0.92rem; }
+
+.v5-faq__list { display: grid; gap: 0.6rem; }
+
+.v5-faq details {
+  background: var(--v5-white);
+  border: 1px solid var(--v5-line);
+  border-radius: var(--v5-radius);
+  padding: 1rem 1.25rem;
+}
+
+.v5-faq summary { cursor: pointer; font-weight: 700; }
+.v5-faq details p { color: var(--v5-slate-deep); margin: 0.75rem 0 0; }
+
+.v5-final { background: var(--v5-navy); color: var(--v5-white); text-align: center; }
+.v5-final h2 { font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.6rem); margin-bottom: 1.5rem; }
+
+/* --- mobile sticky call to action ------------------------------------ */
+
+.v5-sticky {
+  background: color-mix(in srgb, var(--v5-white) 92%, transparent);
+  border-top: 1px solid var(--v5-line);
+  bottom: 0;
+  display: none;
+  inset-inline: 0;
+  padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+  position: fixed;
+  z-index: 40;
+  backdrop-filter: blur(6px);
+}
+
+.v5-sticky__button { display: block; text-align: center; width: 100%; }
+
+@media (max-width: 767px) {
+  .v5-sticky { display: block; }
+  /* room for the bar so it never covers the footer's last line */
+  .v5 { padding-bottom: 4.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v5-tile { transition: none; }
+  .v5-tile:hover, .v5-tile:focus-visible { transform: none; }
+}
+
+/* --- the shared header and footer, inside this page only --------------- */
+/* S5 redesigns the home page, not the product. The header and footer are the
+   site's own components and keep their markup; these rules only reconcile
+   their colour with the navy hero, and only under `.v5`. */
+
+.v5 .site-header {
+  background: var(--v5-white);
+  border-bottom: 1px solid var(--v5-line);
+}
+
+.v5 .site-header .wordmark { color: var(--v5-navy); }
+
+.v5 .site-header .wordmark__mark {
+  background: var(--v5-navy);
+  color: var(--v5-white);
+}
+
+.v5 .site-header .site-nav a { color: var(--v5-slate-deep); }
+.v5 .site-header .site-nav a:hover,
+.v5 .site-header .site-nav a:focus-visible { color: var(--v5-navy); }
+
+.v5 .site-header .button--small {
+  background: var(--v5-navy);
+  border-color: var(--v5-navy);
+  color: var(--v5-white);
+  box-shadow: none;
+}
+
+.v5 .site-footer {
+  background: var(--v5-navy-deep);
+  border-top: none;
+}
