@@ -21,7 +21,9 @@ export async function GET(request: Request) {
     const [salaryCase, documents] = await Promise.all([
       supabase
         .from("cases")
-        .select("status,payment_status")
+        // S4: the public id too, so a screen that just created a case can tell
+        // whether the browser's funnel cookie still points at the same one.
+        .select("public_id,status,payment_status")
         .eq("id", caseId)
         .maybeSingle(),
       supabase
@@ -36,7 +38,7 @@ export async function GET(request: Request) {
 
     // External review #1, finding 1: an unverified contact resumes at the verification step, nowhere further.
     const verified = await supabase.from("cases").select("contact_verified_at").eq("id", caseId).maybeSingle();
-    if (!verified.data?.contact_verified_at) return NextResponse.json({ resumePath: "/check?verify=1", contactVerified: false }, { headers: { "Cache-Control": "no-store" } });
+    if (!verified.data?.contact_verified_at) return NextResponse.json({ resumePath: "/check?verify=1", contactVerified: false, publicId: salaryCase.data.public_id }, { headers: { "Cache-Control": "no-store" } });
     let resumePath = "/check/upload";
     if (["verified", "paid"].includes(salaryCase.data.payment_status)) {
       resumePath = "/check/received";

@@ -74,6 +74,18 @@ export function DocumentReview() {
 
   const payslips = chosen.filter((item) => item.documentType === "payslip");
 
+  // S4 (2.8). The check month is chosen from the months the payslips cover, so
+  // changing a payslip's month could leave the stored choice pointing at a
+  // month no longer on offer: the select fell back to nothing and the person
+  // only learned at submit that the two disagreed.
+  //
+  // Derived rather than corrected. The stored value is the person's preference;
+  // what the screen shows and what is submitted is that preference when it is
+  // still available and the newest month otherwise, so the two can never be out
+  // of step and the submit-time error is unreachable.
+  const availableMonths = [...new Set(payslips.map((item) => item.periodMonth))].sort().reverse();
+  const effectiveCheckMonth = availableMonths.includes(checkMonth) ? checkMonth : (availableMonths[0] ?? checkMonth);
+
   const add = useCallback(async (documentType: DocumentType, file: File | undefined) => {
     if (!file) return;
     const problem = validateUploadDescriptor(file);
@@ -160,10 +172,6 @@ export function DocumentReview() {
       setError("צריך לצרף לפחות תלוש שכר אחד.");
       return;
     }
-    if (!payslips.some((item) => item.periodMonth === checkMonth)) {
-      setError("חודש הבדיקה חייב להיות חודש שהעלית עבורו תלוש.");
-      return;
-    }
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy(true);
@@ -177,7 +185,7 @@ export function DocumentReview() {
         size: item.file.size,
         ...(item.documentType === "payslip" ? { periodMonth: item.periodMonth } : {}),
       })),
-      checkPeriodMonth: checkMonth,
+      checkPeriodMonth: effectiveCheckMonth,
     };
 
     try {
@@ -283,8 +291,8 @@ export function DocumentReview() {
       {payslips.length > 0 ? (
         <label className="document-review__check-month">
           חודש הבדיקה הראשונית
-          <select value={checkMonth} onChange={(event) => setCheckMonth(event.target.value)} disabled={busy}>
-            {[...new Set(payslips.map((item) => item.periodMonth))].sort().reverse().map((month) => (
+          <select value={effectiveCheckMonth} onChange={(event) => setCheckMonth(event.target.value)} disabled={busy}>
+            {availableMonths.map((month) => (
               <option key={month} value={month}>{monthLabel(month)}</option>
             ))}
           </select>

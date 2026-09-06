@@ -72,11 +72,13 @@ function AnswerForm({ request, publicId, onAnswered }: { request: StoredRequest;
           type={request.answer_kind === "number" ? "number" : "text"}
           inputMode={request.answer_kind === "number" ? "decimal" : "text"}
           value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `thread-answer-error-${request.id}` : undefined}
           onChange={(event) => setValue(event.target.value)}
           disabled={busy}
         />
       </label>
-      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {error ? <p className="form-error" id={`thread-answer-error-${request.id}`} role="alert">{error}</p> : null}
       <button className="button button--primary" type="button" onClick={() => void submit()} disabled={busy}>
         {busy ? "שולחים…" : "שליחת תשובה"}
       </button>

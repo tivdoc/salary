@@ -18,7 +18,7 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import type { ContactChannel } from "./crypto.ts";
 
-export type NotificationTemplate = "case_link" | "access_code" | "report_ready" | "document_request";
+export type NotificationTemplate = "case_link" | "access_code" | "report_ready" | "document_request" | "abandonment_reminder";
 
 export type NotificationMessage = Readonly<{
   template: NotificationTemplate;
@@ -95,6 +95,34 @@ export function renderDocumentRequest(input: Readonly<{ firstName: string | null
       `לצירוף התלוש: ${input.linkUrl}`,
       `הבקשה פתוחה בתיק עוד ${input.expiresInDays} ימים. עד שהתלוש מגיע הבדיקה לא מתחילה, והשעון שלנו לא רץ.`,
       "המסמך נשמר באזור פרטי ואינו נשלח למעסיק.",
+    ].join("\n"),
+  };
+}
+
+/**
+ * Site S4 (ב.12). One message, to someone who attached a payslip and did not
+ * pay, twenty-four hours later.
+ *
+ * What it does not do is as deliberate as what it does. It does not offer a
+ * discount, does not say the offer expires, does not count down, and is not the
+ * first of a series — the product either was worth it when they uploaded or it
+ * was not, and a second message would only be asking again louder. It says the
+ * case is saved, where it is, and how to stop hearing from us.
+ *
+ * The opt-out line is not a footer courtesy: it is the only sentence in this
+ * message that is about the reader rather than about us, and it goes in the
+ * body where it will be read.
+ */
+export function renderAbandonmentReminder(input: Readonly<{ firstName: string | null; publicId: string; linkUrl: string; optOutUrl: string }>): Pick<NotificationMessage, "subject" | "body"> {
+  const name = input.firstName ? ` ${input.firstName}` : "";
+  return {
+    subject: `Tivdoc — הבדיקה שלך שמורה (${input.publicId})`,
+    body: [
+      `שלום${name},`,
+      `התלוש שצירפת לתיק ${input.publicId} שמור, והבדיקה מחכה בנקודה שבה עצרת.`,
+      `להמשך: ${input.linkUrl}`,
+      `אם אינך מעוניין לקבל תזכורות, אפשר לבטל כאן: ${input.optOutUrl}`,
+      "זו הודעה אחת. לא נשלח עוד תזכורת על התיק הזה.",
     ].join("\n"),
   };
 }

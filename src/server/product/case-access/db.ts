@@ -12,10 +12,12 @@ export type CaseAccessDb = Readonly<{
 // The function families this seam will call. It is an allowlist and not a
 // convention check: the name is interpolated into SQL by the postgres adapter,
 // so anything not matching here never reaches a query. S3.4 added the thread
-// (`case_request_*`), the case's documents (`case_documents_list`) and S6.1's
-// review queue (`case_report_qa_*`); a call
+// (`case_request_*`), the case's documents (`case_documents_list`), S6.1's
+// review queue (`case_report_qa_*`), D-11's counters
+// (`case_funnel_event_counts`) and S4's abandonment sweep and opt-out
+// (`case_abandonment_*`, `case_reminder_*`); a call
 // to a family that is not listed is a programming error, not a runtime one.
-const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report)_[a-z_]+$/u;
+const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|funnel|abandonment|reminder)_[a-z_]+$/u;
 
 export function supabaseCaseAccessDb(client: {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;

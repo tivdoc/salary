@@ -15,6 +15,7 @@ import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
 import { metaEventId, type MetaEventDescriptor } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { recordCaseFunnelEvent } from "@/lib/funnel-server";
+import { TERMS_VERSION } from "@/lib/legal-terms";
 import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
@@ -84,6 +85,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "תיק הבדיקה לא נמצא. יש להתחיל מחדש." }, { status: 401 });
   }
 
+  // S4 (2.6). The consent is read here rather than on a screen of its own, and
+  // the version comes from the server's constant rather than from the body: a
+  // client that could name the version it agreed to could name any version.
+  // The box is not pre-checked anywhere, so `accepted` false is the default and
+  // this refuses.
+  const body = await request.json().catch(() => null) as { termsAccepted?: unknown } | null;
+  if (body?.termsAccepted !== true) {
+    return NextResponse.json(
+      { error: "צריך לאשר את תנאי השימוש לפני התשלום", code: "terms_not_accepted" },
+      { status: 422 },
+    );
+  }
+
   let failureStage = "load_case";
   try {
     const supabase = getSupabaseAdmin();
@@ -105,6 +119,17 @@ export async function POST(request: Request) {
     }
 
     if (!salaryCase.contact_verified_at) return NextResponse.json({ error: "צריך לאמת את הטלפון או האימייל לפני התשלום", code: "contact_unverified" }, { status: 409 });
+
+    // Recorded before the checkout opens, so a payment cannot exist without the
+    // consent that preceded it. Written once: a second attempt keeps the first
+    // timestamp, because that is when the person actually agreed.
+    failureStage = "record_consent";
+    const { error: consentError } = await supabase
+      .from("cases")
+      .update({ terms_accepted_at: new Date().toISOString(), terms_version: TERMS_VERSION })
+      .eq("id", caseId)
+      .is("terms_accepted_at", null);
+    if (consentError) throw consentError;
     if (["paid", "verified"].includes(salaryCase.payment_status)) {
       return NextResponse.json({ url: "/check/received", publicId: salaryCase.public_id });
     }

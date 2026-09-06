@@ -239,7 +239,7 @@ async function buildDurableLocalProductRuntime(): Promise<DurableLocalProductSta
     // roots plus the canonical route registrar. It is repeated here rather than
     // read from the ledger on purpose — a startup that trusted the ledger would
     // prove nothing about the ledger.
-    if (STABLE_PRODUCT_DISPATCHER_ROOTS.length !== 38
+    if (STABLE_PRODUCT_DISPATCHER_ROOTS.length !== 40
         || syntheticReportPipeline.proof().product_reachable_memory_repositories !== 0
         || multiDocumentIntake.product_proof.product_reachable_memory_fallbacks !== 0
         || multiDocumentIntake.product_proof.legal_conclusions_created !== 0

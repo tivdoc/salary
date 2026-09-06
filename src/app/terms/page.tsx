@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { formatPrice, productOffer } from "@/lib/product-offer";
+import { termsVersionLabel } from "@/lib/legal-terms";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
 export const metadata: Metadata = { title: "תנאי שימוש | Tivdoc" };
@@ -13,7 +15,8 @@ export default async function TermsPage() {
       <SiteHeader />
       <main id="main-content" className="legal-page">
         <div className="legal-shell">
-          <p className="mono legal-page__label">תנאי שימוש · עודכן ביום 22.8.2026</p>
+          {/* S4 2.6: the same string the consent record stores. */}
+          <p className="mono legal-page__label">תנאי שימוש · עודכן ביום {termsVersionLabel()}</p>
           <h1>בדיקה ראשונית, לא קביעה משפטית.</h1>
           <p className="legal-page__lead">
             תנאים אלה מסדירים את השימוש ב־Tivdoc. התחלת בדיקה או רכישתה מהווה הסכמה
@@ -61,7 +64,9 @@ export default async function TermsPage() {
           <section>
             <h2>מחיר ותשלום</h2>
             <p>
-              מחיר הבדיקה הראשונית הוא 9.99 ₪, כולל מע״מ ככל שחל. התשלום מתבצע דרך
+              {/* S4: read from the offer configuration. A price literal in the terms
+                  is a sentence that becomes false the day the price changes. */}
+              מחיר הבדיקה הראשונית הוא {formatPrice(productOffer().initial_check.price)}, כולל מע״מ ככל שחל. התשלום מתבצע דרך
               Invoice4u. פרטי כרטיס אינם נשמרים ב־Tivdoc, ורק אימות תשלום שהתקבל
               בצד השרת מסמן את התשלום ואת תיק הבדיקה כ־paid. חזרה לעמוד Tivdoc ללא
               אימות כזה אינה הוכחת תשלום.

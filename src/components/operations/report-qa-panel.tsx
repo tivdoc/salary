@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 import styles from "./operations-workspace.module.css";
+import { AUTOMATIC_FINDING_CEILING_MINOR_UNITS } from "@/server/product/reports/publication-gate";
 
 type QueueRow = Readonly<{
   id: string;
@@ -42,7 +43,8 @@ const REASON_TEXT: Readonly<Record<string, string>> = Object.freeze({
   document_not_automatic_track: "המסמך לא במסלול האוטומטי",
   finding_at_low_certainty: "ממצא בוודאות נמוכה",
   contradiction_marked: "סימון סתירה",
-  finding_over_ceiling: "ממצא מעל 5,000 ₪",
+  // The ceiling is D-10.2's, read from the gate rather than retyped here.
+  finding_over_ceiling: `ממצא מעל ${(AUTOMATIC_FINDING_CEILING_MINOR_UNITS / 100).toLocaleString("he-IL")} ₪`,
 });
 
 const STEP_TEXT: Readonly<Record<string, string>> = Object.freeze({

@@ -79,7 +79,8 @@ export type FunnelBoard = Readonly<{
 export type EventCount = Readonly<{ event_name: string; cases: number }>;
 
 export type ReportCounts = Readonly<{
-  /** Reports that reached the publication gate at all. */
+  /** Reports that reached the publication gate at all. Zero means the last two
+   *  conversions have no data — not that they are zero. */
   reports: number;
   /** Of those, the ones the gate published without a person (D-11.2). */
   automatic_reports: number;
@@ -108,8 +109,21 @@ export function buildFunnelBoard(
     return byName.get(name) ?? 0;
   };
 
+  // D-11's last two conversions are read from reports, and no report has been
+  // produced yet. Their numerator is therefore UNKNOWN, not zero — and a
+  // denominator of paid cases with a numerator of zero would print "0% of paid
+  // customers had anything found", which is a claim about the engine that
+  // nothing in the data supports. With no reports at all, both go dark.
+  const reportsExist = reports.reports > 0;
+  const REPORT_DERIVED: ReadonlySet<FunnelStep> = new Set(["payment_to_finding", "finding_to_full_report"]);
+
   const steps = Object.fromEntries(
-    FUNNEL_STEPS.map((step) => [step, ratio(count(STEP_EVENTS[step].to), count(STEP_EVENTS[step].from))]),
+    FUNNEL_STEPS.map((step) => [
+      step,
+      REPORT_DERIVED.has(step) && !reportsExist
+        ? ratio(0, 0)
+        : ratio(count(STEP_EVENTS[step].to), count(STEP_EVENTS[step].from)),
+    ]),
   ) as Record<FunnelStep, Ratio>;
 
   return Object.freeze({
@@ -124,6 +138,19 @@ export function buildFunnelBoard(
       generated_at: generatedAt.toISOString(),
     }),
   });
+}
+
+/** D-11.1's four event-driven conversions, counted in the database (S4). */
+export async function readEventCounts(
+  input: Readonly<{ since?: Date | null }> = {},
+  db?: CaseAccessDb | null,
+): Promise<readonly EventCount[]> {
+  const store = db ?? await resolveCaseAccessDb();
+  if (!store) return [];
+  const rows = await store.rpc<Readonly<{ event_name: string; cases: number | string }>>("case_funnel_event_counts", {
+    target_since: input.since ? input.since.toISOString() : null,
+  });
+  return rows.map((row) => Object.freeze({ event_name: row.event_name, cases: Number(row.cases) }));
 }
 
 /** The two cost numbers' raw counts, read from the review table (S6.1). */

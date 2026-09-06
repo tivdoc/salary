@@ -21,6 +21,10 @@ type Notification = { case_id: string | null; identity_id: string | null; channe
 export type FakeCase = {
   id: string; public_id: string; email: string | null; phone: string | null; first_name: string | null; status: string; payment_status: string;
   created_at: string; payment_verified: boolean; contact_verified_at?: number | null; contact_verified_channel?: string | null;
+  // S4 (ב.12)
+  reminder_opted_out_at?: number | null;
+  abandonment_reminder_sent_at?: number | null;
+  abandonment_reminder_state?: string | null;
 };
 
 export type FakeCaseAccessDb = CaseAccessDb & Readonly<{
@@ -36,6 +40,7 @@ export type FakeCaseAccessDb = CaseAccessDb & Readonly<{
   case_documents: FakeCaseDocument[];
   report_qa: QaRow[];
   report_qa_log: QaLogRow[];
+  funnel_events: Array<{ event_name: string; session_id: string | null; case_id: string | null }>;
   calls: Array<{ fn: string; args: Record<string, unknown> }>;
   now: () => number;
   advance(ms: number): void;
@@ -44,10 +49,11 @@ export type FakeCaseAccessDb = CaseAccessDb & Readonly<{
 export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAccessDb {
   let clock = Date.parse("2026-09-05T10:00:00.000Z");
   const state = {
-    cases: cases.map((row) => ({ contact_verified_at: null, contact_verified_channel: null, ...row })), identities: [] as Identity[], identity_cases: [] as Array<{ identity_id: string; case_id: string }>,
+    cases: cases.map((row) => ({ contact_verified_at: null, contact_verified_channel: null, reminder_opted_out_at: null, abandonment_reminder_sent_at: null, abandonment_reminder_state: null, ...row })), identities: [] as Identity[], identity_cases: [] as Array<{ identity_id: string; case_id: string }>,
     tokens: [] as Token[], codes: [] as Code[], sessions: [] as Session[], notifications: [] as Notification[], requests: [] as RequestRow[],
     case_requests: [] as ThreadRow[], case_documents: [] as FakeCaseDocument[],
     report_qa: [] as QaRow[], report_qa_log: [] as QaLogRow[],
+    funnel_events: [] as Array<{ event_name: string; session_id: string | null; case_id: string | null }>,
     calls: [] as Array<{ fn: string; args: Record<string, unknown> }>,
   };
   const now = () => clock;
@@ -237,6 +243,47 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
       state.report_qa.push(row);
       state.report_qa_log.push({ qa_id: row.id, case_id: row.case_id, action: row.state, operator_identity: s(a.target_actor), detail: { reasons: row.queue_reasons }, at: now() });
       return [row];
+    },
+    // --- 202609070002: S4's abandonment sweep and its opt-out.
+    case_abandonment_candidates(a) {
+      const cutoff = now() - Math.max(n(a.target_after_hours), 0) * 3_600_000;
+      return state.cases
+        .filter((row) => row.status === "documents_uploaded"
+          && !["paid", "verified"].includes(row.payment_status)
+          && row.contact_verified_at != null
+          && row.reminder_opted_out_at == null
+          && row.abandonment_reminder_sent_at == null
+          && (row.abandonment_reminder_state == null || row.abandonment_reminder_state === "failed")
+          && Date.parse(row.created_at) < cutoff)
+        .sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at))
+        .slice(0, Math.max(1, Math.min(n(a.target_limit ?? 50), 200)))
+        .map((row) => ({ case_id: row.id, public_id: row.public_id, created_at: row.created_at }));
+    },
+    case_abandonment_mark(a) {
+      const found = caseOf(a.target_case);
+      if (!found) return [];
+      found.abandonment_reminder_state = s(a.target_state);
+      if (a.target_state === "sent") found.abandonment_reminder_sent_at = now();
+      return [found];
+    },
+    case_reminder_opt_out(a) {
+      const found = caseOf(a.target_case);
+      if (!found) return [];
+      found.reminder_opted_out_at ??= now();
+      return [found];
+    },
+    case_funnel_event_counts() {
+      // Distinct sessions before a case exists, distinct cases after — the SQL's rule.
+      const bySession = new Set(["landing_view", "start_check"]);
+      const grouped = new Map<string, Set<string>>();
+      for (const row of state.funnel_events) {
+        const key = bySession.has(row.event_name) ? row.session_id : row.case_id;
+        if (key === null) continue;
+        const seen = grouped.get(row.event_name) ?? new Set<string>();
+        seen.add(key);
+        grouped.set(row.event_name, seen);
+      }
+      return [...grouped.entries()].map(([event_name, seen]) => ({ event_name, cases: seen.size }));
     },
     case_report_qa_track_summary() {
       const rows = state.report_qa;

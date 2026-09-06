@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, LockKey, Timer } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
+import { useFunnelProgress } from "./funnel-progress";
 import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
 import { currentFirstTouch } from "@/lib/attribution";
 import { metaEventDescriptor, trackMetaBrowserEventOnce } from "@/lib/meta-browser";
@@ -34,6 +35,10 @@ type FormState = {
 
 const DRAFT_KEY = "tivdoc:questionnaire-draft:v2";
 const CONTACT_DRAFT_KEY = "tivdoc:questionnaire-contact:v2";
+// S4 / funnel-adversarial finding: "open a new check" survives a refresh.
+// Without this the banner returns on reload and the next click resumes the
+// old case, which is the opposite of what the person just chose.
+const RESUME_DISMISSED_KEY = "tivdoc:resume-dismissed";
 
 const initialForm: FormState = {
   stillEmployed: null,
@@ -57,6 +62,21 @@ const initialForm: FormState = {
   commuteOver500m: null,
   managerialOrTrustRole: null,
 };
+
+// S4 (2.8). What a contact field is checked for on blur, in the customer's own
+// words. Deliberately forgiving: the point is to catch the typo that loses the
+// case, not to argue with an unusual but real address or number.
+function phoneProblem(value: string): string {
+  const digits = value.replace(/\D/gu, "");
+  if (digits.length === 0) return "צריך טלפון — לשם נשלח קוד הכניסה לתיק.";
+  return digits.length >= 9 && digits.length <= 15 ? "" : "המספר נראה קצר או ארוך מדי. אפשר לבדוק שוב?";
+}
+
+function emailProblem(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return "צריך אימייל — לשם נשלח הקישור לתיק.";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(trimmed) ? "" : "הכתובת לא נראית תקינה. אפשר לבדוק שוב?";
+}
 
 const stepTitles = [
   ["האם עדיין עובדים אצל אותו מעסיק?", "שאלה קצרה כדי להבין את מצב ההעסקה הנוכחי."],
@@ -102,6 +122,8 @@ function nonPersonalDraft(form: FormState, step: number) {
 
 export function Questionnaire() {
   const router = useRouter();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const { reportSubstep } = useFunnelProgress();
   const started = useRef(false);
   const hydrated = useRef(false);
   const [step, setStep] = useState(0);
@@ -152,6 +174,7 @@ export function Questionnaire() {
           else setActiveCase("/check?verify=1");
           return;
         }
+        if (sessionStorage.getItem(RESUME_DISMISSED_KEY) === "1") return;
         if (typeof result?.resumePath === "string") setActiveCase(result.resumePath);
       })
       .catch(() => undefined);
@@ -169,7 +192,11 @@ export function Questionnaire() {
 
   useEffect(() => {
     trackEvent("questionnaire_step_viewed", { step_number: step + 1 });
-  }, [step]);
+    // S4 (2.1): the header's indicator and this event read the same number, so
+    // what the customer sees and what the funnel measures cannot drift apart.
+    reportSubstep({ index: step + 1, count: stepTitles.length });
+    return () => reportSubstep(null);
+  }, [step, reportSubstep]);
 
   function markStarted() {
     if (started.current) return;
@@ -216,6 +243,11 @@ export function Questionnaire() {
     setError("");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    // S4 (4.1). Without this, the whole question changes while focus stays on
+    // the button that was pressed: a keyboard or screen-reader user is told
+    // nothing and has to hunt for what moved. Focusing the new heading is also
+    // why the progress bar needs no aria-live.
+    requestAnimationFrame(() => headingRef.current?.focus());
   }
 
   function nextStep() {
@@ -297,6 +329,24 @@ export function Questionnaire() {
       trackEvent("questionnaire_step_completed", { step_number: step + 1 });
       trackEvent("questionnaire_completed");
       setCaseCreated(true);
+      // S4 / funnel-adversarial finding. The funnel keeps one case per browser
+      // in a cookie. Two tabs each finishing a questionnaire means the second
+      // one's case replaces the first's in that cookie — and the verification
+      // request that follows reads the cookie, so the first tab would send a
+      // code for a case it did not create and link the wrong contact.
+      //
+      // The case id is NOT sent from here to fix it: a client that could name
+      // the case to verify could name anyone's. Instead this asks the server
+      // which case the cookie now holds and stops if it is not the one just
+      // created, which is a check the client is allowed to make.
+      const holder = await fetch("/api/cases/resume", { cache: "no-store" })
+        .then(async (response) => (response.ok ? await response.json() as { publicId?: string } : null))
+        .catch(() => null);
+      if (holder?.publicId && holder.publicId !== result.publicId) {
+        setError("נפתחה בדיקה נוספת בחלון אחר של הדפדפן, והיא זו שפעילה כרגע. הבדיקה הזו נשמרה — אפשר לסגור את החלון האחר ולרענן כדי להמשיך בה.");
+        setSubmitting(false);
+        return;
+      }
       await requestVerification();
       setSubmitting(false);
     } catch (caught) {
@@ -329,36 +379,41 @@ export function Questionnaire() {
           <span>אפשר להמשיך אותה מהמקום שבו עצרת, או לפתוח בדיקה חדשה — למשל למעסיק אחר או לתקופה אחרת. הבדיקה הקיימת נשמרת.</span>
           <div className="check-resume-banner__actions">
             <button type="button" className="button button--primary" onClick={() => router.push(activeCase)}>המשך אליה</button>
-            <button type="button" className="button button--secondary" onClick={() => setActiveCase(null)}>פתח בדיקה חדשה</button>
+            <button
+              type="button"
+              className="button button--secondary"
+              onClick={() => {
+                try { sessionStorage.setItem(RESUME_DISMISSED_KEY, "1"); } catch { /* a private window still dismisses for this render */ }
+                setActiveCase(null);
+              }}
+            >פתח בדיקה חדשה</button>
           </div>
         </div>
       )}
-      <div className="questionnaire__meter" aria-hidden="true">
-        <span style={{ width: `${((step + 1) / stepTitles.length) * 100}%` }} />
-      </div>
+      {/* S4 (2.1): no bar and no counter here — the header carries the funnel's
+          one indicator, and this screen reports its position to it. */}
       <div className="questionnaire__heading">
-        <span className="mono">שאלה {step + 1} מתוך {stepTitles.length}</span>
-        <h1>{stepTitles[step][0]}</h1>
+        <h1 id="questionnaire-step-title" ref={headingRef} tabIndex={-1}>{stepTitles[step][0]}</h1>
         <p>{stepTitles[step][1]}</p>
       </div>
 
       <div className="questionnaire__body">
         {step === 0 && (
-          <div className="option-row">
+          <div className="option-row" role="group" aria-labelledby="questionnaire-step-title">
             <OptionButton selected={form.stillEmployed === true} onClick={() => update("stillEmployed", true)}>כן</OptionButton>
             <OptionButton selected={form.stillEmployed === false} onClick={() => update("stillEmployed", false)}>לא</OptionButton>
           </div>
         )}
 
         {step === 1 && (
-          <div className="option-row">
+          <div className="option-row" role="group" aria-labelledby="questionnaire-step-title">
             <OptionButton selected={form.salaryType === "monthly"} onClick={() => update("salaryType", "monthly")}>חודשי</OptionButton>
             <OptionButton selected={form.salaryType === "hourly"} onClick={() => update("salaryType", "hourly")}>שעתי</OptionButton>
           </div>
         )}
 
         {step === 2 && (
-          <div className="option-row option-row--four">
+          <div className="option-row option-row--four" role="group" aria-labelledby="questionnaire-step-title">
             {["8", "9", "10", "11"].map((hours) => (
               <OptionButton
                 key={hours}
@@ -415,9 +470,11 @@ export function Questionnaire() {
                 value={form.employmentStartMonth}
                 max={new Date().toISOString().slice(0, 7)}
                 onChange={(event) => update("employmentStartMonth", event.target.value)}
+                aria-invalid={fieldErrors.employmentStartMonth ? true : undefined}
+                aria-describedby={fieldErrors.employmentStartMonth ? "error-employmentStartMonth" : undefined}
                 onBlur={(event) => setFieldError("employmentStartMonth", event.target.value ? "" : "צריך לבחור חודש ושנה")}
               />
-              {fieldErrors.employmentStartMonth ? <small className="field-error" role="alert">{fieldErrors.employmentStartMonth}</small> : null}
+              {fieldErrors.employmentStartMonth ? <small className="field-error" id="error-employmentStartMonth" role="alert">{fieldErrors.employmentStartMonth}</small> : null}
             </label>
             <fieldset className="field-group">
               <legend>התפקיד ניהולי, או דורש מידה מיוחדת של אמון אישי?</legend>
@@ -442,9 +499,11 @@ export function Questionnaire() {
                   max={new Date().getFullYear() - 14}
                   value={form.birthYear}
                   onChange={(event) => update("birthYear", event.target.value)}
+                  aria-invalid={fieldErrors.birthYear ? true : undefined}
+                  aria-describedby={fieldErrors.birthYear ? "error-birthYear" : undefined}
                   onBlur={(event) => setFieldError("birthYear", /^\d{4}$/u.test(event.target.value) ? "" : "צריך שנה בת ארבע ספרות")}
                 />
-                {fieldErrors.birthYear ? <small className="field-error" role="alert">{fieldErrors.birthYear}</small> : null}
+                {fieldErrors.birthYear ? <small className="field-error" id="error-birthYear" role="alert">{fieldErrors.birthYear}</small> : null}
               </label>
               <fieldset className="field-group">
                 <legend>מין</legend>
@@ -484,7 +543,7 @@ export function Questionnaire() {
 
         {step === 6 && (
           <div className="form-stack">
-            <div className="option-row">
+            <div className="option-row" role="group" aria-labelledby="questionnaire-step-title">
               <OptionButton selected={form.payslipAvailable === true} onClick={() => update("payslipAvailable", true)}>כן, יש לי</OptionButton>
               <OptionButton selected={form.payslipAvailable === false} onClick={() => update("payslipAvailable", false)}>אמצא אחר כך</OptionButton>
             </div>
@@ -510,9 +569,48 @@ export function Questionnaire() {
         {step === 8 && (
           <div className="form-stack">
             <div className="form-grid">
-              <label className="field"><span>שם פרטי</span><input autoComplete="given-name" value={form.firstName} onChange={(event) => update("firstName", event.target.value)} /></label>
-              <label className="field"><span>טלפון</span><input type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={form.phone} onChange={(event) => update("phone", event.target.value)} /></label>
-              <label className="field field--wide"><span>אימייל</span><input type="email" inputMode="email" autoComplete="email" dir="ltr" value={form.email} onChange={(event) => update("email", event.target.value)} /></label>
+              <label className="field">
+                <span>שם פרטי</span>
+                <input
+                  autoComplete="given-name"
+                  value={form.firstName}
+                  aria-invalid={fieldErrors.firstName ? true : undefined}
+                  aria-describedby={fieldErrors.firstName ? "error-firstName" : undefined}
+                  onChange={(event) => update("firstName", event.target.value)}
+                  onBlur={(event) => setFieldError("firstName", event.target.value.trim() ? "" : "צריך שם פרטי כדי לפנות אליך.")}
+                />
+                {fieldErrors.firstName ? <small className="field-error" id="error-firstName" role="alert">{fieldErrors.firstName}</small> : null}
+              </label>
+              <label className="field">
+                <span>טלפון</span>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  dir="ltr"
+                  value={form.phone}
+                  aria-invalid={fieldErrors.phone ? true : undefined}
+                  aria-describedby={fieldErrors.phone ? "error-phone" : undefined}
+                  onChange={(event) => update("phone", event.target.value)}
+                  onBlur={(event) => setFieldError("phone", phoneProblem(event.target.value))}
+                />
+                {fieldErrors.phone ? <small className="field-error" id="error-phone" role="alert">{fieldErrors.phone}</small> : null}
+              </label>
+              <label className="field field--wide">
+                <span>אימייל</span>
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  dir="ltr"
+                  value={form.email}
+                  aria-invalid={fieldErrors.email ? true : undefined}
+                  aria-describedby={fieldErrors.email ? "error-email" : undefined}
+                  onChange={(event) => update("email", event.target.value)}
+                  onBlur={(event) => setFieldError("email", emailProblem(event.target.value))}
+                />
+                {fieldErrors.email ? <small className="field-error" id="error-email" role="alert">{fieldErrors.email}</small> : null}
+              </label>
             </div>
             <div className="questionnaire__trust">
               <span><LockKey weight="duotone" aria-hidden="true" /> פרטי ומאובטח</span>

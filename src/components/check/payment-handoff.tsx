@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import Link from "next/link";
 import { ArrowSquareOut, CheckCircle, LockKey } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
 import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
@@ -12,12 +13,21 @@ export function PaymentHandoff() {
   const price = formatPrice(offer.initial_check.price);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // S4 (2.6). Not pre-checked, and no default that makes it look checked: the
+  // person ticks it or nobody pays. The version they are agreeing to is decided
+  // by the server when it records the consent, never sent from here.
+  const [accepted, setAccepted] = useState(false);
+  const consentId = useId();
 
   async function startPayment() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/payments/start", { method: "POST" });
+      const response = await fetch("/api/payments/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ termsAccepted: accepted }),
+      });
       if (!response.ok) throw new Error(await customerErrorFromResponse(response, "payment_start_failed"));
       const result = await response.json();
       const metaEvent = metaEventDescriptor(result.metaEvent);
@@ -43,8 +53,20 @@ export function PaymentHandoff() {
         <div className="payment-summary__total"><span>סה״כ לתשלום</span><strong className="mono">{price}</strong></div>
       </div>
       <div className="payment-security"><LockKey weight="duotone" aria-hidden="true" /><span>פרטי התשלום מוזנים ב־Invoice4u ואינם נשמרים ב־Tivdoc.</span></div>
+      <div className="payment-consent">
+        <input
+          id={consentId}
+          type="checkbox"
+          checked={accepted}
+          onChange={(event) => setAccepted(event.target.checked)}
+          disabled={loading}
+        />
+        <label htmlFor={consentId}>
+          קראתי ואני מאשר את <Link href="/terms" target="_blank" rel="noreferrer">תנאי השימוש</Link> ואת <Link href="/privacy" target="_blank" rel="noreferrer">מדיניות הפרטיות</Link>.
+        </label>
+      </div>
       {error && <div className="form-error" role="alert">{error}</div>}
-      <button className="button button--primary button--wide" type="button" disabled={loading} onClick={startPayment}>{loading ? "פותחים את עמוד התשלום..." : "מעבר לתשלום מאובטח"}<ArrowSquareOut aria-hidden="true" /></button>
+      <button className="button button--primary button--wide" type="button" disabled={loading || !accepted} onClick={startPayment}>{loading ? "פותחים את עמוד התשלום..." : "מעבר לתשלום מאובטח"}<ArrowSquareOut aria-hidden="true" /></button>
       <p className="payment-note">{offer.second_product_sentence}</p>
       <p className="payment-note">חזרה לעמוד האישור אינה מספיקה כדי לסמן תשלום כהושלם. הסטטוס מתעדכן רק לאחר אימות.</p>
     </div>

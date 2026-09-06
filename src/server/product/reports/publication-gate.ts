@@ -45,7 +45,9 @@ export const QUEUE_REASON_TEXT: Readonly<Record<QueueReason, string>> = Object.f
   document_not_automatic_track: "המסמך לא עבר במסלול האוטומטי.",
   finding_at_low_certainty: "יש ממצא ברמת ודאות נמוכה.",
   contradiction_marked: "יש סימון סתירה בין מקורות.",
-  finding_over_ceiling: "יש ממצא מעל 5,000 ₪.",
+  // Derived from the ceiling above rather than retyped: the sentence an
+  // operator reads and the rule the gate applies move together.
+  finding_over_ceiling: `יש ממצא מעל ${(AUTOMATIC_FINDING_CEILING_MINOR_UNITS / 100).toLocaleString("he-IL")} ₪.`,
 });
 
 /**

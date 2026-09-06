@@ -88,6 +88,9 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609060008_awaiting_document_functions.sql",
   "202609060009_case_report_qa.sql",
   "202609060010_report_qa_automatic_rows.sql",
+  "202609070001_terms_consent.sql",
+  "202609070002_abandonment_reminder.sql",
+  "202609070003_funnel_event_counts.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -208,6 +211,12 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "3404faef83195fa32674d7467d960c1ede8330ce66fdbb21297239cd64b07fd1",
   "202609060010_report_qa_automatic_rows.sql":
     "e5958fa0b9474bd32601f616b96ef9d4fd6e6c809ff9f5856d5e3d4248d83b4e",
+  "202609070001_terms_consent.sql":
+    "cf07c8cca7ec4449e23e42eaa036bf4964c9c9ce4c73b67d308ce8a9ed88b6be",
+  "202609070002_abandonment_reminder.sql":
+    "99730f066c89f2a4bb9d5a1e1c6eb4941aeae064f11c494606b34dcc3250912e",
+  "202609070003_funnel_event_counts.sql":
+    "cd5d2b4ae48ee5ca1f5a2ffba1e6a25d3ff185c78b2824a9eebe1ba47b8d26fa",
 });
 
 export type MigrationFile = Readonly<{

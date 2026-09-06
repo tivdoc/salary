@@ -1843,6 +1843,41 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Site S2.3: points the funnel's case cookie at a case the verified identity owns, so a document added after payment walks the same review screen the funnel walks. It accepts no file and stores nothing."
+    },
+    {
+      "entrypoint_id": "CEP-107",
+      "kind": "app_route",
+      "stable_entry": "/check/reminders/off",
+      "source_path": "src/app/check/reminders/off/page.tsx",
+      "canonical_contract_id": "route.app.reminder-opt-out",
+      "canonical_target": "src/app/check/reminders/off/page.tsx:default",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/components/check/reminder-opt-out.tsx"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Site S4 (ב.12): where the reminder's opt-out link lands. It resolves no token and reveals nothing; the token is passed through to a POST so a link prefetcher cannot opt anyone out."
+    },
+    {
+      "entrypoint_id": "CEP-108",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/reminders/off",
+      "source_path": "src/app/api/cases/reminders/off/route.ts",
+      "canonical_contract_id": "route.api.reminder-opt-out",
+      "canonical_target": "src/app/api/cases/reminders/off/route.ts:POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts",
+        "src/server/product/case-access/abandonment.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Site S4 (ב.12): records the opt-out for the case a reminder token names. It peeks at the token rather than spending it, and answers ok for every token so liveness cannot be probed."
     }
   ]
 }

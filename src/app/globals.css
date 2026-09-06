@@ -1,4 +1,9 @@
 :root {
+  /* S4 (4.6). The funnel, the case screens and /operations are a deliberately
+     light palette; without this a browser in dark mode repaints form controls,
+     scrollbars and the default focus ring dark against it. The landing declares
+     the same thing on `.v5`; this covers everything else. */
+  color-scheme: light;
   --paper: #f7f3e8;
   --paper-deep: #ece6d8;
   --surface: #ffffff;
@@ -1336,7 +1341,29 @@ mark {
   font-weight: 600;
 }
 
+
+/* S4 (2.1): the single bar, filling across the whole funnel. */
+.check-progress__fill {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  height: 3px;
+  background: var(--blue);
+  transition: width 220ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check-progress__fill { transition: none; }
+}
+
+.check-progress__within {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .check-progress {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   padding-bottom: 14px;
@@ -1514,7 +1541,9 @@ mark {
 
 .form-summary {
   padding: 20px 22px;
-  border-right: 4px solid var(--blue);
+  /* Logical, not physical: the accent belongs at the side the reader starts on,
+     which is the right in this RTL document and the left if it is ever not. */
+  border-inline-start: 4px solid var(--blue);
   background: #e8edff;
 }
 
@@ -1672,8 +1701,8 @@ mark {
 
 .upload-item__remove {
   position: absolute;
-  top: -10px;
-  left: -10px;
+  inset-block-start: -10px;
+  inset-inline-end: -10px;
   width: 34px;
   height: 34px;
   display: grid;
@@ -1779,6 +1808,30 @@ mark {
   width: 24px;
   height: 24px;
   color: var(--blue);
+}
+
+/* S4 (2.6): the consent row. A 24px target on the box itself, and the label is
+   clickable — the checkbox is the smallest thing on this screen and the one
+   that gates the payment. */
+.payment-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0 14px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.payment-consent input {
+  inline-size: 24px;
+  block-size: 24px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--blue);
+}
+
+.payment-consent label {
+  cursor: pointer;
 }
 
 .payment-note {

@@ -63,13 +63,33 @@ describe("M01 — the eight numbers", () => {
       { event_name: "document_uploaded", cases: 50 },
       { event_name: "payment_verified", cases: 25 },
     ];
-    const board = buildFunnelBoard(events, { ...NO_REPORTS, cases_with_finding: 15, full_reports_purchased: 3 });
+    const board = buildFunnelBoard(events, { ...NO_REPORTS, reports: 25, cases_with_finding: 15, full_reports_purchased: 3 });
     expect(formatRate(board.steps.landing_to_start)).toBe("50%");
     expect(formatRate(board.steps.start_to_case)).toBe("50%");
     expect(formatRate(board.steps.case_to_upload)).toBe("50%");
     expect(formatRate(board.steps.upload_to_payment)).toBe("50%");
     expect(formatRate(board.steps.payment_to_finding)).toBe("60%");
     expect(formatRate(board.steps.finding_to_full_report)).toBe("20%");
+  });
+
+  // S4 / D-11. The failure this guards against is the worst one the board can
+  // make: today no report has been produced at all, and paid cases exist. A
+  // naive division would print "0% of paid customers had anything found" — a
+  // claim about the engine, from data that says nothing about the engine.
+  it("goes dark on the two report-derived numbers while no report exists", () => {
+    const events: readonly EventCount[] = [
+      { event_name: "document_uploaded", cases: 40 },
+      { event_name: "payment_verified", cases: 20 },
+    ];
+    const board = buildFunnelBoard(events, NO_REPORTS);
+    expect(formatRate(board.steps.upload_to_payment)).toBe("50%");
+    expect(formatRate(board.steps.payment_to_finding)).toBe("—");
+    expect(formatRate(board.steps.finding_to_full_report)).toBe("—");
+
+    // One report through the gate, none with a finding: now zero is a real
+    // answer about that one report, and the board says so.
+    const withOne = buildFunnelBoard(events, { ...NO_REPORTS, reports: 1 });
+    expect(formatRate(withOne.steps.payment_to_finding)).toBe("0%");
   });
 
   it("computes the two cost numbers from the reports, not from the events", () => {

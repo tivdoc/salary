@@ -134,13 +134,16 @@ describe("durable local product runtime configuration", () => {
 
   it("maps every product dispatcher to an enforced allow or intentional local block", () => {
     const runtime = createStableEntrypointRuntime({ projection: buildDurableLocalProductCapabilityProjection() });
-    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(38);
+    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(40);
     const decisions = STABLE_PRODUCT_DISPATCHER_ROOTS.map((entrypoint) => runtime.evaluate(entrypoint.entrypoint_id));
     expect(decisions.every((decision) => decision.outcome === "ALLOW" || decision.reason_codes.length > 0)).toBe(true);
     // UX Run 1 / U0: the six customer-access dispatchers need only postgresql locally, so they are allowed here.
     // S3.4: the four case-screen dispatchers (thread, documents, reports, and the request answer) need the same and no more.
     // S2.3: so does the upload session, which sets a cookie and touches no storage of its own.
-    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(25);
-    expect(decisions.filter((decision) => decision.outcome === "BLOCK")).toHaveLength(13);
+    // S4 added the reminder opt-out. Its API route needs only postgresql and is
+    // allowed; its PAGE is a customer screen and the local runtime blocks
+    // customer processing, exactly as it blocks the rest of /check.
+    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(26);
+    expect(decisions.filter((decision) => decision.outcome === "BLOCK")).toHaveLength(14);
   });
 });

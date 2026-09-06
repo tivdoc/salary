@@ -6,7 +6,7 @@ import type { InternalOpsApplicationPort } from "../internal-ops/application-por
 import { INTERNAL_OPS_SCHEMA_VERSION, type InternalOpsAction, type OpsProblemCode } from "../internal-ops/contracts.ts";
 import { InternalOpsError, type InternalOpsReadKind } from "../internal-ops/service.ts";
 import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
-import { buildFunnelBoard, readReportCounts } from "../reports/funnel-dashboard.ts";
+import { buildFunnelBoard, readEventCounts, readReportCounts } from "../reports/funnel-dashboard.ts";
 import { decideReview, listReviewQueue, setWording } from "../reports/report-qa.ts";
 import { sendReportReadyNotification } from "../case-access/service.ts";
 
@@ -171,8 +171,10 @@ export function createOperationsHttpHandler(input: Readonly<{
             return productJson({ correlation_id: correlationId, data: { items: data } });
           }
           if (joined === "report-qa/board") {
-            const counts = await readReportCounts();
-            return productJson({ correlation_id: correlationId, data: buildFunnelBoard([], counts) });
+            // S4 / D-11: the real events, not an empty list. Every conversion on
+            // this board was a dash until this read existed.
+            const [events, counts] = await Promise.all([readEventCounts(), readReportCounts()]);
+            return productJson({ correlation_id: correlationId, data: buildFunnelBoard(events, counts) });
           }
           const body = await strictJsonObject(request);
           if (!body || typeof body.qa_id !== "string") throw new InternalOpsError("OPS_INVALID_REQUEST");

@@ -27,17 +27,18 @@ import {
 } from "./crypto.ts";
 import { resolveCaseAccessDb, type CaseAccessDb } from "./db.ts";
 import {
-  renderAccessCode, renderCaseLink, renderDocumentRequest, renderReportReady, sendNotification, type NotificationOutcome, type NotificationTemplate,
+  renderAbandonmentReminder, renderAccessCode, renderCaseLink, renderDocumentRequest, renderReportReady, sendNotification, type NotificationOutcome, type NotificationTemplate,
 } from "./notifications.ts";
 // D-9 lives in one place: the request table S3.3 built. The link must not name a
 // different number of days from the one the thread actually enforces.
 import { REQUEST_TIMING } from "../reports/refusal-requests.ts";
 import { openDocumentRequest } from "../reports/awaiting-document.ts";
+import { abandonmentAfterHours, abandonmentCandidates, markAbandonmentReminder, optOutOfReminders, optOutUrl, type SweepOutcome } from "./abandonment.ts";
 
 const DAY = 86_400;
 const HOUR = 3_600;
 
-export type LinkPurpose = "payment_verified" | "resend" | "report_ready" | "document_request";
+export type LinkPurpose = "payment_verified" | "resend" | "report_ready" | "document_request" | "abandonment_reminder";
 
 export type SendLinkResult = Readonly<{
   case_id: string;
@@ -387,6 +388,77 @@ export async function sendDocumentRequestLink(caseId: string, db?: CaseAccessDb 
   return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
 }
 
+/**
+ * Site S4 (ב.12). The abandonment sweep: one message per case, to people who
+ * attached a payslip and did not pay.
+ *
+ * Written as a sweep rather than as a timer set when the upload happens,
+ * because a timer is a promise a process has to stay alive to keep. A sweep
+ * that reads the database and marks what it sent survives a restart, a deploy
+ * and a missed run, which is the same reason U4's link delivery is a sweep.
+ *
+ * The state is recorded whatever happens — sent, failed or refused — so the
+ * answer to "why did this person never hear from us" is in the row rather than
+ * in a log nobody kept.
+ */
+export async function sweepAbandonedCases(
+  input: Readonly<{ limit?: number; afterHours?: number }> = {},
+  db?: CaseAccessDb | null,
+): Promise<SweepOutcome> {
+  const store = db ?? await resolveCaseAccessDb();
+  const empty: SweepOutcome = { examined: 0, sent: 0, failed: 0, refused: 0, skipped_no_contact: 0 };
+  if (!store) return empty;
+  const candidates = await abandonmentCandidates(
+    { afterHours: input.afterHours ?? abandonmentAfterHours(), limit: input.limit ?? 50 },
+    store,
+  );
+  let sent = 0;
+  let failed = 0;
+  let refused = 0;
+  let skipped = 0;
+  for (const candidate of candidates) {
+    const found = await contactOfCase(store, candidate.case_id);
+    // The candidate query already requires a verified contact; this is the
+    // second reading of the same fact and it disagreeing means the row changed
+    // under us, which is a reason to skip and not to send.
+    if (!found || !found.contact_verified) {
+      skipped += 1;
+      continue;
+    }
+    const identityId = await identityOf(store, found.contact);
+    const token = createOpaqueToken();
+    const issued = (await store.rpc<{ token_id: string; issued: boolean }>("case_access_token_issue", {
+      target_case: candidate.case_id, target_identity: identityId, target_purpose: "abandonment_reminder",
+      target_token_hash: hashToken(token), target_ttl_seconds: productOffer().access.link_token_ttl_hours * HOUR,
+    }))[0];
+    if (!issued) {
+      failed += 1;
+      await markAbandonmentReminder({ caseId: candidate.case_id, state: "failed" }, store);
+      continue;
+    }
+    const origin = publicOrigin();
+    const rendered = renderAbandonmentReminder({
+      firstName: found.first_name,
+      publicId: found.public_id,
+      linkUrl: `${origin}/case/${token}`,
+      optOutUrl: optOutUrl(origin, token),
+    });
+    const outcome = await sendNotification({
+      template: "abandonment_reminder", channel: found.contact.channel, to: found.contact.normalized, ...rendered,
+    });
+    await recordNotification(store, {
+      case_id: candidate.case_id, identity_id: identityId, channel: found.contact.channel,
+      template: "abandonment_reminder", outcome,
+    });
+    await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
+    await markAbandonmentReminder({ caseId: candidate.case_id, state: outcome.state }, store);
+    if (outcome.state === "sent") sent += 1;
+    else if (outcome.state === "refused") refused += 1;
+    else failed += 1;
+  }
+  return Object.freeze({ examined: candidates.length, sent, failed, refused, skipped_no_contact: skipped });
+}
+
 // ---------------------------------------------------------------------------
 // The one-time exchange and the challenge (finding 8).
 // ---------------------------------------------------------------------------
@@ -431,6 +503,27 @@ export async function peekLinkToken(token: unknown, db?: CaseAccessDb | null): P
   if (!store || !isOpaqueToken(token)) return { valid: false, public_id: null };
   const resolved = await resolveToken(store, token);
   return resolved?.valid ? { valid: true, public_id: resolved.public_id } : { valid: false, public_id: null };
+}
+
+/**
+ * Site S4 (ב.12). The opt-out behind the link in the reminder.
+ *
+ * It PEEKS at the token rather than exchanging it. The link in a message is
+ * one-time by design — spending it here would mean that clicking "stop sending
+ * me these" also burned the way back into the case, which is a punishment for
+ * asking to be left alone. The token is read, the case is marked, the link
+ * still works.
+ *
+ * An unknown or expired token is not an error the caller can distinguish from
+ * a valid one that opted out: both answer `{ ok: true }`. Whether a given token
+ * is live is not something an unauthenticated caller gets to probe.
+ */
+export async function optOutOfRemindersByToken(token: unknown, db?: CaseAccessDb | null): Promise<Readonly<{ ok: true }>> {
+  const store = db ?? await resolveCaseAccessDb();
+  if (!store || !isOpaqueToken(token)) return { ok: true };
+  const resolved = await resolveToken(store, token);
+  if (resolved?.case_id) await optOutOfReminders(resolved.case_id, store);
+  return { ok: true };
 }
 
 export async function describeChallenge(challenge: string | null, db?: CaseAccessDb | null): Promise<Readonly<{ live: boolean; public_id: string | null; masked_to: string | null; channel: ContactChannel | null }>> {
@@ -572,7 +665,7 @@ export async function listIdentityCases(identityId: string, db?: CaseAccessDb | 
 
 export const caseAccessService = Object.freeze({
   requestFunnelCode, verifyFunnelCode, funnelCaseState,
-  issueAndSendCaseLink, sweepPendingCaseLinks, resendCaseLink, sendReportReadyNotification, sendDocumentRequestLink,
+  issueAndSendCaseLink, sweepPendingCaseLinks, resendCaseLink, sendReportReadyNotification, sendDocumentRequestLink, sweepAbandonedCases, optOutOfRemindersByToken,
   exchangeLinkToken, peekLinkToken, describeChallenge, resendChallengeCode, verifyChallengeCode,
   requestAccessCode, verifyAccessCode, resolveIdentitySession, listIdentityCases,
 });
