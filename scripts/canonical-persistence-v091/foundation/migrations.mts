@@ -91,6 +91,7 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609070001_terms_consent.sql",
   "202609070002_abandonment_reminder.sql",
   "202609070003_funnel_event_counts.sql",
+  "202609070004_funnel_counts_readable.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -217,6 +218,8 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "99730f066c89f2a4bb9d5a1e1c6eb4941aeae064f11c494606b34dcc3250912e",
   "202609070003_funnel_event_counts.sql":
     "cd5d2b4ae48ee5ca1f5a2ffba1e6a25d3ff185c78b2824a9eebe1ba47b8d26fa",
+  "202609070004_funnel_counts_readable.sql":
+    "656e1c65ffff7e07903b07c354ca3a0d7b782bb2a75d3573f8e29803e1d44954",
 });
 
 export type MigrationFile = Readonly<{

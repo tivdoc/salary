@@ -204,6 +204,34 @@ async function main(): Promise<void> {
       shadow.status === 200 && latest?.execution_mode === "draft_parameters_synthetic_inputs"
       && latest.draft_input_pin?.active_real_parameter_count === 0 && shadowBody.data?.summary?.content_included === false);
 
+    // Site S4 / D-11. M01's eight numbers, over HTTP, against the DEV database.
+    //
+    // Two things are checked and they pull in opposite directions, which is the
+    // point. The board must REACH its sources — the funnel events and the
+    // review table — so `events_counted` and `reports_counted` are real reads
+    // rather than the empty list the board was fed before S4. And it must still
+    // refuse to divide what it cannot: no report has ever been produced on this
+    // database, so the two report-derived conversions have to come back
+    // unavailable rather than as a confident 0%.
+    const board = await probe(port, "/api/operations/report-qa/board", authed, 262_144);
+    const boardBody = ((): { data?: { steps?: Record<string, { available?: boolean; rate?: number | null }>; automatic_track?: { available?: boolean }; review_minutes_per_case?: number | null; source?: { events_counted?: number; reports_counted?: number } } } => {
+      try { return JSON.parse(board.body) as never; } catch { return {}; }
+    })();
+    const boardSteps = boardBody.data?.steps ?? {};
+    const eightNumbers = Object.keys(boardSteps).length === 6
+      && boardBody.data?.automatic_track !== undefined
+      && boardBody.data?.review_minutes_per_case !== undefined;
+    const reportDerivedDark = boardSteps.payment_to_finding?.available === false
+      && boardSteps.finding_to_full_report?.available === false
+      && boardSteps.payment_to_finding?.rate === null;
+    const sourcesRead = typeof boardBody.data?.source?.events_counted === "number"
+      && typeof boardBody.data?.source?.reports_counted === "number";
+    writeFileSync(path.join(RECEIPT_ROOT, "m01-board-response.json"), board.body, "utf8");
+    record("m01_eight_numbers", board, "200, six conversions and two costs, sources read",
+      board.status === 200 && eightNumbers && sourcesRead);
+    record("m01_no_data_stays_a_dash", board, "the two report-derived numbers unavailable, not 0%",
+      board.status === 200 && reportDerivedDark);
+
     const actionBody = JSON.stringify({
       schema_version: "tivdoc-operations-command",
       idempotency_key: `idem.journey.${RUN_ID}`,

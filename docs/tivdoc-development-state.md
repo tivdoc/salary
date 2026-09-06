@@ -5093,56 +5093,359 @@ real projection rows, the QA queue's first real flow, and M01's first real
 numbers); S5's four omitted sections when their assets exist. The engine's
 backlog is closed; the product is not complete.
 
+## Long run 12 — funnel hygiene, and the last wave that does not wait on a person
+
+### S4, item by item, before anything was touched
+
+S4 was written against the site as it stood before S5 rewrote the home page and
+before S3 rebuilt the questionnaire. Four of its items are about components that
+no longer exist. The table was produced first, and it is the reason nothing was
+re-implemented that had already been deleted.
+
+| item | verdict |
+|---|---|
+| 2.1 one progress indicator | **todo.** There were two — four stages in the header, nine questions in the questionnaire, moving at different rates. |
+| 2.6 terms and consent on the payment screen | **todo.** Nothing existed: no checkbox, no link, no record. |
+| 2.8 per-field validation on blur | **partly done in S3.1, completed here.** S3.1 covered the start month and the birth year; the three contact fields and the check month were open. |
+| 3.1 balancing the demo number | **obsolete since S5** as written — the component holding it is gone — **but the rule it protects was live elsewhere**: the Open Graph share card showed a sample payslip with invented amounts and "a possible gap was found". Fixed there. |
+| 3.2 H1 ↔ FAQ tone | **todo.** The boundary sentence existed only in the notification templates. |
+| 3.3 Inspector, real or static | **obsolete since S5.** `landing/inspector.tsx` is not rendered by the S5 page. Deleted, not re-implemented. |
+| 3.6 overlaps | **obsolete since S5.** Belonged to the pre-S5 hero. |
+| 3.7 broken highlight | **obsolete since S5.** Same component. |
+| 4.1 `focus()` to the heading on step change | **todo.** Focus stayed on the pressed button while the whole question changed. |
+| 4.2 `fieldset`/`legend` for groups | **partly done, completed here.** Steps 3–5 had them; steps 0, 1, 2 and 6 did not. |
+| 4.3 the step counter without `aria-live` | **already correct.** Kept correct: the new indicator carries none either. |
+| 4.4 `aria-valuetext` on a meter | **todo.** The old meter was `aria-hidden` and had no role at all. |
+| 4.5 / 4.6 `color-scheme: light` | **partly done in S5, completed here.** It was scoped to `.v5`, so the funnel, the case screens and `/operations` were left to the OS. |
+| ב.12 abandonment | **todo.** |
+| D-11 eight numbers reach M01 | **todo.** The board was built in S6.3 and then fed an empty event list, so every conversion read as a dash whatever had happened. |
+
+**10 todo · 1 already correct · 4 obsolete since S5** (three of the ten were
+partial and are now complete).
+
+### What changed
+
+**One progress indicator (2.1).** The header owns it; the questionnaire reports
+its position into it; both read the same step number the funnel's own analytics
+event carries, so what a customer sees and what the funnel measures cannot
+drift. The questions fill the first stage's share of the bar rather than
+running beside it, and `funnel-progress.test.ts` holds the property that made
+the old pair confusing: the bar never goes backwards.
+
+**A consent that names what was consented to (2.6).** An unchecked box, links to
+the terms and the privacy policy, and a payment button that stays disabled until
+it is ticked. Two columns rather than a boolean, because "did they agree" is not
+a useful question a year later and "what did they agree to" is. The version
+comes from `src/lib/legal-terms.ts`, which the terms page also prints, so a
+later revision cannot retroactively reinterpret an earlier consent — and it is
+read from the server's own constant, never from the request body.
+
+**The fields a typo loses a case on (2.8).** Name, phone and email validate on
+blur, and every per-field error is now tied to its input by `aria-describedby`
+and `aria-invalid` rather than floating beside it. The check month became a
+derived value instead of a stored one, which makes the submit-time error
+"the check month must be a month you uploaded" unreachable rather than merely
+rarer.
+
+**A share card that stops showing a finding (3.1).** This is the one worth
+naming. The rule that no amount appears at low certainty was enforced on every
+screen, and the image that appears in every share of the site showed a sample
+payslip with invented figures and the words "a possible gap was found" — a
+finding, for a check nobody ran. The seven components of the pre-S5 landing,
+which held every remaining demo amount in the repository, were deleted rather
+than re-implemented. The price-literal test that should have caught some of this
+was naming a file S5 had already deleted, so it was asserting about something
+that did not exist; it sweeps the whole source tree now, for a price literal and
+for a sample amount, with comments stripped.
+
+**Accessibility (4.x).** Focus moves to the new heading on every step change —
+which is also why the progress bar carries no `aria-live`; a live region on an
+element that animates talks over everything else, and the focus move is what a
+person actually needs to hear. The four single-group steps are named by their
+heading rather than given a legend that would make a screen reader read the
+question twice. `color-scheme: light` now covers the whole product. Two physical
+CSS offsets became logical ones in a document that is right-to-left.
+
+**One reminder (ב.12).** Twenty-four hours after an upload with no payment, on
+U4's own channel under a fifth purpose. One — not a sequence, no discount, no
+deadline, and the message says so. The opt-out is a link in the body; it peeks
+at the token rather than spending it, because asking to be left alone should not
+burn the way back into the case, and it is a POST behind a confirm screen so
+that a mail client's link prefetcher cannot opt anyone out. A refused recipient
+is terminal (S1.5's distinction between a policy refusal and a provider
+failure); a failed send may be retried.
+
+**M01 reads real events (D-11).** Distinct sessions before a case exists,
+distinct cases after — a person who reloads the landing five times is one person
+considering one check. And the two report-derived conversions go dark while no
+report exists at all: dividing zero findings by twenty paid cases would print
+"0% of paid customers had anything found", which is a claim about the engine
+from data that says nothing about the engine.
+
+### Lane B — two agents, and what was done with what they found
+
+**Accessibility (WCAG 2.1 AA, six screens).** 0 blockers, 5 majors: three
+per-field errors not programmatically tied to their inputs (questionnaire ×2,
+thread ×1) and two physical CSS offsets in an RTL document. All five applied
+after checking each against the source. The audit did not find the three items
+S4's own list names — no focus move on step change, four unlabelled groups, and
+`color-scheme` scoped to the landing — which is a useful calibration: an agent
+audit is a second pair of eyes, not a substitute for the brief's own checklist.
+
+**Funnel adversarial.** Five findings, of which four survived checking:
+
+- *Applied.* The funnel keeps one case per browser in a cookie, so two tabs each
+  finishing a questionnaire leaves the first about to send a verification code
+  for a case it did not create. The agent's own fix — pass the case id from the
+  client — was rejected: a client that could name the case to verify could name
+  anyone's. What was implemented instead is a check the client is allowed to
+  make: ask the server which case the cookie holds, and stop if it is not the
+  one just created.
+- *Applied.* The "open a new check" dismissal did not survive a refresh, so the
+  resume banner returned and the next click resumed the case the person had just
+  chosen to leave.
+- *Declined, with reason.* "Fail case creation if the awaiting-document request
+  cannot be opened." Losing a whole case because a follow-up request failed is
+  worse than the degradation that exists: the case stays in
+  `questionnaire_completed` and the person walks the pre-S2.4 funnel, which
+  works.
+- *Withdrawn by the agent itself* on re-reading (a half-written case after a
+  failed questionnaire insert — the cookie is set after the insert, so it cannot
+  happen).
+
+### One defect this run found by running things
+
+`case_funnel_event_counts` was written as security invoker — correctly, since a
+definer would widen the definer surface for a read that needs no elevation — but
+`funnel_events` had been granted to `service_role` alone. Every unit test passed
+against the in-memory mirror; the operations journey returned 422 twice. The fix
+is the grant and a read policy, not a definer: a grant without a policy on an
+RLS table answers every query with zero rows, which would have been worse than
+the error, because the board would have shown a confident zero.
+
+## Freeze — long run 12, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs`:
+type check 0 errors; eslint 0 errors, 0 warnings; vitest **322 files, 2362
+passed, 3 skipped, 0 failed**; `next build` compiled; production closure
+**48/48 over both environments, identical posture**.
+
+### DEV, as the runtime roles
+
+Chain **74/74**, tail `202609070004` — four migrations this run (`…0001` the
+terms consent, `…0002` the abandonment reminder and its fifth token purpose,
+`…0003` the funnel counters, `…0004` the grant and read policy those counters
+needed), **no new definer name**: every function this run added is security
+invoker. Definer surface **111, ungated 2, unexpected 0, reserved-execute 14**.
+Dynamic matrix **14 checks, 10 supported, 10 passed**. RLS force **66
+tenant-scoped tables, 0 unforced**. Parameter-decision matrix **21/21**.
+Operations journey **19/19** — two steps added this run, proving M01 reaches its
+sources and that the two report-derived numbers stay a dash. Access journey
+**26/26**. S6 structure proof **12/12**. D-11 counting proof
+(`scripts/dev-runtime/funnel-counts-proof.mts`) **6/6**, seeded and rolled back
+so the database is left exactly as it was found.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0 (62 registered), rules active
+0, attestations 0, reviewer identities 0, customer rows 0, **messages to any
+real contact 0**, openai calls 0, provider calls 0, deployments 0, remote
+production migrations 0, findings 0, reports in the review queue 0.
+
+### Entry points
+
+CEP-107 and CEP-108 added: inventory **108**, product-stable **97**, product
+dispatcher roots **40** (39 Next roots plus the canonical registrar), app routes
+19, api routes 20. `product_runtime` imports nothing from the engine, proven per
+route file at HEAD against `main`.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-29 | open | unchanged; no `.env.local`, 0 of 4 variables present by name, so run 13-T did not start |
+| BL-31 | open, **a full blocker for the access path in production** | no provider; every message this run went to the file sink or was refused by the allowlist |
+| BL-30 | open | unchanged; the attestation reality check disagrees with the owner statement again |
+| BL-32, BL-33, BL-27, BL-25, BL-26, BL-28, BL-16 | open | unchanged |
+| BL-34 | noted, closed on our side | DEV is `tivdoc_v09_devruntime01`, not the `postgres` the dashboard shows |
+
+## Where the system stands (after LR12) — 2026-09-06
+
+The document to read first. Everything above this line is how the system got
+here; this is what it is.
+
+### What is built
+
+Each line names the thing and the test or journey that proves it, so a claim
+here can be checked rather than believed.
+
+| wave | what exists | proven by |
+|---|---|---|
+| Engine (pools H, D, S, R, E2, E3, L4–L10, runs 11–12) | the legal engine, its parameters, decisions, resolutions and shadow | `parameter-decision-matrix.mts` 21/21; `dynamic-matrix.mts` 10/10 supported; `shadow/verify-v010.mts` |
+| S1 — customer access | link, code, rolling session, `/login`, `/cases` | `scripts/dev-runtime/access-journey.mts` **26/26** |
+| S1.5 — delivery | one outbound channel, a recipient allowlist that fails closed, `refused` as a state distinct from `failed` | `delivery-allowlist.test.ts`; access journey step "a recipient outside the allowlist is refused" |
+| S2 — documents | twelve payslip slots, a review screen before payment, readability judged once | `document-review` suites; `202609060002` slots migration |
+| S2.3 / S2.4 | a document added after payment walks the same review screen; "I'll find it later" opens a blocking request, a case state and a link | `awaiting-document.test.ts` 7/7; `upload-session/route.test.ts` 4/4 |
+| S3 — the report contract | three gates made structural (activation → applicability → certainty); a number at low certainty cannot be constructed | `case-report-projection.test.ts` 14/14, incl. "a draft parameter carries no amount" |
+| S3.3 / S3.4 | refusal → request mapping (11 codes); the four case screens | `refusal-requests.test.ts`; `case-requests.ts`; CEP-102…105 |
+| S5 — the home page | direction B, four sections deliberately absent until their assets exist | `landing-v5.test.ts`, incl. "no amount in the hero visual" |
+| S6 — operations | D-10.2/D-10.3 review queue, wording-only editing, `recheck_required`, M01 | `report-qa.test.ts` 16/16; `report-qa-proof.mts` **12/12** on DEV |
+| S4 — funnel hygiene (this run) | one progress indicator, terms consent with its version, per-field validation, the abandonment reminder, M01 reading real events | `funnel-progress.test.ts` 5/5; `legal-terms.test.ts` 4/4; `abandonment.test.ts` 7/7; operations journey **19/19**; `funnel-counts-proof.mts` **6/6** on DEV |
+
+Local, at this head: type check 0 errors, eslint 0/0, vitest **322 files, 2362
+passed, 3 skipped**, `next build` compiled, production closure **48/48 over both
+environments with identical posture**.
+
+### What is inactive, and on purpose
+
+None of these is a defect, and none of them is fixed by writing code.
+
+- **Topics 0 of 7.** No topic is active, because activation requires two
+  attested reviewer identities and there are zero identities in the database.
+  Every report the product can produce today therefore reads
+  "ממתין לאימות בסיום הפיתוח" for all seven topics — which is not a placeholder,
+  it is the truth, and the fixture that says so is the one the case screens
+  render.
+- **No message has ever reached a real person.** There is no email or SMS
+  provider configured, and the delivery allowlist refuses every recipient
+  outside the owner's own two channels before a provider is even called. Every
+  send in every run has gone to a file sink or been refused.
+- **No production environment on this machine.** The four variables
+  (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`,
+  `OPENAI_EXTRACTION_MODEL`) exist nowhere here, so run 13-T has never started.
+- **No projection row exists.** `case_report_projections` is append-only and no
+  role holds insert until run 16, so the review queue has nothing real to
+  review and M01's two report-derived numbers correctly show a dash rather than
+  a zero.
+- **Nothing is deployed.** tivdoc.com serves `main`; this branch has never been
+  merged, and the access path stays inactive in production until a provider
+  exists.
+
+### The human gate
+
+Mirrors `tivdoc-owner-checklist.md` (2026-09-06). Items 1–5 are about fifteen
+minutes in total; 6–8 are hours of two people's time.
+
+1. **The four environment variables — 3 minutes.** Vercel →
+   `tivdoccom-5042s-projects` → the tivdoc.com project → Settings →
+   Environment Variables → copy `NEXT_PUBLIC_SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OPENAI_EXTRACTION_MODEL`
+   into a new `C:\dev\tivdoc\salary\.env.local`, one `NAME=value` per line. The
+   file is gitignored. **Not into a chat.** → unblocks run 13-T on the seven
+   trial cases: the real pipeline, extraction to engine to drafts.
+2. **Cloudflare — a mailbox for info@tivdoc.com — 5 minutes.**
+   dash.cloudflare.com → tivdoc.com → Email → Email Routing: (a) Destination
+   addresses → `tivdoc.com@gmail.com` → Add → click the verification mail;
+   (b) Routing rules → Create address → `info` → Send to → that address → Save;
+   (c) the "DNS records: Not configured" banner → **Add records and enable**;
+   (d) DNS → Records → Add → TXT, name `_dmarc`, content
+   `v=DMARC1; p=none; rua=mailto:info@tivdoc.com`. → today `info@` receives no
+   mail at all (no MX). After this: the footer, Reply-To, and a delivery test.
+3. **GitHub → private — 1 minute.** github.com/tivdoc/salary → Settings →
+   Danger Zone → Change visibility → Make private. → the code and the legal
+   documents stop being public.
+4. **An email/SMS provider — 5 minutes.** Choose one (Resend/Postmark/SendGrid
+   for mail; Twilio or an Israeli provider for SMS), add tivdoc.com in the
+   provider, copy the DKIM records it gives you into Cloudflare DNS as "DNS
+   only", and put the credentials in `.env.local` (variable names: table G0.2
+   of `tivdoc-site-run-s1-5-delivery.md`). Exactly **one** SPF record:
+   `v=spf1 include:_spf.mx.cloudflare.net include:<provider> ~all`. → S1.5
+   U1/U5, a real message to a customer. Without it the access path is inactive.
+5. **Order 2000 — the sanctioned download — 2 minutes.**
+   `output\legal-knowledge\acquisition-handoff-v0.2\ACQ-V02-FRAMEWORK-EXTENSION-ORDER-2000\README`
+   — download from the official link, hash it, complete `receipt.json`, run the
+   import command. → closes BL-27; 43 hours straight from the source.
+6. **Two reviewer identities — 2 minutes each, each person at this keyboard.**
+   `docs\reviewer-onboarding\vladimir-kremen.he.md` and `leo-kremen.he.md` —
+   keygen, then register. Needs DEV reachable
+   (`~/.tivdoc-dev/credentials.env` present on the machine). → everything:
+   attestations, Golden Cases, run 14.
+7. **Attestations — 6–10 hours each, separately.** 62 parameters, 23 sources, 7
+   visual, the resolutions, 7 RuleSpecs, in `/operations` against DEV: claim →
+   read the citation → attest. A derived parameter (8.6) must name its
+   assumption. The basis is the opinion plus the errata (§7 of the approval
+   record) and package v15. → the first topic (minimum wage) becomes 1 of 7,
+   and then run 14.
+8. **42 Golden Cases and Ground Truth — 8–12 hours each, plus 3–4.**
+   `tivdoc-manual-check-worksheet.xlsx` v2 computes the expected result; the
+   system refuses the same identity twice. Ground Truth: 5 composites, visual
+   confirmation and annotation. → run 14 (offline shadow), then 15 (customer
+   shadow).
+9. **Home page assets (optional).** `docs/design/assets-needed.md` — a
+   photograph of a real person, a video and its poster, and the founder's story
+   in three to five of your own sentences. Each asset turns on one omitted
+   section; without them the page works as it is.
+
+**Recommended order when you come back:** 1 → run this repository's next brief
+→ 2, 3 → 4 → 5 → 6 (with Leo) → start 7.
+
+**What not to do.** Do not delete, reset or pause the Supabase project
+`cpzrbidxftzqcfeqqusu` — DEV lives there in the database
+`tivdoc_v09_devruntime01`, not in the `postgres` the dashboard shows (BL-34).
+Do not paste keys into a chat. Do not register an identity on someone else's
+behalf.
+
+### The two defects long run 11 found in its own foundations
+
+Both were the same shape — a fact written down in two places, where one copy
+went stale and no test read the source. Both now have a test that reads the
+source rather than trusting a second copy, and both tests earned their place in
+this run:
+
+- **The store adapter's function allowlist.** `db.ts` validates every SQL
+  function name before interpolating it, and its list named only the families
+  that existed when it was written. The test is
+  `src/server/product/case-access/db.test.ts` → **"accepts every function name
+  the product actually calls"**, which reads the product's own source for the
+  names it passes to `rpc`. It fired twice in LR12, on the `case_funnel_*` and
+  `case_abandonment_*`/`case_reminder_*` families, before either could reach a
+  screen.
+- **The dispatcher denominator.** The local runtime keeps its own copy of the
+  count of product dispatchers, deliberately — a startup that read the ledger
+  would prove nothing about the ledger. The test is
+  `src/server/platform/capabilities/stable-entrypoint-reachability.test.ts` →
+  **"agrees with every hard-coded copy of the dispatcher denominator"**, which
+  greps the source for every comparison against the array's length. It fired in
+  LR12 when CEP-107 and CEP-108 moved the count to 40.
+
 ## Resume point
 
-Refreshed after long run 11. Everything before this point is history; this
-section and `docs/resume-after-pause.md` are what a resuming session must read.
+Refreshed after long run 12. Everything before this point is history; the
+section "Where the system stands (after LR12)" above and
+`docs/resume-after-pause.md` are what a resuming session must read.
 
 **Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`).
-Pools H, D, S, R, E2, E3, L4-L10, runs 11-12, wave S1, the external-review
-corrections, long run 9, long run 10 and long run 11 are closed; run 13-T is
-closed at Gate 0 with D1-D5 blocked (BL-29). Pool P: 62 versions, all draft or
-superseded, 0 attestations. Eight legal decisions: six carry an owner-recorded
-resolution (eight rows). Report v10 and package v15 carry `legal_basis:
-opinion_3ddad7e8 + errata_1_owner_closed`.
+The engine's pools and runs 11–12 are closed; waves S1, S1.5, S2, S3, S4, S5 and
+S6 are closed; run 13-T is closed at Gate 0 with D1–D5 blocked (BL-29). Pool P:
+62 versions, all draft or superseded, 0 attestations.
 
-**What long run 11 changed, in one sentence.** The product now has a written
-contract for what a report may say — three gates made structural, so a number
-at low certainty or under an unverified rule cannot be constructed — plus the
-case screens that render it, a thread where every refusal becomes one question
-with a clock, a state for the payslip that arrives later, and an operations
-queue where a person reads a report before a customer does and can change its
-wording but never its numbers.
+**What long run 12 changed, in one sentence.** The funnel stopped contradicting
+itself — one progress indicator instead of two, a consent that records which
+terms it was given for, per-field validation on the fields a typo loses a case
+on, a share card that no longer shows a finding nobody found, one abandonment
+message with an opt-out that does not burn the way back in, and M01 reading real
+events instead of an empty list.
 
-**What it could not do.** Phase D (run 13-T): no `.env.local`, so none of the
-four production variables exist by name. The QA queue's flow on DEV: the queue
-points at `case_report_projections`, which no role may write until run 16, so
-the flow is proven against the in-memory mirror and only the structure is proven
-on the database.
+**What it could not do.** Run 13-T: no `.env.local`, so none of the four
+production variables exist by name. Nothing else in the brief was blocked.
 
-**Read this before touching Supabase.** The project the owner sees as empty IS
-the runs' DEV (BL-34) — project `cpzrbidx…`, database
-`tivdoc_v09_devruntime01`, not `postgres`. A script that builds its own
-connection URL from the credential file's parts will land on `postgres` and
-report every table as missing; use the per-role `TIVDOC_*_POSTGRES_URL` values
-the runtimes themselves use. Resetting or deleting the project destroys every
-run's evidence.
+**There is no further code wave that does not wait on a person.** Runs 14
+(offline shadow), 15 (customer shadow) and 16 (production activation) each need
+items 6–8 of the human gate done first. The nine items, with their exact click
+paths, are in "Where the system stands (after LR12)".
+
+**Read this before touching Supabase.** DEV is project `cpzrbidx…`, database
+`tivdoc_v09_devruntime01` — not the `postgres` the dashboard shows (BL-34). A
+script that builds its own connection URL from the credential file's parts will
+land on `postgres` and report every table as missing; use the per-role
+`TIVDOC_*_POSTGRES_URL` values the runtimes themselves use. Resetting or
+deleting the project destroys every run's evidence.
 
 **What is proven about the live site.** Unchanged. tivdoc.com serves `main`;
 nothing here is deployed; the access path stays inactive in production until
 BL-31.
 
-**The waves, in order.** Run 16 (the engine's insert grant on the projection,
-and with it the first real report, the QA queue's first real flow and M01's
-first real numbers) → S4 (hygiene and a11y) any time.
-
-**The human gates, named.**
-
-1. The owner: BL-31 — the SMS and email provider and its credentials; the four
-   production variables (BL-29); two reviewer identities at a keyboard
-   (`docs/reviewer-onboarding/`); the official records behind BL-32; the assets
-   in `docs/design/assets-needed.md` that turn S5's four omitted sections on;
-   and the DNS work for `info@tivdoc.com`, which today cannot receive mail.
-2. No lawyer step exists anywhere: errata #1 is owner-closed.
-
-**Engineering after this run.** Run 16, on the engine side.
+**Engineering after this run.** Nothing, until the human gate moves. When it
+does: run 13-T (needs item 1 only), then run 14 (needs items 6–8).
