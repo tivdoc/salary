@@ -13,6 +13,14 @@ const validQuestionnaire = {
   worksSaturday: false,
   payslipAvailable: true,
   suspectedIssue: "השעות הנוספות מופיעות כסכום קבוע מדי חודש.",
+  // S3.1: the engine's own inputs. Each decides whether a topic can be checked at all.
+  employmentStartMonth: "2023-04",
+  birthYear: "1994",
+  sex: "female",
+  hadPensionFundAtHire: false,
+  employerProvidesTransport: false,
+  commuteOver500m: true,
+  managerialOrTrustRole: false,
 };
 
 describe("questionnaireSchema", () => {

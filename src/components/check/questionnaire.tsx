@@ -23,6 +23,13 @@ type FormState = {
   firstName: string;
   phone: string;
   email: string;
+  employmentStartMonth: string;
+  birthYear: string;
+  sex: "female" | "male" | "unspecified" | null;
+  hadPensionFundAtHire: boolean | null;
+  employerProvidesTransport: boolean | null;
+  commuteOver500m: boolean | null;
+  managerialOrTrustRole: boolean | null;
 };
 
 const DRAFT_KEY = "tivdoc:questionnaire-draft:v2";
@@ -40,6 +47,15 @@ const initialForm: FormState = {
   firstName: "",
   phone: "",
   email: "",
+  // S3.1: the engine's own inputs. Each one decides whether a topic can be
+  // checked at all — without them the report refuses instead of answering.
+  employmentStartMonth: "",
+  birthYear: "",
+  sex: null,
+  hadPensionFundAtHire: null,
+  employerProvidesTransport: null,
+  commuteOver500m: null,
+  managerialOrTrustRole: null,
 };
 
 const stepTitles = [
@@ -47,6 +63,8 @@ const stepTitles = [
   ["איך השכר מוגדר?", "אין צורך לדעת כרגע את הסכום המדויק."],
   ["כמה שעות עובדים ביום רגיל?", "בחרו את האפשרות הקרובה ביותר."],
   ["איך נראה שבוע העבודה?", "מספיק אומדן. את הפרטים המדויקים נראה במסמכים."],
+  ["מתי התחלת, ומה התפקיד?", "הוותק קובע ימי חופשה והבראה; התפקיד קובע אם חוק שעות העבודה חל עליך."],
+  ["עוד שתי שאלות קצרות", "גיל קובע שכר מינימום לנוער; פנסיה ונסיעות נקבעות לפי מה שתסמן כאן."],
   ["יש תלוש שאפשר לצלם או להעלות?", "PDF או צילום ברור מהטלפון — שניהם מתאימים."],
   ["מה גרם לכם לבדוק?", "לא חובה. משפט קצר יכול לעזור לנו להבין איפה להסתכל."],
   ["לאן לקשר את הבדיקה?", "הפרטים נשמרים באופן פרטי ולא נשלחים למעסיק."],
@@ -87,6 +105,10 @@ export function Questionnaire() {
   const started = useRef(false);
   const hydrated = useRef(false);
   const [step, setStep] = useState(0);
+  // Review 2.8: a field says what is wrong when you leave it, not when you submit.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const setFieldError = (field: string, message: string) =>
+    setFieldErrors((current) => ({ ...current, [field]: message }));
   const [form, setForm] = useState<FormState>(initialForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -171,10 +193,19 @@ export function Questionnaire() {
     ) {
       return "צריך להשלים את ימי העבודה ושאלות שישי ושבת.";
     }
-    if (step === 4 && form.payslipAvailable === null) {
+    // S3.1: the engine inputs. A missing one here becomes a refusal later, so it is
+    // cheaper for everyone to ask now than to open a blocking request afterwards.
+    if (step === 4 && (!form.employmentStartMonth || form.managerialOrTrustRole === null)) {
+      return "צריך למלא את חודש תחילת העבודה ולסמן אם התפקיד ניהולי.";
+    }
+    if (step === 5 && (!form.birthYear || form.sex === null || form.hadPensionFundAtHire === null
+      || form.employerProvidesTransport === null || (form.employerProvidesTransport === false && form.commuteOver500m === null))) {
+      return "צריך להשלים את שנת הלידה, המין, הפנסיה והנסיעות.";
+    }
+    if (step === 6 && form.payslipAvailable === null) {
       return "צריך לבחור אם יש תלוש זמין.";
     }
-    if (step === 6 && (!form.firstName.trim() || !form.phone.trim() || !form.email.trim())) {
+    if (step === 8 && (!form.firstName.trim() || !form.phone.trim() || !form.email.trim())) {
       return "צריך למלא שם, טלפון ואימייל כדי לפתוח את הבדיקה.";
     }
     return "";
@@ -237,7 +268,11 @@ export function Questionnaire() {
     }
 
     const attribution = currentFirstTouch();
-    const parsed = questionnaireSchema.safeParse({ ...form, attribution });
+    // When the employer provides transport the distance question is never shown, and it
+    // has no meaning: there is no travel entitlement to measure. It is recorded as false
+    // rather than left unset, so the fact is present and answered rather than missing.
+    const commuteOver500m = form.employerProvidesTransport === true ? false : form.commuteOver500m;
+    const parsed = questionnaireSchema.safeParse({ ...form, commuteOver500m, attribution });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message || "יש פרט שדורש תיקון לפני שממשיכים.");
       return;
@@ -373,6 +408,82 @@ export function Questionnaire() {
 
         {step === 4 && (
           <div className="form-stack">
+            <label className="field">
+              <span>חודש ושנה של תחילת העבודה</span>
+              <input
+                type="month"
+                value={form.employmentStartMonth}
+                max={new Date().toISOString().slice(0, 7)}
+                onChange={(event) => update("employmentStartMonth", event.target.value)}
+                onBlur={(event) => setFieldError("employmentStartMonth", event.target.value ? "" : "צריך לבחור חודש ושנה")}
+              />
+              {fieldErrors.employmentStartMonth ? <small className="field-error" role="alert">{fieldErrors.employmentStartMonth}</small> : null}
+            </label>
+            <fieldset className="field-group">
+              <legend>התפקיד ניהולי, או דורש מידה מיוחדת של אמון אישי?</legend>
+              <div className="option-row">
+                <OptionButton selected={form.managerialOrTrustRole === true} onClick={() => update("managerialOrTrustRole", true)}>כן</OptionButton>
+                <OptionButton selected={form.managerialOrTrustRole === false} onClick={() => update("managerialOrTrustRole", false)}>לא</OptionButton>
+              </div>
+              <small>אם כן — לפי סעיף 30(א) חוק שעות עבודה ומנוחה אינו חל, והדוח יאמר זאת במקום לבדוק שעות.</small>
+            </fieldset>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="form-stack">
+            <div className="form-grid">
+              <label className="field">
+                <span>שנת לידה</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1940}
+                  max={new Date().getFullYear() - 14}
+                  value={form.birthYear}
+                  onChange={(event) => update("birthYear", event.target.value)}
+                  onBlur={(event) => setFieldError("birthYear", /^\d{4}$/u.test(event.target.value) ? "" : "צריך שנה בת ארבע ספרות")}
+                />
+                {fieldErrors.birthYear ? <small className="field-error" role="alert">{fieldErrors.birthYear}</small> : null}
+              </label>
+              <fieldset className="field-group">
+                <legend>מין</legend>
+                <div className="option-row option-row--three">
+                  <OptionButton selected={form.sex === "female"} onClick={() => update("sex", "female")}>אישה</OptionButton>
+                  <OptionButton selected={form.sex === "male"} onClick={() => update("sex", "male")}>גבר</OptionButton>
+                  <OptionButton selected={form.sex === "unspecified"} onClick={() => update("sex", "unspecified")}>מעדיף/ה לא לציין</OptionButton>
+                </div>
+              </fieldset>
+            </div>
+            <fieldset className="field-group">
+              <legend>כשהתחלת לעבוד, כבר הייתה לך קרן פנסיה?</legend>
+              <div className="option-row">
+                <OptionButton selected={form.hadPensionFundAtHire === true} onClick={() => update("hadPensionFundAtHire", true)}>כן</OptionButton>
+                <OptionButton selected={form.hadPensionFundAtHire === false} onClick={() => update("hadPensionFundAtHire", false)}>לא</OptionButton>
+              </div>
+              <small>קובע מתי מתחילה חובת ההפרשה.</small>
+            </fieldset>
+            <fieldset className="field-group">
+              <legend>המעסיק מספק הסעה?</legend>
+              <div className="option-row">
+                <OptionButton selected={form.employerProvidesTransport === true} onClick={() => update("employerProvidesTransport", true)}>כן</OptionButton>
+                <OptionButton selected={form.employerProvidesTransport === false} onClick={() => update("employerProvidesTransport", false)}>לא</OptionButton>
+              </div>
+            </fieldset>
+            {form.employerProvidesTransport === false ? (
+              <fieldset className="field-group">
+                <legend>המרחק מהבית לעבודה מעל 500 מטר?</legend>
+                <div className="option-row">
+                  <OptionButton selected={form.commuteOver500m === true} onClick={() => update("commuteOver500m", true)}>כן</OptionButton>
+                  <OptionButton selected={form.commuteOver500m === false} onClick={() => update("commuteOver500m", false)}>לא</OptionButton>
+                </div>
+              </fieldset>
+            ) : null}
+          </div>
+        )}
+
+        {step === 6 && (
+          <div className="form-stack">
             <div className="option-row">
               <OptionButton selected={form.payslipAvailable === true} onClick={() => update("payslipAvailable", true)}>כן, יש לי</OptionButton>
               <OptionButton selected={form.payslipAvailable === false} onClick={() => update("payslipAvailable", false)}>אמצא אחר כך</OptionButton>
@@ -384,7 +495,7 @@ export function Questionnaire() {
           </div>
         )}
 
-        {step === 5 && (
+        {step === 7 && (
           <label className="field">
             <span>אפשר לכתוב כאן — או פשוט להמשיך</span>
             <textarea
@@ -396,7 +507,7 @@ export function Questionnaire() {
           </label>
         )}
 
-        {step === 6 && (
+        {step === 8 && (
           <div className="form-stack">
             <div className="form-grid">
               <label className="field"><span>שם פרטי</span><input autoComplete="given-name" value={form.firstName} onChange={(event) => update("firstName", event.target.value)} /></label>

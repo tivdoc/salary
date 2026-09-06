@@ -17,6 +17,34 @@ export const questionnaireSchema = z.object({
   payslipAvailable: z.boolean(),
   suspectedIssue: z.string().trim().max(500).optional().default(""),
   attribution: firstTouchSchema.nullable().optional(),
+
+  // --- S3.1: the inputs the engine actually needs -------------------------
+  //
+  // Everything below is an ENGINE input, not a marketing question. Each one
+  // decides whether a topic can be checked at all: without the start month the
+  // vacation and convalescence bands have no seniority; without the birth year
+  // the youth minimum wage cannot be told from the adult one; without the
+  // pension-at-hire answer the waiting period is unknown; without the transport
+  // answers the travel entitlement has no basis; and §30(א) decides whether the
+  // working-hours topic applies to this person at all.
+  //
+  // Every one of these is answered by a PERSON, so the facts they produce carry
+  // `provenance: person` and can never raise a topic above medium certainty
+  // (D-6.1). That is recorded in `questionnaireFacts` below, not assumed here.
+
+  /** First month of employment, as YYYY-MM. Seniority for vacation and convalescence. */
+  employmentStartMonth: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u, "נא לבחור חודש ושנה"),
+  /** Year of birth. The youth minimum wage applies below 18. */
+  birthYear: z.coerce.number().int().min(1940).max(new Date().getFullYear() - 14),
+  sex: z.enum(["female", "male", "unspecified"]),
+  /** Whether a pension fund already existed at hire — it sets the waiting period. */
+  hadPensionFundAtHire: z.boolean(),
+  /** The employer provides transport, so no travel entitlement arises. */
+  employerProvidesTransport: z.boolean(),
+  /** Travel pay begins beyond 500 m from home to work. */
+  commuteOver500m: z.boolean(),
+  /** §30(א): a managerial role or one requiring special personal trust is outside the Hours of Work and Rest Law. */
+  managerialOrTrustRole: z.boolean(),
 });
 
 export type QuestionnaireInput = z.infer<typeof questionnaireSchema>;

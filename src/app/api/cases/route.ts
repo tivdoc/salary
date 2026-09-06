@@ -4,6 +4,15 @@ import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
 import { metaEventId } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { questionnaireSchema } from "@/lib/validation";
+// S3.1 raised the questionnaire from seven steps to nine: the engine needs the
+// start month, birth year and sex, the pension-at-hire answer, the two travel
+// answers and the §30(א) role question, and without them the report refuses
+// instead of answering. The two client events already in place —
+// questionnaire_step_viewed and questionnaire_step_completed, both carrying
+// step_number — are what measures the cost: if start→case falls more than ten
+// points against the pre-S3.1 baseline, the split the brief specifies is to keep
+// steps 0-3 and 8 before payment and reopen steps 4-5 as thread requests after
+// it. Nothing here assumes the drop; the instrument is what decides.
 import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
@@ -53,7 +62,7 @@ export async function POST(request: Request) {
         landing_url: attribution?.landingUrl ?? null,
         referrer: attribution?.referrer ?? null,
         first_touch_at: attribution?.firstTouchAt ?? null,
-        current_questionnaire_step: 7,
+        current_questionnaire_step: 9,
         attribution_status: attribution ? "captured" : "legacy_unresolved",
       })
       .select("id,public_id")
@@ -95,7 +104,7 @@ export async function POST(request: Request) {
             referrer: attribution.referrer,
             first_touch_at: attribution.firstTouchAt,
             last_seen_at: now,
-            current_questionnaire_step: 7,
+            current_questionnaire_step: 9,
             questionnaire_started_at: now,
             questionnaire_completed_at: now,
             updated_at: now,
