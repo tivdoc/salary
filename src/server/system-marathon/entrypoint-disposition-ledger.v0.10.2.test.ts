@@ -30,8 +30,8 @@ describe("V0.10.2 entrypoint before/after disposition ledger", () => {
   it("recomputes the exact source roots without deleting or changing any kind", () => {
     expect(ENTRYPOINT_DISPOSITION_LEDGER.source_disposition_counts).toEqual({
       product_stable_partial_or_unwired: 0,
-      app_routes: 15,
-      api_routes: 17,
+      app_routes: 18,
+      api_routes: 18,
       durable_workers: 5,
       application_services: 19,
       clis: 45,

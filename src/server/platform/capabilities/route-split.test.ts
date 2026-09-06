@@ -86,6 +86,10 @@ describe("the differential against main's own route inventory (D4)", () => {
       "src/app/api/cases/access/request/route.ts": "UX Run 1 / U2: issues an access code to the channel on file; an empty body is a 400, never a hint about a contact.",
       "src/app/api/cases/access/verify/route.ts": "UX Run 1 / U2: turns a valid code into a rolling identity session; an empty body is a 400.",
       "src/app/api/cases/access/resend/route.ts": "UX Run 1 / U5: re-sends the case link for the funnel cookie's case; without the cookie it answers 401.",
+      "src/app/case/[token]/thread/page.tsx": "Site S3.4 / D-2: the thread where a refusal became a question; without a session it sends the visitor to /login.",
+      "src/app/case/[token]/documents/page.tsx": "Site S3.4 + S2.3: the case's own documents, behind the verified identity session.",
+      "src/app/case/[token]/reports/page.tsx": "Site S3.4: renders the case_report_projection and computes nothing; today every topic reads awaiting_verification.",
+      "src/app/api/cases/[token]/requests/route.ts": "Site S3.4 / D-2: answers one open request; it cannot open one, and the case comes from the session rather than the body.",
     };
     for (const file of added) {
       const entry = byFile.get(file);

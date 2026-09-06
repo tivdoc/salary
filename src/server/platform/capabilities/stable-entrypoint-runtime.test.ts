@@ -54,10 +54,10 @@ describe("stable entrypoint capability registry", () => {
   it("preserves the complete frozen denominator and separates CLI execution classes", () => {
     expect(validateStableEntrypointCapabilityRequirements()).toEqual([]);
     expect(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS).toHaveLength(105);
-    expect(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS.filter((entry) => entry.product_stable)).toHaveLength(90);
+    expect(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS.filter((entry) => entry.product_stable)).toHaveLength(94);
     expect(countBy(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS, "kind")).toEqual({
-      api_route: 17,
-      app_route: 15,
+      api_route: 18,
+      app_route: 18,
       application_service: 19,
       cli: 45,
       durable_worker: 5,

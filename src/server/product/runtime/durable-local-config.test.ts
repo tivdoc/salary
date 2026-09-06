@@ -138,7 +138,8 @@ describe("durable local product runtime configuration", () => {
     const decisions = STABLE_PRODUCT_DISPATCHER_ROOTS.map((entrypoint) => runtime.evaluate(entrypoint.entrypoint_id));
     expect(decisions.every((decision) => decision.outcome === "ALLOW" || decision.reason_codes.length > 0)).toBe(true);
     // UX Run 1 / U0: the six customer-access dispatchers need only postgresql locally, so they are allowed here.
-    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(20);
+    // S3.4: the four case-screen dispatchers (thread, documents, reports, and the request answer) need the same and no more.
+    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(24);
     expect(decisions.filter((decision) => decision.outcome === "BLOCK")).toHaveLength(13);
   });
 });
