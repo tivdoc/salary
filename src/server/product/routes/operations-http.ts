@@ -6,6 +6,9 @@ import type { InternalOpsApplicationPort } from "../internal-ops/application-por
 import { INTERNAL_OPS_SCHEMA_VERSION, type InternalOpsAction, type OpsProblemCode } from "../internal-ops/contracts.ts";
 import { InternalOpsError, type InternalOpsReadKind } from "../internal-ops/service.ts";
 import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
+import { buildFunnelBoard, readReportCounts } from "../reports/funnel-dashboard.ts";
+import { decideReview, listReviewQueue, setWording } from "../reports/report-qa.ts";
+import { sendReportReadyNotification } from "../case-access/service.ts";
 
 export const STABLE_OPERATIONS_COMMAND_SCHEMA = "tivdoc-operations-command" as const;
 
@@ -49,6 +52,31 @@ export const GROUND_TRUTH_ROUTES = Object.freeze([
  */
 export const SHADOW_ROUTES = Object.freeze([
   Object.freeze({ path: "shadow/summary", method: "GET" as const }),
+]);
+
+/**
+ * Site S6.1/S6.3. The report review queue and M01's eight numbers.
+ *
+ * Unlike every panel above it, this one is not a capability of the canonical
+ * engine service: the reports it reviews are the product's own projection
+ * contract, and the queue is a product table. It is served here because the
+ * person who reviews a report works in /operations, and it is closed in
+ * production exactly like the rest of this surface until run 16.
+ */
+/**
+ * The operator, as one string for the log. Role and id together, because "who
+ * published this" is answered by a person AND the authority they acted under —
+ * an id alone stops meaning anything once the roster changes.
+ */
+export function operatorIdentity(actor: Readonly<{ actor_id: string; role: string }>): string {
+  return `${actor.role}:${actor.actor_id}`;
+}
+
+export const REPORT_QA_ROUTES = Object.freeze([
+  Object.freeze({ path: "report-qa/queue", method: "GET" as const }),
+  Object.freeze({ path: "report-qa/board", method: "GET" as const }),
+  Object.freeze({ path: "report-qa/wording", method: "POST" as const }),
+  Object.freeze({ path: "report-qa/decide", method: "POST" as const }),
 ]);
 
 type OperationsRoute =
@@ -119,6 +147,67 @@ export function createOperationsHttpHandler(input: Readonly<{
             idempotency_key: body.idempotency_key, occurred_at: body.occurred_at,
           });
           return productJson({ correlation_id: correlationId, data });
+        } catch (error) {
+          const code = problemCode(error);
+          return productJson({ code, correlation_id: correlationId, retryable: false }, statusFor(code));
+        }
+      }
+      // Site S6.1/S6.3. The report review queue: D-10.2 and D-10.3 decide who
+      // gets here, an operator edits wording (never a number — see report-qa.ts
+      // for why that is structural rather than checked), and every step is a
+      // log line carrying the operator's identity from the session.
+      if (segments[0] === "report-qa") {
+        const joined = segments.join("/");
+        const isPost = request.method === "POST";
+        if (!REPORT_QA_ROUTES.some((route) => route.path === joined && route.method === request.method)) {
+          return productNotFound("PATH_NOT_ROUTED");
+        }
+        const session = await input.sessions.verify(request, "operations", isPost);
+        if (!session) return productNotFound("SESSION_UNVERIFIED");
+        const correlationId = correlationIdFor(request);
+        try {
+          if (joined === "report-qa/queue") {
+            const data = await listReviewQueue({ limit: queueLimit(request) });
+            return productJson({ correlation_id: correlationId, data: { items: data } });
+          }
+          if (joined === "report-qa/board") {
+            const counts = await readReportCounts();
+            return productJson({ correlation_id: correlationId, data: buildFunnelBoard([], counts) });
+          }
+          const body = await strictJsonObject(request);
+          if (!body || typeof body.qa_id !== "string") throw new InternalOpsError("OPS_INVALID_REQUEST");
+          if (joined === "report-qa/wording") {
+            if (!isRecord(body.wording)) throw new InternalOpsError("OPS_INVALID_REQUEST");
+            const wording: Record<string, string> = {};
+            for (const [topic, value] of Object.entries(body.wording)) {
+              if (typeof value !== "string") throw new InternalOpsError("OPS_INVALID_REQUEST");
+              wording[topic] = value;
+            }
+            const result = await setWording({ qaId: body.qa_id, wording, operator: operatorIdentity(session.actor) });
+            // A refusal is an answer, not an error: the operator has to see
+            // which sentence was rejected and why, in the field they typed it.
+            return productJson({ correlation_id: correlationId, data: result }, result.refusals.length > 0 ? 422 : 200);
+          }
+          const state = body.state;
+          if (state !== "approved" && state !== "published" && state !== "rejected") {
+            throw new InternalOpsError("OPS_INVALID_REQUEST");
+          }
+          const reviewSeconds = typeof body.review_seconds === "number" && Number.isSafeInteger(body.review_seconds)
+            ? body.review_seconds : undefined;
+          const row = await decideReview({ qaId: body.qa_id, state, operator: operatorIdentity(session.actor), reviewSeconds });
+          if (!row) throw new InternalOpsError("OPS_NOT_FOUND");
+          // The published report is what U4's second template announces. It is
+          // sent from here rather than from a screen so a report cannot be
+          // announced without having been published.
+          if (state === "published") {
+            try {
+              await sendReportReadyNotification(row.case_id);
+            } catch {
+              // A message that did not go out does not un-publish a report; the
+              // received screen offers a resend, and the row records the state.
+            }
+          }
+          return productJson({ correlation_id: correlationId, data: row });
         } catch (error) {
           const code = problemCode(error);
           return productJson({ code, correlation_id: correlationId, retryable: false }, statusFor(code));

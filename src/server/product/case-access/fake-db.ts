@@ -13,6 +13,8 @@ type Code = { id: string; identity_id: string; token_id: string | null; case_id:
 type Session = { id: string; identity_id: string; session_hash: string; created_at: number; expires_at: number; last_seen_at: number; revoked_at: number | null };
 type RequestRow = { identity_id: string | null; requester_ip_hash: string | null; outcome: string; created_at: number };
 type ThreadRow = { id: string; case_id: string; code: string; question: string; answer_kind: string; options: string[] | null; field_crop: string | null; blocking: boolean; opened_at: number; expires_at: string; answered_at: number | null; answer_text: string | null };
+type QaRow = { id: string; case_id: string; projection_id: string; report_kind: string; document_track: string; state: string; queue_reasons: string[]; wording: Record<string, string>; operator_identity: string | null; review_seconds: number | null; queued_at: number; decided_at: number | null; published_at: number | null };
+type QaLogRow = { qa_id: string; case_id: string; action: string; operator_identity: string; detail: Record<string, unknown>; at: number };
 export type FakeCaseDocument = { id: string; case_id: string; document_type: string; slot: string; original_filename: string; mime_type: string; size: number; period_month: string | null; created_at: number };
 type Notification = { case_id: string | null; identity_id: string | null; channel: string; template: string; state: string; provider: string; payload_sha256: string; error_code: string | null };
 
@@ -32,6 +34,8 @@ export type FakeCaseAccessDb = CaseAccessDb & Readonly<{
   requests: RequestRow[];
   case_requests: ThreadRow[];
   case_documents: FakeCaseDocument[];
+  report_qa: QaRow[];
+  report_qa_log: QaLogRow[];
   calls: Array<{ fn: string; args: Record<string, unknown> }>;
   now: () => number;
   advance(ms: number): void;
@@ -43,6 +47,7 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
     cases: cases.map((row) => ({ contact_verified_at: null, contact_verified_channel: null, ...row })), identities: [] as Identity[], identity_cases: [] as Array<{ identity_id: string; case_id: string }>,
     tokens: [] as Token[], codes: [] as Code[], sessions: [] as Session[], notifications: [] as Notification[], requests: [] as RequestRow[],
     case_requests: [] as ThreadRow[], case_documents: [] as FakeCaseDocument[],
+    report_qa: [] as QaRow[], report_qa_log: [] as QaLogRow[],
     calls: [] as Array<{ fn: string; args: Record<string, unknown> }>,
   };
   const now = () => clock;
@@ -214,6 +219,72 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
       row.answered_at = now();
       row.answer_text = s(a.target_answer).slice(0, 2_000);
       return [row];
+    },
+    // --- 202609060009: S6.1's review queue and its append-only log.
+    case_report_qa_enqueue(a) {
+      const next = s(a.target_state);
+      if (!["queued", "published"].includes(next)) throw new Error("CASE_REPORT_QA_STATE_UNKNOWN");
+      const open = state.report_qa.find((row) => row.projection_id === a.target_projection && (row.state === "queued" || row.state === "recheck_required"));
+      if (open) return [open];
+      const published = next === "published";
+      const row: QaRow = {
+        id: randomUUID(), case_id: s(a.target_case), projection_id: s(a.target_projection),
+        report_kind: s(a.target_report_kind), document_track: s(a.target_document_track),
+        state: next, queue_reasons: [...((a.target_reasons as string[] | null) ?? [])],
+        wording: {}, operator_identity: published ? s(a.target_actor) : null, review_seconds: null,
+        queued_at: now(), decided_at: published ? now() : null, published_at: published ? now() : null,
+      };
+      state.report_qa.push(row);
+      state.report_qa_log.push({ qa_id: row.id, case_id: row.case_id, action: row.state, operator_identity: s(a.target_actor), detail: { reasons: row.queue_reasons }, at: now() });
+      return [row];
+    },
+    case_report_qa_track_summary() {
+      const rows = state.report_qa;
+      const reviewed = rows.filter((row) => row.queue_reasons.length > 0);
+      return [{
+        reports: rows.length,
+        automatic_reports: rows.length - reviewed.length,
+        reviewed_reports: reviewed.length,
+        review_seconds_total: rows.reduce((total, row) => total + (row.review_seconds ?? 0), 0),
+        cases_reviewed: new Set(rows.filter((row) => row.review_seconds !== null).map((row) => row.case_id)).size,
+      }];
+    },
+    case_report_qa_list(a) {
+      const wanted = new Set((a.target_states as string[] | null) ?? []);
+      return state.report_qa.filter((row) => wanted.has(row.state))
+        .sort((left, right) => left.queued_at - right.queued_at)
+        .slice(0, Math.max(1, Math.min(n(a.target_limit ?? 50), 500)));
+    },
+    case_report_qa_wording_set(a) {
+      const row = state.report_qa.find((candidate) => candidate.id === a.target_qa && (candidate.state === "queued" || candidate.state === "recheck_required"));
+      if (!row) return [];
+      row.wording = { ...(a.target_wording as Record<string, string>) };
+      state.report_qa_log.push({ qa_id: row.id, case_id: row.case_id, action: "wording_edited", operator_identity: s(a.target_actor), detail: { topics: Object.keys(row.wording) }, at: now() });
+      return [row];
+    },
+    case_report_qa_decide(a) {
+      const next = s(a.target_state);
+      if (!["approved", "published", "rejected"].includes(next)) throw new Error("CASE_REPORT_QA_STATE_UNKNOWN");
+      const row = state.report_qa.find((candidate) => candidate.id === a.target_qa && ["queued", "recheck_required", "approved"].includes(candidate.state));
+      if (!row) return [];
+      row.state = next;
+      row.operator_identity = s(a.target_actor);
+      if (a.target_review_seconds !== null && a.target_review_seconds !== undefined) row.review_seconds = n(a.target_review_seconds);
+      row.decided_at = now();
+      if (next === "published") row.published_at = now();
+      state.report_qa_log.push({ qa_id: row.id, case_id: row.case_id, action: next, operator_identity: row.operator_identity, detail: { review_seconds: row.review_seconds }, at: now() });
+      return [row];
+    },
+    case_report_qa_recheck(a) {
+      const ids = new Set((a.target_qa_ids as string[] | null) ?? []);
+      const moved = state.report_qa.filter((row) => ids.has(row.id) && row.state === "published");
+      for (const row of moved) {
+        row.state = "recheck_required";
+        row.queue_reasons = [...new Set([...row.queue_reasons, s(a.target_reason)])];
+        row.decided_at = null;
+        state.report_qa_log.push({ qa_id: row.id, case_id: row.case_id, action: "recheck_required", operator_identity: s(a.target_actor), detail: { reason: s(a.target_reason) }, at: now() });
+      }
+      return [{ value: moved.length }];
     },
     case_documents_await(a) {
       // The SQL guard, mirrored: only a case still in the funnel moves.

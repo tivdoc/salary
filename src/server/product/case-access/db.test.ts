@@ -70,7 +70,10 @@ describe("case access store adapters", () => {
     const supabase = supabaseCaseAccessDb({ async rpc() { return { data: [], error: null }; } });
     for (const store of [postgres, supabase]) {
       await expect(store.rpc("drop_everything", {})).rejects.toThrow("CASE_ACCESS_DB_FUNCTION_UNKNOWN:drop_everything");
-      await expect(store.rpc("case_report_publish", {})).rejects.toThrow("CASE_ACCESS_DB_FUNCTION_UNKNOWN");
+      // A plausible-looking name in no allowed family: `case_report_*` is a
+      // family and `case_payment_*` is not, so the guard is about the list and
+      // not about the prefix looking familiar.
+      await expect(store.rpc("case_payment_refund", {})).rejects.toThrow("CASE_ACCESS_DB_FUNCTION_UNKNOWN");
     }
   });
 

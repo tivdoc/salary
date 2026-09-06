@@ -132,7 +132,26 @@ export const MIXED_S04_S05_S06: CaseReportProjection = projection(
   }),
 );
 
+/**
+ * The three named states as whole reports, each with one topic in the state
+ * and the rest awaiting verification. S6.1's gate reads a report rather than a
+ * topic, and a fixture that mixed all three at once could not show which
+ * condition sent it to the queue.
+ */
+export const S04_HIGH_CERTAINTY: CaseReportProjection = projection(
+  PROJECTION_TOPICS.map((topic) => (topic === "minimum_wage" ? S04_HIGH_CERTAINTY_FINDING : awaiting(topic))),
+);
+export const S05_LOW_CERTAINTY: CaseReportProjection = projection(
+  PROJECTION_TOPICS.map((topic) => (topic === "pension" ? S05_LOW_CERTAINTY_DIRECTION : awaiting(topic))),
+);
+export const S06_REFUSED: CaseReportProjection = projection(
+  PROJECTION_TOPICS.map((topic) => (topic === "working_time" ? S06_REFUSED_FOR_APPLICABILITY : awaiting(topic))),
+);
+
 export const PROJECTION_FIXTURES = Object.freeze({
   all_awaiting_verification: ALL_AWAITING_VERIFICATION,
   mixed_s04_s05_s06: MIXED_S04_S05_S06,
+  s04_high_certainty: S04_HIGH_CERTAINTY,
+  s05_low_certainty: S05_LOW_CERTAINTY,
+  s06_refused: S06_REFUSED,
 });
