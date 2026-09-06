@@ -7,6 +7,7 @@ import {
   storageBaseName,
   uploadManifestSchema,
 } from "@/lib/validation";
+import { documentArrived } from "@/server/product/reports/awaiting-document";
 import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
 
@@ -89,8 +90,18 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", caseId)
-      .in("status", ["started", "questionnaire_completed", "documents_uploaded"]);
+      // S2.4 added `awaiting_document`: a case that was waiting for exactly this
+      // file must be allowed to move now, or the upload would succeed and the
+      // case would keep saying it is waiting.
+      .in("status", ["started", "questionnaire_completed", "awaiting_document", "documents_uploaded"]);
     if (updateError) throw updateError;
+    // The request that was holding the case is answered, not deleted: the thread
+    // keeps the record of what was asked (D-2), and the SLA clock starts again.
+    try {
+      await documentArrived(caseId);
+    } catch (error) {
+      console.warn("Closing the document request deferred", error instanceof Error ? error.name : "error");
+    }
     await recordCaseFunnelEvent(caseId, "document_uploaded");
 
     const currentPaths = new Set(records.map((record) => record.storage_path));

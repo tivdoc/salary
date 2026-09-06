@@ -24,6 +24,8 @@ export const CUSTOMER_ERROR_COPY: Readonly<Record<string, string>> = Object.free
   upload_prepare_failed: "הכנת ההעלאה נכשלה. אפשר לנסות שוב.",
   upload_transfer_failed: "העלאת הקובץ נכשלה. אפשר לבדוק את החיבור ולנסות שוב.",
   upload_complete_failed: "שמירת הקבצים נכשלה. אפשר לנסות שוב.",
+  // S2.3: reaching the upload screen from a case screen.
+  upload_session_failed: "לא הצלחנו לפתוח את מסך צירוף המסמך. אפשר לנסות שוב.",
   payment_start_failed: "לא הצלחנו לפתוח את עמוד התשלום. אפשר לנסות שוב.",
   network_failed: "החיבור נכשל. אפשר לבדוק את הרשת ולנסות שוב.",
   unknown: "משהו השתבש. אפשר לנסות שוב.",

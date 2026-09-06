@@ -21,8 +21,13 @@ vi.mock("@/server/platform/capabilities/stable-next-entrypoint", () => ({
 }));
 
 vi.mock("@/components/check/upload-form", () => ({ UploadForm: () => null }));
+vi.mock("@/components/check/document-review", () => ({ DocumentReview: () => null }));
 
 const caseId = "22222222-2222-4222-8222-222222222222";
+
+function verifiedCase() {
+  return { id: caseId, public_id: "TV-UPLOAD01", email: "u@example.com", phone: null, first_name: null, status: "questionnaire_completed", payment_status: "not_started", created_at: "2026-09-05T09:00:00.000Z", payment_verified: false, contact_verified_at: Date.now(), contact_verified_channel: "email" };
+}
 
 describe("/check/upload without a case", () => {
   beforeEach(() => {
@@ -54,10 +59,45 @@ describe("/check/upload without a case", () => {
     const { createHmac } = await import("node:crypto");
     const { fakeCaseAccessDb } = await import("@/server/product/case-access/fake-db");
     const { installCaseAccessDbForTests } = await import("@/server/product/case-access/db");
-    installCaseAccessDbForTests(fakeCaseAccessDb([{ id: caseId, public_id: "TV-UPLOAD01", email: "u@example.com", phone: null, first_name: null, status: "questionnaire_completed", payment_status: "not_started", created_at: "2026-09-05T09:00:00.000Z", payment_verified: false, contact_verified_at: Date.now(), contact_verified_channel: "email" }]));
+    installCaseAccessDbForTests(fakeCaseAccessDb([verifiedCase()]));
     cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
     const { default: UploadPage } = await import("./page.tsx");
     await expect(UploadPage()).resolves.toBeDefined();
+    installCaseAccessDbForTests(null);
+  });
+
+  // Site S2.4: the customer already answered "I'll find it later". The screen
+  // says the case is saved and how long the request stands, instead of asking
+  // the same question again.
+  it("tells a case that is waiting for a payslip what it is waiting for", async () => {
+    const { createHmac } = await import("node:crypto");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { fakeCaseAccessDb } = await import("@/server/product/case-access/fake-db");
+    const { installCaseAccessDbForTests } = await import("@/server/product/case-access/db");
+    const { beginAwaitingDocument } = await import("@/server/product/reports/awaiting-document");
+
+    const db = fakeCaseAccessDb([verifiedCase()]);
+    installCaseAccessDbForTests(db);
+    await beginAwaitingDocument(caseId, db);
+    cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
+
+    const { default: UploadPage } = await import("./page.tsx");
+    const markup = renderToStaticMarkup(await UploadPage());
+    expect(markup).toContain("\u05d4\u05ea\u05d9\u05e7 \u05e9\u05dc\u05da \u05e9\u05de\u05d5\u05e8 \u05d5\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05ea\u05dc\u05d5\u05e9");
+    expect(markup).toContain("10");
+    installCaseAccessDbForTests(null);
+  });
+
+  it("does not say a case is waiting when nothing was asked of it", async () => {
+    const { createHmac } = await import("node:crypto");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { fakeCaseAccessDb } = await import("@/server/product/case-access/fake-db");
+    const { installCaseAccessDbForTests } = await import("@/server/product/case-access/db");
+    installCaseAccessDbForTests(fakeCaseAccessDb([verifiedCase()]));
+    cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
+    const { default: UploadPage } = await import("./page.tsx");
+    const markup = renderToStaticMarkup(await UploadPage());
+    expect(markup).not.toContain("\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05ea\u05dc\u05d5\u05e9");
     installCaseAccessDbForTests(null);
   });
 });

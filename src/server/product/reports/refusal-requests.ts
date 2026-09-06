@@ -108,6 +108,17 @@ export const REFUSAL_MAPPINGS: readonly RefusalMapping[] = Object.freeze([
     not_checked_text: "לא בדקנו: שני מקורות סותרים זה את זה, ואי אפשר להכריע ביניהם בלעדיך.",
   },
   {
+    // S2.4: the customer said they would find the payslip later. The case is open
+    // and waiting on them, so this blocks — and the SLA clock stops while it does.
+    code: "document_missing",
+    outcome: "request",
+    blocking: true,
+    question: "אפשר לצרף את התלוש עכשיו?",
+    answer_kind: "document",
+    field_crop: null,
+    not_checked_text: "ממתינים לתלוש כדי להתחיל את הבדיקה.",
+  },
+  {
     code: "document_unreadable",
     outcome: "request",
     blocking: true,

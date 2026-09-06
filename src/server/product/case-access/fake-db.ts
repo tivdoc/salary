@@ -12,6 +12,8 @@ type Token = { id: string; case_id: string; identity_id: string; purpose: string
 type Code = { id: string; identity_id: string; token_id: string | null; case_id: string | null; challenge_hash: string | null; code_hash: string; created_at: number; expires_at: number; attempts: number; max_attempts: number; consumed_at: number | null; locked_at: number | null; requester_ip_hash: string | null };
 type Session = { id: string; identity_id: string; session_hash: string; created_at: number; expires_at: number; last_seen_at: number; revoked_at: number | null };
 type RequestRow = { identity_id: string | null; requester_ip_hash: string | null; outcome: string; created_at: number };
+type ThreadRow = { id: string; case_id: string; code: string; question: string; answer_kind: string; options: string[] | null; field_crop: string | null; blocking: boolean; opened_at: number; expires_at: string; answered_at: number | null; answer_text: string | null };
+export type FakeCaseDocument = { id: string; case_id: string; document_type: string; slot: string; original_filename: string; mime_type: string; size: number; period_month: string | null; created_at: number };
 type Notification = { case_id: string | null; identity_id: string | null; channel: string; template: string; state: string; provider: string; payload_sha256: string; error_code: string | null };
 
 export type FakeCase = {
@@ -28,6 +30,8 @@ export type FakeCaseAccessDb = CaseAccessDb & Readonly<{
   sessions: Session[];
   notifications: Notification[];
   requests: RequestRow[];
+  case_requests: ThreadRow[];
+  case_documents: FakeCaseDocument[];
   calls: Array<{ fn: string; args: Record<string, unknown> }>;
   now: () => number;
   advance(ms: number): void;
@@ -38,6 +42,7 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
   const state = {
     cases: cases.map((row) => ({ contact_verified_at: null, contact_verified_channel: null, ...row })), identities: [] as Identity[], identity_cases: [] as Array<{ identity_id: string; case_id: string }>,
     tokens: [] as Token[], codes: [] as Code[], sessions: [] as Session[], notifications: [] as Notification[], requests: [] as RequestRow[],
+    case_requests: [] as ThreadRow[], case_documents: [] as FakeCaseDocument[],
     calls: [] as Array<{ fn: string; args: Record<string, unknown> }>,
   };
   const now = () => clock;
@@ -186,6 +191,44 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
       code.case_id = (a.target_case as string | null) ?? null;
       if (a.target_token) { const token = state.tokens.find((row) => row.id === a.target_token); if (token) token.used_at ??= now(); }
       return [issued];
+    },
+    // --- 202609060004/0005: the thread and the case's documents (S3.4 / S2.3).
+    case_request_list(a) {
+      return state.case_requests.filter((row) => row.case_id === a.target_case).sort((left, right) => right.opened_at - left.opened_at);
+    },
+    case_request_open(a) {
+      // The partial unique index, in the fake: one open request per code per case.
+      if (state.case_requests.some((row) => row.case_id === a.target_case && row.code === a.target_code && row.answered_at === null)) return [];
+      const row: ThreadRow = {
+        id: randomUUID(), case_id: s(a.target_case), code: s(a.target_code), question: s(a.target_question),
+        answer_kind: s(a.target_answer_kind), options: (a.target_options as string[] | null) ?? null,
+        field_crop: (a.target_field_crop as string | null) ?? null, blocking: a.target_blocking === true,
+        opened_at: now(), expires_at: s(a.target_expires_at), answered_at: null, answer_text: null,
+      };
+      state.case_requests.push(row);
+      return [row];
+    },
+    case_request_answer(a) {
+      const row = state.case_requests.find((candidate) => candidate.id === a.target_request && candidate.case_id === a.target_case && candidate.answered_at === null);
+      if (!row) return [];
+      row.answered_at = now();
+      row.answer_text = s(a.target_answer).slice(0, 2_000);
+      return [row];
+    },
+    case_documents_await(a) {
+      // The SQL guard, mirrored: only a case still in the funnel moves.
+      const found = caseOf(a.target_case);
+      if (!found) return [{ value: null }];
+      if (found.status === "started" || found.status === "questionnaire_completed") found.status = "awaiting_document";
+      return [{ value: found.status }];
+    },
+    case_documents_arrived(a) {
+      const open = state.case_requests.filter((row) => row.case_id === a.target_case && row.code === "document_missing" && row.answered_at === null);
+      for (const row of open) { row.answered_at = now(); row.answer_text = s(a.target_answer); }
+      return [{ value: open.length }];
+    },
+    case_documents_list(a) {
+      return state.case_documents.filter((row) => row.case_id === a.target_case).sort((left, right) => left.created_at - right.created_at);
     },
     case_access_challenge_resolve(a) {
       const code = state.codes.find((row) => row.challenge_hash === a.target_challenge_hash);

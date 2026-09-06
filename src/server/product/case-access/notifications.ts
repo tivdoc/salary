@@ -18,7 +18,7 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import type { ContactChannel } from "./crypto.ts";
 
-export type NotificationTemplate = "case_link" | "access_code" | "report_ready";
+export type NotificationTemplate = "case_link" | "access_code" | "report_ready" | "document_request";
 
 export type NotificationMessage = Readonly<{
   template: NotificationTemplate;
@@ -71,6 +71,30 @@ export function renderReportReady(input: Readonly<{ publicId: string; linkUrl: s
       `הדוח הראשוני לתיק ${input.publicId} מוכן.`,
       `לצפייה: ${input.linkUrl}`,
       "הדוח מציג מה נבדק, מה לא נבדק ומדוע, ורמת ודאות לכל נקודה.",
+    ].join("\n"),
+  };
+}
+
+/**
+ * Site S2.4. The customer said they would find the payslip later; this is what
+ * reaches them when they do. It is deliberately the same shape as the case
+ * link — one-time URL, code on arrival — because a second kind of link would be
+ * a second thing to explain and a second thing to get wrong.
+ *
+ * It says what is waiting and for how long: the request on the thread expires
+ * ten days after it opened (D-9), and a customer who does not know that cannot
+ * act on it.
+ */
+export function renderDocumentRequest(input: Readonly<{ firstName: string | null; publicId: string; linkUrl: string; expiresInDays: number }>): Pick<NotificationMessage, "subject" | "body"> {
+  const name = input.firstName ? ` ${input.firstName}` : "";
+  return {
+    subject: `Tivdoc — תיק ${input.publicId} ממתין לתלוש`,
+    body: [
+      `שלום${name},`,
+      `פתחנו את תיק ${input.publicId} ושמרנו את מה שמילאת. כדי להתחיל את הבדיקה חסר תלוש אחד.`,
+      `לצירוף התלוש: ${input.linkUrl}`,
+      `הבקשה פתוחה בתיק עוד ${input.expiresInDays} ימים. עד שהתלוש מגיע הבדיקה לא מתחילה, והשעון שלנו לא רץ.`,
+      "המסמך נשמר באזור פרטי ואינו נשלח למעסיק.",
     ].join("\n"),
   };
 }

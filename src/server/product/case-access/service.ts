@@ -27,13 +27,17 @@ import {
 } from "./crypto.ts";
 import { resolveCaseAccessDb, type CaseAccessDb } from "./db.ts";
 import {
-  renderAccessCode, renderCaseLink, renderReportReady, sendNotification, type NotificationOutcome, type NotificationTemplate,
+  renderAccessCode, renderCaseLink, renderDocumentRequest, renderReportReady, sendNotification, type NotificationOutcome, type NotificationTemplate,
 } from "./notifications.ts";
+// D-9 lives in one place: the request table S3.3 built. The link must not name a
+// different number of days from the one the thread actually enforces.
+import { REQUEST_TIMING } from "../reports/refusal-requests.ts";
+import { openDocumentRequest } from "../reports/awaiting-document.ts";
 
 const DAY = 86_400;
 const HOUR = 3_600;
 
-export type LinkPurpose = "payment_verified" | "resend" | "report_ready";
+export type LinkPurpose = "payment_verified" | "resend" | "report_ready" | "document_request";
 
 export type SendLinkResult = Readonly<{
   case_id: string;
@@ -205,6 +209,21 @@ export async function verifyFunnelCode(input: Readonly<{ caseId: string; code: u
   if (!verified || verified.outcome !== "ok") return failedCode(verified?.outcome);
   await store.rpc("case_access_funnel_verify", { target_case: input.caseId, target_identity: identityId, target_channel: found.contact.channel });
   const session = await openSession(store, identityId);
+  // S2.4. This is the first moment the contact is verified, and therefore the
+  // first moment a link may be sent to it. A case waiting for a payslip gets
+  // one now, so the customer can leave this screen and come back with the file
+  // instead of having to remember a URL. It is sent once, here, and not on
+  // every later verification: the request it points at can only be open once.
+  const waiting = await openDocumentRequest(input.caseId, store);
+  if (waiting) {
+    try {
+      await sendDocumentRequestLink(input.caseId, store);
+    } catch {
+      // The thread still holds the case. A link that did not go out is a worse
+      // experience, not a failed verification, and refusing the session here
+      // would lock the customer out of the case they just proved they own.
+    }
+  }
   return { outcome: "ok", session: session.session, session_ttl_seconds: session.ttl, identity_id: identityId, next: "/check/upload" };
 }
 
@@ -316,6 +335,54 @@ export async function sendReportReadyNotification(caseId: string, db?: CaseAcces
   const rendered = renderReportReady({ publicId: found.public_id, linkUrl: `${publicOrigin()}/case/${token}` });
   const outcome = await sendNotification({ template: "report_ready", channel: found.contact.channel, to: found.contact.normalized, ...rendered });
   await recordNotification(store, { case_id: caseId, identity_id: identityId, channel: found.contact.channel, template: "report_ready", outcome });
+  await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
+  return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
+}
+
+/**
+ * Site S2.4. The case is waiting for a payslip the customer said they would
+ * find later, and this is the link that brings them back to attach it.
+ *
+ * Three things it is careful about:
+ *
+ *   it does not gate on payment. Every other outbound link in this file waits
+ *   for a verified payment, because every other one leads to something that was
+ *   paid for. This one leads to a case that cannot start without a document —
+ *   holding it until payment would mean asking for money before the check can
+ *   begin.
+ *
+ *   it verifies the contact first. The funnel verifies the contact before the
+ *   case is created, so this is normally already true; when it is not, sending
+ *   an access link to an unverified address is exactly the failure the access
+ *   system was rebuilt to remove, and the send is refused instead.
+ *
+ *   it says nothing about what the check found, because nothing has been
+ *   checked yet.
+ *
+ * The send itself goes wherever the delivery configuration points. Outside the
+ * local runtime that is nowhere — the outcome is recorded as failed or refused,
+ * and the request on the thread is still what holds the case.
+ */
+export async function sendDocumentRequestLink(caseId: string, db?: CaseAccessDb | null): Promise<SendLinkResult> {
+  const store = db ?? await resolveCaseAccessDb();
+  if (!store) return { case_id: caseId, outcome: "no_store", token_id: null, provider: null, error_code: "no_store_configured" };
+  const found = await contactOfCase(store, caseId);
+  if (!found) return { case_id: caseId, outcome: "no_contact", token_id: null, provider: null, error_code: "contact_missing" };
+  if (!found.contact_verified) return { case_id: caseId, outcome: "contact_unverified", token_id: null, provider: null, error_code: "contact_unverified" };
+  const identityId = await identityOf(store, found.contact);
+  const token = createOpaqueToken();
+  const issued = (await store.rpc<{ token_id: string; issued: boolean }>("case_access_token_issue", {
+    target_case: caseId, target_identity: identityId, target_purpose: "document_request", target_token_hash: hashToken(token), target_ttl_seconds: productOffer().access.link_token_ttl_hours * HOUR,
+  }))[0];
+  if (!issued) return { case_id: caseId, outcome: "send_failed", token_id: null, provider: null, error_code: "token_issue_failed" };
+  const rendered = renderDocumentRequest({
+    firstName: found.first_name,
+    publicId: found.public_id,
+    linkUrl: `${publicOrigin()}/case/${token}`,
+    expiresInDays: REQUEST_TIMING.expiry_days,
+  });
+  const outcome = await sendNotification({ template: "document_request", channel: found.contact.channel, to: found.contact.normalized, ...rendered });
+  await recordNotification(store, { case_id: caseId, identity_id: identityId, channel: found.contact.channel, template: "document_request", outcome });
   await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
   return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
 }
@@ -505,7 +572,7 @@ export async function listIdentityCases(identityId: string, db?: CaseAccessDb | 
 
 export const caseAccessService = Object.freeze({
   requestFunnelCode, verifyFunnelCode, funnelCaseState,
-  issueAndSendCaseLink, sweepPendingCaseLinks, resendCaseLink, sendReportReadyNotification,
+  issueAndSendCaseLink, sweepPendingCaseLinks, resendCaseLink, sendReportReadyNotification, sendDocumentRequestLink,
   exchangeLinkToken, peekLinkToken, describeChallenge, resendChallengeCode, verifyChallengeCode,
   requestAccessCode, verifyAccessCode, resolveIdentitySession, listIdentityCases,
 });

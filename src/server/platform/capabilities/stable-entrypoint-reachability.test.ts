@@ -11,15 +11,15 @@ const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
 
 describe("stable product dispatcher capability reachability", () => {
-  it("maps the exact 36 live Next roots plus the canonical route registrar", () => {
+  it("maps the exact 37 live Next roots plus the canonical route registrar", () => {
     const nextRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter(
       (entry) => entry.kind === "app_route" || entry.kind === "api_route",
     );
     const registrar = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => entry.entrypoint_id === "CEP-078");
-    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(37);
-    expect(nextRoots).toHaveLength(36);
+    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(38);
+    expect(nextRoots).toHaveLength(37);
     expect(registrar).toHaveLength(1);
-    expect(new Set(STABLE_PRODUCT_DISPATCHER_ROOTS.map((entry) => entry.entrypoint_id)).size).toBe(37);
+    expect(new Set(STABLE_PRODUCT_DISPATCHER_ROOTS.map((entry) => entry.entrypoint_id)).size).toBe(38);
 
     const liveNextRoots = walk(join(repositoryRoot, "src/app"))
       .map((path) => relative(repositoryRoot, path).replaceAll("\\", "/"))
@@ -46,7 +46,7 @@ describe("stable product dispatcher capability reachability", () => {
 
   it("proves every exported HTTP method reaches its exact bounded request guard", () => {
     const apiRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => entry.kind === "api_route");
-    expect(apiRoots).toHaveLength(18);
+    expect(apiRoots).toHaveLength(19);
     for (const entry of apiRoots) {
       const source = sourceAt(entry.source_path);
       const expected = `guardStableHttpEntrypoint("${entry.entrypoint_id}"`;

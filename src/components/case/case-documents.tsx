@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AddDocumentButton } from "@/components/case/add-document-button";
 import type { CaseDocument } from "@/server/product/reports/case-documents";
 import { freePayslipSlots } from "@/server/product/reports/case-documents";
 
@@ -54,7 +54,7 @@ export function CaseDocuments({ publicId, documents }: { publicId: string; docum
         ) : (
           <>
             <p>אפשר לצרף עוד תלוש — הבדיקה תכסה אותו בדוח המלא.</p>
-            <Link className="button button--primary" href={`/check/upload?case=${publicId}`}>הוספת מסמך</Link>
+            <AddDocumentButton publicId={publicId} label="הוספת מסמך" />
           </>
         )}
       </div>

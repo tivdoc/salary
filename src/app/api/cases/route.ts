@@ -4,6 +4,7 @@ import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
 import { metaEventId } from "@/lib/meta-events";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { questionnaireSchema } from "@/lib/validation";
+import { beginAwaitingDocument } from "@/server/product/reports/awaiting-document";
 // S3.1 raised the questionnaire from seven steps to nine: the engine needs the
 // start month, birth year and sex, the pension-at-hire answer, the two travel
 // answers and the §30(א) role question, and without them the report refuses
@@ -81,6 +82,20 @@ export async function POST(request: Request) {
     if (responseError) {
       await supabase.from("cases").delete().eq("id", created.id);
       throw responseError;
+    }
+
+    // S2.4. The customer said they would find the payslip later. The blocking
+    // request on the thread is what carries the reminders and the ten-day expiry
+    // (D-9), and the case moves to `awaiting_document` only if it opened — see
+    // `beginAwaitingDocument` for why that order is not an accident. A store
+    // that is not configured yet leaves the funnel exactly as it was.
+    if (parsed.data.payslipAvailable === false) {
+      try {
+        const awaited = await beginAwaitingDocument(created.id);
+        if (!awaited.request) console.warn("Awaiting-document request not opened", created.public_id);
+      } catch (error) {
+        console.warn("Awaiting-document setup deferred", error instanceof Error ? error.name : "error");
+      }
     }
 
     if (attribution) {

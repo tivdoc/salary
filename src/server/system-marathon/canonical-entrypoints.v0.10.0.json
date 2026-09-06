@@ -1825,6 +1825,24 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Site S3.4 / D-2: answers one open request on the thread. It cannot open one — only a refusal does — and the case comes from the verified session, never from the body."
+    },
+    {
+      "entrypoint_id": "CEP-106",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/[id]/upload-session",
+      "source_path": "src/app/api/cases/[token]/upload-session/route.ts",
+      "canonical_contract_id": "route.api.case-upload-session",
+      "canonical_target": "src/app/api/cases/[token]/upload-session/route.ts:POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts",
+        "src/lib/case-cookie.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Site S2.3: points the funnel's case cookie at a case the verified identity owns, so a document added after payment walks the same review screen the funnel walks. It accepts no file and stores nothing."
     }
   ]
 }

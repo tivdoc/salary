@@ -83,6 +83,9 @@ export const EXPECTED_MIGRATION_CHAIN = Object.freeze([
   "202609060003_case_report_projection.sql",
   "202609060004_case_requests.sql",
   "202609060005_case_documents_list.sql",
+  "202609060006_awaiting_document_state.sql",
+  "202609060007_document_request_link.sql",
+  "202609060008_awaiting_document_functions.sql",
 ] as const);
 
 export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATION_CHAIN)[number], string>> = Object.freeze({
@@ -193,6 +196,12 @@ export const EXPECTED_MIGRATION_SHA256: Readonly<Record<(typeof EXPECTED_MIGRATI
     "4033043e077c8069410efc16b33a678ac71435d7c6653024fd67357bde23c008",
   "202609060005_case_documents_list.sql":
     "a06e3ac1416249edd335dd4938f9345d8b0bed28f167f5ce3c3baa5730d7b2a7",
+  "202609060006_awaiting_document_state.sql":
+    "ff364d4f79dba8363638599537c233112ffbc0514d5c959a825278faa9703f50",
+  "202609060007_document_request_link.sql":
+    "e1d8788e1669e543594b0a8da4aae1d3048a9c7672574990d19259c750df980d",
+  "202609060008_awaiting_document_functions.sql":
+    "4c53030d24286295bb3a0cbdb153d17ce16903b3c60f8d29e2de8a93f32d2e3e",
 });
 
 export type MigrationFile = Readonly<{
