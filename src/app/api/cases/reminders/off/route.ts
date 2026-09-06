@@ -15,11 +15,11 @@ export const dynamic = "force-dynamic";
  * something they never clicked. The link opens a page; the page asks once and
  * posts.
  *
- * It always answers ok. An unknown token, an expired one and a valid one are
- * indistinguishable from outside, because "is this token live?" is not a
- * question an unauthenticated caller may ask — and because a person who clicked
- * an old link should be told they will not be bothered again, which is true
- * either way.
+ * It always answers ok — 200 for a valid token, an expired one, a made-up one
+ * and a body that is not JSON at all. "Is this token live?" is not a question
+ * an unauthenticated caller may ask, and a status code that changed with the
+ * answer would answer it. A person who clicked an old link should also be told
+ * they will not be bothered again, which is true either way.
  */
 export async function POST(request: Request) {
   try {
