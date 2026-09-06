@@ -40,6 +40,36 @@ export const documentLocatorSchema = z
   })
   .strict();
 
+/**
+ * External review #1, finding 7 — the deterministic conversion from the retired
+ * single `reading` field to the four that replaced it.
+ *
+ * Nothing in the database carries `reading` today (checked on DEV: zero rows in
+ * the one table holding evidence), so this migrates nothing right now. It exists
+ * because a row COULD arrive carrying it — an old backup, a fixture written
+ * before the split — and when one does the mapping must already be decided
+ * rather than improvised by whoever notices:
+ *
+ *   reading "machine" → read_by "machine", verified false. The extractor read
+ *                       it and nobody confirmed it; that is exactly what the old
+ *                       field meant, and it keeps the number off the verified rung.
+ *   reading "person"  → read_by "person",  verified false. A person read it. That
+ *                       is NOT the same as a person having confirmed a machine's
+ *                       reading, so `verified` stays false: the old field never
+ *                       recorded a confirmation step, and inventing one here
+ *                       would upgrade evidence that was never checked.
+ *   absent            → both absent. The old field's absence asserted neither,
+ *                       and so does the new one's.
+ */
+export function migrateLegacyReading(
+  evidence: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  if (!("reading" in evidence)) return evidence;
+  const { reading, ...rest } = evidence;
+  if (reading !== "machine" && reading !== "person") return rest;
+  return { ...rest, read_by: reading, verified: false };
+}
+
 export const evidenceReferenceSchema = z.discriminatedUnion("source_type", [
   z
     .object({

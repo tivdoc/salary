@@ -1,3 +1,4 @@
+import { migrateLegacyReading } from "../facts/contracts.ts";
 // L7-3 / D3. The grade of an execution is the worst of what went into it.
 import { describe, expect, it } from "vitest";
 import { prepareRuleInputs } from "../rule-input/preparation.ts";
@@ -127,5 +128,25 @@ describe("the execution grade", () => {
     expect(prepared.result.status).toBe("rejected");
     expect(prepared.result.rejection_codes).toEqual(["fact.conflicted"]);
     expect(prepared.result.values).toEqual([]);
+  });
+});
+
+describe("external review #1, finding 7: the retired `reading` field converts deterministically", () => {
+  it("maps machine and person to read_by, and never invents a confirmation", () => {
+    const base = { source_type: "documented" as const, source_reference: { kind: "document" as const, document_id: "11111111-1111-4111-8111-111111111111" } };
+    expect(migrateLegacyReading({ ...base, reading: "machine" })).toEqual({ ...base, read_by: "machine", verified: false });
+    // A person having READ it is not a person having CONFIRMED a machine's reading.
+    // The old field never recorded a confirmation, so none is invented here.
+    expect(migrateLegacyReading({ ...base, reading: "person" })).toEqual({ ...base, read_by: "person", verified: false });
+  });
+
+  it("drops a value it does not recognise rather than carrying it forward", () => {
+    const base = { source_type: "documented" as const, source_reference: { kind: "document" as const, document_id: "11111111-1111-4111-8111-111111111111" } };
+    expect(migrateLegacyReading({ ...base, reading: "something_else" })).toEqual(base);
+  });
+
+  it("leaves evidence without the retired field exactly as it is", () => {
+    const already = { source_type: "documented", source_reference: { kind: "document", document_id: "x" }, read_by: "person", verified: true };
+    expect(migrateLegacyReading(already)).toBe(already);
   });
 });
