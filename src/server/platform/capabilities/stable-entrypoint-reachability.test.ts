@@ -11,6 +11,36 @@ const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
 
 describe("stable product dispatcher capability reachability", () => {
+  // Long run 11 found this the expensive way: CEP-106 moved the dispatcher
+  // count to 38, every denominator in the ledger and its tests was updated, and
+  // the local runtime still refused to start because it carries its OWN copy of
+  // the number in a startup proof no unit test read. The journeys caught it as
+  // five 500s.
+  //
+  // The number is deliberately repeated in several places — a startup proof
+  // that read the ledger would prove nothing about the ledger — so what has to
+  // be checked is that the copies agree. This reads the source for every
+  // hard-coded comparison against the array's length and asserts each one.
+  it("agrees with every hard-coded copy of the dispatcher denominator", () => {
+    const pattern = /STABLE_PRODUCT_DISPATCHER_ROOTS\.length\s*!==\s*(\d+)/gu;
+    const found: Array<{ file: string; declared: number }> = [];
+    const walkSource = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const full = join(directory, entry.name);
+      if (entry.isDirectory()) return walkSource(full);
+      return entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts") ? [full] : [];
+    });
+    for (const file of walkSource(join(repositoryRoot, "src"))) {
+      for (const match of readFileSync(file, "utf8").matchAll(pattern)) {
+        found.push({ file: relative(repositoryRoot, file).replaceAll("\\", "/"), declared: Number(match[1]) });
+      }
+    }
+    // A collector that found nothing would make this pass while the copies drift.
+    expect(found.length).toBeGreaterThanOrEqual(2);
+    for (const entry of found) {
+      expect(entry.declared, entry.file).toBe(STABLE_PRODUCT_DISPATCHER_ROOTS.length);
+    }
+  });
+
   it("maps the exact 37 live Next roots plus the canonical route registrar", () => {
     const nextRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter(
       (entry) => entry.kind === "app_route" || entry.kind === "api_route",
