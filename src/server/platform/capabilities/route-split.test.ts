@@ -42,7 +42,7 @@ describe("the product/engine route split (D3)", () => {
       if (entry.half === "product") expect(entry.probes?.length ?? 0, entry.entrypoint_id).toBeGreaterThan(0);
       else expect(entry.probes, entry.entrypoint_id).toBeUndefined();
     }
-    expect(productAssignments()).toHaveLength(26);
+    expect(productAssignments()).toHaveLength(30);
     expect(engineAssignments()).toHaveLength(7);
   });
 

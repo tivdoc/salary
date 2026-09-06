@@ -1751,6 +1751,80 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "UX Run 1 / U5: re-issues the case link from the received screen for the funnel cookie's own case, rate-limited; a failed send never blocks payment verification."
+    },
+    {
+      "entrypoint_id": "CEP-102",
+      "kind": "app_route",
+      "stable_entry": "/case/[id]/thread",
+      "source_path": "src/app/case/[token]/thread/page.tsx",
+      "canonical_contract_id": "route.public.case-thread",
+      "canonical_target": "src/app/case/[token]/thread/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts",
+        "src/server/product/reports/refusal-requests.ts"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Site S3.4 / D-2: the thread where a refusal becomes a question. Renders requests and their answers; it opens none by itself, and the engine writes none until run 16."
+    },
+    {
+      "entrypoint_id": "CEP-103",
+      "kind": "app_route",
+      "stable_entry": "/case/[id]/documents",
+      "source_path": "src/app/case/[token]/documents/page.tsx",
+      "canonical_contract_id": "route.public.case-documents",
+      "canonical_target": "src/app/case/[token]/documents/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Site S3.4 + S2.3: the case's documents after payment, behind the verified identity session. Adding one is the same review screen the funnel uses."
+    },
+    {
+      "entrypoint_id": "CEP-104",
+      "kind": "app_route",
+      "stable_entry": "/case/[id]/reports",
+      "source_path": "src/app/case/[token]/reports/page.tsx",
+      "canonical_contract_id": "route.public.case-reports",
+      "canonical_target": "src/app/case/[token]/reports/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/service.ts",
+        "src/server/product/reports/case-report-projection.ts"
+      ],
+      "blockers": [
+        "CUSTOMER_PROCESSING_DISABLED",
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Site S3.4: renders the case_report_projection and computes nothing. Today every topic is awaiting_verification, so the screen shows that and no figure."
+    },
+    {
+      "entrypoint_id": "CEP-105",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/[id]/requests",
+      "source_path": "src/app/api/cases/[token]/requests/route.ts",
+      "canonical_contract_id": "route.api.case-request-answer",
+      "canonical_target": "src/app/api/cases/[token]/requests/route.ts:POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/reports/case-requests.ts",
+        "src/server/product/case-access/service.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Site S3.4 / D-2: answers one open request on the thread. It cannot open one — only a refusal does — and the case comes from the verified session, never from the body."
     }
   ]
 }

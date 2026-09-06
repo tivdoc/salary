@@ -53,7 +53,7 @@ afterEach(() => resetStableEntrypointRuntimeForTests());
 describe("stable entrypoint capability registry", () => {
   it("preserves the complete frozen denominator and separates CLI execution classes", () => {
     expect(validateStableEntrypointCapabilityRequirements()).toEqual([]);
-    expect(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS).toHaveLength(101);
+    expect(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS).toHaveLength(105);
     expect(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS.filter((entry) => entry.product_stable)).toHaveLength(90);
     expect(countBy(STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS, "kind")).toEqual({
       api_route: 17,

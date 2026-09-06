@@ -201,7 +201,7 @@ describe.skipIf(process.platform !== "win32")("V0.9.1 dynamic PostgreSQL foundat
   it("discovers the exact migration chain and canonical checksum", async () => {
     const paths = resolveDynamicPostgresPaths(process.cwd(), ownedTarget());
     const chain = await discoverMigrationChain(paths);
-    expect(chain.migration_count).toBe(63);
+    expect(chain.migration_count).toBe(65);
     expect(Object.fromEntries(chain.migrations.map(({ name, sha256 }) => [name, sha256])))
       .toEqual(EXPECTED_MIGRATION_SHA256);
     expect(chain.canonical_migration_sha256).toBe(CANONICAL_COMPOSITION_MIGRATION_SHA256);
@@ -230,8 +230,8 @@ describe.skipIf(process.platform !== "win32")("V0.9.1 dynamic PostgreSQL foundat
     const bootstrap = await applyCompatibilityBootstrap({ target, paths, binaries, runner });
     const migrations = await applyCleanMigrationChain({ target, paths, binaries, chain, runner });
     expect(bootstrap.applied_count).toBe(1);
-    expect(migrations.applied_count).toBe(63);
-    expect(commands).toHaveLength(64);
+    expect(migrations.applied_count).toBe(65);
+    expect(commands).toHaveLength(66);
     expect(commands.every((command) => command.args.every((argument) => !argument.includes(password)))).toBe(true);
     expect(JSON.stringify({ bootstrap, migrations })).not.toContain(password);
   });

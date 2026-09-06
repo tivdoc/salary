@@ -15,8 +15,8 @@ const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 describe("V0.10.2 entrypoint before/after disposition ledger", () => {
   it("preserves all 101 rows, every identity and the starting denominator", () => {
     expect(validateEntrypointDispositionLedger()).toEqual([]);
-    expect(ENTRYPOINT_DISPOSITION_LEDGER.rows).toHaveLength(101);
-    expect(ENTRYPOINT_DISPOSITION_LEDGER.product_stable_denominator).toBe(90);
+    expect(ENTRYPOINT_DISPOSITION_LEDGER.rows).toHaveLength(105);
+    expect(ENTRYPOINT_DISPOSITION_LEDGER.product_stable_denominator).toBe(94);
     expect(ENTRYPOINT_DISPOSITION_LEDGER.before_counts).toEqual({
       partial: 31,
       implemented_not_wired: 21,
