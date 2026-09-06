@@ -4916,44 +4916,225 @@ three report gates, the case screens, and the thread S2.4 waits for); S4 (hygien
 run 16. S5's omitted sections turn on when their slots are filled. The engine's backlog is closed;
 the product is not complete.
 
+## Long run 11 — the contract, the thread, and the review before a customer reads
+
+Three waves in one session: S3 (the report contract and the case screens), S2.3
+and S2.4 (the payslip that arrives later), and S6 (operations). One phase was
+blocked before it started.
+
+**S3.2 — the contract, with the three gates made structural.** D-6.4's single
+"certainty" question is replaced by three, asked in order: is the rule active,
+does it apply to this case, and only then how certain the answer is. The
+projection is a discriminated union on that gate, so a topic awaiting
+verification has no `amount` field at all — not a null one, not a hedged one —
+and a report that showed a number for an unverified rule cannot be constructed
+rather than being caught by a check somebody has to remember to run. Display
+follows certainty mechanically (D-6.3): high shows a sum, medium a range, low a
+direction and no figure anywhere. A missing applicability fact produces a
+refusal and a request, never a lower certainty — the difference between "we
+don't know" and "we know less" is the difference between a question we can ask
+and a number we would be inventing. Fixtures cover S04, S05, S06 and the state
+the product is actually in today: all seven topics awaiting verification.
+Migration `202609060003` holds the table, append-only, and **no role holds
+insert on it** — the engine is granted that in run 16.
+
+**S3.3 — one table from refusal to request.** Eleven codes, each mapping to
+exactly one of three outcomes: a request that blocks (the case cannot finish, so
+the SLA clock stops — D-7.2 — and the customer is reminded at 48 hours and 5
+days and the request expires at ten, D-9), a request that does not block, or no
+request at all. The third case is the one worth naming: when a rate has not been
+published yet, or a topic is not verified, nobody can supply what is missing, and
+asking would be a question with no possible answer.
+
+**S3.1 — the questionnaire asks what the engine needs.** Seven engine inputs
+were added (start month, birth year and sex, pension at hire, the two travel
+answers, the §30(א) role question), every answer carrying `provenance: person`,
+which caps its certainty at medium by construction. Per-field validation on
+blur. The funnel's own step events measure what it cost.
+
+**S3.4 — the case screens.** `/case/[id]`, `/case/[id]/thread`,
+`/case/[id]/documents`, `/case/[id]/reports`, each behind the verified identity
+session, each registered through U0 before it was built.
+
+**S2.4 — "אמצא אחר כך" stops being a dead end.** The funnel opens a blocking
+request on the thread, the case moves to a state that names what it is waiting
+for (`awaiting_document`), and the SLA clock stops while it stands. The order is
+the whole design: the request opens first and the case moves only if it opened,
+because a case waiting for something nobody asked for has no reminder, no expiry
+and no line the customer can read. When the payslip arrives the request is
+answered rather than deleted. The link that brings the customer back is U4's own
+machinery under a fourth purpose, sent at the moment the contact is verified —
+the first moment a link may be sent at all.
+
+**S2.3 — a document after payment.** The new route accepts no file. It proves
+the identity owns the case and points the funnel's cookie at it, so the customer
+walks the same review screen — preview, page count, readability, month — that
+the funnel walks. A second endpoint that accepted a document would be a second
+place readability is judged, which is the failure S2 exists to prevent.
+
+**S6.1 — the review a report passes.** D-10.2 is written as a positive list: an
+initial report publishes itself only when the document came through the
+automatic track, every finding is at high or medium certainty, no contradiction
+is marked and no finding exceeds 5,000 ₪. Written as a list of blockers, a
+condition nobody thought of would default to publishing. D-10.3 sits above it —
+a full report is always human. The operator edits wording and never a number,
+and that is structural: the queue row has no numeric column, so a figure has
+nowhere to travel; the published report is the engine's projection byte for byte
+plus the operator's sentences beside it, and the test asserts exactly that. The
+one remaining path, a sum written in prose, is refused by name.
+
+Every report that reaches the gate gets a row, including the ones the gate
+published itself, because "who published this" must have an answer for every
+report, because D-11.2's automatic-track share needs a denominator, and because
+R-8 must be able to reach a report no person ever read.
+
+**S6.2 — a parameter changed.** Published reports that used it return to the
+queue as `recheck_required`, read from each report's own parameter grades. The
+customer's copy is not withdrawn: a report that vanishes is worse than one
+marked as being looked at again.
+
+**S6.3 — M01.** D-11's six conversions and two costs, and nothing else. Its one
+rule is that a number with no data is a dash and never a zero — the board is
+read to decide whether the product works, and "0% of visitors started a check"
+and "nobody has visited yet" are opposite answers that look identical.
+
+**Two defects this run found in its own foundations.** The store adapter's
+function allowlist still named only the two families that existed when it was
+written, so every `case_request_*` and `case_documents_list` call would have
+thrown in production and on the local runtime while every unit test passed
+against a fake that never consults it; the new `db.test.ts` reads the product's
+own source for the names it actually calls. And the local runtime carries its
+own copy of the dispatcher denominator — deliberately, since a startup that read
+the ledger would prove nothing about it — which CEP-106 left stale: type check,
+lint, the whole suite and the build passed while the runtime refused to install,
+and the operations journey found it as five 500s. The number stays repeated, and
+a test now holds the copies together.
+
+**Phase D — blocked, as expected.** No `.env.local` exists on this machine, so
+none of the four production variables (`NEXT_PUBLIC_SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OPENAI_EXTRACTION_MODEL`) can be
+read by name. Run 13-T did not start. BL-29 unchanged.
+
+## Freeze — long run 11, the complete matrix
+
+### Local
+
+Run as the CI workflow's own steps by `scripts/ci/run-workflow-steps.mjs` at
+`8fa2eca`, receipt `58b81a67599a9fcedd69e6bd0c3d38a26854764b25725894dc27a4f23558493d`:
+type check 0 errors; eslint 0 errors, 0 warnings; vitest **319/319 files, 2345
+passed, 3 skipped, 0 failed**; `next build` compiled; the production closure
+proof over both environments **48/48 PASS, identical posture, production
+`69d7a627…`, preview `dc216acc…`**.
+
+### DEV, as the runtime roles
+
+Chain **70/70**, tail `202609060010` — eight migrations this run (`…0003`
+projection contract, `…0004` the thread, `…0005` the case's documents, `…0006`
+the `awaiting_document` state, `…0007` the document-request link purpose,
+`…0008` the two S2.4 functions, `…0009` the review queue and its append-only
+log, `…0010` the automatic rows and the track summary), **no new definer name**:
+every function this run added is security invoker. Definer surface **111, ungated
+2 (the known bootstrap pair), unexpected 0, reserved-execute 14** — unchanged.
+Dynamic matrix **14 checks, 10 supported, 10 passed, 4 not supported**. RLS force
+**66 tenant-scoped tables, 0 unforced**. Chain inventory: 90 tables, 88 with RLS
+enabled, 70 forced, 144 policies, 190 functions. Parameter-decision matrix
+**21/21**. Gate 0 / attestation reality **identities 0, versions 62, dual
+attested 0, resolutions 8, topics eligible 0/7, decision `draft_shadow`, owner
+statement inconsistent with what is visible**. S6 structure proof
+(`scripts/dev-runtime/report-qa-proof.mts`) **12/12** — the two tables with
+forced RLS, six invoker functions, the append-only log trigger, the foreign key,
+and the run-16 boundary still closed: the operations runtime cannot insert a
+projection (42501). Operations journey **17/17**, run after the matrix. Access
+journey **26/26**.
+
+**What DEV could not prove, and why.** The QA queue's flow — enqueue, word,
+approve, publish — needs a row in `case_report_projections`, and no role holds
+insert on that table until run 16. The flow is proven against the in-memory
+mirror; what DEV proves is the structure those tests assume. Opening the table
+early to get a prettier receipt was the one shortcut available and was not
+taken.
+
+### Counters
+
+topics 0/7, sources active 0, parameters active 0 (62 registered, all draft or
+superseded), rules active 0, attestations 0, resolutions owner_recorded 6
+decisions / 8 rows, resolutions attested 0, reviewer identities registered 0,
+visual confirmations 0, customer rows 0, **messages to any real contact 0** (no
+provider exists; every send in this run went to the file sink or was refused by
+the allowlist), composites opened 0, openai calls 0, provider calls 0,
+extraction used no, deployments 0, remote production migrations 0, findings 0,
+approved-opinion file edits 0, reports in the review queue 0.
+
+### Entry points
+
+CEP-102…CEP-106 registered this run and in the corrections that preceded it:
+inventory **106**, product-stable **95**, product dispatcher roots **38** (37
+Next roots plus the canonical registrar), app routes 18, api routes 19, closure
+proof green at every denominator. `product_runtime` imports nothing from the
+engine — proven per route file, at HEAD, against `main`.
+
+### Blocked ledger
+
+| id | status | note |
+|---|---|---|
+| BL-29 | open, `production_unreachable_from_engineering_machine` | unchanged; phase D (run 13-T) did not start — no `.env.local`, 0 of 4 variables present by name |
+| BL-31 | open, **a full blocker for the access path in production** | no provider; every message this run went to the file sink |
+| BL-30 | open, `owner_statement_not_in_database` | unchanged; the attestation reality check disagrees with the owner statement again |
+| BL-32 | open, `source_not_acquirable_through_controlled_path` | unchanged |
+| BL-33 | open, `schedule_facts_not_in_corpus` | unchanged |
+| BL-34 | noted, closed on our side | the runs' DEV is project `cpzrbidx…`, database `tivdoc_v09_devruntime01`; the dashboard shows `postgres`, which is empty. This run hit it again: a proof script that rebuilt its own URL from the credential file's parts landed on `postgres` and reported six functions as missing |
+| BL-25, BL-26, BL-27, BL-28, BL-16 | open | unchanged |
+
+### Backlog
+
+S4 (hygiene, including the a11y pass every screen this run declared); run 16
+(the engine's insert grant on `case_report_projections`, and with it the first
+real projection rows, the QA queue's first real flow, and M01's first real
+numbers); S5's four omitted sections when their assets exist. The engine's
+backlog is closed; the product is not complete.
+
 ## Resume point
 
-Refreshed after long run 10. Everything before this point is history; this
+Refreshed after long run 11. Everything before this point is history; this
 section and `docs/resume-after-pause.md` are what a resuming session must read.
 
 **Where the work is.** On the remote (`origin/claude/v0-10-2b-full-parallel`).
 Pools H, D, S, R, E2, E3, L4-L10, runs 11-12, wave S1, the external-review
-corrections, long run 9 and long run 10 are closed; run 13-T is closed at Gate 0
-with D1-D5 blocked (BL-29). Pool P: 62 versions, all draft or superseded, 0
-attestations. Eight legal decisions: six carry an owner-recorded resolution
-(eight rows — the daily threshold and the pension wage-cap source are each at
-revision 2). Report v10 and package v15 supersede v9/v14 and carry
-`legal_basis: opinion_3ddad7e8 + errata_1_owner_closed`.
+corrections, long run 9, long run 10 and long run 11 are closed; run 13-T is
+closed at Gate 0 with D1-D5 blocked (BL-29). Pool P: 62 versions, all draft or
+superseded, 0 attestations. Eight legal decisions: six carry an owner-recorded
+resolution (eight rows). Report v10 and package v15 carry `legal_basis:
+opinion_3ddad7e8 + errata_1_owner_closed`.
 
-**What long run 10 changed, in one sentence.** The errata are fully recorded
-(the §18 base rule is a real draft parameter, the vacation table was already
-right, the report and package say which basis each resolution rests on), the
-home page is rebuilt with four sections deliberately absent, a delivery
-allowlist refuses any recipient but the owner's two channels before a provider
-is ever called, and a case can hold twelve payslips instead of one.
+**What long run 11 changed, in one sentence.** The product now has a written
+contract for what a report may say — three gates made structural, so a number
+at low certainty or under an unverified rule cannot be constructed — plus the
+case screens that render it, a thread where every refusal becomes one question
+with a clock, a state for the payslip that arrives later, and an operations
+queue where a person reads a report before a customer does and can change its
+wording but never its numbers.
 
-**What it could not do.** Phase E (the seven-case trial): no `.env.local`, so
-none of the four production variables exist. S2.3 and S2.4: one needs a new
-route, the other needs S3's thread. U5: no provider, so no real message and no
-owner confirmation.
+**What it could not do.** Phase D (run 13-T): no `.env.local`, so none of the
+four production variables exist by name. The QA queue's flow on DEV: the queue
+points at `case_report_projections`, which no role may write until run 16, so
+the flow is proven against the in-memory mirror and only the structure is proven
+on the database.
 
 **Read this before touching Supabase.** The project the owner sees as empty IS
-the runs' DEV (BL-34). Its governance data is in the `private` schema and its
-chain is not recorded in the CLI's migrations table, which is why the dashboard
-shows almost nothing. Resetting or deleting it destroys every run's evidence.
+the runs' DEV (BL-34) — project `cpzrbidx…`, database
+`tivdoc_v09_devruntime01`, not `postgres`. A script that builds its own
+connection URL from the credential file's parts will land on `postgres` and
+report every table as missing; use the per-role `TIVDOC_*_POSTGRES_URL` values
+the runtimes themselves use. Resetting or deleting the project destroys every
+run's evidence.
 
 **What is proven about the live site.** Unchanged. tivdoc.com serves `main`;
 nothing here is deployed; the access path stays inactive in production until
 BL-31.
 
-**The waves, in order.** S3 on Opus (the three report gates, the case screens,
-D-2's thread) → S2.3/S2.4 behind it → S6 (operations) → run 16; S4 (hygiene)
-any time.
+**The waves, in order.** Run 16 (the engine's insert grant on the projection,
+and with it the first real report, the QA queue's first real flow and M01's
+first real numbers) → S4 (hygiene and a11y) any time.
 
 **The human gates, named.**
 
@@ -4964,4 +5145,4 @@ any time.
    and the DNS work for `info@tivdoc.com`, which today cannot receive mail.
 2. No lawyer step exists anywhere: errata #1 is owner-closed.
 
-**Engineering after this run.** S3 next session, on Opus.
+**Engineering after this run.** Run 16, on the engine side.

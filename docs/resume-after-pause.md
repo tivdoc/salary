@@ -4,6 +4,15 @@
 from now, without reading the run sections of `docs/tivdoc-development-state.md`.
 Everything below is at head `677ea92` (2026-09-05).*
 
+*Freshness, added at long run 11 (2026-09-06). This document was not rewritten;
+its digests and counts are the ones its own head carried. What has moved since,
+and would mislead a resuming session if read as current: the migration chain is
+**70**, not 53 (tail `202609060010`); the draft parameter versions are **62**,
+not 59; the DEV database is `tivdoc_v09_devruntime01` and not the `postgres` the
+dashboard shows. Everything else below still holds, including the central point
+— nothing unique lives only in DEV. The current state is the resume point at the
+end of `docs/tivdoc-development-state.md`.*
+
 ## 1. Where everything is
 
 | copy | what | where | digest |
