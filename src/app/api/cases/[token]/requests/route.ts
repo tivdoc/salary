@@ -1,3 +1,5 @@
+import {supportRequestSchema,submitSupport} from "@/server/product/reports/support";
+import {sameOriginSessionRequest} from "@/server/product/case-access/session-actions";
 import { RequestAnswerError } from "@/server/product/reports/request-answer";
 import { NextResponse } from "next/server";
 import { answerCaseRequest, editCaseRequest, listCaseRequests } from "@/server/product/reports/case-requests";
@@ -12,7 +14,7 @@ export const dynamic = "force-dynamic";
 /**
  * Site S3.4 / D-2 — answering one request on the thread.
  *
- * The only write this route performs is an ANSWER. There is no path here that
+ * Engine questions accept answers; separate support actions append messages. There is no path here that
  * opens a request: a request exists because a refusal opened it, and a customer
  * (or an operator, or a screen) inventing one would put a question in the thread
  * that no refusal is waiting on.
@@ -28,8 +30,10 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   } catch (error) {
     return refusedEntrypoint(error);
   }
-  const body = await strictJsonObject(request, 4_096);
-  if (!body || typeof body.requestId !== "string" || typeof body.answer !== "string" || body.answer.trim().length === 0) {
+  if(!sameOriginSessionRequest(request))return new Response(null,{status:403});
+  const body = await strictJsonObject(request, 12000);
+  const support=supportRequestSchema.safeParse(body);
+  if (!support.success && (!body || typeof body.requestId !== "string" || typeof body.answer !== "string" || body.answer.trim().length === 0)) {
     return NextResponse.json({ error: "לא הצלחנו לקרוא את התשובה", code: "request_answer_invalid" }, { status: 400 });
   }
 
@@ -45,6 +49,8 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   }
 
   try {
+    if(support.success){await submitSupport(found.case_id,session.identity_id,support.data);return NextResponse.json({ok:true},{status:202,headers:{"Cache-Control":"no-store"}});}
+    if (!body || typeof body.requestId!=="string" || typeof body.answer!=="string") return new Response(null,{status:400});
     if (body.action === "draft" || body.action === "correction") {
       if (typeof body.expectedRevision !== "number") return NextResponse.json({code:"request_answer_invalid"},{status:400});
       await editCaseRequest({caseId:found.case_id,requestId:body.requestId,identityId:session.identity_id,answer:body.answer,expectedRevision:body.expectedRevision,kind:body.action});

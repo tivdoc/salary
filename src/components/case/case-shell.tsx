@@ -14,6 +14,7 @@ export function CaseShell({ children, eyebrow, publicId }: { children: React.Rea
           <Link className="wordmark" href="/" aria-label="תבדוק, חזרה לעמוד הבית">
             <BrandLogo />
           </Link>
+          {publicId?<Link href={`/case/${publicId}/thread#support`}>פנייה לתמיכה</Link>:null}
           <Link href="/cases">התיקים שלי</Link><Link href="/account">חשבון</Link><SessionControls />
           {eyebrow ? <span className="check-header__price mono">{eyebrow}</span> : null}
         </div>

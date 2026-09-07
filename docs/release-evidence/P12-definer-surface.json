@@ -1,5 +1,5 @@
 {
-  "definition_count": 223,
+  "definition_count": 229,
   "new_release_definitions": {
     "20260907070000_case_input_outbox.sql": [
       "private.capture_case_input",
@@ -106,6 +106,14 @@
     ],
     "20260907190000_request_pause_trigger_authority.sql": [
       "private.order_request_pause_close"
+    ],
+    "20260907200000_owner_support_threads.sql": [
+      "public.case_request_support_open",
+      "private.case_correction_support_thread",
+      "public.case_request_support_list",
+      "public.case_request_support_reply",
+      "public.case_request_support_queue",
+      "public.case_request_support_owner_reply"
     ]
   },
   "note": "Definition inventory, not proof of live ACLs. Empty search_path is independently checked; scoped-role DB proofs are separate."

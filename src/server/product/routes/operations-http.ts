@@ -9,6 +9,7 @@ import { InternalOpsError, type InternalOpsReadKind } from "../internal-ops/serv
 import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
 import { productMonitor } from "../reports/monitor.ts";
 import { liveMetrics } from "../reports/live-metrics.ts";
+import {requireSupportOwner,supportQueue,ownerSupportReply} from "../reports/support";
 import { decideReview, listReviewQueue, setWording, reviewDetail, assignReview, reviewSource } from "../reports/report-qa.ts";
 
 import { resolveReportOperationsDb } from "../case-access/db.ts";
@@ -76,6 +77,8 @@ export function operatorIdentity(actor: Readonly<{ actor_id: string; role: strin
 }
 
 export const REPORT_QA_ROUTES = Object.freeze([
+  Object.freeze({path:"report-qa/support",method:"GET" as const}),
+  Object.freeze({path:"report-qa/support",method:"POST" as const}),
   Object.freeze({ path: "report-qa/monitor", method: "GET" as const }),
   Object.freeze({ path: "report-qa/source", method: "GET" as const }),
   Object.freeze({ path: "report-qa/detail", method: "GET" as const }),
@@ -182,6 +185,7 @@ export function createOperationsHttpHandler(input: Readonly<{
         if (!session) return productNotFound("SESSION_UNVERIFIED");
         const correlationId = correlationIdFor(request);
         try {
+          if(joined==="report-qa/support"){requireSupportOwner(session.actor);if(!isPost)return productJson({data:await supportQueue()});await ownerSupportReply(operatorIdentity(session.actor),await strictJsonObject(request,12000));return productJson({ok:true});}
           if (joined === "report-qa/queue") {
             const states=new URL(request.url).searchParams.get("state");
             const data = await listReviewQueue({ limit: queueLimit(request),states:states==="approved"?["approved"]:states==="published"?["published"]:undefined });

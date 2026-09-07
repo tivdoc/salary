@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CaseShell } from "@/components/case/case-shell";
+import {SupportThreadView} from "@/components/case/support-thread";
+import {customerSupport} from "@/server/product/reports/support";
 import { ThreadView } from "@/components/case/thread-view";
 import { listCaseRequests } from "@/server/product/reports/case-requests";
 import { listIdentityCases, resolveIdentitySession } from "@/server/product/case-access/service";
@@ -32,10 +34,11 @@ export default async function CaseThreadPage({ params }: { params: Promise<{ tok
   const item = cases.find((candidate) => candidate.public_id === token);
   if (!item) notFound();
 
-  const requests = await listCaseRequests(item.case_id);
+  const [requests,support] = await Promise.all([listCaseRequests(item.case_id),customerSupport(item.case_id,session.identity_id)]);
   return (
     <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
       <ThreadView publicId={item.public_id} requests={requests} />
+      <SupportThreadView publicId={item.public_id} threads={support}/>
       <p className="case-back">
         <Link href={`/case/${item.public_id}`}>חזרה לתיק</Link>
       </p>
