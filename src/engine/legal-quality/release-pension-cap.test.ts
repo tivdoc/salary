@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
-import {createRuleSpecPackage,executeRuleSpecAtomic,type RuleSpecPackage} from '../legal-operations/rulespec';
-import {PENSION_CONTRIBUTION_SHADOW_SPEC,PENSION_EMPLOYER_CONTRIBUTION_SHADOW_SPEC,PENSION_SEVERANCE_CONTRIBUTION_SHADOW_SPEC} from '../shadow/draft-shadow-specs';
-import {researchedPensionCap} from './release-pension-cap';
+import {createRuleSpecPackage,executeRuleSpecAtomic,type RuleSpecPackage} from '../legal-operations/rulespec.js';
+import {PENSION_CONTRIBUTION_SHADOW_SPEC,PENSION_EMPLOYER_CONTRIBUTION_SHADOW_SPEC,PENSION_SEVERANCE_CONTRIBUTION_SHADOW_SPEC} from '../shadow/draft-shadow-specs.js';
+import {researchedPensionCap} from './release-pension-cap.js';
 
 function calculate(rule:RuleSpecPackage,month:string,wage:number,share:string,n:number,d:number){
  const cap=researchedPensionCap(month);if(!cap)return null;
