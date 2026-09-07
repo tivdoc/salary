@@ -1,4 +1,5 @@
 import { AwaitingDocumentNotice } from "@/components/check/awaiting-document-notice";
+import { uploadSnapshot } from "@/server/product/documents/upload";
 import { DocumentReview } from "@/components/check/document-review";
 import { openDocumentRequest } from "@/server/product/reports/awaiting-document";
 import { requireVerifiedFunnelCase } from "@/server/product/case-access/funnel-guard";
@@ -9,11 +10,11 @@ export default async function UploadPage() {
   const caseId = await requireVerifiedFunnelCase(); // UX Run 1 / U7 + external review #1: no case, or an unverified contact, no screen.
   // S2.4: a case that is here because it was waiting for this file says so
   // instead of asking the question the customer already answered.
-  const waiting = await openDocumentRequest(caseId);
+  const [waiting, snapshot] = await Promise.all([openDocumentRequest(caseId), uploadSnapshot(caseId)]);
   return (
     <>
       {waiting ? <AwaitingDocumentNotice expiresAt={waiting.expires_at} /> : null}
-      <DocumentReview />
+      <DocumentReview key={caseId} initial={snapshot} />
     </>
   );
 }

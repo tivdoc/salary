@@ -38,6 +38,15 @@ function calledFunctionNames(): string[] {
 }
 
 describe("case access store adapters", () => {
+  it("preserves safe upload conflicts without exposing database error details", async () => {
+    for (const message of ["UPLOAD_VERSION_CONFLICT", "permission denied for private customer@example.invalid"]) {
+      const store = supabaseCaseAccessDb({ async rpc() { return { data: null, error: { code: "P0001", message } }; } });
+      await expect(store.rpc("case_documents_upload_commit", {})).rejects.toThrow(
+        `CASE_ACCESS_DB_RPC_FAILED:case_documents_upload_commit:${message.startsWith("UPLOAD_") ? message : "rpc_failed"}`,
+      );
+    }
+  });
+
   it("accepts every function name the product actually calls", async () => {
     const names = calledFunctionNames();
     // A collector that found nothing would make this test pass vacuously.

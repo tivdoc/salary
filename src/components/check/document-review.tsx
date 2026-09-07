@@ -1,312 +1,247 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileArrowUp, FilePdf, X } from "@phosphor-icons/react/dist/ssr";
 import { trackEvent } from "@/lib/analytics";
-import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
 import { countPdfPages, measureImage, type ReadabilityReport } from "@/lib/document-readability";
-import {
-  lastCompleteMonth,
-  MAX_PAYSLIPS,
-  slotForDocumentType,
-  validateUploadDescriptor,
-  type DocumentType,
-} from "@/lib/validation";
-
-// Site S2 (S2.1, S2.2, S2.5). The screen that stands between choosing a file
-// and paying for it. Every refund this wave exists to prevent starts with a
-// document nobody looked at until after the money moved, so: a preview, a page
-// count, a readability verdict, a named month, replace, delete — and only then
-// the payment.
+import { lastCompleteMonth, MAX_PAYSLIPS, validateUploadDescriptor, type DocumentType } from "@/lib/validation";
+import { uploadNextPath, type DocumentUpload, type SavedDocument, type UploadSnapshot } from "@/lib/document-upload";
+import { transferDocuments } from "./document-transfer";
+import "./document-review.css";
 
 type Chosen = {
-  id: string;
-  documentType: DocumentType;
-  slot: string;
-  file: File;
-  previewUrl: string;
-  pages: number | null;
-  readability: ReadabilityReport | null;
-  periodMonth: string;
-  status: "ready" | "uploading" | "uploaded" | "failed";
+  id: string; documentType: DocumentType; file: File; previewUrl: string;
+  pages: number | null; readability: ReadabilityReport | null; periodMonth: string;
+  replace?: { documentId: string; versionId: string };
   sent: number;
-  error: string | null;
 };
-
+const labels = { payslip: "תלוש", contract: "חוזה", attendance: "דוח נוכחות" };
 function formatSize(size: number) {
   return size < 1024 * 1024 ? `${Math.round(size / 1024)}KB` : `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
-
 function monthLabel(month: string) {
-  const [year, index] = month.split("-");
-  const names = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
-  return `${names[Number(index) - 1] ?? month} ${year}`;
+  return new Intl.DateTimeFormat("he-IL", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`));
 }
-
-/** The last twelve complete months, newest first — what a payslip can plausibly cover. */
 function recentMonths(): string[] {
   const now = new Date();
-  return Array.from({ length: MAX_PAYSLIPS }, (_, index) => {
-    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1 - index, 1));
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  return Array.from({ length: MAX_PAYSLIPS }, (_, i) => {
+    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1 - i, 1));
+    return date.toISOString().slice(0, 7);
   });
 }
+async function post(path: string, body: unknown, signal?: AbortSignal): Promise<unknown> {
+  const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error ?? "ההעלאה לא הושלמה. אפשר לנסות שוב.");
+  return data;
+}
 
-export function DocumentReview() {
+export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
   const router = useRouter();
-  const months = useMemo(() => recentMonths(), []);
+  const [snapshot, setSnapshot] = useState(initial);
   const [chosen, setChosen] = useState<Chosen[]>([]);
-  const [checkMonth, setCheckMonth] = useState<string>(() => lastCompleteMonth());
+  const [checkMonth, setCheckMonth] = useState(initial.checkPeriodMonth ?? lastCompleteMonth());
+  const [requestId, setRequestId] = useState(initial.documents.some((doc) => doc.document_type === "payslip")
+    ? "" : initial.requests.find((request) => request.code === "document_missing")?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [batchId, setBatchId] = useState<string | null>(null);
+  const [recoveryReady, setRecoveryReady] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const chosenRef = useRef<Chosen[]>([]);
-  // The ref mirrors state for the async paths (the transfer loop and the unmount cleanup) that must
-  // see the latest list without re-subscribing. Written in an effect, never during render.
-  useEffect(() => { chosenRef.current = chosen; }, [chosen]);
+  const manifestRef = useRef<DocumentUpload | null>(null);
+  const workingRef = useRef(false);
+  const storageKey = `tivdoc:document-upload:v1:${initial.caseId}`;
+  const months = useMemo(() => recentMonths(), []);
+  useEffect(() => {
+    // Only an opaque batch id is persisted; no files, names or signed URLs.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate external tab storage after SSR; initial HTML must be identical on server and client.
+    try { setBatchId(sessionStorage.getItem(storageKey)); } catch { /* memory-only retry still works */ }
+    setRecoveryReady(true);
+    return () => {
+      abortRef.current?.abort();
+      for (const item of chosenRef.current) URL.revokeObjectURL(item.previewUrl);
+    };
+  }, [storageKey]);
+  function updateChosen(items: Chosen[]) { chosenRef.current = items; setChosen(items); }
+  function remember(id: string | null) {
+    setBatchId(id);
+    try { if (id) sessionStorage.setItem(storageKey, id); else sessionStorage.removeItem(storageKey); } catch { /* optional recovery cache */ }
+  }
+  const replaced = new Set(chosen.flatMap((item) => item.replace ? [item.replace.documentId] : []));
+  const kept = snapshot.documents.filter((doc) => !replaced.has(doc.id));
+  const payslips = [...kept.filter((doc) => doc.document_type === "payslip").map((doc) => doc.period_month),
+    ...chosen.filter((doc) => doc.documentType === "payslip").map((doc) => doc.periodMonth)];
+  const availableMonths = [...new Set(payslips.filter((month): month is string => Boolean(month)))].sort().reverse();
+  const paid = uploadNextPath(snapshot) !== "/check/payment";
+  const effectiveCheckMonth = availableMonths.includes(checkMonth) ? checkMonth : availableMonths[0];
+  const locked = busy || batchId !== null || !recoveryReady;
 
-  // Object URLs are a resource: released when the component goes away, and when a file is removed.
-  useEffect(() => () => {
-    for (const item of chosenRef.current) URL.revokeObjectURL(item.previewUrl);
-    abortRef.current?.abort();
-  }, []);
-
-  const payslips = chosen.filter((item) => item.documentType === "payslip");
-
-  // S4 (2.8). The check month is chosen from the months the payslips cover, so
-  // changing a payslip's month could leave the stored choice pointing at a
-  // month no longer on offer: the select fell back to nothing and the person
-  // only learned at submit that the two disagreed.
-  //
-  // Derived rather than corrected. The stored value is the person's preference;
-  // what the screen shows and what is submitted is that preference when it is
-  // still available and the newest month otherwise, so the two can never be out
-  // of step and the submit-time error is unreachable.
-  const availableMonths = [...new Set(payslips.map((item) => item.periodMonth))].sort().reverse();
-  const effectiveCheckMonth = availableMonths.includes(checkMonth) ? checkMonth : (availableMonths[0] ?? checkMonth);
-
-  const add = useCallback(async (documentType: DocumentType, file: File | undefined) => {
-    if (!file) return;
+  async function add(documentType: DocumentType, file?: File, replace?: SavedDocument) {
+    if (!file || workingRef.current || batchId) return;
     const problem = validateUploadDescriptor(file);
-    if (problem) {
-      setError(`${file.name}: ${problem}`);
-      trackEvent("upload_error", { reason: problem });
-      return;
-    }
-    setError("");
+    if (problem) { setError(problem); return; }
     const current = chosenRef.current;
-    if (documentType === "payslip" && current.filter((item) => item.documentType === "payslip").length >= MAX_PAYSLIPS) {
-      setError(`אפשר לצרף עד ${MAX_PAYSLIPS} תלושים.`);
-      return;
+    const count = snapshot.documents.filter((doc) => doc.document_type === documentType).length
+      + current.filter((doc) => doc.documentType === documentType && !doc.replace).length;
+    if (!replace && count >= (documentType === "payslip" ? MAX_PAYSLIPS : 1)) {
+      setError("אין מקום למסמך נוסף מסוג זה. להחלפה, יש לבחור במסמך השמור."); return;
     }
-    // A payslip takes the first free slot; a contract or an attendance report replaces its own.
-    const used = new Set(current.map((item) => item.slot));
-    const slot = documentType === "payslip"
-      ? Array.from({ length: MAX_PAYSLIPS }, (_, index) => slotForDocumentType("payslip", index)).find((candidate) => !used.has(candidate))!
-      : documentType;
-    const existing = current.find((item) => item.slot === slot);
-    if (existing) URL.revokeObjectURL(existing.previewUrl);
-
-    const [pages, readability] = await Promise.all([countPdfPages(file), measureImage(file)]);
-    const entry: Chosen = {
-      id: `${slot}:${Date.now()}`,
-      documentType,
-      slot,
-      file,
-      previewUrl: URL.createObjectURL(file),
-      pages,
-      readability,
-      periodMonth: months[Math.min(current.filter((item) => item.documentType === "payslip").length, months.length - 1)]!,
-      status: "ready",
-      sent: 0,
-      error: null,
-    };
-    setChosen((items) => [...items.filter((item) => item.slot !== slot), entry]);
-  }, [months]);
-
-  function remove(id: string) {
-    setChosen((items) => {
-      const going = items.find((item) => item.id === id);
-      if (going) URL.revokeObjectURL(going.previewUrl);
-      return items.filter((item) => item.id !== id);
-    });
-  }
-
-  function setMonth(id: string, month: string) {
-    setChosen((items) => items.map((item) => (item.id === id ? { ...item, periodMonth: month } : item)));
-  }
-
-  function cancel() {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setBusy(false);
-    setChosen((items) => items.map((item) => (item.status === "uploading" ? { ...item, status: "ready", sent: 0 } : item)));
-  }
-
-  /**
-   * The transfer, per file, with real byte progress and a working cancel.
-   * XMLHttpRequest rather than fetch: it is still the only way to observe bytes
-   * leaving the browser, which is what S2.5 asks for.
-   */
-  function putFile(url: string, item: Chosen, signal: AbortSignal): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = new XMLHttpRequest();
-      request.open("PUT", url, true);
-      request.setRequestHeader("content-type", item.file.type);
-      request.setRequestHeader("x-upsert", "true");
-      request.upload.onprogress = (event) => {
-        if (!event.lengthComputable) return;
-        setChosen((items) => items.map((row) => (row.id === item.id ? { ...row, sent: event.loaded } : row)));
-      };
-      request.onload = () => (request.status >= 200 && request.status < 300 ? resolve() : reject(new Error(`upload_${request.status}`)));
-      request.onerror = () => reject(new Error("upload_network"));
-      request.onabort = () => reject(new DOMException("aborted", "AbortError"));
-      signal.addEventListener("abort", () => request.abort(), { once: true });
-      request.send(item.file);
-    });
-  }
-
-  async function submit() {
-    if (payslips.length === 0) {
-      setError("צריך לצרף לפחות תלוש שכר אחד.");
-      return;
-    }
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setBusy(true);
-    setError("");
-    const manifest = {
-      files: chosen.map((item) => ({
-        documentType: item.documentType,
-        slot: item.slot,
-        name: item.file.name,
-        type: item.file.type,
-        size: item.file.size,
-        ...(item.documentType === "payslip" ? { periodMonth: item.periodMonth } : {}),
-      })),
-      checkPeriodMonth: effectiveCheckMonth,
-    };
-
+    workingRef.current = true; setBusy(true); setError("");
     try {
-      const signResponse = await fetch("/api/documents/sign", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(manifest), signal: controller.signal,
-      });
-      if (!signResponse.ok) throw new Error(await customerErrorFromResponse(signResponse, "upload_prepare_failed"));
-      const signed = (await signResponse.json()) as { uploads: Array<{ slot: string; signedUrl?: string; path: string; token: string }> };
-
-      for (const upload of signed.uploads) {
-        const item = chosenRef.current.find((row) => row.slot === upload.slot);
-        if (!item) throw new Error(customerErrorMessage({}, "upload_transfer_failed"));
-        setChosen((items) => items.map((row) => (row.id === item.id ? { ...row, status: "uploading", sent: 0, error: null } : row)));
-        const url = upload.signedUrl ?? `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/v1/object/upload/sign/salary-documents/${upload.path}?token=${upload.token}`;
-        try {
-          await putFile(url, item, controller.signal);
-          setChosen((items) => items.map((row) => (row.id === item.id ? { ...row, status: "uploaded", sent: row.file.size } : row)));
-        } catch (caught) {
-          if (caught instanceof DOMException && caught.name === "AbortError") return;
-          setChosen((items) => items.map((row) => (row.id === item.id ? { ...row, status: "failed", error: customerErrorMessage({}, "upload_transfer_failed") } : row)));
-          throw new Error(customerErrorMessage({}, "upload_transfer_failed"));
+      const [pages, readability] = await Promise.all([countPdfPages(file), measureImage(file)]);
+      const prior = replace ? current.find((item) => item.replace?.documentId === replace.id) : undefined;
+      if (prior) URL.revokeObjectURL(prior.previewUrl);
+      updateChosen([...current.filter((item) => item !== prior), {
+        id: crypto.randomUUID(), documentType, file, pages, readability, previewUrl: URL.createObjectURL(file),
+        periodMonth: replace?.period_month ?? months[0]!, sent: 0,
+        ...(replace ? { replace: { documentId: replace.id, versionId: replace.version_id } } : {}),
+      }]);
+    } catch { setError("לא הצלחנו לקרוא את הקובץ. אפשר לבחור אותו שוב."); }
+    finally { workingRef.current = false; setBusy(false); }
+  }
+  function remove(id: string) {
+    const item = chosenRef.current.find((doc) => doc.id === id);
+    if (item) URL.revokeObjectURL(item.previewUrl);
+    updateChosen(chosenRef.current.filter((doc) => doc.id !== id));
+  }
+  function putFile(url: string, file: File, clientId: string, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (signal.aborted) { reject(new DOMException("aborted", "AbortError")); return; }
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url, true);
+      xhr.setRequestHeader("content-type", file.type);
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) updateChosen(chosenRef.current.map((row) => row.id === clientId ? { ...row, sent: event.loaded } : row));
+      };
+      const abort = () => xhr.abort();
+      const finish = (problem?: Error) => { signal.removeEventListener("abort", abort); if (problem) reject(problem); else resolve(); };
+      xhr.onload = () => finish(xhr.status >= 200 && xhr.status < 300 ? undefined : new Error("השליחה לא הושלמה. אפשר לנסות שוב."));
+      xhr.onerror = () => finish(new Error("החיבור נקטע. אפשר לנסות שוב."));
+      xhr.onabort = () => finish(new DOMException("aborted", "AbortError"));
+      signal.addEventListener("abort", abort, { once: true });
+      xhr.send(file);
+    });
+  }
+  function accept(result: UploadSnapshot) {
+    setSnapshot(result); setRequestId(""); manifestRef.current = null; remember(null);
+    for (const item of chosenRef.current) URL.revokeObjectURL(item.previewUrl);
+    updateChosen([]);
+  }
+  async function submit() {
+    if (workingRef.current) return;
+    if (!batchId && chosen.length === 0) { router.push(uploadNextPath(snapshot)); return; }
+    workingRef.current = true; setBusy(true); setError("");
+    const controller = new AbortController(); abortRef.current = controller;
+    try {
+      let result: UploadSnapshot;
+      if (batchId && !manifestRef.current) {
+        // A reload has no File objects. Finish the exact prior batch, or offer explicit cancellation.
+        result = await post("/api/documents/complete", { caseId: snapshot.caseId, batchId }, controller.signal) as UploadSnapshot;
+      } else {
+        if (!manifestRef.current) {
+          const id = crypto.randomUUID();
+          const files = await Promise.all(chosenRef.current.map(async (item) => ({
+            clientId: item.id, documentType: item.documentType, name: item.file.name, type: item.file.type as DocumentUpload["files"][number]["type"], size: item.file.size,
+            sha256: Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await item.file.arrayBuffer())), (byte) => byte.toString(16).padStart(2, "0")).join(""),
+            ...(item.documentType === "payslip" ? { periodMonth: item.periodMonth } : {}),
+            ...(item.replace ? { replace: item.replace } : {}),
+          })));
+          manifestRef.current = { caseId: snapshot.caseId, batchId: id, files,
+            ...(!paid && effectiveCheckMonth ? { checkPeriodMonth: effectiveCheckMonth } : {}),
+            ...(requestId ? { requestId } : {}),
+          };
+          remember(id);
         }
+        result = await transferDocuments({ manifest: manifestRef.current, files: new Map(chosenRef.current.map((item) => [item.id, item.file])), signal: controller.signal, post, put: putFile }) as UploadSnapshot;
       }
-
-      const completeResponse = await fetch("/api/documents/complete", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(manifest), signal: controller.signal,
-      });
-      if (!completeResponse.ok) throw new Error(await customerErrorFromResponse(completeResponse, "upload_complete_failed"));
-      trackEvent("payslip_uploaded", { document_count: chosen.length });
-      router.push("/check/payment");
+      accept(result);
+      trackEvent("payslip_uploaded", { document_count: result.documents.length });
+      router.push(uploadNextPath(result)); router.refresh();
     } catch (caught) {
-      if (caught instanceof DOMException && caught.name === "AbortError") return;
-      const message = customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "upload_transfer_failed");
-      setError(message);
-      setBusy(false);
-      trackEvent("upload_error", { reason: message });
-    }
+      if (!(caught instanceof DOMException && caught.name === "AbortError")) setError(caught instanceof Error ? caught.message : "ההעלאה לא הושלמה. אפשר לנסות שוב.");
+    } finally { workingRef.current = false; setBusy(false); abortRef.current = null; }
+  }
+  async function cancelAttempt() {
+    if (!batchId || workingRef.current) return;
+    workingRef.current = true; setBusy(true); setError("");
+    try {
+      const result = await post("/api/documents/complete", { caseId: snapshot.caseId, batchId, action: "cancel" }) as UploadSnapshot;
+      accept(result); router.refresh();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "הביטול לא הושלם. אפשר לנסות שוב."); }
+    finally { workingRef.current = false; setBusy(false); }
   }
 
   return (
     <div className="upload-form document-review">
       <div className="check-page-heading">
         <span className="mono">מסמכים</span>
-        <h1>נראה שהתלוש קריא — לפני שמשלמים.</h1>
+        <h1>{paid ? "השלמת מסמכים לתיק" : "נראה שהתלוש קריא — לפני שמשלמים."}</h1>
         <p>אפשר לצרף עד {MAX_PAYSLIPS} תלושים. הבדיקה הראשונית רצה על חודש אחד שתבחר; הדוח המלא מכסה את כולם.</p>
       </div>
-
+      {snapshot.documents.length > 0 ? <section aria-label="מסמכים שמורים">
+        <h2>המסמכים השמורים בתיק</h2>
+        <ul className="document-review__list">{snapshot.documents.map((doc) => <li className="document-card" key={doc.id}>
+          <FilePdf aria-hidden="true" />
+          <div className="document-card__body">
+            <p className="document-card__name">{doc.original_filename}</p>
+            <p>{labels[doc.document_type]} · {formatSize(doc.size)}{doc.period_month ? ` · ${monthLabel(doc.period_month)}` : ""}</p>
+            <p role="status">{replaced.has(doc.id) ? "נבחר קובץ להחלפה. המסמך השמור נשאר עד לסיום." : "שמור בתיק"}</p>
+          </div>
+          <label className="button button--ghost">החלפת מסמך
+            <input type="file" aria-label={`החלפת ${doc.original_filename}`} accept="application/pdf,image/jpeg,image/png" disabled={locked}
+              onChange={(event) => { void add(doc.document_type, event.target.files?.[0], doc); event.target.value = ""; }} />
+          </label>
+        </li>)}</ul>
+      </section> : null}
       <div className="document-review__pickers">
-        <label className="button button--ghost">
-          <FileArrowUp aria-hidden="true" /> הוספת תלוש
-          <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { void add("payslip", event.target.files?.[0]); event.target.value = ""; }} />
-        </label>
-        <label className="button button--ghost">
-          חוזה עבודה
-          <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { void add("contract", event.target.files?.[0]); event.target.value = ""; }} />
-        </label>
-        <label className="button button--ghost">
-          דוח נוכחות
-          <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { void add("attendance", event.target.files?.[0]); event.target.value = ""; }} />
-        </label>
+        {(["payslip", "contract", "attendance"] as const).map((type) => {
+          const count = snapshot.documents.filter((doc) => doc.document_type === type).length + chosen.filter((doc) => doc.documentType === type && !doc.replace).length;
+          return <label className="button button--ghost" key={type}>
+            <FileArrowUp aria-hidden="true" /> הוספת {labels[type]}
+            <input type="file" aria-label={`הוספת ${labels[type]}`} accept="application/pdf,image/jpeg,image/png" disabled={locked || count >= (type === "payslip" ? MAX_PAYSLIPS : 1)}
+              onChange={(event) => { void add(type, event.target.files?.[0]); event.target.value = ""; }} />
+          </label>;
+        })}
       </div>
-
-      <ul className="document-review__list">
-        {chosen.map((item) => (
-          <li className={`document-card document-card--${item.status}`} key={item.id}>
-            <div className="document-card__preview">
-              {item.file.type === "application/pdf"
-                ? <span className="document-card__icon"><FilePdf weight="duotone" aria-hidden="true" /></span>
-                /* eslint-disable-next-line @next/next/no-img-element -- a local object URL, never a remote asset */
-                : <img src={item.previewUrl} alt={`תצוגה מקדימה של ${item.file.name}`} />}
-            </div>
-            <div className="document-card__body">
-              <p className="document-card__name">{item.file.name}</p>
-              <p className="document-card__meta">
-                {item.documentType === "payslip" ? "תלוש" : item.documentType === "contract" ? "חוזה" : "נוכחות"} · {formatSize(item.file.size)}
-                {item.pages === null ? "" : ` · ${item.pages} עמודים`}
-                {item.readability?.width ? ` · ${item.readability.width}×${item.readability.height}` : ""}
-              </p>
-              {item.readability?.message ? <p className="document-card__warn" role="status">{item.readability.message}</p> : null}
-              {item.documentType === "payslip" ? (
-                <label className="document-card__month">
-                  חודש התלוש
-                  <select value={item.periodMonth} onChange={(event) => setMonth(item.id, event.target.value)} disabled={busy}>
-                    {months.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
-                  </select>
-                </label>
-              ) : null}
-              {item.status === "uploading" ? (
-                <p className="document-card__progress" role="status">
-                  נשלח {formatSize(item.sent)} מתוך {formatSize(item.file.size)}
-                </p>
-              ) : null}
-              {item.status === "uploaded" ? <p className="document-card__done" role="status">נשלח</p> : null}
-              {item.error ? <p className="form-error" role="alert">{item.error}</p> : null}
-            </div>
-            <button type="button" className="document-card__remove" aria-label={`הסרת ${item.file.name}`} onClick={() => remove(item.id)} disabled={busy}>
-              <X aria-hidden="true" />
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {payslips.length > 0 ? (
-        <label className="document-review__check-month">
-          חודש הבדיקה הראשונית
-          <select value={effectiveCheckMonth} onChange={(event) => setCheckMonth(event.target.value)} disabled={busy}>
-            {availableMonths.map((month) => (
-              <option key={month} value={month}>{monthLabel(month)}</option>
-            ))}
-          </select>
-          <span>הדוח המלא מכסה את כל החודשים שצירפת.</span>
-        </label>
-      ) : null}
-
-      <p className="upload-limit">PDF, JPG או PNG. עד 10MB לקובץ ועד 25MB יחד.</p>
+      <ul className="document-review__list">{chosen.map((item) => <li className="document-card" key={item.id}>
+        <div className="document-card__preview">{item.file.type === "application/pdf" ? <FilePdf aria-hidden="true" />
+          // eslint-disable-next-line @next/next/no-img-element -- local object URL
+          : <img src={item.previewUrl} alt={`תצוגה מקדימה של ${item.file.name}`} />}</div>
+        <div className="document-card__body">
+          <p className="document-card__name">{item.file.name}</p>
+          <p>{item.replace ? "החלפה ממתינה" : "מסמך חדש"} · {formatSize(item.file.size)}{item.pages === null ? "" : ` · ${item.pages} עמודים`}</p>
+          {item.readability?.message ? <p role="status">{item.readability.message}</p> : null}
+          {item.documentType === "payslip" ? <label>חודש התלוש
+            <select value={item.periodMonth} disabled={locked} onChange={(event) => updateChosen(chosenRef.current.map((row) => row.id === item.id ? { ...row, periodMonth: event.target.value } : row))}>
+              {[...new Set([item.periodMonth, ...months])].sort().reverse().map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
+            </select>
+          </label> : null}
+          {item.sent > 0 ? <p role="status">נשלח {formatSize(item.sent)} מתוך {formatSize(item.file.size)} · ממתין לשמירה בתיק</p> : null}
+        </div>
+        <button type="button" className="document-card__remove" aria-label={`הסרת ${item.file.name} מהבחירה`} disabled={locked} onClick={() => remove(item.id)}><X aria-hidden="true" /></button>
+      </li>)}</ul>
+      {!paid && availableMonths.length > 0 ? <label className="document-review__check-month">חודש הבדיקה הראשונית
+        <select value={effectiveCheckMonth} disabled={locked || chosen.length === 0} onChange={(event) => setCheckMonth(event.target.value)}>
+          {availableMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
+        </select><span>הדוח המלא מכסה את כל החודשים שצירפת.</span>
+      </label> : null}
+      {snapshot.requests.length > 0 ? <label>בקשת ההשלמה שהמסמך עונה עליה
+        <select value={requestId} disabled={locked} onChange={(event) => setRequestId(event.target.value)}>
+          <option value="">צירוף מסמך ללא מענה לבקשה</option>
+          {snapshot.requests.map((request) => <option key={request.id} value={request.id}>{request.question}</option>)}
+        </select>
+      </label> : null}
+      <p className="upload-limit">PDF, JPG או PNG. עד 10MB לקובץ ועד 25MB יחד בתיק.</p>
+      {batchId ? <p role="status">יש ניסיון העלאה שטרם אישרנו את סיומו. המסמכים השמורים נשמרו. אפשר לנסות להשלים אותו או לבטל את הניסיון.</p> : null}
       {error ? <div className="form-error" role="alert">{error}</div> : null}
       <div className="document-review__actions">
-        <button className="button button--primary button--wide" type="button" disabled={busy || payslips.length === 0} onClick={() => void submit()}>
-          {busy ? "מעלים…" : "אישור ומעבר לתשלום"}
+        <button className="button button--primary button--wide" type="button" disabled={busy || !recoveryReady || (payslips.length === 0 && !batchId)} onClick={() => void submit()}>
+          {busy ? "מעלים…" : batchId ? "ניסיון נוסף להשלמת ההעלאה" : paid ? "שמירה וחזרה לתיק" : "אישור ומעבר לתשלום"}
         </button>
-        {busy ? <button className="button button--ghost" type="button" onClick={cancel}>ביטול</button> : null}
+        {busy ? <button className="button button--ghost" type="button" onClick={() => abortRef.current?.abort()}>עצירת השליחה</button> : null}
+        {batchId && !busy ? <button className="button button--ghost" type="button" onClick={() => void cancelAttempt()}>ביטול ניסיון ההעלאה</button> : null}
       </div>
     </div>
   );

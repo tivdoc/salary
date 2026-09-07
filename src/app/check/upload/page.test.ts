@@ -22,6 +22,10 @@ vi.mock("@/server/platform/capabilities/stable-next-entrypoint", () => ({
 
 vi.mock("@/components/check/upload-form", () => ({ UploadForm: () => null }));
 vi.mock("@/components/check/document-review", () => ({ DocumentReview: () => null }));
+vi.mock("@/server/product/documents/upload", () => ({ uploadSnapshot: async () => ({
+  caseId: "22222222-2222-4222-8222-222222222222", publicId: "TV-UPLOAD01", status: "documents_uploaded",
+  paymentStatus: "not_started", checkPeriodMonth: "2026-08", documents: [], requests: [],
+}) }));
 
 const caseId = "22222222-2222-4222-8222-222222222222";
 

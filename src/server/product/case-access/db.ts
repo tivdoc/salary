@@ -27,7 +27,7 @@ export function supabaseCaseAccessDb(client: {
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
       if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const result = await client.rpc(fn, { ...args });
-      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}`), { code: result.error.code ?? "rpc_failed" });
+      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^UPLOAD_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
       const data = result.data;
       if (Array.isArray(data)) return data as T[];
       if (data === null || data === undefined) return [];
@@ -85,6 +85,11 @@ export function installCaseAccessDbForTests(db: CaseAccessDb | null): void {
  */
 export async function resolveCaseAccessDb(): Promise<CaseAccessDb | null> {
   if (override) return override;
+  // The durable local runtime uses a separate replay database on DEV. Its
+  // Storage API credentials must not silently switch SQL to PostgREST's default database.
+  if (process.env.TIVDOC_RUNTIME_TARGET === "local_only" && process.env.TIVDOC_PRODUCT_PERSISTENCE_MODE === "isolated_postgres" && process.env.TIVDOC_WEB_POSTGRES_URL) {
+    return postgresCaseAccessDb(await postgresPool(process.env.TIVDOC_WEB_POSTGRES_URL));
+  }
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const { getSupabaseAdmin } = await import("../../../lib/supabase-admin.ts");
     return supabaseCaseAccessDb(getSupabaseAdmin());

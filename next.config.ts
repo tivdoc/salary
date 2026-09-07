@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+// Direct signed uploads use the configured private Storage origin. Keeping
+// connect-src at 'self' silently blocks every browser upload before it reaches Storage.
+const storageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin : null;
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -10,7 +15,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  `connect-src 'self'${storageOrigin ? ` ${storageOrigin}` : ""}`,
   "worker-src 'self' blob:",
 ].join("; ");
 

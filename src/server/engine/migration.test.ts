@@ -33,13 +33,12 @@ describe("engine persistence migration safety", () => {
   // it: the engine's own migration still may not touch the documents table's constraints, and the
   // upload path must key on the slot — which is what makes a second payslip a second document
   // instead of an overwrite of the first.
-  it("keys documents on their slot, so a second payslip never overwrites the first", () => {
+  it("delegates document publication to the atomic upload protocol", () => {
     expect(migration).not.toMatch(/drop\s+constraint[^;]*documents/i);
     expect(migration).not.toMatch(/drop\s+index[^;]*documents/i);
-    expect(uploadRoute).toContain('.upsert(records, { onConflict: "case_id,slot" })');
-    expect(uploadRoute).toContain("storageBaseName(file.slot)");
-    expect(uploadRoute).toContain("slot: file.slot");
-    expect(validation).toContain("export function storageBaseName(slot: DocumentSlot)");
+    expect(uploadRoute).toContain("completeUpload(caseId, parsed.data.batchId)");
+    expect(uploadRoute).not.toContain(".upsert(");
+    expect(uploadRoute).not.toContain(".remove(");
     // The slot vocabulary is fixed: twelve payslips, a contract and an attendance report.
     expect(validation).toContain("MAX_PAYSLIPS = 12");
   });
