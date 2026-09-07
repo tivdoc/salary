@@ -13,7 +13,7 @@ export function isolatedPreviewDatabase(env:Readonly<Record<string,string|undefi
  if(target.hostname!=='aws-0-eu-central-1.pooler.supabase.com'||target.port!=='5432'
   ||decodeURIComponent(target.username)!=='tivdoc_web_runtime.cpzrbidxftzqcfeqqusu'
   ||target.pathname!=='/tivdoc_release_replay_20260907'||!target.password
-  ||target.hash||target.search
+  ||target.hash||target.search!=='?sslmode=verify-full'
   ||env.NEXT_PUBLIC_SUPABASE_URL!=='https://cpzrbidxftzqcfeqqusu.supabase.co')return refuse();
  return value;
 }

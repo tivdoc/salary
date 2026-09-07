@@ -19,14 +19,22 @@ await mkdir(directory,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const checks:{name:string;passed:boolean;detail?:string}[]=[];
 const pages:{path:string;width:number;status:number|null;horizontalOverflow:number;errors:string[]}[]=[];
+async function saveReceipt(){
+ await writeFile(`${directory}/receipt.json`,JSON.stringify({origin,deployedSha,checks,pages,
+  scope:'Public read-only pages and anonymous authorization; no case identity/payment/provider or completed DB journey',
+  productionChanged:false,temporaryAccessIncluded:false},null,2)+'\n');
+}
 async function check(name:string,run:()=>Promise<void>){
  try{await run();checks.push({name,passed:true});console.log('PASS '+name);}
  catch(error){const detail=error instanceof Error?error.message:'check failed';checks.push({name,passed:false,detail});console.log('FAIL '+name+': '+detail);}
+ await saveReceipt();
 }
 let context:BrowserContext|undefined;
 try{
  context=await browser.newContext({storageState,locale:'he-IL',timezoneId:'Asia/Jerusalem',reducedMotion:'reduce'});
  const page=await context.newPage();
+ context.setDefaultTimeout(15000);context.setDefaultNavigationTimeout(20000);
+ await saveReceipt();
  const errors:string[]=[];
  page.on('pageerror',error=>errors.push(error.message));
  await check('DEV liveness distinguishes readiness and external services are disabled',async()=>{
@@ -40,9 +48,11 @@ try{
   await page.setViewportSize({width,height:900});
   for(const path of ['/','/check','/login','/privacy','/terms']){
    await check(`public ${path} at ${width}px`,async()=>{
-    const start=errors.length;const response=await page.goto(origin+path,{waitUntil:'networkidle',timeout:45000});
+    const start=errors.length;const response=await page.goto(origin+path,{waitUntil:'domcontentloaded',timeout:20000});
+    await page.screenshot({path:`${directory}/navigation-${path==='/'?'home':path.slice(1)}-${width}.png`,fullPage:false,timeout:10000});
     assert.equal(response?.status(),200);assert.equal(new URL(page.url()).origin,origin);
-    await page.evaluate(()=>document.fonts.ready);
+    await page.locator('main').waitFor({state:'visible',timeout:15000});
+    await page.evaluate(()=>Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,3000))]));
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     const pageErrors=errors.slice(start);pages.push({path,width,status:response?.status()??null,horizontalOverflow:overflow,errors:pageErrors});
     await page.screenshot({path:`${directory}/${path==='/'?'home':path.slice(1)}-${width}.png`,fullPage:true});
@@ -54,22 +64,22 @@ try{
   }
  }
  await check('keyboard can reach a visible homepage control',async()=>{
-  await page.goto(origin);await page.keyboard.press('Tab');
+  await page.goto(origin,{waitUntil:'domcontentloaded'});await page.keyboard.press('Tab');
   const focused=await page.evaluate(()=>{const e=document.activeElement as HTMLElement|null;return e?{tag:e.tagName,rect:e.getBoundingClientRect().toJSON()}:null;});
   assert.ok(focused&&['A','BUTTON','INPUT'].includes(focused.tag));assert.ok(focused.rect.width>0);
  });
  await check('anonymous private routes redirect before streaming any case data',async()=>{
-  for(const path of ['/account','/cases','/case/TV-SYNTHETIC000','/case/TV-SYNTHETIC000/documents','/case/TV-SYNTHETIC000/thread','/case/TV-SYNTHETIC000/reports','/case/TV-SYNTHETIC000/orders']){
+  for(const path of ['/account','/cases','/case/TV-QAPRE001','/case/TV-QAPRE001/documents','/case/TV-QAPRE001/thread','/case/TV-QAPRE001/reports','/case/TV-QAPRE001/orders']){
    const response=await context!.request.get(origin+path,{maxRedirects:0});assert.equal(response.status(),307,path);
    assert.ok(response.headers().location?.includes('/login'),path);
   }
  });
  await check('anonymous document API refuses access',async()=>{
-  const response=await context!.request.get(origin+'/api/cases/TV-SYNTHETIC000/upload-session');
+  const response=await context!.request.get(origin+'/api/cases/TV-QAPRE001/upload-session');
   assert.ok([401,403,404].includes(response.status()),String(response.status()));
  });
 }finally{
  await context?.close();await browser.close();
- await writeFile(`${directory}/receipt.json`,JSON.stringify({origin,deployedSha,checks,pages,scope:'Public read-only pages and anonymous authorization; no case identity/payment/provider or completed DB journey',productionChanged:false,temporaryAccessIncluded:false},null,2)+'\n');
+ await saveReceipt();
 }
 if(checks.some(check=>!check.passed))process.exitCode=1;

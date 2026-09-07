@@ -5,6 +5,7 @@
 // local runtime it is a `pg` call as the web runtime role. The service never
 // sees which, and a test hands it a fake.
 import { isolatedPreviewDatabase } from './preview-database.ts';
+import { SUPABASE_ROOT_2021_CA } from './supabase-ca.ts';
 
 export type CaseAccessDb = Readonly<{
   provider: "supabase" | "postgres" | "fake";
@@ -63,12 +64,13 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
 let pool: PgPoolLike | null = null;
 let poolUrl: string | null = null;
 
-async function postgresPool(connectionString: string): Promise<PgPoolLike> {
-  if (pool && poolUrl === connectionString) return pool;
+async function postgresPool(connectionString: string, tls?: Readonly<{ca:string;rejectUnauthorized:true}>): Promise<PgPoolLike> {
+  const cacheKey = `${connectionString}:${tls?.ca ?? ""}`;
+  if (pool && poolUrl === cacheKey) return pool;
   const { default: pg } = await import("pg");
-  const created = new pg.Pool({ connectionString, max: 2, connectionTimeoutMillis: 20_000, application_name: "tivdoc_case_access" });
+  const created = new pg.Pool({ connectionString, ...(tls ? {ssl:tls} : {}), max: 2, connectionTimeoutMillis: 20_000, application_name: "tivdoc_case_access" });
   pool = created;
-  poolUrl = connectionString;
+  poolUrl = cacheKey;
   return created;
 }
 
@@ -88,7 +90,14 @@ export function installCaseAccessDbForTests(db: CaseAccessDb | null): void {
 export async function resolveCaseAccessDb(): Promise<CaseAccessDb | null> {
   if (override) return override;
   const previewUrl = isolatedPreviewDatabase(process.env);
-  if (previewUrl) return postgresCaseAccessDb(await postgresPool(previewUrl));
+  if (previewUrl) {
+    const target = new URL(previewUrl);
+    // pg's URL sslmode parsing overrides its ssl object. The selector has
+    // already required verify-full; pass the trusted CA/hostname verification
+    // explicitly after removing that sole accepted query parameter.
+    target.search = '';
+    return postgresCaseAccessDb(await postgresPool(target.toString(), {ca:SUPABASE_ROOT_2021_CA,rejectUnauthorized:true}));
+  }
   // The durable local runtime uses a separate replay database on DEV. Its
   // Storage API credentials must not silently switch SQL to PostgREST's default database.
   if (process.env.TIVDOC_RUNTIME_TARGET === "local_only" && process.env.TIVDOC_PRODUCT_PERSISTENCE_MODE === "isolated_postgres" && process.env.TIVDOC_WEB_POSTGRES_URL) {
