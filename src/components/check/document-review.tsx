@@ -37,13 +37,13 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
   return data;
 }
 
-export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
+export function DocumentReview({ initial, initialRequestId }: { initial: UploadSnapshot; initialRequestId?: string }) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState(initial);
   const [chosen, setChosen] = useState<Chosen[]>([]);
   const [checkMonth, setCheckMonth] = useState(initial.checkPeriodMonth ?? lastCompleteMonth());
-  const [requestId, setRequestId] = useState(initial.documents.some((doc) => doc.document_type === "payslip")
-    ? "" : initial.requests.find((request) => request.code === "document_missing")?.id ?? "");
+  const [requestId, setRequestId] = useState(initialRequestId ?? (initial.documents.some((doc) => doc.document_type === "payslip")
+    ? "" : initial.requests.find((request) => request.code === "document_missing")?.id ?? ""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [batchId, setBatchId] = useState<string | null>(null);

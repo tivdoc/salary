@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "actual server SQL refuses impossible hours and forged choice",
+    "request cannot be answered through another case",
+    "48-hour reminder persists once per request across repeated sweeps",
+    "five-day reminder is independently deduplicated",
+    "valid answer commits and P05 captures the response",
+    "draft survives a separate SQL read without changing analysis input",
+    "correction preserves original, exposes latest and invalidates analysis once",
+    "stale correction/retry cannot overwrite a newer answer",
+    "identity ownership is checked again at the edit SQL boundary",
+    "expiry and answer remain distinct terminal states; answered request is never expired",
+    "customer web runtime cannot run or time-shift the scheduler"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "provider_delivery": false,
+  "fixtures": "synthetic; cleaned",
+  "production": "untouched"
+}

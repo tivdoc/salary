@@ -10,9 +10,10 @@
 // production (PostgREST) and the local runtime (pg) run one SQL and tests run a
 // fake. This file imports nothing from the engine.
 import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db.ts";
+import { validateRequestAnswer } from "./request-answer";
 import { requestFor, slaPaused, type ThreadRequest } from "./refusal-requests.ts";
 
-export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null }>;
+export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null }>;
 
 type RequestRow = Readonly<{
   id: string;
@@ -50,7 +51,11 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null)
   const store = db ?? await resolveCaseAccessDb();
   if (!store) return [];
   const rows = await store.rpc<RequestRow>("case_request_list", { target_case: caseId });
-  return rows.map(toRequest);
+  const revisions = await store.rpc<{request_id:string;answer_revision:number;latest_answer:string|null;draft_revision:number;draft_text:string|null}>("case_request_revision_list", {target_case:caseId});
+  return rows.map(row => {
+    const revision = revisions.find(value => value.request_id === row.id);
+    return {...toRequest(row),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
+  });
 }
 
 /**
@@ -93,10 +98,13 @@ export async function answerCaseRequest(
 ): Promise<StoredRequest | null> {
   const store = db ?? await resolveCaseAccessDb();
   if (!store) return null;
+  const request = (await listCaseRequests(input.caseId, store)).find(row => row.id === input.requestId);
+  if (!request || request.answered_at !== null || new Date(request.expires_at) <= new Date()) return null;
+  const answer = validateRequestAnswer(request, input.answer);
   const rows = await store.rpc<RequestRow>("case_request_answer", {
     target_request: input.requestId,
     target_case: input.caseId,
-    target_answer: input.answer.slice(0, 2_000),
+    target_answer: answer,
   });
   return rows[0] ? toRequest(rows[0]) : null;
 }
@@ -109,4 +117,14 @@ export function caseSlaPaused(requests: readonly StoredRequest[]): boolean {
 /** D-9: a request past its expiry is closed and stops holding the case. */
 export function expiredRequests(requests: readonly StoredRequest[], now: Date = new Date()): readonly StoredRequest[] {
   return requests.filter((request) => request.answered_at === null && new Date(request.expires_at) <= now);
+}
+
+export async function editCaseRequest(input:{caseId:string;requestId:string;identityId:string;answer:string;expectedRevision:number;kind:'draft'|'correction'},db?:CaseAccessDb|null){
+ const store=db??await resolveCaseAccessDb();if(!store)throw new Error('REQUEST_STORE_UNAVAILABLE');
+ if(!Number.isInteger(input.expectedRevision)||input.expectedRevision<0||input.answer.length>2000)throw new Error('REQUEST_EDIT_INVALID');
+ if(input.kind==='correction'){
+  const request=(await listCaseRequests(input.caseId,store)).find(r=>r.id===input.requestId);
+  if(!request)throw new Error('REQUEST_FORBIDDEN');validateRequestAnswer(request,input.answer);
+ }
+ return store.rpc('case_request_edit',{target_case:input.caseId,target_request:input.requestId,target_identity:input.identityId,target_answer:input.answer,expected_revision:input.expectedRevision,edit_kind:input.kind});
 }

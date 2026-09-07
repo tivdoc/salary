@@ -169,9 +169,23 @@ const mappingByCode = new Map(REFUSAL_MAPPINGS.map((entry) => [entry.code, entry
 export function mappingFor(code: string): RefusalMapping | null {
   const exact = mappingByCode.get(code);
   if (exact) return exact;
-  const family = code.includes(":") ? code.slice(0, code.indexOf(":")) : null;
-  if (family === null) return null;
-  return [...mappingByCode.values()].find((entry) => entry.code.startsWith(`${family}:`)) ?? null;
+  const match = /^(fact\.missing|fact\.conflicted|low_confidence):([a-z][a-z0-9_.]{1,59})$/.exec(code);
+  if (!match) return null;
+  const [, family, field] = match;
+  const labels: Record<string, string> = {
+    hours_regular: "מספר השעות הרגילות", base_wage: "שכר הבסיס",
+    "work.regular_hours": "מספר השעות הרגילות", "compensation.base_monthly_salary": "שכר הבסיס החודשי",
+    "compensation.hourly_rate": "השכר לשעה", "pension.base_salary": "השכר המבוטח לפנסיה",
+    "travel.reimbursement": "החזר הנסיעות", "leave.vacation_balance": "יתרת החופשה",
+    "leave.sick_balance": "יתרת המחלה", "employment.start_date": "תאריך תחילת העבודה",
+  };
+  const label = labels[field] ?? `הנתון המסומן ${field}`;
+  return {
+    code, outcome: "request", blocking: family !== "low_confidence",
+    question: family === "fact.conflicted" ? `יש מידע סותר לגבי ${label}. מה הנתון הנכון ומה המקור שלו?` : `אפשר לאשר מהו ${label}?`,
+    answer_kind: "text", field_crop: field,
+    not_checked_text: `נדרש אישור לגבי ${label}.`,
+  };
 }
 
 export const threadRequestSchema = z.object({
@@ -215,6 +229,6 @@ export function reminderTimes(openedAt: Date): Date[] {
 }
 
 /** The SLA clock runs unless a blocking request is open (D-7.2). */
-export function slaPaused(requests: readonly ThreadRequest[]): boolean {
-  return requests.some((request) => request.blocking && request.answered_at === null);
+export function slaPaused(requests: readonly ThreadRequest[], now = new Date()): boolean {
+  return requests.some((request) => request.blocking && request.answered_at === null && new Date(request.expires_at) > now);
 }

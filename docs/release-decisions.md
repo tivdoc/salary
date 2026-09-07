@@ -12,3 +12,8 @@
 - D-008 (P04): travel uses actual relevant discounted cost and attendance, bounded by daily cap/monthly pass; missing price cannot become entitlement at cap. New inactive RuleSpec, seven-topic AI worksheet.
 - D-009 (P04): ordinary sick pay uses actual wage as a fact; first-day zero is an explicit AI legal interpretation for the ordinary branch only, exceptions require applicability. Historical sensitivity spec preserved.
 - D-010 (P04): latest owner authorization permits AI-authored expected worksheets; they are separate from the human golden ledger and never activate it. 42 values authored before executing tests.
+
+
+D-011 / P06: SLA human service hours are Sunday–Thursday 09:00–17:00 Asia/Jerusalem, with national/Jewish holiday dates from the [official CSC 2026 calendar, pp.2–3](https://www.gov.il/BlobFolder/policy/calendar_2026/he/calendar_2026.pdf). This is a Tivdoc service policy, not an interpretation of civil-service employee rights; its special agreement days and shortened hours are not copied. Automatic SLA counts elapsed time. Blocking intervals are unioned before subtraction. Unknown calendar years explicitly refuse an SLA calculation. Order-bound persisted SLA clocks remain to be connected with P09.
+
+D-012 / P06: expired document requests remain terminal. An already reserved upload may still save its documents after request expiry, without answering a newer request or rejecting otherwise valid uploaded files. Correction of a submitted text/choice/number is a new answer revision; the original row is retained. Drafts do not invalidate analysis; submitted corrections do.

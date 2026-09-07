@@ -1,3 +1,9 @@
+## Release completion P06 checkpoint — 2026-09-07
+
+Base P05 `9d9d706`; continuing on `codex/tivdoc-release-completion`. Field-family fallbacks retain the original code/crop and ask about the correct field. Text/choice/number validation runs in server code and SQL; document questions enter the authenticated upload flow with an exact request ID. Drafts survive a read/reload without triggering analysis. Corrections append a version, preserve the original, and invalidate source analysis. Expiry and answers are terminal alternatives; 48h/5d reminder intentions are durable and deduplicated. A reserved document can finish after request expiry without answering a newer request. Added a bounded worker command and a sourced 2026 Jerusalem service clock that unions overlapping pauses.
+
+Validation: 129 tests/17 files PASS; 11 actual PostgreSQL checks PASS; tsc, full lint and production build PASS. Database changes applied only to isolated `tivdoc_release_replay_20260907`. No provider messages sent and no scheduler deployed. Remaining: order-bound persisted SLA (P09), reminders through provider outbox (P07), hosted schedule and browser acceptance (P11/P13). P05 full composition remains open. Current evidence: `docs/release-evidence/P06-request-db.json`.
+
 ## Release completion P05 checkpoint — 2026-09-07
 
 Base P04 `1ffb17d`; branch `codex/tivdoc-release-completion`. Added a transactional source journal for document, questionnaire, answer, period and payment changes. Unchanged content does not enqueue another revision. The dispatcher uses the existing canonical PostgreSQL jobs repository with three attempts; mode and current-input fencing are explicit. An approved/published report must match the current input revision. Historical inputs survive changes.

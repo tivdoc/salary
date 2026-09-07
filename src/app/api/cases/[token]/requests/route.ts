@@ -1,5 +1,6 @@
+import { RequestAnswerError } from "@/server/product/reports/request-answer";
 import { NextResponse } from "next/server";
-import { answerCaseRequest, listCaseRequests } from "@/server/product/reports/case-requests";
+import { answerCaseRequest, editCaseRequest, listCaseRequests } from "@/server/product/reports/case-requests";
 import { listIdentityCases, resolveIdentitySession } from "@/server/product/case-access/service";
 import { readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { refusedEntrypoint, strictJsonObject } from "@/server/product/routes/http-common";
@@ -44,6 +45,11 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   }
 
   try {
+    if (body.action === "draft" || body.action === "correction") {
+      if (typeof body.expectedRevision !== "number") return NextResponse.json({code:"request_answer_invalid"},{status:400});
+      await editCaseRequest({caseId:found.case_id,requestId:body.requestId,identityId:session.identity_id,answer:body.answer,expectedRevision:body.expectedRevision,kind:body.action});
+      return NextResponse.json({ok:true},{headers:{"Cache-Control":"no-store"}});
+    }
     const answered = await answerCaseRequest({ requestId: body.requestId, caseId: found.case_id, answer: body.answer });
     if (!answered) {
       // Either it is not this case's request, or it was already answered — and an
@@ -56,6 +62,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    if (error instanceof RequestAnswerError) return NextResponse.json({ error: "התשובה אינה מתאימה לשאלה", code: "request_answer_invalid" }, { status: 400 });
     console.error("Answering a case request failed", error instanceof Error ? error.name : "error");
     return NextResponse.json({ error: "לא הצלחנו לשמור את התשובה", code: "request_answer_failed" }, { status: 503 });
   }

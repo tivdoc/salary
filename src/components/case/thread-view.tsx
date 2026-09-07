@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AddDocumentButton } from "./add-document-button";
 import { useRouter } from "next/navigation";
 import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
 import type { StoredRequest } from "@/server/product/reports/case-requests";
@@ -13,12 +14,12 @@ function formatWhen(iso: string): string {
   return new Date(iso).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
 }
 
-function AnswerForm({ request, publicId, onAnswered }: { request: StoredRequest; publicId: string; onAnswered: () => void }) {
-  const [value, setValue] = useState("");
+function AnswerForm({ request, publicId, onAnswered, correction = false }: { request: StoredRequest; publicId: string; onAnswered: () => void; correction?: boolean }) {
+  const [value, setValue] = useState(request.draft_text ?? (correction ? request.answer_text ?? "" : ""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function submit() {
+  async function submit(action: "answer" | "draft" | "correction" = correction ? "correction" : "answer") {
     if (!value.trim()) {
       setError("צריך לענות כדי לשלוח.");
       return;
@@ -29,7 +30,7 @@ function AnswerForm({ request, publicId, onAnswered }: { request: StoredRequest;
       const response = await fetch(`/api/cases/${publicId}/requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId: request.id, answer: value.trim() }),
+        body: JSON.stringify({ requestId: request.id, answer: value.trim(), action, expectedRevision: action === "draft" ? request.draft_revision ?? 0 : request.answer_revision ?? 0 }),
       });
       if (!response.ok) throw new Error(await customerErrorFromResponse(response, "request_answer_failed"));
       onAnswered();
@@ -37,6 +38,10 @@ function AnswerForm({ request, publicId, onAnswered }: { request: StoredRequest;
       setError(customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "request_answer_failed"));
       setBusy(false);
     }
+  }
+
+  if (request.answer_kind === "document") {
+    return <AddDocumentButton publicId={publicId} label="צירוף המסמך לתיק" requestId={request.id} />;
   }
 
   if (request.answer_kind === "choice" && request.options) {
@@ -58,8 +63,9 @@ function AnswerForm({ request, publicId, onAnswered }: { request: StoredRequest;
         </div>
         {error ? <p className="form-error" role="alert">{error}</p> : null}
         <button className="button button--primary" type="button" onClick={() => void submit()} disabled={busy || !value}>
-          {busy ? "שולחים…" : "שליחת תשובה"}
+          {busy ? "שומרים…" : correction ? "שליחת תיקון" : "שליחת תשובה"}
         </button>
+        <button className="button button--secondary" type="button" onClick={() => void submit("draft")} disabled={busy || !value.trim()}>שמירת טיוטה</button>
       </div>
     );
   }
@@ -80,15 +86,17 @@ function AnswerForm({ request, publicId, onAnswered }: { request: StoredRequest;
       </label>
       {error ? <p className="form-error" id={`thread-answer-error-${request.id}`} role="alert">{error}</p> : null}
       <button className="button button--primary" type="button" onClick={() => void submit()} disabled={busy}>
-        {busy ? "שולחים…" : "שליחת תשובה"}
+        {busy ? "שומרים…" : correction ? "שליחת תיקון" : "שליחת תשובה"}
       </button>
+      <button className="button button--secondary" type="button" onClick={() => void submit("draft")} disabled={busy || !value.trim()}>שמירת טיוטה</button>
     </div>
   );
 }
 
 export function ThreadView({ publicId, requests }: { publicId: string; requests: readonly StoredRequest[] }) {
   const router = useRouter();
-  const open = requests.filter((request) => request.answered_at === null);
+  const open = requests.filter((request) => request.answered_at === null && new Date(request.expires_at) > new Date());
+  const expired = requests.filter((request) => request.answered_at === null && new Date(request.expires_at) <= new Date());
   const answered = requests.filter((request) => request.answered_at !== null);
   const blocking = open.filter((request) => request.blocking);
 
@@ -114,9 +122,11 @@ export function ThreadView({ publicId, requests }: { publicId: string; requests:
           </p>
           <h2>{request.question}</h2>
           {request.field_crop ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
-          <AnswerForm request={request} publicId={publicId} onAnswered={() => router.refresh()} />
+          <AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={() => router.refresh()} />
         </div>
       ))}
+
+      {expired.length > 0 ? <div className="received-card"><h2>שאלות שנסגרו ללא תשובה</h2>{expired.map(request => <p key={request.id}>{request.question} — הסתיים המועד להשלמה.</p>)}</div> : null}
 
       {answered.length > 0 ? (
         <div className="received-card">
@@ -126,6 +136,8 @@ export function ThreadView({ publicId, requests }: { publicId: string; requests:
               <li key={request.id}>
                 <p className="thread-answered__question">{request.question}</p>
                 <p className="thread-answered__answer">{request.answer_text}</p>
+                {(request.answer_revision ?? 1) > 1 ? <p>תשובה מתוקנת · גרסה {request.answer_revision}. התשובה המקורית נשמרה.</p> : null}
+                {request.answer_kind !== "document" ? <details><summary>תיקון התשובה</summary><AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} correction onAnswered={() => router.refresh()} /></details> : null}
               </li>
             ))}
           </ul>

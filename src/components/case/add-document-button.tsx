@@ -9,7 +9,7 @@ import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-
 // upload screens decide which case a file belongs to from the funnel's cookie,
 // and a plain link would land on whichever case the browser last worked on.
 
-export function AddDocumentButton({ publicId, label }: { publicId: string; label: string }) {
+export function AddDocumentButton({ publicId, label, requestId }: { publicId: string; label: string; requestId?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -21,7 +21,7 @@ export function AddDocumentButton({ publicId, label }: { publicId: string; label
       const response = await fetch(`/api/cases/${encodeURIComponent(publicId)}/upload-session`, { method: "POST" });
       if (!response.ok) throw new Error(await customerErrorFromResponse(response, "upload_session_failed"));
       const result = (await response.json()) as { next?: string };
-      router.push(result.next ?? "/check/upload");
+      router.push(`${result.next ?? "/check/upload"}${requestId ? `?requestId=${encodeURIComponent(requestId)}` : ""}`);
     } catch (caught) {
       setError(customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "upload_session_failed"));
       setBusy(false);

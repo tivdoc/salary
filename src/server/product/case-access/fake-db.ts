@@ -204,6 +204,7 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
       return [issued];
     },
     // --- 202609060004/0005: the thread and the case's documents (S3.4 / S2.3).
+    case_request_revision_list() { return []; },
     case_request_list(a) {
       return state.case_requests.filter((row) => row.case_id === a.target_case).sort((left, right) => right.opened_at - left.opened_at);
     },
