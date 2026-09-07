@@ -35,9 +35,12 @@ export default async function CaseThreadPage({ params }: { params: Promise<{ tok
   if (!item) notFound();
 
   const [requests,support] = await Promise.all([listCaseRequests(item.case_id),customerSupport(item.case_id,session.identity_id)]);
+  // This authenticated server snapshot is serialized once for client hydration.
+  // eslint-disable-next-line react-hooks/purity -- request-time server clock, after awaited data access
+  const renderedAt = Date.now();
   return (
     <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
-      <ThreadView publicId={item.public_id} requests={requests} />
+      <ThreadView publicId={item.public_id} requests={requests} renderedAt={renderedAt} />
       <SupportThreadView publicId={item.public_id} threads={support}/>
       <p className="case-back">
         <Link href={`/case/${item.public_id}`}>חזרה לתיק</Link>

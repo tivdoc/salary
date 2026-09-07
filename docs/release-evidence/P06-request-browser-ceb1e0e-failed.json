@@ -1,0 +1,42 @@
+{
+  "origin": "https://salary-l8hk2xi7m-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "ceb1e0efd354bffc568750e05187800b542375ba",
+  "checks": [
+    {
+      "name": "saved request opens with its exact question and no draft",
+      "passed": true
+    },
+    {
+      "name": "draft response loss retries once and reload shows the persisted value",
+      "passed": true
+    },
+    {
+      "name": "saved initial answer with lost HTTP response remains retryable and clears only its draft",
+      "passed": true
+    },
+    {
+      "name": "correction response loss retries the same immutable version and survives reload",
+      "passed": true
+    },
+    {
+      "name": "stale HTTP draft, foreign case and foreign origin cannot overwrite the saved answer",
+      "passed": true
+    },
+    {
+      "name": "two independent HTTP clients retry one correction without duplicate versions",
+      "passed": true
+    },
+    {
+      "name": "saved corrected request readable at 360px",
+      "passed": false
+    }
+  ],
+  "errors": [
+    "Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.",
+    "Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  ],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA sessions; hosted request draft/answer/correction UI, HTTP and isolated DEV DB. No OTP, provider, real payment or canonical correction application proof.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

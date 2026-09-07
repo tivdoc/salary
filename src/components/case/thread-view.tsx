@@ -1,18 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddDocumentButton } from "./add-document-button";
 import { useRouter } from "next/navigation";
 import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
+import { formatRequestDate } from "@/lib/request-display";
 import type { StoredRequest } from "@/server/product/reports/case-requests";
 
 // Site S3.4 / D-2. The thread renders questions the engine asked and the
 // answers already given. It never invents a question: every card here came from
 // a refusal, and the customer can see which of them is holding the case.
-
-function formatWhen(iso: string): string {
-  return new Date(iso).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
-}
 
 function AnswerForm({ request, publicId, onAnswered, correction = false }: { request: StoredRequest; publicId: string; onAnswered: () => void; correction?: boolean }) {
   const [value, setValue] = useState(request.draft_text ?? (correction ? request.answer_text ?? "" : ""));
@@ -100,10 +97,18 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
   );
 }
 
-export function ThreadView({ publicId, requests }: { publicId: string; requests: readonly StoredRequest[] }) {
+export function ThreadView({ publicId, requests, renderedAt }: { publicId: string; requests: readonly StoredRequest[]; renderedAt: number }) {
   const router = useRouter();
-  const open = requests.filter((request) => request.answered_at === null && new Date(request.expires_at) > new Date());
-  const expired = requests.filter((request) => request.answered_at === null && new Date(request.expires_at) <= new Date());
+  const open = requests.filter((request) => request.answered_at === null && Date.parse(request.expires_at) > renderedAt);
+  const expired = requests.filter((request) => request.answered_at === null && Date.parse(request.expires_at) <= renderedAt);
+  // The initial render uses the same server instant through hydration. The DB
+  // remains the expiry authority; refresh at the next deadline while open.
+  useEffect(() => {
+    const deadlines = requests.filter(request => request.answered_at === null && Date.parse(request.expires_at) > renderedAt).map(request => Date.parse(request.expires_at));
+    if (deadlines.length === 0) return;
+    const timer = window.setTimeout(() => router.refresh(), Math.min(2_147_483_647, Math.max(0, Math.min(...deadlines) - Date.now()) + 100));
+    return () => window.clearTimeout(timer);
+  }, [requests, renderedAt, router]);
   const answered = requests.filter((request) => request.answered_at !== null);
   const blocking = open.filter((request) => request.blocking);
 
@@ -125,7 +130,7 @@ export function ThreadView({ publicId, requests }: { publicId: string; requests:
       {open.map((request) => (
         <div className={`received-card thread-card${request.blocking ? " thread-card--blocking" : ""}`} key={request.id} id={`request-${request.id}`}>
           <p className="thread-card__meta">
-            {request.blocking ? "ממתינים לתשובה כדי להמשיך" : "לא מעכב את הבדיקה"} · נשאל ב־{formatWhen(request.opened_at)} · פתוח עד {formatWhen(request.expires_at)}
+            {request.blocking ? "ממתינים לתשובה כדי להמשיך" : "לא מעכב את הבדיקה"} · נשאל ב־{formatRequestDate(request.opened_at)} · פתוח עד {formatRequestDate(request.expires_at)}
           </p>
           <h2>{request.question}</h2>
           {request.field_crop ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
