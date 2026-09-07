@@ -12,35 +12,7 @@
     },
     {
       "name": "an operations DB reply is visible after customer reload and customer can reopen it",
-      "passed": true
-    },
-    {
-      "name": "concurrent HTTP retries persist once and cross-case or foreign-origin requests are refused",
-      "passed": true
-    },
-    {
-      "name": "persisted support is readable in RTL at 360px",
-      "passed": true
-    },
-    {
-      "name": "persisted support is readable in RTL at 390px",
-      "passed": true
-    },
-    {
-      "name": "persisted support is readable in RTL at 768px",
-      "passed": true
-    },
-    {
-      "name": "persisted support is readable in RTL at 1440px",
-      "passed": true
-    },
-    {
-      "name": "two deliberate identical new messages receive distinct IDs after confirmed saves",
-      "passed": true
-    },
-    {
-      "name": "support leaves case and payment status unchanged",
-      "passed": true
+      "passed": false
     }
   ],
   "errors": [],

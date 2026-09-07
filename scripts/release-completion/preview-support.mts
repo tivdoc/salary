@@ -7,8 +7,8 @@ import {chromium,type BrowserContext} from 'playwright';
 import {readDevEnvFile} from '../supabase-dev-guard/dev-credential.mts';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca.ts';
 
-const origin='https://salary-3zwy6a5w7-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='824c44a60fd3adbcdba0bed749aa0f65f2365c98';
+const origin='https://salary-nvxblwmsh-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='e950177b38f13ba8fd672f6b23a6468882338fcd';
 const directory='output/release-completion/preview-support';
 const env=readDevEnvFile();
 function client(key:string){const u=new URL(env.get(key)!);assert.equal(u.pathname,'/tivdoc_release_replay_20260907');assert.equal(u.hostname,'aws-0-eu-central-1.pooler.supabase.com');assert.ok(u.username.endsWith('.cpzrbidxftzqcfeqqusu'));u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
@@ -48,7 +48,7 @@ try{
   await page.route('**'+route,async r=>{await r.fetch();await r.abort('failed');},{times:1});
   await page.getByRole('button',{name:'שליחת הודעה',exact:true}).click();
   await page.getByText('לא התקבל אישור שמירה. הטקסט נשאר כאן ואפשר לנסות שוב.',{exact:true}).waitFor();
-  assert.equal(await page.locator('#support textarea').first().inputValue(),question);
+  assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),question);
   assert.equal((await db.query('select count(*)::int n from private.case_support_threads where case_id=$1',[ids[0]])).rows[0].n,1);
   await page.getByRole('button',{name:'שליחת הודעה',exact:true}).click();
   await page.locator('#support article').waitFor();await page.reload();
@@ -61,7 +61,7 @@ try{
   await page.reload();await page.getByText('Synthetic owner DB response',{exact:true}).waitFor();
   await page.getByLabel('הוספת תשובה לפנייה',{exact:true}).fill('Synthetic customer follow-up');
   await page.locator('#support article').getByRole('button',{name:'שליחת הודעה',exact:true}).click();
-  await page.getByText('Synthetic customer follow-up',{exact:true}).waitFor();await page.reload();
+  await page.locator('#support article li').getByText('Synthetic customer follow-up',{exact:true}).waitFor();await page.reload();
   assert.equal(await page.locator('#support article li').count(),3);
   assert.equal((await db.query('select state from private.case_support_threads where id=$1',[thread.id])).rows[0].state,'open');
  });
@@ -76,6 +76,15 @@ try{
   await page.setViewportSize({width,height:900});await page.reload();assert.equal(await page.locator('#support article li').count(),4);
   assert.equal(await page.locator('html').getAttribute('dir'),'rtl');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=1);
   await page.screenshot({path:`${directory}/support-${width}.png`,fullPage:true});assert.deepEqual(errors,[]);
+ });
+ await check('two deliberate identical new messages receive distinct IDs after confirmed saves',async()=>{
+  for(const expected of [2,3]){
+   await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).fill('Same deliberate new question');
+   const response=page.waitForResponse(r=>new URL(r.url()).pathname===route&&r.request().method()==='POST');
+   await page.locator('#support').getByRole('button',{name:'שליחת הודעה',exact:true}).first().click();assert.equal((await response).status(),202);
+   await page.waitForFunction(n=>document.querySelectorAll('#support article').length===n,expected);
+  }
+  assert.equal((await db.query('select count(*)::int n from private.case_support_threads where case_id=$1',[ids[0]])).rows[0].n,3);
  });
  await check('support leaves case and payment status unchanged',async()=>{const rows=(await db.query('select status,payment_status from public.cases where id=any($1::uuid[])',[ids])).rows;assert.equal(rows.length,2);assert.ok(rows.every(c=>c.status==='under_review'&&c.payment_status==='verified'));});
 }catch(e){console.error(e instanceof Error?e.message:'proof failed');const failedPage=context?.pages()[0];if(failedPage){await failedPage.screenshot({path:`${directory}/failure.png`,fullPage:true}).catch(()=>{});console.log((await failedPage.locator('#support').innerText()).slice(0,2500));console.log(await failedPage.locator('#support textarea').evaluateAll(es=>es.map(e=>({label:e.parentElement?.textContent,value:(e as HTMLTextAreaElement).value}))));}process.exitCode=1;}

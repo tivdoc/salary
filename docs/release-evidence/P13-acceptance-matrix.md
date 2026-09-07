@@ -105,3 +105,6 @@ Source: owner-supplied website v1.3, section 11; this supersedes older brand col
 ## Release decision
 
 Development continues. Integrated code is pushed in Draft PR #2 on top of upload PR #1. This matrix deliberately does not convert passed legacy/component checks into completed customer capabilities. Production is unchanged.
+
+
+2026-09-07 continuation: P13-launch-preview.json now binds 26 public checks to e950177; P08-support-browser.json binds ten customer support checks to that same Preview, with operations DB-injected reply explicitly distinct from owner HTTP/UI. P05-saved-worker-db.json proves actual worker RLS/stages under six checkpoints on the e6fcd9f change. These extend E05/E06/E15 evidence but do not close provider invocation, final job delivery, AI publication, protected report UI or owner identity activation.

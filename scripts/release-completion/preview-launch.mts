@@ -4,8 +4,8 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,type BrowserContext} from 'playwright';
 
 // Deliberately pinned to the isolated, closed-sales deployment, never production.
-const origin='https://salary-3zwy6a5w7-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='824c44a60fd3adbcdba0bed749aa0f65f2365c98';
+const origin='https://salary-nvxblwmsh-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='e950177b38f13ba8fd672f6b23a6468882338fcd';
 const directory='output/release-completion/preview-launch';
 const raw=process.env.TIVDOC_PREVIEW_BROWSER_STATE;
 if(!raw)throw new Error('PREVIEW_TEMPORARY_ACCESS_MISSING');
