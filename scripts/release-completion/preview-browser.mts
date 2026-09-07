@@ -68,6 +68,24 @@ try{
   const focused=await page.evaluate(()=>{const e=document.activeElement as HTMLElement|null;return e?{tag:e.tagName,rect:e.getBoundingClientRect().toJSON()}:null;});
   assert.ok(focused&&['A','BUTTON','INPUT'].includes(focused.tag));assert.ok(focused.rect.width>0);
  });
+ await check('mobile menu supports keyboard activation, Escape and restored focus',async()=>{
+  await page.setViewportSize({width:390,height:900});await page.goto(origin,{waitUntil:'domcontentloaded'});
+  const toggle=page.getByRole('button',{name:'פתיחת תפריט'});await toggle.focus();await page.keyboard.press('Enter');
+  assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+  await page.keyboard.press('Escape');assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+  assert.equal(await toggle.evaluate(e=>e===document.activeElement),true);
+ });
+ await check('questionnaire keeps a synthetic non-personal draft through offline editing and reload',async()=>{
+  await page.goto(origin+'/check',{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:'כן',exact:true}).click();await page.getByRole('button',{name:'המשך',exact:true}).click();
+  await page.getByRole('heading',{name:'איך השכר מוגדר?'}).waitFor();
+  try{await context!.setOffline(true);await page.getByRole('button',{name:'חודשי',exact:true}).click();}
+  finally{await context!.setOffline(false);}
+  await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('heading',{name:'איך השכר מוגדר?'}).waitFor();
+  await page.getByRole('button',{name:'המשך',exact:true}).click();
+  await page.getByRole('heading',{name:'כמה שעות עובדים ביום רגיל?'}).waitFor();
+  await page.screenshot({path:`${directory}/questionnaire-restored-draft-390.png`,fullPage:true});
+ });
  await check('anonymous private routes redirect before streaming any case data',async()=>{
   for(const path of ['/account','/cases','/case/TV-QAPRE001','/case/TV-QAPRE001/documents','/case/TV-QAPRE001/thread','/case/TV-QAPRE001/reports','/case/TV-QAPRE001/orders']){
    const response=await context!.request.get(origin+path,{maxRedirects:0});assert.equal(response.status(),307,path);
@@ -75,8 +93,8 @@ try{
   }
  });
  await check('anonymous document API refuses access',async()=>{
-  const response=await context!.request.get(origin+'/api/cases/TV-QAPRE001/upload-session');
-  assert.ok([401,403,404].includes(response.status()),String(response.status()));
+  const response=await context!.request.post(origin+'/api/cases/TV-QAPRE001/upload-session',{headers:{origin}});
+  assert.equal(response.status(),401);assert.equal((await response.json()).code,'session_required');
  });
 }finally{
  await context?.close();await browser.close();
