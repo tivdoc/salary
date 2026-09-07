@@ -86,7 +86,7 @@ Source: owner-supplied website v1.3, section 11; this supersedes older brand col
 |---|---|---|
 | D01 | One brand across public/protected/error surfaces | FAIL | ac319bf integrated; final protected screenshots still required. |
 | D02 | 360/390/768/1440 and 200% zoom | FAIL | Hosted public measurement pending; protected routes and keyboard remain. |
-| D03 | Real playable accessible video and failure states | BLOCKED | No approved video/captions/transcript asset. Honest unavailable content is implemented; video capability is absent. |
+| D03 | Real playable accessible video and failure states | IN_PROGRESS | Parallel UI media integrated; exact bytes/manual 30-second playback/captions/written alternative and four public widths verified on Preview 9f9b6f5. Network/media failure, offscreen pause and complete assistive-technology checks remain. |
 | D04 | Motion, manual control, reduced motion, offscreen/video pause | FAIL | Website process illustration integrated; final interactive browser checks remain. |
 | D05 | Actual pipeline example with publication permission | FAIL | Public fallback is honest; no real canonical pipeline-backed approved example yet. |
 | D06 | Verified claims and working contact/legal links | FAIL | Unverified registration claim not expanded; final link audit and operator/media evidence remain. |
@@ -104,7 +104,13 @@ Source: owner-supplied website v1.3, section 11; this supersedes older brand col
 
 ## Release decision
 
-Development continues. Integrated code is pushed in Draft PR #2 on top of upload PR #1. This matrix deliberately does not convert passed legacy/component checks into completed customer capabilities. Production is unchanged.
+Development continues. Integrated code is pushed in Draft PR #2 on top of upload PR #1. This matrix deliberately does not convert passed legacy/component checks into completed customer capabilities. This task has not deployed the release branch to production; the parallel public UI deployment is recorded separately.
 
 
 2026-09-07 continuation: P13-launch-preview.json now binds 26 public checks to e950177; P08-support-browser.json binds ten customer support checks to that same Preview, with operations DB-injected reply explicitly distinct from owner HTTP/UI. P05-saved-worker-db.json proves actual worker RLS/stages under six checkpoints on the e6fcd9f change. These extend E05/E06/E15 evidence but do not close provider invocation, final job delivery, AI publication, protected report UI or owner identity activation.
+
+
+## P13 integrated UI Preview proof — 9f9b6f5 (2026-09-08)
+Both complete CI runs on 9f9b6f5 passed (34161799534/34161795824). Isolated Preview https://salary-hffq2xcce-tivdoccom-5042s-projects.vercel.app, deployment dpl_4YT8J3HjLY8JvFsMYKCxxwP38M63, is READY on that exact SHA. Thirty-three public browser checks and ten protected support checks PASS. The public proof now includes the accessibility page at four widths, exact served media hashes, manual 30-second playback, five frame captures, captions/always-available written alternative, canonical URLs and sitemap. Visually inspected poster, three played frames and mobile accessibility page; no monetary finding or professional endorsement appears in the explainer. Complete media failure/offscreen-pause/assistive-technology verification is still open. All v1.1 public prices, keyboard/menu, questionnaire offline draft, anonymous refusals and support retry/isolation checks continue to pass. Two exact support QA cases/identities removed. Temporary deployment access stayed local; no GitHub secrets created.
+
+P13-launch-preview.json and P08-support-browser.json now pin 9f9b6f5; prior e950177 receipts are preserved with explicit filenames. This Preview includes worker draft completion and pension research/UI integration, but no new live worker/provider activation. P06 request-retry code currently in development is NOT in this deployment; do not attribute these support checks to that new answer/correction path. No release-branch production deployment.

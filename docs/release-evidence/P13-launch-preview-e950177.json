@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-hffq2xcce-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "9f9b6f5b3e270eb0c971cd08564aa7d18d1b9e75",
+  "origin": "https://salary-nvxblwmsh-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "e950177b38f13ba8fd672f6b23a6468882338fcd",
   "checks": [
     {
       "name": "DEV liveness distinguishes readiness and external services are disabled",
@@ -27,10 +27,6 @@
       "passed": true
     },
     {
-      "name": "public /accessibility at 360px",
-      "passed": true
-    },
-    {
       "name": "public / at 390px",
       "passed": true
     },
@@ -48,10 +44,6 @@
     },
     {
       "name": "public /terms at 390px",
-      "passed": true
-    },
-    {
-      "name": "public /accessibility at 390px",
       "passed": true
     },
     {
@@ -75,10 +67,6 @@
       "passed": true
     },
     {
-      "name": "public /accessibility at 768px",
-      "passed": true
-    },
-    {
       "name": "public / at 1440px",
       "passed": true
     },
@@ -96,22 +84,6 @@
     },
     {
       "name": "public /terms at 1440px",
-      "passed": true
-    },
-    {
-      "name": "public /accessibility at 1440px",
-      "passed": true
-    },
-    {
-      "name": "integrated explainer assets match the reviewed Git bytes",
-      "passed": true
-    },
-    {
-      "name": "30-second silent explainer plays on demand and has captions and written alternative",
-      "passed": true
-    },
-    {
-      "name": "accessibility and legal pages have their own canonical URLs and sitemap entries",
       "passed": true
     },
     {
@@ -172,13 +144,6 @@
       "errors": []
     },
     {
-      "path": "/accessibility",
-      "width": 360,
-      "status": 200,
-      "horizontalOverflow": 0,
-      "errors": []
-    },
-    {
       "path": "/",
       "width": 390,
       "status": 200,
@@ -208,13 +173,6 @@
     },
     {
       "path": "/terms",
-      "width": 390,
-      "status": 200,
-      "horizontalOverflow": 0,
-      "errors": []
-    },
-    {
-      "path": "/accessibility",
       "width": 390,
       "status": 200,
       "horizontalOverflow": 0,
@@ -256,13 +214,6 @@
       "errors": []
     },
     {
-      "path": "/accessibility",
-      "width": 768,
-      "status": 200,
-      "horizontalOverflow": 0,
-      "errors": []
-    },
-    {
       "path": "/",
       "width": 1440,
       "status": 200,
@@ -292,13 +243,6 @@
     },
     {
       "path": "/terms",
-      "width": 1440,
-      "status": 200,
-      "horizontalOverflow": 0,
-      "errors": []
-    },
-    {
-      "path": "/accessibility",
       "width": 1440,
       "status": 200,
       "horizontalOverflow": 0,
