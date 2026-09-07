@@ -31,6 +31,15 @@ async function analyzeDeclaration(amount: number) {
 }
 
 describe('document and declaration reconciliation', () => {
+  it('keeps a noncritical declared salary type in the persisted canonical stage', async () => {
+    const fixture=buildSyntheticCaseFixture({fixture_id:'declared-salary-type'});
+    const declaration=canonicalFactSchema.parse({fact_id:'11111111-1111-4111-8111-111111111111',case_id:fixture.command.case_id,path:'compensation.salary_type',value:'hourly',status:'needs_confirmation',confidence:1,provenance:[{source_type:'declared',source_reference:{kind:'questionnaire_response',response_id:'22222222-2222-4222-8222-222222222222'}}],conflicting_fact_ids:[],resolution:null,created_at:'2025-04-01T00:00:00.000Z'});
+    const hash=canonicalSha256([declaration]);const stored={...fixture.stored,declared_fact_snapshot:{...fixture.stored.declared_fact_snapshot,facts:[declaration],snapshot_sha256:hash}};
+    const harness=createFixtureCaseAnalysisHarness([stored]);const bundle=await harness.application.runCaseAnalysis({...fixture.command,declared_fact_snapshot_sha256:hash});const completed=await harness.service.getCompletedRun(bundle.analysis_run_id);
+    const stage=completed?.stages.find(s=>s.stage==='canonical_facts')?.payload as {facts:unknown};const fact=employmentSnapshotSchema.parse(stage.facts).facts.find(f=>f.path===declaration.path);
+    expect(fact).toBeDefined();expect(fact?.provenance.some(p=>p.source_type==='declared')).toBe(true);expect(fact?.status).not.toBe('confirmed');
+  });
+
   it('retains a conflicting document value instead of silently replacing it with a declaration', async () => {
     const { bundle, fact, declaration } = await analyzeDeclaration(200_000);
     expect(fact.status).toBe('conflicted');
@@ -51,6 +60,6 @@ describe('document and declaration reconciliation', () => {
     expect(fact.provenance.some(p => p.source_type === 'documented')).toBe(true);
     expect(fact.provenance.some(p => p.source_type === 'declared')).toBe(true);
     expect(fact.resolution).toBeNull();
-    expect(completed?.dependencies?.code_version).toBe('case-analysis@0.6.1');
+    expect(completed?.dependencies?.code_version).toBe('case-analysis@0.6.2');
   });
 });

@@ -25,7 +25,7 @@ function setup(){
   checkpoint_input_sha256:doc.content_sha256,checkpoint_result_sha256:result.result_sha256,result};
  const calls:PostgresStatement[]=[];
  const responses:Record<string,Record<string,unknown>[]>={source_case_lock:[],source_revision_check:[{revision:2,input_sha256:job.input_sha256}],
-  saved_snapshot_journal:[{input,input_sha256:job.input_sha256,actual_sha256:job.input_sha256}],saved_snapshot_document:[record],
+  saved_snapshot_journal:[{input,created_at:'2025-02-01T00:00:00Z',input_sha256:job.input_sha256,actual_sha256:job.input_sha256}],saved_snapshot_document:[record],
   checkpoint_source_match:[{exists:1}],checkpoint_insert:[],checkpoint_read:[{result,input_sha256:result.input_sha256,result_sha256:result.result_sha256}]};
  const context:PostgresTransactionContext={transaction_id:'synthetic-test',client:{async query(s){calls.push(s);const rows=responses[s.name];if(!rows)throw new Error(`UNEXPECTED_SQL:${s.name}`);return {rows,row_count:rows.length};}}};
  return {fixture,job,result,input,record,responses,calls,context,reader:new SavedCaseSnapshot(context,job)};

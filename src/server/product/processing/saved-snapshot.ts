@@ -1,3 +1,4 @@
+import {savedQuestionnaireFacts} from './saved-questionnaire';
 import { z } from 'zod';
 import { immutableDocumentSchema } from '@/engine/domain/documents';
 import { normalizedPayslipExtractionSchema } from '@/engine/extraction/payslip';
@@ -32,7 +33,7 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   const job=sourceJobSchema.parse(this.candidate);
   await lockCurrentSource(this.context,job);
   const journal=await this.context.client.query(statement('saved_snapshot_journal',
-   `select input,input_sha256,encode(sha256(convert_to(input::text,'UTF8')),'hex') as actual_sha256
+   `select input,created_at,input_sha256,encode(sha256(convert_to(input::text,'UTF8')),'hex') as actual_sha256
     from private.case_input_versions where case_id=$1::uuid and revision=$2`,[job.case_id,job.revision]));
   const row=journal.rows[0];
   if(!row||row.input_sha256!==job.input_sha256||row.actual_sha256!==job.input_sha256)throw new Error('SAVED_INPUT_HASH_MISMATCH');
@@ -75,7 +76,7 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   }
   // Free-text questionnaire/request answers are preserved by the source hash.
   // They cannot be promoted into verified critical facts by this adapter.
-  const facts:StoredCaseInputSnapshot['declared_fact_snapshot']['facts']=[];
+  const facts=savedQuestionnaireFacts({caseId:job.case_id,revision:job.revision,inputSha256:job.input_sha256,month:selectedMonth,journal:row.input,createdAt:new Date(String(row.created_at)).toISOString()});
   return deepFreeze({document_snapshot_id:`saved-documents:${selectedMonth}:${job.input_sha256}`,document_snapshot_sha256:canonicalSha256(documents),documents,
    extraction_snapshot_id:`saved-extractions:${selectedMonth}:${job.input_sha256}`,extraction_snapshot_sha256:canonicalSha256(extractions),extractions,
    declared_fact_snapshot:{snapshot_id:`saved-declarations:${selectedMonth}:${job.input_sha256}`,snapshot_sha256:canonicalSha256(facts),facts}});

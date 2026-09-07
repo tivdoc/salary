@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "canonical service writes seven stages and seven non-monetary results through real PostgreSQL adapters",
+    "all thirteen saved questionnaire assertions reach the canonical persisted stage with declared provenance, no inferred dates or human confirmation",
+    "rollback removes partial analysis/report while preserving source and extraction checkpoint",
+    "retry and replay retain exact report bytes without a duplicate analysis run",
+    "source revision changing before completion rejects old work"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "fixture": "synthetic saved extraction and paid-order scope",
+  "authorization": "migrator fixture policies inside rolled-back transaction; not worker RLS proof",
+  "provider_verified": false,
+  "storage_bytes_verified": false,
+  "customer_publication": false,
+  "production": "untouched"
+}

@@ -83,7 +83,7 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
          select
            private.canonical_text_uuid('analysis_run', $3), private.resolve_engine_case_id($1, $2),
            'full_investigation', 'running',
-           'canonical_case_analysis', 'case-analysis@0.6.1',
+           'canonical_case_analysis', 'case-analysis@0.6.2',
            nullif(current_setting('tivdoc.engine_git_sha', true), ''),
            'tivdoc-case-analysis-v0.6.0', 'tivdoc-canonical-persistence-v0.9.0', null,
            $6::jsonb, $5, $4, transaction_timestamp(), transaction_timestamp(),

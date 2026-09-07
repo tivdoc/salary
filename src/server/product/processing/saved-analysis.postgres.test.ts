@@ -4,6 +4,7 @@ import {randomUUID} from 'node:crypto';
 import {writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
+import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {createPostgresAnalysisRepositories} from '@/server/platform/persistence/postgres/analysis';
 import {intake_factory} from '@/server/platform/persistence/postgres/intake';
@@ -37,6 +38,7 @@ it.skipIf(process.env.TIVDOC_SAVED_SOURCE_DB_PROOF!=='1')('persists real canonic
   }
   await db.query("insert into public.cases(id,first_name,email,phone,status,payment_status,check_period_month) values($1,'Synthetic saved analysis','synthetic@example.invalid','0500000000','under_review','verified','2025-01-01')",[caseId]);
   await db.query("insert into public.documents(id,case_id,version_id,document_type,slot,storage_path,original_filename,mime_type,size,content_sha256,period_month) values($1,$2,$3,'payslip','payslip-01',$4,'synthetic.pdf','application/pdf',$5,$6,'2025-01-01')",[documentId,caseId,doc.document_id,`cases/${caseId}/versions/${doc.document_id}.pdf`,doc.size_bytes,doc.content_sha256]);
+  await db.query("insert into public.questionnaire_responses(case_id,payload,suspected_issue) values($1,$2,'')",[caseId,{salaryType:'hourly',employmentStartMonth:'2024-07',stillEmployed:true,managerialOrTrustRole:true,birthYear:2000,sex:'unspecified',workDaysPerWeek:5,typicalHoursPerDay:8.6,worksFriday:false,worksSaturday:false,hadPensionFundAtHire:true,employerProvidesTransport:false,commuteOver500m:true}]);
   const head=(await db.query('select * from private.case_input_heads where case_id=$1',[caseId])).rows[0];
   // Explicit synthetic paid-order scope; no provider payment is asserted.
   await db.query("update private.case_input_versions set input=jsonb_set(input,'{orders}',$3::jsonb) where case_id=$1 and revision=$2",[caseId,head.revision,JSON.stringify([{id:orderId,kind:'initial',from:'2025-01-01',to:'2025-01-31',topics:fixture.command.requested_topics}])]);
@@ -53,6 +55,14 @@ it.skipIf(process.env.TIVDOC_SAVED_SOURCE_DB_PROOF!=='1')('persists real canonic
   const first=await runSavedMonthAnalysis(args);expect(first.completed).toBe(true);expect(first.stages).toHaveLength(7);
   expect((await db.query('select count(*)::int n from public.engine_topic_result_versions where tenant_id=$1',[tenant])).rows[0].n).toBe(7);
   checks.push('canonical service writes seven stages and seven non-monetary results through real PostgreSQL adapters');
+  const canonicalStage=first.stages.find(s=>s.stage==='canonical_facts')!.payload as {facts:unknown};
+  const facts=employmentSnapshotSchema.parse(canonicalStage.facts).facts;
+  expect(facts.filter(f=>f.provenance.some(p=>p.source_type==='declared'))).toHaveLength(13);
+  expect(facts.find(f=>f.path==='employment.start_month')?.value).toBe('2024-07');
+  expect(facts.find(f=>f.path==='employment.managerial_or_trust_role_declared')?.status).toBe('needs_confirmation');
+  expect(facts.some(f=>f.path==='employment.start_date')).toBe(false);
+  checks.push('all thirteen saved questionnaire assertions reach the canonical persisted stage with declared provenance, no inferred dates or human confirmation');
+
   await db.query('rollback to savepoint before_analysis');
   expect((await db.query('select count(*)::int n from public.analysis_runs where tenant_id=$1',[tenant])).rows[0].n).toBe(0);
   expect((await db.query('select count(*)::int n from public.engine_report_versions where tenant_id=$1',[tenant])).rows[0].n).toBe(0);
@@ -65,6 +75,6 @@ it.skipIf(process.env.TIVDOC_SAVED_SOURCE_DB_PROOF!=='1')('persists real canonic
   await db.query('update private.case_input_heads set revision=revision+1 where case_id=$1',[caseId]);
   await expect(runSavedMonthAnalysis(args)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
   checks.push('source revision changing before completion rejects old work');
-  writeFileSync('docs/release-evidence/P05-saved-analysis-db.json',JSON.stringify({checks,database:'tivdoc_release_replay_20260907',fixture:'synthetic saved extraction and paid-order scope',authorization:'migrator fixture policies inside rolled-back transaction; not worker RLS proof',provider_verified:false,storage_bytes_verified:false,customer_publication:false,production:'untouched'},null,2)+'\n');
+  writeFileSync('docs/release-evidence/P05-saved-questionnaire-analysis-db.json',JSON.stringify({checks,database:'tivdoc_release_replay_20260907',fixture:'synthetic saved extraction and paid-order scope',authorization:'migrator fixture policies inside rolled-back transaction; not worker RLS proof',provider_verified:false,storage_bytes_verified:false,customer_publication:false,production:'untouched'},null,2)+'\n');
  }finally{await db.query('rollback').catch(()=>{});await db.end();}
 },120000);

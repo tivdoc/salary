@@ -29,7 +29,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const journal=z.object({orders:z.array(orderSchema)}).parse(row.input);
  const order=journal.orders.find(o=>o.id===input.orderId);
  if(!order||input.month<order.from.slice(0,7)||input.month>order.to.slice(0,7))throw new Error('SAVED_ORDER_SCOPE');
- const key=`saved-month:${canonicalSha256({job,order_id:order.id,month:input.month,template:SAVED_DRAFT_TEMPLATE,engine:"case-analysis@0.6.1"})}`;
+ const key=`saved-month:${canonicalSha256({job,order_id:order.id,month:input.month,template:SAVED_DRAFT_TEMPLATE,engine:"case-analysis@0.6.2"})}`;
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
  if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report)throw new Error('SAVED_REPLAY_SCOPE');return existing;}
  const snapshots=new SavedCaseSnapshot(input.context,job,input.month),snapshot=await snapshots.read();

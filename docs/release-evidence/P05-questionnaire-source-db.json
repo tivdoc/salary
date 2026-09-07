@@ -1,0 +1,15 @@
+{
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260907193000_questionnaire_source_scope.sql",
+  "migration_sha256": "553c54547750fb60305c35e47da7befeb3eb80d05bde9da3cc1e5dbe184f8dab",
+  "checks": [
+    "actual worker reads questionnaire identity, exact payload and original check-month scope in saved journal",
+    "changing checked month does not extend old declarations to that month",
+    "payload update creates a new input revision while the prior payload and hash remain exact",
+    "case reassignment and statement-period rewrite both refused by DB",
+    "worker cannot rewrite customer questionnaire"
+  ],
+  "syntheticFixturesRemoved": 2,
+  "scope": "Actual DB journal + worker read; no provider invocation or end-to-end analysis claimed",
+  "productionChanged": false
+}

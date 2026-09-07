@@ -48,7 +48,7 @@ export type PinnedAnalysisDependencies = Readonly<{
   source_version_ids: readonly string[];
   parameter_version_ids: readonly string[];
   rule_spec_versions: readonly string[];
-  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1";
+  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1" | "case-analysis@0.6.2";
   template_version: string;
 }>;
 
