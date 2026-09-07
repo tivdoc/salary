@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { initialPrice } from "@/config/product-offer";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
@@ -59,7 +60,7 @@ export default function TermsPage() {
           <section>
             <h2>מחיר ותשלום</h2>
             <p>
-              מחיר הבדיקה הראשונית הוא 9.99 ₪, כולל מע״מ ככל שחל. התשלום מתבצע דרך
+              מחיר הבדיקה הראשונית הוא {initialPrice}, כולל מע״מ ככל שחל. התשלום מתבצע דרך
               Invoice4u. פרטי כרטיס אינם נשמרים ב־Tivdoc, ורק אימות תשלום שהתקבל
               בצד השרת מסמן את התשלום ואת תיק הבדיקה כ־paid. חזרה לעמוד Tivdoc ללא
               אימות כזה אינה הוכחת תשלום.

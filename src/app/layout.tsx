@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans_Hebrew } from "next/font/google";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { MetaPixelProvider } from "@/components/meta-pixel-provider";
 import "./globals.css";
+import "./website.css";
 
 const plexSansHebrew = IBM_Plex_Sans_Hebrew({
   variable: "--font-sans",

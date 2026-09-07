@@ -1,103 +1,278 @@
-import { ArrowLeft, ShieldCheck } from "@phosphor-icons/react/dist/ssr";
-import { SiteFooter } from "@/components/site-footer";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  ArrowUUpLeft,
+  ChatText,
+  Files,
+  FileText,
+  MagnifyingGlass,
+  ListChecks,
+  ShieldCheck,
+  EnvelopeSimple,
+} from "@phosphor-icons/react/dist/ssr";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { TrackedLink } from "@/components/tracked-link";
-import { DocumentLayers } from "@/components/landing/document-layers";
-import { ExampleResult } from "@/components/landing/example-result";
-import { Faq } from "@/components/landing/faq";
+import { BrandSymbol } from "@/components/brand-logo";
 import { Hero } from "@/components/landing/hero";
-import { Inspector } from "@/components/landing/inspector";
+import { Process } from "@/components/landing/process";
+import { ReportPreview } from "@/components/landing/report-preview";
+import { Faq } from "@/components/landing/faq";
 import { LandingView } from "@/components/landing/landing-view";
-import { MiniDemo } from "@/components/landing/mini-demo";
-import { SamplePayslip } from "@/components/landing/sample-payslip";
-
-const checks = [
-  "שעות נוספות",
-  "פנסיה",
-  "חופשה",
-  "הבראה",
-  "נסיעות",
-  "שישי / שבת / חגים",
-  "שכר בסיס",
-  "בונוסים ועמלות",
-  "חוזה מול העבודה בפועל",
-];
-
+import { fullPrice, initialPrice, productOffer } from "@/config/product-offer";
 export default function Home() {
   return (
     <>
       <LandingView />
       <SiteHeader />
-      <main id="main-content">
+      <main id="main-content" className="home-v3">
         <Hero />
-        <Inspector />
-        <DocumentLayers />
-        <MiniDemo />
-        <ExampleResult />
-
-        <section className="checks-section" aria-labelledby="checks-title">
+        <div className="service-strip">
+          <div className="shell service-strip__inner">
+            <p>
+              כבר התחלת?
+              <br />
+              <strong>ממשיכים מכאן.</strong>
+            </p>
+            <Link href="/check/received">
+              <span>
+                <ArrowUUpLeft size={25} />
+              </span>
+              <strong>מצב הבדיקה שלי</strong>
+              <ArrowLeft size={18} />
+            </Link>
+            <Link href="/check/upload">
+              <span>
+                <Files size={25} />
+              </span>
+              <strong>העלאת מסמכים</strong>
+              <ArrowLeft size={18} />
+            </Link>
+            <a href={"mailto:" + productOffer.supportEmail}>
+              <span>
+                <ChatText size={25} />
+              </span>
+              <strong>עזרה ושאלות</strong>
+              <ArrowLeft size={18} />
+            </a>
+          </div>
+        </div>
+        <Process />
+        <section
+          className="explanation-section"
+          aria-labelledby="explanation-title"
+        >
           <div className="shell">
-            <div className="checks-section__headline">
-              <h2 id="checks-title">לא רק מה שילמו לך.<br /><mark>מה היו אמורים לשלם לך.</mark></h2>
+            <div className="section-intro">
+              <h2 id="explanation-title">כך נוצרת תמונה ברורה.</h2>
+              <p>המסמכים מספרים חלק מהסיפור. התשובות שלך עוזרות לחבר אותו.</p>
             </div>
-            <div className="checks-typography" role="list">
-              {checks.map((item, index) => (
-                <div className={`checks-typography__item checks-typography__item--${(index % 4) + 1}`} role="listitem" key={item}>
-                  <span className="mono">{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{item}</strong>
-                </div>
-              ))}
+            <div
+              className="explanation-flow"
+              role="img"
+              aria-label="מסמכים ותשובות עוברים בדיקה והשוואה ומתרכזים בתוצר עם מקור וצעד הבא"
+            >
+              <div>
+                <FileText size={42} weight="duotone" />
+                <strong>המסמכים</strong>
+                <span>מה מופיע בכתב</span>
+              </div>
+              <span className="flow-plus" aria-hidden="true">
+                +
+              </span>
+              <div>
+                <ChatText size={42} weight="duotone" />
+                <strong>התשובות שלך</strong>
+                <span>מה קורה בפועל</span>
+              </div>
+              <ArrowLeft className="flow-arrow" size={28} aria-hidden="true" />
+              <div>
+                <MagnifyingGlass size={42} weight="duotone" />
+                <strong>בדיקה והשוואה</strong>
+                <span>כולל מה שחסר</span>
+              </div>
+              <ArrowLeft className="flow-arrow" size={28} aria-hidden="true" />
+              <div>
+                <ListChecks size={42} weight="duotone" />
+                <strong>תמונה מסודרת</strong>
+                <span>מקור, הסבר וצעד הבא</span>
+              </div>
             </div>
+            <p className="explanation-caption">
+              המחשה כתובה של התהליך. סרטון הסבר אינו זמין כרגע.
+            </p>
+            <details className="explanation-transcript">
+              <summary>לקריאת ההסבר המלא</summary>
+              <p>
+                מתחילים בתלוש ובמסמכים הזמינים, ומשלימים תשובות על העבודה בפועל.
+                הבדיקה מצליבה את המקורות בתחום שנכלל במוצר. מידע חסר מצוין ככזה,
+                ולא הופך לסכום משוער. התוצר המתוכנן מרכז את מה שנבדק, מקורותיו
+                והצעד הבא לבירור. הוא אינו הבטחה להחזר כספי.
+              </p>
+            </details>
           </div>
         </section>
-
-        <section className="process-section" id="how-it-works" aria-labelledby="process-title">
+        <ReportPreview />
+        <section
+          className="home-section pricing-v3"
+          id="pricing"
+          aria-labelledby="pricing-title"
+        >
           <div className="shell">
-            <h2 id="process-title">כמה דקות. ארבעה צעדים.</h2>
-            <ol className="process-list">
-              {[
-                ["01", "העלה תלוש", "מספיק תלוש אחד כדי להתחיל."],
-                ["02", "ספר איך אתה באמת עובד", "שעות, ימים, תפקיד ומה קורה בפועל."],
-                ["03", "Tivdoc בודק את התמונה המלאה", "לא רק את החשבון בתוך התלוש."],
-                ["04", "ראה אם נמצאו פערים", "מקבלים בדיקה ראשונית ברורה."],
-              ].map(([number, title, text]) => (
-                <li key={number}>
-                  <span className="process-list__number mono">{number}</span>
-                  <div><h3>{title}</h3><p>{text}</p></div>
+            <div className="section-intro">
+              <h2 id="pricing-title">
+                יודעים מה מקבלים.
+                <br />
+                ויודעים כמה זה עולה.
+              </h2>
+              <p>מתחילים בבדיקה ראשונית. כל המשך הוא החלטה נפרדת.</p>
+            </div>
+            <div className="offer-grid">
+              <article className="offer offer--initial">
+                <span className="offer-label">כאן מתחילים</span>
+                <h3>בדיקה ראשונית</h3>
+                <p className="offer-price">
+                  <bdi>{initialPrice}</bdi>
+                  <span>תשלום חד־פעמי</span>
+                </p>
+                <p>
+                  חודש אחד. עד {productOffer.initial.maxTopics} נושאים שנבדקו.
+                  <br />
+                  לפי המסמכים והתשובות שמסרת.
+                </p>
+                <ul>
+                  <li>בחינת פערים אפשריים בתחום הבדיקה</li>
+                  <li>ציון מידע חסר ומה דורש בירור</li>
+                  <li>ללא סכום כשאין בסיס מספיק</li>
+                </ul>
+                <p className="offer-note">
+                  לא בדיקה של כל תקופת ההעסקה. ייתכן שיידרשו השלמות. מועד מסירה
+                  ייקבע לפי הטיפול בתיק; אין התחייבות לתוצאה מיידית.
+                </p>
+                <TrackedLink
+                  className="button button--primary"
+                  href="/check"
+                  eventName="start_check"
+                >
+                  התחלת בדיקה ראשונית
                   <ArrowLeft aria-hidden="true" />
-                </li>
-              ))}
-            </ol>
+                </TrackedLink>
+              </article>
+              <article className="offer">
+                <span className="offer-label">
+                  המשך מתוכנן · עדיין לא זמין לרכישה
+                </span>
+                <h3>דוח מלא</h3>
+                <p className="offer-price">
+                  <bdi>{fullPrice}</bdi>
+                  <span>בתשלום נפרד, אם בוחרים להמשיך</span>
+                </p>
+                <p>
+                  העמקה בתקופה שתוסכם מראש.
+                  <br />
+                  בקרה אנושית בכל דוח.
+                </p>
+                <ul>
+                  <li>פירוט ממצאים, מקורות וצעד הבא</li>
+                  <li>חישוב רק כשהמידע והוודאות מאפשרים</li>
+                  <li>היקף ומועד מסירה לפני רכישה</li>
+                </ul>
+                <p className="offer-note">
+                  אין כרגע אפשרות לרכוש דוח מלא באתר. תנאי ההמשך והקיזוז, אם
+                  יהיה, יוצגו לפני שיהיה זמין.
+                </p>
+                <a className="home-text-link" href="#what-you-get">
+                  להיכרות עם מבנה התוצר
+                  <ArrowLeft aria-hidden="true" />
+                </a>
+              </article>
+            </div>
           </div>
         </section>
-
-        <section className="privacy-section" aria-labelledby="privacy-title">
-          <div className="shell privacy-section__grid">
-            <div className="privacy-section__visual">
-              <SamplePayslip variant="redacted" />
+        <section
+          className="home-section trust-v3"
+          id="about"
+          aria-labelledby="trust-title"
+        >
+          <div className="shell trust-v3__grid">
+            <div className="trust-v3__brand">
+              <BrandSymbol />
+              <p>
+                כל פרט הוא חלק
+                <br />
+                מהתמונה שלך.
+              </p>
             </div>
-            <div className="privacy-section__copy">
-              <ShieldCheck size={44} weight="duotone" aria-hidden="true" />
-              <h2 id="privacy-title">התלוש שלך הוא עניינך.</h2>
-              <p>המסמכים והמידע שתעלה משמשים לצורך ביצוע הבדיקה ואינם נשלחים למעסיק.</p>
-              <a href="/privacy">למידע על פרטיות ושמירת מסמכים</a>
+            <div>
+              <h2 id="trust-title">
+                בדיקה רצינית מתחילה
+                <br />
+                בציפיות ברורות.
+              </h2>
+              <p className="home-lead">
+                תבדוק נועדה לעזור להבין את המידע שמפוזר בין המסמכים לבין יום
+                העבודה שלך.
+              </p>
+              <div className="trust-item">
+                <ShieldCheck size={28} aria-hidden="true" />
+                <div>
+                  <h3>המסמכים נשארים פרטיים</h3>
+                  <p>
+                    הגישה למסמכים מוגבלת לצורך השירות. אפשר לקרוא מה נשמר ואיך
+                    פונים בנוגע למידע שלך.
+                  </p>
+                  <Link className="home-text-link" href="/privacy">
+                    מדיניות הפרטיות
+                  </Link>
+                </div>
+              </div>
+              <div className="trust-item">
+                <ListChecks size={28} aria-hidden="true" />
+                <div>
+                  <h3>גם לגבולות הבדיקה יש מקום</h3>
+                  <p>
+                    הבדיקה אינה קביעה משפטית או הבטחה לתשלום מהמעסיק. מידע חסר,
+                    היקף הבדיקה ורמת הוודאות משפיעים על התוצאה.
+                  </p>
+                  <Link className="home-text-link" href="/terms">
+                    תנאי השירות
+                  </Link>
+                </div>
+              </div>
+              <div className="trust-item">
+                <EnvelopeSimple size={28} aria-hidden="true" />
+                <div>
+                  <h3>יש כתובת לשאלות</h3>
+                  <p>
+                    השירות מופעל על ידי תקראלוקס, ח״פ 317067916, אורן 4, נשר.
+                  </p>
+                  <a
+                    className="home-text-link"
+                    href={"mailto:" + productOffer.supportEmail}
+                  >
+                    <bdi>{productOffer.supportEmail}</bdi>
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </section>
-
         <Faq />
-
-        <section className="final-cta" aria-labelledby="final-title">
-          <div className="shell final-cta__grid">
-            <div className="final-cta__copy">
-              <p>את התלוש הבא כבר תסתכל עליו אחרת.</p>
-              <h2 id="final-title">תבדוק לפני התלוש הבא.</h2>
-              <TrackedLink className="button button--primary button--large" href="/check" eventName="start_check">
-                התחל בדיקה <span aria-hidden="true">|</span> 9.99 ₪
-              </TrackedLink>
-              <span>תלוש אחד מספיק כדי להתחיל.</span>
-            </div>
-            <div className="final-cta__visual"><SamplePayslip variant="final" /></div>
+        <section className="closing-v3">
+          <div className="shell">
+            <h2>נתחיל בחלק הראשון?</h2>
+            <p>תלוש אחד, כמה תשובות, ונקודת התחלה ברורה.</p>
+            <TrackedLink
+              className="button button--primary"
+              href="/check"
+              eventName="start_check"
+            >
+              התחלת בדיקה — <bdi>{initialPrice}</bdi>
+              <ArrowLeft aria-hidden="true" />
+            </TrackedLink>
+            <p className="home-scope">
+              חודש אחד · עד {productOffer.initial.maxTopics} נושאים שנבדקו
+            </p>
           </div>
         </section>
       </main>

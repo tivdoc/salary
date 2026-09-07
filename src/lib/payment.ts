@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 
-export const INITIAL_CHECK_PRICE = 9.99;
-export const INITIAL_CHECK_CURRENCY = "ILS";
+import { productOffer } from "@/config/product-offer";
+
+export const INITIAL_CHECK_PRICE = productOffer.initial.price;
+export const INITIAL_CHECK_CURRENCY = productOffer.currency;
 export const INVOICE4U_CHECKOUT_TTL_MS = 10 * 60 * 1000;
 export const PAYMENT_RETURN_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
