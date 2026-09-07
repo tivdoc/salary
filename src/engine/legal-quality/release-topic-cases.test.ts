@@ -1,9 +1,9 @@
 import {describe,it,expect} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {executeRuleSpecAtomic,type RuleSpecInputValue} from '../legal-operations/rulespec';
-import {MINIMUM_WAGE_HOURLY_SPEC,WORKING_TIME_OVERTIME_SPEC,CONVALESCENCE_DAILY_RATE_SPEC,VACATION_SENIORITY_BAND_SPEC} from './sensitivity-rulespecs';
-import {PENSION_CONTRIBUTION_SHADOW_SPEC} from '../shadow/draft-shadow-specs';
-import {TRAVEL_ACTUAL_COST_SPEC,SICK_PAY_ACTUAL_WAGE_SPEC} from './release-rulespecs';
+import {executeRuleSpecAtomic,type RuleSpecInputValue} from '../legal-operations/rulespec.ts';
+import {MINIMUM_WAGE_HOURLY_SPEC,WORKING_TIME_OVERTIME_SPEC,CONVALESCENCE_DAILY_RATE_SPEC,VACATION_SENIORITY_BAND_SPEC} from './sensitivity-rulespecs.ts';
+import {PENSION_CONTRIBUTION_SHADOW_SPEC} from '../shadow/draft-shadow-specs.ts';
+import {TRAVEL_ACTUAL_COST_SPEC,SICK_PAY_ACTUAL_WAGE_SPEC} from './release-rulespecs.ts';
 const money=(ref_id:string,minor_units:number):RuleSpecInputValue=>({ref_id,value:{kind:'money',currency:'ILS',minor_units}});
 const ratio=(ref_id:string,n:number,d=1):RuleSpecInputValue=>({ref_id,value:{kind:'rational',numerator:String(n),denominator:String(d),unit:'ratio'}});
 const integer=(ref_id:string,value:number,unit:string):RuleSpecInputValue=>({ref_id,value:{kind:'integer',value,unit}});

@@ -14,7 +14,10 @@ export async function GET(request: Request) {
   return NextResponse.json(
     {
       ok: true,
-      services: {
+      scope: "process_liveness",
+      readiness: "not_assessed",
+      detail: "Configuration presence below does not verify DB, provider, worker or delivery health.",
+      configured: {
         supabase: isSupabaseConfigured(),
         payment: Boolean(
           process.env.INVOICE4U_API_KEY && process.env.INVOICE4U_CLEARING_COMPANY_TYPE,

@@ -40,7 +40,7 @@ type Board = Readonly<{
   steps: Readonly<Record<string, Ratio>>;
   automatic_track: Ratio;
   review_minutes_per_case: number | null;
-  source: Readonly<{ events_counted: number; reports_counted: number; generated_at: string }>;
+  source: Readonly<{ events_counted: number; reports_counted: number; generated_at: string; since?:string;until?:string;sample?:{cases:number;paid_cases:number;published_cases:number;opened_cases:number;qa_cases_excluded:number;review_duration_missing:number};outcome_dictionary?:string }>;
 }>;
 
 const REASON_TEXT: Readonly<Record<string, string>> = Object.freeze({
@@ -57,8 +57,8 @@ const STEP_TEXT: Readonly<Record<string, string>> = Object.freeze({
   start_to_case: "התחלה ← תיק",
   case_to_upload: "תיק ← תלוש",
   upload_to_payment: "תלוש ← תשלום",
-  payment_to_finding: "תשלום ← S04",
-  finding_to_full_report: "S04 ← דוח מלא",
+  payment_to_finding: "תשלום ← דוח עם ממצא",
+  finding_to_full_report: "דוח עם ממצא ← רכישת מלא",
 });
 
 const STATE_TEXT: Readonly<Record<string, string>> = Object.freeze({
@@ -177,10 +177,13 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
 
       {board && (
         <dl>
-          <dt>שמונת המספרים (D-11)</dt>
+          <dt>תקופה ומדגם</dt><dd>{board.source.since?`${new Date(board.source.since).toLocaleDateString('he-IL')} – ${new Date(board.source.until!).toLocaleDateString('he-IL')}`:'התקופה לא נמסרה'}</dd>
+          <dd>{board.source.sample?`${board.source.sample.cases} תיקים שנפתחו בתקופה; ${board.source.sample.published_cases} עם דוח שפורסם; ${board.source.sample.opened_cases} פתחו דוח; ${board.source.sample.qa_cases_excluded} תיקי QA הוחרגו.`:'המדגם אינו זמין'}</dd>
+          <dd>ביקורים נמדדים לפי חלון הזמן; המשך התיק לפי קבוצת התיקים שנפתחה בו. אלה אינם שיעורי דיוק של המנוע.</dd>
+          <dt>מעברים ושירות</dt>
           <dd>
             <code dir="ltr">
-              {Object.keys(STEP_TEXT).map((step) => `${STEP_TEXT[step]}=${rateText(board.steps[step])}`).join(" · ")}
+              {Object.keys(STEP_TEXT).map((step) => `${STEP_TEXT[step]}: ${rateText(board.steps[step])} (${board.steps[step]?.numerator ?? "?"}/${board.steps[step]?.denominator ?? "?"})`).join(" · ")}
             </code>
           </dd>
           <dt>מסלול אוטומטי</dt>

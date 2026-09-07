@@ -31,8 +31,8 @@ export const FUNNEL_STEP_TEXT: Readonly<Record<FunnelStep, string>> = Object.fre
   start_to_case: "התחלה ← תיק נוצר",
   case_to_upload: "תיק ← תלוש הועלה",
   upload_to_payment: "העלאה ← תשלום אומת",
-  payment_to_finding: "תשלום ← נמצאו נקודות (S04)",
-  finding_to_full_report: "S04 ← רכישת דוח מלא",
+  payment_to_finding: "תשלום ← דוח שפורסם עם ממצא",
+  finding_to_full_report: "דוח עם ממצא ← רכישת דוח מלא",
 });
 
 /** The event on each side of each conversion, so the query has one source of truth. */

@@ -32,7 +32,7 @@ const correction=z.object({id:z.uuid(),reportId:z.uuid(),findingId:z.uuid(),mess
 export async function POST(request:Request,context:Context){
  try{await guardStableHttpEntrypoint("CEP-110",request);}catch(error){return refusedEntrypoint(error);}
  if(!sameOriginSessionRequest(request))return new Response(null,{status:403});
- try{const owner=await scope(context);if(!owner)return new Response(null,{status:404});const body=correction.safeParse(await strictJsonObject(request,12000));if(!body.success)return Response.json({code:'invalid_correction'},{status:400});
+ try{const owner=await scope(context);if(!owner)return new Response(null,{status:404});const raw=await strictJsonObject(request,12000);const opened=z.object({action:z.literal('opened'),reportId:z.uuid()}).strict().safeParse(raw);if(opened.success){const db=await resolveCaseAccessDb();if(!db)throw new Error('unavailable');await db.rpc('case_report_open',{target_case:owner.item.case_id,target_identity:owner.identity,target_report:opened.data.reportId});return new Response(null,{status:204,headers:PRODUCT_HTTP_HEADERS});}const body=correction.safeParse(raw);if(!body.success)return Response.json({code:'invalid_correction'},{status:400});
  const db=await resolveCaseAccessDb();if(!db)throw new Error('unavailable');await db.rpc('case_report_correction_submit',{target_id:body.data.id,target_case:owner.item.case_id,target_identity:owner.identity,target_report:body.data.reportId,target_finding:body.data.findingId,target_message:body.data.message});return Response.json({state:'pending'},{status:202,headers:PRODUCT_HTTP_HEADERS});
  }catch{return Response.json({code:'correction_unavailable'},{status:503,headers:PRODUCT_HTTP_HEADERS});}
 }

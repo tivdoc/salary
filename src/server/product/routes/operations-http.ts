@@ -7,7 +7,8 @@ import type { InternalOpsApplicationPort } from "../internal-ops/application-por
 import { INTERNAL_OPS_SCHEMA_VERSION, type InternalOpsAction, type OpsProblemCode } from "../internal-ops/contracts.ts";
 import { InternalOpsError, type InternalOpsReadKind } from "../internal-ops/service.ts";
 import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
-import { buildFunnelBoard, readEventCounts, readReportCounts } from "../reports/funnel-dashboard.ts";
+import { productMonitor } from "../reports/monitor.ts";
+import { liveMetrics } from "../reports/live-metrics.ts";
 import { decideReview, listReviewQueue, setWording, reviewDetail, assignReview, reviewSource } from "../reports/report-qa.ts";
 
 import { resolveReportOperationsDb } from "../case-access/db.ts";
@@ -75,6 +76,7 @@ export function operatorIdentity(actor: Readonly<{ actor_id: string; role: strin
 }
 
 export const REPORT_QA_ROUTES = Object.freeze([
+  Object.freeze({ path: "report-qa/monitor", method: "GET" as const }),
   Object.freeze({ path: "report-qa/source", method: "GET" as const }),
   Object.freeze({ path: "report-qa/detail", method: "GET" as const }),
   Object.freeze({ path: "report-qa/assign", method: "POST" as const }),
@@ -187,12 +189,12 @@ export function createOperationsHttpHandler(input: Readonly<{
           }
           if(joined==="report-qa/source"){const url=new URL(request.url);const id=url.searchParams.get("id"),version=url.searchParams.get("version");if(!id||!version)throw new InternalOpsError("OPS_INVALID_REQUEST");const source=await reviewSource(id,version);return new Response(Buffer.from(source.bytes),{headers:{...PRODUCT_HTTP_HEADERS,"Content-Type":source.mime,"Content-Disposition":"attachment; filename=source"}});}
           if(joined==="report-qa/detail"){const id=new URL(request.url).searchParams.get("id");if(!id)throw new InternalOpsError("OPS_INVALID_REQUEST");return productJson({data:await reviewDetail(id)});}
+          if (joined === "report-qa/monitor") return productJson({correlation_id:correlationId,data:await productMonitor()});
           if (joined === "report-qa/board") {
             // S4 / D-11: the real events, not an empty list. Every conversion on
             // this board was a dash until this read existed.
             const store=await resolveReportOperationsDb();if(!store)throw new Error("REPORT_STORE_UNAVAILABLE");
-            const [events, counts] = await Promise.all([readEventCounts({},store), readReportCounts({},store)]);
-            return productJson({ correlation_id: correlationId, data: buildFunnelBoard(events, counts) });
+            return productJson({ correlation_id: correlationId, data: await liveMetrics(store) });
           }
           const body = await strictJsonObject(request);
           if (!body || typeof body.qa_id !== "string") throw new InternalOpsError("OPS_INVALID_REQUEST");

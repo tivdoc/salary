@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {reconcileLeaveLedger,type LeaveLedgerEntry} from './period-ledger';
+import {reconcileLeaveLedger,type LeaveLedgerEntry} from './period-ledger.ts';
 const row:LeaveLedgerEntry={case_id:'00000000-0000-4000-8000-000000000001',employment_id:'job1',topic:'sick_leave',month:'2025-12',unit:'workdays_hundredths',opening:100,accrued:150,used:0,closing:250,evidence_ids:['doc1:p1']};
 describe('leave ledger across months',()=>{
  it('carries December to January without treating balance as payment',()=>expect(reconcileLeaveLedger([row,{...row,month:'2026-01',opening:250,closing:400}]).complete).toBe(true));

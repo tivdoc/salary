@@ -5,6 +5,7 @@ import { useState } from "react";
 import styles from "./operations-workspace.module.css";
 import { GroundTruthQueuePanel } from "./ground-truth-queue-panel";
 import { LegalReviewPanel } from "./legal-review-panel";
+import { MonitorPanel } from "./monitor-panel";
 import { PrivacyPanel } from "./privacy-panel";
 import { ReportQaPanel } from "./report-qa-panel";
 import { ShadowSummaryPanel } from "./shadow-summary-panel";
@@ -150,7 +151,7 @@ export function OperationsWorkspace({ csrfToken }: OperationsWorkspaceProps) {
           )}
           <LegalReviewPanel csrfToken={csrfToken} />
           <ReportQaPanel csrfToken={csrfToken} />
-          <PrivacyPanel csrfToken={csrfToken} />
+          <MonitorPanel /><PrivacyPanel csrfToken={csrfToken} />
           <GroundTruthQueuePanel />
           <ShadowSummaryPanel />
         </main>
