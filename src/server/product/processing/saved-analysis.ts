@@ -9,6 +9,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatch';
 import {SavedCaseSnapshot} from './saved-snapshot';
 import {SavedAnalysisDraftBuilder,SAVED_DRAFT_TEMPLATE,savedAnalysisId} from './saved-draft-report';
+import {savedMonthIdempotencyKey} from './saved-order-scope';
 
 const monthSchema=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const orderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full']),from:z.string(),to:z.string(),topics:z.array(z.enum(WAVE3_TOPICS)).min(1)});
@@ -29,7 +30,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const journal=z.object({orders:z.array(orderSchema)}).parse(row.input);
  const order=journal.orders.find(o=>o.id===input.orderId);
  if(!order||input.month<order.from.slice(0,7)||input.month>order.to.slice(0,7))throw new Error('SAVED_ORDER_SCOPE');
- const key=`saved-month:${canonicalSha256({job,order_id:order.id,month:input.month,template:SAVED_DRAFT_TEMPLATE,engine:"case-analysis@0.6.2"})}`;
+ const key=savedMonthIdempotencyKey(job,order.id,input.month);
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
  if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report)throw new Error('SAVED_REPLAY_SCOPE');return existing;}
  const snapshots=new SavedCaseSnapshot(input.context,job,input.month),snapshot=await snapshots.read();

@@ -35,6 +35,7 @@ it.skipIf(process.env.TIVDOC_SAVED_WORKER_DB_PROOF!=='1')('runs saved canonical 
   // Explicit synthetic paid order; no provider receipt is asserted. Source
   // capture itself is real and never patched or rehashed by the test.
   await owner.query("insert into private.product_orders(id,case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,$2,'initial','2025-01-01','2025-01-01',999,'ILS',$3,$4,$5,$6,'paid',now())",[orderId,caseId,offer,offer.sha256,fixture.command.requested_topics.slice(0,3),offer.terms_version]);
+  await owner.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[orderId]);
   await owner.query("insert into public.questionnaire_responses(case_id,payload,suspected_issue) values($1,$2,'')",[caseId,{salaryType:'hourly',employmentStartMonth:'2024-07'}]);
   await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.saved.worker',$3,now()-interval '1 minute',now()+interval '15 minutes',$4,now())",[tenant,sid,jti,canonicalSha256({sid,jti})]);
   await owner.query('commit');seeded=true;
