@@ -4,6 +4,8 @@
 // service role, exactly as the MVP's payment functions are called; on the
 // local runtime it is a `pg` call as the web runtime role. The service never
 // sees which, and a test hands it a fake.
+import { isolatedPreviewDatabase } from './preview-database.ts';
+
 export type CaseAccessDb = Readonly<{
   provider: "supabase" | "postgres" | "fake";
   rpc<T = Record<string, unknown>>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]>;
@@ -85,6 +87,8 @@ export function installCaseAccessDbForTests(db: CaseAccessDb | null): void {
  */
 export async function resolveCaseAccessDb(): Promise<CaseAccessDb | null> {
   if (override) return override;
+  const previewUrl = isolatedPreviewDatabase(process.env);
+  if (previewUrl) return postgresCaseAccessDb(await postgresPool(previewUrl));
   // The durable local runtime uses a separate replay database on DEV. Its
   // Storage API credentials must not silently switch SQL to PostgREST's default database.
   if (process.env.TIVDOC_RUNTIME_TARGET === "local_only" && process.env.TIVDOC_PRODUCT_PERSISTENCE_MODE === "isolated_postgres" && process.env.TIVDOC_WEB_POSTGRES_URL) {

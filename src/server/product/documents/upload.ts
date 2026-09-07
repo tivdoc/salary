@@ -83,7 +83,7 @@ export function uploadErrorResponse(error: unknown): { error: string; code: stri
   const messages: Record<string, string> = {
     UPLOAD_FORBIDDEN: "אין הרשאה להעלאה לתיק הזה. יש לפתוח מחדש את התיק.",
     UPLOAD_CONFLICT: "המסמכים בתיק השתנו או שהמקום תפוס בהעלאה אחרת. יש לרענן ולבחור שוב.",
-    UPLOAD_LIMIT: "אין מקום פנוי להעלאה. אפשר לשמור עד 12 תלושים, חוזה ודוח נוכחות, ועד 25MB לתיק.",
+    UPLOAD_LIMIT: "ההעלאה חורגת ממגבלת הקבצים או הנפח הזמינה. יש לרענן ולבדוק את מגבלות התיק וההעלאה.",
     UPLOAD_EXPIRED: "ניסיון ההעלאה פג. אפשר לבטל אותו ולבחור שוב את הקבצים.",
     UPLOAD_CANCELLED: "ניסיון ההעלאה בוטל. אפשר לבחור שוב את הקבצים.",
     UPLOAD_REQUEST_CONFLICT: "בקשת ההשלמה השתנתה או שאינה מתאימה למסמך. יש לרענן את התיק.",
