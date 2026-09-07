@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "actual paid-source and worker lease admission rejects another worker before provider dispatch",
+    "lease expiry after admission is rejected by the atomic dispatch SQL before any external call",
+    "real adapter verifies PDF bytes outside DB locks; a concurrent independent worker cannot invoke the pending provider again",
+    "provider receipt commits before injected checkpoint rollback; at most the existing two extraction passes execute",
+    "retry through a second actual connection restores the checkpoint and returns the same immutable result without another provider pass",
+    "receipt replay is read-only; DB trigger blocks rewrites, web role has no table access, and actual worker RLS refuses another case",
+    "changed questionnaire rejects the old job; the new pinned source reuses exact same-file/month/policy evidence without OCR expense",
+    "real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; unconfirmed input never publishes amounts",
+    "case and payment state remain unchanged; no customer projection or external provider delivery is performed"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908013000_saved_extraction_invocations.sql",
+  "migration_sha256": "9b0a982a38ce99b7675fece56d81138f91a3b09e15e046933b74d6356f34cb27",
+  "authorization": "actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "syntheticCanonicalTenantRetained": "saved-case:2080d3aa-7b1b-445a-85ab-d7a5155814d8",
+  "retainedScope": "Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.",
+  "providerTransport": "injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage",
+  "providerPasses": 1,
+  "customerPublication": false,
+  "productionChanged": false
+}
