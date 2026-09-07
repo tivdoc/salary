@@ -6,6 +6,7 @@ on:
       - .github/workflows/release-preview.yml
       - scripts/release-completion/preview-browser.mts
       - scripts/release-completion/preview-documents.mts
+      - scripts/release-completion/preview-upload-retry.mts
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,7 +34,7 @@ jobs:
         env:
           TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
           TIVDOC_PREVIEW_CASE_FIXTURES: ${{ secrets.TIVDOC_PREVIEW_CASE_FIXTURES }}
-        run: node --experimental-strip-types scripts/release-completion/preview-documents.mts
+        run: node --experimental-strip-types scripts/release-completion/preview-upload-retry.mts
       - name: Keep public screenshots and scoped receipt only
         if: always()
         uses: actions/upload-artifact@v4
@@ -42,5 +43,6 @@ jobs:
           path: |
             output/release-completion/preview-browser/
             output/release-completion/preview-documents/
+            output/release-completion/preview-upload-retry/
           retention-days: 14
           if-no-files-found: error
