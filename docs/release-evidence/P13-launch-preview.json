@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-hffq2xcce-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "9f9b6f5b3e270eb0c971cd08564aa7d18d1b9e75",
+  "origin": "https://salary-4p9ejfw9i-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "ca63a5fb760f22c36f7115c14fed49c855cfd55c",
   "checks": [
     {
       "name": "DEV liveness distinguishes readiness and external services are disabled",
@@ -108,6 +108,14 @@
     },
     {
       "name": "30-second silent explainer plays on demand and has captions and written alternative",
+      "passed": true
+    },
+    {
+      "name": "keyboard playback pauses offscreen and remains paused on return under reduced motion",
+      "passed": true
+    },
+    {
+      "name": "failed video transfer exposes an operable written alternative",
       "passed": true
     },
     {

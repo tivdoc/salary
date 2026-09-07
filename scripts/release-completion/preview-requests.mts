@@ -7,8 +7,8 @@ import {chromium,type BrowserContext} from 'playwright';
 import {readDevEnvFile} from '../supabase-dev-guard/dev-credential.mts';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca.ts';
 
-const origin='https://salary-l8hk2xi7m-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='ceb1e0efd354bffc568750e05187800b542375ba';
+const origin='https://salary-4p9ejfw9i-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='ca63a5fb760f22c36f7115c14fed49c855cfd55c';
 const directory='output/release-completion/preview-requests';
 const env=readDevEnvFile();
 function client(key:string){const u=new URL(env.get(key)!);assert.equal(u.pathname,'/tivdoc_release_replay_20260907');assert.equal(u.hostname,'aws-0-eu-central-1.pooler.supabase.com');assert.ok(u.username.endsWith('.cpzrbidxftzqcfeqqusu'));u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
@@ -93,6 +93,16 @@ try{
   await page.setViewportSize({width,height:900});await page.reload();assert.equal((await latest().innerText()).trim(),'10');
   assert.equal(await page.locator('html').getAttribute('dir'),'rtl');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=1);
   await page.screenshot({path:`${directory}/request-${width}.png`,fullPage:true});assert.deepEqual(errors,[]);
+ });
+ await check('an open request expires in the displayed thread without manual reload or hydration errors',async()=>{
+  const expiring=randomUUID();
+  await web.query("insert into public.case_requests(id,case_id,code,question,answer_kind,blocking,expires_at) values($1,$2,'regular_day_hours_unknown','שאלה סינתטית עם מועד קרוב','number',true,now()+interval '8 seconds')",[expiring,ids[0]]);
+  await page.reload();await page.locator(`#request-${expiring}`).getByRole('spinbutton').waitFor();
+  await page.getByRole('heading',{name:'שאלות שנסגרו ללא תשובה',exact:true}).waitFor();
+  assert.equal(await page.locator(`#request-${expiring}`).count(),0);
+  assert.ok((await page.locator('.thread-view').innerText()).includes('שאלה סינתטית עם מועד קרוב — הסתיים המועד להשלמה.'));
+  assert.equal((await web.query('select answered_at from public.case_requests where id=$1',[expiring])).rows[0].answered_at,null);
+  assert.deepEqual(errors,[]);
  });
  await check('request retries preserve case/payment and all three original/corrected versions',async()=>{
   const rows=(await db.query('select status,payment_status from public.cases where id=any($1::uuid[])',[ids])).rows;

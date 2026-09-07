@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-hffq2xcce-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "9f9b6f5b3e270eb0c971cd08564aa7d18d1b9e75",
+  "origin": "https://salary-4p9ejfw9i-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "ca63a5fb760f22c36f7115c14fed49c855cfd55c",
   "checks": [
     {
       "name": "customer opens case support with saved server state",
