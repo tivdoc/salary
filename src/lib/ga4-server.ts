@@ -1,3 +1,4 @@
+import {EXTERNAL_MEASUREMENT_ENABLED} from "./measurement-policy";
 import "server-only";
 import { buildGa4PurchasePayload, processVerifiedGa4Purchase } from "./ga4-server-core";
 import { getSupabaseAdmin } from "./supabase-admin";
@@ -24,6 +25,7 @@ export async function sendGa4PurchaseEvents(input: {
   value: number;
   currency: string;
 }) {
+  if(!EXTERNAL_MEASUREMENT_ENABLED)return "disabled" as const;
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
   const apiSecret = process.env.GA4_API_SECRET?.trim();
   if (!measurementId || !apiSecret) return "disabled" as const;
@@ -46,7 +48,7 @@ export async function sendGa4PurchaseEvents(input: {
 }
 
 export async function deliverVerifiedGa4Purchase(caseId: string) {
-  if (!process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || !process.env.GA4_API_SECRET?.trim()) {
+  if (!EXTERNAL_MEASUREMENT_ENABLED || !process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || !process.env.GA4_API_SECRET?.trim()) {
     return "disabled" as const;
   }
 

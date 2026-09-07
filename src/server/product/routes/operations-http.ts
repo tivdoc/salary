@@ -104,6 +104,14 @@ export function createOperationsHttpHandler(input: Readonly<{
       if (!input.service) return productNotFound("SERVICE_ABSENT");
       const segments = safeSegments(rawSegments);
       if (!segments) return productNotFound("SEGMENTS_UNSAFE");
+      if(segments[0]==="privacy"){
+        const action=segments.join("/");if(!((action==="privacy/queue"&&request.method==="GET")||(action==="privacy/decide"&&request.method==="POST")))return productNotFound("PATH_NOT_ROUTED");
+        const session=await input.sessions.verify(request,"operations",request.method==="POST");if(!session)return productNotFound("SESSION_UNVERIFIED");
+        try{const db=await resolveReportOperationsDb();if(!db)throw new Error("PRIVACY_STORE_UNAVAILABLE");if(action==="privacy/queue")return productJson({data:(await db.rpc('case_privacy_queue',{}))[0]??null});
+        const body=await strictJsonObject(request,12000);if(!body||typeof body.id!=="string"||!/^[-a-f0-9]{36}$/.test(body.id)||!['in_review','restricted'].includes(String(body.state))||typeof body.resolution!=="string"||body.resolution.length<4||body.resolution.length>2000)return productJson({code:"PRIVACY_INPUT_INVALID"},400);
+        await db.rpc('case_privacy_decide',{target_request:body.id,target_actor:operatorIdentity(session.actor),target_state:body.state,target_resolution:body.resolution});return productJson({ok:true});
+        }catch{return productJson({code:"PRIVACY_UNAVAILABLE"},503);}
+      }
       // Nested Ground Truth queue panel. Same session and correlation handling
       // as every other operations route; only the capability differs.
       if (segments[0] === "ground-truth") {

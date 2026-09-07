@@ -1,4 +1,5 @@
 "use client";
+import {EXTERNAL_MEASUREMENT_ENABLED} from "./measurement-policy";
 
 import type { MetaConversionEventName, MetaEventDescriptor } from "./meta-events";
 import { initialCheckPriceNumber } from "./product-offer";
@@ -20,7 +21,7 @@ declare global {
 }
 
 function pixelConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_META_PIXEL_ID);
+  return EXTERNAL_MEASUREMENT_ENABLED && Boolean(process.env.NEXT_PUBLIC_META_PIXEL_ID);
 }
 
 export function trackMetaBrowserEvent(

@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-09-07",
+  "access": "read-only production connector",
+  "cases_in_user_brief": 4,
+  "found": 4,
+  "non_qa": 4,
+  "verified_payment": 4,
+  "under_review": 4,
+  "document_records": 8,
+  "matching_storage_metadata": 8,
+  "file_bytes_verified": false,
+  "report_or_notification_tables_present": false,
+  "external_service_delivery": "not established; absence of system records is not evidence of non-delivery",
+  "customer_identifiers_in_public_evidence": false,
+  "mutations": 0,
+  "private_inquiry": "saved outside repository in user outputs"
+}

@@ -23,7 +23,7 @@ describe("Meta browser delivery", () => {
     ).toBe(false);
   });
 
-  it("does not fire Purchase again after received is refreshed", () => {
+  it("keeps configured Pixel delivery closed, including repeated Purchase", () => {
     process.env.NEXT_PUBLIC_META_PIXEL_ID = "pixel-1";
     const storage = new Map<string, string>();
     const fbq = vi.fn();
@@ -46,13 +46,8 @@ describe("Meta browser delivery", () => {
     trackMetaBrowserEventOnce(event);
     trackMetaBrowserEventOnce(event);
 
-    expect(fbq).toHaveBeenCalledTimes(1);
-    expect(fbq).toHaveBeenCalledWith(
-      "track",
-      "Purchase",
-      { value: 9.99, currency: "ILS" },
-      { eventID: "tivdoc:Purchase:payment-1" },
-    );
+    expect(fbq).not.toHaveBeenCalled();
+    expect(storage.size).toBe(0);
   });
 
   it("keeps the CAPI token outside every client Meta module", () => {

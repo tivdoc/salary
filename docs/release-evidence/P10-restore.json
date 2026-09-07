@@ -1,0 +1,22 @@
+{
+  "checks": [
+    "synthetic source bytes are backed up from real private Storage with matching checksum",
+    "complete schema and data custom-format backup created from the isolated owned clone",
+    "all table counts and full row-set checksums match after actual pg_restore",
+    "saved draft report provenance and its immutable document coordinates survive restore",
+    "original FORCE RLS protection is restored on every protected table",
+    "backup bytes restore to a separate private bucket with the same path and checksum"
+  ],
+  "sourceDatabase": "tivdoc_release_replay_20260907",
+  "backupClone": "tivdoc_backup_4b469779",
+  "restoredDatabase": "tivdoc_restore_4b469779",
+  "tableCount": 118,
+  "forcedRlsTables": 72,
+  "backupSha256": "6834da31b7c743299b74e0bd40ac0a09e15921b287ad0bdd135304bd8a545e38",
+  "extensionCommentsExcluded": true,
+  "reportState": "synthetic unpublished draft",
+  "sourceBytes": 876,
+  "storageRestore": true,
+  "production": "untouched",
+  "rpoRtoServiceGuaranteeProven": false
+}

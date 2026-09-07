@@ -1,10 +1,11 @@
 "use client";
+import {EXTERNAL_MEASUREMENT_ENABLED} from "@/lib/measurement-policy";
 
 import Script from "next/script";
 
 export function AnalyticsProvider() {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-  if (!measurementId) return null;
+  if (!EXTERNAL_MEASUREMENT_ENABLED || !measurementId) return null;
 
   return (
     <>

@@ -7,7 +7,7 @@ import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-
 // UX Run 1 / U3 (D-1.4). One route for login and recovery: phone or email,
 // then a code, then every case of that identity. The answer to a contact is
 // the same whether or not it exists.
-export function LoginForm({ codeTtlMinutes }: { codeTtlMinutes: number }) {
+export function LoginForm({ codeTtlMinutes, returnToAccount=false }: { codeTtlMinutes: number; returnToAccount?:boolean }) {
   const router = useRouter();
   const heading = useRef<HTMLHeadingElement>(null);
   const [contact, setContact] = useState("");
@@ -57,7 +57,7 @@ export function LoginForm({ codeTtlMinutes }: { codeTtlMinutes: number }) {
       if (!response.ok) throw new Error(await customerErrorFromResponse(response, "access_code_invalid"));
       const result = (await response.json()) as { next?: string };
       setPhase("done");
-      router.replace(typeof result.next === "string" ? result.next : "/cases");
+      router.replace(returnToAccount?"/account":typeof result.next === "string" ? result.next : "/cases");
     } catch (caught) {
       setPhase("code");
       setError(customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "access_code_invalid"));

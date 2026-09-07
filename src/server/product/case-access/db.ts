@@ -17,7 +17,7 @@ export type CaseAccessDb = Readonly<{
 // (`case_funnel_event_counts`) and S4's abandonment sweep and opt-out
 // (`case_abandonment_*`, `case_reminder_*`); a call
 // to a family that is not listed is a programming error, not a runtime one.
-const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|order|funnel|abandonment|reminder)_[a-z_]+$/u;
+const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|order|privacy|funnel|abandonment|reminder)_[a-z_]+$/u;
 
 export function supabaseCaseAccessDb(client: {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;
@@ -27,7 +27,7 @@ export function supabaseCaseAccessDb(client: {
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
       if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const result = await client.rpc(fn, { ...args });
-      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^UPLOAD_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
+      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^(?:UPLOAD|ORDER|PRIVACY)_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
       const data = result.data;
       if (Array.isArray(data)) return data as T[];
       if (data === null || data === undefined) return [];

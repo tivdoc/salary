@@ -1930,6 +1930,40 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Identity-scoped order history and server-quoted purchase; live sales require capability and configuration."
+    },
+    {
+      "entrypoint_id": "CEP-112",
+      "kind": "app_route",
+      "stable_entry": "/account",
+      "source_path": "src/app/account/page.tsx",
+      "canonical_contract_id": "route.page.customer-privacy",
+      "canonical_target": "src/app/account/page.tsx:default",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/db.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped privacy requests and fresh-session export; request intake is not deletion completion."
+    },
+    {
+      "entrypoint_id": "CEP-113",
+      "kind": "api_route",
+      "stable_entry": "/api/account",
+      "source_path": "src/app/api/account/route.ts",
+      "canonical_contract_id": "route.api.customer-privacy",
+      "canonical_target": "src/app/api/account/route.ts:POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/db.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped privacy requests and fresh-session export; request intake is not deletion completion."
     }
   ]
 }

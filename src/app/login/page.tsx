@@ -14,16 +14,17 @@ export const metadata: Metadata = {
 
 // UX Run 1 / U3 (D-1.4). Login and recovery are one route. A live session
 // skips the form: one case goes to the case, more than one to the list.
-export default async function LoginPage() {
+export default async function LoginPage({searchParams}:{searchParams:Promise<{reauth?:string}>}={searchParams:Promise.resolve({})}) {
   await guardStableAppEntrypoint("CEP-097");
   const session = await resolveIdentitySession(await readCaseSessionCookie());
-  if (session) {
+  const reauth=(await searchParams).reauth==="1";
+  if (session && !reauth) {
     const cases = await listIdentityCases(session.identity_id);
     redirect(cases.length === 1 && cases[0] ? `/case/${cases[0].public_id}` : "/cases");
   }
   return (
     <CaseShell eyebrow="כניסה לתיק">
-      <LoginForm codeTtlMinutes={productOffer().access.code_ttl_minutes} />
+      <LoginForm codeTtlMinutes={productOffer().access.code_ttl_minutes} returnToAccount={reauth} />
     </CaseShell>
   );
 }

@@ -16,7 +16,7 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | P07 | PARTIAL | Cookie/DB expiry alignment and logout, encrypted Resend outbox, Svix inbox, provider receipts, suppression and reminder bridge. 12 actual DB checks; focused tests pass. Provider/DNS/browser proof and contact-change re-verification remain; flags off. |
 | P08 | IMPLEMENTED / integration pending | Saved report history, identity-scoped PDF/source, correction intake, actual QA preview/assignment/approval fingerprint, immutable published content and transactional delivery intention. 9 review + 4 retained-source DB checks; browser and canonical correction/calculation composition remain. |
 | P09 | PARTIAL | Independent immutable order scope/price, atomic checkout claim, worker verification/entitlement, report binding and persisted clocks. 14 order + 10 review + 4 source DB checks, 37 focused tests, tsc/lint pass. Provider receipts/refunds, full historical capacity and canonical/browser integration remain. |
-| P10 | IN_PROGRESS | Privacy, lifecycle, restore and private case investigation |
+| P10 | PARTIAL | Owner privacy/export, retention fences and audited draft sweep; 12 DB + 4 real Storage checks. Actual 118-table restore and private read-only inquiry complete. Full purge, contact re-verification and browser/operational proof remain. |
 | P11 | TODO | Integrate parallel website work and customer surfaces |
 | P12 | TODO | Real metrics, monitoring and recovery controls |
 | P13 | TODO | Acceptance, rehearsal and release readiness |

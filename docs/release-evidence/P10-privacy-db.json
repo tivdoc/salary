@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "privacy request retry preserves one pending request without deleting data",
+    "cross-case request and export are refused",
+    "fresh-session export returns owner data without session secrets or storage coordinates",
+    "rolling session does not bypass fresh authentication for export",
+    "GC retains a live document even after the nominal retention period",
+    "customer server role cannot invoke storage deletion protocol",
+    "old orphan is marked but cannot bypass the deletion grace window",
+    "durable GC fence rejects a new reference before any storage remove",
+    "a late hold cannot claim protection while object removal is in flight",
+    "crash/retry preserves the fence and cannot alter the live document",
+    "a committed hold protects even an otherwise eligible orphan",
+    "terminal draft cleanup respects holds and writes one audit event across retries"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "fixtures": "synthetic QA",
+  "storage_bytes_deleted": false,
+  "production": "untouched"
+}

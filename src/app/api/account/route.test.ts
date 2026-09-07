@@ -1,0 +1,13 @@
+import {it,expect,vi,beforeEach} from 'vitest';
+const mock=vi.hoisted(()=>({session:vi.fn(),cases:vi.fn(),rpc:vi.fn()}));
+vi.mock('@/server/platform/capabilities/stable-http-entrypoint',()=>({guardStableHttpEntrypoint:vi.fn()}));
+vi.mock('@/server/product/case-access/service',()=>({resolveIdentitySession:mock.session,listIdentityCases:mock.cases}));
+vi.mock('@/server/product/case-access/session-cookie',()=>({readCaseSessionCookie:vi.fn()}));
+vi.mock('@/server/product/case-access/db',()=>({resolveCaseAccessDb:async()=>({rpc:mock.rpc})}));
+import {POST} from './route';
+const request=(publicId='TV-OWN00001',origin='https://synthetic.invalid')=>new Request('https://synthetic.invalid/api/account',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify({action:'export',publicId})});
+beforeEach(()=>{vi.clearAllMocks();mock.session.mockResolvedValue({identity_id:'owner',session_id:'current-session'});mock.cases.mockResolvedValue([{public_id:'TV-OWN00001',case_id:'owned'}]);});
+it('rejects cross-origin before reading identity',async()=>{expect((await POST(request(undefined,'https://other.invalid'))).status).toBe(403);expect(mock.session).not.toHaveBeenCalled();});
+it('rejects exporting a foreign case before DB export',async()=>{expect((await POST(request('TV-OTHER001'))).status).toBe(404);expect(mock.rpc).not.toHaveBeenCalled();});
+it('requires a session and handles fresh-auth refusal distinctly',async()=>{mock.session.mockResolvedValueOnce(null);expect((await POST(request())).status).toBe(401);mock.rpc.mockRejectedValue(new Error('PRIVACY_REAUTH_REQUIRED'));const result=await POST(request());expect(result.status).toBe(401);expect(await result.json()).toMatchObject({code:'reauth_required'});});
+it('exports only server-derived case, identity and session with no-store attachment',async()=>{mock.rpc.mockResolvedValue([{value:{schema_version:'test'}}]);const result=await POST(request());expect(result.status).toBe(200);expect(result.headers.get('cache-control')).toContain('no-store');expect(result.headers.get('content-disposition')).toContain('attachment');expect(mock.rpc).toHaveBeenCalledWith('case_privacy_export',{target_case:'owned',target_identity:'owner',target_session:'current-session'});});

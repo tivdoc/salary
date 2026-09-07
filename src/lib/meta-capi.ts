@@ -1,3 +1,4 @@
+import {EXTERNAL_MEASUREMENT_ENABLED,safeMeasurementUrl} from "./measurement-policy";
 import "server-only";
 import {
   META_GRAPH_API_VERSION,
@@ -17,6 +18,7 @@ export async function sendMetaCapiEvent(
   input: MetaCapiEventInput,
   fetcher: Fetcher = fetch,
 ): Promise<MetaCapiDeliveryResult> {
+  if(!EXTERNAL_MEASUREMENT_ENABLED)return {status:"disabled"};
   const config = resolveMetaCapiConfig(process.env);
   if (!config) return { status: "disabled" };
 
@@ -78,7 +80,7 @@ function safeEventSourceUrl(request: Request, fallbackPath: string) {
 
   try {
     const url = new URL(referer);
-    return url.origin === fallbackUrl.origin ? url.toString() : fallbackUrl.toString();
+    return safeMeasurementUrl(url.origin === fallbackUrl.origin ? url.toString() : fallbackUrl.toString(),fallbackUrl.origin);
   } catch {
     return fallbackUrl.toString();
   }

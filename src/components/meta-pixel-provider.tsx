@@ -1,4 +1,5 @@
 "use client";
+import {EXTERNAL_MEASUREMENT_ENABLED} from "@/lib/measurement-policy";
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
@@ -10,13 +11,13 @@ export function MetaPixelProvider({ pixelId }: { pixelId?: string }) {
   const lastPathname = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!pixelId || lastPathname.current === pathname) return;
+    if (!EXTERNAL_MEASUREMENT_ENABLED || !pixelId || lastPathname.current === pathname) return;
     lastPathname.current = pathname;
     trackMetaBrowserEvent("PageView");
     if (pathname === "/check") trackMetaViewContentOnce();
   }, [pathname, pixelId]);
 
-  if (!pixelId) return null;
+  if (!EXTERNAL_MEASUREMENT_ENABLED || !pixelId) return null;
   const serializedPixelId = JSON.stringify(pixelId);
 
   return (
