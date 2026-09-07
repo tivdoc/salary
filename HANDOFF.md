@@ -1,3 +1,11 @@
+## Release completion P05 checkpoint — 2026-09-07
+
+Base P04 `1ffb17d`; branch `codex/tivdoc-release-completion`. Added a transactional source journal for document, questionnaire, answer, period and payment changes. Unchanged content does not enqueue another revision. The dispatcher uses the existing canonical PostgreSQL jobs repository with three attempts; mode and current-input fencing are explicit. An approved/published report must match the current input revision. Historical inputs survive changes.
+
+Actual isolated release PostgreSQL: eight checks PASS (atomic capture, no-op retry, rollback, concurrent changes, two cases, fresh worker connection, ACL, historical hashes). Local: 16 tests across new fencing and existing durable-queue contracts PASS; typecheck PASS. Full lint PASS; migration-chain tests 5/5 PASS. Migration only in `tivdoc_release_replay_20260907`; no hosted/production deployment.
+
+P05 remains PARTIAL: the complete saved-extraction → canonical composition → product projection transaction, parameter invalidation, scheduling entry point and actual Storage/provider journey still need integration. This checkpoint does not relabel the existing synthetic composition as live. Continue P06 independently, then return to composition integration as downstream contracts settle.
+
 ## Release P04 checkpoint — 2026-09-07
 
 P03 follow-up `036c7ff` passed tsc/lint/build. P04 sources and AI decisions are in `docs/release-legal-research.he.md`; 224 tests/25 files, tsc/lint passed. New RuleSpecs remain inactive. No DB activation, customer analysis or deployment. Continue P05–P13 and revisit B-002/B-004/B-005 when capability changes.
