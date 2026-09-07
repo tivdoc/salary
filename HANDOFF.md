@@ -1,5 +1,15 @@
 # HANDOFF — Tivdoc (`tivdoc/salary`)
 
+## 2026-09-07 update — safe document completion
+
+**[verified]** A dedicated `codex/document-upload-integrity` branch now implements immutable uploads, case-wide reservations, explicit versioned replacement and atomic late completion. The reviewed remote base remained `5285bc5`; the additional local handoff commit `06ee5f1` was preserved before editing. Existing working copies were not modified.
+
+Read [Document upload integrity](docs/document-upload-integrity.md) before continuing: it records the original deletion reproduction, protocol, 66 focused tests, 16 real PostgreSQL checks, 11 real Storage/HTTP checks, browser recovery evidence, seven reproduced baseline test failures, and rollout/retention dependencies. This defect correction is authorized engineering work; historical statements below that no further engineering remains do not supersede it.
+
+**[verified]** Only the isolated DEV replay database received the migration. The application was built and exercised locally. No production migration, application deployment, merge or activation was performed. Production rollout must coordinate the migration/API/UI and expiry of legacy upsert tokens; old and abandoned objects remain retained until a separate safe retention policy exists.
+
+---
+
 **Written 2026-09-06 by the Claude (Cowork) session that produced long runs 9–12, at the owner's
 instruction, for whoever continues the work (ChatGPT / Codex).**
 

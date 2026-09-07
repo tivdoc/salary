@@ -1,0 +1,35 @@
+.document-review { min-width: 0; }
+.document-review section { margin-bottom: 28px; }
+.document-review h2 { font-size: 22px; margin-bottom: 16px; }
+.document-review__list { list-style: none; padding: 0; margin: 16px 0 24px; display: grid; gap: 12px; }
+.document-review .document-card {
+  display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; gap: 14px;
+  padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+}
+.document-review .document-card > svg, .document-card__preview svg { width: 28px; height: 28px; color: var(--blue); }
+.document-card__preview img { width: 32px; height: 48px; object-fit: contain; }
+.document-card__body { min-width: 0; }
+.document-card__body p { margin: 0 0 6px; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+.document-card__body .document-card__name { color: var(--ink); font-weight: 600; font-size: 16px; }
+.document-card__body [role="status"] { color: var(--green); }
+.document-review__pickers, .document-review__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.document-review .button--ghost { border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+.document-review label.button { position: relative; min-height: 44px; cursor: pointer; font-size: 14px; }
+.document-review label.button input[type="file"] {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+}
+.document-review label.button:focus-within { outline: 3px solid var(--blue); outline-offset: 3px; }
+.document-review label.button:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.document-review input:disabled { cursor: not-allowed; }
+.document-review__pickers svg { width: 20px; height: 20px; }
+.document-card__remove { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; }
+.document-card__remove svg { width: 20px; height: 20px; }
+.document-review > label, .document-card__body label { display: grid; gap: 8px; margin-block: 16px; font-size: 14px; }
+.document-review select { min-width: 0; width: 100%; max-width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font: inherit; color: var(--ink); }
+.document-review__check-month span, .document-review .upload-limit { color: var(--muted); font-size: 14px; }
+.document-review__actions { margin-top: 24px; }
+@media (max-width: 540px) {
+  .document-review .document-card { grid-template-columns: 28px minmax(0, 1fr); padding: 14px; gap: 10px; }
+  .document-card > label.button, .document-card > .document-card__remove { grid-column: 2; justify-self: start; }
+  .document-review__pickers > label { flex: 1 1 140px; }
+}

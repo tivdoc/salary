@@ -5449,3 +5449,12 @@ BL-31.
 
 **Engineering after this run.** Nothing, until the human gate moves. When it
 does: run 13-T (needs item 1 only), then run 14 (needs items 6–8).
+
+
+## 2026-09-07 — document upload integrity correction
+
+The confirmed completion-route deletion defect is corrected on `codex/document-upload-integrity`, based on remote `5285bc5` plus preserved local handoff `06ee5f1`. Additions reserve case-wide slots, replacements name an expected document version, each upload uses a new non-upsert object path, and publication/request/status updates form one atomic transaction. Saved documents hydrate the form on return; interrupted publication can be retried after reload. A contract can complete its specific request using an already saved payslip, without resetting payment.
+
+See [the detailed handoff and verification record](document-upload-integrity.md). Evidence: 66 focused local tests, typecheck/lint/build, 16 actual DEV PostgreSQL checks, 11 real DEV Storage/HTTP checks, and Chromium addition/replacement/reload recovery. Seven unrelated full-suite failures were reproduced on untouched base `06ee5f1`; the full suite is not claimed green.
+
+The migration is applied only to `tivdoc_v09_devruntime01` on the allowlisted DEV project. No production migration/deployment, merge or activation occurred. Production cutover and an eventual reference-aware retention policy remain explicit dependencies. Earlier historical declarations that no code work remains are superseded only for this authorized defect correction; existing activation gates remain closed.

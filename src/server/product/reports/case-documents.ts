@@ -21,7 +21,7 @@ type DocumentRow = Readonly<{
   original_filename: string;
   mime_type: string;
   size: number | string;
-  period_month: string | null;
+  period_month: string | Date | null;
   created_at: string;
 }>;
 
@@ -36,7 +36,9 @@ export async function listCaseDocuments(caseId: string, db?: CaseAccessDb | null
     original_filename: row.original_filename,
     mime_type: row.mime_type,
     size: Number(row.size),
-    period_month: row.period_month === null ? null : String(row.period_month).slice(0, 7),
+    period_month: row.period_month === null ? null : row.period_month instanceof Date
+      ? `${row.period_month.getFullYear()}-${String(row.period_month.getMonth() + 1).padStart(2, "0")}`
+      : row.period_month.slice(0, 7),
     created_at: new Date(row.created_at).toISOString(),
   }));
 }
