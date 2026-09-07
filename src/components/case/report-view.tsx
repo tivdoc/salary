@@ -35,8 +35,8 @@ function money(value: Readonly<{ currency: "ILS"; minor_units: number }>): strin
   return formatPrice({ amount: (value.minor_units / 100).toFixed(2), currency: value.currency });
 }
 
-function TopicCard({ topic }: { topic: TopicProjection }) {
-  const permission = renderPermission(topic);
+function TopicCard({ topic, reportKind }: { topic: TopicProjection; reportKind: "initial" | "full" }) {
+  const permission = renderPermission(topic, reportKind);
   return (
     <li className={`report-topic report-topic--${topic.gate}`}>
       <h3>{TOPIC_HE[topic.topic] ?? topic.topic}</h3>
@@ -89,7 +89,7 @@ export function ReportView({ projection }: { projection: CaseReportProjection })
   const offer = productOffer();
   const checked = projection.topics.filter((topic) => topic.gate === "checked");
   const findings = checked.filter((topic) => topic.status === "finding");
-  const awaiting = projection.topics.filter((topic) => topic.gate === "awaiting_verification");
+  
 
   return (
     <div className="report-view">
@@ -100,9 +100,9 @@ export function ReportView({ projection }: { projection: CaseReportProjection })
           {projection.months_covered.length > 1 ? ` · כיסוי: ${projection.months_covered.join(", ")}` : null}
         </p>
         {/* The reader is told what state the whole report is in before any topic. */}
-        {awaiting.length === projection.topics.length ? (
+        {checked.length === 0 ? (
           <p className="report-view__all-awaiting">
-            כל הנושאים ממתינים לאימות בסיום הפיתוח. עד שהאימות הושלם אנחנו לא מציגים כיוון, טווח או סכום — לא מספר קטן ולא מספר זהיר.
+            עדיין לא נבדק אף נושא. אין תוצאת בדיקה; פרטי הכיסוי והמידע החסר מופיעים בהמשך.
           </p>
         ) : (
           <p>{findings.length > 0 ? `נמצאו ${findings.length} נקודות לבדיקה.` : "לא נמצאו פערים בנושאים שנבדקו."}</p>
@@ -110,7 +110,7 @@ export function ReportView({ projection }: { projection: CaseReportProjection })
       </div>
 
       <ul className="report-view__topics">
-        {projection.topics.map((topic) => <TopicCard key={topic.topic} topic={topic} />)}
+        {projection.topics.map((topic) => <TopicCard key={topic.topic} topic={topic} reportKind={projection.report_kind} />)}
       </ul>
 
       {findings.length > 0 ? (

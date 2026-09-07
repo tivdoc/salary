@@ -91,3 +91,5 @@ Thumbs.db
 
 # Release completion scratch receipts (public evidence is curated under docs/release-evidence)
 /output/release-completion/
+
+/supabase/.temp/

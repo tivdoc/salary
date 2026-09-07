@@ -27,6 +27,7 @@ export type DocumentTrack = (typeof DOCUMENT_TRACKS)[number];
 export const AUTOMATIC_FINDING_CEILING_MINOR_UNITS = 500_000;
 
 export const QUEUE_REASONS = [
+  "no_checked_topics",
   /** D-10.3: a full report is always read by a person. */
   "full_report",
   /** D-10.2: the documents did not come through the automatic track. */
@@ -41,6 +42,7 @@ export const QUEUE_REASONS = [
 export type QueueReason = (typeof QUEUE_REASONS)[number];
 
 export const QUEUE_REASON_TEXT: Readonly<Record<QueueReason, string>> = Object.freeze({
+  no_checked_topics: "טרם נבדק אף נושא — עדכון מצב אינו דוח למסירה.",
   full_report: "דוח מלא — תמיד בבקרה אנושית (D-10.3).",
   document_not_automatic_track: "המסמך לא עבר במסלול האוטומטי.",
   finding_at_low_certainty: "יש ממצא ברמת ודאות נמוכה.",
@@ -100,6 +102,7 @@ export function publicationDecision(
   input: Readonly<{ documentTrack: DocumentTrack }>,
 ): PublicationDecision {
   const reasons = new Set<QueueReason>();
+  if (!projection.topics.some((topic) => topic.gate === "checked")) reasons.add("no_checked_topics");
 
   if (projection.report_kind === "full") reasons.add("full_report");
   if (input.documentTrack !== "automatic") reasons.add("document_not_automatic_track");

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CaseShell } from "@/components/case/case-shell";
 import { ReportView } from "@/components/case/report-view";
-import { ALL_AWAITING_VERIFICATION } from "@/server/product/reports/case-report-projection.fixtures";
+import { customerReports, type CustomerReports } from "@/server/product/reports/customer-reports";
 import { listIdentityCases, resolveIdentitySession } from "@/server/product/case-access/service";
 import { readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
@@ -13,18 +13,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/**
- * Site S3.4 — the report screen. It renders a `case_report_projection` and
- * computes nothing: no figure is derived here, no certainty is decided here,
- * and no topic is judged checked here.
- *
- * Where the document comes from today: the fixture, because the engine is
- * granted write access to the projection table in run 16 and not before. The
- * fixture in use is `ALL_AWAITING_VERIFICATION`, which is not a placeholder —
- * it is the product's real state (topics 0/7, no parameter active, nothing
- * attested), so this screen currently shows seven topics awaiting verification
- * and not one number. That is the correct output, not a gap in it.
- */
 export default async function CaseReportsPage({ params }: { params: Promise<{ token: string }> }) {
   await guardStableAppEntrypoint("CEP-104");
   const { token } = await params;
@@ -35,9 +23,14 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
   const item = cases.find((candidate) => candidate.public_id === token);
   if (!item) notFound();
 
+  let saved: CustomerReports | null = null;
+  try { saved = await customerReports(item.case_id, session.identity_id, item.public_id); } catch { /* Distinct from an empty report list. */ }
+
   return (
     <CaseShell eyebrow={`תיק ${item.public_id}`}>
-      <ReportView projection={ALL_AWAITING_VERIFICATION} />
+      {saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
+        : saved.reports.length === 0 ? <div><h1>הדוח עדיין לא מוכן</h1>{saved.checkPeriodMonth ? <p>חודש הבדיקה: <bdi>{saved.checkPeriodMonth}</bdi></p> : null}<p>כשיפורסם דוח לתיק, הוא יופיע כאן. אפשר לראות את המצב והבקשות בעמוד התיק.</p></div>
+        : saved.reports.map((report) => <ReportView key={report.id} projection={report.projection} />)}
       <p className="case-back">
         <Link href={`/case/${item.public_id}`}>חזרה לתיק</Link>
       </p>

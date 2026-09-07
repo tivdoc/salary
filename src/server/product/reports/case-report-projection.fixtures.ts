@@ -1,15 +1,12 @@
 // Site S3.2 fixtures. The engine writes this table in run 16; until then these
-// are the only documents that exist, and they are what every screen and every
-// test renders against.
+// are synthetic test/demo data, never a source for a real customer route.
 //
 // Four of them, and the fourth is the important one:
 //
 //   S04  a topic that passes both gates at HIGH certainty — a finding with a sum.
 //   S05  a topic that passes both gates at LOW certainty — a direction, no number.
 //   S06  a topic refused for a missing applicability fact — a question, not a weak answer.
-//   ALL  every topic awaiting verification. This is not a placeholder: it is the
-//        product's state today (topics 0/7, no parameter active, nothing attested),
-//        and it is what a real case would render right now.
+//   ALL  synthetic empty coverage; real routes must load their persisted case.
 import {
   CERTAINTY_SENTENCE,
   displayForCertainty,
@@ -101,7 +98,7 @@ export const S06_REFUSED_FOR_APPLICABILITY: TopicProjection = {
     },
   ],
   branches_examined: ["הסף היומי — מותנה בסידור העבודה"],
-  parameter_grades: { "il.working_time.daily_overtime_threshold_hours@2018.1.0": "derived" },
+  parameter_grades: { "il.working_time.daily_overtime_threshold_hours@2018.1.0": "active" },
 };
 
 function projection(topics: TopicProjection[], kind: "initial" | "full" = "initial"): CaseReportProjection {
@@ -117,7 +114,7 @@ function projection(topics: TopicProjection[], kind: "initial" | "full" = "initi
   });
 }
 
-/** Every topic awaiting verification — the product's actual state today. */
+/** Synthetic empty-coverage fixture; no personal report is implied. */
 export const ALL_AWAITING_VERIFICATION: CaseReportProjection = projection(
   PROJECTION_TOPICS.map((topic) => awaiting(topic, topic === "working_time" ? ["derived"] : ["draft"])),
 );

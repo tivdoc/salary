@@ -63,7 +63,7 @@ export const PROJECTION_SCHEMA_VERSION = "tivdoc-case-report-projection-v1" as c
 export const PROJECTION_LEGAL_BASIS = "opinion_3ddad7e8 + errata_1_owner_closed" as const;
 
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
-const moneySchema = z.object({ currency: z.literal("ILS"), minor_units: z.number().int() }).strict();
+const moneySchema = z.object({ currency: z.literal("ILS"), minor_units: z.number().int().nonnegative() }).strict();
 
 /** The grades a parameter can carry. A topic is active only when every one of its parameters is `active`. */
 export const PARAMETER_GRADES = ["active", "text_verified", "lexicon", "selection", "derived", "inferred_visual", "administrative", "agreement_interpretation", "draft", "owner_recorded"] as const;
@@ -160,6 +160,8 @@ export const checkedTopicSchema = z.object({
   /** Always present for a finding: which way the gap runs. */
   direction: z.enum(["employer_owes", "employee_owes", "none"]),
 }).strict().superRefine((topic, context) => {
+  if (topic.range && topic.range.low.minor_units > topic.range.high.minor_units) context.addIssue({ code: "custom", message: "range_out_of_order" });
+  if (topic.certainty_sentence !== CERTAINTY_SENTENCE[topic.certainty]) context.addIssue({ code: "custom", message: "certainty_sentence_mismatch" });
   // D-6.3, mechanically. This is the rule the whole contract exists to hold.
   if (topic.display !== displayForCertainty(topic.certainty)) {
     context.addIssue({ code: "custom", message: `display_must_follow_certainty:${topic.certainty}` });
@@ -196,10 +198,20 @@ export const SEVERITY_TEXT: Readonly<Record<"statutory_violation" | "order_entit
   order_entitlement: "מתחת לרצפת צו ההרחבה — זכות הניתנת לתביעה",
 });
 
+const coverageTopicSchema = z.object({
+  ...commonTopicFields,
+  gate: z.enum(["not_selected", "not_applicable"]),
+  activation: z.literal("active"),
+  status: z.literal("not_checked"),
+  customer_text: z.string().min(8).max(400),
+  reason: z.string().min(3).max(120),
+}).strict();
+
 export const topicProjectionSchema = z.discriminatedUnion("gate", [
   awaitingVerificationTopicSchema,
   refusedTopicSchema,
   checkedTopicSchema,
+  coverageTopicSchema,
 ]);
 
 export const caseReportProjectionSchema = z.object({
@@ -214,6 +226,13 @@ export const caseReportProjectionSchema = z.object({
   /** Exactly the seven topics, once each: a report that silently omits a topic tells the reader nothing about it. */
   topics: z.array(topicProjectionSchema).length(PROJECTION_TOPICS.length),
 }).strict().superRefine((projection, context) => {
+  const checked = projection.topics.filter((topic) => topic.gate === "checked");
+  if (projection.report_kind === "initial" && checked.length > 3) context.addIssue({ code: "custom", message: "initial_max_three_checked_topics" });
+  for (const topic of projection.topics) {
+    if (topic.activation === "active" && Object.values(topic.parameter_grades).some((grade) => grade !== "active")) context.addIssue({ code: "custom", message: `inactive_parameter:${topic.topic}` });
+    if (topic.gate === "checked" && Object.keys(topic.parameter_grades).length === 0) context.addIssue({ code: "custom", message: "checked_topic_missing_parameter_versions" });
+    if (projection.report_kind === "initial" && topic.gate === "checked" && !topic.basis_complete && (topic.amount !== null || topic.range !== null)) context.addIssue({ code: "custom", message: "initial_incomplete_basis_has_no_number" });
+  }
   const seen = projection.topics.map((topic) => topic.topic);
   if (new Set(seen).size !== seen.length) context.addIssue({ code: "custom", message: "a_topic_appears_twice" });
   for (const topic of PROJECTION_TOPICS) {
@@ -241,20 +260,28 @@ export function parseProjection(value: unknown): CaseReportProjection {
  * again. `showsNumber` is the single question every renderer asks before
  * printing a figure — and it is false for every gate but a passing one.
  */
-export function renderPermission(topic: TopicProjection): Readonly<{
+export function renderPermission(topic: TopicProjection, reportKind: "initial" | "full" = "initial"): Readonly<{
   showsNumber: boolean;
   showsDirection: boolean;
   line: string;
 }> {
-  if (topic.gate === "awaiting_verification") {
+  if (topic.gate !== "checked" && topic.gate !== "refused") {
     return { showsNumber: false, showsDirection: false, line: topic.customer_text };
   }
   if (topic.gate === "refused") {
     return { showsNumber: false, showsDirection: false, line: topic.not_checked.customer_text };
   }
   return {
-    showsNumber: topic.display !== "direction",
+    showsNumber: topic.display !== "direction" && (reportKind === "full" || topic.basis_complete),
     showsDirection: true,
     line: topic.certainty_sentence,
   };
+}
+
+/** The upstream projection assembler applies product scope before publication; no ranking by money. */
+export function scopeInitialTopics(topics: readonly TopicProjection[]): TopicProjection[] {
+  const selected = new Set(PROJECTION_TOPICS.filter((name) => topics.some((topic) => topic.topic === name && topic.gate === "checked")).slice(0, 3));
+  return topics.map((topic) => topic.gate === "checked" && !selected.has(topic.topic)
+    ? { topic: topic.topic, gate: "not_selected", activation: "active", status: "not_checked", parameter_grades: topic.parameter_grades, branches_examined: [], reason: "initial_topic_limit", customer_text: "הנושא אינו כלול בשלושת הנושאים שנבחרו לבדיקה הראשונית." }
+    : topic);
 }

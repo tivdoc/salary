@@ -1,3 +1,7 @@
+## Release P02 checkpoint — 2026-09-07
+
+Branch `codex/tivdoc-release-completion`, base `45abb7e`. P00/P01 pushed; P02 report safeguards and actual saved-report reader now tested (46 tests + tsc/lint/build, five isolated DB checks). No production deployment. Continue P03–P13 from `docs/release-completion-tracker.md`; browser and full writer remain open. Preserve the other website checkout.
+
 # HANDOFF — Tivdoc (`tivdoc/salary`)
 
 ## Active release completion — 2026-09-07

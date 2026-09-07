@@ -84,10 +84,10 @@ describe("D-10.2 / D-10.3 — which reports a person must read", () => {
     expect(publicationDecision(ranged, { documentTrack: "automatic" }).reasons).toEqual(["finding_over_ceiling"]);
   });
 
-  it("does not treat a not-checked topic as a reason on its own", () => {
+  it("does not publish a status update with zero checked topics", () => {
     // Nothing was claimed about these topics, so there is nothing to review.
-    expect(publicationDecision(ALL_AWAITING_VERIFICATION, { documentTrack: "automatic" }).automatic).toBe(true);
-    expect(publicationDecision(S06_REFUSED, { documentTrack: "automatic" }).automatic).toBe(true);
+    expect(publicationDecision(ALL_AWAITING_VERIFICATION, { documentTrack: "automatic" }).automatic).toBe(false);
+    expect(publicationDecision(S06_REFUSED, { documentTrack: "automatic" }).automatic).toBe(false);
   });
 
   it("gives every reason a sentence, and keeps them in one order", () => {
