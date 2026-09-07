@@ -41,7 +41,7 @@ export async function loadVerifiedUpload(caseId:string,versionId:string,db:Uploa
  const extension=row.mime_type==='application/pdf'?'pdf':row.mime_type==='image/png'?'png':'jpg';
  const physicalPath=`cases/${caseId}/versions/${versionId}.${extension}`;
  if(row.storage_path!==physicalPath)throw new ExtractionInputError('source_scope');
- const document=immutableDocumentSchema.parse({document_id:versionId,case_id:caseId,document_type:row.document_type,storage_path:`cases/${caseId}/documents/${versionId}/original.${extension}`,original_filename:row.original_filename,mime_type:row.mime_type,size_bytes:row.size,content_sha256:row.content_sha256,document_period:null,supersedes_document_id:null,created_at:new Date(String(row.created_at)).toISOString()});
+ const document=immutableDocumentSchema.parse({document_id:versionId,case_id:caseId,document_type:row.document_type,storage_path:`cases/${caseId}/documents/${versionId}/original.${extension}`,original_filename:row.original_filename,mime_type:row.mime_type,size_bytes:Number(row.size),content_sha256:row.content_sha256,document_period:null,supersedes_document_id:null,created_at:new Date(String(row.created_at)).toISOString()});
  return {document,productDocumentId:String(row.id),source:{async read(requested){
   if(requested.case_id!==caseId||requested.document_id!==versionId||requested.content_sha256!==document.content_sha256||requested.storage_path!==document.storage_path)throw new ExtractionInputError('source_scope');
   const {data,error}=await storage.download(physicalPath);if(error||!data)throw new ExtractionInputError('source_missing');

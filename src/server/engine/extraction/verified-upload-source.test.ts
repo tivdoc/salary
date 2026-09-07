@@ -16,7 +16,7 @@ describe('P03 verified saved document boundary',()=>{
  });
  it('binds actual bytes to case and version and refuses mutation and foreign scope',async()=>{
   const bytes=await pdf(),caseId=randomUUID(),versionId=randomUUID();
-  const row={id:randomUUID(),case_id:caseId,version_id:versionId,document_type:'payslip',storage_path:`cases/${caseId}/versions/${versionId}.pdf`,original_filename:'synthetic.pdf',mime_type:'application/pdf',size:bytes.length,content_sha256:createHash('sha256').update(bytes).digest('hex'),created_at:new Date().toISOString()};
+  const row={id:randomUUID(),case_id:caseId,version_id:versionId,document_type:'payslip',storage_path:`cases/${caseId}/versions/${versionId}.pdf`,original_filename:'synthetic.pdf',mime_type:'application/pdf',size:String(bytes.length),content_sha256:createHash('sha256').update(bytes).digest('hex'),created_at:new Date().toISOString()};
   const query=vi.fn(async()=>({rows:[row]})),download=vi.fn(async()=>({data:new Blob([Buffer.from(bytes)]),error:null}));
   const loaded=await loadVerifiedUpload(caseId,versionId,{query},{download});
   expect(await loaded.source.read(loaded.document)).toEqual(bytes);
