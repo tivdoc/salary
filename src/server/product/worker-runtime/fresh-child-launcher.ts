@@ -311,7 +311,7 @@ export async function serveFreshWorkerChildProcess(
   const onControl = (message: unknown): void => {
     if (message === CHILD_CANCEL_CONTROL) termination.abort();
   };
-  let runtime: FreshWorkerChildRuntime | null = null;
+  let runtimePromise: Promise<FreshWorkerChildRuntime> | null = null;
   let outcome: FreshWorkerChildProcessOutcome = "FAILED";
 
   process.once("SIGINT", abort);
@@ -320,9 +320,12 @@ export async function serveFreshWorkerChildProcess(
   options.signal?.addEventListener("abort", externalAbort, { once: true });
   if (options.signal?.aborted) termination.abort();
   try {
-    const createdRuntime = await withAbort(Promise.resolve().then(factory), termination.signal);
-    assertChildRuntime(createdRuntime);
-    runtime = createdRuntime;
+    if (termination.signal.aborted) throw new FreshWorkerChildError("FRESH_WORKER_CHILD_CANCELLED");
+    runtimePromise = Promise.resolve().then(factory).then((createdRuntime) => {
+      assertChildRuntime(createdRuntime);
+      return createdRuntime;
+    });
+    const createdRuntime = await withAbort(runtimePromise, termination.signal);
     const serializedRequest = await readSingleBoundedFrame(
       input,
       inputTimeoutMs,
@@ -348,9 +351,13 @@ export async function serveFreshWorkerChildProcess(
     outcome = "FAILED";
   } finally {
     input.pause();
-    if (runtime) {
+    if (runtimePromise) {
       try {
-        await withTimeout(runtime.close(), shutdownTimeoutMs);
+        // Cancellation can win while the factory is still opening resources.
+        // Keep ownership of its eventual result and close it exactly once.
+        // The same shutdown budget includes pending initialization and close;
+        // the parent still enforces the hard process deadline.
+        await withTimeout(runtimePromise.then((runtime) => runtime.close()), shutdownTimeoutMs);
       } catch {
         outcome = "FAILED";
       }
