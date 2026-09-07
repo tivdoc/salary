@@ -1,6 +1,6 @@
 # Release completion tracker
 
-Authoritative execution: [P00–P13 plan](release-specs/tivdoc-full-development-execution-plan-v1.0-he.md), [UI/UX v1.2](release-specs/tivdoc-uiux-execution-plan-v1.2-he.md). Public copies redact existing customer identifiers; hashes are in the manifest.
+Authoritative execution: [launch decisions v1.1](release-specs/tivdoc-launch-decisions-and-next-task-v1.1-he.md), explicitly adopted by the owner on 2026-09-07, overrides pricing and product-review defaults in the [P00–P13 plan](release-specs/tivdoc-full-development-execution-plan-v1.0-he.md) and [UI/UX v1.2](release-specs/tivdoc-uiux-execution-plan-v1.2-he.md). Other requirements remain. This adoption is not a legal attestation or activation of a rule.
 
 Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 contains `06ee5f1`. Both GitHub CI runs completed successfully. Dedicated integration branch: `codex/tivdoc-release-completion`. Website work remains in its author's checkout/branch `codex/website-v1-3`; integrate committed changes, never overwrite its uncommitted work.
 

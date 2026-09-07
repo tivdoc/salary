@@ -196,8 +196,11 @@ function projectFacts(input: Readonly<{
   const declaredByPath = new Map(input.stored.declared_fact_snapshot.facts.map((fact) => [fact.path, fact] as const));
   const facts = Object.values(criticalFactPath).map((path) => {
     const declared = declaredByPath.get(path);
-    if (declared) return canonicalFactSchema.parse(declared);
     const candidates = documentFacts.flatMap((entries) => entries.filter((fact) => fact.path === path));
+    // A declaration is another assertion, never implicit permission to discard
+    // a saved document value or its provenance. Conflicts remain unresolved;
+    // agreement preserves the least-confirmed status across the sources.
+    if (declared) candidates.push(canonicalFactSchema.parse(declared));
     return aggregateFact(
       path,
       candidates,
@@ -399,7 +402,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       rule_spec_versions: sortStrings([...new Set(selections.flatMap((selection) => selection.rule_spec_id && selection.rule_spec_version
         ? [`${selection.rule_spec_id}@${selection.rule_spec_version}`]
         : []))]),
-      code_version: "case-analysis@0.6.0",
+      code_version: "case-analysis@0.6.1",
       template_version: this.dependencies.templateVersion,
     });
     await this.stage(analysisRunId, "analysis_run", { selections, dependencies });
