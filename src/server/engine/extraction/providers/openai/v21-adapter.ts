@@ -46,6 +46,7 @@ export async function runOpenAiPayslipExtractionV21(input: {
 }): Promise<OpenAiPayslipV21Run> {
   const request = extractionRequestSchema.parse(input.request);
   const bytes = await input.source.read(request.document);
+  if(bytes.byteLength!==request.document.size_bytes||createHash("sha256").update(bytes).digest("hex")!==request.document.content_sha256)throw new TypeError("extraction_source_changed");
   const firstPassId = uuidFrom(`${request.extraction_id}:v2.1:first-pass`);
   const firstPassRequest = { ...request, extraction_id: firstPassId };
   const firstRegions: readonly ExtractionRegion[] = ["header", "earnings", "totals", "pension"];

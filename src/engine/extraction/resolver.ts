@@ -128,7 +128,7 @@ function factStatus(fields: readonly NormalizedCandidateField[], validation: Gat
   if (worst === "requires_confirmation" || documentQuality < 0.65) {
     return { status: "needs_confirmation" as const, conflictIds: [] };
   }
-  if (worst === "suspicious" || documentQuality < 0.9 || fields.some((field) => field.confidence < 0.9)) {
+  if (worst === "suspicious" || documentQuality < 0.95 || fields.some((field) => field.confidence < 0.95)) {
     return { status: "candidate" as const, conflictIds: [] };
   }
   return { status: "confirmed" as const, conflictIds: [] };

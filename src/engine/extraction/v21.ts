@@ -27,8 +27,8 @@ import {
 } from "./v2.ts";
 
 export const PAYSLIP_EXTRACTION_V21_VERSION = "2.1";
-export const PAYSLIP_V21_RESOLUTION_POLICY_VERSION = "payslip-v2.1-non-degrading-resolution-1";
-export const RECOVERY_PROMOTION_MIN_CONFIDENCE = 0.9;
+export const PAYSLIP_V21_RESOLUTION_POLICY_VERSION = "payslip-v2.1-non-degrading-resolution-2";
+export const RECOVERY_PROMOTION_MIN_CONFIDENCE = 0.95;
 
 export const expectedInformationGainSchema = z.enum([
   "none",
@@ -311,7 +311,7 @@ function firstPassStatus(pass: PayslipExtractionPass, candidates: readonly Norma
   if (assessment?.status === "invalid") return "invalid";
   if (assessment?.status === "requires_confirmation") return "requires_confirmation";
   if (assessment?.status === "suspicious") return "suspicious";
-  const threshold = criticalFieldThresholds[candidate.field as keyof typeof criticalFieldThresholds] ?? 0.9;
+  const threshold = criticalFieldThresholds[candidate.field as keyof typeof criticalFieldThresholds] ?? 0.95;
   return candidate.confidence >= threshold ? "confirmed" : "candidate";
 }
 

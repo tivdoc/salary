@@ -338,7 +338,7 @@ export function validatePayslipGate0(
     grossField && deductionsField && netField
   ) {
     const expectedNet = grossTotal - deductionsTotal;
-    if (scaledDifferenceIsLarge(BigInt(netTotal), BigInt(expectedNet), BigInt(1), 2)) {
+    if (absolute(BigInt(netTotal) - BigInt(expectedNet)) > BigInt(100)) {
       addIssue(
         "payslip_totals_mismatch",
         "requires_confirmation",
@@ -360,7 +360,7 @@ export function validatePayslipGate0(
       const componentSum = [...componentAmounts, ...additionalAmounts].reduce((sum, value) => sum + value, 0);
       if (nearPowerOfTenScale(BigInt(gross), BigInt(componentSum))) {
         addIssue("ocr_scale_mismatch", "requires_confirmation", "confirmation", [grossField, ...knownComponentFields], "Gross salary and parsed components differ by an apparent factor of ten.");
-      } else if (scaledDifferenceIsLarge(BigInt(gross), BigInt(componentSum), BigInt(1), 3)) {
+      } else if (absolute(BigInt(gross) - BigInt(componentSum)) > BigInt(100)) {
         addIssue("gross_component_mismatch", "suspicious", "warning", [grossField, ...knownComponentFields], "Gross salary does not reconcile with the complete parsed component set.");
       }
     }

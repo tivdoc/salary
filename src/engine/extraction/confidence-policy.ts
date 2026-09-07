@@ -4,20 +4,21 @@ import { payslipFieldKeySchema, type PayslipFieldKey } from "./contracts.ts";
 import { normalizedPayslipExtractionSchema, type NormalizedPayslipExtraction } from "./payslip.ts";
 import { gate0ValidationSchema, type Gate0Validation } from "./validation.ts";
 
+// Release P03: acceptance threshold, not a claim of calibrated model accuracy.
 export const criticalFieldThresholds = {
-  salary_period: 0.9,
-  salary_type: 0.85,
-  gross_salary: 0.9,
-  total_deductions: 0.9,
-  net_salary: 0.9,
-  hourly_rate: 0.9,
-  regular_hours: 0.85,
-  pension_base: 0.92,
-  pension_employee_contribution: 0.9,
-  pension_employer_contribution: 0.9,
-  severance_contribution: 0.9,
-  overtime_125_hours: 0.85,
-  overtime_150_hours: 0.85,
+  salary_period: 0.95,
+  salary_type: 0.95,
+  gross_salary: 0.95,
+  total_deductions: 0.95,
+  net_salary: 0.95,
+  hourly_rate: 0.95,
+  regular_hours: 0.95,
+  pension_base: 0.95,
+  pension_employee_contribution: 0.95,
+  pension_employer_contribution: 0.95,
+  severance_contribution: 0.95,
+  overtime_125_hours: 0.95,
+  overtime_150_hours: 0.95,
 } as const satisfies Partial<Record<PayslipFieldKey, number>>;
 
 export const criticalFieldDecisionSchema = z

@@ -111,6 +111,7 @@ export async function preprocessPayslipDocument(input: {
   mime_type: string;
   regions?: readonly ExtractionRegion[];
 }): Promise<PreparedPayslipDocument> {
+  if(input.bytes.length>10*1024*1024)throw new TypeError("extraction_document_limit");
   const original = { bytes: input.bytes, mime_type: input.mime_type, sha256: digest(input.bytes) };
   if (!new Set(["image/png", "image/jpeg"]).has(input.mime_type)) {
     return {
@@ -133,7 +134,7 @@ export async function preprocessPayslipDocument(input: {
     };
   }
 
-  const metadata = await sharp(input.bytes).metadata();
+  const metadata = await sharp(input.bytes, {limitInputPixels: 40_000_000}).metadata();
   if (!metadata.width || !metadata.height) throw new TypeError("Source image dimensions are unavailable");
   const factor = upscaleFactor(metadata.width);
   if (factor === 1) {
