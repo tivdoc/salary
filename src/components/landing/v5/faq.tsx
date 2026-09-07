@@ -1,4 +1,4 @@
-import { formatDuration, formatPrice, productOffer } from "@/lib/product-offer";
+import { formatDuration, formatPrice, formatFullPrices, productOffer } from "@/lib/product-offer";
 
 /**
  * Site S5, "שאלות לפני שמתחילים" — the canvas's six questions, answered from
@@ -8,7 +8,7 @@ import { formatDuration, formatPrice, productOffer } from "@/lib/product-offer";
 export function FaqV5() {
   const offer = productOffer();
   const price = formatPrice(offer.initial_check.price);
-  const fullPrice = formatPrice(offer.full_report.price);
+  const fullPrice = formatFullPrices();
   const automatic = formatDuration(offer.initial_check.delivery.automatic);
   const items = [
     {

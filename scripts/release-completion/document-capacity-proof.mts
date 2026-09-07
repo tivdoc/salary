@@ -1,4 +1,5 @@
 import '../production-refusal.mjs';
+import {legacyFullOfferFixture} from '../../src/server/product/orders/fixtures/legacy-offer.ts';
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
@@ -28,7 +29,7 @@ try{
  for(const id of ids)await db.query("insert into public.cases(id,first_name,email,phone,status,payment_status,check_period_month,contact_verified_at,is_qa) values($1,'Synthetic capacity','synthetic@example.invalid','0500000000','under_review','verified','2026-08-01',now(),true)",[id]);
  const original=await reserve(a,manifest(ids[0],12));await commit(a,original);
  await assert.rejects(()=>reserve(a,manifest(ids[0])),/UPLOAD_LIMIT/);pass('ordinary case still refuses a thirteenth payslip');
- const offer=offerSnapshot('full');const order=(await db.query("insert into private.product_orders(case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,'full','2017-01-01','2026-08-01',$2,'ILS',$3,$4,$5,$6,'paid',now()) returning id",[ids[0],offer.amount_minor,offer,offer.sha256,offer.topic_order,offer.terms_version])).rows[0].id;
+ const offer=legacyFullOfferFixture();const order=(await db.query("insert into private.product_orders(case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,'full','2017-01-01','2026-08-01',$2,'ILS',$3,$4,$5,$6,'paid',now()) returning id",[ids[0],offer.amount_minor,offer,offer.sha256,offer.topic_order,offer.terms_version])).rows[0].id;
  await db.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[order]);
  const view=await snapshot(a);assert.equal(view.capacity.maxPayslips,116);assert.equal(view.capacity.paidMonths[0],'2017-01');assert.equal((await snapshot(a,ids[1])).capacity.maxPayslips,12);
  pass('paid historical scope expands only its own case and returns its actual selectable months');

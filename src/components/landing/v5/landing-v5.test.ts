@@ -69,7 +69,7 @@ describe("site S5: the home page ships no sample data", () => {
     // No hardcoded price or estimate anywhere in the page's own source.
     for (const text of [sections, faq]) {
       expect(text).not.toContain(offer.initial_check.price.amount);
-      expect(text).not.toContain(offer.full_report.price.amount);
+      for (const tier of offer.full_report.pricing.tiers) expect(text).not.toContain(String(tier.total_minor / 100) + " ₪");
       expect(text).not.toMatch(/15 דק|3 ימי עסקים|10 ימים/u);
     }
     expect(sections).toContain("formatPrice");

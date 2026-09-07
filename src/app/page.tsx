@@ -18,6 +18,7 @@ import { BrandSymbol } from "@/components/brand-logo";
 import { Hero } from "@/components/landing/hero";
 import { Process } from "@/components/landing/process";
 import { ReportPreview } from "@/components/landing/report-preview";
+import { PriceTiers } from "@/components/landing/price-tiers";
 import { Faq } from "@/components/landing/faq";
 import { LandingView } from "@/components/landing/landing-view";
 import { fullPrice, initialPrice, productOffer } from "@/config/product-offer";
@@ -168,12 +169,12 @@ export default async function Home() {
                 <h3>דוח מלא</h3>
                 <p className="offer-price">
                   <bdi>{fullPrice}</bdi>
-                  <span>בתשלום נפרד, אם בוחרים להמשיך</span>
+                  <span>מחיר כולל ראשוני לפי מדרגת הפער המבוסס</span>
                 </p>
                 <p>
                   העמקה בתקופה שתוסכם מראש.
                   <br />
-                  בקרה אנושית בכל דוח.
+                  בדיקת AI עם מקורות, הסברים ואפשרות לתיקון.
                 </p>
                 <ul>
                   <li>פירוט ממצאים, מקורות וצעד הבא</li>
@@ -181,8 +182,8 @@ export default async function Home() {
                   <li>היקף ומועד מסירה לפני רכישה</li>
                 </ul>
                 <p className="offer-note">
-                  אין כרגע אפשרות לרכוש דוח מלא באתר. תנאי ההמשך והקיזוז, אם
-                  יהיה, יוצגו לפני שיהיה זמין.
+                  התשלום הראשוני המאומת מתקזז פעם אחת. שדרוג יוצע רק לאחר
+                  אימות הבסיס הכספי והכיסוי שניתן למסור; אין הבטחת גבייה מהמעסיק.
                 </p>
                 <a className="home-text-link" href="#what-you-get">
                   להיכרות עם מבנה התוצר
@@ -190,6 +191,7 @@ export default async function Home() {
                 </a>
               </article>
             </div>
+            <PriceTiers />
           </div>
         </section>
         <section

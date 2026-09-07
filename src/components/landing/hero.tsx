@@ -39,7 +39,7 @@ export function Hero() {
           <p className="home-scope">
             חודש אחד · עד {productOffer.initial.maxTopics} נושאים שנבדקו.
             <br />
-            דוח מלא מתוכנן בתשלום נוסף של <bdi>{fullPrice}</bdi>; עדיין אינו
+            מחיר כולל לראשוני ולדוח מורחב לפי מדרגות: <bdi>{fullPrice}</bdi>; הראשוני מתקזז; השדרוג עדיין אינו
             זמין לרכישה.
           </p>
         </div>

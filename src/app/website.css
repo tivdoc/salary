@@ -1202,3 +1202,13 @@ h3 {
 @media(max-width:1023px){.case-workspace{padding-bottom:calc(80px + env(safe-area-inset-bottom));}.case-navigation {position:fixed;bottom:0;inset-inline:0;z-index:30;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));}.case-navigation a{padding:8px;font-size:14px;flex:1;}.case-workspace .check-header__price{flex-basis:100%;}.case-workspace .check-header__top{gap:10px;}.case-workspace .wordmark{margin-inline-end:auto;}.case-workspace .check-header__top .button{font-size:14px;padding:8px 12px;}}
 
 .service-availability {padding:16px 20px;margin-block:16px;border:1px solid var(--control-border);background:var(--paper-deep);border-radius:10px;}
+
+/* The launch price matrix remains a semantic table at narrow widths. */
+.price-tiers {margin-block:32px; max-width:100%; color:var(--ink);}
+.price-tiers table {width:100%; border-collapse:collapse; table-layout:fixed; background:var(--surface);}
+.price-tiers caption {text-align:start; font-weight:700; padding-block:12px;}
+.price-tiers th, .price-tiers td {padding:16px; border-bottom:1px solid var(--border); text-align:start; vertical-align:top; overflow-wrap:anywhere;}
+.price-tiers thead {background:var(--paper-deep);}
+.price-tiers th:first-child {width:44%;}
+.price-tiers p {font-size:15px; line-height:1.7; max-width:78ch;}
+@media(max-width:480px){.price-tiers th,.price-tiers td{padding:12px 6px;font-size:14px;}.offer-price bdi{font-size:clamp(24px,7vw,40px);}}

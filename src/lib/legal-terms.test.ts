@@ -30,7 +30,7 @@ describe("the terms version", () => {
 
   it("pins both order snapshots to the server terms and rejects caller-selected versions", async () => {
     expect(offerSnapshot('initial').terms_version).toBe(TERMS_VERSION);
-    expect(offerSnapshot('full').terms_version).toBe(TERMS_VERSION);
+    expect(() => offerSnapshot('full')).toThrow('ORDER_PRICING_BASIS_UNAVAILABLE');
     expect(orderRequestSchema.safeParse({kind:'initial',from:'2026-06',to:'2026-06',terms_version:'2000-01-01'}).success).toBe(false);
     await expect(orderCheckout({caseId:'synthetic',identityId:null,orderId:'synthetic',termsAccepted:false},{provider:'fake',rpc:async()=>{throw new Error('CHECKOUT_MUST_NOT_REACH_STORE');}})).rejects.toThrow('ORDER_TERMS_REQUIRED');
     const route = readFileSync(join(process.cwd(), "src", "app", "api", "payments", "start", "route.ts"), "utf8");

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { TrackedLink } from "@/components/tracked-link";
-import { formatDuration, formatPrice, productOffer } from "@/lib/product-offer";
+import { formatDuration, formatPrice, formatFullPrices, productOffer } from "@/lib/product-offer";
 import { siteContent } from "@/lib/site-content";
 
 /** The canvas's "פעולות נפוצות" tiles. The WhatsApp tile appears only when a number is configured. */
@@ -9,13 +9,13 @@ export function CommonActions() {
   const offer = productOffer();
   const whatsapp = offer.contact.whatsapp;
   const price = formatPrice(offer.initial_check.price);
-  const fullPrice = formatPrice(offer.full_report.price);
+  const fullPrice = formatFullPrices();
   // Only the check tile is a tracked event; `start_check` already exists. The other two
   // are ordinary links — inventing analytics event names to decorate a tile would put
   // strings into the funnel's vocabulary that nothing downstream understands.
   const tiles = [
     { href: "/login", title: "כניסה לתיק", note: "טלפון או מייל ← קוד" },
-    { href: "#pricing", title: "מה כולל הדוח המלא", note: `${fullPrice} · תמיד עם בקרה של חשבת שכר` },
+    { href: "#pricing", title: "מה כולל הדוח המלא", note: `${fullPrice} · בדיקת AI עם מקורות והסברים` },
   ];
   return (
     <section className="v5-actions" aria-labelledby="v5-actions-title">
@@ -133,7 +133,7 @@ export function HumanReviewBand() {
       <div className="v5-shell v5-band__grid">
         <div>
           <p className="v5-band__eyebrow">לא רק אלגוריתם</p>
-          <h2 id="v5-band-title">הדוח המלא עובר תמיד בקרה של חשבת שכר</h2>
+          <h2 id="v5-band-title">דוח AI עם מקורות ואפשרות לשאלה או לתיקון</h2>
           <p>הבדיקה הראשונית רצה על המנוע. הדוח המלא לא מתפרסם בלי שאדם מוסמך עבר עליו.</p>
         </div>
         {photo === null ? null : (
@@ -153,7 +153,7 @@ export function Pricing() {
         <div className="v5-pricing__grid">
           <article className="v5-plan v5-plan--primary">
             <h3>בדיקה ראשונית</h3>
-            <p className="v5-plan__price">{formatPrice(offer.initial_check.price)}<span> · חד־פעמי</span></p>
+            <p className="v5-plan__price">{formatPrice(offer.initial_check.price)}<span> · מחיר כולל לפי המדרגה</span></p>
             <p className="v5-plan__when">תוצאה תוך {formatDuration(offer.initial_check.delivery.automatic)} במסלול האוטומטי, ועד {formatDuration(offer.initial_check.delivery.human)} כשנדרשת בקרה אנושית.</p>
             <ul>
               <li>לכל נקודה: כיוון ורמת ודאות</li>
@@ -164,12 +164,12 @@ export function Pricing() {
           </article>
           <article className="v5-plan">
             <h3>דוח מלא</h3>
-            <p className="v5-plan__price">{formatPrice(offer.full_report.price)}<span> · חד־פעמי</span></p>
+            <p className="v5-plan__price">{formatFullPrices()}<span> · מחיר כולל לפי המדרגה</span></p>
             <p className="v5-plan__when">תוך {formatDuration(offer.full_report.delivery)} מהרגע שאין שאלה פתוחה אצלך.</p>
             <ul>
               <li>כל התקופה שמסרת, כל הנושאים</li>
               <li>חבילת ראיות, צעדי פעולה ו־PDF</li>
-              <li>תמיד עם בקרה של חשבת שכר</li>
+              <li>בדיקת AI עם מקורות והסברים</li>
             </ul>
             <p className="v5-plan__note">זמין אחרי הבדיקה הראשונית, ומוצע רק אם נמצאו נקודות לבדיקה.</p>
           </article>

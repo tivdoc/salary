@@ -1,15 +1,16 @@
 import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
 vi.mock('../../../lib/invoice4u',()=>({Invoice4uClient:class{},invoice4uErrorCode:()=>null}));
+import {legacyFullOfferFixture} from './fixtures/legacy-offer';
 import {offerSnapshot,orderRequestSchema} from './contracts';
 import {orderCheckout,reconcileOrders} from './service';
 import {validateInvoice4uClearingLog} from '../../../lib/payment-verification';
 import type {CaseAccessDb} from '../case-access/db';
-const order={id:'order-one',case_id:'case-one',kind:'full',state:'awaiting_payment',amount_minor:14900,currency:'ILS',terms_version:'test',offer:offerSnapshot('full')};
+const order={id:'order-one',case_id:'case-one',kind:'full',state:'awaiting_payment',amount_minor:14900,currency:'ILS',terms_version:'test',offer:legacyFullOfferFixture()};
 const scope={caseId:'case-one',identityId:'identity-one',orderId:order.id,termsAccepted:true};
 function store(implementation:(fn:string,args:Readonly<Record<string,unknown>>)=>unknown):CaseAccessDb{return {provider:'fake',rpc:async<T>(fn:string,args:Readonly<Record<string,unknown>>)=>[{value:await implementation(fn,args)} as T]};}
 beforeEach(()=>{vi.stubEnv('NEXT_PUBLIC_SITE_URL','https://synthetic.invalid');vi.stubEnv('TIVDOC_FULL_SALES_ENABLED','true');vi.stubEnv('TIVDOC_INVOICE4U_CHECKOUT_ENABLED','true');});afterEach(()=>vi.unstubAllEnvs());
 describe('P09 order boundary',()=>{
- it('does not accept customer prices or reversed periods',()=>{expect(orderRequestSchema.safeParse({kind:'full',from:'2026-01',to:'2026-02',price:1}).success).toBe(false);expect(orderRequestSchema.safeParse({kind:'full',from:'2026-02',to:'2026-01'}).success).toBe(false);expect(offerSnapshot('initial').amount_minor).toBe(999);expect(offerSnapshot('full').amount_minor).toBe(14900);});
+ it('does not accept customer prices or reversed periods',()=>{expect(orderRequestSchema.safeParse({kind:'full',from:'2026-01',to:'2026-02',price:1}).success).toBe(false);expect(orderRequestSchema.safeParse({kind:'full',from:'2026-02',to:'2026-01'}).success).toBe(false);expect(offerSnapshot('initial').amount_minor).toBe(999);expect(()=>offerSnapshot('full')).toThrow('ORDER_PRICING_BASIS_UNAVAILABLE');});
  it('does not reach the provider when sales are disabled',async()=>{vi.stubEnv('TIVDOC_FULL_SALES_ENABLED','false');const createCheckout=vi.fn();await expect(orderCheckout(scope,store(()=>order),{createCheckout})).rejects.toThrow('ORDER_SALES_UNAVAILABLE');expect(createCheckout).not.toHaveBeenCalled();});
  it.each(['creating','uncertain'])('does not open another checkout for an existing %s attempt',async state=>{const createCheckout=vi.fn();await expect(orderCheckout(scope,store(fn=>fn==='case_order_get'?order:{claimed:false,order,checkout:{state}}),{createCheckout})).rejects.toThrow('ORDER_CHECKOUT_UNCERTAIN');expect(createCheckout).not.toHaveBeenCalled();});
  it('uses the saved price and leaves provider timeout uncertain',async()=>{const finished:unknown[]=[];const createCheckout=vi.fn(async(_input:unknown)=>{void _input;throw new Error('provider timeout');});const db=store((fn,args)=>{if(fn==='case_order_get')return order;if(fn==='case_order_checkout_begin')return {claimed:true,order,checkout:{provider_order_id:'provider-order-one'},contact:{public_id:'TV-TEST0001',first_name:'Synthetic',email:'test@example.invalid',phone:'0500000000'}};finished.push(args);return null;});await expect(orderCheckout(scope,db,{createCheckout})).rejects.toThrow('ORDER_CHECKOUT_UNCERTAIN');expect(createCheckout.mock.calls[0][0]).toMatchObject({amount:149,currency:'ILS',orderId:'provider-order-one'});expect(finished).toHaveLength(1);expect(finished[0]).toMatchObject({target_error:'checkout_persistence_unknown'});});

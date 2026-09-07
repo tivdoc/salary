@@ -9,9 +9,9 @@
 // said" and "what we recorded they agreed to" are the same string by
 // construction. Changing the terms means changing this date in the same commit.
 
-export const TERMS_VERSION = "2026-08-22" as const;
+export const TERMS_VERSION = "2026-09-07" as const;
 
-/** The version as the terms page prints it: 22.8.2026. */
+/** The version as the terms page prints it: 7.9.2026. */
 export function termsVersionLabel(version: string = TERMS_VERSION): string {
   const [year, month, day] = version.split("-");
   return `${Number(day)}.${Number(month)}.${year}`;
