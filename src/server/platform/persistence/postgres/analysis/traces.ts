@@ -1,9 +1,9 @@
 import type { CaseConfirmation } from "../../../../engine/persistence-contracts";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
-import type { TopicAnalysisResult } from "../../../../../engine/wave3/contracts";
+import {WAVE3_TOPICS, type Wave3Topic, type TopicAnalysisResult } from "../../../../../engine/wave3/contracts";
 import { statement, type PostgresTransactionContext } from "../contracts";
 import { mapPostgresAnalysisError, PostgresAnalysisError } from "./errors";
-import { assertSafeIdentifier, assertSevenTopics } from "./validation";
+import { assertSafeIdentifier, assertRequestedTopics } from "./validation";
 
 export class PostgresTraceFindingRepository {
   constructor(
@@ -17,8 +17,9 @@ export class PostgresTraceFindingRepository {
     case_id: string;
     analysis_run_id: string;
     topic_results: readonly TopicAnalysisResult[];
+    expected_topics?: readonly Wave3Topic[];
   }>): Promise<void> {
-    assertSevenTopics(input.topic_results);
+    assertRequestedTopics(input.topic_results,input.expected_topics??WAVE3_TOPICS);
     try {
       for (const result of input.topic_results) {
         if (result.trace === null) continue;

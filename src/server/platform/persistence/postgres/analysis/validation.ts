@@ -384,7 +384,7 @@ export function validateTopicResult(value: unknown): TopicAnalysisResult {
   });
 }
 
-export function decodeBundle(value: unknown): AnalysisResultBundle {
+export function decodeBundle(value: unknown, expectedTopics: readonly Wave3Topic[] = WAVE3_TOPICS): AnalysisResultBundle {
   const row = object(value, [
     "schema_version", "analysis_run_id", "case_id", "case_revision", "period", "as_of",
     "document_snapshot_sha256", "extraction_snapshot_sha256", "declared_fact_snapshot_sha256",
@@ -399,7 +399,7 @@ export function decodeBundle(value: unknown): AnalysisResultBundle {
     row.facts_snapshot_sha256, row.catalog_sha256, row.result_sha256,
   ]) assertSha256(hash);
   const topicResults = array(row.topic_results).map(validateTopicResult);
-  assertSevenTopics(topicResults);
+  assertRequestedTopics(topicResults, expectedTopics);
   const knownSubtotal = row.known_subtotal === null ? null : object(row.known_subtotal, ["currency", "minor_units"]);
   if (knownSubtotal && (string(knownSubtotal.currency).length !== 3 || integer(knownSubtotal.minor_units) < 0)) {
     throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
@@ -439,11 +439,14 @@ export function decodeBundle(value: unknown): AnalysisResultBundle {
   return Object.freeze(decoded);
 }
 
-export function assertSevenTopics(results: readonly Pick<TopicAnalysisResult, "topic">[]): void {
-  if (results.length !== WAVE3_TOPICS.length
-      || WAVE3_TOPICS.some((topic) => results.filter((result) => result.topic === topic).length !== 1)) {
+export function assertRequestedTopics(results: readonly Pick<TopicAnalysisResult, "topic">[], expected: readonly Wave3Topic[]): void {
+  if (expected.length === 0 || new Set(expected).size !== expected.length || expected.some(topic => !WAVE3_TOPICS.includes(topic))
+      || results.length !== expected.length || expected.some(topic => results.filter(result => result.topic === topic).length !== 1)) {
     throw new PostgresAnalysisError("TOPIC_SET_INVALID");
   }
+}
+export function assertSevenTopics(results: readonly Pick<TopicAnalysisResult, "topic">[]): void {
+  assertRequestedTopics(results, WAVE3_TOPICS);
 }
 
 export type EncodedReport = Readonly<{
@@ -538,10 +541,8 @@ export function validateReport(report: DeterministicReportArtifacts): void {
   }
 }
 
-export function validateSelections(values: readonly LegalCatalogSelection[]): void {
-  if (values.length !== WAVE3_TOPICS.length || new Set(values.map((selection) => selection.topic)).size !== WAVE3_TOPICS.length) {
-    throw new PostgresAnalysisError("TOPIC_SET_INVALID");
-  }
+export function validateSelections(values: readonly LegalCatalogSelection[], expectedTopics: readonly Wave3Topic[] = WAVE3_TOPICS): void {
+  assertRequestedTopics(values, expectedTopics);
   for (const selection of values) {
     decodeSelection(selection);
   }

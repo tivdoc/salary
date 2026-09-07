@@ -1,0 +1,22 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "a tenant GUC without authoritative machine SID/JTI cannot admit a saved case",
+    "verified machine session admits its paid saved source once and refuses another case",
+    "actual worker can read product document metadata only in its verified case tenant",
+    "actual worker persists seven canonical stages and three non-monetary purchased-topic results",
+    "worker rollback removes partial analysis and retry produces byte-identical persisted draft",
+    "transaction end clears worker authorization and no canonical fixture rows remain"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260907210000_saved_worker_analysis_scope.sql",
+  "migration_sha256": "8232c8ed35bec97f17eaedefbd20b4733036cfca774cb6192e8a9bdd077dee71",
+  "authorization": "actual worker login, provisioned synthetic machine session, existing verified-tenant RLS; no canonical fixture policies",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "canonicalWritesRolledBack": true,
+  "provider_verified": false,
+  "storage_bytes_verified": false,
+  "customer_publication": false,
+  "productionChanged": false
+}
