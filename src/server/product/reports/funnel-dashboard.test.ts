@@ -107,7 +107,8 @@ describe("M01 — the eight numbers", () => {
     // One report the gate published on its own, one a person reviewed.
     await recordPublicationDecision({ caseId: CASE.id, projectionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", projection: S04_HIGH_CERTAINTY, documentTrack: "automatic" }, db);
     const queued = await recordPublicationDecision({ caseId: CASE.id, projectionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", projection: S05_LOW_CERTAINTY, documentTrack: "automatic" }, db);
-    await decideReview({ qaId: queued.row!.id, state: "published", operator: "operator:qa@tivdoc.example", reviewSeconds: 300 }, db);
+    await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "approved", operator: "operator:qa@tivdoc.example", reviewSeconds: 300 }, db);
+    await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "published", operator: "operator:qa@tivdoc.example", reviewSeconds: 300 }, db);
 
     const counts = await readReportCounts({ casesWithFinding: 1, fullReportsPurchased: 0 }, db);
     expect(counts).toMatchObject({ reports: 2, automatic_reports: 1, reviewed_reports: 1, review_seconds_total: 300, cases_reviewed: 1 });

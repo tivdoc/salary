@@ -98,3 +98,13 @@ export async function resolveCaseAccessDb(): Promise<CaseAccessDb | null> {
   if (url) return postgresCaseAccessDb(await postgresPool(url));
   return null;
 }
+
+/** Separate server credential for authenticated operations; never fall back to
+ * the customer web role in an isolated database. */
+let operationsPool:PgPoolLike|null=null;
+export async function resolveReportOperationsDb():Promise<CaseAccessDb|null>{
+ if(override)return override;
+ const url=process.env.TIVDOC_OPERATIONS_POSTGRES_URL;
+ if(url){if(!operationsPool){const {default:pg}=await import('pg');operationsPool=new pg.Pool({connectionString:url,max:2,connectionTimeoutMillis:20000,application_name:'tivdoc_report_operations'});}return postgresCaseAccessDb(operationsPool);}
+ return null;
+}

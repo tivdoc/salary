@@ -1,0 +1,10 @@
+{
+  "fixture": "S04 synthetic only; no customer documents",
+  "pdf": "output/release-completion/P08-report.pdf",
+  "visual_review": "One rendered page inspected; Hebrew headings and labels readable, values separated into table cells, no clipping observed.",
+  "deterministic_bytes": true,
+  "text_mapping": "embedded font + ToUnicode + ActualText",
+  "tagged_pdf": false,
+  "screen_reader_verified": false,
+  "limitation": "Tagged PDF/UA and assistive technology acceptance remain open; the HTML report is the alternative."
+}

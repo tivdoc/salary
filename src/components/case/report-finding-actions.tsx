@@ -1,0 +1,7 @@
+"use client";
+import {useState,useRef} from 'react';
+export function ReportFindingActions({publicId,reportId,findingId,text}:{publicId:string;reportId:string;findingId:string;text:string}){
+ const [message,setMessage]=useState('');const [notice,setNotice]=useState('');const [busy,setBusy]=useState(false);const retry=useRef<{id:string;message:string}|null>(null);
+ async function submit(){setBusy(true);if(!retry.current||retry.current.message!==message)retry.current={id:crypto.randomUUID(),message};try{const response=await fetch(`/api/cases/${publicId}/reports`,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:retry.current.id,reportId,findingId,message})});if(!response.ok)throw new Error();setNotice('הבקשה נשמרה לבירור. הדוח הקיים נשמר עד לסיום הבדיקה.');}catch{setNotice('לא הצלחנו לשמור. הטקסט נשאר כאן ואפשר לנסות שוב.');}finally{setBusy(false);}}
+ return <div>{text?<><label>נוסח לבקשת בירור<textarea readOnly value={text} rows={4}/></label><button type="button" onClick={async()=>{try{await navigator.clipboard.writeText(text);setNotice('הנוסח הועתק.');}catch{setNotice('אפשר לבחור את הטקסט ולהעתיק ידנית.');}}}>העתקת הנוסח</button></>:null}<details id={`correction-${findingId}`}><summary>בקשת תיקון לממצא הזה</summary><label>מה דורש בדיקה נוספת?<textarea maxLength={2000} value={message} onChange={e=>setMessage(e.target.value)} rows={3}/></label><button type="button" disabled={busy||message.trim().length<4} onClick={submit}>שמירת בקשת בירור</button></details><p role="status">{notice}</p></div>;
+}

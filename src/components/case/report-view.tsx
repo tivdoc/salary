@@ -1,3 +1,4 @@
+import {customerWording} from '@/server/product/reports/report-wording';
 import {
   renderPermission,
   SEVERITY_TEXT,
@@ -35,7 +36,7 @@ function money(value: Readonly<{ currency: "ILS"; minor_units: number }>): strin
   return formatPrice({ amount: (value.minor_units / 100).toFixed(2), currency: value.currency });
 }
 
-function TopicCard({ topic, reportKind }: { topic: TopicProjection; reportKind: "initial" | "full" }) {
+function TopicCard({ topic, reportKind,wording }: { topic: TopicProjection; reportKind: "initial" | "full";wording?:string }) {
   const permission = renderPermission(topic, reportKind);
   return (
     <li className={`report-topic report-topic--${topic.gate}`}>
@@ -43,6 +44,7 @@ function TopicCard({ topic, reportKind }: { topic: TopicProjection; reportKind: 
 
       {/* "What was checked, what was not, and why" — always, for every gate. */}
       <p className="report-topic__line">{permission.line}</p>
+      {customerWording(wording)?<p>{customerWording(wording)}</p>:null}
 
       {topic.gate === "checked" ? (
         <>
@@ -85,7 +87,7 @@ function TopicCard({ topic, reportKind }: { topic: TopicProjection; reportKind: 
   );
 }
 
-export function ReportView({ projection }: { projection: CaseReportProjection }) {
+export function ReportView({ projection,wording }: { projection: CaseReportProjection;wording?:Readonly<Record<string,string>> }) {
   const offer = productOffer();
   const checked = projection.topics.filter((topic) => topic.gate === "checked");
   const findings = checked.filter((topic) => topic.status === "finding");
@@ -110,7 +112,7 @@ export function ReportView({ projection }: { projection: CaseReportProjection })
       </div>
 
       <ul className="report-view__topics">
-        {projection.topics.map((topic) => <TopicCard key={topic.topic} topic={topic} reportKind={projection.report_kind} />)}
+        {projection.topics.map((topic) => <TopicCard key={topic.topic} topic={topic} reportKind={projection.report_kind} wording={wording?.[topic.topic]} />)}
       </ul>
 
       {findings.length > 0 ? (

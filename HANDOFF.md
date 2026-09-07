@@ -464,3 +464,15 @@ Deleting or resetting that project destroys every run's evidence.**
 written by the runs that did the work. This file is the map.*
 
 P07 final checkpoint: 51 focused tests pass; typecheck and lint pass with zero warnings. The PostgreSQL proof passes 12 checks, including late token receipts and cancellation of answered reminders before claim. Reminder enqueue/link is atomic. Build completed before the final race guards with an ENOSPC cache persistence warning; the final edits are covered by typecheck/lint, not a clean final build. HEAD-based route closure runs immediately after this checkpoint commit. No provider mail, hosted schedule, DNS or production change.
+
+## P08 checkpoint — saved reports and bounded publication
+
+Base: `44ed78a` on `codex/tivdoc-release-completion`; new migrations through `20260907111000` applied only to `tivdoc_release_replay_20260907`. Historical published reports remain readable after source changes; approved/published envelopes cannot be overwritten. A new approval binds the exact saved projection, source input and wording fingerprint. New decisions require provenance; workers cannot use the human decision RPC. Authenticated operations has a distinct server PostgreSQL credential, actual preview, source download, assignment and approved/published queues.
+
+Customer reports now expose saved revisions, PDF, pinned source and per-finding correction intake. Source byte checks reject a replaced/tampered object. Customer wording is restricted to shared non-monetary templates; old free text remains in the audit record and cannot inject a number into HTML/PDF. Publication commits one durable delivery intention; the existing encrypted notification worker drains it under a separate flag, without publishing again or generating repeated access tokens.
+
+Evidence: 9 real review DB checks and 4 retained-source/correction checks, all synthetic; `P08-report-review-db.json`, `P08-report-source-db.json`. 145 focused tests passed before the final registry fix; capability tests were broadened and their final HEAD check follows the commit. Typecheck/lint/optimized build are being rerun against the final code. One synthetic PDF page was rendered and inspected; mixed-direction values were moved into separate cells. Tagged PDF and screen-reader compliance are not proven. No provider mail or production change.
+
+Remaining integration: canonical calculation trace/fact-correction composition (P05), order/entitlement binding (P09), customer and operations browser journeys, and provider/DNS delivery. Operations Preview requires `TIVDOC_OPERATIONS_POSTGRES_URL`; it deliberately does not reuse the customer web role. No missing source or approval is treated as an empty successful report. Continue P09, then integrate the now-committed website change `ac319bf` in P11. Draft PR remains #2.
+
+P08 final code checkpoint: typecheck, lint (zero warnings), and optimized production build passed after the provenance and registry changes. The final combined focused/registry suite and HEAD route closure run immediately after this commit. No browser or hosted-provider claim is added by the build.

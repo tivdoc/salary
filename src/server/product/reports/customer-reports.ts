@@ -2,7 +2,7 @@ import {canonicalSha256} from '../../../engine/rule-runtime/canonical';
 import {resolveCaseAccessDb,type CaseAccessDb} from '../case-access/db';
 import {parseProjection,type CaseReportProjection} from './case-report-projection';
 import {reportDocumentSchema,type ReportDocument} from './report-document';
-export type SavedReport={id:string;projection:CaseReportProjection;document:ReportDocument|null;sha256:string;publishedAt:string};
+export type SavedReport={id:string;projection:CaseReportProjection;document:ReportDocument|null;sha256:string;publishedAt:string;state?:string;wording?:Record<string,string>};
 export type CustomerReports={caseId:string;publicId:string;checkPeriodMonth:string|null;reports:SavedReport[]};
 export async function customerReports(caseId:string,identityId:string,publicId:string,db?:CaseAccessDb):Promise<CustomerReports>{
  const store=db??await resolveCaseAccessDb();if(!store)throw new Error('REPORT_STORE_UNAVAILABLE');

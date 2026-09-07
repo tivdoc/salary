@@ -2,7 +2,7 @@ import {createCipheriv,createDecipheriv,randomBytes} from 'node:crypto';
 import {z} from 'zod';
 import type {CaseAccessDb} from './db.ts';
 import {normalizeContact} from './crypto.ts';
-import {payloadDigest,recipientRefusal,sendNotification,type NotificationMessage,type NotificationOutcome,type NotificationProvider} from './notifications.ts';
+import {renderReportReady,payloadDigest,recipientRefusal,sendNotification,type NotificationMessage,type NotificationOutcome,type NotificationProvider} from './notifications.ts';
 const messageSchema=z.object({template:z.enum(['case_link','access_code','report_ready','document_request','abandonment_reminder']),channel:z.enum(['email','phone']),to:z.string().max(180),subject:z.string().max(300),body:z.string().max(16000)}).strict();
 const envelope=z.object({version:z.literal(1),iv:z.string(),tag:z.string(),ciphertext:z.string()}).strict();
 function key(value:string){const bytes=Buffer.from(value,'base64');if(bytes.length!==32)throw new Error('NOTIFICATION_KEY_INVALID');return bytes;}
@@ -53,8 +53,20 @@ export async function enqueueRequestReminders(db:CaseAccessDb,secret:string,orig
   const message:NotificationMessage={template:'document_request',channel:'email',to:row.contact,subject:`תזכורת להשלמה בתיק ${row.public_id}`,body:[row.kind==='reminder_5d'?'חלפו חמישה ימים מאז שביקשנו השלמה.':'חלפו יומיים מאז שביקשנו השלמה.',row.question,`להמשך בתיק: ${url.origin}/case/${encodeURIComponent(row.public_id)}/thread?requestId=${encodeURIComponent(row.request_id)}`,'אפשר להיכנס דרך האימייל המאומת. המסמכים אינם נשלחים למעסיק.'].join('\n')};
   const contact=normalizeContact(message.to);if(!contact||recipientRefusal(message.to))continue;
   const id=payloadDigest(message);
-  const result=await db.rpc<string>('case_notification_reminder_enqueue',{target_request:row.request_id,target_kind:row.kind,target_id:id,target_case:row.case_id,target_identity:row.identity_id,target_recipient:contact.hash,target_payload:encryptNotification(message,id,secret),target_expires:new Date(Date.now()+5*3600000).toISOString()});
-  if(result[0])queued++;
+  const result=await db.rpc<{value:string|null}>('case_notification_reminder_enqueue',{target_request:row.request_id,target_kind:row.kind,target_id:id,target_case:row.case_id,target_identity:row.identity_id,target_recipient:contact.hash,target_payload:encryptNotification(message,id,secret),target_expires:new Date(Date.now()+5*3600000).toISOString()});
+  if(result[0]?.value)queued++;
+ }
+ return queued;
+}
+
+export async function enqueuePublishedReports(db:CaseAccessDb,secret:string,origin:string){
+ const base=new URL(origin);if(base.protocol!=='https:'&&base.hostname!=='localhost'&&base.hostname!=='127.0.0.1')throw new Error('NOTIFICATION_ORIGIN_INVALID');
+ const rows=await db.rpc<{report_id:string;case_id:string;public_id:string;identity_id:string;contact:string}>('case_report_notification_pending',{});
+ let queued=0;
+ for(const row of rows){const contact=normalizeContact(row.contact);if(!contact||recipientRefusal(row.contact))continue;
+  const rendered=renderReportReady({publicId:row.public_id,linkUrl:`${base.origin}/case/${encodeURIComponent(row.public_id)}/reports?report=${encodeURIComponent(row.report_id)}`});
+  const message:NotificationMessage={template:'report_ready',channel:'email',to:row.contact,...rendered};const id=payloadDigest(message);
+  await db.rpc('case_report_notification_queue',{target_report:row.report_id,target_delivery:id,target_identity:row.identity_id,target_recipient:contact.hash,target_payload:encryptNotification(message,id,secret),target_expires:new Date(Date.now()+5*3600000).toISOString()});queued++;
  }
  return queued;
 }

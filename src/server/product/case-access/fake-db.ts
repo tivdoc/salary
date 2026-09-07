@@ -310,11 +310,12 @@ export function fakeCaseAccessDb(cases: readonly FakeCase[] = []): FakeCaseAcces
       state.report_qa_log.push({ qa_id: row.id, case_id: row.case_id, action: "wording_edited", operator_identity: s(a.target_actor), detail: { topics: Object.keys(row.wording) }, at: now() });
       return [row];
     },
-    case_report_qa_decide(a) {
+    case_report_qa_decide_bound(a) {
       const next = s(a.target_state);
       if (!["approved", "published", "rejected"].includes(next)) throw new Error("CASE_REPORT_QA_STATE_UNKNOWN");
       const row = state.report_qa.find((candidate) => candidate.id === a.target_qa && ["queued", "recheck_required", "approved"].includes(candidate.state));
       if (!row) return [];
+      if(next==="published"&&row.state!=="approved")throw new Error("REPORT_APPROVAL_REQUIRED");
       row.state = next;
       row.operator_identity = s(a.target_actor);
       if (a.target_review_seconds !== null && a.target_review_seconds !== undefined) row.review_seconds = n(a.target_review_seconds);

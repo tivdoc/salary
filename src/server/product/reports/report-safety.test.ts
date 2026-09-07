@@ -1,3 +1,4 @@
+import {CUSTOMER_WORDING} from './report-wording';
 import {describe,it,expect} from 'vitest';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
@@ -9,6 +10,10 @@ import type {CaseAccessDb} from '../case-access/db';
 const finding=S04_HIGH_CERTAINTY_FINDING;
 function report(topic:unknown){return {...S04_HIGH_CERTAINTY,topics:[topic,...S04_HIGH_CERTAINTY.topics.slice(1)]};}
 describe('P02 report safety regressions',()=>{
+ it('operator prose cannot bypass the display contract',()=>{
+  const unsafe=renderToStaticMarkup(createElement(ReportView,{projection:S04_HIGH_CERTAINTY,wording:{minimum_wage:'מגיעים לך 9000 נוספים'}}));expect(unsafe).not.toContain('9000');
+  const safe=renderToStaticMarkup(createElement(ReportView,{projection:S04_HIGH_CERTAINTY,wording:{minimum_wage:CUSTOMER_WORDING[0]}}));expect(safe).toContain(CUSTOMER_WORDING[0]);
+ });
  it.each(['draft','derived','owner_recorded'])('rejects an active claim backed by %s',grade=>{
   expect(()=>parseProjection(report({...finding,parameter_grades:{rate:grade}}))).toThrow('inactive_parameter');
  });

@@ -14,8 +14,9 @@
 // section, a count of days) pass.
 //
 // This module imports nothing from the engine.
-import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db.ts";
-import { PROJECTION_TOPICS, type CaseReportProjection } from "./case-report-projection.ts";
+import { reportDocumentSchema } from "./report-document.ts";
+import { resolveCaseAccessDb, resolveReportOperationsDb, type CaseAccessDb } from "../case-access/db.ts";
+import { parseProjection, PROJECTION_TOPICS, type CaseReportProjection } from "./case-report-projection.ts";
 import { publicationDecision, type DocumentTrack, type QueueReason } from "./publication-gate.ts";
 
 export const QA_STATES = ["queued", "approved", "published", "rejected", "recheck_required"] as const;
@@ -41,13 +42,14 @@ export type QaRow = Readonly<{
   queued_at: string;
   decided_at: string | null;
   published_at: string | null;
+  assigned_to?: string | null;
 }>;
 
 type RawRow = Readonly<{
   id: string; case_id: string; projection_id: string; report_kind: string; document_track: string;
   state: string; queue_reasons: string[] | null; wording: Record<string, unknown> | null;
   operator_identity: string | null; review_seconds: number | string | null;
-  queued_at: string; decided_at: string | null; published_at: string | null;
+  queued_at: string; decided_at: string | null; published_at: string | null; assigned_to?:string|null;
 }>;
 
 function toRow(raw: RawRow): QaRow {
@@ -57,6 +59,7 @@ function toRow(raw: RawRow): QaRow {
   }
   return Object.freeze({
     id: raw.id,
+    assigned_to: raw.assigned_to??null,
     case_id: raw.case_id,
     projection_id: raw.projection_id,
     report_kind: raw.report_kind === "full" ? "full" : "initial",
@@ -160,7 +163,7 @@ export async function listReviewQueue(
   input: Readonly<{ states?: readonly QaState[]; limit?: number }> = {},
   db?: CaseAccessDb | null,
 ): Promise<readonly QaRow[]> {
-  const store = db ?? await resolveCaseAccessDb();
+  const store = db ?? await resolveReportOperationsDb();
   if (!store) return [];
   const rows = await store.rpc<RawRow>("case_report_qa_list", {
     target_states: [...(input.states ?? OPEN_QA_STATES)],
@@ -176,7 +179,7 @@ export async function setWording(
 ): Promise<Readonly<{ row: QaRow | null; refusals: readonly WordingRefusal[] }>> {
   const refusals = checkWording(input.wording);
   if (refusals.length > 0) return { row: null, refusals };
-  const store = db ?? await resolveCaseAccessDb();
+  const store = db ?? await resolveReportOperationsDb();
   if (!store) return { row: null, refusals };
   const rows = await store.rpc<RawRow>("case_report_qa_wording_set", {
     target_qa: input.qaId,
@@ -192,17 +195,18 @@ export async function setWording(
  * queue: "who published this" must have an answer for every published report.
  */
 export async function decideReview(
-  input: Readonly<{ qaId: string; state: "approved" | "published" | "rejected"; operator: string; reviewSeconds?: number }>,
+  input: Readonly<{ qaId: string; state: "approved" | "published" | "rejected"; operator: string; reviewSeconds?: number; fingerprint:string }>,
   db?: CaseAccessDb | null,
 ): Promise<QaRow | null> {
   if (input.operator.trim().length < 2) throw new Error("CASE_REPORT_QA_OPERATOR_REQUIRED");
-  const store = db ?? await resolveCaseAccessDb();
+  const store = db ?? await resolveReportOperationsDb();
   if (!store) return null;
-  const rows = await store.rpc<RawRow>("case_report_qa_decide", {
+  const rows = await store.rpc<RawRow>("case_report_qa_decide_bound", {
     target_qa: input.qaId,
     target_state: input.state,
     target_actor: input.operator,
     target_review_seconds: input.reviewSeconds ?? null,
+    target_fingerprint:input.fingerprint,
   });
   return rows[0] ? toRow(rows[0]) : null;
 }
@@ -219,7 +223,7 @@ export async function markRecheckRequired(
   db?: CaseAccessDb | null,
 ): Promise<number> {
   if (input.qaIds.length === 0) return 0;
-  const store = db ?? await resolveCaseAccessDb();
+  const store = db ?? await resolveReportOperationsDb();
   if (!store) return 0;
   const rows = await store.rpc<{ value: number | string }>("case_report_qa_recheck", {
     target_qa_ids: [...input.qaIds],
@@ -270,4 +274,25 @@ export function publishedReport(row: QaRow, projection: CaseReportProjection): P
 /** The queue reasons a row carries, as the codes S6.1's screen renders. */
 export function queueReasonsOf(row: QaRow): readonly QueueReason[] {
   return row.queue_reasons as readonly QueueReason[];
+}
+
+export async function reviewDetail(qaId:string,db?:CaseAccessDb){
+ const store=db??await resolveReportOperationsDb();if(!store)throw new Error('REPORT_STORE_UNAVAILABLE');
+ const rows=await store.rpc<{value:{row:QaRow;projection:unknown;document:unknown;fingerprint:string}|null}>('case_report_qa_detail',{target_qa:qaId});
+ const value=rows[0]?.value;if(!value)return null;
+ return {...value,projection:parseProjection(value.projection),document:value.document?reportDocumentSchema.parse(value.document):null};
+}
+export async function assignReview(qaId:string,operator:string,db?:CaseAccessDb){
+ const store=db??await resolveReportOperationsDb();if(!store)throw new Error('REPORT_STORE_UNAVAILABLE');
+ await store.rpc('case_report_qa_assign',{target_qa:qaId,target_actor:operator});
+}
+
+export async function reviewSource(qaId:string,versionId:string){
+ const store=await resolveReportOperationsDb();if(!store)throw new Error('REPORT_STORE_UNAVAILABLE');
+ const rows=await store.rpc<{value:{path:string;mime:string;size:number;sha256:string}}>('case_report_qa_source',{target_qa:qaId,target_version:versionId});
+ const source=rows[0]?.value;if(!source||source.size>10*1024*1024)throw new Error('REPORT_SOURCE_MISSING');
+ const {getSupabaseAdmin}=await import('../../../lib/supabase-admin.ts');const {createHash}=await import('node:crypto');
+ const {data,error}=await getSupabaseAdmin().storage.from('salary-documents').download(source.path);if(error||!data||data.size!==source.size)throw new Error('REPORT_SOURCE_MISSING');
+ const bytes=new Uint8Array(await data.arrayBuffer());if(createHash('sha256').update(bytes).digest('hex')!==source.sha256)throw new Error('REPORT_SOURCE_CHANGED');
+ return {bytes,mime:source.mime};
 }

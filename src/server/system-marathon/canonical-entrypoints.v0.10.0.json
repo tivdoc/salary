@@ -1896,6 +1896,23 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Signature-verified provider event inbox; no cookie authority, no message sending, disabled until configured."
+    },
+    {
+      "entrypoint_id": "CEP-110",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/[token]/reports",
+      "source_path": "src/app/api/cases/[token]/reports/route.ts",
+      "canonical_contract_id": "route.api.customer-saved-report",
+      "canonical_target": "src/app/api/cases/[token]/reports/route.ts:GET,POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/reports/customer-reports.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped saved report PDF, pinned source and correction intake; no calculation or human approval."
     }
   ]
 }

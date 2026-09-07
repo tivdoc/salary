@@ -1,3 +1,4 @@
+import {customerWording} from '../reports/report-wording.ts';
 import "./server-boundary.ts";
 
 import { randomUUID } from "node:crypto";
@@ -7,8 +8,9 @@ import { INTERNAL_OPS_SCHEMA_VERSION, type InternalOpsAction, type OpsProblemCod
 import { InternalOpsError, type InternalOpsReadKind } from "../internal-ops/service.ts";
 import { PRODUCT_HTTP_HEADERS, productJson, productNotFound, safeSegments, strictJsonObject } from "./http-common.ts";
 import { buildFunnelBoard, readEventCounts, readReportCounts } from "../reports/funnel-dashboard.ts";
-import { decideReview, listReviewQueue, setWording } from "../reports/report-qa.ts";
-import { sendReportReadyNotification } from "../case-access/service.ts";
+import { decideReview, listReviewQueue, setWording, reviewDetail, assignReview, reviewSource } from "../reports/report-qa.ts";
+
+import { resolveReportOperationsDb } from "../case-access/db.ts";
 
 export const STABLE_OPERATIONS_COMMAND_SCHEMA = "tivdoc-operations-command" as const;
 
@@ -73,6 +75,10 @@ export function operatorIdentity(actor: Readonly<{ actor_id: string; role: strin
 }
 
 export const REPORT_QA_ROUTES = Object.freeze([
+  Object.freeze({ path: "report-qa/source", method: "GET" as const }),
+  Object.freeze({ path: "report-qa/detail", method: "GET" as const }),
+  Object.freeze({ path: "report-qa/assign", method: "POST" as const }),
+  Object.freeze({ path: "report-qa/notify", method: "POST" as const }),
   Object.freeze({ path: "report-qa/queue", method: "GET" as const }),
   Object.freeze({ path: "report-qa/board", method: "GET" as const }),
   Object.freeze({ path: "report-qa/wording", method: "POST" as const }),
@@ -167,22 +173,29 @@ export function createOperationsHttpHandler(input: Readonly<{
         const correlationId = correlationIdFor(request);
         try {
           if (joined === "report-qa/queue") {
-            const data = await listReviewQueue({ limit: queueLimit(request) });
+            const states=new URL(request.url).searchParams.get("state");
+            const data = await listReviewQueue({ limit: queueLimit(request),states:states==="approved"?["approved"]:states==="published"?["published"]:undefined });
             return productJson({ correlation_id: correlationId, data: { items: data } });
           }
+          if(joined==="report-qa/source"){const url=new URL(request.url);const id=url.searchParams.get("id"),version=url.searchParams.get("version");if(!id||!version)throw new InternalOpsError("OPS_INVALID_REQUEST");const source=await reviewSource(id,version);return new Response(Buffer.from(source.bytes),{headers:{...PRODUCT_HTTP_HEADERS,"Content-Type":source.mime,"Content-Disposition":"attachment; filename=source"}});}
+          if(joined==="report-qa/detail"){const id=new URL(request.url).searchParams.get("id");if(!id)throw new InternalOpsError("OPS_INVALID_REQUEST");return productJson({data:await reviewDetail(id)});}
           if (joined === "report-qa/board") {
             // S4 / D-11: the real events, not an empty list. Every conversion on
             // this board was a dash until this read existed.
-            const [events, counts] = await Promise.all([readEventCounts(), readReportCounts()]);
+            const store=await resolveReportOperationsDb();if(!store)throw new Error("REPORT_STORE_UNAVAILABLE");
+            const [events, counts] = await Promise.all([readEventCounts({},store), readReportCounts({},store)]);
             return productJson({ correlation_id: correlationId, data: buildFunnelBoard(events, counts) });
           }
           const body = await strictJsonObject(request);
           if (!body || typeof body.qa_id !== "string") throw new InternalOpsError("OPS_INVALID_REQUEST");
+          if(joined==="report-qa/assign"){await assignReview(body.qa_id,operatorIdentity(session.actor));return productJson({ok:true});}
+          if(joined==="report-qa/notify"){const detail=await reviewDetail(body.qa_id);if(!detail?.row.published_at)throw new InternalOpsError("OPS_INVALID_REQUEST");const store=await resolveReportOperationsDb();if(!store)throw new Error("REPORT_STORE_UNAVAILABLE");const rows=await store.rpc("case_report_notification_status",{target_qa:body.qa_id});return productJson({data:rows[0]??null});}
           if (joined === "report-qa/wording") {
             if (!isRecord(body.wording)) throw new InternalOpsError("OPS_INVALID_REQUEST");
             const wording: Record<string, string> = {};
             for (const [topic, value] of Object.entries(body.wording)) {
               if (typeof value !== "string") throw new InternalOpsError("OPS_INVALID_REQUEST");
+              if(!customerWording(value))return productJson({code:"REPORT_WORDING_TEMPLATE_REQUIRED"},422);
               wording[topic] = value;
             }
             const result = await setWording({ qaId: body.qa_id, wording, operator: operatorIdentity(session.actor) });
@@ -196,19 +209,10 @@ export function createOperationsHttpHandler(input: Readonly<{
           }
           const reviewSeconds = typeof body.review_seconds === "number" && Number.isSafeInteger(body.review_seconds)
             ? body.review_seconds : undefined;
-          const row = await decideReview({ qaId: body.qa_id, state, operator: operatorIdentity(session.actor), reviewSeconds });
+          if(typeof body.fingerprint!=="string")throw new InternalOpsError("OPS_INVALID_REQUEST");
+          const row = await decideReview({ qaId: body.qa_id, state, fingerprint:body.fingerprint, operator: operatorIdentity(session.actor), reviewSeconds });
           if (!row) throw new InternalOpsError("OPS_NOT_FOUND");
-          // The published report is what U4's second template announces. It is
-          // sent from here rather than from a screen so a report cannot be
-          // announced without having been published.
-          if (state === "published") {
-            try {
-              await sendReportReadyNotification(row.case_id);
-            } catch {
-              // A message that did not go out does not un-publish a report; the
-              // received screen offers a resend, and the row records the state.
-            }
-          }
+          // The database commits the publication notification intention atomically.
           return productJson({ correlation_id: correlationId, data: row });
         } catch (error) {
           const code = problemCode(error);

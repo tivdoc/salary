@@ -14,8 +14,8 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | P05 | PARTIAL | Atomic source journal/outbox and bridge to existing canonical job queue; eight real DB checks and five fencing tests. Full saved-extraction → canonical composition → projection transaction and hosted two-case journey remain open. |
 | P06 | IMPLEMENTED / integration pending | Field-preserving requests, typed answers, durable drafts/corrections, expiry/reminder intentions, worker CLI and Jerusalem business clock. 129 tests, 11 actual DB checks, typecheck/lint/build pass. Hosted schedule, provider delivery, order-bound SLA and browser proof remain. |
 | P07 | PARTIAL | Cookie/DB expiry alignment and logout, encrypted Resend outbox, Svix inbox, provider receipts, suppression and reminder bridge. 12 actual DB checks; focused tests pass. Provider/DNS/browser proof and contact-change re-verification remain; flags off. |
-| P08 | IN_PROGRESS | Saved reports, QA and publication |
-| P09 | TODO | Separate orders and entitlements |
+| P08 | IMPLEMENTED / integration pending | Saved report history, identity-scoped PDF/source, correction intake, actual QA preview/assignment/approval fingerprint, immutable published content and transactional delivery intention. 9 review + 4 retained-source DB checks; browser and canonical correction/calculation composition remain. |
+| P09 | IN_PROGRESS | Separate orders, provider reconciliation, entitlement and persisted SLA |
 | P10 | TODO | Privacy, lifecycle, restore and private case investigation |
 | P11 | TODO | Integrate parallel website work and customer surfaces |
 | P12 | TODO | Real metrics, monitoring and recovery controls |
@@ -32,3 +32,5 @@ P03: `saved-payslip.ts` composes the existing extractor and fact resolver; it do
 P03 verification correction: the first saved-pipeline build found a missing required `declared_document_type` on the extraction request. It was fixed immediately after checkpoint `981e9ce`; the previous pass claim was premature. The follow-up check/commit records the actual result.
 
 P07 final checkpoint: 51 focused tests pass; typecheck and lint pass with zero warnings. The PostgreSQL proof passes 12 checks, including late token receipts and cancellation of answered reminders before claim. Reminder enqueue/link is atomic. Build completed before the final race guards with an ENOSPC cache persistence warning; the final edits are covered by typecheck/lint, not a clean final build. HEAD-based route closure runs immediately after this checkpoint commit. No provider mail, hosted schedule, DNS or production change.
+
+P07 checkpoint pushed: `44ed78a` (implementation `2ed96fd`), including 8 HEAD route tests. P08 additionally corrected the full capability registry denominators (110 entries / 99 product-stable / 42 dispatch roots), which the prior focused route checks did not cover. Broadened capability checks now accompany route registration.
