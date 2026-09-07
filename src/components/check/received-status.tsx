@@ -37,7 +37,7 @@ export function ReceivedStatus() {
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [checking, setChecking] = useState(false);
   const [waitedTooLong, setWaitedTooLong] = useState(false);
-  const [resend, setResend] = useState<{ state: "idle" | "sending" | "sent" | "failed"; message: string }>({ state: "idle", message: "" });
+  const [resend, setResend] = useState<{ state: "idle" | "sending" | "queued" | "sent" | "failed"; message: string }>({ state: "idle", message: "" });
 
   const load = useCallback(async () => {
     setChecking(true);
@@ -90,7 +90,8 @@ export function ReceivedStatus() {
     try {
       const response = await fetch("/api/cases/access/resend", { method: "POST" });
       if (!response.ok) throw new Error(await customerErrorFromResponse(response, "access_send_failed"));
-      setResend({ state: "sent", message: "שלחנו את הקישור שוב לערוץ שמסרת." });
+      const receipt = await response.json() as {outcome?: string};
+      setResend(receipt.outcome === "queued" ? {state:"queued",message:"הבקשה נשמרה וההודעה ממתינה לשליחה."} : { state: "sent", message: "הספק קיבל את ההודעה לשליחה לערוץ שמסרת." });
     } catch (caught) {
       setResend({ state: "failed", message: customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "access_send_failed") });
     }
@@ -137,7 +138,7 @@ export function ReceivedStatus() {
         </div>
         <div className="received-card__next">
           <b>איך חוזרים לתיק?</b>
-          <span>שלחנו קישור לערוץ שמסרת. הוא פותח את התיק מכל מכשיר, עם קוד חד־פעמי. לא הגיע? <button type="button" className="link-button" onClick={resendLink} disabled={resend.state === "sending"}>{resend.state === "sending" ? "שולחים…" : "שלחו לי את הקישור שוב"}</button></span>
+          <span>אפשר להיכנס לתיק מכל מכשיר באמצעות פרטי הקשר שאימתת וקוד חד־פעמי. לקבלת קישור: <button type="button" className="link-button" onClick={resendLink} disabled={resend.state === "sending"}>{resend.state === "sending" ? "שולחים…" : "שלחו לי את הקישור שוב"}</button></span>
         </div>
         {resend.message && <div className={resend.state === "failed" ? "form-error" : "form-notice"} role="status">{resend.message}</div>}
         <p className="payment-note">{offer.second_product_sentence}</p>

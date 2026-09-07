@@ -10,7 +10,7 @@
 // production (PostgREST) and the local runtime (pg) run one SQL and tests run a
 // fake. This file imports nothing from the engine.
 import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db.ts";
-import { validateRequestAnswer } from "./request-answer";
+import { validateRequestAnswer } from "./request-answer.ts";
 import { requestFor, slaPaused, type ThreadRequest } from "./refusal-requests.ts";
 
 export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null }>;

@@ -29,15 +29,16 @@ export type NotificationMessage = Readonly<{
 }>;
 
 export type NotificationOutcome = Readonly<{
-  state: "sent" | "failed" | "refused";
+  state: "queued" | "sent" | "failed" | "refused";
   provider: string;
   error_code: string | null;
   payload_sha256: string;
+  provider_message_id?: string;
 }>;
 
 export type NotificationProvider = Readonly<{
   id: string;
-  send(message: NotificationMessage): Promise<Readonly<{ ok: true } | { ok: false; error_code: string }>>;
+  send(message: NotificationMessage): Promise<Readonly<{ ok: true; provider_message_id?: string } | { ok: false; error_code: string }>>;
 }>;
 
 export function renderCaseLink(input: Readonly<{ firstName: string | null; publicId: string; linkUrl: string; expiresInHours: number }>): Pick<NotificationMessage, "subject" | "body"> {
@@ -224,6 +225,6 @@ export async function sendNotification(message: NotificationMessage, provider: N
   }
   const result = await provider.send(message);
   return result.ok
-    ? { state: "sent", provider: provider.id, error_code: null, payload_sha256: digest }
+    ? { state: "sent", provider: provider.id, error_code: null, payload_sha256: digest, ...(result.provider_message_id ? {provider_message_id:result.provider_message_id} : {}) }
     : { state: "failed", provider: provider.id, error_code: result.error_code, payload_sha256: digest };
 }

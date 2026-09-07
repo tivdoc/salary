@@ -127,8 +127,8 @@ describe("the case link on a verified payment (U4)", () => {
     const sent = capturingProvider();
     const first = await sweepPendingCaseLinks(50, db);
     const second = await sweepPendingCaseLinks(50, db);
-    expect(first).toEqual({ examined: 1, sent: 1, failed: 0, refused: 0, already_sent: 0 });
-    expect(second).toEqual({ examined: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 });
+    expect(first).toEqual({ examined: 1, queued: 0, sent: 1, failed: 0, refused: 0, already_sent: 0 });
+    expect(second).toEqual({ examined: 0, queued: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 });
     expect(sent).toHaveLength(1);
     expect(sent[0]!.template).toBe("case_link");
     expect(sent[0]!.to).toBe("dana.test@example.com");

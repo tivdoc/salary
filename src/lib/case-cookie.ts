@@ -49,3 +49,7 @@ export async function readCaseIdFromCookie() {
     return null;
   }
 }
+
+export async function clearCaseCookie() {
+ (await cookies()).set(CASE_COOKIE,"",{httpOnly:true,sameSite:"lax",secure:process.env.NODE_ENV==="production",path:"/",maxAge:0});
+}

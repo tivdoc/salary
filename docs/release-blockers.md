@@ -16,3 +16,8 @@ B-002 diagnostics (2026-09-07): Vercel connector returned 404 and Supabase MCP r
 
 
 P06 integration dependencies (not external permission blockers): worker command exists at `scripts/product-workers/request-sweep.mts`; a deployment scheduler still needs wiring. Reminder events are queued intentions, not messages sent. Order-bound SLA persistence belongs to P09; the 2026 service calendar refuses unknown years. Browser validation is deferred to the integrated P11/P13 environment.
+
+
+B-006 / P07: Resend API key, verified sender domain/DNS, webhook secret, authorized test recipient and delivery proof are not present. Implemented the REST provider, Svix verification, encrypted outbox, controlled worker and durable event inbox. No email sent and no DNS change made. Flags default off; resume with scoped provider configuration and a synthetic/explicitly authorized recipient. Contact-change re-verification workflow is still an implementation dependency, not externally verified.
+
+B-007 / local capacity: C: became full during P07. npm install initially failed with ENOSPC. Automatic approval rejected recursive deletion of the isolated build cache; exact single generated cache files could be removed, and remaining build artifacts were compressed. Installation recovered. P07 build exited successfully but Turbopack reported failure to persist a cache SST due to capacity. User was asked to free at least 2 GB; no other task's files were touched. Further browser/build work needs available disk.

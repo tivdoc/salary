@@ -1878,6 +1878,24 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Site S4 (ב.12): records the opt-out for the case a reminder token names. It peeks at the token rather than spending it, and answers ok for every token so liveness cannot be probed."
+    },
+    {
+      "entrypoint_id": "CEP-109",
+      "kind": "api_route",
+      "stable_entry": "/api/notifications/resend",
+      "source_path": "src/app/api/notifications/resend/route.ts",
+      "canonical_contract_id": "route.api.notification-outbox-webhook",
+      "canonical_target": "src/app/api/notifications/resend/route.ts:POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/resend-webhook.ts",
+        "src/server/product/case-access/db.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Signature-verified provider event inbox; no cookie authority, no message sending, disabled until configured."
     }
   ]
 }

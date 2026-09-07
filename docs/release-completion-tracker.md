@@ -13,8 +13,8 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | P04 | IMPLEMENTED | Seven-topic research, 51/51 v15 hashes, seven visual readings, 42 AI expectations + seven refusal checks, safer travel/sick RuleSpecs and leave reconciliation. 224 tests/25 files + tsc/lint pass. Full applicability, human goldens/activation and unresolved branches remain B-005. |
 | P05 | PARTIAL | Atomic source journal/outbox and bridge to existing canonical job queue; eight real DB checks and five fencing tests. Full saved-extraction → canonical composition → projection transaction and hosted two-case journey remain open. |
 | P06 | IMPLEMENTED / integration pending | Field-preserving requests, typed answers, durable drafts/corrections, expiry/reminder intentions, worker CLI and Jerusalem business clock. 129 tests, 11 actual DB checks, typecheck/lint/build pass. Hosted schedule, provider delivery, order-bound SLA and browser proof remain. |
-| P07 | IN_PROGRESS | Session rolling/logout and provider delivery |
-| P08 | TODO | Saved reports, QA and publication |
+| P07 | PARTIAL | Cookie/DB expiry alignment and logout, encrypted Resend outbox, Svix inbox, provider receipts, suppression and reminder bridge. 12 actual DB checks; focused tests pass. Provider/DNS/browser proof and contact-change re-verification remain; flags off. |
+| P08 | IN_PROGRESS | Saved reports, QA and publication |
 | P09 | TODO | Separate orders and entitlements |
 | P10 | TODO | Privacy, lifecycle, restore and private case investigation |
 | P11 | TODO | Integrate parallel website work and customer surfaces |
@@ -30,3 +30,5 @@ P02 checkpoint: no real route imports report fixtures. Initial incomplete-basis 
 P03: `saved-payslip.ts` composes the existing extractor and fact resolver; it does not introduce a legal engine. Storage coordinates come from a case+version SQL lookup and immutable bytes are rehashed before use. Changed prompt/resolution versions are explicit; model unchanged. Model high=0.94 remains 0.94 and cannot alone meet the 0.95 release threshold. This is conservative acceptance, not measured 95% accuracy. The saved-source test uses generated PDF bytes and injected ports; it is not DB/provider evidence.
 
 P03 verification correction: the first saved-pipeline build found a missing required `declared_document_type` on the extraction request. It was fixed immediately after checkpoint `981e9ce`; the previous pass claim was premature. The follow-up check/commit records the actual result.
+
+P07 final checkpoint: 51 focused tests pass; typecheck and lint pass with zero warnings. The PostgreSQL proof passes 12 checks, including late token receipts and cancellation of answered reminders before claim. Reminder enqueue/link is atomic. Build completed before the final race guards with an ENOSPC cache persistence warning; the final edits are covered by typecheck/lint, not a clean final build. HEAD-based route closure runs immediately after this checkpoint commit. No provider mail, hosted schedule, DNS or production change.

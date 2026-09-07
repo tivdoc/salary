@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SessionControls } from "./session-controls";
 
 // UX Run 1 / U3. The frame every access and case screen sits in: the wordmark,
 // one main region, the privacy line. Reuses the check funnel's classes so the
@@ -12,6 +13,7 @@ export function CaseShell({ children, eyebrow }: { children: React.ReactNode; ey
             <span className="wordmark__mark" aria-hidden="true">T</span>
             Tivdoc
           </Link>
+          <SessionControls />
           {eyebrow ? <span className="check-header__price mono">{eyebrow}</span> : null}
         </div>
       </header>

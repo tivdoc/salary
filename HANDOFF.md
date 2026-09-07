@@ -1,3 +1,11 @@
+## Release completion P07 checkpoint — 2026-09-07
+
+Base P06 `f80e586`; draft PR https://github.com/tivdoc/salary/pull/2 is stacked on upload PR #1. Added session cookie refresh against actual DB expiry, revoke/logout, encrypted delivery outbox, Resend REST adapter with timeout/idempotency, Svix-verified webhook inbox, durable recipient suppression and provider-state propagation. Scheduler intentions can enqueue exact request reminders; customer text distinguishes queued from provider acceptance. New CEP-109 is explicitly inventoried with the dispatcher count updated to 41. No messages sent, no provider/DNS/production changes.
+
+Ten actual PostgreSQL checks PASS, including concurrent workers, fencing, early/duplicate/out-of-order events, suppression, product receipts, renewal and revocation. Focused P07 tests and typecheck PASS; final lint/HEAD-dependent inventory check recorded after checkpoint. Build exited 0, with a cache-persistence ENOSPC warning; small subsequent copy edits require final integrated build. The two code/lease tests are synthetic contracts, not provider delivery. Migrations through reminder linkage were applied only to isolated release DB; webhook worker grant is checked in for the next replay.
+
+P07 remains PARTIAL: live domain/provider/browser proof, recipient authorization and contact-change verification are outstanding. P05 complete engine composition is still open. Continue P08; do not pause the other packages. Disk capacity was partially recovered using permitted single-cache-file removal and compression; no recursive deletion succeeded and no parallel website file was changed.
+
 ## Release completion P06 checkpoint — 2026-09-07
 
 Base P05 `9d9d706`; continuing on `codex/tivdoc-release-completion`. Field-family fallbacks retain the original code/crop and ask about the correct field. Text/choice/number validation runs in server code and SQL; document questions enter the authenticated upload flow with an exact request ID. Drafts survive a read/reload without triggering analysis. Corrections append a version, preserve the original, and invalidate source analysis. Expiry and answers are terminal alternatives; 48h/5d reminder intentions are durable and deduplicated. A reserved document can finish after request expiry without answering a newer request. Added a bounded worker command and a sourced 2026 Jerusalem service clock that unions overlapping pauses.
@@ -454,3 +462,5 @@ Deleting or resetting that project destroys every run's evidence.**
 
 *If any statement here conflicts with `docs/tivdoc-development-state.md`, that document wins — it was
 written by the runs that did the work. This file is the map.*
+
+P07 final checkpoint: 51 focused tests pass; typecheck and lint pass with zero warnings. The PostgreSQL proof passes 12 checks, including late token receipts and cancellation of answered reminders before claim. Reminder enqueue/link is atomic. Build completed before the final race guards with an ENOSPC cache persistence warning; the final edits are covered by typecheck/lint, not a clean final build. HEAD-based route closure runs immediately after this checkpoint commit. No provider mail, hosted schedule, DNS or production change.
