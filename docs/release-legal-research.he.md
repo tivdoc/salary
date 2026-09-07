@@ -18,7 +18,7 @@
 
 הכרעה: צו 2016 מוסיף את שיעורי ההפקדה מעל מסגרת הזכאות של 2011; הוא אינו מוחק זכויות מיטיבות. בתמונה נקראו 5.75%/6.25% מיולי 2016, ו-6%/6.5% מינואר 2017; רצפת פיצויים 6%. חלק עובד נשמר בנפרד מחוב מעסיק. תחילה היא המאוחר בין 1.7.2016 ויום הפרסום; הסריקה אינה מציגה כותרת ילקוט ולכן מועד הפרסום עדיין אינו מוכח ממנה.
 
-מקורות: [צו 2011 סעיפים 2 ו-6](https://www.gov.il/BlobFolder/guide/labor-wage/he/workers-rights_working-conditions_pension_H096.pdf), [צו 2016 סעיפים 2(ד), 3](https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf). בחירת עמודת השכר הממוצע לשנת 2025 אינה נסגרת באמצעות טיוטת רשות שוק ההון לגבי תקנות מס; נשארת בסיס לא ודאי ללא סכום לקוח. נדרשים תחילת עבודה, קופה קודמת, גיל, שכר מבוטח והפקדות לפי חודשים; בסיס לא ידוע אינו אפס.
+מקורות: [צו 2011 סעיפים 2 ו-6](https://www.gov.il/BlobFolder/guide/labor-wage/he/workers-rights_working-conditions_pension_H096.pdf), [צו 2016 סעיפים 2(ד), 3](https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf). המשך המחקר מ-7.9.2026 מכריע בבחירת עמודת סעיף 2 לגמלאות לשנת 2025 על בסיס צו 2011 והגבלת הקפאת תיקון 244 לפרק ט״ו, ולא מכוח טיוטת רשות שוק ההון. ההנמקה והגבולות מפורטים ב-[הכרעת מחקר AI](legal/pension-cap-ai-decision-20260907.he.md); זה אינו אישור פרסום או הפעלת כלל. נדרשים תחילת עבודה, קופה קודמת, גיל, שכר מבוטח והפקדות לפי חודשים; בסיס לא ידוע אינו אפס.
 
 ## נסיעות
 
