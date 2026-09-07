@@ -1,0 +1,19 @@
+{
+  "id": "dpl_vZyBfGmubMuV4VqRhor1zv6gfTZS",
+  "url": "salary-18a6lvjd7-tivdoccom-5042s-projects.vercel.app",
+  "target": "preview",
+  "readyState": "READY",
+  "sha": "30f24e79ca4ffc3df92403b0d625f8eea4d17ebf",
+  "build": "READY",
+  "verifiedCiSha": "30f24e79ca4ffc3df92403b0d625f8eea4d17ebf",
+  "httpLiveness": {
+    "status": 200,
+    "readiness": "not_assessed",
+    "payment": false,
+    "analytics": false
+  },
+  "browser": "pending cloud proof",
+  "dataApi": "DEV default database lacks release migrations; no authenticated customer journey claimed",
+  "externalProviderActions": "disabled in branch-scoped environment",
+  "productionChanged": false
+}
