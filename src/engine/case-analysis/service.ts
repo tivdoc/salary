@@ -145,6 +145,16 @@ function verifyStoredSnapshot(command: CaseAnalysisCommand, stored: StoredCaseIn
       || actualDeclaredHash !== command.declared_fact_snapshot_sha256 || actualDeclaredHash !== stored.declared_fact_snapshot.snapshot_sha256) {
     throw new CaseAnalysisError("PINNED_SNAPSHOT_HASH_MISMATCH");
   }
+  const declaredPaths = new Set<CanonicalFact["path"]>();
+  const declaredIds = new Set<string>();
+  for (const candidate of stored.declared_fact_snapshot.facts) {
+    const fact = canonicalFactSchema.parse(candidate);
+    if (fact.case_id !== command.case_id) throw new CaseAnalysisError("DECLARED_FACT_CASE_MISMATCH");
+    if (declaredPaths.has(fact.path)) throw new CaseAnalysisError("DECLARED_FACT_PATH_DUPLICATE");
+    if (declaredIds.has(fact.fact_id)) throw new CaseAnalysisError("DECLARED_FACT_ID_DUPLICATE");
+    declaredPaths.add(fact.path);
+    declaredIds.add(fact.fact_id);
+  }
   if (stored.documents.length === 0 || stored.documents.length !== stored.extractions.length) {
     throw new CaseAnalysisError("DOCUMENT_EXTRACTION_CARDINALITY_MISMATCH");
   }
