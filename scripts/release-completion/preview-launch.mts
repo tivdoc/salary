@@ -87,16 +87,48 @@ try{
   assert.equal(await video.locator('track[kind="captions"][srclang="he"]').count(),1);
   await page.locator('.explanation-transcript summary').click();
   assert.ok((await page.locator('.explanation-transcript').innerText()).includes('אינו הבטחה'));
-  await video.evaluate(async node=>{await (node as HTMLVideoElement).play();});
+  await video.evaluate(node=>node.scrollIntoView({block:'center'}));
+  await video.evaluate(async node=>{const media=node as HTMLVideoElement;media.textTracks[0].mode='showing';await media.play();});
   await page.waitForFunction(()=>{const node=document.querySelector('video');return node&&node.currentTime>0;});
   const duration=await video.evaluate(node=>{const media=node as HTMLVideoElement;media.pause();return media.duration;});
   assert.ok(duration>=29.9&&duration<=30.1);
+  await page.waitForFunction(()=>document.querySelector('video')?.textTracks[0]?.cues?.length===5);
   for(const second of [1,7,13,19,25]){
    await video.evaluate((node,position)=>new Promise<void>(resolve=>{
     const media=node as HTMLVideoElement;media.addEventListener('seeked',()=>resolve(),{once:true});media.currentTime=position;
    }),second);
+   assert.ok(await video.evaluate(node=>((node as HTMLVideoElement).textTracks[0]?.activeCues?.length??0)>0));
+   await video.evaluate(node=>node.scrollIntoView({block:'center'}));
    await video.screenshot({path:`${directory}/explainer-${second}s.png`});
   }
+ });
+ await check('keyboard playback pauses offscreen and remains paused on return under reduced motion',async()=>{
+  await page.goto(origin,{waitUntil:'domcontentloaded'});
+  const video=page.locator('video.explainer-video');
+  await video.evaluate(node=>node.scrollIntoView({block:'center'}));await video.focus();await page.keyboard.press('Space');
+  await page.waitForFunction(()=>{const v=document.querySelector('video');return v&&!v.paused&&v.currentTime>0;});
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.waitForFunction(()=>document.querySelector('video')?.paused===true);
+  const stopped=await video.evaluate(node=>(node as HTMLVideoElement).currentTime);
+  await video.evaluate(node=>node.scrollIntoView({block:'center'}));
+  await page.evaluate(()=>new Promise(resolve=>setTimeout(resolve,350)));
+  assert.equal(await video.evaluate(node=>(node as HTMLVideoElement).paused),true);
+  assert.equal(await video.evaluate(node=>(node as HTMLVideoElement).currentTime),stopped);
+  assert.deepEqual(errors,[]);
+ });
+ await check('failed video transfer exposes an operable written alternative',async()=>{
+  const failedContext=await browser.newContext({storageState,locale:'he-IL',timezoneId:'Asia/Jerusalem',reducedMotion:'reduce',viewport:{width:390,height:900}});
+  try{
+   await failedContext.route('**/media/tivdoc-explainer.mp4',r=>r.abort('failed'));
+   const failedPage=await failedContext.newPage();const failedErrors:string[]=[];failedPage.on('pageerror',e=>failedErrors.push(e.message));
+   await failedPage.goto(origin,{waitUntil:'domcontentloaded'});
+   const video=failedPage.locator('video.explainer-video');await video.evaluate(node=>node.scrollIntoView({block:'center'}));
+   await video.evaluate(node=>{void (node as HTMLVideoElement).play().catch(()=>{});});
+   const message=failedPage.locator('.explainer-video-error');await message.waitFor();assert.ok((await message.innerText()).includes('לא נטען'));
+   await message.getByRole('link').click();assert.equal(await failedPage.locator('#explainer-transcript').getAttribute('open'),'');
+   assert.ok((await failedPage.locator('#explainer-transcript').innerText()).includes('אינו הבטחה'));
+   await failedPage.screenshot({path:`${directory}/explainer-network-failure-390.png`,fullPage:false});assert.deepEqual(failedErrors,[]);
+  }finally{await failedContext.close();}
  });
  await check('accessibility and legal pages have their own canonical URLs and sitemap entries',async()=>{
   const sitemap=await context!.request.get(origin+'/sitemap.xml');assert.equal(sitemap.status(),200);
