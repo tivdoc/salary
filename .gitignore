@@ -88,3 +88,6 @@ Thumbs.db
 
 # Next run receipts and evidence
 /output/next/
+
+# Release completion scratch receipts (public evidence is curated under docs/release-evidence)
+/output/release-completion/

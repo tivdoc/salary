@@ -1,5 +1,9 @@
 # HANDOFF — Tivdoc (`tivdoc/salary`)
 
+## Active release completion — 2026-09-07
+
+Continue `codex/tivdoc-release-completion` using [the tracker](docs/release-completion-tracker.md), [baseline](docs/release-baseline.md), [decisions](docs/release-decisions.md) and [blockers](docs/release-blockers.md). The current owner instruction authorizes P00–P13 development and verification autonomously. Preserve the separate website work; do not roll back to the old main checkout. P00 has a fresh DEV replay and real ACL comparison; P01 is next. Historical activation gates remain closed until their evidence exists.
+
 ## 2026-09-07 update — safe document completion
 
 **[verified]** A dedicated `codex/document-upload-integrity` branch now implements immutable uploads, case-wide reservations, explicit versioned replacement and atomic late completion. The reviewed remote base remained `5285bc5`; the additional local handoff commit `06ee5f1` was preserved before editing. Existing working copies were not modified.
