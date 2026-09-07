@@ -8,6 +8,7 @@ import { countPdfPages, measureImage, type ReadabilityReport } from "@/lib/docum
 import { lastCompleteMonth, MAX_PAYSLIPS, validateUploadDescriptor, type DocumentType } from "@/lib/validation";
 import { uploadNextPath, type DocumentUpload, type SavedDocument, type UploadSnapshot } from "@/lib/document-upload";
 import { transferDocuments } from "./document-transfer";
+import { documentCapacity, uploadMonthOptions } from "@/lib/document-capacity";
 import "./document-review.css";
 
 type Chosen = {
@@ -53,7 +54,9 @@ export function DocumentReview({ initial, initialRequestId }: { initial: UploadS
   const manifestRef = useRef<DocumentUpload | null>(null);
   const workingRef = useRef(false);
   const storageKey = `tivdoc:document-upload:v1:${initial.caseId}`;
-  const months = useMemo(() => recentMonths(), []);
+  const recent = useMemo(() => recentMonths(), []);
+  const capacity = documentCapacity(snapshot.capacity);
+  const months = uploadMonthOptions(capacity, recent, snapshot.documents.map(doc => doc.period_month));
   useEffect(() => {
     // Only an opaque batch id is persisted; no files, names or signed URLs.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate external tab storage after SSR; initial HTML must be identical on server and client.
@@ -85,8 +88,12 @@ export function DocumentReview({ initial, initialRequestId }: { initial: UploadS
     const current = chosenRef.current;
     const count = snapshot.documents.filter((doc) => doc.document_type === documentType).length
       + current.filter((doc) => doc.documentType === documentType && !doc.replace).length;
-    if (!replace && count >= (documentType === "payslip" ? MAX_PAYSLIPS : 1)) {
+    if (!replace && count >= (documentType === "payslip" ? capacity.maxPayslips : 1)) {
       setError("אין מקום למסמך נוסף מסוג זה. להחלפה, יש לבחור במסמך השמור."); return;
+    }
+    const pending = current.filter(item => !replace || item.replace?.documentId !== replace.id);
+    if (pending.length >= capacity.maxBatchFiles || pending.reduce((sum, item) => sum + item.file.size, file.size) > capacity.maxBatchBytes) {
+      setError("הבחירה הגיעה למגבלת העלאה אחת. יש לשמור את הקבצים שנבחרו, ואז לצרף את הבאים."); return;
     }
     workingRef.current = true; setBusy(true); setError("");
     try {
@@ -178,7 +185,7 @@ export function DocumentReview({ initial, initialRequestId }: { initial: UploadS
       <div className="check-page-heading">
         <span className="mono">מסמכים</span>
         <h1>{paid ? "השלמת מסמכים לתיק" : "נראה שהתלוש קריא — לפני שמשלמים."}</h1>
-        <p>אפשר לצרף עד {MAX_PAYSLIPS} תלושים. הבדיקה הראשונית רצה על חודש אחד שתבחר; הדוח המלא מכסה את כולם.</p>
+        <p>אפשר לשמור עד {capacity.maxPayslips} תלושים בתיק. הבדיקה הראשונית מתייחסת לחודש אחד; היקף הדוח המלא נקבע בהזמנה ששולמה.</p>
       </div>
       {snapshot.documents.length > 0 ? <section aria-label="מסמכים שמורים">
         <h2>המסמכים השמורים בתיק</h2>
@@ -200,7 +207,7 @@ export function DocumentReview({ initial, initialRequestId }: { initial: UploadS
           const count = snapshot.documents.filter((doc) => doc.document_type === type).length + chosen.filter((doc) => doc.documentType === type && !doc.replace).length;
           return <label className="button button--ghost" key={type}>
             <FileArrowUp aria-hidden="true" /> הוספת {labels[type]}
-            <input type="file" aria-label={`הוספת ${labels[type]}`} accept="application/pdf,image/jpeg,image/png" disabled={locked || count >= (type === "payslip" ? MAX_PAYSLIPS : 1)}
+            <input type="file" aria-label={`הוספת ${labels[type]}`} accept="application/pdf,image/jpeg,image/png" disabled={locked || count >= (type === "payslip" ? capacity.maxPayslips : 1)}
               onChange={(event) => { void add(type, event.target.files?.[0]); event.target.value = ""; }} />
           </label>;
         })}
@@ -225,7 +232,7 @@ export function DocumentReview({ initial, initialRequestId }: { initial: UploadS
       {!paid && availableMonths.length > 0 ? <label className="document-review__check-month">חודש הבדיקה הראשונית
         <select value={effectiveCheckMonth} disabled={locked || chosen.length === 0} onChange={(event) => setCheckMonth(event.target.value)}>
           {availableMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
-        </select><span>הדוח המלא מכסה את כל החודשים שצירפת.</span>
+        </select><span>היקף הדוח המלא נקבע בנפרד, לפי התקופה שבהזמנה.</span>
       </label> : null}
       {snapshot.requests.length > 0 ? <label>בקשת ההשלמה שהמסמך עונה עליה
         <select value={requestId} disabled={locked} onChange={(event) => setRequestId(event.target.value)}>
@@ -233,7 +240,7 @@ export function DocumentReview({ initial, initialRequestId }: { initial: UploadS
           {snapshot.requests.map((request) => <option key={request.id} value={request.id}>{request.question}</option>)}
         </select>
       </label> : null}
-      <p className="upload-limit">PDF, JPG או PNG. עד 10MB לקובץ ועד 25MB יחד בתיק.</p>
+      <p className="upload-limit">PDF, JPG או PNG. עד 10MB לקובץ, עד 25MB בהעלאה אחת ועד {formatSize(capacity.maxCaseBytes)} בתיק.</p>
       {batchId ? <p role="status">יש ניסיון העלאה שטרם אישרנו את סיומו. המסמכים השמורים נשמרו. אפשר לנסות להשלים אותו או לבטל את הניסיון.</p> : null}
       {error ? <div className="form-error" role="alert">{error}</div> : null}
       <div className="document-review__actions">

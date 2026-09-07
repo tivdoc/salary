@@ -39,6 +39,7 @@ export type SavedDocument = {
 export type UploadSnapshot = {
   caseId: string; publicId: string; status: string; paymentStatus: string;
   checkPeriodMonth: string | null; documents: SavedDocument[];
+  capacity?: import("./document-capacity").DocumentCapacity;
   requests: { id: string; code: string; question: string; documentType: string }[];
 };
 

@@ -27,7 +27,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // 202609050005 re-declares the record function once more (the audit-actor repair).
 // Release P05–P12: explicit additional source, request, delivery, order, privacy and metrics definitions.
 // See docs/release-evidence/P12-definer-surface.json; the empty search_path rule remains exhaustive.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 221;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 222;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

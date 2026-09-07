@@ -1,5 +1,5 @@
 {
-  "definition_count": 221,
+  "definition_count": 222,
   "new_release_definitions": {
     "20260907070000_case_input_outbox.sql": [
       "private.capture_case_input",
@@ -100,6 +100,9 @@
     ],
     "20260907141000_product_monitor.sql": [
       "public.case_funnel_monitor"
+    ],
+    "20260907150000_paid_document_capacity.sql": [
+      "private.case_document_capacity"
     ]
   },
   "note": "Definition inventory, not proof of live ACLs. Empty search_path is independently checked; scoped-role DB proofs are separate."
