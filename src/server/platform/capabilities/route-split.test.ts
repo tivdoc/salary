@@ -80,6 +80,7 @@ describe("the differential against main's own route inventory (D4)", () => {
     // must be named here, with its reason, to pass.
     // UX Run 1 (S1): the six customer-access routes, product half, each with the reason route-split.ts carries.
     const productAddedOnBranch: Record<string, string> = {
+      "src/app/api/notifications/resend/route.ts": "P07 authenticated provider event inbox, disabled until configured; no customer or send authority.",
       "src/app/case/[token]/page.tsx": "UX Run 1 / D-1.2: the code challenge the sent link opens, and the case view for a verified identity session; it reaches no legal computation.",
       "src/app/login/page.tsx": "UX Run 1 / D-1.4: phone or email, then a code, then the identity's cases; login and recovery in one route.",
       "src/app/cases/page.tsx": "UX Run 1 / D-1.5: the identity's case list, rendered only with more than one case; without a session it sends the visitor to /login.",
