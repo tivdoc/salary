@@ -4,8 +4,8 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,type BrowserContext} from 'playwright';
 
 // Deliberately pinned to the isolated, closed-sales deployment, never production.
-const origin='https://salary-18a6lvjd7-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='30f24e79ca4ffc3df92403b0d625f8eea4d17ebf';
+const origin='https://salary-oq30tj1do-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='923517ec42e37296a68c69ae2d362a4629808efa';
 const directory='output/release-completion/preview-browser';
 const raw=process.env.TIVDOC_PREVIEW_BROWSER_STATE;
 if(!raw)throw new Error('PREVIEW_TEMPORARY_ACCESS_MISSING');
@@ -70,7 +70,7 @@ try{
  });
  await check('mobile menu supports keyboard activation, Escape and restored focus',async()=>{
   await page.setViewportSize({width:390,height:900});await page.goto(origin,{waitUntil:'domcontentloaded'});
-  const toggle=page.getByRole('button',{name:'פתיחת תפריט'});await toggle.focus();await page.keyboard.press('Enter');
+  const toggle=page.locator('button[aria-controls="public-navigation"]');await toggle.focus();await page.keyboard.press('Enter');
   assert.equal(await toggle.getAttribute('aria-expanded'),'true');
   await page.keyboard.press('Escape');assert.equal(await toggle.getAttribute('aria-expanded'),'false');
   assert.equal(await toggle.evaluate(e=>e===document.activeElement),true);

@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/release-preview.yml
       - scripts/release-completion/preview-browser.mts
+      - scripts/release-completion/preview-documents.mts
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,11 +29,18 @@ jobs:
         env:
           TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
         run: node --experimental-strip-types scripts/release-completion/preview-browser.mts
+      - name: Synthetic owner document journeys on isolated Preview
+        env:
+          TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
+          TIVDOC_PREVIEW_CASE_FIXTURES: ${{ secrets.TIVDOC_PREVIEW_CASE_FIXTURES }}
+        run: node --experimental-strip-types scripts/release-completion/preview-documents.mts
       - name: Keep public screenshots and scoped receipt only
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: release-preview-browser
-          path: output/release-completion/preview-browser/
+          path: |
+            output/release-completion/preview-browser/
+            output/release-completion/preview-documents/
           retention-days: 14
           if-no-files-found: error
