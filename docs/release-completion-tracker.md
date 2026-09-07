@@ -7,8 +7,8 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | Package | Status | Evidence / next action |
 |---|---|---|
 | P00 | VERIFIED | 75 migrations replayed; five installed upload definitions/ACLs match; privilege checks and 16 closure/replay tests pass. Hosted adapter remains P01/B-002. See release-baseline.md |
-| P01 | IN_PROGRESS | Preserve upload integrity; repair seven host baseline failures, then Preview proof |
-| P02 | TODO | Report contract, empty state, deterministic scope |
+| P01 | IMPLEMENTED | Seven baseline failures fixed; 23 tests pass (six files), tsc/lint pass; original upload DB proof rerun. Hosted PostgREST and expanded lifecycle remain open under B-002/P10. |
+| P02 | IN_PROGRESS | Report contract, empty state, deterministic scope |
 | P03 | TODO | Real extraction and provenance |
 | P04 | TODO | Primary-source legal research and seven topics |
 | P05 | TODO | Durable engine/product orchestration |
@@ -22,3 +22,5 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | P13 | TODO | Acceptance, rehearsal and release readiness |
 
 Evidence status is never inferred from code existence. An unresolved external substep does not close its package or stop independent implementation. Each checkpoint records its commit in Git history and subsequent entries here.
+
+P00 checkpoint: `aaa5f7a` pushed. P01: original worker objects restored from the engineering archive; signed hashes unchanged, comparison reuses the existing SQL digest contract. Worktree validation checks reciprocal pointers and common object storage.

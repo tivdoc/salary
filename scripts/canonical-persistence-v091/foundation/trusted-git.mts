@@ -113,14 +113,23 @@ export function assertTrustedGitRepository(repositoryRoot: string): TrustedGitRe
     trustedGitText(root, ["rev-parse", "--absolute-git-dir"]),
     "TRUSTED_GIT_DIRECTORY_INVALID",
   );
-  if (!samePath(gitDir, expectedGitDir) || !isContained(root, gitDir)) {
-    throw new Error("TRUSTED_GIT_DIRECTORY_MISMATCH");
-  }
   const commonDir = assertOrdinaryPhysicalDirectory(
     trustedGitText(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]),
     "TRUSTED_GIT_COMMON_DIRECTORY_INVALID",
   );
-  if (!samePath(commonDir, gitDir)) throw new Error("TRUSTED_GIT_COMMON_DIRECTORY_MISMATCH");
+  if (samePath(commonDir, gitDir)) {
+    if (!samePath(gitDir, expectedGitDir) || !isContained(root, gitDir)) throw new Error("TRUSTED_GIT_DIRECTORY_MISMATCH");
+  } else {
+    // A linked worktree must prove both pointers and its common object store.
+    const pointer = assertOrdinaryPhysicalFile(expectedGitDir, "TRUSTED_GIT_WORKTREE_POINTER_INVALID");
+    const declaration = readFileSync(pointer, "utf8").trim().match(/^gitdir: (.+)$/u);
+    if (!declaration || !samePath(path.resolve(root, declaration[1]!), gitDir)
+      || !isContained(path.join(commonDir, "worktrees"), gitDir)) throw new Error("TRUSTED_GIT_WORKTREE_POINTER_MISMATCH");
+    const backlink = assertOrdinaryPhysicalFile(path.join(gitDir, "gitdir"), "TRUSTED_GIT_WORKTREE_BACKLINK_INVALID");
+    if (!samePath(path.resolve(gitDir, readFileSync(backlink, "utf8").trim()), pointer)) throw new Error("TRUSTED_GIT_WORKTREE_BACKLINK_MISMATCH");
+    const commonPointer = assertOrdinaryPhysicalFile(path.join(gitDir, "commondir"), "TRUSTED_GIT_COMMON_POINTER_INVALID");
+    if (!samePath(path.resolve(gitDir, readFileSync(commonPointer, "utf8").trim()), commonDir)) throw new Error("TRUSTED_GIT_COMMON_DIRECTORY_MISMATCH");
+  }
 
   const indexPath = assertOrdinaryPhysicalFile(
     trustedGitText(root, ["rev-parse", "--path-format=absolute", "--git-path", "index"]),
@@ -133,7 +142,7 @@ export function assertTrustedGitRepository(repositoryRoot: string): TrustedGitRe
     trustedGitText(root, ["rev-parse", "--path-format=absolute", "--git-path", "objects"]),
     "TRUSTED_GIT_OBJECT_DIRECTORY_INVALID",
   );
-  if (!samePath(objectDirectory, path.join(gitDir, "objects")) || !isContained(gitDir, objectDirectory)) {
+  if (!samePath(objectDirectory, path.join(commonDir, "objects")) || !isContained(commonDir, objectDirectory)) {
     throw new Error("TRUSTED_GIT_OBJECT_DIRECTORY_MISMATCH");
   }
   if (pathExists(path.join(objectDirectory, "info", "alternates"))) {
@@ -141,7 +150,7 @@ export function assertTrustedGitRepository(repositoryRoot: string): TrustedGitRe
   }
 
   const graftsPath = path.join(gitDir, "info", "grafts");
-  if (pathExists(graftsPath)) throw new Error("TRUSTED_GIT_GRAFTS_FORBIDDEN");
+  if (pathExists(graftsPath) || pathExists(path.join(commonDir, "info", "grafts"))) throw new Error("TRUSTED_GIT_GRAFTS_FORBIDDEN");
   const replacementRefs = trustedGitText(root, [
     "for-each-ref",
     "--format=%(refname)",

@@ -6,9 +6,9 @@ import {
   generateWave1GitAudit,
   WAVE1_WORKERS,
 } from "./git-audit.ts";
-import { localArtifacts } from "../../../test-support/host.ts";
+import { gitObjects, localArtifacts } from "../../../test-support/host.ts";
 
-describe.skipIf(!(localArtifacts(["C:/dev/tivdoc-wave1-working-time-permits/output/legal-knowledge/wave1-working-time-permits"])).holds)("Wave 1 Git evidence audit", () => {
+describe("Wave 1 Git evidence audit", () => {
   // H-2. `generateWave1GitAudit` spawns roughly 90 synchronous `git`
   // subprocesses (per-commit `show`/`diff-tree` for the 9-commit
   // first-parent chain, plus per-worker `show`/`patch-id`/`merge-base`/
@@ -21,7 +21,9 @@ describe.skipIf(!(localArtifacts(["C:/dev/tivdoc-wave1-working-time-permits/outp
   // a defect in the audit itself (`git-audit.ts` is unchanged). 90s is
   // comfortably over 2x the isolated measurement and over 2x the one
   // observed under-load duration, without being reachable by a hang.
-  it("proves every worker base, allowlist and cherry-pick patch", () => {
+  const artifacts = localArtifacts(["C:/dev/tivdoc-wave1-working-time-permits/output/legal-knowledge/wave1-working-time-permits"]);
+  const objects = gitObjects(WAVE1_WORKERS.flatMap((worker) => [worker.worker_commit, worker.integration_commit, worker.expected_base]));
+  it.skipIf(!artifacts.holds || !objects.holds)(`proves every worker base, allowlist and cherry-pick patch${objects.holds ? "" : ` (${objects.reason})`}`, () => {
     const report = generateWave1GitAudit({ repo_root: path.resolve(".") });
     expect(report.first_parent_commit_count).toBe(9);
     expect(report.all_worker_patch_ids_equivalent).toBe(true);

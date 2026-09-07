@@ -52,11 +52,19 @@ export function pythonHost(): HostPrecondition {
   return resolvePython() ? { holds: true, reason: "" } : { holds: false, reason: "no Python 3 on this host" };
 }
 
-/** `main` as this checkout knows it: a local branch, or the remote-tracking ref a CI checkout has. */
+/** Freeze the explicit comparison base to a commit; a stale local main never wins. */
 export function resolveMainRef(): string {
-  for (const candidate of ["main", "origin/main"]) {
+  const candidates = process.env.TIVDOC_TEST_BASE_REF ? [process.env.TIVDOC_TEST_BASE_REF] : ["origin/main", "main"];
+  for (const candidate of candidates) {
     const probe = spawnSync("git", ["rev-parse", "--verify", "--quiet", `${candidate}^{commit}`], { encoding: "utf8" });
-    if (probe.status === 0) return candidate;
+    if (probe.status === 0) return probe.stdout.trim();
   }
-  throw new Error("MAIN_REF_UNRESOLVED: neither main nor origin/main is present in this checkout");
+  throw new Error(`MAIN_REF_UNRESOLVED:${candidates.join(",")}`);
+}
+
+/** Historical patch evidence requires the original worker objects, not only a folder. */
+export function gitObjects(commits: readonly string[]): HostPrecondition {
+  const missing = commits.filter((commit) => !/^[a-f0-9]{40}$/u.test(commit)
+    || spawnSync("git", ["cat-file", "-e", `${commit}^{commit}`], { windowsHide: true }).status !== 0);
+  return { holds: missing.length === 0, reason: missing.length ? `historical Git objects absent; restore the Wave 1 evidence archive: ${missing.join(",")}` : "" };
 }

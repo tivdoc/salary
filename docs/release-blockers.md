@@ -7,3 +7,5 @@
 | B-003 | P11 parallel UI work | `website tivdoc dev` is actively editing `codex/website-v1-3`, based on older main. | Website commit/PR needed for safe merge; no source files copied mid-edit. | Product contracts/backend |
 
 Missing documents and legal/provider gaps will be added only after inspecting their actual dependencies. Do not treat a historical lack of access as a new proven blocker.
+
+B-002 diagnostics (2026-09-07): Vercel connector returned 404 and Supabase MCP returned permission denied. Authenticated CLI and guarded pg access work. Preview inherited the production Supabase URL; no customer requests were issued. Branch-only DEV URL/keys are being configured. DEV default `postgres` has six historical scaffold tables, zero cases, five old manual migration records, and no upload RPC. The separate 75-migration replay is verified, but cannot prove PostgREST. Reconcile this isolated target or provision an independent Data API target before end-to-end hosted acceptance; do not overwrite historical legal evidence or silently retarget to production. Continue P02 independently.
