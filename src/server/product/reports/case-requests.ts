@@ -49,7 +49,7 @@ function toRequest(row: RequestRow): StoredRequest {
 
 export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null): Promise<readonly StoredRequest[]> {
   const store = db ?? await resolveCaseAccessDb();
-  if (!store) return [];
+  if (!store) throw new Error("CASE_STORE_UNAVAILABLE");
   const rows = await store.rpc<RequestRow>("case_request_list", { target_case: caseId });
   const revisions = await store.rpc<{request_id:string;answer_revision:number;latest_answer:string|null;draft_revision:number;draft_text:string|null}>("case_request_revision_list", {target_case:caseId});
   return rows.map(row => {

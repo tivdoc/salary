@@ -29,7 +29,7 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
   try { saved = await customerReports(item.case_id, session.identity_id, item.public_id); } catch { /* Distinct from an empty report list. */ }
 
   return (
-    <CaseShell eyebrow={`תיק ${item.public_id}`}>
+    <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
       {saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
         : saved.reports.length === 0 ? <div><h1>הדוח עדיין לא מוכן</h1>{saved.checkPeriodMonth ? <p>חודש הבדיקה: <bdi>{saved.checkPeriodMonth}</bdi></p> : null}<p>כשיפורסם דוח לתיק, הוא יופיע כאן. אפשר לראות את המצב והבקשות בעמוד התיק.</p></div>
         : saved.reports.map((report) => <article key={report.id} aria-label={`דוח שפורסם ${report.publishedAt}`}>

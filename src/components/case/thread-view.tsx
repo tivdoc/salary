@@ -116,7 +116,7 @@ export function ThreadView({ publicId, requests }: { publicId: string; requests:
       </div>
 
       {open.map((request) => (
-        <div className={`received-card thread-card${request.blocking ? " thread-card--blocking" : ""}`} key={request.id}>
+        <div className={`received-card thread-card${request.blocking ? " thread-card--blocking" : ""}`} key={request.id} id={`request-${request.id}`}>
           <p className="thread-card__meta">
             {request.blocking ? "ממתינים לתשובה כדי להמשיך" : "לא מעכב את הבדיקה"} · נשאל ב־{formatWhen(request.opened_at)} · פתוח עד {formatWhen(request.expires_at)}
           </p>

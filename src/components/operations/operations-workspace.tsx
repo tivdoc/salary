@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { useState } from "react";
 import styles from "./operations-workspace.module.css";
 import { GroundTruthQueuePanel } from "./ground-truth-queue-panel";
@@ -110,7 +111,7 @@ export function OperationsWorkspace({ csrfToken }: OperationsWorkspaceProps) {
     <div className={styles.page} dir="rtl" lang="he">
       <a className={styles.skip} href="#operations-content">מעבר לתוכן הראשי</a>
       <header className={styles.header}>
-        <div><p>Tivdoc · סביבת תפעול פנימית</p><h1>מסוף בקרת תיק</h1><span>אין מסירה ללקוח ואין עקיפת חסמים.</span></div>
+        <div><BrandLogo /><p>סביבת תפעול פנימית</p><h1>מסוף בקרת תיק</h1><span>אין מסירה ללקוח ואין עקיפת חסמים.</span></div>
         <button data-testid="load-operations" type="button" onClick={() => void loadQueue()} disabled={busy}>טעינת תור והרשאות</button>
       </header>
       <div className={styles.workspace}>

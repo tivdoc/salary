@@ -4,7 +4,7 @@ Hebrew RTL MVP for the Tivdoc Salary validation funnel:
 
 `Landing → questionnaire → private document upload → Invoice4u hosted payment → verified status`
 
-The project intentionally does not include OCR, a salary-law engine, AI analysis, user accounts, dashboards or the future ₪99 report product.
+The project intentionally does not include OCR, a salary-law engine, AI analysis, user accounts or dashboards. The website shows the planned ₪149 full report as unavailable for purchase. See [website v1.3 handoff](docs/website-v1.3-handoff.md) for the local redesign, verification and outstanding product dependencies.
 
 ## Stack
 

@@ -115,8 +115,8 @@ export function ReceivedStatus() {
         <h1>לא הצלחנו לזהות את הבדיקה.</h1>
         <p>{error}</p>
         {recheck}
-        <p>אם שילמת, הקישור לתיק נשלח לערוץ שמסרת: {contact}.</p>
-        <Link className="button button--secondary" href="/check">התחלת בדיקה חדשה</Link>
+        <p>אין צורך לשלם שוב. אפשר להיכנס עם פרטי הקשר שאימתת או לפנות לשירות: {contact}.</p>
+        <Link className="button button--secondary" href="/login">כניסה לתיק</Link>
       </div>
     );
   }
@@ -153,7 +153,7 @@ export function ReceivedStatus() {
         <WarningCircle weight="duotone" aria-hidden="true" />
         <span className="mono">תיק {data.publicId}</span>
         <h1>האימות מתעכב.</h1>
-        <p>עברו יותר מ־{offer.verification_wait.named_state_after_seconds} שניות בלי אישור מחברת הסליקה. זה קורה; התשלום לא אבד והתיק נשמר. האימות ממשיך ברקע ומתעדכן גם אחרי שסוגרים את החלון.</p>
+        <p>עברו יותר מ־{offer.verification_wait.named_state_after_seconds} שניות בלי אישור מחברת הסליקה. זה קורה; התיק נשמר, אך עדיין אין אישור לתוצאת התשלום. אין צורך לשלם שוב; אפשר לבדוק סטטוס או לפנות לשירות.</p>
         {recheck}
         <div className="received-card__next"><b>לא מסתדר?</b><span>{contact}</span></div>
         <Link className="button button--secondary" href="/">חזרה לעמוד הבית</Link>

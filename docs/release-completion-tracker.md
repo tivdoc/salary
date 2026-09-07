@@ -17,7 +17,7 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | P08 | IMPLEMENTED / integration pending | Saved report history, identity-scoped PDF/source, correction intake, actual QA preview/assignment/approval fingerprint, immutable published content and transactional delivery intention. 9 review + 4 retained-source DB checks; browser and canonical correction/calculation composition remain. |
 | P09 | PARTIAL | Independent immutable order scope/price, atomic checkout claim, worker verification/entitlement, report binding and persisted clocks. 14 order + 10 review + 4 source DB checks, 37 focused tests, tsc/lint pass. Provider receipts/refunds, full historical capacity and canonical/browser integration remain. |
 | P10 | PARTIAL | Owner privacy/export, retention fences and audited draft sweep; 12 DB + 4 real Storage checks. Actual 118-table restore and private read-only inquiry complete. Full purge, contact re-verification and browser/operational proof remain. |
-| P11 | TODO | Integrate parallel website work and customer surfaces |
+| P11 | PARTIAL | Merged ac319bf branding into current flows; four-destination case shell and saved-state overview. 13 focused tests + lint pass. Final build/typecheck/browser blocked by disk/system memory; actual example, clock and broader acceptance remain. |
 | P12 | TODO | Real metrics, monitoring and recovery controls |
 | P13 | TODO | Acceptance, rehearsal and release readiness |
 

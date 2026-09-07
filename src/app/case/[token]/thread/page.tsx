@@ -34,7 +34,7 @@ export default async function CaseThreadPage({ params }: { params: Promise<{ tok
 
   const requests = await listCaseRequests(item.case_id);
   return (
-    <CaseShell eyebrow={`תיק ${item.public_id}`}>
+    <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
       <ThreadView publicId={item.public_id} requests={requests} />
       <p className="case-back">
         <Link href={`/case/${item.public_id}`}>חזרה לתיק</Link>

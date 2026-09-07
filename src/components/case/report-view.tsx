@@ -75,7 +75,7 @@ function TopicCard({ topic, reportKind,wording }: { topic: TopicProjection; repo
             <p className="report-topic__assumption" key={assumption.slot}>{assumption.statement}</p>
           ))}
           {mappingFor(topic.not_checked.code)?.question ? (
-            <p className="report-topic__request">שאלנו אותך על כך בת׳רד של התיק.</p>
+            <p className="report-topic__request">המידע הדרוש להמשך מופיע בהודעות בתיק.</p>
           ) : null}
         </>
       ) : null}

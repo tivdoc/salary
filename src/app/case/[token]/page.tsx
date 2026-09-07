@@ -1,3 +1,4 @@
+import { loadCaseOverview } from "@/server/product/case-access/overview";
 import { notFound, redirect } from "next/navigation";
 import { AccessChallenge } from "@/components/case/access-challenge";
 import { CaseShell } from "@/components/case/case-shell";
@@ -52,9 +53,10 @@ export default async function CaseAccessPage({ params }: { params: Promise<{ tok
     const cases = await listIdentityCases(session.identity_id);
     const item = cases.find((candidate) => candidate.public_id === token);
     if (!item) notFound();
+    const overview = await loadCaseOverview(item, session.identity_id);
     return (
-      <CaseShell eyebrow={`תיק ${item.public_id}`}>
-        <CaseView item={item} otherCases={cases.length - 1} />
+      <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
+        <CaseView item={item} otherCases={cases.length - 1} overview={overview} />
       </CaseShell>
     );
   }
