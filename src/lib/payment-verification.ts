@@ -33,14 +33,15 @@ function textValue(value: unknown) {
 }
 
 function amountInAgorot(value: unknown) {
-  const number = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(number)) return null;
-  return Math.round(number * 100);
+  const text=typeof value==='number'?String(value):typeof value==='string'?value.trim():'';
+  const match=/^(\d+)(?:\.(\d{1,2}))?$/.exec(text);if(!match)return null;
+  const minor=Number(match[1])*100+Number((match[2]??'').padEnd(2,'0'));return Number.isSafeInteger(minor)?minor:null;
 }
 
 export function validateInvoice4uClearingLog(
   log: Invoice4uClearingLog | null,
   expectedClearingLogId: string,
+  expected: {amountMinor:number;currency:"ILS";orderId?:string} = {amountMinor:Math.round(INITIAL_CHECK_PRICE*100),currency:INITIAL_CHECK_CURRENCY},
 ): VerifiedInvoice4uTransaction {
   if (!log) throw new PaymentVerificationError("reference_missing");
 
@@ -67,15 +68,16 @@ export function validateInvoice4uClearingLog(
   }
 
   const amount = amountInAgorot(log.Amount);
-  if (amount !== Math.round(INITIAL_CHECK_PRICE * 100)) {
+  if (amount !== expected.amountMinor) {
     throw new PaymentVerificationError("amount_mismatch");
   }
 
   const currency = textValue(log.CurrencyName)?.toUpperCase();
-  if (currency !== INITIAL_CHECK_CURRENCY) {
+  if (currency !== expected.currency) {
     throw new PaymentVerificationError("currency_mismatch");
   }
 
+  if(expected.orderId&&log.OrderIdClientUsage!==undefined&&textValue(log.OrderIdClientUsage)!==expected.orderId)throw new PaymentVerificationError("transaction_reused");
   return {
     paymentId,
     clearingLogId,

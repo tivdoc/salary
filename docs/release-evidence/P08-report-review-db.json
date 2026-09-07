@@ -1,6 +1,7 @@
 {
   "checks": [
     "actual operations role reads saved preview and review fingerprint",
+    "an approved report requires the same case paid active order entitlement",
     "direct publication without approval is refused",
     "wording changes invalidate the previously viewed fingerprint",
     "worker cannot impersonate a human review; customer role cannot read QA",

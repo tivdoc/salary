@@ -25,3 +25,7 @@ B-007 / local capacity: C: became full during P07. npm install initially failed 
 B-007 RESOLVED for continuation: approximately 2.3 GB free after bounded build-cache work and reversible NTFS compression of this worktree dependency files. A subsequent P08 optimized build passed without the prior ENOSPC warning. No other task files deleted.
 
 P08 integration dependencies: the renderer has ToUnicode/ActualText but is not a tagged PDF/UA artifact; screen-reader proof remains open. Correction intake is durable and visible in QA; applying a corrected fact through canonical fact resolution still needs P05 composition. QA sources are downloaded only after operator authentication and checksum validation, but live Storage/browser proof has not yet run for this new route. Provider delivery flags remain off.
+
+P09: Supabase branch discovery was also refused by MCP (`permission denied`). No project or paid branch created. Independent PostgreSQL work remains available. Invoice4U live checkout, receipt and refund have not been verified; the existing official SOAP clearing endpoint and vendor WordPress documentation establish the current integration surface but do not establish a safe refund request schema. No guessed refund API call is implemented. Browser/sales flags stay disabled until provider and delivery capabilities are demonstrated.
+
+B-007 reopened for heavy builds: free space fell to approximately 250 MB during P09; re-compressing this worktree's .next freed no meaningful space. Typecheck and focused tests remain possible; no other checkout files touched.

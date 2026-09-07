@@ -21,6 +21,7 @@ type CheckoutInput = {
   returnUrl: string;
   amount: number;
   currency: string;
+  kind?: "initial" | "full";
 };
 
 export type Invoice4uCheckout = {
@@ -137,12 +138,12 @@ export class Invoice4uClient {
         Phone: input.phone,
         Email: input.email,
         Sum: input.amount,
-        Description: `Tivdoc salary initial check (${input.caseId})`,
+        Description: `Tivdoc salary ${input.kind=== "full"?"full report":"initial check"} (${input.caseId})`,
         PaymentsNum: 1,
         Currency: input.currency,
         OrderIdClientUsage: input.orderId,
         IsDocCreate: true,
-        DocHeadline: "Tivdoc - בדיקה ראשונית",
+        DocHeadline: input.kind==="full"?"Tivdoc - דוח מלא":"Tivdoc - בדיקה ראשונית",
         DocComments: `Case ${input.caseId}`,
         IsManualDocCreationsWithParams: false,
         IsGeneralClient: true,

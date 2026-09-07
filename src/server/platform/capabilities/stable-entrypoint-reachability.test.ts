@@ -41,15 +41,15 @@ describe("stable product dispatcher capability reachability", () => {
     }
   });
 
-  it("maps the exact 41 live Next roots plus the canonical route registrar", () => {
+  it("maps the exact 42 live Next roots plus the canonical route registrar", () => {
     const nextRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter(
       (entry) => entry.kind === "app_route" || entry.kind === "api_route",
     );
     const registrar = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => entry.entrypoint_id === "CEP-078");
-    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(42);
-    expect(nextRoots).toHaveLength(41);
+    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(43);
+    expect(nextRoots).toHaveLength(42);
     expect(registrar).toHaveLength(1);
-    expect(new Set(STABLE_PRODUCT_DISPATCHER_ROOTS.map((entry) => entry.entrypoint_id)).size).toBe(42);
+    expect(new Set(STABLE_PRODUCT_DISPATCHER_ROOTS.map((entry) => entry.entrypoint_id)).size).toBe(43);
 
     const liveNextRoots = walk(join(repositoryRoot, "src/app"))
       .map((path) => relative(repositoryRoot, path).replaceAll("\\", "/"))
@@ -60,7 +60,7 @@ describe("stable product dispatcher capability reachability", () => {
 
   it("proves every app dispatcher invokes its exact request-time capability guard", () => {
     const appRoots = STABLE_PRODUCT_DISPATCHER_ROOTS.filter((entry) => entry.kind === "app_route");
-    expect(appRoots).toHaveLength(19);
+    expect(appRoots).toHaveLength(20);
     for (const entry of appRoots) {
       const source = sourceAt(entry.source_path);
       expect(source.text, entry.entrypoint_id).toContain(`guardStableAppEntrypoint("${entry.entrypoint_id}")`);

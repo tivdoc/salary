@@ -1,0 +1,22 @@
+{
+  "checks": [
+    "zero deliverable coverage cannot create a sale",
+    "initial and full are independent scope/price snapshots; retries reuse the order",
+    "an identity cannot read another case orders",
+    "double-click and two tabs reserve one provider checkout attempt",
+    "customer server role cannot manufacture payment verification",
+    "null or wrong amount cannot grant entitlement",
+    "verified provider observation grants one entitlement across replay",
+    "one provider charge cannot fund two orders even in the same case",
+    "paying for the full order preserves the initial case status",
+    "price changes affect new orders only; unknown provider outcome never creates a second checkout",
+    "saved price and scope cannot be edited after creation",
+    "verified orders start independent persisted service clocks",
+    "refund retry records one request, never asserts refunded or revokes delivery",
+    "paid order scope participates in the immutable analysis input"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "fixtures": "synthetic QA; fake provider coordinates, no external charge",
+  "provider_verified": false,
+  "production": "untouched"
+}

@@ -42,7 +42,7 @@ describe("the product/engine route split (D3)", () => {
       if (entry.half === "product") expect(entry.probes?.length ?? 0, entry.entrypoint_id).toBeGreaterThan(0);
       else expect(entry.probes, entry.entrypoint_id).toBeUndefined();
     }
-    expect(productAssignments()).toHaveLength(35);
+    expect(productAssignments()).toHaveLength(36);
     expect(engineAssignments()).toHaveLength(7);
   });
 
@@ -80,6 +80,7 @@ describe("the differential against main's own route inventory (D4)", () => {
     // must be named here, with its reason, to pass.
     // UX Run 1 (S1): the six customer-access routes, product half, each with the reason route-split.ts carries.
     const productAddedOnBranch: Record<string, string> = {
+      "src/app/case/[token]/orders/page.tsx": "P09 identity-scoped order history and purchase quote.",
       "src/app/api/cases/[token]/reports/route.ts": "P08 identity-scoped saved report artifacts and correction intake; no calculation or publication.",
       "src/app/api/notifications/resend/route.ts": "P07 authenticated provider event inbox, disabled until configured; no customer or send authority.",
       "src/app/case/[token]/page.tsx": "UX Run 1 / D-1.2: the code challenge the sent link opens, and the case view for a verified identity session; it reaches no legal computation.",

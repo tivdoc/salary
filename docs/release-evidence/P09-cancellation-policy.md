@@ -1,0 +1,9 @@
+# P09 cancellation decision record — AI research, not human approval
+
+Decision: accept cancellation/refund requests for every paid order, including after report publication. Do not infer that delivery of a digital report automatically removes consumer rights. Do not mark a request refunded, revoke access or issue an accounting document until a verified provider outcome exists. A request is retained once per order with status and timestamp. No legal amount calculation changes.
+
+Scope: a one-off remote purchase of an individualized review service. Whether a particular purchase is a non-continuing service, whether performance has started and whether enhanced cancellation rights apply require case facts. The implementation does not automatically deny requests by a generic 14-day timer and does not import tourism's seven-day exception.
+
+Primary materials consulted 2026-09-07: [court-hosted consumer-law discussion](https://elyon1.court.gov.il/heb/tovanot_y/4412b.pdf) quotes section 14ג service cancellation timing and disclosure requirements; this is historical case material, not proof of the current consolidated statute. [State Comptroller's 2022 online commerce audit](https://library.mevaker.gov.il/sites/DigitalLibrary/Documents/2022/2022.11/2022.11-206-Online.pdf) reviews cancellation/disclosure enforcement. The government consumer brochure fetch returned 403. No fully verified current statutory exemption for this exact service was established, so the product decision preserves intake and individual review. Statutory eligibility and an actual refund remain unproven; this research is not a human signature.
+
+Provider: [official Invoice4U clearing service](https://api.invoice4u.co.il/Services/ClearingProductService.svc), [vendor integration guidance](https://www.invoice4u.co.il/wordpress-o/). No official refund operation schema was established. The release does not invent a provider refund or fiscal receipt.

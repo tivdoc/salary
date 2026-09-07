@@ -1,4 +1,5 @@
 import '../production-refusal.mjs';
+import {offerSnapshot} from '../../src/server/product/orders/contracts.ts';
 import assert from 'node:assert/strict';import {readFileSync,writeFileSync} from 'node:fs';import {randomUUID} from 'node:crypto';import pg from 'pg';
 import {readDevEnvFile} from '../supabase-dev-guard/dev-credential.mts';import {TIVDOC_DEV_PROJECT_REF} from '../supabase-dev-guard/guard.mts';
 import {canonicalSha256} from '../../src/engine/rule-runtime/canonical.ts';
@@ -14,6 +15,7 @@ try{
  if(!(await db.query("select to_regclass('private.case_report_delivery') value")).rows[0].value){await db.query('begin');try{await db.query(readFileSync('supabase/migrations/20260907105500_report_delivery_intentions.sql','utf8'));await db.query('commit');}catch(e){await db.query('rollback');throw e;}}
  if(!(await db.query("select to_regprocedure('public.case_report_qa_source(uuid,uuid)') value")).rows[0].value){await db.query('begin');try{await db.query(readFileSync('supabase/migrations/20260907110000_report_review_sources.sql','utf8'));await db.query('commit');}catch(e){await db.query('rollback');throw e;}}
  if(!(await db.query("select pg_get_functiondef('private.case_report_current_input()'::regprocedure) value")).rows[0].value.includes('REPORT_PROVENANCE_REQUIRED'))await db.query(readFileSync('supabase/migrations/20260907111000_report_provenance_publication.sql','utf8'));
+ await db.query(readFileSync('supabase/migrations/20260907123000_report_order_entitlement.sql','utf8'));
  await db.query('begin');
  for(const id of [caseId,other])await db.query("insert into public.cases(id,first_name,email,phone,status,payment_status,check_period_month) values($1,'Synthetic review','synthetic@example.invalid','0500000000','under_review','verified','2026-06-01')",[id]);
  await db.query("update public.cases set payment_status='verified' where id=$1",[caseId]);
@@ -24,8 +26,9 @@ try{
  await db.query('create policy review_document_proof on public.documents for all to tivdoc_dev_migrator using(true) with check(true)');
  await db.query("insert into public.documents(id,case_id,version_id,document_type,slot,storage_path,original_filename,mime_type,size,content_sha256) values($1,$2,$3,'payslip','payslip-01',$4,'synthetic.pdf','application/pdf',100,$5)",[docId,caseId,versionId,`cases/${caseId}/versions/${versionId}.pdf`,'b'.repeat(64)]);
  await db.query('drop policy review_document_proof on public.documents');
+ const orderId=randomUUID(),offer=offerSnapshot('initial');await db.query("insert into private.product_orders(id,case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,$2,'initial','2026-06-01','2026-06-01',999,'ILS',$3,$4,array['minimum_wage'], $5,'paid',now())",[orderId,caseId,offer,offer.sha256,offer.terms_version]);await db.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[orderId]);
  const input=(await db.query('select * from private.case_input_heads where case_id=$1',[caseId])).rows[0];
- const document={schema_version:'tivdoc-report-document-v2',id:projectionId,case_id:caseId,order_id:randomUUID(),revision:1,input_sha256:input.input_sha256,projection_sha256:canonicalSha256(projection),purchased_period:{from:'2026-06',to:'2026-06'},projection,evidence:[{id:evidenceId,document_id:docId,version_id:versionId,sha256:'b'.repeat(64),page:1,field:'gross',fact_version:'1'}],findings:[{id:randomUUID(),topic:'minimum_wage',evidence_ids:[evidenceId],rule_versions:['synthetic-rule'],parameter_versions:['synthetic-parameter']}],publication:{state:'draft',approved_input_sha256:null,approval_actor_kind:null,published_at:null},correction_policy:'append_new_revision_preserve_published'};
+ const document={schema_version:'tivdoc-report-document-v2',id:projectionId,case_id:caseId,order_id:orderId,revision:1,input_sha256:input.input_sha256,projection_sha256:canonicalSha256(projection),purchased_period:{from:'2026-06',to:'2026-06'},projection,evidence:[{id:evidenceId,document_id:docId,version_id:versionId,sha256:'b'.repeat(64),page:1,field:'gross',fact_version:'1'}],findings:[{id:randomUUID(),topic:'minimum_wage',evidence_ids:[evidenceId],rule_versions:['synthetic-rule'],parameter_versions:['synthetic-parameter']}],publication:{state:'draft',approved_input_sha256:null,approval_actor_kind:null,published_at:null},correction_policy:'append_new_revision_preserve_published'};
 
  await db.query("insert into public.case_report_projections(id,case_id,schema_version,report_kind,check_period_month,projection,projection_sha256,legal_basis,generated_at,input_revision) values($1,$2,$3,'initial','2026-06-01',$4,$5,$6,now(),$7)",[projectionId,caseId,projection.schema_version,projection,canonicalSha256(projection),projection.legal_basis,input.revision]);
  await db.query('update public.case_report_projections set report_document=$1 where id=$2',[document,projectionId]);
@@ -33,6 +36,7 @@ try{
  const q=(await ops.query("select * from public.case_report_qa_enqueue($1,$2,'initial','human',array['document_not_automatic_track'],'queued','system:publication_gate')",[caseId,projectionId])).rows[0];
  const detail=async()=> (await ops.query('select public.case_report_qa_detail($1) value',[q.id])).rows[0].value;
  const fingerprint=(await detail()).fingerprint;assert.match(fingerprint,/^[a-f0-9]{64}$/);pass('actual operations role reads saved preview and review fingerprint');
+ await db.query("update private.order_entitlements set state='suspended' where order_id=$1",[orderId]);await assert.rejects(ops.query("select * from public.case_report_qa_decide_bound($1,'approved','operator:synthetic-proof',10,$2)",[q.id,fingerprint]),/REPORT_PAID_ORDER_REQUIRED/);await db.query("update private.order_entitlements set state='active' where order_id=$1",[orderId]);pass('an approved report requires the same case paid active order entitlement');
  await assert.rejects(ops.query("select * from public.case_report_qa_decide_bound($1,'published','operator:synthetic-proof',10,$2)",[q.id,fingerprint]),/REPORT_APPROVAL_REQUIRED/);pass('direct publication without approval is refused');
  await ops.query("select * from public.case_report_qa_wording_set($1,$2,'operator:synthetic-proof')",[q.id,{minimum_wage:'נבקש לברר את בסיס הנתונים ששימש לבדיקה.'}]);
  await assert.rejects(ops.query("select * from public.case_report_qa_decide_bound($1,'approved','operator:synthetic-proof',10,$2)",[q.id,fingerprint]),/REPORT_REVIEW_STALE/);pass('wording changes invalidate the previously viewed fingerprint');

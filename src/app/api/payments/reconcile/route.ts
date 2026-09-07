@@ -1,3 +1,4 @@
+import {reconcileOrders} from '@/server/product/orders/service';
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { reconcilePendingPayments } from "@/lib/reconcile-payments";
@@ -30,7 +31,8 @@ export async function POST(request: Request) {
 
   try {
     const summary = await reconcilePendingPayments();
-    return NextResponse.json(summary, {
+    const orders = await reconcileOrders();
+    return NextResponse.json({legacy:summary,orders}, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {

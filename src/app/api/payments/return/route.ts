@@ -1,3 +1,5 @@
+import {resolveCaseAccessDb} from '@/server/product/case-access/db';
+import {reconcileOrders} from '@/server/product/orders/service';
 import { NextResponse } from "next/server";
 import { setCaseCookie } from "@/lib/case-cookie";
 import { hashPaymentReturnToken, isPaymentReturnToken } from "@/lib/payment";
@@ -25,6 +27,11 @@ export async function GET(request: Request) {
   }
 
   try {
+    const db=await resolveCaseAccessDb();
+    if(!db)throw new Error('order_store_unavailable');
+    const result=await db.rpc<{value:{order_id:string;case_id:string;public_id:string;kind:string}}>('case_order_return_resolve',{target_hash:hashPaymentReturnToken(paymentReturnToken)});
+    const order=result[0]?.value;
+    if(order){await reconcileOrders(undefined,undefined,order.order_id).catch(()=>{});return NextResponse.redirect(new URL(`/case/${order.public_id}/orders`,request.url));}
     const supabase = getSupabaseAdmin();
     const tokenHash = hashPaymentReturnToken(paymentReturnToken);
     const { data: payment, error } = await supabase

@@ -15,8 +15,8 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | P06 | IMPLEMENTED / integration pending | Field-preserving requests, typed answers, durable drafts/corrections, expiry/reminder intentions, worker CLI and Jerusalem business clock. 129 tests, 11 actual DB checks, typecheck/lint/build pass. Hosted schedule, provider delivery, order-bound SLA and browser proof remain. |
 | P07 | PARTIAL | Cookie/DB expiry alignment and logout, encrypted Resend outbox, Svix inbox, provider receipts, suppression and reminder bridge. 12 actual DB checks; focused tests pass. Provider/DNS/browser proof and contact-change re-verification remain; flags off. |
 | P08 | IMPLEMENTED / integration pending | Saved report history, identity-scoped PDF/source, correction intake, actual QA preview/assignment/approval fingerprint, immutable published content and transactional delivery intention. 9 review + 4 retained-source DB checks; browser and canonical correction/calculation composition remain. |
-| P09 | IN_PROGRESS | Separate orders, provider reconciliation, entitlement and persisted SLA |
-| P10 | TODO | Privacy, lifecycle, restore and private case investigation |
+| P09 | PARTIAL | Independent immutable order scope/price, atomic checkout claim, worker verification/entitlement, report binding and persisted clocks. 14 order + 10 review + 4 source DB checks, 37 focused tests, tsc/lint pass. Provider receipts/refunds, full historical capacity and canonical/browser integration remain. |
+| P10 | IN_PROGRESS | Privacy, lifecycle, restore and private case investigation |
 | P11 | TODO | Integrate parallel website work and customer surfaces |
 | P12 | TODO | Real metrics, monitoring and recovery controls |
 | P13 | TODO | Acceptance, rehearsal and release readiness |

@@ -17,7 +17,7 @@ export type CaseAccessDb = Readonly<{
 // (`case_funnel_event_counts`) and S4's abandonment sweep and opt-out
 // (`case_abandonment_*`, `case_reminder_*`); a call
 // to a family that is not listed is a programming error, not a runtime one.
-const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|funnel|abandonment|reminder)_[a-z_]+$/u;
+const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|order|funnel|abandonment|reminder)_[a-z_]+$/u;
 
 export function supabaseCaseAccessDb(client: {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;

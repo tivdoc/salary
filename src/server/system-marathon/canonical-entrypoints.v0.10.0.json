@@ -1913,6 +1913,23 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Identity-scoped saved report PDF, pinned source and correction intake; no calculation or human approval."
+    },
+    {
+      "entrypoint_id": "CEP-111",
+      "kind": "app_route",
+      "stable_entry": "/case/[token]/orders",
+      "source_path": "src/app/case/[token]/orders/page.tsx",
+      "canonical_contract_id": "route.page.customer-orders",
+      "canonical_target": "src/app/case/[token]/orders/page.tsx:default",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/orders/service.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped order history and server-quoted purchase; live sales require capability and configuration."
     }
   ]
 }
