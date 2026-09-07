@@ -1,0 +1,33 @@
+name: Reconcile pending payments
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: salary-payment-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify pending Invoice4u transactions
+        env:
+          RECONCILIATION_SECRET: ${{ secrets.PAYMENT_RECONCILIATION_SECRET }}
+        run: |
+          response_file="$(mktemp)"
+          status="$(curl --silent --show-error --output "$response_file" --write-out "%{http_code}" \
+            --request POST \
+            --header "Authorization: Bearer $RECONCILIATION_SECRET" \
+            --header "Content-Type: application/json" \
+            https://tivdoc.com/api/payments/reconcile)"
+          if [ "$status" -ne 200 ]; then
+            echo "Reconciliation returned HTTP $status"
+            exit 1
+          fi
+          cat "$response_file"

@@ -1,9 +1,13 @@
 "use client";
 
+import { currentFirstTouch, recordFunnelEvent } from "./attribution";
+
 export type AnalyticsEvent =
   | "landing_view"
   | "start_check"
   | "questionnaire_started"
+  | "questionnaire_step_viewed"
+  | "questionnaire_step_completed"
   | "questionnaire_completed"
   | "payslip_uploaded"
   | "payment_started"
@@ -26,11 +30,42 @@ declare global {
 
 export function trackEvent(eventName: AnalyticsEvent, params?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
+  const attribution = currentFirstTouch();
+  const safeParams = {
+    ...(typeof params?.value === "number" ? { value: params.value } : {}),
+    ...(typeof params?.currency === "string" ? { currency: params.currency.slice(0, 3) } : {}),
+    ...(typeof params?.step_number === "number" ? { step_number: params.step_number } : {}),
+    ...(attribution
+      ? {
+          funnel_session_id: attribution.funnelId,
+          ...(attribution.utmContent ? { utm_content: attribution.utmContent } : {}),
+        }
+      : {}),
+  };
+  if (
+    [
+      "landing_view",
+      "start_check",
+      "questionnaire_started",
+      "questionnaire_step_viewed",
+      "questionnaire_step_completed",
+      "questionnaire_completed",
+    ].includes(eventName)
+  ) {
+    recordFunnelEvent(eventName, {
+      stepNumber:
+        typeof safeParams.step_number === "number" ? safeParams.step_number : undefined,
+      publicCaseId:
+        typeof sessionStorage === "undefined"
+          ? undefined
+          : sessionStorage.getItem("tivdoc-public-id") || undefined,
+    });
+  }
   if (window.gtag) {
-    window.gtag("event", eventName, params);
+    window.gtag("event", eventName, safeParams);
     return;
   }
 
   window.tivdocAnalyticsQueue = window.tivdocAnalyticsQueue || [];
-  window.tivdocAnalyticsQueue.push({ eventName, params });
+  window.tivdocAnalyticsQueue.push({ eventName, params: safeParams });
 }

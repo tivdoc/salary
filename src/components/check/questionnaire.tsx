@@ -1,130 +1,196 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, Check, LockKey, Timer } from "@phosphor-icons/react";
 import { trackEvent } from "@/lib/analytics";
+import { currentFirstTouch } from "@/lib/attribution";
 import { metaEventDescriptor, trackMetaBrowserEventOnce } from "@/lib/meta-browser";
 import { questionnaireSchema } from "@/lib/validation";
 
 type FormState = {
+  stillEmployed: boolean | null;
+  salaryType: "monthly" | "hourly" | null;
+  typicalHoursPerDay: string;
+  workDaysPerWeek: string;
+  worksFriday: boolean | null;
+  worksSaturday: boolean | null;
+  payslipAvailable: boolean | null;
+  suspectedIssue: string;
   firstName: string;
   phone: string;
   email: string;
-  employmentStartDate: string;
-  stillEmployed: boolean;
-  salaryType: "monthly" | "hourly";
-  statedSalary: string;
-  typicalHoursPerDay: string;
-  workDaysPerWeek: string;
-  worksFriday: boolean;
-  worksSaturday: boolean;
-  breakMinutes: string;
-  contractRole: string;
-  actualRole: string;
-  industry: string;
-  bonuses: string;
-  travelArrangement: string;
-  pension: "yes" | "no" | "not_sure";
-  attendanceReportAvailable: boolean;
-  suspectedIssue: string;
 };
 
+const DRAFT_KEY = "tivdoc:questionnaire-draft:v2";
+const CONTACT_DRAFT_KEY = "tivdoc:questionnaire-contact:v2";
+
 const initialForm: FormState = {
+  stillEmployed: null,
+  salaryType: null,
+  typicalHoursPerDay: "",
+  workDaysPerWeek: "",
+  worksFriday: null,
+  worksSaturday: null,
+  payslipAvailable: null,
+  suspectedIssue: "",
   firstName: "",
   phone: "",
   email: "",
-  employmentStartDate: "",
-  stillEmployed: true,
-  salaryType: "monthly",
-  statedSalary: "",
-  typicalHoursPerDay: "8",
-  workDaysPerWeek: "5",
-  worksFriday: false,
-  worksSaturday: false,
-  breakMinutes: "30",
-  contractRole: "",
-  actualRole: "",
-  industry: "",
-  bonuses: "",
-  travelArrangement: "",
-  pension: "not_sure",
-  attendanceReportAvailable: false,
-  suspectedIssue: "",
 };
 
 const stepTitles = [
-  ["נתחיל בהיכרות קצרה.", "נשתמש בפרטים האלה כדי לקשר את המסמכים לבדיקה שלך."],
-  ["מה כתוב על השכר?", "פרטי ההעסקה הבסיסיים עוזרים לנו להבין את נקודת ההתחלה."],
-  ["איך שבוע העבודה באמת נראה?", "לא מה אמור לקרות. מה קורה ברוב השבועות."],
-  ["חוזה לחוד, עבודה בפועל לחוד.", "כאן נכנס המידע שלא מופיע בשורות התלוש."],
-  ["מה גרם לך לעצור ולבדוק?", "אפשר לכתוב חופשי. כל פרט קטן עשוי לעזור בבדיקה."],
-];
+  ["האם עדיין עובדים אצל אותו מעסיק?", "שאלה קצרה כדי להבין את מצב ההעסקה הנוכחי."],
+  ["איך השכר מוגדר?", "אין צורך לדעת כרגע את הסכום המדויק."],
+  ["כמה שעות עובדים ביום רגיל?", "בחרו את האפשרות הקרובה ביותר."],
+  ["איך נראה שבוע העבודה?", "מספיק אומדן. את הפרטים המדויקים נראה במסמכים."],
+  ["יש תלוש שאפשר לצלם או להעלות?", "PDF או צילום ברור מהטלפון — שניהם מתאימים."],
+  ["מה גרם לכם לבדוק?", "לא חובה. משפט קצר יכול לעזור לנו להבין איפה להסתכל."],
+  ["לאן לקשר את הבדיקה?", "הפרטים נשמרים באופן פרטי ולא נשלחים למעסיק."],
+] as const;
 
-function OptionButton({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+function OptionButton({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <button className={selected ? "option-button is-selected" : "option-button"} type="button" aria-pressed={selected} onClick={onClick}>
+    <button
+      className={selected ? "option-button is-selected" : "option-button"}
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+    >
       {selected && <Check weight="bold" aria-hidden="true" />}
       {children}
     </button>
   );
 }
 
+function nonPersonalDraft(form: FormState, step: number) {
+  const { firstName: _firstName, phone: _phone, email: _email, ...answers } = form;
+  void _firstName;
+  void _phone;
+  void _email;
+  return { form: answers, step };
+}
+
 export function Questionnaire() {
   const router = useRouter();
   const started = useRef(false);
+  const hydrated = useRef(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initialForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null") as {
+          form?: Partial<FormState>;
+          step?: number;
+        } | null;
+        const contact = JSON.parse(sessionStorage.getItem(CONTACT_DRAFT_KEY) || "null") as
+          | Pick<FormState, "firstName" | "phone" | "email">
+          | null;
+        if (saved?.form) {
+          setForm((current) => ({ ...current, ...saved.form, ...(contact || {}) }));
+        }
+        if (Number.isInteger(saved?.step)) {
+          setStep(Math.min(Math.max(saved?.step ?? 0, 0), stepTitles.length - 1));
+        }
+      } catch {
+        localStorage.removeItem(DRAFT_KEY);
+        sessionStorage.removeItem(CONTACT_DRAFT_KEY);
+      }
+      hydrated.current = true;
+    });
+
+    void fetch("/api/cases/resume", { cache: "no-store" })
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((result) => {
+        if (result?.resumePath) router.replace(result.resumePath);
+      })
+      .catch(() => undefined);
+  }, [router]);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(nonPersonalDraft(form, step)));
+    sessionStorage.setItem(
+      CONTACT_DRAFT_KEY,
+      JSON.stringify({ firstName: form.firstName, phone: form.phone, email: form.email }),
+    );
+  }, [form, step]);
+
+  useEffect(() => {
+    trackEvent("questionnaire_step_viewed", { step_number: step + 1 });
+  }, [step]);
+
+  function markStarted() {
+    if (started.current) return;
+    started.current = true;
+    trackEvent("questionnaire_started");
+  }
+
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+    markStarted();
     setForm((current) => ({ ...current, [key]: value }));
     setError("");
-    if (!started.current) {
-      started.current = true;
-      trackEvent("questionnaire_started");
-    }
   }
 
   function validateCurrentStep() {
-    if (step === 0 && (!form.firstName.trim() || !form.phone.trim() || !form.email.trim())) {
-      return "צריך למלא שם, טלפון ואימייל כדי להמשיך.";
+    if (step === 0 && form.stillEmployed === null) return "צריך לבחור תשובה כדי להמשיך.";
+    if (step === 1 && !form.salaryType) return "צריך לבחור איך השכר מוגדר.";
+    if (step === 2 && !form.typicalHoursPerDay) return "צריך לבחור מספר שעות משוער.";
+    if (
+      step === 3
+      && (!form.workDaysPerWeek || form.worksFriday === null || form.worksSaturday === null)
+    ) {
+      return "צריך להשלים את ימי העבודה ושאלות שישי ושבת.";
     }
-    if (step === 1 && (!form.employmentStartDate || !form.statedSalary)) {
-      return "צריך לבחור תאריך ולהזין את השכר שסוכם.";
+    if (step === 4 && form.payslipAvailable === null) {
+      return "צריך לבחור אם יש תלוש זמין.";
     }
-    if (step === 2 && (!form.typicalHoursPerDay || !form.workDaysPerWeek || form.breakMinutes === "")) {
-      return "צריך להשלים את פרטי שבוע העבודה.";
-    }
-    if (step === 3 && (!form.contractRole.trim() || !form.actualRole.trim() || !form.industry.trim() || !form.travelArrangement.trim())) {
-      return "צריך להשלים את פרטי התפקיד, התחום והנסיעות.";
-    }
-    if (step === 4 && form.suspectedIssue.trim().length < 10) {
-      return "כדאי להוסיף לפחות משפט קצר על מה שנראה לא תקין.";
+    if (step === 6 && (!form.firstName.trim() || !form.phone.trim() || !form.email.trim())) {
+      return "צריך למלא שם, טלפון ואימייל כדי לפתוח את הבדיקה.";
     }
     return "";
   }
 
-  function nextStep() {
-    const validationError = validateCurrentStep();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    setStep((current) => Math.min(stepTitles.length - 1, current + 1));
+  function moveTo(next: number) {
+    setStep(next);
+    setError("");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }
 
+  function nextStep() {
+    markStarted();
+    const validationError = validateCurrentStep();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    trackEvent("questionnaire_step_completed", { step_number: step + 1 });
+    moveTo(Math.min(stepTitles.length - 1, step + 1));
+  }
+
   async function submit() {
+    markStarted();
     const validationError = validateCurrentStep();
     if (validationError) {
       setError(validationError);
       return;
     }
 
-    const parsed = questionnaireSchema.safeParse(form);
+    const attribution = currentFirstTouch();
+    const parsed = questionnaireSchema.safeParse({ ...form, attribution });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message || "יש פרט שדורש תיקון לפני שממשיכים.");
       return;
@@ -141,8 +207,12 @@ export function Questionnaire() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "פתיחת הבדיקה נכשלה");
       sessionStorage.setItem("tivdoc-public-id", result.publicId);
+      localStorage.setItem("tivdoc:active-case", result.publicId);
+      localStorage.removeItem(DRAFT_KEY);
+      sessionStorage.removeItem(CONTACT_DRAFT_KEY);
       const metaEvent = metaEventDescriptor(result.metaEvent);
       if (metaEvent) trackMetaBrowserEventOnce(metaEvent);
+      trackEvent("questionnaire_step_completed", { step_number: step + 1 });
       trackEvent("questionnaire_completed");
       router.push("/check/upload");
     } catch (caught) {
@@ -152,59 +222,116 @@ export function Questionnaire() {
   }
 
   return (
-    <div className="questionnaire" onFocusCapture={() => !started.current && update("firstName", form.firstName)}>
+    <div className="questionnaire" onFocusCapture={markStarted}>
+      <div className="questionnaire__meter" aria-hidden="true">
+        <span style={{ width: `${((step + 1) / stepTitles.length) * 100}%` }} />
+      </div>
       <div className="questionnaire__heading">
-        <span className="mono">{String(step + 1).padStart(2, "0")} / {String(stepTitles.length).padStart(2, "0")}</span>
+        <span className="mono">שאלה {step + 1} מתוך {stepTitles.length}</span>
         <h1>{stepTitles[step][0]}</h1>
         <p>{stepTitles[step][1]}</p>
       </div>
 
       <div className="questionnaire__body">
         {step === 0 && (
-          <div className="form-grid">
-            <label className="field"><span>שם פרטי</span><input autoComplete="given-name" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} /></label>
-            <label className="field"><span>טלפון</span><input type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={form.phone} onChange={(e) => update("phone", e.target.value)} /></label>
-            <label className="field field--wide"><span>אימייל</span><input type="email" inputMode="email" autoComplete="email" dir="ltr" value={form.email} onChange={(e) => update("email", e.target.value)} /></label>
+          <div className="option-row">
+            <OptionButton selected={form.stillEmployed === true} onClick={() => update("stillEmployed", true)}>כן</OptionButton>
+            <OptionButton selected={form.stillEmployed === false} onClick={() => update("stillEmployed", false)}>לא</OptionButton>
           </div>
         )}
 
         {step === 1 && (
-          <div className="form-stack">
-            <label className="field"><span>מתי התחלת לעבוד?</span><input type="date" dir="ltr" value={form.employmentStartDate} onChange={(e) => update("employmentStartDate", e.target.value)} /></label>
-            <fieldset className="field-group"><legend>עדיין עובד/ת שם?</legend><div className="option-row"><OptionButton selected={form.stillEmployed} onClick={() => update("stillEmployed", true)}>כן</OptionButton><OptionButton selected={!form.stillEmployed} onClick={() => update("stillEmployed", false)}>לא</OptionButton></div></fieldset>
-            <fieldset className="field-group"><legend>איך השכר מוגדר?</legend><div className="option-row"><OptionButton selected={form.salaryType === "monthly"} onClick={() => update("salaryType", "monthly")}>שכר חודשי</OptionButton><OptionButton selected={form.salaryType === "hourly"} onClick={() => update("salaryType", "hourly")}>שכר שעתי</OptionButton></div></fieldset>
-            <label className="field"><span>{form.salaryType === "monthly" ? "השכר החודשי שסוכם" : "השכר לשעה שסוכם"}</span><div className="money-input"><input type="number" inputMode="decimal" min="1" value={form.statedSalary} onChange={(e) => update("statedSalary", e.target.value)} /><b>₪</b></div></label>
+          <div className="option-row">
+            <OptionButton selected={form.salaryType === "monthly"} onClick={() => update("salaryType", "monthly")}>חודשי</OptionButton>
+            <OptionButton selected={form.salaryType === "hourly"} onClick={() => update("salaryType", "hourly")}>שעתי</OptionButton>
           </div>
         )}
 
         {step === 2 && (
-          <div className="form-stack">
-            <fieldset className="field-group"><legend>כמה שעות אתה באמת עובד ביום?</legend><div className="option-row option-row--four">{["8", "9", "10", "11"].map((hours) => <OptionButton key={hours} selected={form.typicalHoursPerDay === hours} onClick={() => update("typicalHoursPerDay", hours)}><bdi dir="ltr">{hours === "11" ? "11+" : hours}</bdi></OptionButton>)}</div></fieldset>
-            <label className="field"><span>כמה ימים בשבוע?</span><input type="number" inputMode="numeric" min="1" max="7" value={form.workDaysPerWeek} onChange={(e) => update("workDaysPerWeek", e.target.value)} /></label>
-            <div className="form-grid">
-              <fieldset className="field-group"><legend>עבודה ביום שישי?</legend><div className="option-row"><OptionButton selected={form.worksFriday} onClick={() => update("worksFriday", true)}>כן</OptionButton><OptionButton selected={!form.worksFriday} onClick={() => update("worksFriday", false)}>לא</OptionButton></div></fieldset>
-              <fieldset className="field-group"><legend>עבודה בשבת?</legend><div className="option-row"><OptionButton selected={form.worksSaturday} onClick={() => update("worksSaturday", true)}>כן</OptionButton><OptionButton selected={!form.worksSaturday} onClick={() => update("worksSaturday", false)}>לא</OptionButton></div></fieldset>
-            </div>
-            <label className="field"><span>משך הפסקה טיפוסית בדקות</span><input type="number" inputMode="numeric" min="0" max="300" value={form.breakMinutes} onChange={(e) => update("breakMinutes", e.target.value)} /></label>
+          <div className="option-row option-row--four">
+            {["8", "9", "10", "11"].map((hours) => (
+              <OptionButton
+                key={hours}
+                selected={form.typicalHoursPerDay === hours}
+                onClick={() => update("typicalHoursPerDay", hours)}
+              >
+                <bdi dir="ltr">{hours === "11" ? "11+" : hours}</bdi>
+              </OptionButton>
+            ))}
           </div>
         )}
 
         {step === 3 && (
           <div className="form-stack">
-            <label className="field"><span>התפקיד שכתוב בחוזה</span><input value={form.contractRole} onChange={(e) => update("contractRole", e.target.value)} /></label>
-            <label className="field"><span>מה עושים בפועל?</span><textarea rows={4} value={form.actualRole} onChange={(e) => update("actualRole", e.target.value)} /></label>
-            <label className="field"><span>תחום הפעילות של המעסיק</span><input value={form.industry} onChange={(e) => update("industry", e.target.value)} /></label>
-            <label className="field"><span>בונוסים או עמלות (אם יש)</span><input value={form.bonuses} onChange={(e) => update("bonuses", e.target.value)} /></label>
-            <label className="field"><span>איך מסודרות הנסיעות?</span><input value={form.travelArrangement} onChange={(e) => update("travelArrangement", e.target.value)} /></label>
-            <fieldset className="field-group"><legend>מופרשת פנסיה?</legend><div className="option-row option-row--three"><OptionButton selected={form.pension === "yes"} onClick={() => update("pension", "yes")}>כן</OptionButton><OptionButton selected={form.pension === "no"} onClick={() => update("pension", "no")}>לא</OptionButton><OptionButton selected={form.pension === "not_sure"} onClick={() => update("pension", "not_sure")}>לא בטוח</OptionButton></div></fieldset>
-            <fieldset className="field-group"><legend>יש דוח נוכחות?</legend><div className="option-row"><OptionButton selected={form.attendanceReportAvailable} onClick={() => update("attendanceReportAvailable", true)}>כן</OptionButton><OptionButton selected={!form.attendanceReportAvailable} onClick={() => update("attendanceReportAvailable", false)}>לא</OptionButton></div></fieldset>
+            <fieldset className="field-group">
+              <legend>כמה ימים בשבוע?</legend>
+              <div className="option-row option-row--three">
+                {["5", "6", "7"].map((days) => (
+                  <OptionButton
+                    key={days}
+                    selected={form.workDaysPerWeek === days}
+                    onClick={() => update("workDaysPerWeek", days)}
+                  >
+                    {days}
+                  </OptionButton>
+                ))}
+              </div>
+            </fieldset>
+            <div className="form-grid">
+              <fieldset className="field-group">
+                <legend>עבודה בשישי?</legend>
+                <div className="option-row">
+                  <OptionButton selected={form.worksFriday === true} onClick={() => update("worksFriday", true)}>כן</OptionButton>
+                  <OptionButton selected={form.worksFriday === false} onClick={() => update("worksFriday", false)}>לא</OptionButton>
+                </div>
+              </fieldset>
+              <fieldset className="field-group">
+                <legend>עבודה בשבת?</legend>
+                <div className="option-row">
+                  <OptionButton selected={form.worksSaturday === true} onClick={() => update("worksSaturday", true)}>כן</OptionButton>
+                  <OptionButton selected={form.worksSaturday === false} onClick={() => update("worksSaturday", false)}>לא</OptionButton>
+                </div>
+              </fieldset>
+            </div>
           </div>
         )}
 
         {step === 4 && (
           <div className="form-stack">
-            <label className="field"><span>מה גורם לך לחשוב שמשהו לא תקין?</span><textarea rows={8} value={form.suspectedIssue} onChange={(e) => update("suspectedIssue", e.target.value)} placeholder="למשל: אני נשאר כמעט כל יום שעה נוספת, אבל בתלוש מופיע סכום קבוע..." /></label>
-            <div className="form-summary"><b>מה יקרה בהמשך?</b><p>נפתח תיק בדיקה, נבקש תלוש אחד לפחות ונעביר אותך לתשלום המאובטח של Invoice4u.</p></div>
+            <div className="option-row">
+              <OptionButton selected={form.payslipAvailable === true} onClick={() => update("payslipAvailable", true)}>כן, יש לי</OptionButton>
+              <OptionButton selected={form.payslipAvailable === false} onClick={() => update("payslipAvailable", false)}>אמצא אחר כך</OptionButton>
+            </div>
+            <div className="form-summary">
+              <b>המסמך נשמר באזור פרטי.</b>
+              <p>אין קישור ציבורי לקובץ, והוא לא נשלח למעסיק.</p>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <label className="field">
+            <span>אפשר לכתוב כאן — או פשוט להמשיך</span>
+            <textarea
+              rows={5}
+              value={form.suspectedIssue}
+              onChange={(event) => update("suspectedIssue", event.target.value)}
+              placeholder="למשל: השעות הנוספות לא נראות לי נכונות"
+            />
+          </label>
+        )}
+
+        {step === 6 && (
+          <div className="form-stack">
+            <div className="form-grid">
+              <label className="field"><span>שם פרטי</span><input autoComplete="given-name" value={form.firstName} onChange={(event) => update("firstName", event.target.value)} /></label>
+              <label className="field"><span>טלפון</span><input type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={form.phone} onChange={(event) => update("phone", event.target.value)} /></label>
+              <label className="field field--wide"><span>אימייל</span><input type="email" inputMode="email" autoComplete="email" dir="ltr" value={form.email} onChange={(event) => update("email", event.target.value)} /></label>
+            </div>
+            <div className="questionnaire__trust">
+              <span><LockKey weight="duotone" aria-hidden="true" /> פרטי ומאובטח</span>
+              <span><Timer weight="duotone" aria-hidden="true" /> נשאר רק להעלות תלוש</span>
+            </div>
           </div>
         )}
       </div>
@@ -212,9 +339,23 @@ export function Questionnaire() {
       {error && <div className="form-error" role="alert">{error}</div>}
 
       <div className="questionnaire__actions">
-        {step > 0 ? <button className="button button--secondary" type="button" onClick={() => { setStep((current) => current - 1); setError(""); }}><ArrowRight aria-hidden="true" /> חזרה</button> : <span />}
-        {step < stepTitles.length - 1 ? <button className="button button--primary" type="button" onClick={nextStep}>המשך <ArrowLeft aria-hidden="true" /></button> : <button className="button button--primary" type="button" disabled={submitting} onClick={submit}>{submitting ? "פותחים את הבדיקה..." : "שמירה ומעבר למסמכים"}<ArrowLeft aria-hidden="true" /></button>}
+        {step > 0 ? (
+          <button className="button button--secondary" type="button" onClick={() => moveTo(step - 1)}>
+            <ArrowRight aria-hidden="true" /> חזרה
+          </button>
+        ) : <span />}
+        {step < stepTitles.length - 1 ? (
+          <button className="button button--primary" type="button" onClick={nextStep}>
+            המשך <ArrowLeft aria-hidden="true" />
+          </button>
+        ) : (
+          <button className="button button--primary" type="button" disabled={submitting} onClick={submit}>
+            {submitting ? "פותחים את הבדיקה..." : "פתיחת תיק והעלאת תלוש"}
+            <ArrowLeft aria-hidden="true" />
+          </button>
+        )}
       </div>
+      <p className="questionnaire__saved">התשובות נשמרות בדפדפן אם צריך לעצור ולחזור.</p>
     </div>
   );
 }

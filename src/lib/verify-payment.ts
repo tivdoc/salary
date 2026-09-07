@@ -6,6 +6,7 @@ import {
   validateInvoice4uClearingLog,
 } from "./payment-verification";
 import { getSupabaseAdmin } from "./supabase-admin";
+import { recordCaseFunnelEvent } from "./funnel-server";
 
 export type PaymentVerificationResult =
   | "verified"
@@ -101,5 +102,6 @@ export async function verifyPendingInvoice4uPayment(
     console.error("Payment verification database transition rejected", verificationError.code);
     return "rejected";
   }
+  await recordCaseFunnelEvent(caseId, "payment_verified");
   return newlyVerified ? "verified" : "already_verified";
 }

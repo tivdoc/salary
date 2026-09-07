@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const optionalText = z.string().trim().max(500).optional().default("");
+import { firstTouchSchema } from "./funnel-validation";
 
 export const questionnaireSchema = z.object({
   firstName: z.string().trim().min(2, "נא להזין שם פרטי").max(80),
@@ -9,27 +8,15 @@ export const questionnaireSchema = z.object({
     .trim()
     .regex(/^\+?[0-9][0-9\-\s]{7,16}$/, "נא להזין מספר טלפון תקין"),
   email: z.email("נא להזין כתובת אימייל תקינה").max(180),
-  employmentStartDate: z.iso.date("נא לבחור תאריך תחילת עבודה"),
   stillEmployed: z.boolean(),
   salaryType: z.enum(["monthly", "hourly"]),
-  statedSalary: z.coerce.number().positive("נא להזין שכר גדול מאפס").max(1_000_000),
   typicalHoursPerDay: z.coerce.number().min(1).max(18),
   workDaysPerWeek: z.coerce.number().int().min(1).max(7),
   worksFriday: z.boolean(),
   worksSaturday: z.boolean(),
-  breakMinutes: z.coerce.number().int().min(0).max(300),
-  contractRole: z.string().trim().min(2, "נא לתאר את התפקיד בחוזה").max(300),
-  actualRole: z.string().trim().min(2, "נא לתאר מה עושים בפועל").max(700),
-  industry: z.string().trim().min(2, "נא לציין תחום פעילות").max(200),
-  bonuses: optionalText,
-  travelArrangement: z.string().trim().min(2, "נא לתאר את הסדר הנסיעות").max(300),
-  pension: z.enum(["yes", "no", "not_sure"]),
-  attendanceReportAvailable: z.boolean(),
-  suspectedIssue: z
-    .string()
-    .trim()
-    .min(10, "נא להוסיף כמה מילים על מה שנראה לא תקין")
-    .max(2_000),
+  payslipAvailable: z.boolean(),
+  suspectedIssue: z.string().trim().max(500).optional().default(""),
+  attribution: firstTouchSchema.nullable().optional(),
 });
 
 export type QuestionnaireInput = z.infer<typeof questionnaireSchema>;

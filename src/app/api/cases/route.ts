@@ -25,6 +25,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseAdmin();
+    const attribution = parsed.data.attribution;
     const { data: created, error: caseError } = await supabase
       .from("cases")
       .insert({
@@ -32,13 +33,29 @@ export async function POST(request: Request) {
         email: parsed.data.email.toLowerCase(),
         phone: parsed.data.phone,
         status: "questionnaire_completed",
+        funnel_session_id: attribution?.funnelId ?? null,
+        utm_source: attribution?.utmSource ?? null,
+        utm_medium: attribution?.utmMedium ?? null,
+        utm_campaign: attribution?.utmCampaign ?? null,
+        utm_content: attribution?.utmContent ?? null,
+        utm_term: attribution?.utmTerm ?? null,
+        fbclid: attribution?.fbclid ?? null,
+        fbp: attribution?.fbp ?? null,
+        fbc: attribution?.fbc ?? null,
+        ga_client_id: attribution?.gaClientId ?? null,
+        landing_url: attribution?.landingUrl ?? null,
+        referrer: attribution?.referrer ?? null,
+        first_touch_at: attribution?.firstTouchAt ?? null,
+        current_questionnaire_step: 7,
+        attribution_status: attribution ? "captured" : "legacy_unresolved",
       })
       .select("id,public_id")
       .single();
 
     if (caseError || !created) throw caseError ?? new Error("Case creation returned no identifier");
 
-    const { suspectedIssue, ...payload } = parsed.data;
+    const { suspectedIssue, attribution: _attribution, ...payload } = parsed.data;
+    void _attribution;
     const { error: responseError } = await supabase.from("questionnaire_responses").insert({
       case_id: created.id,
       payload,
@@ -48,6 +65,50 @@ export async function POST(request: Request) {
     if (responseError) {
       await supabase.from("cases").delete().eq("id", created.id);
       throw responseError;
+    }
+
+    if (attribution) {
+      const now = new Date().toISOString();
+      const sessionResult = await supabase
+        .from("funnel_sessions")
+        .upsert(
+          {
+            id: attribution.funnelId,
+            case_id: created.id,
+            utm_source: attribution.utmSource,
+            utm_medium: attribution.utmMedium,
+            utm_campaign: attribution.utmCampaign,
+            utm_content: attribution.utmContent,
+            utm_term: attribution.utmTerm,
+            fbclid: attribution.fbclid,
+            fbp: attribution.fbp,
+            fbc: attribution.fbc,
+            ga_client_id: attribution.gaClientId,
+            landing_url: attribution.landingUrl,
+            referrer: attribution.referrer,
+            first_touch_at: attribution.firstTouchAt,
+            last_seen_at: now,
+            current_questionnaire_step: 7,
+            questionnaire_started_at: now,
+            questionnaire_completed_at: now,
+            updated_at: now,
+          },
+          { onConflict: "id" },
+        );
+      if (sessionResult.error) {
+        console.warn("Case attribution link deferred", sessionResult.error.code);
+      } else {
+        await supabase.from("funnel_events").upsert(
+          {
+            session_id: attribution.funnelId,
+            case_id: created.id,
+            event_name: "case_created",
+            step_number: null,
+            idempotency_key: `${attribution.funnelId}:case_created:${created.public_id}`,
+          },
+          { onConflict: "idempotency_key", ignoreDuplicates: true },
+        );
+      }
     }
 
     await setCaseCookie(created.id);

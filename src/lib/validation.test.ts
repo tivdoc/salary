@@ -5,29 +5,19 @@ const validQuestionnaire = {
   firstName: "נועה",
   phone: "050-1234567",
   email: "noa@example.com",
-  employmentStartDate: "2024-01-15",
   stillEmployed: true,
   salaryType: "monthly",
-  statedSalary: "9400",
   typicalHoursPerDay: "9",
   workDaysPerWeek: "5",
   worksFriday: true,
   worksSaturday: false,
-  breakMinutes: "30",
-  contractRole: "רכזת תפעול",
-  actualRole: "מנהלת צוות ועובדת מול לקוחות",
-  industry: "שירותים",
-  bonuses: "בונוס רבעוני",
-  travelArrangement: "החזר חופשי חודשי",
-  pension: "yes",
-  attendanceReportAvailable: true,
+  payslipAvailable: true,
   suspectedIssue: "השעות הנוספות מופיעות כסכום קבוע מדי חודש.",
 };
 
 describe("questionnaireSchema", () => {
   it("normalizes numeric questionnaire inputs", () => {
     const result = questionnaireSchema.parse(validQuestionnaire);
-    expect(result.statedSalary).toBe(9400);
     expect(result.typicalHoursPerDay).toBe(9);
     expect(result.workDaysPerWeek).toBe(5);
   });
@@ -37,9 +27,9 @@ describe("questionnaireSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("requires a meaningful suspected issue", () => {
-    const result = questionnaireSchema.safeParse({ ...validQuestionnaire, suspectedIssue: "לא תקין" });
-    expect(result.success).toBe(false);
+  it("allows the suspected issue to stay optional", () => {
+    const result = questionnaireSchema.safeParse({ ...validQuestionnaire, suspectedIssue: "" });
+    expect(result.success).toBe(true);
   });
 });
 
