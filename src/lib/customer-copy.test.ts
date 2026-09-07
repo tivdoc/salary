@@ -3,6 +3,10 @@ import { CUSTOMER_ERROR_COPY, customerErrorMessage } from "./customer-copy.ts";
 
 // UX Run 1 / U8: no component renders a raw error.
 describe("customer error copy", () => {
+  it("shows a request save failure and never returns an absent fallback string", () => {
+    expect(customerErrorMessage({error:"Failed to fetch"}, "request_answer_failed")).toMatch(/[֐-׿]/u);
+    expect(customerErrorMessage({error:"Failed to fetch"}, "future_unknown_fallback")).toBe(CUSTOMER_ERROR_COPY.unknown);
+  });
   it("maps a known code to Hebrew copy and ignores whatever else came with it", () => {
     expect(customerErrorMessage({ code: "access_code_locked", error: "TypeError: boom" })).toBe(CUSTOMER_ERROR_COPY.access_code_locked);
   });

@@ -28,6 +28,9 @@ export const CUSTOMER_ERROR_COPY: Readonly<Record<string, string>> = Object.free
   reminder_opt_out_failed: "לא הצלחנו לבטל את התזכורות כרגע. אפשר לנסות שוב, או פשוט להתעלם מההודעה.",
   upload_session_failed: "לא הצלחנו לפתוח את מסך צירוף המסמך. אפשר לנסות שוב.",
   payment_start_failed: "לא הצלחנו לפתוח את עמוד התשלום. אפשר לנסות שוב.",
+  request_answer_failed: "לא התקבל אישור שמירה. התשובה נשארה כאן ואפשר לנסות שוב.",
+  request_answer_invalid: "התשובה אינה מתאימה לשאלה. צריך לבדוק את הערך ולנסות שוב.",
+  request_edit_conflict: "התשובה או הטיוטה השתנו. אפשר לטעון את המצב שנשמר לפני שליחה נוספת.",
   network_failed: "החיבור נכשל. אפשר לבדוק את הרשת ולנסות שוב.",
   unknown: "משהו השתבש. אפשר לנסות שוב.",
 });
@@ -48,7 +51,7 @@ export function customerErrorMessage(
 ): string {
   if (typeof input.code === "string" && input.code in CUSTOMER_ERROR_COPY) return CUSTOMER_ERROR_COPY[input.code]!;
   if (typeof input.error === "string" && HEBREW.test(input.error) && !TECHNICAL.test(input.error)) return input.error;
-  return CUSTOMER_ERROR_COPY[fallback]!;
+  return CUSTOMER_ERROR_COPY[fallback] ?? CUSTOMER_ERROR_COPY.unknown!;
 }
 
 /** Reads `{ error, code }` out of a failed fetch response body, tolerating bodies that are not JSON. */
