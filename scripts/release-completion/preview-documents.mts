@@ -11,7 +11,7 @@ const directory='output/release-completion/preview-documents';
 type Fixture={caseId:string;publicId:string;identity:string;session:string;requests:Record<string,string>};
 type Doc={id:string;version_id:string;slot:string;original_filename:string;document_type:string};
 type Snapshot={caseId:string;documents:Doc[];status:string;paymentStatus:string;requests:{id:string}[]};
-const fixtures=JSON.parse(process.env.TIVDOC_PREVIEW_CASE_FIXTURES??'null') as {origin:string;database:string;cases:Fixture[]};
+const fixtures=JSON.parse(process.env.TIVDOC_PREVIEW_CASE_FIXTURES??'null') as {origin:string;database:string;cases:Fixture[];pendingBatch?:string;resume?:{run:number;snapshots:Record<string,Snapshot>}};
 const access=JSON.parse(process.env.TIVDOC_PREVIEW_BROWSER_STATE??'null');
 delete process.env.TIVDOC_PREVIEW_CASE_FIXTURES;delete process.env.TIVDOC_PREVIEW_BROWSER_STATE;
 assert.equal(fixtures.origin,origin);assert.equal(fixtures.database,'tivdoc_release_replay_20260907');assert.equal(fixtures.cases.length,2);
@@ -25,14 +25,14 @@ const contexts:BrowserContext[]=[];
 const checks:{name:string;passed:boolean;detail?:string}[]=[];
 const snapshots:Record<string,Snapshot>={};
 const expectedFiles:{name:string;sha256:string;size:number}[]=[];
-const errors:string[]=[];
-async function receipt(){await writeFile(`${directory}/receipt.json`,JSON.stringify({origin,deployedSha,checks,snapshots,expectedFiles,errors,
+const errors:string[]=[];const network:{kind:string;status?:number;code?:string|null}[]=[];let observed:Page|undefined;
+async function receipt(){await writeFile(`${directory}/receipt.json`,JSON.stringify({origin,deployedSha,resumedPrefixFromRun:fixtures.resume?.run??null,checks,snapshots,expectedFiles,errors,network,
  scope:'Two seeded synthetic QA identities; actual hosted pages, HTTP upload APIs, DEV Storage PUT and isolated web-role DB RPC. No OTP delivery or real payment/provider verification.',
  productionChanged:false,secretsIncluded:false},null,2)+'\n');}
-async function check(name:string,run:()=>Promise<void>){try{await run();checks.push({name,passed:true});console.log('PASS '+name);}catch(e){const detail=e instanceof Error?e.message:'failed';checks.push({name,passed:false,detail});console.log('FAIL '+name+': '+detail);await receipt();throw e;}await receipt();}
+async function check(name:string,run:()=>Promise<void>){try{await run();checks.push({name,passed:true});console.log('PASS '+name);}catch(e){const detail=e instanceof Error?e.message:'failed';checks.push({name,passed:false,detail});console.log('FAIL '+name+': '+detail);if(observed){await observed.screenshot({path:`${directory}/failure.png`,fullPage:true}).catch(()=>{});network.push({kind:'visible alerts: '+(await observed.getByRole('alert').allTextContents()).join(' | ')});}await receipt();throw e;}await receipt();}
 async function context(c:Fixture){const ctx=await browser.newContext({storageState:access,locale:'he-IL',timezoneId:'Asia/Jerusalem',viewport:{width:390,height:900},reducedMotion:'reduce'});contexts.push(ctx);ctx.setDefaultTimeout(20000);ctx.setDefaultNavigationTimeout(30000);await ctx.addCookies([{name:'tivdoc_case_session',value:c.session,domain:new URL(origin).hostname,path:'/',secure:true,httpOnly:true,sameSite:'Lax'}]);return ctx;}
-function watch(page:Page){page.on('pageerror',e=>errors.push(e.message));}
-async function open(page:Page,c:Fixture){const response=await page.goto(`${origin}/case/${c.publicId}/documents`,{waitUntil:'domcontentloaded'});assert.equal(response?.status(),200,'owner documents page');await page.getByRole('heading',{name:'המסמכים בתיק',exact:true}).waitFor();await page.getByRole('button',{name:'ניהול המסמכים',exact:true}).click();await page.waitForURL(origin+'/check/upload');await page.getByRole('heading',{name:'השלמת מסמכים לתיק',exact:true}).waitFor();}
+function watch(page:Page){page.on('pageerror',e=>errors.push(e.message));page.on('response',async r=>{const url=new URL(r.url());if(url.origin===origin&&url.pathname.startsWith('/api/documents/')){const body=await r.json().catch(()=>({}));network.push({kind:url.pathname,status:r.status(),code:body.code??null});}else if(url.hostname==='cpzrbidxftzqcfeqqusu.supabase.co'&&r.request().method()==='PUT')network.push({kind:'DEV Storage PUT',status:r.status()});});page.on('requestfailed',r=>{const u=new URL(r.url());if(u.origin===origin&&u.pathname.startsWith('/api/documents/'))network.push({kind:u.pathname+' failed'});else if(u.hostname==='cpzrbidxftzqcfeqqusu.supabase.co')network.push({kind:'DEV Storage request failed'});});}
+async function open(page:Page,c:Fixture){observed=page;const response=await page.goto(`${origin}/case/${c.publicId}/documents`,{waitUntil:'domcontentloaded'});assert.equal(response?.status(),200,'owner documents page');await page.getByRole('heading',{name:'המסמכים בתיק',exact:true}).waitFor();await page.getByRole('button',{name:'ניהול המסמכים',exact:true}).click();await page.waitForURL(origin+'/check/upload');await page.getByRole('heading',{name:'השלמת מסמכים לתיק',exact:true}).waitFor();}
 async function file(name:string){const pdf=await PDFDocument.create();const font=await pdf.embedFont(StandardFonts.Helvetica);pdf.addPage([400,250]).drawText('SYNTHETIC QA ONLY: '+name,{x:24,y:200,size:12,font});const buffer=Buffer.from(await pdf.save());expectedFiles.push({name,sha256:createHash('sha256').update(buffer).digest('hex'),size:buffer.length});return {name,mimeType:'application/pdf',buffer};}
 async function choose(page:Page,label:string,name:string){await page.getByLabel(label,{exact:true}).setInputFiles(await file(name));await page.getByRole('button',{name:'שמירה וחזרה לתיק',exact:true}).waitFor({state:'visible'});await page.waitForFunction(()=>!document.querySelector<HTMLButtonElement>('.document-review__actions .button--primary')?.disabled);}
 async function submit(page:Page){const result=page.waitForResponse(r=>r.url()===origin+'/api/documents/complete'&&r.request().method()==='POST');await page.getByRole('button',{name:/^(שמירה וחזרה לתיק|ניסיון נוסף להשלמת ההעלאה)$/u}).click();const response=await result;assert.equal(response.status(),200,'completion status');const body=await response.json() as Snapshot;await page.waitForURL(/\/case\/TV-[A-Z0-9]{8}\/documents$/u);return body;}
@@ -41,14 +41,23 @@ function retained(before:Snapshot,after:Snapshot,names:string[]){for(const name 
 async function saved(page:Page,names:string[]){const section=page.getByRole('region',{name:'מסמכים שמורים'});for(const name of names)await section.getByText(name,{exact:true}).waitFor();assert.equal(await section.locator('li').count(),names.length);}
 try{
  const [a,b]=fixtures.cases;const ca=await context(a),cb=await context(b);const pa=await ca.newPage(),pb=await cb.newPage();watch(pa);watch(pb);
+ if(fixtures.resume){
+  assert.equal(fixtures.resume.run,34139129328);Object.assign(snapshots,fixtures.resume.snapshots);assert.equal(snapshots.added.caseId,a.caseId);
+  await check('cancel incomplete prior attempt while retaining its three saved documents',async()=>{
+   await open(pa,a);await saved(pa,['qa-first.pdf','qa-contract.pdf','qa-second.pdf']);
+   const response=await ca.request.post(origin+'/api/documents/complete',{headers:{origin},data:{caseId:a.caseId,batchId:fixtures.pendingBatch,action:'cancel'}});assert.equal(response.status(),200);assert.deepEqual((await response.json()).documents,snapshots.added.documents);
+  });
+ }else{
  await check('owner session reaches the isolated hosted upload screen',async()=>{await open(pa,a);assert.equal(await pa.getByRole('region',{name:'מסמכים שמורים'}).count(),0);});
  await check('initial payslip and contract are uploaded through UI, Storage and completion',async()=>{await choose(pa,'הוספת תלוש','qa-first.pdf');await choose(pa,'הוספת חוזה','qa-contract.pdf');snapshots.initial=await submit(pa);assert.equal(snapshots.initial.documents.length,2);});
  await check('returning to upload renders the saved first payslip and contract',async()=>{await open(pa,a);await saved(pa,['qa-first.pdf','qa-contract.pdf']);await pa.screenshot({path:`${directory}/saved-initial-390.png`,fullPage:true});});
  await check('adding a second payslip preserves both original document identities and versions',async()=>{await choose(pa,'הוספת תלוש','qa-second.pdf');snapshots.added=await submit(pa);assert.equal(snapshots.added.documents.length,3);retained(snapshots.initial,snapshots.added,['qa-first.pdf','qa-contract.pdf']);});
+ }
  await check('connection failure before completion leaves the original replacement target saved',async()=>{
   await open(pa,a);await choose(pa,'החלפת qa-first.pdf','qa-replaced.pdf');
   await pa.route(origin+'/api/documents/complete',route=>route.abort('connectionfailed'),{times:1});
-  await pa.getByRole('button',{name:'שמירה וחזרה לתיק',exact:true}).click();await pa.getByRole('alert').waitFor();
+  await Promise.all([pa.waitForRequest(r=>r.url()===origin+'/api/documents/complete'&&r.method()==='POST'),pa.getByRole('button',{name:'שמירה וחזרה לתיק',exact:true}).click()]);await pa.getByRole('alert').waitFor();
+  await pa.unroute(origin+'/api/documents/complete');
   await pa.reload({waitUntil:'domcontentloaded'});await saved(pa,['qa-first.pdf','qa-contract.pdf','qa-second.pdf']);
   await pa.getByRole('button',{name:'ניסיון נוסף להשלמת ההעלאה',exact:true}).waitFor();
   await pa.screenshot({path:`${directory}/interrupted-replacement-390.png`,fullPage:true});
@@ -91,4 +100,4 @@ try{
  });
 }catch{/* each failed check already recorded; stop dependent mutations */}
 finally{await Promise.all(contexts.map(c=>c.close()));await browser.close();await receipt();}
-if(checks.some(c=>!c.passed)||checks.length<12)process.exitCode=1;
+if(checks.some(c=>!c.passed)||checks.length<(fixtures.resume?10:13))process.exitCode=1;

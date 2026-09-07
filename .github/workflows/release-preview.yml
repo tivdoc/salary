@@ -34,7 +34,7 @@ jobs:
         env:
           TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
           TIVDOC_PREVIEW_CASE_FIXTURES: ${{ secrets.TIVDOC_PREVIEW_CASE_FIXTURES }}
-        run: node --experimental-strip-types scripts/release-completion/preview-upload-retry.mts
+        run: node --experimental-strip-types scripts/release-completion/preview-documents.mts
       - name: Keep public screenshots and scoped receipt only
         if: always()
         uses: actions/upload-artifact@v4
