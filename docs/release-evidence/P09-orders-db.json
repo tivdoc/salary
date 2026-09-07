@@ -13,7 +13,9 @@
     "saved price and scope cannot be edited after creation",
     "verified orders start independent persisted service clocks",
     "refund retry records one request, never asserts refunded or revokes delivery",
-    "paid order scope participates in the immutable analysis input"
+    "paid order scope participates in the immutable analysis input",
+    "authenticated order clocks retain distinct verified-payment start, saved calendar and positive budget",
+    "order clocks reject an identity requesting another case"
   ],
   "database": "tivdoc_release_replay_20260907",
   "fixtures": "synthetic QA; fake provider coordinates, no external charge",
