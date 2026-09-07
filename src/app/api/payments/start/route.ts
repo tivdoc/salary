@@ -1,3 +1,4 @@
+import { productOffer } from "@/config/product-offer";
 import { NextResponse } from "next/server";
 import { readCaseIdFromCookie } from "@/lib/case-cookie";
 import {
@@ -72,6 +73,9 @@ async function deliverCheckoutMeta(
 }
 
 export async function POST(request: Request) {
+  if (!productOffer.initial.available) {
+    return NextResponse.json({ code: "SERVICE_UNAVAILABLE", error: "פתיחת בדיקות חדשות ותשלומים אינה זמינה כרגע. אפשר לפנות לשירות בנוגע לבדיקה קיימת." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
   const caseId = await readCaseIdFromCookie();
   if (!caseId) {
     return NextResponse.json({ error: "תיק הבדיקה לא נמצא. יש להתחיל מחדש." }, { status: 401 });

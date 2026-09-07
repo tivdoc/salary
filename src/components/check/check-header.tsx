@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
-import { initialPrice } from "@/config/product-offer";
+import { initialPrice, productOffer } from "@/config/product-offer";
 import { usePathname } from "next/navigation";
 
 const steps = [
@@ -22,16 +22,16 @@ export function CheckHeader() {
         <Link className="wordmark" href="/" aria-label="Tivdoc, חזרה לעמוד הבית">
           <BrandLogo />
         </Link>
-        <span className="check-header__price mono">{initialPrice}</span>
+        <span className="check-header__price mono">{productOffer.initial.available ? initialPrice : "שירות ללקוחות קיימים"}</span>
       </div>
-      <div className="check-shell check-progress" aria-label={`שלב ${current + 1} מתוך ${steps.length}`}>
+      {productOffer.initial.available && <div className="check-shell check-progress" aria-label={`שלב ${current + 1} מתוך ${steps.length}`}>
         {steps.map((step, index) => (
           <div className={index <= current ? "check-progress__step is-active" : "check-progress__step"} key={step.path}>
             <span className="mono">{String(index + 1).padStart(2, "0")}</span>
             <b>{step.label}</b>
           </div>
         ))}
-      </div>
+      </div>}
     </header>
   );
 }

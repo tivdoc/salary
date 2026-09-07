@@ -1,4 +1,5 @@
 "use client";
+import { productOffer } from "@/config/product-offer";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { List, X, ArrowLeft } from "@phosphor-icons/react";
@@ -58,7 +59,7 @@ export function SiteHeader() {
             href="/check"
             eventName="start_check"
           >
-            התחלת בדיקה <ArrowLeft aria-hidden="true" />
+            {productOffer.initial.available ? "התחלת בדיקה" : "זמינות השירות"} <ArrowLeft aria-hidden="true" />
           </TrackedLink>
           <button
             className="menu-toggle"

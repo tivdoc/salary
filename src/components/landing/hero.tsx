@@ -29,13 +29,14 @@ export function Hero() {
               href="/check"
               eventName="start_check"
             >
-              התחלת בדיקה ראשונית — <bdi>{initialPrice}</bdi>
+              {productOffer.initial.available ? <>התחלת בדיקה ראשונית — <bdi>{initialPrice}</bdi></> : "עדכון על זמינות הבדיקות"}
               <ArrowLeft aria-hidden="true" />
             </TrackedLink>
             <a className="home-text-link" href="#what-you-get">
               מה מקבלים בבדיקה
             </a>
           </div>
+          {!productOffer.initial.available && <p className="launch-notice">השירות בהכנה. פתיחת בדיקות חדשות ותשלום אינם זמינים כרגע.</p>}
           <p className="home-scope">
             חודש אחד · עד {productOffer.initial.maxTopics} נושאים שנבדקו.
             <br />

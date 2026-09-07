@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
-export const metadata: Metadata = { title: "מדיניות פרטיות | Tivdoc" };
+export const metadata: Metadata = { alternates: { canonical: "/privacy" }, title: "מדיניות פרטיות | Tivdoc" };
 
 export default function PrivacyPage() {
   return (

@@ -1,3 +1,4 @@
+import { productOffer } from "@/config/product-offer";
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured } from "@/lib/supabase-admin";
 
@@ -5,6 +6,8 @@ export function GET() {
   return NextResponse.json(
     {
       ok: true,
+      acceptingNewCases: productOffer.initial.available,
+      fullReportAvailable: productOffer.full.available,
       services: {
         supabase: isSupabaseConfigured(),
         payment: Boolean(

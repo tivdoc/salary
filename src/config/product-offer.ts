@@ -1,7 +1,7 @@
 // Public offer shared by UI and server payment code. Full report has no checkout yet.
 export const productOffer = {
   currency: "ILS",
-  initial: { price: 9.99, months: 1, maxTopics: 3 },
+  initial: { available: false, price: 9.99, months: 1, maxTopics: 3 },
   full: { price: 149, available: false, humanReviewRequired: true },
   supportEmail: "info@tivdoc.com",
 } as const;

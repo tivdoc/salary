@@ -2,6 +2,7 @@
 import { trackEvent } from "@/lib/analytics";
 import { initialPrice, fullPrice, productOffer } from "@/config/product-offer";
 const questions = [
+  ["אפשר להתחיל בדיקה עכשיו?", productOffer.initial.available ? "אפשר להתחיל דרך כפתור התחלת הבדיקה." : "עדיין לא. אנחנו משלימים את ההיערכות למסירת תוצאות. לא ניתן לפתוח בדיקה חדשה או לשלם כרגע. השירות זמין לפניות בנוגע לבדיקות קיימות."],
   [
     "מה צריך כדי להתחיל?",
     "תלוש שכר אחד ותשובות על העבודה שלך. חוזה עבודה ודוח נוכחות יכולים לעזור, אם הם זמינים.",

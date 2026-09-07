@@ -4,7 +4,7 @@ import { initialPrice } from "@/config/product-offer";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
-export const metadata: Metadata = { title: "תנאי שימוש | Tivdoc" };
+export const metadata: Metadata = { alternates: { canonical: "/terms" }, title: "תנאי שימוש | Tivdoc" };
 
 export default function TermsPage() {
   return (

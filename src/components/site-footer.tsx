@@ -15,6 +15,7 @@ export function SiteFooter() {
         <nav aria-label="שירות ומידע">
           <a href={"mailto:" + productOffer.supportEmail}>יצירת קשר</a>
           <Link href="/privacy">פרטיות</Link>
+          <Link href="/accessibility">נגישות</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/#faq">שאלות ותשובות</Link>
         </nav>

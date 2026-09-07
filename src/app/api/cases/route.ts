@@ -1,3 +1,4 @@
+import { productOffer } from "@/config/product-offer";
 import { NextResponse } from "next/server";
 import { setCaseCookie } from "@/lib/case-cookie";
 import { metaRequestContext, sendMetaCapiEvent } from "@/lib/meta-capi";
@@ -8,6 +9,9 @@ import { questionnaireSchema } from "@/lib/validation";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  if (!productOffer.initial.available) {
+    return NextResponse.json({ code: "SERVICE_UNAVAILABLE", error: "פתיחת בדיקות חדשות ותשלומים אינה זמינה כרגע. אפשר לפנות לשירות בנוגע לבדיקה קיימת." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
   let body: unknown;
   try {
     body = await request.json();

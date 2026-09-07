@@ -67,6 +67,11 @@ export default function Home() {
               <h2 id="explanation-title">כך נוצרת תמונה ברורה.</h2>
               <p>המסמכים מספרים חלק מהסיפור. התשובות שלך עוזרות לחבר אותו.</p>
             </div>
+            <video className="explainer-video" controls playsInline preload="none" poster="/media/tivdoc-explainer-poster.png" aria-label="סרטון הסבר על התהליך המתוכנן, 30 שניות ללא קול">
+              <source src="/media/tivdoc-explainer.mp4" type="video/mp4" />
+              <track kind="captions" src="/media/tivdoc-explainer.he.vtt" srcLang="he" label="עברית" />
+              הדפדפן אינו תומך בווידאו. ההסבר הכתוב מופיע בהמשך.
+            </video>
             <div
               className="explanation-flow"
               role="img"
@@ -99,7 +104,7 @@ export default function Home() {
               </div>
             </div>
             <p className="explanation-caption">
-              המחשה כתובה של התהליך. סרטון הסבר אינו זמין כרגע.
+              30 שניות · ללא קול · המחשה של השירות המתוכנן. אפשר גם לקרוא את ההסבר בהמשך.
             </p>
             <details className="explanation-transcript">
               <summary>לקריאת ההסבר המלא</summary>
@@ -125,11 +130,11 @@ export default function Home() {
                 <br />
                 ויודעים כמה זה עולה.
               </h2>
-              <p>מתחילים בבדיקה ראשונית. כל המשך הוא החלטה נפרדת.</p>
+              <p>המחירים וההיקף המתוכננים. רכישת בדיקות תתאפשר לאחר השלמת ההיערכות לשירות.</p>
             </div>
             <div className="offer-grid">
               <article className="offer offer--initial">
-                <span className="offer-label">כאן מתחילים</span>
+                <span className="offer-label">{productOffer.initial.available ? "כאן מתחילים" : "מתוכנן · עדיין לא זמין לרכישה"}</span>
                 <h3>בדיקה ראשונית</h3>
                 <p className="offer-price">
                   <bdi>{initialPrice}</bdi>
@@ -154,7 +159,7 @@ export default function Home() {
                   href="/check"
                   eventName="start_check"
                 >
-                  התחלת בדיקה ראשונית
+                  {productOffer.initial.available ? "התחלת בדיקה ראשונית" : "עדכון על זמינות השירות"}
                   <ArrowLeft aria-hidden="true" />
                 </TrackedLink>
               </article>
@@ -267,7 +272,7 @@ export default function Home() {
               href="/check"
               eventName="start_check"
             >
-              התחלת בדיקה — <bdi>{initialPrice}</bdi>
+              {productOffer.initial.available ? <>התחלת בדיקה — <bdi>{initialPrice}</bdi></> : "עדכון על זמינות השירות"}
               <ArrowLeft aria-hidden="true" />
             </TrackedLink>
             <p className="home-scope">
