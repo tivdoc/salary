@@ -1,0 +1,16 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "reproduced: the stored first answer is refused after its successful response is lost",
+    "reproduced: clearing a draft resets its version and permits stale pre-clear draft resurrection"
+  ],
+  "migration": null,
+  "migration_sha256": null,
+  "database": "tivdoc_release_replay_20260907",
+  "authorization": "two actual independent web logins; no fixture RLS policies",
+  "syntheticCasesRemoved": 2,
+  "identityRemoved": true,
+  "browser_verified": false,
+  "provider_verified": false,
+  "productionChanged": false
+}

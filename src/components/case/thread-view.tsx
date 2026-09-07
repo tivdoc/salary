@@ -18,6 +18,7 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
   const [value, setValue] = useState(request.draft_text ?? (correction ? request.answer_text ?? "" : ""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [conflict, setConflict] = useState(false);
 
   async function submit(action: "answer" | "draft" | "correction" = correction ? "correction" : "answer") {
     if (!value.trim()) {
@@ -26,13 +27,17 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
     }
     setBusy(true);
     setError("");
+    setConflict(false);
     try {
       const response = await fetch(`/api/cases/${publicId}/requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestId: request.id, answer: value.trim(), action, expectedRevision: action === "draft" ? request.draft_revision ?? 0 : request.answer_revision ?? 0 }),
       });
-      if (!response.ok) throw new Error(await customerErrorFromResponse(response, "request_answer_failed"));
+      if (!response.ok) {
+        if(response.status===409)setConflict(true);
+        throw new Error(await customerErrorFromResponse(response, "request_answer_failed"));
+      }
       onAnswered();
     } catch (caught) {
       setError(customerErrorMessage({ error: caught instanceof Error ? caught.message : null }, "request_answer_failed"));
@@ -62,6 +67,7 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
           ))}
         </div>
         {error ? <p className="form-error" role="alert">{error}</p> : null}
+        {conflict ? <button className="button button--secondary" type="button" onClick={onAnswered}>טעינת התשובה שנשמרה</button> : null}
         <button className="button button--primary" type="button" onClick={() => void submit()} disabled={busy || !value}>
           {busy ? "שומרים…" : correction ? "שליחת תיקון" : "שליחת תשובה"}
         </button>
@@ -85,6 +91,7 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
         />
       </label>
       {error ? <p className="form-error" id={`thread-answer-error-${request.id}`} role="alert">{error}</p> : null}
+      {conflict ? <button className="button button--secondary" type="button" onClick={onAnswered}>טעינת התשובה שנשמרה</button> : null}
       <button className="button button--primary" type="button" onClick={() => void submit()} disabled={busy}>
         {busy ? "שומרים…" : correction ? "שליחת תיקון" : "שליחת תשובה"}
       </button>

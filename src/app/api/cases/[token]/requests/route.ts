@@ -33,6 +33,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   if(!sameOriginSessionRequest(request))return new Response(null,{status:403});
   const body = await strictJsonObject(request, 12000);
   const support=supportRequestSchema.safeParse(body);
+  if(!support.success&&body?.action!==undefined&&(typeof body.action!=='string'||!['answer','draft','correction'].includes(body.action)))return NextResponse.json({code:'request_answer_invalid'},{status:400});
   if (!support.success && (!body || typeof body.requestId !== "string" || typeof body.answer !== "string" || body.answer.trim().length === 0)) {
     return NextResponse.json({ error: "לא הצלחנו לקרוא את התשובה", code: "request_answer_invalid" }, { status: 400 });
   }
@@ -68,6 +69,8 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    if(error instanceof Error&&/REQUEST_(ANSWER|EDIT)_INVALID$/.test(error.message))return NextResponse.json({error:'התשובה אינה מתאימה לשאלה',code:'request_answer_invalid'},{status:400});
+    if(error instanceof Error&&/REQUEST_EDIT_(CONFLICT|CLOSED)$/.test(error.message))return NextResponse.json({error:'התשובה או הטיוטה השתנו. אפשר לטעון את המצב שנשמר לפני שליחה נוספת.',code:'request_edit_conflict'},{status:409});
     if (error instanceof RequestAnswerError) return NextResponse.json({ error: "התשובה אינה מתאימה לשאלה", code: "request_answer_invalid" }, { status: 400 });
     console.error("Answering a case request failed", error instanceof Error ? error.name : "error");
     return NextResponse.json({ error: "לא הצלחנו לשמור את התשובה", code: "request_answer_failed" }, { status: 503 });

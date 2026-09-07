@@ -97,9 +97,11 @@ export async function answerCaseRequest(
   db?: CaseAccessDb | null,
 ): Promise<StoredRequest | null> {
   const store = db ?? await resolveCaseAccessDb();
-  if (!store) return null;
+  if (!store) throw new Error("REQUEST_STORE_UNAVAILABLE");
   const request = (await listCaseRequests(input.caseId, store)).find(row => row.id === input.requestId);
-  if (!request || request.answered_at !== null || new Date(request.expires_at) <= new Date()) return null;
+  if (!request) return null;
+  // The locked SQL operation owns expiry and exact-original retry semantics.
+  // A stale browser clock or lost successful response is not a second answer.
   const answer = validateRequestAnswer(request, input.answer);
   const rows = await store.rpc<RequestRow>("case_request_answer", {
     target_request: input.requestId,
@@ -126,5 +128,7 @@ export async function editCaseRequest(input:{caseId:string;requestId:string;iden
   const request=(await listCaseRequests(input.caseId,store)).find(r=>r.id===input.requestId);
   if(!request)throw new Error('REQUEST_FORBIDDEN');validateRequestAnswer(request,input.answer);
  }
- return store.rpc('case_request_edit',{target_case:input.caseId,target_request:input.requestId,target_identity:input.identityId,target_answer:input.answer,expected_revision:input.expectedRevision,edit_kind:input.kind});
+ const rows=await store.rpc<{value:number}>('case_request_edit',{target_case:input.caseId,target_request:input.requestId,target_identity:input.identityId,target_answer:input.answer,expected_revision:input.expectedRevision,edit_kind:input.kind});
+ if(rows.length!==1||rows[0].value!==input.expectedRevision+1)throw new Error('REQUEST_EDIT_RECEIPT_MISSING');
+ return rows[0].value;
 }

@@ -1,0 +1,22 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "two independent web connections retry the same draft with one revision",
+    "simultaneous initial answers and later retry return the original once without another source revision",
+    "clearing the submitted draft advances its persistent generation and refuses old forms",
+    "concurrent exact correction retries preserve original history and invalidate analysis once",
+    "a late correction receipt does not clear a newer unsent draft",
+    "conflicting retries, foreign case, null CAS and direct private generation access refuse",
+    "different simultaneous drafts have one winner and one conflict without silent overwrite",
+    "original-answer replay cannot undo correction or change case/payment state"
+  ],
+  "migration": "20260908001500_request_retry_integrity.sql",
+  "migration_sha256": "24bd194f1169f0029d822925d04ea6668a80ed1105b593c315e1218f3456478d",
+  "database": "tivdoc_release_replay_20260907",
+  "authorization": "two actual independent web logins; no fixture RLS policies",
+  "syntheticCasesRemoved": 2,
+  "identityRemoved": true,
+  "browser_verified": false,
+  "provider_verified": false,
+  "productionChanged": false
+}

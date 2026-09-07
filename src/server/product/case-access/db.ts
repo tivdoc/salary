@@ -30,7 +30,7 @@ export function supabaseCaseAccessDb(client: {
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
       if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const result = await client.rpc(fn, { ...args });
-      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^(?:UPLOAD|ORDER|PRIVACY)_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
+      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^(?:UPLOAD|ORDER|PRIVACY|REQUEST)_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
       const data = result.data;
       if (Array.isArray(data)) return data as T[];
       if (data === null || data === undefined) return [];

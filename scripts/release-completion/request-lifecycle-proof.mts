@@ -29,7 +29,8 @@ try{
  const identity=(await db.query("select public.case_access_identity_upsert('email',$1,'synthetic@example.invalid') id",[caseId.replaceAll('-','').repeat(2)])).rows[0].id;
  fixtureIdentity=identity;await db.query('select public.case_access_identity_link($1,$2)',[identity,caseId]);
  const beforeRevision=(await db.query('select revision from private.case_input_heads where case_id=$1',[caseId])).rows[0].revision;
- await web.query("select public.case_request_edit($1,$2,$3,'6',0,'draft')",[caseId,choiceId,identity]);
+ const savedDraftRevision=(await web.query('select * from public.case_request_revision_list($1)',[caseId])).rows.find(r=>r.request_id===choiceId).draft_revision;
+ await web.query("select public.case_request_edit($1,$2,$3,'6',$4,'draft')",[caseId,choiceId,identity,savedDraftRevision]);
  assert.equal((await web.query('select * from public.case_request_revision_list($1)',[caseId])).rows.find(r=>r.request_id===choiceId).draft_text,'6');
  assert.equal((await db.query('select revision from private.case_input_heads where case_id=$1',[caseId])).rows[0].revision,beforeRevision);pass('draft survives a separate SQL read without changing analysis input');
  await web.query("select public.case_request_edit($1,$2,$3,'6',1,'correction')",[caseId,choiceId,identity]);
