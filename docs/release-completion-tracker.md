@@ -10,8 +10,8 @@ Base: `45abb7e70c1001f88192c983b75008f5f5e198c1`, fetched 2026-09-07; PR #1 cont
 | P01 | IMPLEMENTED | Seven baseline failures fixed; 23 tests pass (six files), tsc/lint pass; original upload DB proof rerun. Hosted PostgREST and expanded lifecycle remain open under B-002/P10. |
 | P02 | IMPLEMENTED | 46 focused tests, tsc, lint and build pass; five real PostgreSQL checks pass. Saved-report route and v2 provenance contract implemented. Browser and writer composition continue in P05/P08/P11. |
 | P03 | IMPLEMENTED | Verified saved-upload adapter + existing v2.1 pipeline, 0.95 acceptance, absolute arithmetic tolerance, bounded PDF/raster input and explicit untrusted-document prompt. 101 extraction/provider tests + five new boundary tests pass; preprocessing tests, tsc/lint/build pass. Durable invocation P05; live provider/calibration B-004. |
-| P04 | IN_PROGRESS | Primary-source legal research and seven topics |
-| P05 | TODO | Durable engine/product orchestration |
+| P04 | IMPLEMENTED | Seven-topic research, 51/51 v15 hashes, seven visual readings, 42 AI expectations + seven refusal checks, safer travel/sick RuleSpecs and leave reconciliation. 224 tests/25 files + tsc/lint pass. Full applicability, human goldens/activation and unresolved branches remain B-005. |
+| P05 | IN_PROGRESS | Durable engine/product orchestration |
 | P06 | TODO | Request lifecycle, SLA and scheduler |
 | P07 | TODO | Session rolling/logout and provider delivery |
 | P08 | TODO | Saved reports, QA and publication |

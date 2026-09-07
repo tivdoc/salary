@@ -1,0 +1,284 @@
+{
+  "schema_version": "tivdoc-review-package-v14-manifest",
+  "manifest_sha256": "4d054bbb101780fee898ad3bd002cadfc6909aa4ab1de4fb47a005adfef3f73d",
+  "checks": [
+    {
+      "file": "decisions/bl24-attribution-annotation.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/branches-examined-and-rejected.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v1.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v2.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v3.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v4.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v5.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v6.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v7.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report-superseded-v8.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/decision-sensitivity-report.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/legal-decision-resolutions-proof.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/legal-decision-resolutions.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/legal-open-decisions.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "decisions/open-items-v1-v13.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "dossier/research-dossier-2026-09-03.md",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "evidence/owner-evidence-index.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "evidence/tivdoc-legal-opinion-approval-record.md",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "evidence/tivdoc-open-decisions-legal-opinion.md",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "packets/supersession-accounting.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "packets/supersession-packets-index.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/batch-16-daily-threshold.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/batch-17-average-wage.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/batch-18-havraa-year.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/batch-19-rest-day-daily-threshold.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/batch-20-derived-daily-norm.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/citation-anchors.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/citation-recheck-v0-vs-v1.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/derived-parameters.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "parameters/draft-parameters.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "report/hebrew-rendering-receipt.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "report/sensitivity-report.he.md",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "report/sensitivity-report.he.pdf",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "rulespecs/drafts.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "rulespecs/executable-sensitivity-specs.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "rulespecs/templates.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "runbook/reviewer-runbook.he.md",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "scenarios/executions-and-traces.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "scenarios/scenario-input-fixtures.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "scenarios/topics-not-run.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "shadow/branch-comparison.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "shadow/default-transitions.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "shadow/draft-shadow-receipt-v1.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "shadow/draft-shadow-summary-v1.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "shadow/shadow-run-comparison-l116.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "shadow/shadow-run-comparison-l123.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "shadow/synthetic-corpus-index.json",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "visual-pages/IL_CONVALESCENCE_REDUCTION_FREEZE_LAW_2025.p19.adc28e10b2d5aad5.pdf",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "visual-pages/IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016.p2.bfba6c9e3b55508a.pdf",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "visual-pages/IL_HOURS_WORK_REST_LAW.p4.6b41df8306ce4c60.pdf",
+      "hash_match": true,
+      "size_match": true
+    },
+    {
+      "file": "visual-pages/index.json",
+      "hash_match": true,
+      "size_match": true
+    }
+  ],
+  "counts": {
+    "active_parameters": 0,
+    "active_rules": 0,
+    "active_sources": 0,
+    "attestations": 0,
+    "deliveries": 0,
+    "findings": 0,
+    "human_ground_truth_locked": 0,
+    "resolutions_attested": 0,
+    "reviewed_sources": 0,
+    "reviewer_identities_registered": 0
+  },
+  "sensitivity": {
+    "previous_package_topics_run": 7,
+    "report_sha256": "f584847f6007ccd8cfdf5ef04e55cf78a2fe3c98b1d2dcd96f14b9bea6106df4",
+    "topics_not_run": 0,
+    "topics_run": 7,
+    "topics_run_floor": 7,
+    "traces_included": 100
+  },
+  "verified_members": 51,
+  "member_count": 51,
+  "human_attestation_added": false
+}

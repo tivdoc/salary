@@ -7,3 +7,8 @@
 
 - D-005: preserve original pinned migration hashes. Host tests now call the same LF-aware digest routine already used by the migration verifier; semantic SQL comparisons normalize only in memory. Original worker commits were found and fetched from the engineering archive; audit tests still require exact commits and patch/blob equivalence. Missing objects are an explicit precondition, not a substituted expected value.
 - D-006: release Preview branch variables override inherited production Supabase credentials with the allowlisted DEV project. No global Preview or Production variable is changed; hosted mutations wait for schema compatibility.
+
+- D-007 (P04, AI source inspection): convalescence gazette page is 9132, not 9134. Correct citation only; retain human gate and historical opinion bytes.
+- D-008 (P04): travel uses actual relevant discounted cost and attendance, bounded by daily cap/monthly pass; missing price cannot become entitlement at cap. New inactive RuleSpec, seven-topic AI worksheet.
+- D-009 (P04): ordinary sick pay uses actual wage as a fact; first-day zero is an explicit AI legal interpretation for the ordinary branch only, exceptions require applicability. Historical sensitivity spec preserved.
+- D-010 (P04): latest owner authorization permits AI-authored expected worksheets; they are separate from the human golden ledger and never activate it. 42 values authored before executing tests.

@@ -1,0 +1,270 @@
+{
+  "schema_version": "tivdoc-ai-research-expectations-v1",
+  "author_kind": "ai",
+  "legal_ground_truth": false,
+  "activation_allowed": false,
+  "case_count": 42,
+  "assumptions": {
+    "minimum_wage": "Adult general 182-hour framework; hourly official rate 35.40, not monthly salary 6443.85. No youth/sector override.",
+    "working_time": "Known ordinary-day overtime hours beyond independently established threshold; regular hourly wage 30.00.",
+    "pension": "Employee share only; eligible employee, known pensionable wage, assumed section-2 benefits cap 13769.00; 6%. This is not employer debt.",
+    "travel": "Actual eligible workdays; daily discounted fare 12.00, cap 22.60, monthly pass 200.00. No employer transport.",
+    "convalescence": "2026 rate 451.50, known entitled days after seniority/fraction/reduction evaluation; this worksheet tests scaling only.",
+    "vacation": "Post-2017 statutory calendar days for whole qualifying year. No conversion to workdays or proration implied.",
+    "sick_leave": "Ordinary illness, sufficient balance, no collective/medical exception, actual daily wage 400.00."
+  },
+  "cases": [
+    {
+      "id": "minimum_wage.1",
+      "topic": "minimum_wage",
+      "input": 1,
+      "expected": 3540
+    },
+    {
+      "id": "minimum_wage.2",
+      "topic": "minimum_wage",
+      "input": 0,
+      "expected": 0
+    },
+    {
+      "id": "minimum_wage.3",
+      "topic": "minimum_wage",
+      "input": 182,
+      "expected": 644280
+    },
+    {
+      "id": "minimum_wage.4",
+      "topic": "minimum_wage",
+      "input": 91,
+      "expected": 322140
+    },
+    {
+      "id": "minimum_wage.5",
+      "topic": "minimum_wage",
+      "input": 0.5,
+      "expected": 1770
+    },
+    {
+      "id": "minimum_wage.6",
+      "topic": "minimum_wage",
+      "input": 2,
+      "expected": 7080
+    },
+    {
+      "id": "working_time.1",
+      "topic": "working_time",
+      "input": 0,
+      "expected": 0
+    },
+    {
+      "id": "working_time.2",
+      "topic": "working_time",
+      "input": 1,
+      "expected": 3750
+    },
+    {
+      "id": "working_time.3",
+      "topic": "working_time",
+      "input": 2,
+      "expected": 7500
+    },
+    {
+      "id": "working_time.4",
+      "topic": "working_time",
+      "input": 3,
+      "expected": 12000
+    },
+    {
+      "id": "working_time.5",
+      "topic": "working_time",
+      "input": 4,
+      "expected": 16500
+    },
+    {
+      "id": "working_time.6",
+      "topic": "working_time",
+      "input": 5,
+      "expected": 21000
+    },
+    {
+      "id": "pension.1",
+      "topic": "pension",
+      "input": 0,
+      "expected": 0
+    },
+    {
+      "id": "pension.2",
+      "topic": "pension",
+      "input": 100000,
+      "expected": 6000
+    },
+    {
+      "id": "pension.3",
+      "topic": "pension",
+      "input": 800000,
+      "expected": 48000
+    },
+    {
+      "id": "pension.4",
+      "topic": "pension",
+      "input": 1376900,
+      "expected": 82614
+    },
+    {
+      "id": "pension.5",
+      "topic": "pension",
+      "input": 1500000,
+      "expected": 82614
+    },
+    {
+      "id": "pension.6",
+      "topic": "pension",
+      "input": 1,
+      "expected": 0
+    },
+    {
+      "id": "travel.1",
+      "topic": "travel",
+      "input": 0,
+      "expected": 0
+    },
+    {
+      "id": "travel.2",
+      "topic": "travel",
+      "input": 1,
+      "expected": 1200
+    },
+    {
+      "id": "travel.3",
+      "topic": "travel",
+      "input": 10,
+      "expected": 12000
+    },
+    {
+      "id": "travel.4",
+      "topic": "travel",
+      "input": 20,
+      "expected": 20000
+    },
+    {
+      "id": "travel.5",
+      "topic": "travel",
+      "input": 30,
+      "expected": 20000
+    },
+    {
+      "id": "travel.6",
+      "topic": "travel",
+      "input": 2,
+      "expected": 2400
+    },
+    {
+      "id": "convalescence.1",
+      "topic": "convalescence",
+      "input": 0,
+      "expected": 0
+    },
+    {
+      "id": "convalescence.2",
+      "topic": "convalescence",
+      "input": 1,
+      "expected": 45150
+    },
+    {
+      "id": "convalescence.3",
+      "topic": "convalescence",
+      "input": 5,
+      "expected": 225750
+    },
+    {
+      "id": "convalescence.4",
+      "topic": "convalescence",
+      "input": 6,
+      "expected": 270900
+    },
+    {
+      "id": "convalescence.5",
+      "topic": "convalescence",
+      "input": 7,
+      "expected": 316050
+    },
+    {
+      "id": "convalescence.6",
+      "topic": "convalescence",
+      "input": 0.5,
+      "expected": 22575
+    },
+    {
+      "id": "vacation.1",
+      "topic": "vacation",
+      "input": 1,
+      "expected": 16
+    },
+    {
+      "id": "vacation.2",
+      "topic": "vacation",
+      "input": 5,
+      "expected": 16
+    },
+    {
+      "id": "vacation.3",
+      "topic": "vacation",
+      "input": 6,
+      "expected": 18
+    },
+    {
+      "id": "vacation.4",
+      "topic": "vacation",
+      "input": 7,
+      "expected": 21
+    },
+    {
+      "id": "vacation.5",
+      "topic": "vacation",
+      "input": 8,
+      "expected": 22
+    },
+    {
+      "id": "vacation.6",
+      "topic": "vacation",
+      "input": 14,
+      "expected": 28
+    },
+    {
+      "id": "sick_leave.1",
+      "topic": "sick_leave",
+      "input": 1,
+      "expected": 0
+    },
+    {
+      "id": "sick_leave.2",
+      "topic": "sick_leave",
+      "input": 2,
+      "expected": 20000
+    },
+    {
+      "id": "sick_leave.3",
+      "topic": "sick_leave",
+      "input": 3,
+      "expected": 20000
+    },
+    {
+      "id": "sick_leave.4",
+      "topic": "sick_leave",
+      "input": 4,
+      "expected": 40000
+    },
+    {
+      "id": "sick_leave.5",
+      "topic": "sick_leave",
+      "input": 5,
+      "expected": 40000
+    },
+    {
+      "id": "sick_leave.6",
+      "topic": "sick_leave",
+      "input": 10,
+      "expected": 40000
+    }
+  ]
+}

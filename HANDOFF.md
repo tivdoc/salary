@@ -1,3 +1,7 @@
+## Release P04 checkpoint — 2026-09-07
+
+P03 follow-up `036c7ff` passed tsc/lint/build. P04 sources and AI decisions are in `docs/release-legal-research.he.md`; 224 tests/25 files, tsc/lint passed. New RuleSpecs remain inactive. No DB activation, customer analysis or deployment. Continue P05–P13 and revisit B-002/B-004/B-005 when capability changes.
+
 ## Release P03 checkpoint — 2026-09-07
 
 P02 pushed as `0a4da4c`. Saved-upload OCR adapter and acceptance hardening implemented; local tests/build/typecheck/lint pass. Live OCR and calibration remain B-004, durable invocation continues P05. Continue P04–P13; see tracker.
