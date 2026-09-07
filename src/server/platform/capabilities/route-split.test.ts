@@ -42,7 +42,7 @@ describe("the product/engine route split (D3)", () => {
       if (entry.half === "product") expect(entry.probes?.length ?? 0, entry.entrypoint_id).toBeGreaterThan(0);
       else expect(entry.probes, entry.entrypoint_id).toBeUndefined();
     }
-    expect(productAssignments()).toHaveLength(38);
+    expect(productAssignments()).toHaveLength(39);
     expect(engineAssignments()).toHaveLength(7);
   });
 
@@ -80,6 +80,7 @@ describe("the differential against main's own route inventory (D4)", () => {
     // must be named here, with its reason, to pass.
     // UX Run 1 (S1): the six customer-access routes, product half, each with the reason route-split.ts carries.
     const productAddedOnBranch: Record<string, string> = {
+      "src/app/accessibility/page.tsx": "P11 public accessibility information, contact and honest verification scope; no claim of certified compliance.",
       "src/app/account/page.tsx": "P10 authenticated account and privacy request history.",
       "src/app/api/account/route.ts": "P10 scoped privacy intake and fresh-session personal data export.",
       "src/app/case/[token]/orders/page.tsx": "P09 identity-scoped order history and purchase quote.",

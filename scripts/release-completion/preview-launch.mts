@@ -1,6 +1,7 @@
 import '../production-refusal.mjs';
 import assert from 'node:assert/strict';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {chromium,type BrowserContext} from 'playwright';
 
 // Deliberately pinned to the isolated, closed-sales deployment, never production.
@@ -46,7 +47,7 @@ try{
  });
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
-  for(const path of ['/','/check','/login','/privacy','/terms']){
+  for(const path of ['/','/check','/login','/privacy','/terms','/accessibility']){
    await check(`public ${path} at ${width}px`,async()=>{
     const start=errors.length;const response=await page.goto(origin+path,{waitUntil:'domcontentloaded',timeout:20000});
     await page.screenshot({path:`${directory}/navigation-${path==='/'?'home':path.slice(1)}-${width}.png`,fullPage:false,timeout:10000});
@@ -70,6 +71,43 @@ try{
    });
   }
  }
+ await check('integrated explainer assets match the reviewed Git bytes',async()=>{
+  for(const name of ['tivdoc-explainer.mp4','tivdoc-explainer-poster.png','tivdoc-explainer.he.vtt']){
+   const response=await context!.request.get(origin+'/media/'+name);assert.equal(response.status(),200);
+   const expected=await readFile('public/media/'+name);
+   const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
+   assert.equal(hash(await response.body()),hash(expected),name);
+  }
+ });
+ await check('30-second silent explainer plays on demand and has captions and written alternative',async()=>{
+  await page.goto(origin,{waitUntil:'domcontentloaded'});
+  const video=page.locator('video.explainer-video');assert.equal(await video.count(),1);
+  assert.equal(await video.getAttribute('autoplay'),null);assert.equal(await video.getAttribute('preload'),'none');
+  assert.equal(await video.evaluate(node=>(node as HTMLVideoElement).paused),true);
+  assert.equal(await video.locator('track[kind="captions"][srclang="he"]').count(),1);
+  await page.locator('.explanation-transcript summary').click();
+  assert.ok((await page.locator('.explanation-transcript').innerText()).includes('אינו הבטחה'));
+  await video.evaluate(async node=>{await (node as HTMLVideoElement).play();});
+  await page.waitForFunction(()=>{const node=document.querySelector('video');return node&&node.currentTime>0;});
+  const duration=await video.evaluate(node=>{const media=node as HTMLVideoElement;media.pause();return media.duration;});
+  assert.ok(duration>=29.9&&duration<=30.1);
+  for(const second of [1,7,13,19,25]){
+   await video.evaluate((node,position)=>new Promise<void>(resolve=>{
+    const media=node as HTMLVideoElement;media.addEventListener('seeked',()=>resolve(),{once:true});media.currentTime=position;
+   }),second);
+   await video.screenshot({path:`${directory}/explainer-${second}s.png`});
+  }
+ });
+ await check('accessibility and legal pages have their own canonical URLs and sitemap entries',async()=>{
+  const sitemap=await context!.request.get(origin+'/sitemap.xml');assert.equal(sitemap.status(),200);
+  for(const path of ['/accessibility','/terms','/privacy']){
+   await page.goto(origin+path,{waitUntil:'domcontentloaded'});
+   const canonical=await page.locator('link[rel="canonical"]').getAttribute('href');assert.ok(canonical&&new URL(canonical).pathname===path);
+   assert.ok((await sitemap.text()).includes(path));
+  }
+  await page.goto(origin+'/accessibility',{waitUntil:'domcontentloaded'});
+  assert.ok((await page.locator('main').innerText()).includes('אינו אישור לעמידה מלאה בתקן'));
+ });
  await check('keyboard can reach a visible homepage control',async()=>{
   await page.goto(origin,{waitUntil:'domcontentloaded'});await page.keyboard.press('Tab');
   const focused=await page.evaluate(()=>{const e=document.activeElement as HTMLElement|null;return e?{tag:e.tagName,rect:e.getBoundingClientRect().toJSON()}:null;});

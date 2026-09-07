@@ -1964,6 +1964,19 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Identity-scoped privacy requests and fresh-session export; request intake is not deletion completion."
+    },
+    {
+      "entrypoint_id": "CEP-114",
+      "kind": "app_route",
+      "stable_entry": "/accessibility",
+      "source_path": "src/app/accessibility/page.tsx",
+      "canonical_contract_id": "route.public.accessibility",
+      "canonical_target": "src/app/accessibility/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [],
+      "blockers": [],
+      "non_claim": "Public accessibility information and verification limits, not a professional compliance certificate."
     }
   ]
 }

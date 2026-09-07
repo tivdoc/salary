@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
-export const metadata: Metadata = { title: "מדיניות פרטיות | Tivdoc" };
+export const metadata: Metadata = { alternates: { canonical: "/privacy" }, title: "מדיניות פרטיות | Tivdoc" };
 
 export default async function PrivacyPage() {
   await guardStableAppEntrypoint("CEP-008");

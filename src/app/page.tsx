@@ -71,6 +71,11 @@ export default async function Home() {
               <h2 id="explanation-title">כך נוצרת תמונה ברורה.</h2>
               <p>המסמכים מספרים חלק מהסיפור. התשובות שלך עוזרות לחבר אותו.</p>
             </div>
+            <video className="explainer-video" controls playsInline preload="none" poster="/media/tivdoc-explainer-poster.png" aria-label="סרטון הסבר על התהליך המתוכנן, 30 שניות ללא קול">
+              <source src="/media/tivdoc-explainer.mp4" type="video/mp4" />
+              <track kind="captions" src="/media/tivdoc-explainer.he.vtt" srcLang="he" label="עברית" />
+              הדפדפן אינו תומך בווידאו. ההסבר הכתוב מופיע בהמשך.
+            </video>
             <div
               className="explanation-flow"
               role="img"
@@ -103,7 +108,7 @@ export default async function Home() {
               </div>
             </div>
             <p className="explanation-caption">
-              המחשה כתובה של התהליך. סרטון הסבר אינו זמין כרגע.
+              30 שניות · ללא קול · המחשה של השירות המתוכנן. אפשר גם לקרוא את ההסבר בהמשך.
             </p>
             <details className="explanation-transcript">
               <summary>לקריאת ההסבר המלא</summary>

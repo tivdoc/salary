@@ -1219,3 +1219,5 @@ h3 {
 .support-threads ol {padding-inline-start:24px;}
 .support-threads time {display:block;font-size:14px;}
 .support-threads li p {white-space:pre-wrap;}
+
+.explainer-video { display: block; width: 100%; aspect-ratio: 16/9; border-radius: 20px; background: #302c48; margin-block: 28px 16px; }

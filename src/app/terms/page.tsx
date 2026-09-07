@@ -7,7 +7,7 @@ import { PriceTiers } from "@/components/landing/price-tiers";
 import { termsVersionLabel } from "@/lib/legal-terms";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
-export const metadata: Metadata = { title: "תנאי שימוש | Tivdoc" };
+export const metadata: Metadata = { alternates: { canonical: "/terms" }, title: "תנאי שימוש | Tivdoc" };
 
 export default async function TermsPage() {
   await guardStableAppEntrypoint("CEP-009");
