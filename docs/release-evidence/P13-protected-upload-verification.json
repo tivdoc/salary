@@ -1,0 +1,47 @@
+{
+  "deployed_sha": "923517ec42e37296a68c69ae2d362a4629808efa",
+  "preview_origin": "https://salary-oq30tj1do-tivdoccom-5042s-projects.vercel.app",
+  "database": "tivdoc_release_replay_20260907",
+  "database_migration": "20260907190000_request_pause_trigger_authority.sql",
+  "requirements": {
+    "second_payslip_preserves_first_and_contract": "verified",
+    "explicit_replacement_changes_only_selected_version": "verified",
+    "storage_sha_before_completion_fault": "verified",
+    "reload_retry_and_duplicate_completion": "verified",
+    "concurrent_tabs_preserve_documents": "verified",
+    "contract_only_answers_selected_request": "verified",
+    "foreign_case_and_foreign_link_refused": "verified",
+    "reopened_saved_state_four_viewports": "verified"
+  },
+  "members": [
+    {
+      "member": "P13-owner-initial-attempt.json",
+      "sha256": "3ce47c3dae48d570aed85b2160ab55a41a152df084ea8208521f4eb7e9320378"
+    },
+    {
+      "member": "P13-owner-recovery-attempt.json",
+      "sha256": "9bc01a4df499cf32172fa0f049be519c54c711161600351b966d41948f0f7c3d"
+    },
+    {
+      "member": "P13-owner-contract-attempt.json",
+      "sha256": "70e64a68d605517d544f54a82cfad07e082091137844e4baa17bb75005c7b0f7"
+    },
+    {
+      "member": "P13-owner-final.json",
+      "sha256": "9993fda758f3296d84342acf8c1075b416844cdee95833e6f5cab20034a1807e"
+    },
+    {
+      "member": "P13-public-preview.json",
+      "sha256": "f3304b5eb6620e3b2f54edbd2286c14ae2f48d670a628a525a2cb8ee0aa0d705"
+    }
+  ],
+  "failed_attempts_preserved": true,
+  "test_repairs": [
+    "Next route announcer was incorrectly accepted as the upload error; use .form-error[role=alert]",
+    "Nested-label text matching corrected for request select",
+    "Foreign replacement is 403, matching the actual authorization contract"
+  ],
+  "application_repair": "Request pause-close trigger needed scoped definer authority; four real DB assertions in P13-request-pause-authority-db.json",
+  "proof_scope": "Seeded synthetic sessions; no OTP delivery, real payment, production deployment or full analysis-to-report proof",
+  "production_changed": false
+}

@@ -1,0 +1,255 @@
+{
+  "origin": "https://salary-oq30tj1do-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "923517ec42e37296a68c69ae2d362a4629808efa",
+  "checks": [
+    {
+      "name": "DEV liveness distinguishes readiness and external services are disabled",
+      "passed": true
+    },
+    {
+      "name": "public / at 360px",
+      "passed": true
+    },
+    {
+      "name": "public /check at 360px",
+      "passed": true
+    },
+    {
+      "name": "public /login at 360px",
+      "passed": true
+    },
+    {
+      "name": "public /privacy at 360px",
+      "passed": true
+    },
+    {
+      "name": "public /terms at 360px",
+      "passed": true
+    },
+    {
+      "name": "public / at 390px",
+      "passed": true
+    },
+    {
+      "name": "public /check at 390px",
+      "passed": true
+    },
+    {
+      "name": "public /login at 390px",
+      "passed": true
+    },
+    {
+      "name": "public /privacy at 390px",
+      "passed": true
+    },
+    {
+      "name": "public /terms at 390px",
+      "passed": true
+    },
+    {
+      "name": "public / at 768px",
+      "passed": true
+    },
+    {
+      "name": "public /check at 768px",
+      "passed": true
+    },
+    {
+      "name": "public /login at 768px",
+      "passed": true
+    },
+    {
+      "name": "public /privacy at 768px",
+      "passed": true
+    },
+    {
+      "name": "public /terms at 768px",
+      "passed": true
+    },
+    {
+      "name": "public / at 1440px",
+      "passed": true
+    },
+    {
+      "name": "public /check at 1440px",
+      "passed": true
+    },
+    {
+      "name": "public /login at 1440px",
+      "passed": true
+    },
+    {
+      "name": "public /privacy at 1440px",
+      "passed": true
+    },
+    {
+      "name": "public /terms at 1440px",
+      "passed": true
+    },
+    {
+      "name": "keyboard can reach a visible homepage control",
+      "passed": true
+    },
+    {
+      "name": "mobile menu supports keyboard activation, Escape and restored focus",
+      "passed": true
+    },
+    {
+      "name": "questionnaire keeps a synthetic non-personal draft through offline editing and reload",
+      "passed": true
+    },
+    {
+      "name": "anonymous private routes redirect before streaming any case data",
+      "passed": true
+    },
+    {
+      "name": "anonymous document API refuses access",
+      "passed": true
+    }
+  ],
+  "pages": [
+    {
+      "path": "/",
+      "width": 360,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/check",
+      "width": 360,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/login",
+      "width": 360,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/privacy",
+      "width": 360,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/terms",
+      "width": 360,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/",
+      "width": 390,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/check",
+      "width": 390,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/login",
+      "width": 390,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/privacy",
+      "width": 390,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/terms",
+      "width": 390,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/",
+      "width": 768,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/check",
+      "width": 768,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/login",
+      "width": 768,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/privacy",
+      "width": 768,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/terms",
+      "width": 768,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/",
+      "width": 1440,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/check",
+      "width": 1440,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/login",
+      "width": 1440,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/privacy",
+      "width": 1440,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    },
+    {
+      "path": "/terms",
+      "width": 1440,
+      "status": 200,
+      "horizontalOverflow": 0,
+      "errors": []
+    }
+  ],
+  "scope": "Public read-only pages and anonymous authorization; no case identity/payment/provider or completed DB journey",
+  "productionChanged": false,
+  "temporaryAccessIncluded": false
+}

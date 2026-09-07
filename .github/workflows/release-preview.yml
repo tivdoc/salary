@@ -30,11 +30,9 @@ jobs:
         env:
           TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
         run: node --experimental-strip-types scripts/release-completion/preview-browser.mts
-      - name: Synthetic owner document journeys on isolated Preview
-        env:
-          TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
-          TIVDOC_PREVIEW_CASE_FIXTURES: ${{ secrets.TIVDOC_PREVIEW_CASE_FIXTURES }}
-        run: node --experimental-strip-types scripts/release-completion/preview-documents.mts
+      # Protected owner proof runs locally with the exact synthetic fixture and
+      # private DEV Storage credentials, so bytes are verified before fault injection.
+      # Do not export a Storage service credential to this public-page workflow.
       - name: Keep public screenshots and scoped receipt only
         if: always()
         uses: actions/upload-artifact@v4

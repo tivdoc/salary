@@ -8,7 +8,7 @@ Evidence baseline: `30f24e79ca4ffc3df92403b0d625f8eea4d17ebf`. CI runs 341343525
 
 | ID | Required behavior | State | Existing evidence | Remaining verification / work |
 |---|---|---|---|---|
-| E01 | PR #1 משולב; הוספה, החלפה וכשל שומרים קבצים וגרסאות | IMPLEMENTED | P01; P09-document-capacity-db.json | Final authenticated browser refresh/two-tab/replacement journey. |
+| E01 | PR #1 משולב; הוספה, החלפה וכשל שומרים קבצים וגרסאות | VERIFIED | P13-protected-upload-verification.json; P13-request-pause-authority-db.json | Hosted code 923517e plus isolated DB migration 20260907190000. Actual bytes verified before fault, replacement/retry/two-tab/reopen and contract-only completion pass. Final RC must revalidate its own SHA. |
 | E02 | אין סכום אסור בשום ערוץ; ראשוני נשאר חודש אחד ועד שלושה נושאים | IMPLEMENTED | P02-report-db.json; projection/renderer contract tests | Integrated DOM, PDF and copy checks on final build. |
 | E03 | אפס נושאים שנבדקו אינו no_gap ואינו דוח שהושלם | IMPLEMENTED | P02-report-db.json; canonical seven-refusal draft proof | Final browser no-report/refused/awaiting states. |
 | E04 | שני תיקים/זהויות/חודשים מופרדים ב-API, Storage, דוח ו-UI | IN_PROGRESS | P05-saved-analysis-db.json; P08-report-source-db.json; P09-orders-db.json | Two browser identities through every protected surface. |
