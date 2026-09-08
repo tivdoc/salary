@@ -21,3 +21,10 @@ it('calls the identity-scoped saved clock RPC and refuses unavailable data',asyn
  expect(calls).toEqual([{name:'case_order_sla_snapshot',args:{target_case:'case',target_identity:'identity'}}]);
  await expect(customerServiceClocks('case','identity',{rpc:async()=>[]} as unknown as CaseAccessDb)).rejects.toThrow();
 });
+
+it('accepts a saved business schedule and counts business time independently of human review',async()=>{
+ const clock={...base,track:'business' as const,budget_ms:86400000};
+ const db={rpc:async()=>[{value:[clock]}]} as unknown as CaseAccessDb;
+ expect((await customerServiceClocks('case','identity',db)).clocks[0].track).toBe('business');
+ expect(orderClockView(clock,Date.parse('2026-09-07T06:00:00Z'))).toMatchObject({elapsedMs:8*3600000,remainingMs:16*3600000});
+});

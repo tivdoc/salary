@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {resolveCaseAccessDb,type CaseAccessDb} from '../case-access/db';
 import {elapsedServiceMs,SERVICE_CALENDAR_2026} from '../reports/business-clock';
 const instant=z.iso.datetime({offset:true});
-const clockSchema=z.object({order_id:z.uuid(),started_at:instant,completed_at:instant.nullable(),track:z.enum(['automatic','human']),budget_ms:z.coerce.number().int().positive(),
+const clockSchema=z.object({order_id:z.uuid(),started_at:instant,completed_at:instant.nullable(),track:z.enum(['automatic','human','business']),budget_ms:z.coerce.number().int().positive(),
  calendar:z.object({version:z.string(),from:z.string(),to:z.string(),source:z.string(),closed:z.array(z.string())}),
  pauses:z.array(z.object({request_id:z.uuid(),started_at:instant,ended_at:instant.nullable()})),
 });

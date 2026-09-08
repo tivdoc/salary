@@ -3,6 +3,11 @@ import {useState} from 'react';
 import Link from 'next/link';
 import type {ProductOrder} from '@/server/product/orders/contracts';
 const names:Record<string,string>={minimum_wage:'שכר מינימום',working_time:'שעות עבודה',pension:'פנסיה',travel:'נסיעות',convalescence:'הבראה',vacation:'חופשה',sick_leave:'מחלה'};
+function servicePromise(offer:ProductOrder['offer']){
+ const sla=offer.sla;
+ if('budget_ms' in sla)return sla.track==='business'?`עד ${sla.budget_ms/3600000} שעות עסקים. `:`עד ${sla.budget_ms/60000} דקות. `;
+ return `${sla.automatic_ms!==null?`עד ${sla.automatic_ms/60000} דקות במסלול אוטומטי; `:''}עד ${sla.human_ms/3600000} שעות עסקים במסלול טיפול. `;
+}
 export function OrderPurchase({publicId,initial=false}:{publicId?:string;initial?:boolean}){
  const [from,setFrom]=useState(''),[to,setTo]=useState(''),[order,setOrder]=useState<ProductOrder|null>(null),[accepted,setAccepted]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  async function send(action:'quote'|'checkout'){
@@ -10,7 +15,7 @@ export function OrderPurchase({publicId,initial=false}:{publicId?:string;initial
  }
  return <section className="payment-card"><h1>{initial?'בדיקה ראשונית':'הזמנת דוח מלא'}</h1><p>{initial?'חודש תלוש אחד ועד שלושה נושאים שניתן לבדוק.':'בחרו תקופה. נציג את הכיסוי הזמין ואת המחיר לפני אישור תשלום.'}</p>
  {!order?<><div>{!initial?<><label>מחודש <input type="month" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>עד חודש <input type="month" value={to} onChange={e=>setTo(e.target.value)}/></label></>:null}</div><button className="button button--primary" disabled={busy||!initial&&(!from||!to||from>to)} onClick={()=>send('quote')}>{busy?'בודקים זמינות…':'הצגת מחיר וכיסוי'}</button></>:<>
- <p>תקופה: <bdi>{order.period_from.slice(0,7)} – {order.period_to.slice(0,7)}</bdi></p><p>מחיר ההזמנה: <strong><bdi>{(order.amount_minor/100).toFixed(2)} ₪</bdi></strong></p><p>הנושאים הכלולים: {order.topics.map(t=>names[t]??t).join(', ')}. נושאים אחרים אינם כלולים בהזמנה.</p><p>{order.offer.human_review_required?'הזמנה זו כוללת בדיקה אנושית לפי תנאיה השמורים.': 'בדיקת AI לפי הכיסוי שנרכש.'} זמן השירות שנשמר בהזמנה: {order.offer.sla.automatic_ms!==null?`עד ${order.offer.sla.automatic_ms/60000} דקות במסלול אוטומטי; `:''}{`עד ${order.offer.sla.human_ms/3600000} שעות עסקים במסלול טיפול`} שעות עסקים: א׳–ה׳ 09:00–17:00, שעון ישראל, ללא חגים. זמן המתנה להשלמה שחוסמת את ההזמנה אינו נספר.</p>
+ <p>תקופה: <bdi>{order.period_from.slice(0,7)} – {order.period_to.slice(0,7)}</bdi></p><p>מחיר ההזמנה: <strong><bdi>{(order.amount_minor/100).toFixed(2)} ₪</bdi></strong></p><p>הנושאים הכלולים: {order.topics.map(t=>names[t]??t).join(', ')}. נושאים אחרים אינם כלולים בהזמנה.</p><p>{order.offer.human_review_required?'הזמנה זו כוללת בדיקה אנושית לפי תנאיה השמורים.': 'בדיקת AI לפי הכיסוי שנרכש.'} זמן השירות שנשמר בהזמנה: {servicePromise(order.offer)}שעות עסקים: א׳–ה׳ 09:00–17:00, שעון ישראל, ללא חגים. זמן המתנה להשלמה שחוסמת את ההזמנה אינו נספר.</p>
  <label><input type="checkbox" checked={accepted} disabled={busy} onChange={e=>setAccepted(e.target.checked)}/> קראתי את <Link href="/terms" target="_blank">תנאי השימוש</Link> ו<Link href="/privacy" target="_blank">הפרטיות</Link>, ואני מאשר את התקופה, הכיסוי והמחיר המוצגים.</label><button className="button button--primary" disabled={busy||!accepted} onClick={()=>send('checkout')}>{busy?'פותחים תשלום…':'מעבר לתשלום מאובטח'}</button></>}
  {error?<p role="alert">{error}</p>:null}<p>חזרה מסליקה אינה אישור תשלום. ההזמנה מתעדכנת לאחר אימות הספק.</p></section>;
 }

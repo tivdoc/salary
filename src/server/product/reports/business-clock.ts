@@ -23,8 +23,9 @@ function atHour(date:string,hour:number){
 }
 function dateKey(at:number){const p=dayFormatter.formatToParts(at);return ['year','month','day'].map(k=>p.find(i=>i.type===k)!.value).join('-');}
 /** Exact elapsed milliseconds. Overlapping blockers are subtracted once;
- * automatic checks use elapsed time, human reviews Sun–Thu 09:00–17:00. */
-export function elapsedServiceMs(start:number,end:number,pauses:readonly PauseInterval[],kind:'automatic'|'human',calendar:ServiceCalendar=SERVICE_CALENDAR_2026):number{
+ * automatic checks use elapsed time; business scheduling and historical human
+ * review clocks use Sun–Thu 09:00–17:00. Scheduling is not a review attestation. */
+export function elapsedServiceMs(start:number,end:number,pauses:readonly PauseInterval[],kind:'automatic'|'human'|'business',calendar:ServiceCalendar=SERVICE_CALENDAR_2026):number{
  if(!Number.isFinite(start)||!Number.isFinite(end)||end<start||end-start>366*86400000)throw new Error('SLA_INTERVAL_INVALID');
  const merged=unionIntervals(pauses);
  function active(a:number,b:number){a=Math.max(a,start);b=Math.min(b,end);if(b<=a)return 0;let total=b-a;for(const p of merged)total-=Math.max(0,Math.min(b,p.end)-Math.max(a,p.start));return total;}

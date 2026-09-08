@@ -1,0 +1,24 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "unavailable purchased coverage creates neither an order nor a credit reservation",
+    "failure after SQL acceptance but before commit rolls back the newly created order, reservation and cascading events",
+    "altered price, foreign case/identity, actual web access and all non-worker function ACLs are refused",
+    "different quotes racing for one initial credit create exactly one full order; the losing insert rolls back",
+    "concurrent exact retries after response loss return one saved order and do not duplicate either event",
+    "a different quote for an existing purchased scope cannot silently reprice, cancel or replace that order",
+    "two first acceptances of the same unreserved quote create one order and one zero-credit reservation",
+    "synthetic paid v2 order starts a business clock without human attestation; historical v1 retains its human clock",
+    "changed source rejects unpaid retry while exact paid replay preserves purchased history",
+    "quote acceptance alone grants no entitlement and invokes no payment provider"
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908151940_quoted_order_acceptance.sql",
+  "migration_sha256": "53353c7925682b31980f99d528ef08714f6e1f2447f81ab7f13ba896a4f06ad4",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual worker/peer/web roles; injected synthetic monetary basis and synthetic verified payment row. No canonical monetary proof, provider payment, customer checkout or production change.",
+  "productionChanged": false
+}
