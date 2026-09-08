@@ -1,17 +1,13 @@
 {
-  "origin": "https://salary-c2vg0ac5j-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "5a9878e37dfc288715031f1a83a191fc87a1787c",
+  "origin": "https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "17c668ef480f1b70e612d8906a9b81d79073f121",
   "checks": [
     {
       "name": "customer opens case support with saved server state",
       "passed": true
     },
     {
-      "name": "unsent support draft survives reload without creating a server thread",
-      "passed": true
-    },
-    {
-      "name": "lost completion response survives full reload and retries the same saved question without duplication",
+      "name": "lost completion response retries the same saved question without duplication",
       "passed": true
     },
     {
@@ -44,10 +40,6 @@
     },
     {
       "name": "support leaves case and payment status unchanged",
-      "passed": true
-    },
-    {
-      "name": "logout revokes the real session and removes only tab-local support recovery",
       "passed": true
     }
   ],

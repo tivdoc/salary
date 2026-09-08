@@ -7,8 +7,8 @@ import {chromium,type BrowserContext} from 'playwright';
 import {readDevEnvFile} from '../supabase-dev-guard/dev-credential.mts';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca.ts';
 
-const origin='https://salary-gpbszhds3-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='0e7c9d0aa1122a5dbbdf1f5f0a3ec87fab51c649';
+const origin='https://salary-c2vg0ac5j-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='5a9878e37dfc288715031f1a83a191fc87a1787c';
 const directory='output/release-completion/preview-support';
 const env=readDevEnvFile();
 function client(key:string){const u=new URL(env.get(key)!);assert.equal(u.pathname,'/tivdoc_release_replay_20260907');assert.equal(u.hostname,'aws-0-eu-central-1.pooler.supabase.com');assert.ok(u.username.endsWith('.cpzrbidxftzqcfeqqusu'));u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
@@ -110,6 +110,10 @@ try{
   assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).some(k=>k.startsWith('tivdoc:support:v1:'))),false);
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('synthetic-unrelated-proof')),'preserved');
   assert.equal((await context!.request.post(origin+route,{headers:{origin},data:{id:randomUUID(),action:'support_open',message:'Denied after logout'}})).status(),401);
+  // Cookie removal alone does not prove server revocation: replay the old
+  // opaque session deliberately, with the same real Preview access cookie.
+  await context!.addCookies([{name:'tivdoc_case_session',value:cases[0].session,domain:new URL(origin).hostname,path:'/',secure:true,httpOnly:true,sameSite:'Lax'}]);
+  assert.equal((await context!.request.post(origin+route,{headers:{origin},data:{id:randomUUID(),action:'support_open',message:'Denied revoked session replay'}})).status(),401);
  });
 }catch(e){console.error(e instanceof Error?e.message:'proof failed');const failedPage=context?.pages()[0];if(failedPage){await failedPage.screenshot({path:`${directory}/failure.png`,fullPage:true}).catch(()=>{});if(await failedPage.locator('#support').isVisible())console.log((await failedPage.locator('#support').innerText()).slice(0,2500));}process.exitCode=1;}
 finally{
