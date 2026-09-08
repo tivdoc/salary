@@ -34,7 +34,7 @@ export default async function CaseThreadPage({ params }: { params: Promise<{ tok
   const item = cases.find((candidate) => candidate.public_id === token);
   if (!item) notFound();
 
-  const [requests,support] = await Promise.all([listCaseRequests(item.case_id),customerSupport(item.case_id,session.identity_id)]);
+  const [requests,support] = await Promise.all([listCaseRequests(item.case_id,undefined,session.identity_id),customerSupport(item.case_id,session.identity_id)]);
   // This authenticated server snapshot is serialized once for client hydration.
   // eslint-disable-next-line react-hooks/purity -- request-time server clock, after awaited data access
   const renderedAt = Date.now();

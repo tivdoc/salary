@@ -82,9 +82,9 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       // answer is written once, so the second attempt is refused rather than merged.
       return NextResponse.json({ error: "השאלה כבר נענתה או שאינה שייכת לתיק הזה", code: "request_not_open" }, { status: 409 });
     }
-    const remaining = await listCaseRequests(found.case_id);
+    const remaining = await listCaseRequests(found.case_id,undefined,session.identity_id);
     return NextResponse.json(
-      { ok: true, open: remaining.filter((row) => row.answered_at === null).length },
+      { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && Date.parse(row.expires_at)>Date.now()).length },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

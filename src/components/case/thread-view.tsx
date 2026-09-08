@@ -99,12 +99,13 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
 
 export function ThreadView({ publicId, requests, renderedAt }: { publicId: string; requests: readonly StoredRequest[]; renderedAt: number }) {
   const router = useRouter();
-  const open = requests.filter((request) => request.answered_at === null && Date.parse(request.expires_at) > renderedAt);
-  const expired = requests.filter((request) => request.answered_at === null && Date.parse(request.expires_at) <= renderedAt);
+  const open = requests.filter((request) => request.answered_at === null && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
+  const expired = requests.filter((request) => request.answered_at === null && request.source_current !== false && Date.parse(request.expires_at) <= renderedAt);
+  const superseded = requests.filter((request) => request.answered_at === null && request.source_current === false);
   // The initial render uses the same server instant through hydration. The DB
   // remains the expiry authority; refresh at the next deadline while open.
   useEffect(() => {
-    const deadlines = requests.filter(request => request.answered_at === null && Date.parse(request.expires_at) > renderedAt).map(request => Date.parse(request.expires_at));
+    const deadlines = requests.filter(request => request.answered_at === null && request.source_current !== false && Date.parse(request.expires_at) > renderedAt).map(request => Date.parse(request.expires_at));
     if (deadlines.length === 0) return;
     const timer = window.setTimeout(() => router.refresh(), Math.min(2_147_483_647, Math.max(0, Math.min(...deadlines) - Date.now()) + 100));
     return () => window.clearTimeout(timer);
@@ -141,6 +142,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
       ))}
 
       {expired.length > 0 ? <div className="received-card"><h2>שאלות שנסגרו ללא תשובה</h2>{expired.map(request => <p key={request.id}>{request.question} — הסתיים המועד להשלמה.</p>)}</div> : null}
+      {superseded.length > 0 ? <div className="received-card"><h2>שאלות ממסמך קודם</h2><p>המסמך או תקופתו השתנו. השאלות נשמרות בהיסטוריה ואינן ממתינות לאישור. אם יהיה צורך בהשלמה מהמסמך העדכני, תופיע שאלה חדשה.</p>{superseded.map(request => <p key={request.id}>{request.question}</p>)}</div> : null}
 
       {answered.length > 0 ? (
         <div className="received-card">
@@ -152,7 +154,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
                 {request.statement_month ? <p>תקופת התשובה: {formatRequestMonth(request.statement_month)}</p> : null}
                 <p className="thread-answered__answer">{request.answer_text}</p>
                 {(request.answer_revision ?? 1) > 1 ? <p>תשובה מתוקנת · גרסה {request.answer_revision}. התשובה המקורית נשמרה.</p> : null}
-                {request.answer_kind !== "document" ? <details><summary>תיקון התשובה</summary><AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} correction onAnswered={() => router.refresh()} /></details> : null}
+                {request.source_current === false ? <p>התשובה נשמרה ביחס למסמך הקודם. היא אינה מאשרת נתונים מהמסמך העדכני.</p> : request.answer_kind !== "document" ? <details><summary>תיקון התשובה</summary><AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} correction onAnswered={() => router.refresh()} /></details> : null}
               </li>
             ))}
           </ul>

@@ -1,0 +1,7 @@
+{
+  "state": "APPLIED_ISOLATED_DEV",
+  "migration": "20260908205236_document_field_visibility.sql",
+  "sha256": "4f4600d2764c1bc9809100ae91834059dabe14fa4dbe34101148cda4a65ea5ba",
+  "scope": "Derived identity-bound current-source visibility; immutable questions and answer history preserved",
+  "productionChanged": false
+}

@@ -70,9 +70,18 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
   const [id,duplicate]=await Promise.all([open(worker),open(peer)]);expect(duplicate).toBe(id);expect(await open(worker)).toBe(id);
   const request=(await owner.query('select * from public.case_requests where id=$1',[id])).rows[0];expect(request.statement_month).toBe('2025-02');expect(request.blocking).toBe(false);
   checks.push('concurrent open and retry return one request bound to purchased February while the initial case month stays January');
+  const visibility=async(identity=identities[0])=>(await web.query('select * from public.case_request_field_states($1,$2)',[caseId,identity])).rows;
+  expect(await visibility()).toEqual([{request_id:id,source_current:true}]);
+  await expect(visibility(identities[1])).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
+  await expect(worker.query('select * from public.case_request_field_states($1,$2)',[caseId,identities[0]])).rejects.toMatchObject({code:'42501'});
+  checks.push('current-source presentation is identity-bound and rejects foreign customer and worker access');
   const setMonth=async(month:string)=>{await owner.query('begin');await owner.query('create policy field_month_fixture on public.documents for update to tivdoc_dev_migrator using(true) with check(true)');
    await owner.query('update public.documents set period_month=$1 where id=$2',[month,docId]);await owner.query('drop policy field_month_fixture on public.documents');await owner.query('commit');};
-  await setMonth('2025-03-01');await expect(open(worker)).rejects.toThrow('REQUEST_FIELD_SOURCE_CHANGED');await setMonth('2025-02-01');
+  await setMonth('2025-03-01');await expect(open(worker)).rejects.toThrow('REQUEST_FIELD_SOURCE_CHANGED');
+  expect(await visibility()).toEqual([{request_id:id,source_current:false}]);
+  expect((await web.query('select answered_at,expires_at from public.case_requests where id=$1',[id])).rows[0]).toMatchObject({answered_at:null,expires_at:request.expires_at});
+  checks.push('an unanswered stale source is identified without rewriting its question expiry or answer state');
+  await setMonth('2025-02-01');
   checks.push('changing current document-month metadata invalidates the old reading even when immutable bytes and older checkpoint still match');
   await expect(web.query('select * from public.case_request_answer($1,$2,$3)',[id,caseId,DOCUMENT_FIELD_CONFIRMATION_ANSWERS[0]])).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
   await expect(identified(web,id,identities[1])).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
@@ -104,6 +113,9 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
   await owner.query('begin');await owner.query('create policy field_replacement on public.documents for update to tivdoc_dev_migrator using(true) with check(true)');
   const replacement=randomUUID();await owner.query('update public.documents set version_id=$1,storage_path=$2 where id=$3',[replacement,`cases/${caseId}/versions/${replacement}.pdf`,docId]);await owner.query('drop policy field_replacement on public.documents');await owner.query('commit');
   await expect(open(worker)).rejects.toThrow('REQUEST_FIELD_SOURCE_CHANGED');expect((await web.query('select public.case_request_document_source($1,$2,$3) value',[caseId,identities[0],id])).rows[0].value).toBeNull();
+  expect(await visibility()).toEqual([{request_id:id,source_current:false}]);
+  expect((await owner.query('select count(*)::int n from private.case_request_answer_versions where request_id=$1',[id])).rows[0].n).toBe(2);
+  checks.push('answered replaced-source visibility is historical while both immutable answer versions remain intact');
   expect((await owner.query('select status,payment_status from public.cases where id=$1',[caseId])).rows[0]).toEqual({status:'under_review',payment_status:'verified'});
   checks.push('replacement invalidates source and old target reuse without changing paid status or deleting answer history');
  }catch(e){failure=e instanceof Error?e.message:'FIELD_PROOF_FAILED';throw e;}finally{
@@ -112,7 +124,7 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
    expect((await owner.query("delete from public.cases where id=any($1::uuid[]) and is_qa and first_name='Synthetic field confirmation'",[[caseId,otherId]])).rowCount).toBe(2);
    await owner.query('delete from public.case_identities where id=any($1::uuid[])',[identities]);await owner.query('commit');cleaned=true;}
   }catch(e){cleanupFailure=e instanceof Error?e.message:'FIELD_CLEANUP_FAILED';await owner.query('rollback');throw e;}finally{
-   writeFileSync('docs/release-evidence/P06-field-confirmation-db.json',JSON.stringify({verdict:cleaned&&!failure&&checks.length===12?'PASS':'FAIL',checks,failure,cleanupFailure,migration,sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),periodGuardMigration:'20260908202806_document_field_period_guard.sql',periodGuardSha256:createHash('sha256').update(readFileSync('supabase/migrations/20260908202806_document_field_period_guard.sql')).digest('hex'),syntheticCasesRemoved:cleaned?2:0,syntheticIdentitiesRemoved:cleaned?identities.length:0,machineSessionRevoked:cleaned,scope:'Actual isolated DEV worker/peer/web SQL, saved snapshot and canonical PostgreSQL stages with synthetic document metadata and paid order. No Storage bytes, browser, legal activation or production.',productionChanged:false},null,2)+'\n');
+   writeFileSync('docs/release-evidence/P06-field-confirmation-db.json',JSON.stringify({verdict:cleaned&&!failure&&checks.length===15?'PASS':'FAIL',checks,failure,cleanupFailure,migration,sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),periodGuardMigration:'20260908202806_document_field_period_guard.sql',periodGuardSha256:createHash('sha256').update(readFileSync('supabase/migrations/20260908202806_document_field_period_guard.sql')).digest('hex'),visibilityMigration:'20260908205236_document_field_visibility.sql',visibilitySha256:createHash('sha256').update(readFileSync('supabase/migrations/20260908205236_document_field_visibility.sql')).digest('hex'),syntheticCasesRemoved:cleaned?2:0,syntheticIdentitiesRemoved:cleaned?identities.length:0,machineSessionRevoked:cleaned,scope:'Actual isolated DEV worker/peer/web SQL, saved snapshot and canonical PostgreSQL stages with synthetic document metadata and paid order. No Storage bytes, browser, legal activation or production.',productionChanged:false},null,2)+'\n');
    await Promise.all([owner.end(),worker.end(),peer.end(),web.end()]);
   }
  }

@@ -13,7 +13,7 @@ import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db.ts";
 import { validateRequestAnswer } from "./request-answer.ts";
 import { requestFor, slaPaused, type ThreadRequest } from "./refusal-requests.ts";
 
-export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null }>;
+export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean }>;
 
 type RequestRow = Readonly<{
   id: string;
@@ -49,14 +49,18 @@ function toRequest(row: RequestRow): StoredRequest {
   };
 }
 
-export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null): Promise<readonly StoredRequest[]> {
+export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null, identityId?: string): Promise<readonly StoredRequest[]> {
   const store = db ?? await resolveCaseAccessDb();
   if (!store) throw new Error("CASE_STORE_UNAVAILABLE");
   const rows = await store.rpc<RequestRow>("case_request_list", { target_case: caseId });
   const revisions = await store.rpc<{request_id:string;answer_revision:number;latest_answer:string|null;draft_revision:number;draft_text:string|null}>("case_request_revision_list", {target_case:caseId});
+  const bound = rows.filter(row => row.code.startsWith('document_field:'));
+  const states = identityId && bound.length ? await store.rpc<{request_id:string;source_current:boolean}>('case_request_field_states',{target_case:caseId,target_identity:identityId}) : [];
+  if (identityId && bound.length && (states.length !== bound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!bound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   return rows.map(row => {
     const revision = revisions.find(value => value.request_id === row.id);
-    return {...toRequest(row),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
+    const state = states.find(value => value.request_id === row.id);
+    return {...toRequest(row),...(state?{source_current:state.source_current}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
   });
 }
 
