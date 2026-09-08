@@ -46,3 +46,6 @@ B-005 update 7.9.2026: 2025 pension column research is resolved as an explicitly
 
 
 P03/P05 update 2026-09-08: durable saved extraction invocation, exact paid/fenced admission, cross-connection deduplication, late receipt recovery and canonical draft composition now have nine isolated DB checks (P05-saved-extraction-worker-db.json), using the real adapter with injected transport and in-memory synthetic PDF Storage. This resolves the missing internal provider composition for that bounded path; it does not resolve B-004 credentials/calibration or supply a hosted worker/scheduler. Unknown external outcomes are intentionally retained and require recovered provider receipts/operational reconciliation; an expiry is not authorization to repeat a potentially charged call. No production change.
+
+
+2026-09-08 B-003 update: studio UI through 68d82cc is integrated in 17c668e and independently proved on the isolated Preview with 62 checks. Both exact-SHA CI runs pass. B-003 no longer blocks this integration; remaining P11 accessibility/user-study and protected-report acceptance are separate gaps. See the tracker and current P13/P06/P08 receipts. No release-branch production deployment.

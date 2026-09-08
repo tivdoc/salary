@@ -7,8 +7,8 @@ import {chromium,type BrowserContext} from 'playwright';
 import {readDevEnvFile} from '../supabase-dev-guard/dev-credential.mts';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca.ts';
 
-const origin='https://salary-r1jvnsvor-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='6cb92fa84bcbe51627194e66eb481610983306cd';
+const origin='https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='17c668ef480f1b70e612d8906a9b81d79073f121';
 const directory='output/release-completion/preview-support';
 const env=readDevEnvFile();
 function client(key:string){const u=new URL(env.get(key)!);assert.equal(u.pathname,'/tivdoc_release_replay_20260907');assert.equal(u.hostname,'aws-0-eu-central-1.pooler.supabase.com');assert.ok(u.username.endsWith('.cpzrbidxftzqcfeqqusu'));u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}

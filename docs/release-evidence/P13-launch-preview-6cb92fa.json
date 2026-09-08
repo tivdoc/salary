@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "17c668ef480f1b70e612d8906a9b81d79073f121",
+  "origin": "https://salary-r1jvnsvor-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "6cb92fa84bcbe51627194e66eb481610983306cd",
   "checks": [
     {
       "name": "DEV liveness distinguishes readiness and external services are disabled",
@@ -128,26 +128,6 @@
     },
     {
       "name": "mobile menu supports keyboard activation, Escape and restored focus",
-      "passed": true
-    },
-    {
-      "name": "studio dark theme remains usable at 390px",
-      "passed": true
-    },
-    {
-      "name": "studio dark theme remains usable at 1440px",
-      "passed": true
-    },
-    {
-      "name": "studio process and report tabs respond to the keyboard",
-      "passed": true
-    },
-    {
-      "name": "live reduced-motion preference cancels artwork and reveal animation",
-      "passed": true
-    },
-    {
-      "name": "client navigation away from studio retains the legal page styling",
       "passed": true
     },
     {

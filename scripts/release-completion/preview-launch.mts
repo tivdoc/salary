@@ -5,8 +5,8 @@ import {createHash} from 'node:crypto';
 import {chromium,type BrowserContext} from 'playwright';
 
 // Deliberately pinned to the isolated, closed-sales deployment, never production.
-const origin='https://salary-r1jvnsvor-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='6cb92fa84bcbe51627194e66eb481610983306cd';
+const origin='https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='17c668ef480f1b70e612d8906a9b81d79073f121';
 const directory='output/release-completion/preview-launch';
 const raw=process.env.TIVDOC_PREVIEW_BROWSER_STATE;
 if(!raw)throw new Error('PREVIEW_TEMPORARY_ACCESS_MISSING');
@@ -69,7 +69,7 @@ try{
     }
     if(path==='/'){
      assert.ok((await page.locator('body').innerText()).includes('פתיחת הזמנות חדשות אינה זמינה כרגע'));
-     await page.locator('.lens-artwork img').evaluate(image=>{assertImage(image as HTMLImageElement);function assertImage(i:HTMLImageElement){if(!i.complete||i.naturalWidth===0)throw new Error('Artwork did not load');}});
+     assert.equal(await page.locator('.lens-artwork img').evaluate(image=>(image as HTMLImageElement).complete&&(image as HTMLImageElement).naturalWidth>0),true,'Artwork did not load');
      const hero=await page.locator('#hero-title').boundingBox();assert.ok(hero&&hero.x>=0&&hero.x+hero.width<=width+1);
      const explore=await page.locator('.studio-hero .studio-link').boundingBox();assert.ok(explore&&explore.y>=0&&explore.y+explore.height<=900,'Exploration link is outside the opening viewport');
      assert.ok(await page.locator('header a[href="/cases"]').count()>0);
@@ -163,7 +163,7 @@ try{
   const dark=await browser.newContext({storageState,colorScheme:'dark',reducedMotion:'reduce',locale:'he-IL',viewport:{width,height:900}});
   try{
    const p=await dark.newPage();const darkErrors:string[]=[];p.on('pageerror',e=>darkErrors.push(e.message));
-   await p.goto(origin,{waitUntil:'networkidle'});
+   await p.goto(origin,{waitUntil:'domcontentloaded'});
    assert.equal(await p.evaluate(()=>matchMedia('(prefers-color-scheme: dark)').matches),true);
    assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1);
    assert.equal(await p.locator('.lens-artwork img').evaluate(n=>(n as HTMLImageElement).naturalWidth>0),true);
@@ -174,7 +174,7 @@ try{
   }finally{await dark.close();}
  });
  await check('studio process and report tabs respond to the keyboard',async()=>{
-  await page.setViewportSize({width:1440,height:900});await page.goto(origin,{waitUntil:'networkidle'});
+  await page.setViewportSize({width:1440,height:900});await page.goto(origin,{waitUntil:'domcontentloaded'});
   const stages=page.locator('.studio-chapters button');assert.equal(await stages.count(),4);
   for(let index=0;index<4;index++){
    await stages.nth(index).focus();await page.keyboard.press('Enter');
@@ -190,7 +190,7 @@ try{
  await check('live reduced-motion preference cancels artwork and reveal animation',async()=>{
   const moving=await browser.newContext({storageState,reducedMotion:'no-preference',viewport:{width:1440,height:900}});
   try{
-   const p=await moving.newPage();await p.goto(origin,{waitUntil:'networkidle'});
+   const p=await moving.newPage();await p.goto(origin,{waitUntil:'domcontentloaded'});
    const art=p.locator('.lens-artwork');const rect=await art.boundingBox();assert.ok(rect);
    await p.mouse.move(rect.x+rect.width*0.75,rect.y+rect.height*0.4);
    assert.ok((await p.locator('.lens-artwork__object').getAttribute('style'))?.includes('perspective'));
@@ -200,9 +200,9 @@ try{
   }finally{await moving.close();}
  });
  await check('client navigation away from studio retains the legal page styling',async()=>{
-  await page.goto(origin+'/privacy',{waitUntil:'networkidle'});
+  await page.goto(origin+'/privacy',{waitUntil:'domcontentloaded'});
   const before=await page.locator('main').evaluate(n=>({font:getComputedStyle(n).fontFamily,color:getComputedStyle(n).color,width:n.getBoundingClientRect().width}));
-  await page.goto(origin,{waitUntil:'networkidle'});
+  await page.goto(origin,{waitUntil:'domcontentloaded'});
   await page.locator('.studio-principles a[href="/privacy"]').click();await page.waitForURL(origin+'/privacy');
   assert.equal(await page.locator('.studio-site').count(),0);
   const after=await page.locator('main').evaluate(n=>({font:getComputedStyle(n).fontFamily,color:getComputedStyle(n).color,width:n.getBoundingClientRect().width}));
