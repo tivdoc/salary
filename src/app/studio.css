@@ -1332,3 +1332,12 @@
     transform: none !important;
   }
 }
+
+/* Keep the artwork in its intrinsic square and avoid a clipped matte in dark mode. */
+@supports (width: 1cqw) {
+ .lens-artwork { container-type: size; }
+ .lens-artwork__object { display: grid; place-items: center; }
+ .lens-artwork img { width: min(110cqw, 100cqh); height: auto; aspect-ratio: 1; transform: none; }
+}
+@media (prefers-color-scheme: dark) { .lens-artwork img { mask-image: none; border-radius: 12px; } }
+@media (max-width: 767px) { .lens-artwork { animation: none; } }
