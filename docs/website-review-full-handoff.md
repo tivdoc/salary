@@ -64,3 +64,18 @@ The full E/F/A release matrix in docs/release-evidence/P13-acceptance-matrix.md 
 Measurements use the same local production server, mobile Lighthouse defaults and inherited external-measurement-disabled policy before and after. Baseline (4d1a91b): performance 75, accessibility 100, LCP 4.4s, TBT 390ms, CLS 0. After the content/layout change, before font refinement: 80/100, LCP 4.8s, TBT 170ms, CLS 0. The trace identifies the lens as LCP, not a hypothetical oversized image; it also records eleven prioritized font loads. Final measurement and Preview source/URL are appended after validation.
 
 Production tivdoc.com remains on its existing website deployment. This review is delivered as integrated code and Preview. It does not grant or enact activation, billing, customer publication or a production rollout of the advanced system.
+
+### Final evidence and deployment outcome
+
+Code SHA built and verified: `dc7ef7fe7f6e6503466a144a54e1bc96bc90eeb4`. Draft integration PR: https://github.com/tivdoc/salary/pull/3, targeting release-completion. Final local mobile Lighthouse: performance 83, accessibility 100, FCP 2.1s, LCP 4.2s, TBT 110ms, CLS 0. A failed NO_NAVSTART recording was discarded and rerun; it is not counted as a performance result. Results are single lab measurements, not statistical or field guarantees.
+
+The remote Preview attempt `dpl_HNmiU9xcacpmoDBwq3oEZNiNFmXE` (salary-jc3a5caw1-tivdoccom-5042s-projects.vercel.app) is **BLOCKED, not built or verified**. The authenticated Vercel deployment API reports: “The deployment was blocked because the commit author doesn’t have permission to create deployments for this project.” No author metadata was changed to evade this restriction. The Preview needs the project owner to resolve the author authorization and then a fresh deployment/verification. Production was not changed. Local review remains available at http://localhost:3114 while its server runs.
+
+Before/after captures and compact measured evidence:
+
+- [Desktop before](release-evidence/website-review/before-desktop.png) / [desktop after](release-evidence/website-review/after-desktop.png)
+- [Mobile before](release-evidence/website-review/before-mobile.png) / [mobile after](release-evidence/website-review/after-mobile.png)
+- [200% reflow](release-evidence/website-review/zoom-200.png), [media error recovery](release-evidence/website-review/video-error.png)
+- [Browser receipt](release-evidence/website-review/browser-results.json), [performance and trace summary](release-evidence/website-review/performance.json)
+
+Unresolved dependencies: Vercel Preview author authorization; full protected end-to-end/provider/system acceptance from P13; actual engine generation/publication/delivery. Public synthetic contract/renderer proof is complete within its declared scope.
