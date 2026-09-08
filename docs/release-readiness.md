@@ -14,6 +14,7 @@ The release is **not an RC and not ready for live sales**. Work continues under 
 
 | Capability | Implemented | Verified | Ready to operate / deployed |
 |---|---|---|---|
+| Calculation source provenance | Distinct fact/parameter pins, exact RuleSpec replay, full saved-stage and case/run binding; historical trace compatibility | 36 new local assertions; six actual DEV DB assertions on exact 054ddaf, with retry/rollback/foreign-tenant/immutability and complete fixture cleanup | Arithmetic foundation only; not deployed, no unpaid-gap writer, real rule activation or pricing reader |
 | Saved document addition/replacement and selected late completion | Immutable versions, reservations, case-wide limits, explicit replacement and exact request linkage | Hosted UI → HTTP → actual DB/Storage, retry after transferred bytes, two tabs, foreign-case refusal; 12 current checks, 8 object hashes | Verified in the named DEV Preview; no production rollout |
 | Exact document-field readings | Immutable document/candidate/month targets, identified revisions, current-source checks and canonical reading metadata | 15 actual DB + 11 hosted checks, two real source objects, response-loss recovery and historical visibility | Named DEV Preview; synthetic extraction, no live provider accuracy or monetary authorization |
 | Saved answers and support | Versioned answers, draft recovery, correction/retry identity, expiry and customer support | 12 request + 12 support hosted checks with owned synthetic identities | Named DEV Preview; live mail/reminder delivery unproved |

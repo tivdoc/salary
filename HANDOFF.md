@@ -6,6 +6,8 @@ Local suite: 3,033 tests pass, 37 skip, zero failures. New trace/domain and pers
 
 The first exact-708226b DB run reached actual trace insert/retry/replay and foreign-tenant refusal, then the test expected SQLSTATE 42501 from the historical append-only trigger; it correctly returned P0001 with `Engine version history is append-only`. Fixed that assertion, without changing the trigger or production code. Failed receipts retained; both owned cases/identities were removed and machine session revoked, with no cleanup failure. The final all-assertions DB receipt remains pending the repeat run.
 
+Repeat **PASS on exact 054ddaf11f727b73fa3ffffd105331ce61aaee38**: six actual PostgreSQL trace assertions and all 15 field-confirmation checks. Trace/run rollback verified, two cases/identities removed, machine revoked, no cleanup errors. P08-source-calculation-trace-{local,db}.json and P06-field-confirmation-db-054ddaf.json contain evidence. P06's current hosted receipt remains the separately archived exact-115a2dd proof. No new deployment, rule activation, unpaid-gap finding or customer amount; next ordinary work is canonical gap and projection/pricing composition.
+
 ## P13 integrated field and history Preview — exact 115a2dd (2026-09-09)
 
 Preview https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app (dpl_9QfryeYWadFvYYmzzkuJzLB6BE1m) is READY from exact 115a2dde81e9a2a537590588e400cb2994965926. Both CI/build/closure runs pass (34278013129/34278008101; credential-free suite 2,971 pass/63 skip). Fresh separate DEV schema replay proves all 120 migrations, 118 raw and two documented managed-platform compensations; shared role provisioning unchanged.

@@ -1,0 +1,19 @@
+{
+  "verdict": "PASS",
+  "implementationCommit": "708226b5e5e62fbcadc499ed41f82ee4a813dee5",
+  "dbHarnessCorrectionCommit": "054ddaf11f727b73fa3ffffd105331ce61aaee38",
+  "newDomainAndPersistenceTests": 36,
+  "fullLocalSuite": {"passed": 3033, "failed": 0, "skipped": 37},
+  "typecheck": "PASS",
+  "changedFileLint": "PASS",
+  "postStagingFoundationAndTrustedGitTests": {"passed": 22, "failed": 0},
+  "runnerCorrection": "An initial node --test invocation of two Vitest files failed before assertions; rerun with the repository Vitest runner passed all 22.",
+  "databaseEvidence": "P08-source-calculation-trace-db.json",
+  "browserProof": false,
+  "productionChanged": false,
+  "limits": [
+    "Arithmetic provenance only, no rule activation or meaningful legal golden approval",
+    "No unpaid-gap writer, pricing reader or customer monetary publication added",
+    "Current hosted Preview remains exact 115a2dd with separate 110-check evidence"
+  ]
+}
