@@ -23,16 +23,11 @@
   "sha256": "02e4514626e558c366f48162b49cf41b23b0d9c8a5de3c6314a5f4027bb05cd9",
   "periodGuardMigration": "20260908202806_document_field_period_guard.sql",
   "periodGuardSha256": "91377881d6aa0c1cc69a52f557d942bde30dee3e8fd8e758dba630b5318f5ff6",
-  "visibilityMigration": "20260908205236_document_field_visibility.sql",
-  "visibilitySha256": "4f4600d2764c1bc9809100ae91834059dabe14fa4dbe34101148cda4a65ea5ba",
   "syntheticCasesRemoved": 2,
   "syntheticIdentitiesRemoved": 2,
   "machineSessionRevoked": true,
-  "browserProof": true,
-  "storageUploaded": true,
-  "storageRemoved": true,
-  "storageObjectsRemoved": 2,
-  "sourceSha256": "94ddcf729214b7c7a36811427ba24c2a5995bd456d99ec0b0dda0f228efdd30c",
-  "scope": "Actual isolated DEV worker/peer/web SQL, actual Storage PDF, seeded customer sessions and hosted reading/correction/history; saved snapshot and canonical PostgreSQL stages. Synthetic extraction and paid order, no live OCR/OTP, legal activation, monetary calculation or production.",
-  "productionChanged": false
+  "scope": "Actual isolated DEV worker/peer/web SQL, saved snapshot and canonical PostgreSQL stages with synthetic document metadata and paid order. No Storage bytes, browser, legal activation or production.",
+  "productionChanged": false,
+  "visibilityMigration": "20260908205236_document_field_visibility.sql",
+  "visibilitySha256": "4f4600d2764c1bc9809100ae91834059dabe14fa4dbe34101148cda4a65ea5ba"
 }

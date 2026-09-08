@@ -1,0 +1,67 @@
+{
+  "sha": "115a2dde81e9a2a537590588e400cb2994965926",
+  "origin": "https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app",
+  "deployment": "dpl_9QfryeYWadFvYYmzzkuJzLB6BE1m",
+  "ready": true,
+  "ci": [
+    34278013129,
+    34278008101
+  ],
+  "results": [
+    {
+      "name": "P13-launch-preview.json",
+      "passed": 44
+    },
+    {
+      "name": "P06-request-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P08-support-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P13-studio-upload-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P08-ai-report-browser.json",
+      "passed": 11
+    },
+    {
+      "name": "P09-customer-refund-browser.json",
+      "passed": 8
+    },
+    {
+      "name": "P06-field-confirmation-browser.json",
+      "passed": 11
+    }
+  ],
+  "totalBrowserChecks": 110,
+  "aiPublicationDbAssertions": 9,
+  "verifiedStorageObjects": 11,
+  "currentUploadObjects": 7,
+  "retainedUploadObjects": 1,
+  "reportSourceObjects": 1,
+  "syntheticCasesRemoved": 12,
+  "syntheticIdentitiesRemoved": 12,
+  "ownedCleanupComplete": true,
+  "inspectedScreenshots": [
+    "preview-field-confirmation/field-390.png",
+    "preview-field-confirmation/historical-field-390.png",
+    "preview-field-confirmation/source-page-1.png",
+    "preview-ai-report/report-390.png",
+    "preview-ai-report/current-pdf-page-1.png",
+    "preview-order-refunds/orders-390.png"
+  ],
+  "runtimeErrorQuery": {
+    "since": "20m",
+    "limit": 100,
+    "count": 0
+  },
+  "scope": "Isolated DEV Preview with seeded QA sessions, actual HTTP/DB/Storage, source-bound customer reading and correction/history, AI report/PDF disclosure and pending refund status. All 11 source objects verified and removed. Synthetic extraction, paid orders, pricing basis and projections; no live OCR/OTP, canonical monetary computation, legal activation, provider settlement or production rollout. Separate failed AI harness invocation used the wrong environment variable before Storage upload and removed its two owned cases; its failure receipt is retained.",
+  "productionChanged": false,
+  "priceCorrectionDbAssertions": 12,
+  "fieldConfirmationDbAssertions": 15,
+  "fieldSourceObjects": 2
+}

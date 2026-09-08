@@ -5,8 +5,8 @@ import {chromium} from 'playwright';
 import {isOpaqueToken} from '../../src/server/product/case-access/crypto.ts';
 
 // Repin only after the implementation's exact CI and isolated deployment pass.
-const origin='https://salary-1vlhcfu08-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='ee4a8be9f90ba8ae93dbfe4a52ff003099919dcc';
+const origin='https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='115a2dde81e9a2a537590588e400cb2994965926';
 const directory='output/release-completion/preview-order-refunds';
 export async function verifyOrderRefundPreview(input:{publicId:string;foreignPublicId:string;session:string;foreignSession:string}){
  assert.ok(isOpaqueToken(input.session)&&isOpaqueToken(input.foreignSession));
