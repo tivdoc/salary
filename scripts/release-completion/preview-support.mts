@@ -7,8 +7,8 @@ import {chromium,type BrowserContext} from 'playwright';
 import {readDevEnvFile} from '../supabase-dev-guard/dev-credential.mts';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca.ts';
 
-const origin='https://salary-dsv1kjbir-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='4b526f72a1e11415478cbb38c3408b852045d047';
+const origin='https://salary-rb7ah8nqx-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='1d8f28e56f447caa64fd963347f2528d0956a627';
 const directory='output/release-completion/preview-support';
 const env=readDevEnvFile();
 function client(key:string){const u=new URL(env.get(key)!);assert.equal(u.pathname,'/tivdoc_release_replay_20260907');assert.equal(u.hostname,'aws-0-eu-central-1.pooler.supabase.com');assert.ok(u.username.endsWith('.cpzrbidxftzqcfeqqusu'));u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
@@ -17,10 +17,11 @@ assert.equal(access.origins.length,0);assert.equal(access.cookies.length,1);asse
 const db=client('TIVDOC_DEV_DATABASE_URL'),ops=client('TIVDOC_OPERATIONS_POSTGRES_URL');
 const ids=[randomUUID(),randomUUID()],identities:string[]=[],cases:{caseId:string;publicId:string;session:string}[]=[];
 const checks:{name:string;passed:boolean;detail?:string}[]=[],errors:string[]=[];
+const skipLinkStates:{width:number;focused:boolean;y:number;bottom:number;scrollY:number;transform:string}[]=[];
 let cleaned=false,context:BrowserContext|undefined;
 mkdirSync(directory,{recursive:true});
 const browser=await chromium.launch({headless:true,channel:'chrome'});
-const save=()=>writeFileSync(`${directory}/receipt.json`,JSON.stringify({origin,deployedSha,checks,errors,syntheticCasesRemoved:cleaned?2:0,scope:'Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.',productionChanged:false,secretsIncluded:false},null,2)+'\n');
+const save=()=>writeFileSync(`${directory}/receipt.json`,JSON.stringify({origin,deployedSha,checks,errors,skipLinkStates,syntheticCasesRemoved:cleaned?2:0,scope:'Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.',productionChanged:false,secretsIncluded:false},null,2)+'\n');
 async function check(name:string,run:()=>Promise<void>){try{await run();checks.push({name,passed:true});console.log('PASS '+name);}catch(e){checks.push({name,passed:false,detail:e instanceof Error?e.message:'failed'});throw e;}finally{save();}}
 try{
  await Promise.all([db.connect(),ops.connect()]);
@@ -60,6 +61,7 @@ try{
   await page.getByText('לא התקבל אישור שמירה. הטקסט נשאר כאן ואפשר לנסות שוב.',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),question);
   await page.locator('#support').getByRole('button',{name:'שליחת הודעה',exact:true}).first().click();
+  await page.getByText('ההודעה נשמרה בשרשור התמיכה.',{exact:true}).waitFor();
   await page.locator('#support article').waitFor();await page.reload();
   assert.equal(await page.locator('#support article').count(),1);assert.equal(await page.locator('#support article li').count(),1);
   assert.ok((await page.locator('#support article').innerText()).includes(question));
@@ -90,6 +92,12 @@ try{
  for(const width of [360,390,768,1440])await check(`persisted support is readable in RTL at ${width}px`,async()=>{
   await page.setViewportSize({width,height:900});await page.reload();assert.equal(await page.locator('#support article li').count(),4);
   assert.equal(await page.locator('html').getAttribute('dir'),'rtl');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=1);
+  const skip=await page.locator('.skip-link').evaluate(e=>{const r=e.getBoundingClientRect();return {focused:e===document.activeElement,y:r.y,bottom:r.bottom,scrollY:window.scrollY,transform:getComputedStyle(e).transform};});
+  skipLinkStates.push({width,...skip});
+  if(skip.focused)assert.ok(skip.y>=0&&skip.bottom<=900);else assert.ok(skip.bottom<=0,'unfocused skip link must be outside the viewport');
+  // A full-page capture with retained scroll/focus places fixed controls at
+  // the old viewport offset. Capture ordinary layout after a real pointer action.
+  await page.locator('#support-title').click();await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:`${directory}/support-${width}.png`,fullPage:true});assert.deepEqual(errors,[]);
  });
  await check('two deliberate identical new messages receive distinct IDs after confirmed saves',async()=>{
