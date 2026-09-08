@@ -5,7 +5,7 @@ import {
   type CaseAnalysisStage,
   type PinnedAnalysisDependencies,
 } from "../../../../../engine/case-analysis/contracts";
-import { calculationTraceSchema } from "../../../../../engine/calculations/contracts";
+import { persistedCalculationTraceSchema } from "../../../../../engine/calculations/source-trace";
 import { canonicalFactSchema } from "../../../../../engine/facts/contracts";
 import {
   canonicalReadinessJson,
@@ -365,7 +365,7 @@ export function validateTopicResult(value: unknown): TopicAnalysisResult {
   if (row.rule_input_sha256 !== null) assertSha256(row.rule_input_sha256);
   let trace: TopicAnalysisResult["trace"] = null;
   if (row.trace !== null) {
-    const parsedTrace = calculationTraceSchema.safeParse(row.trace);
+    const parsedTrace = persistedCalculationTraceSchema.safeParse(row.trace);
     if (!parsedTrace.success) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
     trace = parsedTrace.data;
   }
@@ -434,9 +434,29 @@ export function decodeBundle(value: unknown, expectedTopics: readonly Wave3Topic
     coverage_complete: boolean(row.coverage_complete),
     result_sha256: sha256(row.result_sha256),
   } satisfies AnalysisResultBundle;
+  for (const result of decoded.topic_results) assertSourceTraceScope(result, decoded);
   const seed = Object.fromEntries(Object.entries(decoded).filter(([key]) => key !== "result_sha256"));
   if (canonicalSha256(seed) !== decoded.result_sha256) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
   return Object.freeze(decoded);
+}
+
+export type SourceTraceScope = Pick<AnalysisResultBundle,
+  "case_id" | "analysis_run_id" | "facts_snapshot_sha256" | "facts" | "rule_inputs" | "catalog_sha256">;
+
+/** A self-consistent replay is insufficient: its operands must belong to the
+ * enclosing saved analysis. This does not attest legal applicability or gaps. */
+export function assertSourceTraceScope(result: TopicAnalysisResult, scope: SourceTraceScope): void {
+  const trace = result.trace;
+  if (trace === null || !("schema_version" in trace)) return;
+  if (trace.case_id !== scope.case_id || trace.analysis_run_id !== scope.analysis_run_id
+      || trace.rule_package.topic !== result.topic || trace.rule_input_sha256 !== result.rule_input_sha256
+      || trace.facts_snapshot_sha256 !== scope.facts_snapshot_sha256 || trace.catalog_sha256 !== scope.catalog_sha256
+      || canonicalSha256(trace.facts_snapshot.facts) !== canonicalSha256(scope.facts)
+      || scope.rule_inputs.filter(input => input.snapshot_sha256 === trace.rule_input_sha256).length !== 1
+      || (result.amount !== null && (trace.output.kind !== "money"
+        || canonicalSha256(result.amount) !== canonicalSha256(trace.output.value)))) {
+    throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  }
 }
 
 export function assertRequestedTopics(results: readonly Pick<TopicAnalysisResult, "topic">[], expected: readonly Wave3Topic[]): void {

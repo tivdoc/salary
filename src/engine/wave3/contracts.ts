@@ -1,4 +1,4 @@
-import type { CalculationTrace } from "../calculations/contracts.ts";
+import type { PersistedCalculationTrace as CalculationTrace } from "../calculations/source-trace.ts";
 import type { Money } from "../domain/primitives.ts";
 import type { CanonicalFact } from "../facts/contracts.ts";
 import type { LegalReadinessDecision } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";

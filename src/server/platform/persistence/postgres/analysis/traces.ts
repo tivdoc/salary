@@ -1,9 +1,10 @@
 import type { CaseConfirmation } from "../../../../engine/persistence-contracts";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
+import type { SourceCalculationTrace } from "../../../../../engine/calculations/source-trace";
 import {WAVE3_TOPICS, type Wave3Topic, type TopicAnalysisResult } from "../../../../../engine/wave3/contracts";
 import { statement, type PostgresTransactionContext } from "../contracts";
 import { mapPostgresAnalysisError, PostgresAnalysisError } from "./errors";
-import { assertSafeIdentifier, assertRequestedTopics } from "./validation";
+import { assertSafeIdentifier, assertRequestedTopics, assertSourceTraceScope, validateTopicResult, type SourceTraceScope } from "./validation";
 
 export class PostgresTraceFindingRepository {
   constructor(
@@ -18,14 +19,30 @@ export class PostgresTraceFindingRepository {
     analysis_run_id: string;
     topic_results: readonly TopicAnalysisResult[];
     expected_topics?: readonly Wave3Topic[];
+    source_scope?: SourceTraceScope;
   }>): Promise<void> {
     assertRequestedTopics(input.topic_results,input.expected_topics??WAVE3_TOPICS);
+    // Validate the entire batch before the first write, including callers that
+    // use this repository directly rather than through complete().
+    const results = input.topic_results.map(validateTopicResult);
+    for (const result of results) {
+      if (result.trace !== null && "schema_version" in result.trace) {
+        if (!input.source_scope || input.source_scope.case_id !== input.case_id
+            || input.source_scope.analysis_run_id !== input.analysis_run_id) {
+          throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+        }
+        assertSourceTraceScope(result, input.source_scope);
+      }
+    }
     try {
-      for (const result of input.topic_results) {
+      for (const result of results) {
+        if (result.trace && "schema_version" in result.trace) await this.assertSavedSource(result.trace);
+      }
+      for (const result of results) {
         if (result.trace === null) continue;
         const traceSha256 = canonicalSha256(result.trace);
         const traceId = `trace:${input.analysis_run_id}:${result.topic}:${traceSha256}`;
-        await this.context.client.query(statement(
+        const inserted = await this.context.client.query(statement(
           "analysis_trace_insert",
           `insert into public.engine_calculation_trace_versions
              (trace_id, tenant_id, case_id, analysis_run_id, topic, trace, trace_sha256, created_at)
@@ -36,12 +53,53 @@ export class PostgresTraceFindingRepository {
               and ar.canonical_case_id = $3
               and ar.tenant_id = $1
               and ecs.tenant_id = $1
-           on conflict (trace_id) do nothing`,
+           on conflict (trace_id) do nothing
+           returning trace_sha256`,
           [this.tenantId, input.analysis_run_id, input.case_id, traceId, result.topic, JSON.stringify(result.trace), traceSha256],
         ));
+        if (inserted.row_count !== 1) {
+          const existing = await this.context.client.query(statement(
+            "analysis_trace_existing",
+            `select t.trace_sha256 from public.engine_calculation_trace_versions t
+               join public.analysis_runs ar on ar.id = t.analysis_run_id and ar.case_id = t.case_id
+              where t.tenant_id = $1 and ar.tenant_id = $1
+                and ar.canonical_analysis_run_id = $2 and ar.canonical_case_id = $3 and t.trace_id = $4`,
+            [this.tenantId, input.analysis_run_id, input.case_id, traceId],
+          ));
+          if (existing.row_count !== 1 || existing.rows[0]?.trace_sha256 !== traceSha256) {
+            throw new PostgresAnalysisError("IMMUTABLE_COMPLETED_RUN_MISMATCH");
+          }
+        }
       }
     } catch (error) {
       mapPostgresAnalysisError(error, "IMMUTABLE_COMPLETED_RUN_MISMATCH");
+    }
+  }
+
+  private async assertSavedSource(trace: SourceCalculationTrace): Promise<void> {
+    const saved = await this.context.client.query(statement(
+      "analysis_trace_source_stages",
+      `select s.stage, s.payload, s.payload_sha256 from public.engine_analysis_stage_versions s
+         join public.analysis_runs ar on ar.id = s.analysis_run_id and ar.case_id = s.case_id
+        where s.tenant_id = $1 and ar.tenant_id = $1
+          and ar.canonical_analysis_run_id = $2 and ar.canonical_case_id = $3
+          and s.stage in ('canonical_facts', 'rule_inputs', 'analysis_run')`,
+      [this.tenantId, trace.analysis_run_id, trace.case_id],
+    ));
+    if (saved.row_count !== 3 || new Set(saved.rows.map(row => row.stage)).size !== 3
+        || saved.rows.some(row => canonicalSha256(row.payload ?? null) !== row.payload_sha256)) {
+      throw new PostgresAnalysisError("STAGE_HASH_MISMATCH");
+    }
+    const payload = (name: string) => saved.rows.find(row => row.stage === name)?.payload as Record<string, unknown> | undefined;
+    const facts = payload('canonical_facts'), rules = payload('rule_inputs');
+    const dependencies = payload('analysis_run')?.dependencies as Record<string, unknown> | undefined;
+    if (canonicalSha256(facts?.facts ?? null) !== trace.facts_snapshot_sha256
+        || facts?.facts_snapshot_sha256 !== trace.facts_snapshot_sha256
+        || dependencies?.facts_snapshot_sha256 !== trace.facts_snapshot_sha256
+        || dependencies?.catalog_sha256 !== trace.catalog_sha256
+        || !Array.isArray(rules?.rule_inputs)
+        || rules.rule_inputs.filter((input: {snapshot_sha256?: unknown} | null) => input?.snapshot_sha256 === trace.rule_input_sha256).length !== 1) {
+      throw new PostgresAnalysisError("STAGE_HASH_MISMATCH");
     }
   }
 

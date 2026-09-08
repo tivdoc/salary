@@ -122,7 +122,7 @@ const ruleSpecDraftSchema = ruleSpecDraftObjectSchema.readonly();
 
 export const ruleSpecPackageSchema = ruleSpecDraftObjectSchema.extend({ content_sha256: legalOperationsSha256Schema }).strict().readonly();
 
-const ruleSpecValueSchema = z.discriminatedUnion("kind", [
+export const ruleSpecValueSchema = z.discriminatedUnion("kind", [
   exactRationalSchema,
   z.object({ kind: z.literal("money"), currency: z.string().regex(/^[A-Z]{3}$/), minor_units: z.number().int().safe() }).strict(),
   z.object({ kind: z.literal("integer"), value: z.number().int().safe(), unit: legalOperationsIdSchema }).strict(),

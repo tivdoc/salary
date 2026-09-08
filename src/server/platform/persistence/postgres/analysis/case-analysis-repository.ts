@@ -194,6 +194,7 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
       analysis_run_id: input.analysis_run_id,
       topic_results: bundle.topic_results,
       expected_topics: existing.command.requested_topics,
+      source_scope: bundle,
     });
     await this.repositories.traceFindings.assertFindingsDisabled({
       case_id: bundle.case_id,

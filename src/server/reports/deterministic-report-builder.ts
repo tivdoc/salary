@@ -1,4 +1,5 @@
 import { PDFDocument } from "pdf-lib";
+import type { CalculationTrace } from "../../engine/calculations/contracts";
 import type {
   AnalysisResultBundle,
   CanonicalHashPort,
@@ -38,7 +39,7 @@ type ReportTopic = Readonly<{
     rule_id: string | null;
     rule_version: string | null;
   }>;
-  calculation_trace: TopicAnalysisResult["trace"];
+  calculation_trace: CalculationTrace | null;
 }>;
 
 export type CanonicalCaseReport = Readonly<{
@@ -221,6 +222,10 @@ export function buildCanonicalReport(bundle: AnalysisResultBundle, reportId: str
 }
 
 function reportTopic(topic: Wave3Topic, result: TopicAnalysisResult | undefined): ReportTopic {
+  const trace = result?.trace ?? null;
+  if (trace && "schema_version" in trace) {
+    throw new Error("ARITHMETIC_PROVENANCE_NOT_PUBLISHABLE");
+  }
   if (!result) {
     return immutable({
       topic,
@@ -249,7 +254,7 @@ function reportTopic(topic: Wave3Topic, result: TopicAnalysisResult | undefined)
       rule_id: result.trace?.rule.rule_id ?? null,
       rule_version: result.trace?.rule.rule_version ?? null,
     },
-    calculation_trace: result.trace,
+    calculation_trace: trace,
   });
 }
 
