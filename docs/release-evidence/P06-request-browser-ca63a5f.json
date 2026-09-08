@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-r1jvnsvor-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "6cb92fa84bcbe51627194e66eb481610983306cd",
+  "origin": "https://salary-4p9ejfw9i-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "ca63a5fb760f22c36f7115c14fed49c855cfd55c",
   "checks": [
     {
       "name": "saved request opens with its exact question and no draft",
