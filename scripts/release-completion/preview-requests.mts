@@ -47,6 +47,7 @@ try{
  const latest=()=>page.locator('.thread-answered__answer');
  await check('saved request opens with its exact question and no draft',async()=>{
   assert.equal((await page.goto(url))?.status(),200);await card().getByRole('heading',{name:'כמה שעות נמשך יום העבודה הרגיל שלך?'}).waitFor();
+  await card().getByText('תקופת השאלה: אוגוסט 2026',{exact:true}).waitFor();
   assert.equal(await card().getByRole('spinbutton',{name:'תשובה',exact:true}).inputValue(),'');
  });
  await check('draft response loss retries once and reload shows the persisted value',async()=>{
@@ -91,6 +92,7 @@ try{
  });
  for(const width of [360,390,768,1440])await check(`saved corrected request readable at ${width}px`,async()=>{
   await page.setViewportSize({width,height:900});await page.reload();assert.equal((await latest().innerText()).trim(),'10');
+  await page.getByText('תקופת התשובה: אוגוסט 2026',{exact:true}).waitFor();
   assert.equal(await page.locator('html').getAttribute('dir'),'rtl');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=1);
   await page.screenshot({path:`${directory}/request-${width}.png`,fullPage:true});assert.deepEqual(errors,[]);
  });

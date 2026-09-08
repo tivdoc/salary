@@ -1,5 +1,5 @@
 {
-  "verdict": "PASS",
+  "verdict": "FAIL",
   "checks": [
     "actual paid-source and worker lease admission rejects another worker before provider dispatch",
     "lease expiry after admission is rejected by the atomic dispatch SQL before any external call",
@@ -7,9 +7,7 @@
     "provider receipt commits before injected checkpoint rollback; at most the existing two extraction passes execute",
     "retry through a second actual connection restores the checkpoint and returns the same immutable result without another provider pass",
     "receipt replay is read-only; DB trigger blocks rewrites, web role has no table access, and actual worker RLS refuses another case",
-    "changed questionnaire rejects the old job; the new pinned source reuses exact same-file/month/policy evidence without OCR expense",
-    "real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; missing OCR preserves unconfirmed questionnaire values and the actual corrected request revision without publishing amounts",
-    "case and payment state remain unchanged; no customer projection or external provider delivery is performed"
+    "changed questionnaire rejects the old job; the new pinned source reuses exact same-file/month/policy evidence without OCR expense"
   ],
   "database": "tivdoc_release_replay_20260907",
   "migration": "20260908013000_saved_extraction_invocations.sql",
@@ -22,7 +20,7 @@
   "machineSessionRevoked": true,
   "requestIdentityRemoved": true,
   "additional_migration": "20260908073000_request_statement_scope.sql",
-  "syntheticCanonicalTenantRetained": "saved-case:e6b864e1-e967-4972-8231-93dcbde17ba2",
+  "syntheticCanonicalTenantRetained": "saved-case:cb8c8ad4-b3eb-4f49-81e6-1135809d4e3a",
   "retainedScope": "Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.",
   "providerTransport": "injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage",
   "providerPasses": 1,

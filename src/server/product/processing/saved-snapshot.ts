@@ -1,4 +1,4 @@
-import {savedQuestionnaireFacts} from './saved-questionnaire';
+import {savedDeclaredFacts} from './saved-request-facts';
 import { z } from 'zod';
 import { immutableDocumentSchema } from '@/engine/domain/documents';
 import { normalizedPayslipExtractionSchema } from '@/engine/extraction/payslip';
@@ -76,7 +76,7 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   }
   // Free-text questionnaire/request answers are preserved by the source hash.
   // They cannot be promoted into verified critical facts by this adapter.
-  const facts=savedQuestionnaireFacts({caseId:job.case_id,revision:job.revision,inputSha256:job.input_sha256,month:selectedMonth,journal:row.input,createdAt:new Date(String(row.created_at)).toISOString()});
+  const facts=savedDeclaredFacts({caseId:job.case_id,revision:job.revision,inputSha256:job.input_sha256,month:selectedMonth,journal:row.input,createdAt:new Date(String(row.created_at)).toISOString()});
   return deepFreeze({document_snapshot_id:`saved-documents:${selectedMonth}:${job.input_sha256}`,document_snapshot_sha256:canonicalSha256(documents),documents,
    extraction_snapshot_id:`saved-extractions:${selectedMonth}:${job.input_sha256}`,extraction_snapshot_sha256:canonicalSha256(extractions),extractions,
    declared_fact_snapshot:{snapshot_id:`saved-declarations:${selectedMonth}:${job.input_sha256}`,snapshot_sha256:canonicalSha256(facts),facts}});

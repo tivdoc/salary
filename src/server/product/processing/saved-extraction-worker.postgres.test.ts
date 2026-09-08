@@ -30,6 +30,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
  const doc={...fixture.stored.documents[0],size_bytes:bytes.length,content_sha256:createHash('sha256').update(bytes).digest('hex')},offer=offerSnapshot('initial');
  const migration='20260908013000_saved_extraction_invocations.sql',workerId='synthetic-extraction-worker';
  writeFileSync(`../release-work/saved-extraction-owned-${caseId}.json`,JSON.stringify({caseIds:[caseId,otherId],tenant,sid,scope:'Synthetic extraction proof; isolated DEV only'}));
+ let requestIdentity:string|undefined;
  let seeded=false,cleaned=false,activeTransactions=0,passes=0,failCheckpoint=true,expireBeforeDispatch=false;
  const transactions=(db:pg.Client):SavedWorkerTransactions=>async operation=>{
   await db.query('begin');activeTransactions++;
@@ -103,8 +104,14 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
   expect((await transactions(peer)(async()=>peer.query('select * from private.case_extraction_invocations where case_id=$1',[otherId]))).rows).toHaveLength(0);
   await expect(transactions(peer)(async()=>peer.query("insert into private.case_extraction_invocations(invocation_id,case_id,version_id,policy_version,expected_month,input_sha256,source_revision,job_id,fencing_token) values($1,$2,$3,'test','2025-01',$4,1,'foreign',1)",[randomUUID(),otherId,randomUUID(),'a'.repeat(64)]))).rejects.toThrow(/row-level security/);
   checks.push('receipt replay is read-only; DB trigger blocks rewrites, web role has no table access, and actual worker RLS refuses another case');
-  const oldArgs=args();await owner.query("update public.questionnaire_responses set payload=payload||'{\"typicalHoursPerDay\":8}'::jsonb where case_id=$1",[caseId]);
-  await expect(runSavedWorkerExtraction(oldArgs)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');await enqueue();
+  const oldArgs=args();await owner.query("update public.questionnaire_responses set payload=payload||'{\"worksFriday\":false}'::jsonb where case_id=$1",[caseId]);
+  await expect(runSavedWorkerExtraction(oldArgs)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
+  requestIdentity=(await owner.query("select public.case_access_identity_upsert('email',$1,'qa@example.invalid') id",[createHash('sha256').update(caseId).digest('hex')])).rows[0].id;
+  await owner.query('select public.case_access_identity_link($1,$2)',[requestIdentity,caseId]);const requestId=randomUUID();
+  await web.query("insert into public.case_requests(id,case_id,code,question,answer_kind,blocking,expires_at) values($1,$2,'regular_day_hours_unknown','כמה שעות נמשך יום העבודה הרגיל?','number',true,now()+interval '10 days')",[requestId,caseId]);
+  await web.query("select * from public.case_request_answer($1,$2,'8')",[requestId,caseId]);
+  await web.query("select public.case_request_edit($1,$2,$3,'9',1,'correction')",[caseId,requestId,requestIdentity]);
+  await enqueue();
   const changed=await runSavedWorkerExtraction(args());expect(changed.reused).toBe(true);expect(changed.invocationId).toBeNull();expect(passes).toBe(before);
   checks.push('changed questionnaire rejects the old job; the new pinned source reuses exact same-file/month/policy evidence without OCR expense');
   await transactions(worker)(async context=>{
@@ -113,9 +120,12 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    const stage=analysis.stages.find(s=>s.stage==='canonical_facts')?.payload as {facts:unknown};
    const declaredType=employmentSnapshotSchema.parse(stage.facts).facts.find(f=>f.path==='compensation.salary_type');
    expect(declaredType?.value).toBe('hourly');expect(declaredType?.status).toBe('needs_confirmation');expect(declaredType?.provenance.every(p=>p.source_type==='declared')).toBe(true);
+   const correctedHours=employmentSnapshotSchema.parse(stage.facts).facts.find(f=>f.path==='work.typical_hours_per_day');
+   expect(correctedHours?.value).toBe(9);expect(correctedHours?.status).toBe('needs_confirmation');
+   expect(correctedHours?.provenance).toEqual([{source_type:'declared',source_reference:{kind:'case_request_answer',request_id:requestId,answer_revision:2}}]);
    await worker.query('rollback to savepoint before_analysis');
   });
-  checks.push('real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; missing document fields preserve unconfirmed questionnaire values without publishing amounts');
+  checks.push('real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; missing OCR preserves unconfirmed questionnaire values and the actual corrected request revision without publishing amounts');
   expect((await owner.query('select status,payment_status from public.cases where id=$1',[caseId])).rows[0]).toEqual({status:'under_review',payment_status:'verified'});
   checks.push('case and payment state remain unchanged; no customer projection or external provider delivery is performed');
  }finally{
@@ -124,9 +134,9 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    await transactions(worker)(async()=>{await worker.query("update public.engine_durable_jobs set state='cancelled',cancellation_requested=true,lease_owner=null,lease_expires_at=null,revision=revision+1 where tenant_id=$1 and state in ('queued','leased','running','retry_wait')",[tenant]);});
    await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[tenant]);
    await owner.query('update public.product_identity_sessions set revoked_at=now() where sid=$1 and tenant_id=$2',[sid,tenant]);
-   const removed=await owner.query("delete from public.cases where id=any($1::uuid[]) and is_qa and first_name='Synthetic extraction proof'",[[caseId,otherId]]);expect(removed.rowCount).toBe(2);await owner.query('commit');cleaned=true;
+   const removed=await owner.query("delete from public.cases where id=any($1::uuid[]) and is_qa and first_name='Synthetic extraction proof'",[[caseId,otherId]]);expect(removed.rowCount).toBe(2);if(requestIdentity)await owner.query('delete from public.case_identities where id=$1',[requestIdentity]);await owner.query('commit');cleaned=true;
   }
-  writeFileSync('docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9?'PASS':'FAIL',checks,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,syntheticCanonicalTenantRetained:tenant,retainedScope:'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
+  writeFileSync('docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9?'PASS':'FAIL',checks,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,requestIdentityRemoved:cleaned&&!!requestIdentity,additional_migration:'20260908073000_request_statement_scope.sql',syntheticCanonicalTenantRetained:tenant,retainedScope:'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
   await Promise.all([owner.end(),worker.end(),peer.end(),web.end()]);
  }
 },240000);

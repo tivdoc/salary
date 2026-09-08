@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AddDocumentButton } from "./add-document-button";
 import { useRouter } from "next/navigation";
 import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
-import { formatRequestDate } from "@/lib/request-display";
+import { formatRequestDate, formatRequestMonth } from "@/lib/request-display";
 import type { StoredRequest } from "@/server/product/reports/case-requests";
 
 // Site S3.4 / D-2. The thread renders questions the engine asked and the
@@ -132,6 +132,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           <p className="thread-card__meta">
             {request.blocking ? "ממתינים לתשובה כדי להמשיך" : "לא מעכב את הבדיקה"} · נשאל ב־{formatRequestDate(request.opened_at)} · פתוח עד {formatRequestDate(request.expires_at)}
           </p>
+          {request.statement_month ? <p className="thread-card__meta">תקופת השאלה: {formatRequestMonth(request.statement_month)}</p> : null}
           <h2>{request.question}</h2>
           {request.field_crop ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
           <AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={() => router.refresh()} />
@@ -147,6 +148,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
             {answered.map((request) => (
               <li key={request.id}>
                 <p className="thread-answered__question">{request.question}</p>
+                {request.statement_month ? <p>תקופת התשובה: {formatRequestMonth(request.statement_month)}</p> : null}
                 <p className="thread-answered__answer">{request.answer_text}</p>
                 {(request.answer_revision ?? 1) > 1 ? <p>תשובה מתוקנת · גרסה {request.answer_revision}. התשובה המקורית נשמרה.</p> : null}
                 {request.answer_kind !== "document" ? <details><summary>תיקון התשובה</summary><AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} correction onAnswered={() => router.refresh()} /></details> : null}

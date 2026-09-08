@@ -116,6 +116,11 @@ export const evidenceReferenceSchema = z.discriminatedUnion("source_type", [
             response_id: uuidSchema,
           })
           .strict(),
+        z.object({
+          kind: z.literal("case_request_answer"),
+          request_id: uuidSchema,
+          answer_revision: z.number().int().positive(),
+        }).strict(),
       ]),
     })
     .strict(),
@@ -247,7 +252,7 @@ const canonicalFactUnionSchema = z.discriminatedUnion("path", [
   factVariant("person.birth_year", z.number().int().min(1900).max(2200)),
   factVariant("person.sex", z.enum(['female','male','unspecified'])),
   factVariant("work.days_per_week", z.number().int().min(1).max(7)),
-  factVariant("work.typical_hours_per_day", z.number().min(1).max(18)),
+  factVariant("work.typical_hours_per_day", z.number().positive().max(24)),
   factVariant("work.works_friday", z.boolean()),
   factVariant("work.works_saturday", z.boolean()),
   factVariant("pension.fund_at_hire", z.boolean()),

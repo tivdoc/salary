@@ -13,7 +13,7 @@ import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db.ts";
 import { validateRequestAnswer } from "./request-answer.ts";
 import { requestFor, slaPaused, type ThreadRequest } from "./refusal-requests.ts";
 
-export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null }>;
+export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null }>;
 
 type RequestRow = Readonly<{
   id: string;
@@ -28,6 +28,7 @@ type RequestRow = Readonly<{
   expires_at: string;
   answered_at: string | null;
   answer_text: string | null;
+  statement_month?: string | null;
 }>;
 
 function toRequest(row: RequestRow): StoredRequest {
@@ -44,6 +45,7 @@ function toRequest(row: RequestRow): StoredRequest {
     expires_at: new Date(row.expires_at).toISOString(),
     answered_at: row.answered_at === null ? null : new Date(row.answered_at).toISOString(),
     answer_text: row.answer_text,
+    statement_month: row.statement_month ?? null,
   };
 }
 

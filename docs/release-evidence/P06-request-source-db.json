@@ -1,0 +1,20 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "forward migration leaves a real pre-migration question scope unknown and original journal bytes unchanged",
+    "server pins current checked month rather than caller-supplied scope; list mapper returns month precision and later scope mutation refuses",
+    "actual original answer reaches the immutable journal as a typed unconfirmed fact with request ID and revision 1",
+    "correction creates a distinct source/fact version while original history and exact retry bytes remain unchanged",
+    "changing the case month never relabels or extrapolates the saved January answer into February",
+    "questionnaire disagreement remains a sourced conflict; agreement retains both references without confirmation",
+    "foreign case correction refuses and answers do not alter case/payment status"
+  ],
+  "migration": "20260908073000_request_statement_scope.sql",
+  "migration_sha256": "f38c41f781a2b1932c87a7bc356380b6bc87a31803c9172188221dbe27966f53",
+  "applied_in_this_run": true,
+  "database": "tivdoc_release_replay_20260907",
+  "syntheticCasesRemoved": 2,
+  "identityRemoved": true,
+  "proof": "actual web RPCs and immutable journal plus typed canonical adapter; canonical stage persistence and hosted UI are separate checks",
+  "productionChanged": false
+}
