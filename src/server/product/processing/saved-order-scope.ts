@@ -12,7 +12,7 @@ export const savedOrderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full
 export type SavedOrderScope=z.infer<typeof savedOrderSchema>;
 
 export function savedMonthIdempotencyKey(job:SourceJob,orderId:string,month:string){
- return `saved-month:${canonicalSha256({job,order_id:orderId,month,template:SAVED_DRAFT_TEMPLATE,engine:'case-analysis@0.6.2'})}`;
+ return `saved-month:${canonicalSha256({job,order_id:orderId,month,template:SAVED_DRAFT_TEMPLATE,engine:'case-analysis@0.6.3'})}`;
 }
 
 export function purchasedMonths(candidate:SavedOrderScope){

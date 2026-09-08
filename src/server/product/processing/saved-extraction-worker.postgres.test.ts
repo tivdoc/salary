@@ -5,6 +5,7 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {PDFDocument} from 'pdf-lib';
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
+import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {PostgresJobsOutboxAuditRepository} from '@/server/platform/persistence/postgres/runtime/jobs-outbox-audit';
@@ -109,9 +110,12 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
   await transactions(worker)(async context=>{
    await worker.query('savepoint before_analysis');const analysis=await runSavedWorkerMonth({context,job:job!,orderId,month:'2025-01'});
    expect(analysis.stages).toHaveLength(7);expect(analysis.bundle?.topic_results).toHaveLength(3);expect(analysis.bundle?.topic_results.every(t=>t.amount===null)).toBe(true);
+   const stage=analysis.stages.find(s=>s.stage==='canonical_facts')?.payload as {facts:unknown};
+   const declaredType=employmentSnapshotSchema.parse(stage.facts).facts.find(f=>f.path==='compensation.salary_type');
+   expect(declaredType?.value).toBe('hourly');expect(declaredType?.status).toBe('needs_confirmation');expect(declaredType?.provenance.every(p=>p.source_type==='declared')).toBe(true);
    await worker.query('rollback to savepoint before_analysis');
   });
-  checks.push('real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; unconfirmed input never publishes amounts');
+  checks.push('real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; missing document fields preserve unconfirmed questionnaire values without publishing amounts');
   expect((await owner.query('select status,payment_status from public.cases where id=$1',[caseId])).rows[0]).toEqual({status:'under_review',payment_status:'verified'});
   checks.push('case and payment state remain unchanged; no customer projection or external provider delivery is performed');
  }finally{
@@ -122,7 +126,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    await owner.query('update public.product_identity_sessions set revoked_at=now() where sid=$1 and tenant_id=$2',[sid,tenant]);
    const removed=await owner.query("delete from public.cases where id=any($1::uuid[]) and is_qa and first_name='Synthetic extraction proof'",[[caseId,otherId]]);expect(removed.rowCount).toBe(2);await owner.query('commit');cleaned=true;
   }
-  writeFileSync('docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9?'PASS':'FAIL',checks,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,syntheticCanonicalTenantRetained:tenant,retainedScope:'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
+  writeFileSync('docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9?'PASS':'FAIL',checks,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,syntheticCanonicalTenantRetained:tenant,retainedScope:'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
   await Promise.all([owner.end(),worker.end(),peer.end(),web.end()]);
  }
 },240000);

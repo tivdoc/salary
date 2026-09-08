@@ -92,39 +92,49 @@ function aggregateFact(
   factId: string,
   createdAt: string,
 ): CanonicalFact {
-  const provenance = facts
+  // An absent reading is not a competing assertion. Preserve the input
+  // snapshots, but only attribute a known value to sources that supply one.
+  const assertions = facts.filter((fact) => fact.status !== "missing");
+  const supporting = assertions.length > 0 ? assertions : facts;
+  const provenance = supporting
     .flatMap((fact) => fact.provenance)
     .sort((left, right) => {
       const leftKey = canonicalStringify(left);
       const rightKey = canonicalStringify(right);
       return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
     });
-  const conflicts = sortStrings(facts.flatMap((fact) => [fact.fact_id, ...fact.conflicting_fact_ids]));
-  if (facts.length === 0 || facts.some((fact) => fact.status === "missing")) {
+  const conflicts = sortStrings(assertions.flatMap((fact) => [fact.fact_id, ...fact.conflicting_fact_ids]));
+  const hasMissingReading = facts.some((fact) => fact.status === "missing");
+  const hasDeclaration = assertions.some((fact) => fact.value !== null && fact.provenance.some((source) => source.source_type === "declared"));
+  const distinctValues = new Set(assertions.map((fact) => canonicalStringify(fact.value)));
+  const hasConflict = assertions.some((fact) => fact.status === "conflicted") || distinctValues.size > 1;
+  // Documentary coverage may span several periods: a value in one document
+  // cannot fill a missing period. An explicit declaration can remain visible
+  // as unconfirmed, but never converts that gap into verified coverage.
+  if (assertions.length === 0 || (hasMissingReading && !hasDeclaration && !hasConflict)) {
     return canonicalFactSchema.parse({
       fact_id: factId, case_id: caseId, path, value: null, status: "missing",
       provenance: provenance.length > 0 ? provenance : [], confidence: 1,
       conflicting_fact_ids: [], resolution: null, created_at: createdAt,
     });
   }
-  const distinctValues = new Set(facts.map((fact) => canonicalStringify(fact.value)));
-  if (facts.some((fact) => fact.status === "conflicted") || distinctValues.size > 1) {
+  if (hasConflict) {
     return canonicalFactSchema.parse({
       fact_id: factId, case_id: caseId, path, value: null, status: "conflicted",
-      provenance, confidence: Math.min(...facts.map((fact) => fact.confidence)),
+      provenance, confidence: Math.min(...assertions.map((fact) => fact.confidence)),
       conflicting_fact_ids: [...new Set(conflicts)].slice(0, Math.max(2, conflicts.length)),
       resolution: null, created_at: createdAt,
     });
   }
-  const first = facts[0]!;
-  const status = facts.every((fact) => fact.status === "confirmed") ? "confirmed" : "needs_confirmation";
+  const first = assertions[0]!;
+  const status = !hasMissingReading && assertions.every((fact) => fact.status === "confirmed") ? "confirmed" : "needs_confirmation";
   return canonicalFactSchema.parse({
     ...first,
     fact_id: factId,
     case_id: caseId,
     status,
     provenance,
-    confidence: Math.min(...facts.map((fact) => fact.confidence)),
+    confidence: Math.min(...assertions.map((fact) => fact.confidence)),
     conflicting_fact_ids: [],
     resolution: null,
     created_at: createdAt,
@@ -403,7 +413,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       rule_spec_versions: sortStrings([...new Set(selections.flatMap((selection) => selection.rule_spec_id && selection.rule_spec_version
         ? [`${selection.rule_spec_id}@${selection.rule_spec_version}`]
         : []))]),
-      code_version: "case-analysis@0.6.2",
+      code_version: "case-analysis@0.6.3",
       template_version: this.dependencies.templateVersion,
     });
     await this.stage(analysisRunId, "analysis_run", { selections, dependencies });
