@@ -5,8 +5,8 @@ import {createHash} from 'node:crypto';
 import {chromium,type BrowserContext} from 'playwright';
 
 // Deliberately pinned to the isolated, closed-sales deployment, never production.
-const origin='https://salary-c2vg0ac5j-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='5a9878e37dfc288715031f1a83a191fc87a1787c';
+const origin='https://salary-jjdhdzcka-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='bda6e04b97081b98c1d07185c8d8a74083b35f92';
 const directory='output/release-completion/preview-launch';
 const raw=process.env.TIVDOC_PREVIEW_BROWSER_STATE;
 if(!raw)throw new Error('PREVIEW_TEMPORARY_ACCESS_MISSING');

@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-jjdhdzcka-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "bda6e04b97081b98c1d07185c8d8a74083b35f92",
+  "origin": "https://salary-c2vg0ac5j-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "5a9878e37dfc288715031f1a83a191fc87a1787c",
   "checks": [
     {
       "name": "DEV liveness distinguishes readiness and external services are disabled",

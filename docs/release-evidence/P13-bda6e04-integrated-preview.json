@@ -1,0 +1,47 @@
+{
+  "sha": "bda6e04b97081b98c1d07185c8d8a74083b35f92",
+  "origin": "https://salary-jjdhdzcka-tivdoccom-5042s-projects.vercel.app",
+  "deployment": "dpl_Bq7qghs1ZynwJgdwh1sNtgh8JN1w",
+  "ready": true,
+  "ci": [
+    34247236784,
+    34247232347
+  ],
+  "results": [
+    {
+      "name": "P13-launch-preview.json",
+      "passed": 40,
+      "removedCases": null
+    },
+    {
+      "name": "P06-request-browser.json",
+      "passed": 12,
+      "removedCases": 2
+    },
+    {
+      "name": "P08-support-browser.json",
+      "passed": 12,
+      "removedCases": 2
+    },
+    {
+      "name": "P13-studio-upload-browser.json",
+      "passed": 12,
+      "removedCases": null
+    }
+  ],
+  "verifiedStorageObjects": 8,
+  "currentStorageObjects": 7,
+  "retainedStorageObjects": 1,
+  "ownedCleanupComplete": true,
+  "inspectedScreenshots": [
+    "preview-launch/navigation-home-390.png",
+    "preview-support/support-390.png"
+  ],
+  "runtimeErrorQuery": {
+    "since": "20m",
+    "limit": 100,
+    "count": 0
+  },
+  "scope": "Protected isolated DEV Preview. Seeded QA sessions; real HTTP/DB/Storage. No OTP, provider payment/refund, extraction model, active legal rule, monetary finding, customer report publication or production rollout.",
+  "productionChanged": false
+}
