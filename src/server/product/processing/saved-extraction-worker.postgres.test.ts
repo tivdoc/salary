@@ -13,7 +13,9 @@ import {OpenAiPayslipV2PassExtractor} from '@/server/engine/extraction/providers
 import type {OpenAiPayslipV2StructuredOutput} from '@/server/engine/extraction/providers/openai/v2-schema';
 import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
 import {offerSnapshot} from '../orders/contracts';
+import {legacyFullOfferFixture} from '../orders/fixtures/legacy-offer';
 import {runSavedWorkerMonth} from './saved-worker';
+import {runSavedDraftJob} from './saved-job-runner';
 import {admitSavedSource,savedCaseTenant} from './saved-admission';
 import {dispatchCaseInput,type SourceJob} from './source-dispatch';
 import {runSavedWorkerExtraction,recordSavedExtractionResult,type SavedWorkerTransactions} from './saved-extraction-worker';
@@ -25,6 +27,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
  function client(key:string){const u=new URL(env.get(key)!);expect(u.pathname).toBe('/tivdoc_release_replay_20260907');expect(u.hostname).toBe('aws-0-eu-central-1.pooler.supabase.com');expect(u.username.endsWith('.cpzrbidxftzqcfeqqusu')).toBe(true);u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
  const owner=client('TIVDOC_DEV_DATABASE_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),peer=client('TIVDOC_WORKER_POSTGRES_URL'),web=client('TIVDOC_WEB_POSTGRES_URL');
  const fixture=buildSyntheticCaseFixture({fixture_id:`extraction-${randomUUID()}`,mode:'real'}),caseId=fixture.command.case_id,otherId=randomUUID(),documentId=randomUUID(),orderId=randomUUID();
+ const runnerProof=process.env.TIVDOC_SAVED_RUNNER_DB_PROOF==='1',runnerChecks:string[]=[];
  const tenant=savedCaseTenant(caseId),sid=`extraction-proof:${randomUUID()}`,jti=randomUUID(),checks:string[]=[];
  const pdf=await PDFDocument.create();pdf.addPage().drawText('Synthetic payslip January 2025');const bytes=await pdf.save();
  const doc={...fixture.stored.documents[0],size_bytes:bytes.length,content_sha256:createHash('sha256').update(bytes).digest('hex')},offer=offerSnapshot('initial');
@@ -32,6 +35,8 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
  writeFileSync(`../release-work/saved-extraction-owned-${caseId}.json`,JSON.stringify({caseIds:[caseId,otherId],tenant,sid,scope:'Synthetic extraction proof; isolated DEV only'}));
  let requestIdentity:string|undefined;
  let seeded=false,cleaned=false,activeTransactions=0,passes=0,failCheckpoint=true,expireBeforeDispatch=false;
+ let heartbeatCount=0,expireAtHeartbeat=0,failFinalizer=false;
+ let inFlight:Promise<unknown>|null=null;
  const transactions=(db:pg.Client):SavedWorkerTransactions=>async operation=>{
   await db.query('begin');activeTransactions++;
   try{
@@ -40,6 +45,8 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    const context:PostgresTransactionContext={transaction_id:`${sid}:${randomUUID()}`,client:{async query(s){
     if(s.name==='extraction_dispatch_once'&&expireBeforeDispatch){expireBeforeDispatch=false;await db.query("update public.engine_durable_jobs set lease_expires_at=clock_timestamp()-interval '1 second' where job_id=$1",[jobId]);}
     if(s.name==='checkpoint_insert'&&failCheckpoint)throw new Error('INJECTED_CHECKPOINT_FAILURE');
+    if(s.name==='saved_runner_heartbeat'){heartbeatCount++;if(heartbeatCount===expireAtHeartbeat)await db.query("update public.engine_durable_jobs set lease_expires_at=clock_timestamp()-interval '1 second' where job_id=$1",[jobId]);}
+    if(s.name==='saved_job_complete_atomic'&&failFinalizer){failFinalizer=false;throw new Error('INJECTED_FINALIZER_FAILURE');}
     const r=await db.query(s.text,[...s.values]);return {rows:r.rows.map(row=>Object.fromEntries(Object.entries(row).map(([k,v])=>[k,v instanceof Date?v.toISOString():v]))),row_count:r.rowCount??0};
    }}};
    const result=await operation(context);await db.query('commit');return result;
@@ -86,9 +93,15 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
   expect(passes).toBe(0);checks.push('actual paid-source and worker lease admission rejects another worker before provider dispatch');
   expireBeforeDispatch=true;await expect(runSavedWorkerExtraction(args())).rejects.toThrow('SAVED_JOB_FENCE');expect(passes).toBe(0);
   checks.push('lease expiry after admission is rejected by the atomic dispatch SQL before any external call');
-  const running=runSavedWorkerExtraction(args());const outcome=running.then(value=>({value,error:null}),error=>({value:null,error}));await Promise.race([began,outcome.then(value=>{throw value.error??new Error('PROVIDER_DID_NOT_START');})]);
+  const running=runnerProof?runSavedDraftJob({...args(),heartbeat:{intervalMs:1000,leaseMs:60000}}):runSavedWorkerExtraction(args());const outcome=running.then(value=>({value,error:null}),error=>({value:null,error}));inFlight=outcome;await Promise.race([began,outcome.then(value=>{throw value.error??new Error('PROVIDER_DID_NOT_START');})]);
   await owner.query('begin');await owner.query('select id from public.cases where id=$1 for update nowait',[caseId]);await owner.query('rollback');
   await expect(runSavedWorkerExtraction({...args(),transactions:transactions(peer)})).rejects.toThrow('SAVED_EXTRACTION_OUTCOME_PENDING');
+  if(runnerProof){
+   const expiry=async()=>transactions(peer)(async()=>new Date((await peer.query('select lease_expires_at from public.engine_durable_jobs where job_id=$1',[jobId])).rows[0].lease_expires_at).getTime());
+   const beforePulse=await expiry();await new Promise(resolve=>setTimeout(resolve,1200));
+   expect(heartbeatCount).toBeGreaterThanOrEqual(2);expect(await expiry()).toBeGreaterThan(beforePulse);
+   runnerChecks.push('actual DB-clock heartbeat renews a running job while provider I/O is held outside case locks');
+  }
   expect(passes).toBe(1);release();expect((await outcome).error?.message).toBe('INJECTED_CHECKPOINT_FAILURE');
   checks.push('real adapter verifies PDF bytes outside DB locks; a concurrent independent worker cannot invoke the pending provider again');
   const counts=await transactions(worker)(async()=>({receipts:(await worker.query('select count(*)::int n from private.case_extraction_invocations where case_id=$1 and result is not null',[caseId])).rows[0].n,checkpoints:(await worker.query('select count(*)::int n from private.case_extraction_checkpoints where case_id=$1',[caseId])).rows[0].n}));
@@ -106,6 +119,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
   checks.push('receipt replay is read-only; DB trigger blocks rewrites, web role has no table access, and actual worker RLS refuses another case');
   const oldArgs=args();await owner.query("update public.questionnaire_responses set payload=payload||'{\"worksFriday\":false}'::jsonb where case_id=$1",[caseId]);
   await expect(runSavedWorkerExtraction(oldArgs)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
+  if(runnerProof){await expect(runSavedDraftJob(oldArgs)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');runnerChecks.push('whole-job consumer rejects a superseded source before additional extraction or analysis');}
   requestIdentity=(await owner.query("select public.case_access_identity_upsert('email',$1,'qa@example.invalid') id",[createHash('sha256').update(caseId).digest('hex')])).rows[0].id;
   await owner.query('select public.case_access_identity_link($1,$2)',[requestIdentity,caseId]);const requestId=randomUUID();
   await web.query("insert into public.case_requests(id,case_id,code,question,answer_kind,blocking,expires_at) values($1,$2,'regular_day_hours_unknown','כמה שעות נמשך יום העבודה הרגיל?','number',true,now()+interval '10 days')",[requestId,caseId]);
@@ -126,17 +140,49 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    await worker.query('rollback to savepoint before_analysis');
   });
   checks.push('real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; missing OCR preserves unconfirmed questionnaire values and the actual corrected request revision without publishing amounts');
+  if(runnerProof){
+   const counts=()=>transactions(worker)(async()=>({
+    analyses:(await worker.query("select count(*)::int n from public.analysis_runs where tenant_id=$1 and status='completed'",[tenant])).rows[0].n,
+    manifests:(await worker.query("select count(*)::int n from public.engine_outbox_events where tenant_id=$1 and effect_kind='saved_analysis_draft_ready_v1'",[tenant])).rows[0].n,
+   }));
+   heartbeatCount=0;expireAtHeartbeat=2;
+   await expect(runSavedDraftJob(args())).rejects.toThrow('SAVED_JOB_FENCE');
+   expect(await counts()).toEqual({analyses:0,manifests:0});expireAtHeartbeat=0;
+   runnerChecks.push('expiry after canonical analysis but before its transaction commits rolls back all monthly stages and creates no completion manifest');
+   failFinalizer=true;await expect(runSavedDraftJob(args())).rejects.toThrow('INJECTED_FINALIZER_FAILURE');
+   expect(await counts()).toEqual({analyses:1,manifests:0});expect(passes).toBe(before);
+   runnerChecks.push('failure before finalizer SQL preserves the independently committed month and extraction, while job/outbox remain incomplete');
+   const concurrent=await Promise.allSettled([runSavedDraftJob(args()),runSavedDraftJob({...args(),transactions:transactions(peer)})]);
+   expect(concurrent.some(r=>r.status==='fulfilled')).toBe(true);
+   for(const result of concurrent)if(result.status==='rejected')expect(result.reason.message).toMatch(/^SAVED_JOB_(FENCE|ALREADY_COMPLETED)$/);
+   expect(await counts()).toEqual({analyses:1,manifests:1});expect(passes).toBe(before);
+   runnerChecks.push('two independent actual worker connections race whole-job completion: one month, one immutable manifest, no repeated provider call');
+   const replayed=await runSavedDraftJob({...args(),transactions:transactions(peer)});
+   expect(replayed.completion.replayed).toBe(true);expect(replayed.analyzedMonths).toBe(0);expect(replayed.extractedVersions).toBe(0);
+   expect(replayed.completion.manifest.months).toHaveLength(1);expect(replayed.completion.manifest.months[0].order_id).toBe(orderId);
+   expect(replayed.completion.manifest.publication).toBe('draft');expect(await counts()).toEqual({analyses:1,manifests:1});
+   runnerChecks.push('retry after committed success returns the same saved complete-scope manifest without heartbeat, OCR, monthly rewrite or customer publication');
+   const extendedId=randomUUID(),extended=legacyFullOfferFixture();
+   await owner.query('begin');
+   await owner.query("insert into private.product_orders(id,case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,$2,'full','2025-01-01','2025-02-01',14900,'ILS',$3,$4,$5,$6,'awaiting_payment',null)",[extendedId,caseId,extended,extended.sha256,fixture.command.requested_topics,extended.terms_version]);
+   await owner.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[extendedId]);await owner.query("update private.product_orders set state='paid',verified_at=now() where id=$1",[extendedId]);await owner.query('commit');await enqueue();
+   await expect(runSavedDraftJob(args())).rejects.toMatchObject({message:'SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED',months:['2025-02']});
+   expect(await counts()).toEqual({analyses:3,manifests:1});expect(passes).toBe(before);
+   const incomplete=(await transactions(worker)(async()=>worker.query('select state,terminal_effect_sha256 from public.engine_durable_jobs where job_id=$1',[jobId]))).rows[0];
+   expect(incomplete.state).toBe('running');expect(incomplete.terminal_effect_sha256).toBeNull();
+   runnerChecks.push('a later historical full order with a missing February document preserves both available January analyses but cannot acknowledge full scope or create a second manifest');
+  }
   expect((await owner.query('select status,payment_status from public.cases where id=$1',[caseId])).rows[0]).toEqual({status:'under_review',payment_status:'verified'});
   checks.push('case and payment state remain unchanged; no customer projection or external provider delivery is performed');
  }finally{
-  release();await Promise.all([owner.query('rollback').catch(()=>{}),worker.query('rollback').catch(()=>{}),peer.query('rollback').catch(()=>{})]);
+  release();await inFlight;await Promise.all([owner.query('rollback').catch(()=>{}),worker.query('rollback').catch(()=>{}),peer.query('rollback').catch(()=>{})]);
   if(seeded){
    await transactions(worker)(async()=>{await worker.query("update public.engine_durable_jobs set state='cancelled',cancellation_requested=true,lease_owner=null,lease_expires_at=null,revision=revision+1 where tenant_id=$1 and state in ('queued','leased','running','retry_wait')",[tenant]);});
    await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[tenant]);
    await owner.query('update public.product_identity_sessions set revoked_at=now() where sid=$1 and tenant_id=$2',[sid,tenant]);
    const removed=await owner.query("delete from public.cases where id=any($1::uuid[]) and is_qa and first_name='Synthetic extraction proof'",[[caseId,otherId]]);expect(removed.rowCount).toBe(2);if(requestIdentity)await owner.query('delete from public.case_identities where id=$1',[requestIdentity]);await owner.query('commit');cleaned=true;
   }
-  writeFileSync('docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9?'PASS':'FAIL',checks,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,requestIdentityRemoved:cleaned&&!!requestIdentity,additional_migration:'20260908073000_request_statement_scope.sql',syntheticCanonicalTenantRetained:tenant,retainedScope:'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
+  writeFileSync(runnerProof?'docs/release-evidence/P05-saved-job-runner-db.json':'docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9&&(!runnerProof||runnerChecks.length===7)?'PASS':'FAIL',checks,runnerChecks,runner_sha256:runnerProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runner.ts')).digest('hex'):null,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,requestIdentityRemoved:cleaned&&!!requestIdentity,additional_migration:'20260908073000_request_statement_scope.sql',syntheticCanonicalTenantRetained:tenant,retainedScope:runnerProof?'Synthetic canonical identity/lifecycle, job history, completed monthly analysis/report bytes and pending draft-ready outbox manifest retained as audit evidence. No customer publication. Product cases/documents/invocations/checkpoints cascade-cleaned.':'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
   await Promise.all([owner.end(),worker.end(),peer.end(),web.end()]);
  }
 },240000);
