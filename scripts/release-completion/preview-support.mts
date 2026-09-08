@@ -43,14 +43,23 @@ try{
   assert.ok((await page.locator('#support').innerText()).includes('עדיין אין פניות תמיכה בתיק.'));
  });
  const question='Synthetic browser support question';
- await check('lost completion response retries the same saved question without duplication',async()=>{
+ await check('unsent support draft survives reload without creating a server thread',async()=>{
+  await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).fill(question);await page.reload();
+  await page.getByText('הטיוטה שוחזרה בלשונית זו. היא טרם נשלחה.',{exact:true}).waitFor();
+  assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),question);
+  assert.equal((await db.query('select count(*)::int n from private.case_support_threads where case_id=$1',[ids[0]])).rows[0].n,0);
+ });
+ await check('lost completion response survives full reload and retries the same saved question without duplication',async()=>{
   await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).fill(question);
   await page.route('**'+route,async r=>{await r.fetch();await r.abort('failed');},{times:1});
   await page.getByRole('button',{name:'שליחת הודעה',exact:true}).click();
   await page.getByText('לא התקבל אישור שמירה. הטקסט נשאר כאן ואפשר לנסות שוב.',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),question);
   assert.equal((await db.query('select count(*)::int n from private.case_support_threads where case_id=$1',[ids[0]])).rows[0].n,1);
-  await page.getByRole('button',{name:'שליחת הודעה',exact:true}).click();
+  await page.reload();
+  await page.getByText('לא התקבל אישור שמירה. הטקסט נשאר כאן ואפשר לנסות שוב.',{exact:true}).waitFor();
+  assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),question);
+  await page.locator('#support').getByRole('button',{name:'שליחת הודעה',exact:true}).first().click();
   await page.locator('#support article').waitFor();await page.reload();
   assert.equal(await page.locator('#support article').count(),1);assert.equal(await page.locator('#support article li').count(),1);
   assert.ok((await page.locator('#support article').innerText()).includes(question));
@@ -60,10 +69,16 @@ try{
   await ops.query('select public.case_request_support_owner_reply($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),thread.id,thread.revision,'owner:synthetic-browser','Synthetic owner DB response','waiting_customer','normal']);
   await page.reload();await page.getByText('Synthetic owner DB response',{exact:true}).waitFor();
   await page.getByLabel('הוספת תשובה לפנייה',{exact:true}).fill('Synthetic customer follow-up');
+  await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).fill('Independent unsent new support draft');
+  await page.reload();
+  await page.getByLabel('הוספת תשובה לפנייה',{exact:true}).waitFor();
+  await page.waitForFunction(()=>document.querySelectorAll('#support textarea')[1]?.textContent==='Synthetic customer follow-up');
+  assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),'Independent unsent new support draft');
   await page.locator('#support article').getByRole('button',{name:'שליחת הודעה',exact:true}).click();
   await page.locator('#support article li').getByText('Synthetic customer follow-up',{exact:true}).waitFor();await page.reload();
   assert.equal(await page.locator('#support article li').count(),3);
   assert.equal((await db.query('select state from private.case_support_threads where id=$1',[thread.id])).rows[0].state,'open');
+  assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),'Independent unsent new support draft');
  });
  await check('concurrent HTTP retries persist once and cross-case or foreign-origin requests are refused',async()=>{
   const data={id:randomUUID(),action:'support_reply',threadId:thread.id,message:'Synthetic concurrent reply'};
