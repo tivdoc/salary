@@ -5,8 +5,8 @@ import {createHash} from 'node:crypto';
 import {chromium,type BrowserContext} from 'playwright';
 
 // Deliberately pinned to the isolated, closed-sales deployment, never production.
-const origin='https://salary-jjdhdzcka-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='bda6e04b97081b98c1d07185c8d8a74083b35f92';
+const origin='https://salary-hr5ztifiq-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='948c33da5b8a3b317d88e4473cdcea5acda05cd0';
 const directory='output/release-completion/preview-launch';
 const raw=process.env.TIVDOC_PREVIEW_BROWSER_STATE;
 if(!raw)throw new Error('PREVIEW_TEMPORARY_ACCESS_MISSING');
@@ -156,6 +156,8 @@ try{
   await page.setViewportSize({width:390,height:900});await page.goto(origin,{waitUntil:'domcontentloaded'});
   const toggle=page.locator('button[aria-controls="public-navigation"]');await toggle.focus();await page.keyboard.press('Enter');
   assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+  await page.waitForFunction(()=>document.querySelector('#public-navigation a')===document.activeElement);
+  await page.keyboard.press('Tab');assert.equal(await page.locator('#public-navigation a').nth(1).evaluate(n=>n===document.activeElement),true);
   await page.keyboard.press('Escape');assert.equal(await toggle.getAttribute('aria-expanded'),'false');
   assert.equal(await toggle.evaluate(e=>e===document.activeElement),true);
  });
@@ -175,17 +177,54 @@ try{
  });
  await check('studio process and report tabs respond to the keyboard',async()=>{
   await page.setViewportSize({width:1440,height:900});await page.goto(origin,{waitUntil:'domcontentloaded'});
-  const stages=page.locator('.studio-chapters button');assert.equal(await stages.count(),4);
+  const stages=page.locator('.process-tabs [role="tab"]');assert.equal(await stages.count(),4);
   for(let index=0;index<4;index++){
    await stages.nth(index).focus();await page.keyboard.press('Enter');
-   assert.equal(await stages.nth(index).getAttribute('aria-pressed'),'true');
+   assert.equal(await stages.nth(index).getAttribute('aria-selected'),'true');
    assert.equal(await page.locator('#process-illustration').getAttribute('data-phase'),String(index));
   }
+  await stages.nth(3).press('Home');assert.equal(await stages.nth(0).getAttribute('aria-selected'),'true');
+  for(const [key,index] of [['ArrowLeft',1],['ArrowRight',0],['End',3]] as const){
+   await page.keyboard.press(key);assert.equal(await stages.nth(index).getAttribute('aria-selected'),'true');
+   assert.equal(await stages.nth(index).evaluate(n=>n===document.activeElement),true);
+   assert.equal(await page.locator('#process-panel').getAttribute('aria-labelledby'),'process-tab-'+index);
+  }
+  assert.equal(await page.getByRole('button',{name:'השלב הבא',exact:true}).isDisabled(),true);
+  await page.getByRole('button',{name:'השלב הקודם',exact:true}).click();
+  assert.equal(await stages.nth(2).getAttribute('aria-selected'),'true');
   await page.locator('#report-tab-0').focus();await page.keyboard.press('ArrowLeft');
   assert.equal(await page.locator('#report-tab-1').getAttribute('aria-selected'),'true');
   assert.equal(await page.locator('#report-tab-1').evaluate(n=>n===document.activeElement),true);
   assert.ok((await page.locator('#report-panel').innerText()).includes('בדיקת AI'));
   await page.keyboard.press('Home');assert.equal(await page.locator('#report-tab-0').getAttribute('aria-selected'),'true');
+ });
+ for(const width of [390,1440])await check(`process panel stays stable across all stages at ${width}px`,async()=>{
+  await page.setViewportSize({width,height:900});await page.goto(origin,{waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>document.fonts.ready);const heights:number[]=[];
+  for(let i=0;i<4;i++){
+   await page.locator('#process-tab-'+i).click();
+   heights.push(await page.locator('#how-it-works').evaluate(n=>n.getBoundingClientRect().height));
+   assert.equal(await page.locator('.process-tabs [tabindex="0"]').count(),1);
+  }
+  assert.ok(Math.max(...heights)-Math.min(...heights)<=1,JSON.stringify(heights));
+ });
+ await check('mobile section navigation transfers focus and closes when focus leaves',async()=>{
+  await page.setViewportSize({width:390,height:900});await page.goto(origin,{waitUntil:'domcontentloaded'});
+  const toggle=page.locator('button[aria-controls="public-navigation"]');await toggle.click();
+  await page.locator('#public-navigation a').first().click();
+  assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+  assert.equal(await page.locator('#process-title').evaluate(n=>n===document.activeElement),true);
+  assert.equal(await page.locator('#public-navigation a').first().getAttribute('aria-current'),'location');
+  await toggle.click();await page.locator('#process-tab-0').focus();
+  await page.waitForFunction(()=>document.querySelector('button[aria-controls="public-navigation"]')?.getAttribute('aria-expanded')==='false');
+  assert.ok((await page.locator('.price-sheet .studio-button').getAttribute('href'))?.startsWith('mailto:'));
+ });
+ await check('all four process explanations remain visible without JavaScript',async()=>{
+  const plain=await browser.newContext({storageState,javaScriptEnabled:false,viewport:{width:390,height:900}});
+  try{const p=await plain.newPage();await p.goto(origin,{waitUntil:'domcontentloaded'});
+   const steps=p.locator('.process-explorer noscript ol li');assert.equal(await steps.count(),4);
+   for(let i=0;i<4;i++){assert.equal(await steps.nth(i).isVisible(),true);assert.ok((await steps.nth(i).innerText()).length>40);}
+  }finally{await plain.close();}
  });
  await check('live reduced-motion preference cancels artwork and reveal animation',async()=>{
   const moving=await browser.newContext({storageState,reducedMotion:'no-preference',viewport:{width:1440,height:900}});

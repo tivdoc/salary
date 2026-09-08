@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-hr5ztifiq-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "948c33da5b8a3b317d88e4473cdcea5acda05cd0",
+  "origin": "https://salary-jjdhdzcka-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "bda6e04b97081b98c1d07185c8d8a74083b35f92",
   "checks": [
     {
       "name": "DEV liveness distinguishes readiness and external services are disabled",
@@ -140,22 +140,6 @@
     },
     {
       "name": "studio process and report tabs respond to the keyboard",
-      "passed": true
-    },
-    {
-      "name": "process panel stays stable across all stages at 390px",
-      "passed": true
-    },
-    {
-      "name": "process panel stays stable across all stages at 1440px",
-      "passed": true
-    },
-    {
-      "name": "mobile section navigation transfers focus and closes when focus leaves",
-      "passed": true
-    },
-    {
-      "name": "all four process explanations remain visible without JavaScript",
       "passed": true
     },
     {
