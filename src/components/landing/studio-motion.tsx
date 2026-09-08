@@ -11,13 +11,18 @@ export function StudioMotion() {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
           observer.unobserve(entry.target);
-          if (preference.matches || !entry.target.animate) return;
+          if (
+            preference.matches ||
+            !entry.target.animate ||
+            entry.boundingClientRect.top < 80
+          )
+            return;
           const animation = entry.target.animate(
             [
-              { opacity: 0, transform: "translateY(28px)" },
+              { opacity: 0.55, transform: "translateY(16px)" },
               { opacity: 1, transform: "translateY(0)" },
             ],
-            { duration: 720, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+            { duration: 440, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
           );
           animations.add(animation);
           animation.onfinish = () => animations.delete(animation);

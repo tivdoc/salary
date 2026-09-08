@@ -36,13 +36,13 @@ export default async function Home() {
           <span className="availability-dot" />
           {salesAvailable
             ? "אפשר להתחיל בדיקה ראשונית"
-            : "פתיחת הזמנות חדשות אינה זמינה כרגע."}
+            : "בדיקות חדשות עדיין אינן זמינות לרכישה."}
           <Link href="/check" prefetch={false}>
             זמינות השירות <ArrowLeft size={16} aria-hidden="true" />
           </Link>
         </div>
         <Process />
-        <section className="studio-film" aria-labelledby="film-title">
+        <section className="studio-film" id="film" aria-labelledby="film-title">
           <div className="studio-shell">
             <div className="studio-film__heading" data-reveal>
               <h2 id="film-title">
@@ -57,6 +57,7 @@ export default async function Home() {
             <div className="studio-film__frame" data-reveal>
               <ExplainerVideo poster="/media/tivdoc-explainer-poster.webp" />
             </div>
+            <p className="film-note">ללא קול · אפשר גם לקרוא את ההסבר</p>
             <details className="studio-transcript" id="explainer-transcript">
               <summary>מעדיפים לקרוא? ההסבר כאן</summary>
               <p>
@@ -88,7 +89,11 @@ export default async function Home() {
               <article className="price-sheet">
                 <div className="price-sheet__heading">
                   <h3>בדיקה ראשונית</h3>
-                  <span>נקודת ההתחלה</span>
+                  <span>
+                    {salesAvailable
+                      ? "נקודת ההתחלה"
+                      : "עדיין לא זמין לרכישה"}
+                  </span>
                 </div>
                 <p className="price-sheet__amount">
                   <bdi>{initialPrice}</bdi>
@@ -110,22 +115,30 @@ export default async function Home() {
                     הטיפול בתיק, ללא התחייבות לתוצאה מיידית.
                   </p>
                 </details>
-                <TrackedLink
-                  prefetch={false}
-                  className="studio-button"
-                  href="/check"
-                  eventName="start_check"
-                >
-                  {salesAvailable
-                    ? "התחלת בדיקה"
-                    : "זמינות השירות"}
-                  <ArrowUpLeft size={22} aria-hidden="true" />
-                </TrackedLink>
+                {salesAvailable ? (
+                  <TrackedLink
+                    prefetch={false}
+                    className="studio-button"
+                    href="/check"
+                    eventName="start_check"
+                  >
+                    התחלת בדיקה
+                    <ArrowUpLeft size={22} aria-hidden="true" />
+                  </TrackedLink>
+                ) : (
+                  <a
+                    className="studio-button"
+                    href={"mailto:" + productOffer.supportEmail}
+                  >
+                    פנייה לשירות
+                    <EnvelopeSimple size={22} aria-hidden="true" />
+                  </a>
+                )}
               </article>
               <article className="price-sheet price-sheet--full">
                 <div className="price-sheet__heading">
                   <h3>דוח מלא</h3>
-                  <span>המשך מתוכנן</span>
+                  <span>עדיין לא זמין לרכישה</span>
                 </div>
                 <p className="price-sheet__amount">
                   <bdi>{fullPrice}</bdi>

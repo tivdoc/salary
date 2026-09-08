@@ -5,20 +5,20 @@ export function Hero() {
     <section className="studio-hero" aria-labelledby="hero-title">
       <div className="studio-shell studio-hero__layout">
         <div className="studio-hero__copy">
-          <p className="studio-eyebrow">לראות מעבר לתלוש</p>
+          <p className="studio-eyebrow">בדיקת שכר וזכויות בעבודה</p>
           <h1 id="hero-title">
             <span>יש יותר</span>
             <span>ממה שכתוב.</span>
           </h1>
           <p className="studio-hero__intro">
-            תלוש השכר הוא רק ההתחלה. תבדוק נעזרת ב־AI כדי לחבר בין המסמכים לבין מה שקורה
-            בעבודה.
+            תבדוק נעזרת ב־AI כדי לחבר בין תלוש השכר, מסמכי ההעסקה והעבודה בפועל,
+            ולהבין מה כדאי לבדוק.
           </p>
           <a className="studio-link" href="#how-it-works">
             <span className="studio-link__icon">
               <ArrowDown size={22} aria-hidden="true" />
             </span>
-            מגלים את התמונה
+            איך הבדיקה עובדת
           </a>
         </div>
         <LensArtwork />
