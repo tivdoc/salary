@@ -43,7 +43,7 @@ function amountInAgorot(value: unknown) {
 export function validateInvoice4uClearingLog(
   log: Invoice4uClearingLog | null,
   expectedClearingLogId: string,
-  expected: {amountMinor:number;currency:"ILS";orderId?:string} = {amountMinor:Math.round(INITIAL_CHECK_PRICE*100),currency:INITIAL_CHECK_CURRENCY},
+  expected: {amountMinor:number;currency:"ILS";orderId?:string;paymentId?:string|null} = {amountMinor:Math.round(INITIAL_CHECK_PRICE*100),currency:INITIAL_CHECK_CURRENCY},
 ): VerifiedInvoice4uTransaction {
   if (!log) throw new PaymentVerificationError("reference_missing");
 
@@ -67,6 +67,9 @@ export function validateInvoice4uClearingLog(
   const errorMessage = typeof log.ErrorMessage === "string" ? log.ErrorMessage.trim() : "";
   if (log.IsSuccess !== true || errors.length > 0 || errorMessage) {
     throw new PaymentVerificationError("transaction_failed");
+  }
+  if (expected.paymentId != null && paymentId !== expected.paymentId) {
+    throw new PaymentVerificationError("transaction_reused");
   }
 
   // Invoice4U's current Clearing Logs contract distinguishes request/response,

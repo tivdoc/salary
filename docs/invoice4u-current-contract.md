@@ -21,3 +21,7 @@ The cumulative request ledger and customer pending status are implemented. Actua
 ## Checkout request and response
 
 The [ProcessApiRequestV2 contract](https://invoice4u.gitbook.io/invoice4u-docs/clearing-payments/process-api-request-v2) specifies NIS on the wire and IsQaMode for QA. The adapter maps the product ILS currency and rejects invalid minor-unit amounts before transport. Both dictionary and historical array OpenInfo are supported; top-level and nested PaymentId must agree when both exist. Conflicting repeated keys are refused. An exact separately supplied clearing-log reference remains required: the documentation example containing only PaymentId is insufficient for this verifier and is not silently accepted. Ten of eleven original regression tests failed before repair; all 19 expanded checkout checks now pass with injected transport. This does not prove merchant account interoperability.
+
+## Persisted reference verification
+
+A successful provider log must also match any known PaymentId already saved on the checkout and payment row. The pending verifier now receives that ID; both current order and historical initial-payment paths reject contradictions. PostgreSQL independently rechecks saved references, exact amount/currency and the presence of the payment row before creating paid state or entitlement. Fourteen actual DEV assertions include two worker connections racing and customer-role refusal. These use synthetic provider coordinates, not merchant QA or live settlement.

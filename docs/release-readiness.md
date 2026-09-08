@@ -35,3 +35,5 @@ External dependencies are scoped in [release blockers](release-blockers.md): aut
 The existing automatic ceiling remains 5,000 ILS per finding. With one initial month and at most three checked topics, an automatically published initial report cannot currently reach the 20,000 ILS pricing tier. Changing an accuracy policy to make a price tier reachable is not authorized by a commercial price table.
 
 Use the full [acceptance matrix](release-evidence/P13-acceptance-matrix.md), [package tracker](release-completion-tracker.md) and [handoff](../HANDOFF.md) for individual results, failed runs and precise continuation boundaries. `Implemented`, `verified`, `ready to operate` and `deployed` remain separate states.
+
+Current payment binding checkpoint (base bfd61f6): 14 actual DEV assertions, 97 focused local checks plus three definer checks. Applied migration tail is 20260908182405_payment_reference_binding.sql (117 files), with unchanged execution ACLs. The previous fresh 116-file replay remains the last complete-chain receipt until the next committed-source replay. The READY bfd61f6 Preview is not yet browser-proved and does not include the later binding change.

@@ -1,0 +1,10 @@
+{
+  "verdict": "FAIL",
+  "checks": [],
+  "failure": "expected 'permission denied to set role \"tivdoc…' to contain 'ORDER_PAYMENT_MISMATCH'",
+  "rolledBack": true,
+  "database": "tivdoc_release_replay_20260907",
+  "candidateMigration": null,
+  "scope": "Actual PostgreSQL function and SET LOCAL ROLE worker inside one owner transaction. All synthetic metadata and optional candidate migration rolled back. This is not a separate verifier credential, real Storage bytes or provider payment.",
+  "productionChanged": false
+}

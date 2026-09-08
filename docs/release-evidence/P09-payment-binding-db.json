@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "contradictory checkout payment reference refused",
+    "refusal leaves order unpaid and entitlement absent",
+    "missing payment row cannot create a paid order",
+    "pending verification carries the saved payment reference",
+    "initially unknown payment can be discovered through its exact saved log",
+    "contradictory saved payment row refused",
+    "exact verified observation is idempotent",
+    "one payment event and entitlement across replay",
+    "paid replay cannot replace the original payment",
+    "actual customer web credential cannot verify payment",
+    "actual worker credential rejects contradictory reference",
+    "two actual worker connections grant one verification under concurrency",
+    "actual worker response-loss retry replays the saved result",
+    "concurrent worker observations leave one event and entitlement"
+  ],
+  "failure": null,
+  "rolledBack": true,
+  "committedFixtureCleaned": true,
+  "database": "tivdoc_release_replay_20260907",
+  "candidateMigration": null,
+  "scope": "First nine assertions use an isolated owner transaction. Applied-migration runs additionally use actual worker/peer/web credentials against one briefly committed owned QA case, then remove it and its metadata. No shared role membership changed. No real Storage bytes or provider payment; the configured dedicated payment-verifier deployment credential remains separate.",
+  "productionChanged": false
+}
