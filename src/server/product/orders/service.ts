@@ -1,4 +1,6 @@
 import {randomUUID} from 'node:crypto';
+import pg from 'pg';
+import {attachDatabasePool} from '@vercel/functions';
 import {Invoice4uClient,invoice4uErrorCode} from '../../../lib/invoice4u';
 import {createPaymentReturnToken,hashPaymentReturnToken,getPaymentReturnUrl} from '../../../lib/payment';
 import {validateInvoice4uClearingLog,PaymentVerificationError} from '../../../lib/payment-verification';
@@ -27,7 +29,13 @@ export async function orderCheckout(input:{caseId:string;identityId:string|null;
  }catch(error){await store.rpc('case_order_checkout_finish',{target_order:order.id,target_attempt:attempt,target_log:null,target_payment:null,target_url:null,target_error:invoice4uErrorCode(error)??'checkout_persistence_unknown'}).catch(()=>{});throw new OrderError('ORDER_CHECKOUT_UNCERTAIN');}
 }
 let verifier:CaseAccessDb|null=null;
-export async function orderVerifierDb(){if(verifier)return verifier;const url=process.env.TIVDOC_PAYMENT_VERIFICATION_POSTGRES_URL;if(!url)throw new OrderError('ORDER_VERIFIER_UNAVAILABLE');const {default:pg}=await import('pg');verifier=postgresCaseAccessDb(new pg.Pool({connectionString:url,max:2,connectionTimeoutMillis:15000,application_name:'tivdoc_payment_verifier'}));return verifier;}
+export async function orderVerifierDb(){
+ if(verifier)return verifier;const url=process.env.TIVDOC_PAYMENT_VERIFICATION_POSTGRES_URL;if(!url)throw new OrderError('ORDER_VERIFIER_UNAVAILABLE');
+ // No yield between cache lookup and assignment, including the cold path.
+ const pool=new pg.Pool({connectionString:url,max:2,min:0,idleTimeoutMillis:5000,connectionTimeoutMillis:15000,application_name:'tivdoc_payment_verifier'});
+ pool.on('error',()=>console.error('PAYMENT_VERIFIER_POOL_IDLE_ERROR'));attachDatabasePool(pool);
+ verifier=postgresCaseAccessDb(pool);return verifier;
+}
 export async function reconcileOrders(db?:CaseAccessDb,provider=new Invoice4uClient(),onlyOrder?:string){
  const store=db??await orderVerifierDb();const result=await store.rpc<{value:(ProductOrder&{provider_log_id:string;provider_order_id:string})[]}>('case_order_payment_pending',{target_limit:100});const summary={scanned:0,verified:0,pending:0,rejected:0,failed:0};
  for(const order of result[0]?.value??[]){if(onlyOrder&&order.id!==onlyOrder)continue;summary.scanned++;try{const log=await provider.getClearingLogById(order.provider_log_id);if(!log){summary.pending++;continue;}const tx=validateInvoice4uClearingLog(log,order.provider_log_id,{amountMinor:order.amount_minor,currency:order.currency,orderId:order.provider_order_id});await store.rpc('case_order_payment_verify',{target_order:order.id,target_log:tx.clearingLogId,target_payment:tx.paymentId,target_confirmation:tx.confirmationNumber,target_minor:Math.round(tx.amount*100),target_currency:tx.currency});summary.verified++;}catch(error){if(error instanceof PaymentVerificationError){if(error.code==='transaction_pending')summary.pending++;else summary.rejected++;}else summary.failed++;}}

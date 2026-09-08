@@ -8,6 +8,6 @@ export function OrderServiceClock({clock,publicId,observedAt}:{clock:ServiceCloc
  return <div aria-label="זמן טיפול בהזמנה">
   <p>{view.state==='completed'?'הדוח פורסם וזמן הטיפול נסגר.':view.state==='paused'?'זמן הטיפול מושהה עד להשלמת הפרטים המבוקשים.':view.state==='overdue'?'זמן השירות שהוקצה להזמנה חלף. ההזמנה עדיין בטיפול.':`נותרו ${duration(view.remainingMs!)} מזמן השירות שהוקצה להזמנה.`}</p>
   {view.blockingRequests.map(id=><p key={id}><Link href={`/case/${publicId}/thread#request-${id}`}>לפרטים שצריך להשלים</Link></p>)}
-  <p className="muted">{clock.track==='human'?'זמן השירות נספר בימים א׳–ה׳, 09:00–17:00, לפי לוח השירות שנשמר בהזמנה ובהפחתת זמני השלמה.':'זמן השירות נספר בדקות שחלפו, בהפחתת זמני השלמה.'} נכון ל־<bdi>{new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',dateStyle:'short',timeStyle:'short'}).format(observedAt)}</bdi>.</p>
+  <p className="muted">{clock.track!=='automatic'?'זמן השירות נספר בימים א׳–ה׳, 09:00–17:00, לפי לוח השירות שנשמר בהזמנה ובהפחתת זמני השלמה.':'זמן השירות נספר בדקות שחלפו, בהפחתת זמני השלמה.'} נכון ל־<bdi>{new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',dateStyle:'short',timeStyle:'short'}).format(observedAt)}</bdi>.</p>
  </div>;
 }
