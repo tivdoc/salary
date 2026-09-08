@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {readCaseIdFromCookie} from '@/lib/case-cookie';
 import {createOrder,orderCheckout} from '@/server/product/orders/service';
+import {cancelCustomerUnstartedOrder} from '@/server/product/orders/customer-cancellation';
 import {orderRequestSchema} from '@/server/product/orders/contracts';
 import {resolveCaseAccessDb} from '@/server/product/case-access/db';
 import {listIdentityCases,resolveIdentitySession} from '@/server/product/case-access/service';
@@ -13,6 +14,7 @@ const bodySchema=z.discriminatedUnion('action',[
  z.object({action:z.literal('quote'),publicId:z.string().optional(),request:orderRequestSchema.optional()}).strict(),
  z.object({action:z.literal('checkout'),publicId:z.string().optional(),orderId:z.uuid(),termsAccepted:z.literal(true)}).strict(),
  z.object({action:z.literal('refund'),publicId:z.string(),orderId:z.uuid(),id:z.uuid(),reason:z.string().trim().min(4).max(2000)}).strict(),
+ z.object({action:z.literal('cancel_unstarted'),publicId:z.string().min(1),orderId:z.uuid()}).strict(),
 ]);
 export async function POST(request:Request){
  try{await guardStableHttpEntrypoint("CEP-022",request);}catch(error){return refusedEntrypoint(error);}
@@ -23,6 +25,16 @@ export async function POST(request:Request){
   if(body.data.publicId){const session=await resolveIdentitySession(await readCaseSessionCookie());if(session){const item=(await listIdentityCases(session.identity_id)).find(c=>c.public_id===body.data.publicId);if(item){caseId=item.case_id;identityId=session.identity_id;}}}
   else caseId=await readCaseIdFromCookie();
   if(!caseId)return new Response(null,{status:404});
+  if(body.data.action==='cancel_unstarted'){
+   if(!identityId)return new Response(null,{status:404});
+   try{return Response.json({cancellation:await cancelCustomerUnstartedOrder({caseId,identityId,orderId:body.data.orderId})},{headers:PRODUCT_HTTP_HEADERS});}
+   catch(error){
+    const message=error instanceof Error?error.message:'';
+    if(/ORDER_FORBIDDEN$/.test(message))return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+    if(/ORDER_CANCEL_REQUIRES_RECONCILIATION$/.test(message))return Response.json({code:'cancellation_requires_reconciliation',error:'מצב ההזמנה השתנה או שכבר התחיל ניסיון תשלום. נדרש בירור לפני ביטול.'},{status:409,headers:PRODUCT_HTTP_HEADERS});
+    return Response.json({code:'cancellation_unconfirmed',error:'לא התקבל אישור ביטול. אפשר לבדוק את ההיסטוריה או לנסות שוב.'},{status:503,headers:PRODUCT_HTTP_HEADERS});
+   }
+  }
   if(body.data.action==='refund'){
    const db=await resolveCaseAccessDb();if(!db)throw new Error('store');const state=(await db.rpc<{value:string}>('case_order_refund_request',{target_case:caseId,target_identity:identityId,target_order:body.data.orderId,target_id:body.data.id,target_reason:body.data.reason}))[0]?.value;
    return Response.json({state},{status:202,headers:PRODUCT_HTTP_HEADERS});
