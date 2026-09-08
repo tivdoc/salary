@@ -41,4 +41,12 @@ After: cool paper #F5F5F7, original indigo/coral identity and original logos, la
 
 ## Deployment
 
-Pending verification and promotion. Previous production: dpl_2sd8iW5ybFaCnBgdq7scEFLwLYTR / https://salary-l1s8w4bzq-tivdoccom-5042s-projects.vercel.app. This is the explicit rollback target.
+Published on 8 September 2026 to https://tivdoc.com, deployment dpl_4CNGHNBCBBZa8rNrDZxFzkUxcwzV / https://salary-nshmw5oma-tivdoccom-5042s-projects.vercel.app. Source commit: 133a41c (main redesign cdc3ae6).
+
+The production build passed. Before promotion, vercel curl verified the HTML, health response and exact SHA-256 of the served illustration. Production protection was not disabled. The final deployment was promoted after verification; no environment variables, migrations or service gates were changed.
+
+The public-domain browser checks passed at all five widths, with no pageerror, working menu Escape and report tabs/disclosures, and reduced motion. Screenshots and browser-results.json are in output/studio/live.
+
+Local Lighthouse tests under mobile simulation scored 100 for accessibility, best practices and SEO, with CLS 0. Performance varied 67–75, with simulated LCP 5.5–6.1 seconds; the field-performance target is not proven. Asset delivery was reduced to a 41 KB WebP, unnecessary checkout prefetch was removed, and mobile artwork entrance was disabled in the final refinement. These changes do not establish a production Core Web Vitals claim. No repeat claim is made for the last CSS refinement.
+
+Previous production: dpl_2sd8iW5ybFaCnBgdq7scEFLwLYTR / https://salary-l1s8w4bzq-tivdoccom-5042s-projects.vercel.app. This is the explicit rollback target.
