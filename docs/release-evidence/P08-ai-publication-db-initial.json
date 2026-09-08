@@ -1,5 +1,5 @@
 {
-  "verdict": "FAIL",
+  "verdict": "PASS",
   "checks": [
     "actual foreign case/identity and web-role publication are refused",
     "wrong offer hash, historical initial order and forged source byte hash cannot publish",
@@ -11,16 +11,12 @@
     "published evidence is immutable and exact receipt replay survives later input changes",
     "no projection write permission or real legal-source activation is introduced"
   ],
-  "failure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ ''\n- 'Synthetic saved finding correction'\n",
+  "failure": null,
   "cleanupFailure": null,
   "migration": "20260908162320_ai_report_publication.sql",
   "migration_sha256": "ec331ed662e7b2e2ee7ad2d2c433bf64b49b7ba2f7c1b6d27567872068b77075",
   "syntheticCasesRemoved": 2,
   "machineSessionRevoked": true,
-  "browserProof": true,
-  "storageUploaded": true,
-  "storageRemoved": true,
-  "sourceSha256": "97873973f7f770791d18c67419fbf3ec82a048ebf279be5b9bdf523fca29fe63",
-  "scope": "Actual worker/peer/web SQL publication, synthetic paid report and seeded customer sessions; hosted browser/API/PDF and owned Storage bytes. No canonical monetary computation, legal activation, real payment/provider, runtime projection INSERT grant or production.",
+  "scope": "Actual worker/peer/web roles and SQL publication/customer snapshot. Owner-seeded synthetic projection, payslip metadata and payment. No Storage bytes, actual monetary computation, source attestation, provider or browser publication proof. No runtime projection INSERT permission or production change.",
   "productionChanged": false
 }

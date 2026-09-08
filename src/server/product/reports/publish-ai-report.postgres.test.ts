@@ -1,7 +1,9 @@
 import {it,expect,vi} from 'vitest';
-import {randomUUID,createHash} from 'node:crypto';
+import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
 import pg from 'pg';
+import {createClient} from '@supabase/supabase-js';
+import {PDFDocument} from 'pdf-lib';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
@@ -20,6 +22,9 @@ it.skipIf(process.env.TIVDOC_AI_PUBLICATION_DB_PROOF!=='1')('binds AI publicatio
  const owner=client('TIVDOC_DEV_DATABASE_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),peer=client('TIVDOC_WORKER_POSTGRES_URL'),web=client('TIVDOC_WEB_POSTGRES_URL');
  const ids=[randomUUID(),randomUUID()],identities:string[]=[],initialId=randomUUID(),tenant=`saved-case:${ids[0]}`,sid=`ai-publication:${randomUUID()}`,jti=randomUUID();
  const marker=`synthetic-ai-publication:${ids[0]}`,projectionId=randomUUID(),docId=randomUUID(),versionId=randomUUID(),evidenceId=randomUUID();
+ const browserProof=process.env.TIVDOC_AI_PUBLICATION_PREVIEW_PROOF==='1';
+ const customerSessions:string[]=[],publicIds:string[]=[];let bucket:ReturnType<ReturnType<typeof createClient>['storage']['from']>|undefined,storageUploaded=false,storageRemoved=false,sourceHash='b'.repeat(64),sourceSize=100;
+ const sourcePath=`cases/${ids[0]}/versions/${versionId}.pdf`;
  const migration='20260908162320_ai_report_publication.sql',checks:string[]=[];let seeded=false,cleaned=false,failure:string|null=null,cleanupError:unknown;
  writeFileSync(`../release-work/ai-publication-owned-${ids[0]}.json`,JSON.stringify({ids,identities,tenant,sid,jti,marker,projectionId,scope:'Exclusively owned synthetic DEV publication proof'}));
  const transact=async<T>(db:pg.Client,run:(c:PostgresTransactionContext)=>Promise<T>)=>{
@@ -37,6 +42,11 @@ it.skipIf(process.env.TIVDOC_AI_PUBLICATION_DB_PROOF!=='1')('binds AI publicatio
    await owner.query("insert into public.cases(id,first_name,email,phone,is_qa,status,payment_status,contact_verified_at,check_period_month) values($1,'Synthetic AI publication',$2,'0500000000',true,'under_review','verified',now(),'2020-01-01')",[id,email]);
    const identity=(await owner.query("select public.case_access_identity_upsert('email',$1,$2) id",[createHash('sha256').update('email|'+email).digest('hex'),email])).rows[0].id;identities.push(identity);await owner.query('select public.case_access_identity_link($1,$2)',[identity,id]);
   }
+  if(browserProof)for(let i=0;i<ids.length;i++){
+   const session=randomBytes(16).toString('base64url');customerSessions.push(session);
+   publicIds.push((await owner.query('select public_id from public.cases where id=$1',[ids[i]])).rows[0].public_id);
+   await owner.query('select public.case_access_session_create($1,$2,14400)',[identities[i],createHash('sha256').update('case-access-session|'+session).digest('hex')]);
+  }
   const initial=offerSnapshot('initial');
   await owner.query("insert into private.product_orders(id,case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,$2,'initial','2020-01-01','2020-01-01',999,'ILS',$3,$4,array['minimum_wage'],$5,'paid',now())",[initialId,ids[0],initial,initial.sha256,initial.terms_version]);
   await owner.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[initialId]);
@@ -45,16 +55,24 @@ it.skipIf(process.env.TIVDOC_AI_PUBLICATION_DB_PROOF!=='1')('binds AI publicatio
   await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.saved.worker',$3,now()-interval '1 minute',now()+interval '15 minutes',$4,now())",[tenant,sid,jti,canonicalSha256({sid,jti})]);
   await owner.query("insert into private.order_availability(kind,topic,period_from,period_to,ready,evidence_reference) values('full','minimum_wage','2020-01-01','2020-01-01',true,$1)",[marker]);
   await owner.query('commit');seeded=true;
+  if(browserProof){
+   const keys=JSON.parse(readFileSync(process.env.TIVDOC_PREVIEW_STORAGE_CREDENTIALS_FILE??'','utf8'));expect(keys.NEXT_PUBLIC_SUPABASE_URL).toBe('https://cpzrbidxftzqcfeqqusu.supabase.co');
+   bucket=createClient(keys.NEXT_PUBLIC_SUPABASE_URL,keys.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}}).storage.from('salary-documents');
+   const pdf=await PDFDocument.create();pdf.addPage().drawText('SYNTHETIC - AI report evidence fixture');const bytes=await pdf.save();sourceSize=bytes.length;sourceHash=createHash('sha256').update(bytes).digest('hex');
+   const uploaded=await bucket.upload(sourcePath,bytes,{contentType:'application/pdf',upsert:false});if(uploaded.error)throw Error('OWNED_SOURCE_UPLOAD_FAILED');storageUploaded=true;
+   const stored=await bucket.download(sourcePath);if(stored.error||!stored.data)throw Error('OWNED_SOURCE_READ_FAILED');expect(createHash('sha256').update(Buffer.from(await stored.data.arrayBuffer())).digest('hex')).toBe(sourceHash);
+  }
+
   const quote=await transact(worker,c=>issueSavedPriceQuote(c,{id:randomUUID(),caseId:ids[0],identityId:identities[0],from:'2020-01',to:'2020-01',topics:['minimum_wage']},reader));if(quote.state!=='quoted')throw Error('QUOTE_NOT_ISSUED');
   const accepted=await transact(worker,c=>acceptSavedPriceQuote(c,{quoteId:quote.id,caseId:ids[0],identityId:identities[0]}));
   await owner.query("update private.product_orders set state='paid',verified_at=now() where id=$1",[accepted.order.id]);await owner.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[accepted.order.id]);
   await owner.query('begin');await owner.query('create policy ai_doc_fixture on public.documents for all to tivdoc_dev_migrator using(true) with check(true)');
-  await owner.query("insert into public.documents(id,case_id,version_id,document_type,slot,storage_path,original_filename,mime_type,size,content_sha256) values($1,$2,$3,'payslip','payslip-01',$4,'synthetic.pdf','application/pdf',100,$5)",[docId,ids[0],versionId,`cases/${ids[0]}/versions/${versionId}.pdf`,'b'.repeat(64)]);
+  await owner.query("insert into public.documents(id,case_id,version_id,document_type,slot,storage_path,original_filename,mime_type,size,content_sha256) values($1,$2,$3,'payslip','payslip-01',$4,'synthetic.pdf','application/pdf',$6,$5)",[docId,ids[0],versionId,sourcePath,sourceHash,sourceSize]);
   await owner.query('drop policy ai_doc_fixture on public.documents');await owner.query('commit');
   const source=(await owner.query('select * from private.case_input_heads where case_id=$1',[ids[0]])).rows[0];
   const publicId=(await owner.query('select public_id from public.cases where id=$1',[ids[0]])).rows[0].public_id;
   const projection={...structuredClone(S04_HIGH_CERTAINTY),case_public_id:publicId,report_kind:'full' as const,check_period_month:'2020-01',months_covered:['2020-01']};
-  const document={schema_version:'tivdoc-report-document-v3',service_kind:'ai_assisted',publication_policy:'tivdoc-ai-publication-v1',order_offer_sha256:(accepted.order.offer as {sha256:string}).sha256,id:projectionId,case_id:ids[0],order_id:accepted.order.id,revision:1,input_sha256:source.input_sha256,projection_sha256:canonicalSha256(projection),purchased_period:{from:'2020-01',to:'2020-01'},projection,evidence:[{id:evidenceId,document_id:docId,version_id:versionId,sha256:'b'.repeat(64),page:1,field:'gross',fact_version:'synthetic-1'}],findings:[{id:randomUUID(),topic:'minimum_wage',evidence_ids:[evidenceId],rule_versions:['synthetic-rule'],parameter_versions:['synthetic-parameter']}],publication:{state:'draft',approved_input_sha256:null,approval_actor_kind:'automation',published_at:null},correction_policy:'append_new_revision_preserve_published'};
+  const document={schema_version:'tivdoc-report-document-v3',service_kind:'ai_assisted',publication_policy:'tivdoc-ai-publication-v1',order_offer_sha256:(accepted.order.offer as {sha256:string}).sha256,id:projectionId,case_id:ids[0],order_id:accepted.order.id,revision:1,input_sha256:source.input_sha256,projection_sha256:canonicalSha256(projection),purchased_period:{from:'2020-01',to:'2020-01'},projection,evidence:[{id:evidenceId,document_id:docId,version_id:versionId,sha256:sourceHash,page:1,field:'gross',fact_version:'synthetic-1'}],findings:[{id:randomUUID(),topic:'minimum_wage',evidence_ids:[evidenceId],rule_versions:['synthetic-rule'],parameter_versions:['synthetic-parameter']}],publication:{state:'draft',approved_input_sha256:null,approval_actor_kind:'automation',published_at:null},correction_policy:'append_new_revision_preserve_published'};
   reportDocumentSchema.parse(document);
   await owner.query('begin');await owner.query('create policy ai_projection_fixture on public.case_report_projections for all to tivdoc_dev_migrator using(true) with check(true)');
   await owner.query("insert into public.case_report_projections(id,case_id,schema_version,report_kind,check_period_month,projection,projection_sha256,legal_basis,generated_at,input_revision,report_document) values($1,$2,$3,'full','2020-01-01',$4,$5,$6,now(),$7,$8)",[projectionId,ids[0],projection.schema_version,projection,canonicalSha256(projection),projection.legal_basis,source.revision,document]);
@@ -98,6 +116,12 @@ it.skipIf(process.env.TIVDOC_AI_PUBLICATION_DB_PROOF!=='1')('binds AI publicatio
   checks.push('published evidence is immutable and exact receipt replay survives later input changes');
   expect((await owner.query("select has_table_privilege('tivdoc_worker_runtime','public.case_report_projections','INSERT') allowed")).rows[0].allowed).toBe(false);
   checks.push('no projection write permission or real legal-source activation is introduced');
+  if(browserProof){
+   const {verifyAiReportPreview}=await import('../../../../scripts/release-completion/preview-ai-report.mts');
+   await verifyAiReportPreview({publicId:publicIds[0],foreignPublicId:publicIds[1],session:customerSessions[0],foreignSession:customerSessions[1],reportId:projectionId,versionId,findingId:document.findings[0].id,sourceSha256:sourceHash});
+   expect((await owner.query('select count(*)::int n from private.case_support_threads where case_id=$1 and report_id=$2 and finding_id=$3',[ids[0],projectionId,document.findings[0].id])).rows[0].n).toBe(1);
+  }
+
  }catch(e){failure=e instanceof Error?e.message:'proof_failed';throw e;}finally{
   await owner.query('rollback').catch(()=>{});
   if(seeded){await owner.query('begin');try{
@@ -109,8 +133,10 @@ it.skipIf(process.env.TIVDOC_AI_PUBLICATION_DB_PROOF!=='1')('binds AI publicatio
    await owner.query('alter table public.case_report_qa_log enable trigger case_report_qa_log_no_update');for(const table of ['case_report_projections','case_report_qa','case_report_qa_log'])await owner.query(`drop policy ai_cleanup on public.${table}`);
    expect((await owner.query('select count(*)::int n from public.cases where id=any($1::uuid[])',[ids])).rows[0].n).toBe(0);await owner.query('commit');cleaned=true;
   }catch(e){await owner.query('rollback');cleanupError=e;}}
+  if(cleaned&&storageUploaded&&bucket){const removed=await bucket.remove([sourcePath]);if(removed.error)cleanupError=new Error('OWNED_SOURCE_CLEANUP_FAILED');else storageRemoved=true;}
   await Promise.allSettled([owner.end(),worker.end(),peer.end(),web.end()]);
-  writeFileSync('docs/release-evidence/P08-ai-publication-db.json',JSON.stringify({verdict:cleaned&&checks.length===9&&!failure?'PASS':'FAIL',checks,failure,cleanupFailure:cleanupError instanceof Error?cleanupError.message:null,migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,scope:'Actual worker/peer/web roles and SQL publication/customer snapshot. Owner-seeded synthetic projection, payslip metadata and payment. No Storage bytes, actual monetary computation, source attestation, provider or browser publication proof. No runtime projection INSERT permission or production change.',productionChanged:false},null,2)+'\n');
+  writeFileSync('docs/release-evidence/P08-ai-publication-db.json',JSON.stringify({verdict:cleaned&&checks.length===9&&!failure&&!cleanupError?'PASS':'FAIL',checks,failure,cleanupFailure:cleanupError instanceof Error?cleanupError.message:null,migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,browserProof,storageUploaded,storageRemoved,sourceSha256:browserProof?sourceHash:null,scope:browserProof?'Actual worker/peer/web SQL publication, synthetic paid report and seeded customer sessions; hosted browser/API/PDF and owned Storage bytes. No canonical monetary computation, legal activation, real payment/provider, runtime projection INSERT grant or production.':'Actual worker/peer/web roles and SQL publication/customer snapshot. Owner-seeded synthetic projection, payslip metadata and payment. No Storage bytes, actual monetary computation, source attestation, provider or browser publication proof. No runtime projection INSERT permission or production change.',productionChanged:false},null,2)+'\n');
   if(cleanupError)throw cleanupError;
  }
-},120000);
+},browserProofTimeout());
+function browserProofTimeout(){return process.env.TIVDOC_AI_PUBLICATION_PREVIEW_PROOF==='1'?240000:120000;}
