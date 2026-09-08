@@ -1,4 +1,5 @@
 import { Pool, type PoolConfig } from "pg";
+import { isDisposableCanonicalDatabase } from "./disposable-target.ts";
 
 import type {
   PostgresParameter,
@@ -14,7 +15,6 @@ const LOOPBACK_HOSTS = new Map([
   ["::1", "::1"],
   ["[::1]", "::1"],
 ] as const);
-const DISPOSABLE_DATABASE = /^tivdoc_v09_[a-z0-9_]{8,48}$/u;
 const VALIDATED_TARGET = "NODE_POSTGRES_LOOPBACK_DISPOSABLE_VALIDATED" as const;
 const ALLOWED_SSL_MODES = new Set(["require", "no-verify", "verify-full"]);
 
@@ -89,7 +89,7 @@ type NodePostgresPoolResult = Readonly<{
 
 export interface NodePostgresPoolClient {
   query(config: NodePostgresQueryConfig): Promise<NodePostgresPoolResult>;
-  release(): void;
+  release(destroy?:boolean): void;
 }
 
 export interface NodePostgresPool {
@@ -247,6 +247,7 @@ class NodePostgresManagedClient implements ManagedPostgresClient {
   readonly #client: NodePostgresPoolClient;
   readonly #metrics: Readonly<{ query(): void; release(): void }>;
   #released = false;
+  #discard = false;
 
   constructor(
     client: NodePostgresPoolClient,
@@ -270,6 +271,9 @@ class NodePostgresManagedClient implements ManagedPostgresClient {
         row_count: result.rowCount ?? result.rows.length,
       });
     } catch (error) {
+      // An uncertain transaction boundary must never return a possibly open
+      // transaction to a different machine session in the pool.
+      if (['transaction_begin','transaction_commit','transaction_rollback'].includes(statement.name)) this.#discard=true;
       throw mapPostgresFailure(error, "POSTGRES_STATEMENT_FAILED");
     }
   }
@@ -278,7 +282,7 @@ class NodePostgresManagedClient implements ManagedPostgresClient {
     if (this.#released) throw new CanonicalPostgresError("POSTGRES_RELEASE_FAILED");
     this.#released = true;
     try {
-      this.#client.release();
+      this.#client.release(this.#discard);
     } catch (error) {
       throw mapPostgresFailure(error, "POSTGRES_RELEASE_FAILED");
     } finally {
@@ -331,16 +335,15 @@ function targetFromUrl(parsed: URL, remote: NodePostgresRemoteDevTarget | null):
   } catch {
     throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
   }
-  if (!DISPOSABLE_DATABASE.test(database)) {
+  if (!isDisposableCanonicalDatabase(database)) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
   }
   const port = parsed.port === "" ? 5432 : Number(parsed.port);
   if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_REQUIRED");
   }
-  const suffix = database.slice("tivdoc_v09_".length).replaceAll("_", "-");
   return Object.freeze({
-    target_id: `tivdoc-v09-${suffix}`,
+    target_id: database.replaceAll("_", "-"),
     host: normalizedHost,
     port,
     database,
@@ -366,7 +369,7 @@ function remoteTargetFromUrl(
   } catch {
     throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
   }
-  if (!DISPOSABLE_DATABASE.test(database)) {
+  if (!isDisposableCanonicalDatabase(database)) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
   }
   if (parsed.hostname.toLowerCase() !== remote.host.toLowerCase()

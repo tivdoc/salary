@@ -1,4 +1,5 @@
 import type { PostgresTransactionContext } from "../persistence/postgres/contracts.ts";
+import { isDisposableCanonicalDatabase } from "../persistence/postgres/runtime/disposable-target.ts";
 import { statement } from "../persistence/postgres/contracts.ts";
 import { CanonicalPostgresError } from "../persistence/postgres/runtime/errors.ts";
 import { PostgresIdempotencyRepository } from "../persistence/postgres/runtime/idempotency.ts";
@@ -240,7 +241,7 @@ function validateTarget(target: CanonicalPostgresTarget | undefined): void {
   }
   if (!target.disposable
       || (target.validation !== "LOOPBACK_DISPOSABLE_VALIDATED" && !remoteAllowlisted)
-      || !/^tivdoc_v09_[a-z0-9_]{8,48}$/u.test(target.database)) {
+        || !isDisposableCanonicalDatabase(target.database)) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
   }
   // A remote target still has to name a host; an empty one would slip past the
