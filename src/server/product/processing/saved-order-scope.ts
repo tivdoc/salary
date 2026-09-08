@@ -8,7 +8,7 @@ import type {SourceJob} from './source-dispatch';
 const monthDate=z.iso.date().refine(value=>value.endsWith('-01'));
 export const savedOrderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full']),from:monthDate,to:monthDate,
  topics:z.array(z.enum(WAVE3_TOPICS)).min(1).max(7).refine(value=>new Set(value).size===value.length),
- offer_sha256:z.string().regex(/^[a-f0-9]{64}$/)}).refine(value=>value.from<=value.to&&(value.kind!=='initial'||value.from===value.to));
+ offer_sha256:z.string().regex(/^[a-f0-9]{64}$/)}).refine(value=>value.from<=value.to&&(value.kind!=='initial'||value.from===value.to&&value.topics.length<=3));
 export type SavedOrderScope=z.infer<typeof savedOrderSchema>;
 
 export function savedMonthIdempotencyKey(job:SourceJob,orderId:string,month:string){

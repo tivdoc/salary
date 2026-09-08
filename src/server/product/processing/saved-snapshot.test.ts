@@ -85,7 +85,9 @@ describe('exact saved source to canonical snapshot',()=>{
  });
  it('runs canonical analysis on saved inputs, retains seven refusals and replays exact draft bytes',async()=>{
   const s=setup(),orderId='44444444-4444-4444-8444-444444444444';
-  s.responses.saved_analysis_order=[{input:{...s.input,orders:[{id:orderId,kind:'initial',from:'2025-01-01',to:'2025-01-31',topics:s.fixture.command.requested_topics}]},created_at:'2025-02-01T00:00:00Z',engine_revision:'1'}];
+  const order={id:orderId,kind:'full',from:'2025-01-01',to:'2025-01-01',topics:s.fixture.command.requested_topics,offer_sha256:'b'.repeat(64)};
+  s.responses.saved_order_entitlements=[{orders:[order],current_orders:[order]}];
+  s.responses.saved_analysis_order=[{created_at:'2025-02-01T00:00:00Z',engine_revision:'1'}];
   // Deliberately hermetic: this checks real service/catalog/renderer behavior,
   // not PostgreSQL commit/rollback or provider extraction.
   const analysis={caseAnalysis:new InMemoryCaseAnalysisRepository(),reports:new FixtureCaseReviewPort()} as unknown as PostgresAnalysisRepositories;

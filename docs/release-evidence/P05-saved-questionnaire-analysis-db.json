@@ -4,6 +4,7 @@
     "all thirteen saved questionnaire assertions reach the canonical persisted stage with declared provenance, no inferred dates or human confirmation",
     "rollback removes partial analysis/report while preserving source and extraction checkpoint",
     "retry and replay retain exact report bytes without a duplicate analysis run",
+    "revoked selected entitlement refuses a cached monthly result; rollback restores exact replay without another analysis",
     "source revision changing before completion rejects old work"
   ],
   "database": "tivdoc_release_replay_20260907",

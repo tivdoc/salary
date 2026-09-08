@@ -3,16 +3,15 @@ import {z} from 'zod';
 import {CaseAnalysisService} from '@/engine/case-analysis/service';
 import {LegalOperationsCatalog} from '@/engine/legal-operations/catalog';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
-import {WAVE3_TOPICS,type CaseAnalysisCommand} from '@/engine/wave3/contracts';
+import type {CaseAnalysisCommand} from '@/engine/wave3/contracts';
 import type {PostgresAnalysisRepositories} from '@/server/platform/persistence/postgres/analysis';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatch';
 import {SavedCaseSnapshot} from './saved-snapshot';
 import {SavedAnalysisDraftBuilder,SAVED_DRAFT_TEMPLATE,savedAnalysisId} from './saved-draft-report';
-import {savedMonthIdempotencyKey} from './saved-order-scope';
+import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
 
 const monthSchema=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
-const orderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full']),from:z.string(),to:z.string(),topics:z.array(z.enum(WAVE3_TOPICS)).min(1)});
 /** Execute one purchased month through the existing CaseAnalysisService and
  * canonical PostgreSQL analysis adapters. Caller owns the canonical transaction;
  * all stages, legal pins, results, traces and draft bytes commit/rollback together.
@@ -22,14 +21,15 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const job=sourceJobSchema.parse(input.job);z.uuid().parse(input.orderId);monthSchema.parse(input.month);
  if(job.mode!=='draft')throw new Error('SAVED_LIVE_COMPOSITION_NOT_ENABLED');
  await lockCurrentSource(input.context,job);
+ // Recheck the selected entitlement even on replay. A different paid order in
+ // this case, or an old cached result, cannot authorize a revoked purchase.
+ const [order]=await readSavedOrders(input.context,job,input.orderId);
+ if(input.month<order.from.slice(0,7)||input.month>order.to.slice(0,7))throw new Error('SAVED_ORDER_SCOPE');
  const selected=await input.context.client.query(statement('saved_analysis_order',
-  `select v.input,v.created_at,ecs.revision as engine_revision from private.case_input_versions v
+  `select v.created_at,ecs.revision as engine_revision from private.case_input_versions v
    join public.engine_case_state ecs on ecs.canonical_case_id=v.case_id::text and ecs.tenant_id=$3
    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$4`,[job.case_id,job.revision,input.tenantId,job.input_sha256]));
  const row=selected.rows[0];if(!row)throw new Error('SAVED_ENGINE_CASE_NOT_ADMITTED');
- const journal=z.object({orders:z.array(orderSchema)}).parse(row.input);
- const order=journal.orders.find(o=>o.id===input.orderId);
- if(!order||input.month<order.from.slice(0,7)||input.month>order.to.slice(0,7))throw new Error('SAVED_ORDER_SCOPE');
  const key=savedMonthIdempotencyKey(job,order.id,input.month);
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
  if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report)throw new Error('SAVED_REPLAY_SCOPE');return existing;}

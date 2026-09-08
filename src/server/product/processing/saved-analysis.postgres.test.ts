@@ -10,6 +10,7 @@ import {createPostgresAnalysisRepositories} from '@/server/platform/persistence/
 import {intake_factory} from '@/server/platform/persistence/postgres/intake';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {runSavedMonthAnalysis} from './saved-analysis';
+import {legacyFullOfferFixture} from '../orders/fixtures/legacy-offer';
 import {saveExtractionCheckpoint} from './extraction-checkpoint';
 import type {SourceJob} from './source-dispatch';
 
@@ -39,12 +40,14 @@ it.skipIf(process.env.TIVDOC_SAVED_SOURCE_DB_PROOF!=='1')('persists real canonic
   await db.query("insert into public.cases(id,first_name,email,phone,status,payment_status,check_period_month) values($1,'Synthetic saved analysis','synthetic@example.invalid','0500000000','under_review','verified','2025-01-01')",[caseId]);
   await db.query("insert into public.documents(id,case_id,version_id,document_type,slot,storage_path,original_filename,mime_type,size,content_sha256,period_month) values($1,$2,$3,'payslip','payslip-01',$4,'synthetic.pdf','application/pdf',$5,$6,'2025-01-01')",[documentId,caseId,doc.document_id,`cases/${caseId}/versions/${doc.document_id}.pdf`,doc.size_bytes,doc.content_sha256]);
   await db.query("insert into public.questionnaire_responses(case_id,payload,suspected_issue) values($1,$2,'')",[caseId,{salaryType:'hourly',employmentStartMonth:'2024-07',stillEmployed:true,managerialOrTrustRole:true,birthYear:2000,sex:'unspecified',workDaysPerWeek:5,typicalHoursPerDay:8.6,worksFriday:false,worksSaturday:false,hadPensionFundAtHire:true,employerProvidesTransport:false,commuteOver500m:true}]);
+  // Actual synthetic historical full-order row and entitlement. The journal is
+  // captured by the real triggers; seven topics never masquerade as an initial.
+  const offer=legacyFullOfferFixture();
+  await db.query("insert into private.product_orders(id,case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state) values($1,$2,'full','2025-01-01','2025-01-01',14900,'ILS',$3,$4,$5,$6,'awaiting_payment')",[orderId,caseId,offer,offer.sha256,fixture.command.requested_topics,offer.terms_version]);
+  await db.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[orderId]);
+  await db.query("update private.product_orders set state='paid',verified_at=now() where id=$1",[orderId]);
   const head=(await db.query('select * from private.case_input_heads where case_id=$1',[caseId])).rows[0];
-  // Explicit synthetic paid-order scope; no provider payment is asserted.
-  await db.query("update private.case_input_versions set input=jsonb_set(input,'{orders}',$3::jsonb) where case_id=$1 and revision=$2",[caseId,head.revision,JSON.stringify([{id:orderId,kind:'initial',from:'2025-01-01',to:'2025-01-31',topics:fixture.command.requested_topics}])]);
-  const source=(await db.query("update private.case_input_versions set input_sha256=encode(sha256(convert_to(input::text,'UTF8')),'hex') where case_id=$1 and revision=$2 returning input_sha256",[caseId,head.revision])).rows[0];
-  await db.query('update private.case_input_heads set input_sha256=$2 where case_id=$1',[caseId,source.input_sha256]);
-  const job:SourceJob={schema_version:'saved-case-work-v1',case_id:caseId,revision:head.revision,input_sha256:source.input_sha256,mode:'draft'};
+  const job:SourceJob={schema_version:'saved-case-work-v1',case_id:caseId,revision:head.revision,input_sha256:head.input_sha256,mode:'draft'};
   const result={schema_version:'tivdoc-saved-extraction-v1',case_id:caseId,product_document_id:documentId,version_id:doc.document_id,input_sha256:doc.content_sha256,
    expected_month:'2025-01',period_mismatch:false,requires_confirmation:false,run:{result:{final_extraction:extraction}},result_sha256:canonicalSha256({final_extraction:extraction})};
   await saveExtractionCheckpoint(context,job,result as Parameters<typeof saveExtractionCheckpoint>[2]);
@@ -72,6 +75,13 @@ it.skipIf(process.env.TIVDOC_SAVED_SOURCE_DB_PROOF!=='1')('persists real canonic
   expect(retry.report?.report_sha256).toBe(first.report?.report_sha256);expect(again.report).toEqual(retry.report);
   expect((await db.query('select count(*)::int n from public.analysis_runs where tenant_id=$1',[tenant])).rows[0].n).toBe(1);
   checks.push('retry and replay retain exact report bytes without a duplicate analysis run');
+  await db.query('savepoint before_entitlement_revocation');
+  await db.query("update private.order_entitlements set state='revoked' where order_id=$1",[orderId]);
+  await expect(runSavedMonthAnalysis(args)).rejects.toThrow('SAVED_ORDER_ENTITLEMENT_REQUIRED');
+  expect((await db.query('select count(*)::int n from public.analysis_runs where tenant_id=$1',[tenant])).rows[0].n).toBe(1);
+  await db.query('rollback to savepoint before_entitlement_revocation');
+  expect((await runSavedMonthAnalysis(args)).report).toEqual(retry.report);
+  checks.push('revoked selected entitlement refuses a cached monthly result; rollback restores exact replay without another analysis');
   await db.query('update private.case_input_heads set revision=revision+1 where case_id=$1',[caseId]);
   await expect(runSavedMonthAnalysis(args)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
   checks.push('source revision changing before completion rejects old work');
