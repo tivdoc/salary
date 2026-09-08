@@ -10,7 +10,7 @@ import {
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { TrackedLink } from "@/components/tracked-link";
-import { BrandSymbol } from "@/components/brand-logo";
+import { Trust } from "@/components/landing/trust";
 import { ExplainerVideo } from "@/components/landing/explainer-video";
 import { PriceTiers } from "@/components/landing/price-tiers";
 import { Hero } from "@/components/landing/hero";
@@ -24,7 +24,9 @@ import "./studio.css";
 
 export default async function Home() {
   await guardStableAppEntrypoint("CEP-001");
-  const salesAvailable = process.env.TIVDOC_INITIAL_SALES_ENABLED === "true" && process.env.TIVDOC_INVOICE4U_CHECKOUT_ENABLED === "true";
+  const salesAvailable =
+    process.env.TIVDOC_INITIAL_SALES_ENABLED === "true" &&
+    process.env.TIVDOC_INVOICE4U_CHECKOUT_ENABLED === "true";
   return (
     <div className="studio-site">
       <LandingView />
@@ -55,7 +57,7 @@ export default async function Home() {
               </span>
             </div>
             <div className="studio-film__frame" data-reveal>
-              <ExplainerVideo poster="/media/tivdoc-explainer-poster.webp" />
+              <ExplainerVideo poster="/media/tivdoc-explainer-sample.jpg" />
             </div>
             <p className="film-note">ללא קול · אפשר גם לקרוא את ההסבר</p>
             <details className="studio-transcript" id="explainer-transcript">
@@ -83,16 +85,16 @@ export default async function Home() {
               <span>מעמיקים אם צריך.</span>
             </h2>
             <p className="studio-pricing__intro">
-              {salesAvailable ? "מתחילים בבדיקה ראשונית. כל המשך הוא החלטה נפרדת." : "מחירי ההשקה. פתיחת הזמנות חדשות אינה זמינה כרגע."}
+              {salesAvailable
+                ? "מתחילים בבדיקה ראשונית. כל המשך הוא החלטה נפרדת."
+                : "מחירי ההשקה. פתיחת הזמנות חדשות אינה זמינה כרגע."}
             </p>
             <div className="price-comparison" data-reveal>
               <article className="price-sheet">
                 <div className="price-sheet__heading">
                   <h3>בדיקה ראשונית</h3>
                   <span>
-                    {salesAvailable
-                      ? "נקודת ההתחלה"
-                      : "עדיין לא זמין לרכישה"}
+                    {salesAvailable ? "נקודת ההתחלה" : "עדיין לא זמין לרכישה"}
                   </span>
                 </div>
                 <p className="price-sheet__amount">
@@ -144,7 +146,9 @@ export default async function Home() {
                   <bdi>{fullPrice}</bdi>
                   <span>מחיר כולל ראשוני לפי מדרגת הפער המבוסס</span>
                 </p>
-                <p className="price-sheet__scope">בדיקת AI עם מקורות, הסברים ואפשרות לתיקון.</p>
+                <p className="price-sheet__scope">
+                  בדיקת AI עם מקורות, הסברים ואפשרות לתיקון.
+                </p>
                 <ul>
                   <li>העמקה בתקופה שתוסכם מראש</li>
                   <li>ממצאים, מקורות וצעד הבא</li>
@@ -153,8 +157,8 @@ export default async function Home() {
                 <details>
                   <summary>מה עוד כדאי לדעת</summary>
                   <p>
-                    דוח מלא עדיין אינו זמין לרכישה. לפני רכישה יוצגו היקף
-                    הבדיקה ומועד המסירה. התשלום הראשוני המאומת מתקזז פעם אחת. סכום לא
+                    דוח מלא עדיין אינו זמין לרכישה. לפני רכישה יוצגו היקף הבדיקה
+                    ומועד המסירה. התשלום הראשוני המאומת מתקזז פעם אחת. סכום לא
                     יוצג כשהמידע או רמת הוודאות אינם מאפשרים זאת.
                   </p>
                 </details>
@@ -166,42 +170,7 @@ export default async function Home() {
             <PriceTiers />
           </div>
         </section>
-        <section
-          className="studio-about"
-          id="about"
-          aria-labelledby="about-title"
-        >
-          <div className="studio-shell">
-            <div className="studio-about__intro" data-reveal>
-              <BrandSymbol />
-              <h2 id="about-title">
-                מאחורי כל מסמך,
-                <br />
-                יש יום עבודה שלם.
-              </h2>
-              <p>
-                תבדוק נועדה לעזור להבין את הקשר בין מה שמופיע במסמכים לבין מה
-                שקורה בפועל. עם הסבר ברור, וגם עם מקום למה שעדיין לא ידוע.
-              </p>
-            </div>
-            <div className="studio-principles" data-reveal>
-              <div>
-                <h3>המידע שלך, פרטי.</h3>
-                <p>הגישה למסמכים מוגבלת לצורך השירות.</p>
-                <Link href="/privacy">
-                  מדיניות הפרטיות <ArrowLeft size={17} aria-hidden="true" />
-                </Link>
-              </div>
-              <div>
-                <h3>גם הגבולות ברורים.</h3>
-                <p>הבדיקה אינה קביעה משפטית או הבטחה להחזר.</p>
-                <Link href="/terms">
-                  תנאי השירות <ArrowLeft size={17} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        <Trust />
         <Faq />
         <section className="studio-service" aria-labelledby="service-title">
           <div className="studio-shell">

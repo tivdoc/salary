@@ -6,7 +6,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="shell site-footer__inner">
         <div>
-          <Link className="footer-brand" href="/" aria-label="תבדוק, עמוד הבית">
+          <Link prefetch={false} className="footer-brand" href="/" aria-label="תבדוק, עמוד הבית">
             <BrandLogo />
           </Link>
           <p>המסמכים שלך. התמונה המלאה.</p>
@@ -14,10 +14,10 @@ export function SiteFooter() {
         </div>
         <nav aria-label="שירות ומידע">
           <a href={"mailto:" + productOffer.supportEmail}>יצירת קשר</a>
-          <Link href="/privacy">פרטיות</Link>
-          <Link href="/terms">תנאי שימוש</Link>
-          <Link href="/accessibility">נגישות</Link>
-          <Link href="/#faq">שאלות ותשובות</Link>
+          <Link prefetch={false} href="/privacy">פרטיות</Link>
+          <Link prefetch={false} href="/terms">תנאי שימוש</Link>
+          <Link prefetch={false} href="/accessibility">נגישות</Link>
+          <Link prefetch={false} href="/#faq">שאלות ותשובות</Link>
         </nav>
       </div>
     </footer>

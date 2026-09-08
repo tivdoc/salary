@@ -1,5 +1,4 @@
-"use client";
-import { trackEvent } from "@/lib/analytics";
+import { FaqDisclosure } from "./faq-disclosure";
 import { initialPrice, fullPrice, productOffer } from "@/config/product-offer";
 const questions = [
   [
@@ -43,19 +42,13 @@ export function Faq() {
         </div>
         <div className="faq-list">
           {questions.map(([question, answer], index) => (
-            <details
-              key={question}
-              onToggle={(event) =>
-                event.currentTarget.open &&
-                trackEvent("faq_opened", { question: "faq-" + (index + 1) })
-              }
-            >
+            <FaqDisclosure key={question} index={index}>
               <summary>
                 {question}
                 <span aria-hidden="true">+</span>
               </summary>
               <p>{answer}</p>
-            </details>
+            </FaqDisclosure>
           ))}
         </div>
       </div>

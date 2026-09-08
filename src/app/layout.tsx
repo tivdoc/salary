@@ -8,12 +8,13 @@ import "./website.css";
 
 const plexSansHebrew = IBM_Plex_Sans_Hebrew({
   variable: "--font-sans",
-  subsets: ["hebrew", "latin"],
+  subsets: ["hebrew"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
 const plexMono = IBM_Plex_Mono({
+  preload: false,
   variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600"],

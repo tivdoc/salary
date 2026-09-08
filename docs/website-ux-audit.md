@@ -1,3 +1,5 @@
+> Historical snapshot. For the current integrated website review, see [website-review-full-handoff.md](website-review-full-handoff.md). The test counts and production state below describe their original SHA only.
+
 # Website UX audit — 8 September 2026
 
 The user requested a design and usability review followed by implementation. This follow-up preserves the studio identity and original artwork while making the page easier to navigate and understand.

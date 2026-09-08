@@ -1,0 +1,347 @@
+{
+  "label": "נתוני הדגמה סינתטיים בלבד",
+  "source": "מסמך הדגמה סינתטי בלבד — אינו תלוש של לקוח\nתקופה: יוני 2026\nרכיב פנסיה: מופיע במסמך ההדגמה\nקרן פנסיה פעילה בתחילת ההעסקה: לא נמסר\nסידור עבודה רגיל: לא נמסר\n",
+  "sourceSha256": "40ce5800cd09c5aec37502fb880f7f1e4c5f03ac86d18459aeff06d67b4a1d66",
+  "reports": [
+    {
+      "schema_version": "tivdoc-report-document-v3",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "case_id": "00000000-0000-4000-8000-000000000001",
+      "order_id": "00000000-0000-4000-8000-000000000002",
+      "revision": 1,
+      "input_sha256": "40ce5800cd09c5aec37502fb880f7f1e4c5f03ac86d18459aeff06d67b4a1d66",
+      "projection_sha256": "ab37a23a6a6d5d5598d67c4f261b17c47d30a558095276d19f32dd2662f772f9",
+      "purchased_period": {
+        "from": "2026-06",
+        "to": "2026-06"
+      },
+      "projection": {
+        "schema_version": "tivdoc-case-report-projection-v1",
+        "case_public_id": "TV-DEMO0001",
+        "check_period_month": "2026-06",
+        "months_covered": [
+          "2026-06"
+        ],
+        "report_kind": "initial",
+        "legal_basis": "opinion_3ddad7e8 + errata_1_owner_closed",
+        "generated_at": "2026-09-06T09:00:00.000Z",
+        "topics": [
+          {
+            "topic": "minimum_wage",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "working_time",
+            "branches_examined": [],
+            "parameter_grades": {
+              "synthetic-schedule-v1": "active"
+            },
+            "gate": "refused",
+            "activation": "active",
+            "applicability": {
+              "refused": "days_per_week"
+            },
+            "status": "not_checked",
+            "not_checked": {
+              "code": "schedule_unknown",
+              "customer_text": "לא בדקנו את שעות העבודה: צריך לדעת כמה ימים בשבוע אתה עובד ומה אורך יום העבודה הרגיל."
+            },
+            "missing_facts": [
+              "days_per_week",
+              "regular_day_hours"
+            ],
+            "assumptions": []
+          },
+          {
+            "topic": "pension",
+            "branches_examined": [
+              "נתוני הדגמה סינתטיים בלבד"
+            ],
+            "parameter_grades": {
+              "synthetic-pension-v1": "active"
+            },
+            "gate": "checked",
+            "activation": "active",
+            "applicability": "applicable",
+            "status": "finding",
+            "certainty": "low",
+            "display": "direction",
+            "certainty_sentence": "אי אפשר לקבוע סכום, וזה מה שיעלה את הוודאות",
+            "severity_class": "order_entitlement",
+            "basis_complete": false,
+            "missing_facts": [
+              "אישור על קרן פנסיה פעילה בתחילת ההעסקה"
+            ],
+            "assumptions": [],
+            "retroactive_update": null,
+            "amount": null,
+            "range": null,
+            "direction": "employer_owes"
+          },
+          {
+            "topic": "travel",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "convalescence",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "vacation",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "sick_leave",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "id": "00000000-0000-4000-8000-000000000020",
+          "document_id": "00000000-0000-4000-8000-000000000021",
+          "version_id": "00000000-0000-4000-8000-000000000022",
+          "sha256": "40ce5800cd09c5aec37502fb880f7f1e4c5f03ac86d18459aeff06d67b4a1d66",
+          "page": 1,
+          "field": "רכיב פנסיה ומידע חסר בתחילת העסקה",
+          "fact_version": "synthetic-1"
+        }
+      ],
+      "findings": [
+        {
+          "id": "00000000-0000-4000-8000-000000000030",
+          "topic": "pension",
+          "evidence_ids": [
+            "00000000-0000-4000-8000-000000000020"
+          ],
+          "rule_versions": [
+            "synthetic-pension-rule-v1"
+          ],
+          "parameter_versions": [
+            "synthetic-pension-v1"
+          ]
+        }
+      ],
+      "publication": {
+        "state": "draft",
+        "approved_input_sha256": null,
+        "approval_actor_kind": "automation",
+        "published_at": null
+      },
+      "correction_policy": "append_new_revision_preserve_published",
+      "service_kind": "ai_assisted",
+      "publication_policy": "tivdoc-ai-publication-v1",
+      "order_offer_sha256": "40ce5800cd09c5aec37502fb880f7f1e4c5f03ac86d18459aeff06d67b4a1d66"
+    },
+    {
+      "schema_version": "tivdoc-report-document-v3",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "case_id": "00000000-0000-4000-8000-000000000001",
+      "order_id": "00000000-0000-4000-8000-000000000003",
+      "revision": 1,
+      "input_sha256": "40ce5800cd09c5aec37502fb880f7f1e4c5f03ac86d18459aeff06d67b4a1d66",
+      "projection_sha256": "907f4cd581d8210d9b94375920cb2d034efd5f078f9ba136248043de5cac209d",
+      "purchased_period": {
+        "from": "2026-06",
+        "to": "2026-06"
+      },
+      "projection": {
+        "schema_version": "tivdoc-case-report-projection-v1",
+        "case_public_id": "TV-DEMO0001",
+        "check_period_month": "2026-06",
+        "months_covered": [
+          "2026-06"
+        ],
+        "report_kind": "full",
+        "legal_basis": "opinion_3ddad7e8 + errata_1_owner_closed",
+        "generated_at": "2026-09-06T09:00:00.000Z",
+        "topics": [
+          {
+            "topic": "minimum_wage",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "working_time",
+            "branches_examined": [],
+            "parameter_grades": {
+              "synthetic-schedule-v1": "active"
+            },
+            "gate": "refused",
+            "activation": "active",
+            "applicability": {
+              "refused": "days_per_week"
+            },
+            "status": "not_checked",
+            "not_checked": {
+              "code": "schedule_unknown",
+              "customer_text": "לא בדקנו את שעות העבודה: צריך לדעת כמה ימים בשבוע אתה עובד ומה אורך יום העבודה הרגיל."
+            },
+            "missing_facts": [
+              "days_per_week",
+              "regular_day_hours"
+            ],
+            "assumptions": []
+          },
+          {
+            "topic": "pension",
+            "branches_examined": [
+              "נתוני הדגמה סינתטיים בלבד"
+            ],
+            "parameter_grades": {
+              "synthetic-pension-v1": "active"
+            },
+            "gate": "checked",
+            "activation": "active",
+            "applicability": "applicable",
+            "status": "finding",
+            "certainty": "low",
+            "display": "direction",
+            "certainty_sentence": "אי אפשר לקבוע סכום, וזה מה שיעלה את הוודאות",
+            "severity_class": "order_entitlement",
+            "basis_complete": false,
+            "missing_facts": [
+              "אישור על קרן פנסיה פעילה בתחילת ההעסקה"
+            ],
+            "assumptions": [],
+            "retroactive_update": null,
+            "amount": null,
+            "range": null,
+            "direction": "employer_owes"
+          },
+          {
+            "topic": "travel",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "convalescence",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "vacation",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          },
+          {
+            "topic": "sick_leave",
+            "branches_examined": [],
+            "parameter_grades": {},
+            "gate": "awaiting_verification",
+            "activation": "awaiting_verification",
+            "status": "not_checked",
+            "customer_text": "ממתין לאימות בסיום הפיתוח",
+            "blocked_by_grades": [
+              "draft"
+            ]
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "id": "00000000-0000-4000-8000-000000000020",
+          "document_id": "00000000-0000-4000-8000-000000000021",
+          "version_id": "00000000-0000-4000-8000-000000000022",
+          "sha256": "40ce5800cd09c5aec37502fb880f7f1e4c5f03ac86d18459aeff06d67b4a1d66",
+          "page": 1,
+          "field": "רכיב פנסיה ומידע חסר בתחילת העסקה",
+          "fact_version": "synthetic-1"
+        }
+      ],
+      "findings": [
+        {
+          "id": "00000000-0000-4000-8000-000000000030",
+          "topic": "pension",
+          "evidence_ids": [
+            "00000000-0000-4000-8000-000000000020"
+          ],
+          "rule_versions": [
+            "synthetic-pension-rule-v1"
+          ],
+          "parameter_versions": [
+            "synthetic-pension-v1"
+          ]
+        }
+      ],
+      "publication": {
+        "state": "draft",
+        "approved_input_sha256": null,
+        "approval_actor_kind": "automation",
+        "published_at": null
+      },
+      "correction_policy": "append_new_revision_preserve_published",
+      "service_kind": "ai_assisted",
+      "publication_policy": "tivdoc-ai-publication-v1",
+      "order_offer_sha256": "40ce5800cd09c5aec37502fb880f7f1e4c5f03ac86d18459aeff06d67b4a1d66"
+    }
+  ]
+}

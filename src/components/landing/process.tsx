@@ -11,21 +11,25 @@ const stages = [
     title: "קודם, מה שכתוב.",
     text: "תלוש שכר, חוזה ודוח נוכחות. כל מסמך נותן זווית אחרת על העבודה שלך.",
     label: "המסמכים",
+    detail: "סוג המסמך: תלוש שכר · חודש הבדיקה: יוני 2026",
   },
   {
     title: "ואז, מה שקורה באמת.",
     text: "השעות, התפקיד והתנאים בפועל. כמה תשובות משלימות את מה שהמסמכים לא מספרים.",
     label: "התשובות שלך",
+    detail: "קרן פנסיה פעילה בתחילת ההעסקה? טרם נמסר",
   },
   {
     title: "מחברים את הקצוות.",
     text: "מצליבים מקורות ובודקים את ההקשר. מידע חסר נשאר שאלה לבירור, ולא הופך לניחוש.",
     label: "הצלבת המידע",
+    detail: "מקור: מסמך ההדגמה, עמוד 1 · שדה: רכיב פנסיה",
   },
   {
     title: "רואים מה הצעד הבא.",
     text: "מה נבדק, על סמך מה, ומה עוד צריך להשלים. תמונה שאפשר להבין ולהמשיך ממנה.",
     label: "מבנה התוצר",
+    detail: "מידע חסר → בקשת השלמה. סכום הפער נשאר לא ידוע.",
   },
 ];
 export function Process() {
@@ -102,20 +106,31 @@ export function Process() {
               <div className="assembly__sheet assembly__sheet--one">
                 <FileText size={26} />
                 <span>תלוש שכר</span>
+                <small className="assembly-fact">יוני 2026 · מסמך הדגמה</small>
                 <i />
                 <i />
                 <i />
               </div>
               <div className="assembly__sheet assembly__sheet--two">
                 <ChatText size={26} />
-                <span>העבודה בפועל</span>
+                <span>התשובה שלך</span>
+                <small className="assembly-fact">
+                  קרן פעילה בתחילת ההעסקה?
+                  <br />
+                  עדיין לא נמסר
+                </small>
                 <i />
                 <i />
                 <i />
               </div>
               <div className="assembly__sheet assembly__sheet--three">
                 <ListChecks size={26} />
-                <span>התמונה שלך</span>
+                <span>הצעד הבא</span>
+                <small className="assembly-fact">
+                  להשלים אישור על מצב הקרן
+                  <br />
+                  אין סכום מבוסס
+                </small>
                 <i />
                 <i />
                 <i />
@@ -139,6 +154,10 @@ export function Process() {
           >
             <h3>{stages[active].title}</h3>
             <p>{stages[active].text}</p>
+            <p className="process-example" aria-live="polite">
+              <small>דוגמה סינתטית</small>
+              {stages[active].detail}
+            </p>
             <div className="process-pager">
               <span aria-live="polite" aria-atomic="true">
                 שלב {active + 1} מתוך {stages.length}

@@ -1,3 +1,5 @@
+> Historical snapshot. For the current integrated website review, see [website-review-full-handoff.md](website-review-full-handoff.md). The test counts and production state below describe their original SHA only.
+
 # מסירת עדכון האתר — 7.9.2026
 
 ## היקף ובסיס

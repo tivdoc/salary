@@ -1,0 +1,8 @@
+.git
+.env*
+.claude
+output
+supabase/.temp
+node_modules
+.next
+*.log
