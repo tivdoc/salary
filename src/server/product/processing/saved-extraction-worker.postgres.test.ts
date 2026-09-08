@@ -3,7 +3,7 @@ import pg from 'pg';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID,createHash} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
-import {execFileSync} from 'node:child_process';
+import {execFileSync,spawnSync} from 'node:child_process';
 import {PDFDocument} from 'pdf-lib';
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
@@ -31,7 +31,8 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
  function client(key:string){const u=new URL(env.get(key)!);expect(u.pathname).toBe('/tivdoc_release_replay_20260907');expect(u.hostname).toBe('aws-0-eu-central-1.pooler.supabase.com');expect(u.username.endsWith('.cpzrbidxftzqcfeqqusu')).toBe(true);u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
  const owner=client('TIVDOC_DEV_DATABASE_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),peer=client('TIVDOC_WORKER_POSTGRES_URL'),web=client('TIVDOC_WEB_POSTGRES_URL');
  const fixture=buildSyntheticCaseFixture({fixture_id:`extraction-${randomUUID()}`,mode:'real'}),caseId=fixture.command.case_id,otherId=randomUUID(),documentId=randomUUID(),orderId=randomUUID();
- const hostProof=process.env.TIVDOC_SAVED_HOST_DB_PROOF==='1',hostChecks:string[]=[],hostDrivers:NodePostgresConnectionFactory[]=[];
+ const bundleProof=process.env.TIVDOC_SAVED_BUNDLE_DB_PROOF==='1',bundleChecks:string[]=[];
+ const hostProof=process.env.TIVDOC_SAVED_HOST_DB_PROOF==='1'||bundleProof,hostChecks:string[]=[],hostDrivers:NodePostgresConnectionFactory[]=[];
  const storageProof=process.env.TIVDOC_SAVED_REAL_STORAGE_PROOF==='1'||hostProof,storageChecks:string[]=[];
  const runtimeProof=process.env.TIVDOC_SAVED_RUNTIME_DB_PROOF==='1'||storageProof,runtimeChecks:string[]=[];
  const runnerProof=process.env.TIVDOC_SAVED_RUNNER_DB_PROOF==='1'||runtimeProof,runnerChecks:string[]=[];
@@ -109,8 +110,14 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
   });
  };
  const args=()=>({transactions:transactions(worker),storage,extractor,providerEnabled:true,jobId,workerId,fencingToken:fence,versionId:doc.document_id});
- const saveReceipt=()=>writeFileSync(hostProof?'docs/release-evidence/P05-saved-worker-host-db.json':storageProof?'docs/release-evidence/P05-saved-job-storage-db.json':runtimeProof?'docs/release-evidence/P05-saved-job-runtime-db.json':runnerProof?'docs/release-evidence/P05-saved-job-runner-db.json':'docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:cleaned&&(!storageProof||storageCleaned)&&checks.length===9&&(!runnerProof||runnerChecks.length===7)&&(!runtimeProof||runtimeChecks.length===6)&&(!storageProof||storageChecks.length===4)&&(!hostProof||hostChecks.length===4)?'PASS':'FAIL',checks,runnerChecks,runtimeChecks,storageChecks,hostChecks,host_sha256:hostProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-worker-host.ts')).digest('hex'):null,storageObjectsRemoved:storageCleaned?uploaded.length:0,storageInputHashes:storageProof?physical.map(p=>p.sha):[],otherMachineSessionRevoked:storageProof&&cleaned&&otherSessionCreated,secondSyntheticCanonicalTenantRetained:storageProof?otherTenant:null,runtime_sha256:runtimeProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runtime.ts')).digest('hex'):null,runner_sha256:runnerProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runner.ts')).digest('hex'):null,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,requestIdentityRemoved:cleaned&&!!requestIdentity,additional_migration:'20260908073000_request_statement_scope.sql',syntheticCanonicalTenantRetained:tenant,retainedScope:runnerProof?'Synthetic canonical identity/lifecycle, job history, completed monthly analysis/report bytes and pending draft-ready outbox manifest retained as audit evidence. No customer publication. Product cases/documents/invocations/checkpoints cascade-cleaned.':'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:storageProof?'injected deterministic structured responses; actual private isolated DEV Storage PDF bytes/hash and adapter, no network OpenAI call':'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
+ const saveReceipt=()=>writeFileSync(bundleProof?'docs/release-evidence/P05-saved-worker-bundle-db.json':hostProof?'docs/release-evidence/P05-saved-worker-host-db.json':storageProof?'docs/release-evidence/P05-saved-job-storage-db.json':runtimeProof?'docs/release-evidence/P05-saved-job-runtime-db.json':runnerProof?'docs/release-evidence/P05-saved-job-runner-db.json':'docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:cleaned&&(!storageProof||storageCleaned)&&checks.length===9&&(!runnerProof||runnerChecks.length===7)&&(!runtimeProof||runtimeChecks.length===6)&&(!storageProof||storageChecks.length===4)&&(!hostProof||hostChecks.length===4)&&(!bundleProof||bundleChecks.length===4)?'PASS':'FAIL',checks,runnerChecks,runtimeChecks,storageChecks,hostChecks,bundleChecks,bundle_sha256:bundleProof?createHash('sha256').update(readFileSync('output/release-completion/saved-worker/worker.cjs')).digest('hex'):null,host_sha256:hostProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-worker-host.ts')).digest('hex'):null,storageObjectsRemoved:storageCleaned?uploaded.length:0,storageInputHashes:storageProof?physical.map(p=>p.sha):[],otherMachineSessionRevoked:storageProof&&cleaned&&otherSessionCreated,secondSyntheticCanonicalTenantRetained:storageProof?otherTenant:null,runtime_sha256:runtimeProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runtime.ts')).digest('hex'):null,runner_sha256:runnerProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runner.ts')).digest('hex'):null,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,requestIdentityRemoved:cleaned&&!!requestIdentity,additional_migration:'20260908073000_request_statement_scope.sql',syntheticCanonicalTenantRetained:tenant,retainedScope:runnerProof?'Synthetic canonical identity/lifecycle, job history, completed monthly analysis/report bytes and pending draft-ready outbox manifest retained as audit evidence. No customer publication. Product cases/documents/invocations/checkpoints cascade-cleaned.':'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:storageProof?'injected deterministic structured responses; actual private isolated DEV Storage PDF bytes/hash and adapter, no network OpenAI call':'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
  try{
+  if(bundleProof){
+   const manifest=JSON.parse(readFileSync('output/release-completion/saved-worker/manifest.json','utf8'));
+   expect(manifest.dirty).toBe(false);expect(manifest.gitSha).toBe(execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim());
+   expect(manifest.bundleSha256).toBe(createHash('sha256').update(readFileSync('output/release-completion/saved-worker/worker.cjs')).digest('hex'));
+   bundleChecks.push('the executable bundle is hash-verified and was built from this exact clean Git commit');
+  }
   await Promise.all([owner.connect(),worker.connect(),peer.connect(),web.connect()]);
   if(process.env.TIVDOC_APPLY_EXTRACTION_INVOCATIONS==='1'){await owner.query('begin');await owner.query(readFileSync('supabase/migrations/'+migration,'utf8'));await owner.query('commit');}
   await owner.query('begin');
@@ -251,12 +258,20 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
      await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.saved.storage.worker',$3,now()-interval '1 minute',now()+interval '15 minutes',$4,now())",[otherTenant,otherSid,otherJti,canonicalSha256({sid:otherSid,jti:otherJti})]);
      await owner.query('commit');otherSessionCreated=true;
      let secondTransactions=transactions(peer,{sid:otherSid,jti:otherJti});
+     let runBundle:(()=>ReturnType<typeof spawnSync>)|undefined;
      if(hostProof){
       const connection=new URL(env.get('TIVDOC_WORKER_POSTGRES_URL')!);connection.search='';
       const driver=NodePostgresConnectionFactory.fromConnectionUrl({connection_url:connection.toString(),max_connections:2,connection_timeout_ms:15000,application_name:'tivdoc_saved_host_proof',remote_dev_target:{host:'aws-0-eu-central-1.pooler.supabase.com',port:Number(connection.port||5432),database:'tivdoc_release_replay_20260907',project_ref:'cpzrbidxftzqcfeqqusu'}},config=>new pg.Pool({...config,ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA}}));
       hostDrivers.push(driver);
       const identity={session_id:otherSid,token_id:otherJti,tenant_id:otherTenant,actor_id:'synthetic.saved.storage.worker',reviewer_organization_id:null,rotation_counter:0};
       const input={caseId:otherId,identity,buildSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),target:driver.target};
+      if(bundleProof){
+       const childEnv={PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,NODE_ENV:'development' as const,TIVDOC_SAVED_DRAFT_WORKER_ENABLED:'true',TIVDOC_SAVED_WORKER_REPLAY_ONLY:'true',TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED:'false',TIVDOC_SAVED_WORKER_CASE_ID:otherId,TIVDOC_SAVED_WORKER_IDENTITY:JSON.stringify(identity),TIVDOC_WORKER_POSTGRES_URL:connection.toString(),TIVDOC_SAVED_WORKER_DEV_TARGET:JSON.stringify({host:driver.target.host,port:driver.target.port,database:driver.target.database,project_ref:'cpzrbidxftzqcfeqqusu'})};
+       runBundle=()=>spawnSync(process.execPath,['output/release-completion/saved-worker/worker.cjs'],{env:childEnv,encoding:'utf8',windowsHide:true,timeout:60000});
+       const unfinished=runBundle();expect(unfinished.status).toBe(1);expect(JSON.parse(String(unfinished.stderr)).code).toBe('SAVED_REPLAY_NOT_COMPLETE');
+       expect((await owner.query('select job_id from public.engine_durable_jobs where tenant_id=$1',[otherTenant])).rows).toHaveLength(0);
+       bundleChecks.push('replay of an unfinished case refuses and rolls back dispatch/claim, leaving no newly running job');
+      }
       secondTransactions=await createSavedWorkerHost(input,driver);
       const actual=await secondTransactions(c=>c.client.query(statement('host_proof_context',"select session_user::text principal,private.runtime_verified_tenant() tenant_id,current_setting('tivdoc.engine_git_sha') build,current_setting('statement_timeout') timeout",[])));
       expect(actual.rows[0]).toEqual({principal:'tivdoc_worker_runtime',tenant_id:otherTenant,build:input.buildSha,timeout:'30s'});
@@ -272,11 +287,20 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
      expect(result.result.completion.manifest.publication).toBe('draft');expect(passes).toBe(before+1);
      const repeat=await runSavedDraftOnce({transactions:secondTransactions,caseId:otherId,workerId:'second-storage-worker',enabled:true,providerEnabled:true,storage,extractor});
      expect(repeat.state).toBe('succeeded');expect(passes).toBe(before+1);
+     if(runBundle){
+      for(let run=0;run<2;run++){
+       const child=runBundle();expect(child.status,String(child.stderr)).toBe(0);
+       expect(JSON.parse(String(child.stdout))).toEqual({worker:'saved_draft',state:'succeeded',replayOnly:true,manifestSha256:result.result.completion.sha256});
+      }
+      expect(passes).toBe(before+1);
+      bundleChecks.push('two independent Node processes reopen the saved result and emit the same manifest hash without provider or Storage credentials');
+     }
      const primaryRows=await secondTransactions(c=>c.client.query(statement('host_proof_other_report','select report_id from public.engine_report_versions where canonical_case_id=$1',[caseId])));expect(primaryRows.rows).toHaveLength(0);
      if(hostProof){
       hostChecks.push('the host runs actual Storage through saved extraction, canonical draft and completion; replay uses the saved manifest with no new provider pass and another case report is invisible');
       await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[otherTenant]);await owner.query('update public.product_identity_sessions set revoked_at=now() where sid=$1 and tenant_id=$2',[otherSid,otherTenant]);await owner.query('commit');
       let reached=false;await expect(secondTransactions(async()=>{reached=true;})).rejects.toThrow();expect(reached).toBe(false);
+      if(runBundle){const child=runBundle();expect(child.status).toBe(1);expect(JSON.parse(String(child.stderr)).code).toBe('SAVED_WORKER_EXECUTION_FAILED');expect(String(child.stderr).includes(otherJti)).toBe(false);bundleChecks.push('a new executable process refuses the revoked machine session and emits only a safe failure code');}
       expect(hostDrivers.every(d=>d.metrics().active_clients===0)).toBe(true);
       hostChecks.push('revoking the machine session blocks its next transaction before work; all pooled clients have been released');
      }
