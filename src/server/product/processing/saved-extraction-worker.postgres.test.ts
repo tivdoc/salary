@@ -16,6 +16,7 @@ import {offerSnapshot} from '../orders/contracts';
 import {legacyFullOfferFixture} from '../orders/fixtures/legacy-offer';
 import {runSavedWorkerMonth} from './saved-worker';
 import {runSavedDraftJob} from './saved-job-runner';
+import {claimSavedDraftJob,recordSavedJobFailure,runSavedDraftOnce} from './saved-job-runtime';
 import {admitSavedSource,savedCaseTenant} from './saved-admission';
 import {dispatchCaseInput,type SourceJob} from './source-dispatch';
 import {runSavedWorkerExtraction,recordSavedExtractionResult,type SavedWorkerTransactions} from './saved-extraction-worker';
@@ -27,7 +28,8 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
  function client(key:string){const u=new URL(env.get(key)!);expect(u.pathname).toBe('/tivdoc_release_replay_20260907');expect(u.hostname).toBe('aws-0-eu-central-1.pooler.supabase.com');expect(u.username.endsWith('.cpzrbidxftzqcfeqqusu')).toBe(true);u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
  const owner=client('TIVDOC_DEV_DATABASE_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),peer=client('TIVDOC_WORKER_POSTGRES_URL'),web=client('TIVDOC_WEB_POSTGRES_URL');
  const fixture=buildSyntheticCaseFixture({fixture_id:`extraction-${randomUUID()}`,mode:'real'}),caseId=fixture.command.case_id,otherId=randomUUID(),documentId=randomUUID(),orderId=randomUUID();
- const runnerProof=process.env.TIVDOC_SAVED_RUNNER_DB_PROOF==='1',runnerChecks:string[]=[];
+ const runtimeProof=process.env.TIVDOC_SAVED_RUNTIME_DB_PROOF==='1',runtimeChecks:string[]=[];
+ const runnerProof=process.env.TIVDOC_SAVED_RUNNER_DB_PROOF==='1'||runtimeProof,runnerChecks:string[]=[];
  const tenant=savedCaseTenant(caseId),sid=`extraction-proof:${randomUUID()}`,jti=randomUUID(),checks:string[]=[];
  const pdf=await PDFDocument.create();pdf.addPage().drawText('Synthetic payslip January 2025');const bytes=await pdf.save();
  const doc={...fixture.stored.documents[0],size_bytes:bytes.length,content_sha256:createHash('sha256').update(bytes).digest('hex')},offer=offerSnapshot('initial');
@@ -35,7 +37,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
  writeFileSync(`../release-work/saved-extraction-owned-${caseId}.json`,JSON.stringify({caseIds:[caseId,otherId],tenant,sid,scope:'Synthetic extraction proof; isolated DEV only'}));
  let requestIdentity:string|undefined;
  let seeded=false,cleaned=false,activeTransactions=0,passes=0,failCheckpoint=true,expireBeforeDispatch=false;
- let heartbeatCount=0,expireAtHeartbeat=0,failFinalizer=false;
+ let heartbeatCount=0,expireAtHeartbeat=0,failFinalizer=false,failRuntimeJournal=false;
  let inFlight:Promise<unknown>|null=null;
  const transactions=(db:pg.Client):SavedWorkerTransactions=>async operation=>{
   await db.query('begin');activeTransactions++;
@@ -44,6 +46,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    await db.query("select set_config('tivdoc.engine_git_sha',$1,true)",[execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()]);
    const context:PostgresTransactionContext={transaction_id:`${sid}:${randomUUID()}`,client:{async query(s){
     if(s.name==='extraction_dispatch_once'&&expireBeforeDispatch){expireBeforeDispatch=false;await db.query("update public.engine_durable_jobs set lease_expires_at=clock_timestamp()-interval '1 second' where job_id=$1",[jobId]);}
+    if(s.name==='saved_runner_journal'&&failRuntimeJournal)throw new Error('INJECTED_TRANSIENT_PRIVATE_PROVIDER_DETAIL');
     if(s.name==='checkpoint_insert'&&failCheckpoint)throw new Error('INJECTED_CHECKPOINT_FAILURE');
     if(s.name==='saved_runner_heartbeat'){heartbeatCount++;if(heartbeatCount===expireAtHeartbeat)await db.query("update public.engine_durable_jobs set lease_expires_at=clock_timestamp()-interval '1 second' where job_id=$1",[jobId]);}
     if(s.name==='saved_job_complete_atomic'&&failFinalizer){failFinalizer=false;throw new Error('INJECTED_FINALIZER_FAILURE');}
@@ -65,14 +68,26 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
  }},log:()=>{}});
  const storage={async download(path:string){expect(activeTransactions).toBe(0);expect(path).toBe(`cases/${caseId}/versions/${doc.document_id}.pdf`);return {data:new Blob([Buffer.from(bytes)]),error:null};}};
  let job:SourceJob,jobId='',fence=0;
- const enqueue=async()=>transactions(worker)(async context=>{
+ const enqueue=async()=>{
+  if(runtimeProof){
+   const input={caseId,workerId,leaseMs:60000};
+   const claims=await Promise.all([transactions(worker)(c=>claimSavedDraftJob(c,input)),transactions(peer)(c=>claimSavedDraftJob(c,input))]);
+   expect(claims.map(c=>c.state).sort()).toEqual(['busy','claimed']);
+   const claimed=claims.find(c=>c.state==='claimed')!;if(claimed.state!=='claimed')throw new Error('NO_RUNTIME_CLAIM');
+   jobId=claimed.jobId;fence=claimed.fencingToken;
+   job=(await transactions(worker)(async()=>worker.query('select payload from public.engine_durable_jobs where job_id=$1',[jobId]))).rows[0].payload;
+   if(!runtimeChecks.length)runtimeChecks.push('two real worker transactions atomically dispatch/claim one current paid source, while the peer observes busy without stealing it');
+   return;
+  }
+  return transactions(worker)(async context=>{
   const head=(await owner.query('select * from private.case_input_heads where case_id=$1',[caseId])).rows[0];
   job={schema_version:'saved-case-work-v1',case_id:caseId,revision:head.revision,input_sha256:head.input_sha256,mode:'draft'};
   await admitSavedSource(context,job);
   const dispatched=await dispatchCaseInput(context,{caseId,tenantId:tenant,mode:'draft',liveEnabled:false,nowMs:Date.now()});
   const queue=new PostgresJobsOutboxAuditRepository(context,tenant,caseId),claimed=(await queue.claim(workerId,Date.now(),240000))[0];
   expect(claimed.job_id).toBe(dispatched!.job_id);await queue.start(claimed.job_id,workerId,claimed.fencing_token,Date.now());jobId=claimed.job_id;fence=claimed.fencing_token;
- });
+  });
+ };
  const args=()=>({transactions:transactions(worker),storage,extractor,providerEnabled:true,jobId,workerId,fencingToken:fence,versionId:doc.document_id});
  try{
   await Promise.all([owner.connect(),worker.connect(),peer.connect(),web.connect()]);
@@ -171,6 +186,33 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    const incomplete=(await transactions(worker)(async()=>worker.query('select state,terminal_effect_sha256 from public.engine_durable_jobs where job_id=$1',[jobId]))).rows[0];
    expect(incomplete.state).toBe('running');expect(incomplete.terminal_effect_sha256).toBeNull();
    runnerChecks.push('a later historical full order with a missing February document preserves both available January analyses but cannot acknowledge full scope or create a second manifest');
+   if(runtimeProof){
+    const held=await transactions(worker)(context=>recordSavedJobFailure(context,{caseId,workerId,jobId,fencingToken:fence},new Error('SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED')));
+    expect(held).toMatchObject({state:'dead_letter',reason:'saved_documents_missing'});
+    const heldAudit=(await transactions(worker)(async()=>worker.query("select reason_code from public.engine_platform_audit_events where tenant_id=$1 and resource_id=$2 order by case_sequence desc limit 1",[tenant,jobId]))).rows[0];
+    expect(heldAudit.reason_code).toBe('saved_documents_missing');
+    const once=()=>runSavedDraftOnce({...args(),caseId,enabled:true});
+    expect(await once()).toMatchObject({state:'held',reason:'dead_letter'});
+    runtimeChecks.push('missing purchased document becomes an atomic durable hold with a safe audit reason; repeat host iteration cannot silently mark the job complete');
+    await owner.query("update public.questionnaire_responses set payload=payload||'{\"worksSaturday\":false}'::jsonb where case_id=$1",[caseId]);
+    failRuntimeJournal=true;const first=await once();expect(first).toMatchObject({state:'retry_wait',reason:'saved_processing_retry'});
+    if(!('jobId' in first)||typeof first.jobId!=='string')throw new Error('RUNTIME_JOB_ID_MISSING');const retryId=first.jobId;
+    const retryState=async()=>transactions(worker)(async()=> (await worker.query('select state,attempt_count,fencing_token,available_at>clock_timestamp() delayed from public.engine_durable_jobs where job_id=$1',[retryId])).rows[0]);
+    const attempt1=await retryState();expect(attempt1).toMatchObject({state:'retry_wait',attempt_count:1,delayed:true});
+    runtimeChecks.push('injected processing failure commits retry_wait with DB-time backoff and no private provider text in the audit');
+    expect(await once()).toMatchObject({state:'busy',jobId:retryId});expect((await retryState()).attempt_count).toBe(1);
+    runtimeChecks.push('another host iteration before persisted availability cannot consume an extra attempt');
+    const advance=()=>transactions(worker)(async()=>worker.query("update public.engine_durable_jobs set available_at=clock_timestamp()-interval '1 second' where job_id=$1",[retryId]));
+    await advance();expect(await once()).toMatchObject({state:'retry_wait'});expect((await retryState()).attempt_count).toBe(2);
+    await expect(transactions(peer)(context=>recordSavedJobFailure(context,{caseId,workerId,jobId:retryId,fencingToken:Number(attempt1.fencing_token)},new Error('stale')))).rejects.toThrow('SAVED_JOB_FENCE');
+    runtimeChecks.push('a reclaimed retry advances the fence and refuses the previous worker failure receipt');
+    await advance();expect(await once()).toMatchObject({state:'dead_letter',reason:'saved_attempts_exhausted'});
+    expect(await retryState()).toMatchObject({state:'dead_letter',attempt_count:3});expect(await once()).toMatchObject({state:'held'});
+    const reasons=(await transactions(worker)(async()=>worker.query("select reason_code from public.engine_platform_audit_events where tenant_id=$1 and resource_id=$2 and reason_code<>'saved_job_claimed' order by case_sequence",[tenant,retryId]))).rows.map(r=>r.reason_code);
+    expect(reasons).toEqual(['saved_processing_retry','saved_processing_retry','saved_attempts_exhausted']);expect(passes).toBe(before);
+    runtimeChecks.push('three bounded failed attempts end in a durable hold with exactly three safe failure audit events and no additional provider passes');
+    failRuntimeJournal=false;
+   }
   }
   expect((await owner.query('select status,payment_status from public.cases where id=$1',[caseId])).rows[0]).toEqual({status:'under_review',payment_status:'verified'});
   checks.push('case and payment state remain unchanged; no customer projection or external provider delivery is performed');
@@ -182,7 +224,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
    await owner.query('update public.product_identity_sessions set revoked_at=now() where sid=$1 and tenant_id=$2',[sid,tenant]);
    const removed=await owner.query("delete from public.cases where id=any($1::uuid[]) and is_qa and first_name='Synthetic extraction proof'",[[caseId,otherId]]);expect(removed.rowCount).toBe(2);if(requestIdentity)await owner.query('delete from public.case_identities where id=$1',[requestIdentity]);await owner.query('commit');cleaned=true;
   }
-  writeFileSync(runnerProof?'docs/release-evidence/P05-saved-job-runner-db.json':'docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9&&(!runnerProof||runnerChecks.length===7)?'PASS':'FAIL',checks,runnerChecks,runner_sha256:runnerProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runner.ts')).digest('hex'):null,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,requestIdentityRemoved:cleaned&&!!requestIdentity,additional_migration:'20260908073000_request_statement_scope.sql',syntheticCanonicalTenantRetained:tenant,retainedScope:runnerProof?'Synthetic canonical identity/lifecycle, job history, completed monthly analysis/report bytes and pending draft-ready outbox manifest retained as audit evidence. No customer publication. Product cases/documents/invocations/checkpoints cascade-cleaned.':'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
+  writeFileSync(runtimeProof?'docs/release-evidence/P05-saved-job-runtime-db.json':runnerProof?'docs/release-evidence/P05-saved-job-runner-db.json':'docs/release-evidence/P05-saved-extraction-worker-db.json',JSON.stringify({verdict:checks.length===9&&(!runnerProof||runnerChecks.length===7)&&(!runtimeProof||runtimeChecks.length===6)?'PASS':'FAIL',checks,runnerChecks,runtimeChecks,runtime_sha256:runtimeProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runtime.ts')).digest('hex'):null,runner_sha256:runnerProof?createHash('sha256').update(readFileSync('src/server/product/processing/saved-job-runner.ts')).digest('hex'):null,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),tested_base_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),worker_composition_sha256:createHash('sha256').update(readFileSync('src/server/product/processing/saved-extraction-worker.ts')).digest('hex'),canonical_service_sha256:createHash('sha256').update(readFileSync('src/engine/case-analysis/service.ts')).digest('hex'),authorization:'actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies',syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,requestIdentityRemoved:cleaned&&!!requestIdentity,additional_migration:'20260908073000_request_statement_scope.sql',syntheticCanonicalTenantRetained:tenant,retainedScope:runnerProof?'Synthetic canonical identity/lifecycle, job history, completed monthly analysis/report bytes and pending draft-ready outbox manifest retained as audit evidence. No customer publication. Product cases/documents/invocations/checkpoints cascade-cleaned.':'Canonical identity/lifecycle and cancelled job history intentionally retained; monthly analysis rolled back. Product cases, documents, invocations and checkpoints cascade-cleaned.',providerTransport:'injected deterministic structured responses; real adapter and PDF byte/hash checks, no network provider or hosted Storage',providerPasses:passes,customerPublication:false,productionChanged:false},null,2)+'\n');
   await Promise.all([owner.end(),worker.end(),peer.end(),web.end()]);
  }
 },240000);
