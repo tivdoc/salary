@@ -1,0 +1,71 @@
+{
+  "origin": "https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "17c668ef480f1b70e612d8906a9b81d79073f121",
+  "ownedCaseIds": [
+    "c7d5e788-b155-457d-aa21-fb7d20ff1a6b",
+    "5213ef0d-9458-49e6-bb92-2e9bd02036d4"
+  ],
+  "ownedIdentityIds": [
+    "d36be29f-7dbb-4021-951f-631a2f166ddc",
+    "13991183-3f5b-48f0-a949-04fe5d86724a"
+  ],
+  "browserPassed": true,
+  "objects": [
+    {
+      "path": "cases/c7d5e788-b155-457d-aa21-fb7d20ff1a6b/versions/1b819297-f966-4be1-a7b3-649ba27fbe35.pdf",
+      "size": 886,
+      "sha256": "f3db6a40853434535634124c93dab63995675230bb2112a49624886cdafb314e",
+      "retained": false
+    },
+    {
+      "path": "cases/c7d5e788-b155-457d-aa21-fb7d20ff1a6b/versions/85aa9318-cd2f-4abc-8a34-b04fca0a7c14.pdf",
+      "size": 886,
+      "sha256": "b620107ff652c0bbb863c9808d41f63d6f76e21407772ef59893783bf989b440",
+      "retained": false
+    },
+    {
+      "path": "cases/c7d5e788-b155-457d-aa21-fb7d20ff1a6b/versions/f0023cc5-114f-43c9-ba49-37451b5dd402.pdf",
+      "size": 886,
+      "sha256": "1b1b10913ee6ec4c84cfc56ee613cc57e805613061e8b728948024cca210afb6",
+      "retained": false
+    },
+    {
+      "path": "cases/c7d5e788-b155-457d-aa21-fb7d20ff1a6b/versions/dadcb8ce-cc29-4301-9560-e824c515042e.pdf",
+      "size": 890,
+      "sha256": "d306666ba00ff1f827976a45aff568e97e5144bb905ddb83fa70b1eccaac1f35",
+      "retained": false
+    },
+    {
+      "path": "cases/c7d5e788-b155-457d-aa21-fb7d20ff1a6b/versions/19a944da-c5ff-4ca2-9674-6c3e50b29ddd.pdf",
+      "size": 890,
+      "sha256": "6954104a377b7603364fecfd79aa3a26da87f8eb7c46da9e6a4e14d6e16d1130",
+      "retained": false
+    },
+    {
+      "path": "cases/5213ef0d-9458-49e6-bb92-2e9bd02036d4/versions/dd239ca6-d7a5-4d63-b16a-db8209bab0ea.pdf",
+      "size": 890,
+      "sha256": "c1c7b5e1c5ab71b83004041a68f033f63bb65345f83bf6bddd4d45950d7f20f9",
+      "retained": false
+    },
+    {
+      "path": "cases/5213ef0d-9458-49e6-bb92-2e9bd02036d4/versions/81c81506-84e1-4f92-9714-0d5fbeade13c.pdf",
+      "size": 894,
+      "sha256": "f173dd8d0914b11cc521176b3dee05b63e39b7bd17250eeddf2121e90a8498e9",
+      "retained": false
+    },
+    {
+      "path": "cases/c7d5e788-b155-457d-aa21-fb7d20ff1a6b/versions/3aaa830a-cf95-4e62-a746-7322d7eaf60d.pdf",
+      "size": 881,
+      "sha256": "9e2669ed8a4edb841635327e23b1b064a58f5bb74e96c8bb3b17e293bcf32665",
+      "retained": true
+    }
+  ],
+  "removedCases": 2,
+  "removedIdentities": 2,
+  "removedObjects": 8,
+  "emptyPrefixes": true,
+  "errors": [],
+  "scope": "Fresh owned QA identities and cases; actual hosted upload, isolated PostgreSQL and private Storage bytes. No OTP, real payment or model call.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}
