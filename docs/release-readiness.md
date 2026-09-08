@@ -8,7 +8,7 @@ The release is **not an RC and not ready for live sales**. Work continues under 
 - Parallel UI integrated through `85177bcf507c3820cc5f1131f4f438a56b1f504c`; its author's checkout is separate and unchanged by this task.
 - Verified [isolated Preview](https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app): exact `45cf30f178a86e45793e90e3789f225fe7024e9d`, deployment `dpl_6fpJkYMsbFRvxfFPUEVJudSJbSoM`. CI `34255608069` and `34255602893` pass. The later correction intake is not in this deployment.
 - Preview uses DEV project `cpzrbidxftzqcfeqqusu`, database `tivdoc_release_replay_20260907`, the actual server-side PostgreSQL adapter and DEV Storage. Sales, mail and extraction-provider flags remain disabled. No release-branch production rollout occurred.
-- Current fresh schema proof: `tivdoc_release_chain_20260908_d6c2b16`, 116 migrations, 114 raw and two explicitly recorded managed-platform compensations. Shared role provisioning unchanged. This separate database contains no customer fixtures.
+- Current fresh schema proof: `tivdoc_release_chain_20260908_80c4b2a`, 117 migrations, 115 raw and two explicitly recorded managed-platform compensations. Shared role provisioning unchanged. This separate database contains no customer fixtures.
 
 ## Implemented versus verified
 
@@ -36,4 +36,4 @@ The existing automatic ceiling remains 5,000 ILS per finding. With one initial m
 
 Use the full [acceptance matrix](release-evidence/P13-acceptance-matrix.md), [package tracker](release-completion-tracker.md) and [handoff](../HANDOFF.md) for individual results, failed runs and precise continuation boundaries. `Implemented`, `verified`, `ready to operate` and `deployed` remain separate states.
 
-Current payment binding checkpoint (base bfd61f6): 14 actual DEV assertions, 97 focused local checks plus three definer checks. Applied migration tail is 20260908182405_payment_reference_binding.sql (117 files), with unchanged execution ACLs. The previous fresh 116-file replay remains the last complete-chain receipt until the next committed-source replay. The READY bfd61f6 Preview is not yet browser-proved and does not include the later binding change.
+Current payment binding checkpoint (base bfd61f6): 14 actual DEV assertions, 97 focused local checks plus three definer checks. Applied migration tail is 20260908182405_payment_reference_binding.sql (117 files), with unchanged execution ACLs. Fresh 80c4b2a replay now proves all 117 files; the 116-file predecessor is archived. The READY bfd61f6 Preview is not yet browser-proved and does not include the later binding change.
