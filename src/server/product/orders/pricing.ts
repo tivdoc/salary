@@ -90,5 +90,5 @@ export function quoteCorrectionRefund(candidateQuote:unknown,candidateBasis:unkn
  if(basis.case_id!==quote.case_id||basis.identity_id!==quote.identity_id||!same(basis.checked_months,quote.checked_months)||!same(basis.checked_topics,quote.checked_topics))return {state:'amount_unknown' as const,reason:'correction_scope_mismatch'};
  const corrected=priceUnderPolicy(basis,quote.pricing_policy);if(corrected.state==='amount_unknown')return corrected;
  return {state:'calculated' as const,pricing_version:quote.pricing_version,quote_sha256:quote.sha256,corrected_basis_sha256:canonicalSha256(basis),
-  refund_minor:pricingRefundDifference({total_minor:quote.total_minor,upgrade_paid_minor:quote.balance_minor},corrected)!};
+  corrected_basis_minor:corrected.basis_minor,refund_minor:pricingRefundDifference({total_minor:quote.total_minor,upgrade_paid_minor:quote.balance_minor},corrected)!};
 }
