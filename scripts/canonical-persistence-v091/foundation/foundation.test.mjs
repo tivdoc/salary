@@ -305,6 +305,26 @@ describe.skipIf(process.platform !== "win32")("V0.9.1 dynamic PostgreSQL foundat
     expect(result.customer_artifacts_tracked).toBe(0);
   });
 
+  it("allows only pinned public asset bytes and refuses substitutions and customer paths", async () => {
+    const temporary = await mkdtemp(join(tmpdir(), "tivdoc-public-asset-proof-"));
+    try {
+      execFileSync("git", ["init", "--quiet"], { cwd: temporary, windowsHide: true });
+      await mkdir(join(temporary, "public/brand"), { recursive: true });
+      const asset = await readFile(join(process.cwd(), "public/brand/tivdoc-symbol-original.png"));
+      await writeFile(join(temporary, "public/brand/tivdoc-symbol-original.png"), asset);
+      execFileSync("git", ["add", "."], { cwd: temporary, windowsHide: true });
+      expect((await inspectRepositorySourceSafety(temporary)).customer_artifacts_tracked).toBe(0);
+      await writeFile(join(temporary, "public/brand/tivdoc-symbol-original.png"), Buffer.concat([asset, Buffer.from("changed")]));
+      await writeFile(join(temporary, "public/brand/unreviewed.png"), asset);
+      await mkdir(join(temporary, "customer-documents"));
+      await writeFile(join(temporary, "customer-documents/source.png"), asset);
+      execFileSync("git", ["add", "."], { cwd: temporary, windowsHide: true });
+      expect((await inspectRepositorySourceSafety(temporary)).customer_artifacts_tracked).toBe(3);
+    } finally {
+      await rm(temporary, { recursive: true, force: true });
+    }
+  });
+
   it("rejects nested local environment files, allows examples, and fails closed above 64 MiB", async () => {
     const temporary = await mkdtemp(join(tmpdir(), "tivdoc-v091-preflight-"));
     try {

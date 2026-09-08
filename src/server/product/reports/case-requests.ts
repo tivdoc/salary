@@ -95,7 +95,7 @@ export async function openRequestsForRefusals(
 }
 
 export async function answerCaseRequest(
-  input: Readonly<{ requestId: string; caseId: string; answer: string }>,
+  input: Readonly<{ requestId: string; caseId: string; answer: string; identityId?:string }>,
   db?: CaseAccessDb | null,
 ): Promise<StoredRequest | null> {
   const store = db ?? await resolveCaseAccessDb();
@@ -105,10 +105,13 @@ export async function answerCaseRequest(
   // The locked SQL operation owns expiry and exact-original retry semantics.
   // A stale browser clock or lost successful response is not a second answer.
   const answer = validateRequestAnswer(request, input.answer);
-  const rows = await store.rpc<RequestRow>("case_request_answer", {
+  const bound=request.code.startsWith('document_field:');
+  if(bound&&!input.identityId)throw new Error('REQUEST_FIELD_FORBIDDEN');
+  const rows = await store.rpc<RequestRow>(bound?"case_request_answer_identified":"case_request_answer", {
     target_request: input.requestId,
     target_case: input.caseId,
     target_answer: answer,
+    ...(bound?{target_identity:input.identityId}:{}),
   });
   return rows[0] ? toRequest(rows[0]) : null;
 }

@@ -7,9 +7,28 @@ import { listIdentityCases, resolveIdentitySession } from "@/server/product/case
 import { readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { refusedEntrypoint, strictJsonObject } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
+import {loadRequestDocumentSource} from '@/server/product/reports/request-document-source';
+import {PRODUCT_HTTP_HEADERS} from '@/server/product/routes/http-common';
+import {z} from 'zod';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/** A request links only its exact source version. The server checks the
+ * authenticated case and the stored target before reading and hashing bytes. */
+export async function GET(request:Request,context:{params:Promise<{token:string}>}){
+ try{await guardStableHttpEntrypoint("CEP-105",request);}catch(error){return refusedEntrypoint(error);}
+ try{
+  const session=await resolveIdentitySession(await readCaseSessionCookie());
+  if(!session)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+  const {token}=await context.params,found=(await listIdentityCases(session.identity_id)).find(c=>c.public_id===token);
+  const id=z.uuid().safeParse(new URL(request.url).searchParams.get('source'));
+  if(!found||!id.success)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+  const source=await loadRequestDocumentSource({caseId:found.case_id,identityId:session.identity_id,requestId:id.data});
+  if(!source)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+  return new Response(source.bytes,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':source.mime,'Content-Disposition':`inline; filename="source-${source.version}.${source.extension}"`}});
+ }catch{return NextResponse.json({code:'request_source_unavailable'},{status:503,headers:PRODUCT_HTTP_HEADERS});}
+}
 
 /**
  * Site S3.4 / D-2 — answering one request on the thread.
@@ -57,7 +76,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       await editCaseRequest({caseId:found.case_id,requestId:body.requestId,identityId:session.identity_id,answer:body.answer,expectedRevision:body.expectedRevision,kind:body.action});
       return NextResponse.json({ok:true},{headers:{"Cache-Control":"no-store"}});
     }
-    const answered = await answerCaseRequest({ requestId: body.requestId, caseId: found.case_id, answer: body.answer });
+    const answered = await answerCaseRequest({ requestId: body.requestId, caseId: found.case_id, answer: body.answer, identityId:session.identity_id });
     if (!answered) {
       // Either it is not this case's request, or it was already answered — and an
       // answer is written once, so the second attempt is refused rather than merged.
@@ -69,6 +88,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    if(error instanceof Error&&/REQUEST_FIELD_SOURCE_CHANGED$/.test(error.message))return NextResponse.json({code:'request_edit_conflict',error:'המסמך השתנה מאז פתיחת השאלה. צריך לטעון את השאלה העדכנית.'},{status:409});
     if(error instanceof Error&&/REQUEST_(ANSWER|EDIT)_INVALID$/.test(error.message))return NextResponse.json({error:'התשובה אינה מתאימה לשאלה',code:'request_answer_invalid'},{status:400});
     if(error instanceof Error&&/REQUEST_EDIT_(CONFLICT|CLOSED)$/.test(error.message))return NextResponse.json({error:'התשובה או הטיוטה השתנו. אפשר לטעון את המצב שנשמר לפני שליחה נוספת.',code:'request_edit_conflict'},{status:409});
     if (error instanceof RequestAnswerError) return NextResponse.json({ error: "התשובה אינה מתאימה לשאלה", code: "request_answer_invalid" }, { status: 400 });

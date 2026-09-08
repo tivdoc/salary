@@ -95,7 +95,7 @@ describe("the differential against main's own route inventory (D4)", () => {
       "src/app/case/[token]/thread/page.tsx": "Site S3.4 / D-2: the thread where a refusal became a question; without a session it sends the visitor to /login.",
       "src/app/case/[token]/documents/page.tsx": "Site S3.4 + S2.3: the case's own documents, behind the verified identity session.",
       "src/app/case/[token]/reports/page.tsx": "Site S3.4: renders the case_report_projection and computes nothing; today every topic reads awaiting_verification.",
-      "src/app/api/cases/[token]/requests/route.ts": "P08: session-scoped request answers and support messages; rejects missing or foreign Origin before payload parsing, and never accepts a case identity from the body.",
+      "src/app/api/cases/[token]/requests/route.ts": "P06/P08: session-scoped answers, support and exact request-source bytes. Mutations require same Origin; scope and actor come from the verified session.",
       "src/app/api/cases/[token]/upload-session/route.ts": "Site S2.3: points the funnel's case cookie at a case the verified identity owns, so a document added after payment walks the same review screen; it accepts no file.",
       "src/app/check/reminders/off/page.tsx": "Site S4 (ב.12): where the reminder's opt-out link lands. It asks once and posts, so a mail client's link prefetcher cannot opt anyone out; it resolves no token and reveals nothing.",
       "src/app/api/cases/reminders/off/route.ts": "Site S4 (ב.12): records the opt-out for the case a reminder token names. It peeks at the token rather than spending it, and answers ok for every token so liveness cannot be probed.",

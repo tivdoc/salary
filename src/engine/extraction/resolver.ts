@@ -6,6 +6,8 @@ import { employmentSnapshotSchema } from "../facts/snapshot.ts";
 import { factPathSchema, type FactPath } from "../facts/fact-paths.ts";
 import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip.ts";
 import { gate0ValidationSchema, type Gate0Validation } from "./validation.ts";
+import {canonicalSha256} from '../rule-runtime/canonical.ts';
+import type {CustomerDocumentReading} from './customer-reading.ts';
 
 export const snapshotResolutionContextSchema = z
   .object({
@@ -61,7 +63,7 @@ const fieldToPath = {
 
 const assessmentRank = { valid: 0, suspicious: 1, requires_confirmation: 2, invalid: 3 } as const;
 
-function documentaryEvidence(field: NormalizedCandidateField): EvidenceReference {
+function documentaryEvidence(field: NormalizedCandidateField,reading?:CustomerDocumentReading): EvidenceReference {
   const locator = {
     page: field.source.page,
     ...(field.source.text_fragment ? { text_span: field.source.text_fragment } : {}),
@@ -70,9 +72,9 @@ function documentaryEvidence(field: NormalizedCandidateField): EvidenceReference
   return {
     source_type: "documented",
     source_reference: { kind: "document", document_id: field.source.document_id, locator },
-    // The extractor read it; no person has confirmed it. The execution grade keeps it off `verified`.
     read_by: "machine",
-    verified: false,
+    verified: reading!==undefined,
+    ...(reading?{customer_confirmation:reading}:{}),
   };
 }
 
@@ -142,6 +144,7 @@ function makeFact(
   validation: Gate0Validation,
   documentQuality: number,
   context: SnapshotResolutionContext,
+  readings:ReadonlyMap<string,CustomerDocumentReading>,
 ): CanonicalFact {
   const factId = context.fact_ids[path];
   if (!factId) throw new TypeError(`A deterministic fact ID is required for ${path}`);
@@ -160,14 +163,21 @@ function makeFact(
     });
   }
   const disposition = factStatus(fields, validation, documentQuality);
+  // Cell confirmation resolves only uncertainty in reading. Reconciliation,
+  // impossible values, duplicate candidates and cross-source conflicts retain
+  // their original gates. No professional/legal approval is inferred.
+  const confirmed=fields.every(field=>readings.has(field.candidate_id)&&
+    fieldAssessment(validation,field.candidate_id)?.issue_codes.every(code=>['low_field_confidence','moderate_field_confidence','ocr_value_ambiguous'].includes(code)));
   return canonicalFactSchema.parse({
     fact_id: factId,
     case_id: context.case_id,
     path,
     value: disposition.status === "conflicted" ? null : value,
-    status: disposition.status,
-    provenance: fields.map(documentaryEvidence),
-    confidence: Math.min(documentQuality, ...fields.map((field) => field.confidence)),
+    status: confirmed?'confirmed':disposition.status,
+    provenance: fields.map(field=>documentaryEvidence(field,readings.get(field.candidate_id))),
+    // This is the source grade of an explicit customer reading, not an increase
+    // to the saved model's confidence (which remains in the original checkpoint).
+    confidence: confirmed?1:Math.min(documentQuality, ...fields.map((field) => field.confidence)),
     conflicting_fact_ids: disposition.conflictIds,
     resolution: null,
     created_at: context.created_at,
@@ -187,6 +197,18 @@ export function resolvePayslipSnapshot(input: {
   if (document.case_id !== context.case_id || document.document_id !== extraction.document_id) {
     throw new TypeError("Snapshot resolution inputs must reference one case and document");
   }
+  const {customer_readings=[],...machineExtraction}=extraction;
+  const readings=new Map<string,CustomerDocumentReading>();
+  for(const reading of customer_readings){
+    const candidates=extraction.fields.filter(field=>field.candidate_id===reading.candidate_id);
+    const periods=extraction.fields.filter(field=>field.field==='salary_period');
+    if(reading.case_id!==document.case_id||reading.document_id!==document.document_id||reading.source_sha256!==document.content_sha256
+      ||reading.normalized_extraction_sha256!==canonicalSha256(machineExtraction)||candidates.length!==1
+      ||reading.candidate_sha256!==canonicalSha256(candidates[0])||readings.has(reading.candidate_id)
+      ||!periods.length||periods.some(period=>!period.normalized_value||`${period.normalized_value.year}-${String(period.normalized_value.month).padStart(2,'0')}`!==reading.month))
+      throw new TypeError('DOCUMENT_READING_BINDING_MISMATCH');
+    readings.set(reading.candidate_id,reading);
+  }
 
   const facts = new Map<FactPath, CanonicalFact>();
   for (const [field, path] of Object.entries(fieldToPath)) {
@@ -204,7 +226,7 @@ export function resolvePayslipSnapshot(input: {
     }
     facts.set(
       path,
-      makeFact(path, value, candidates, document.document_id, validation, extraction.document_quality_confidence, context),
+      makeFact(path, value, candidates, document.document_id, validation, extraction.document_quality_confidence, context,readings),
     );
   }
 
@@ -220,6 +242,7 @@ export function resolvePayslipSnapshot(input: {
       validation,
       extraction.document_quality_confidence,
       context,
+      readings,
     ),
   );
 
@@ -259,6 +282,7 @@ export function resolvePayslipSnapshot(input: {
       validation,
       extraction.document_quality_confidence,
       context,
+      readings,
     ),
   );
 
@@ -277,6 +301,7 @@ export function resolvePayslipSnapshot(input: {
       validation,
       extraction.document_quality_confidence,
       context,
+      readings,
     ),
   );
 
@@ -284,7 +309,7 @@ export function resolvePayslipSnapshot(input: {
     if (!facts.has(path)) {
       facts.set(
         path,
-        makeFact(path, null, [], document.document_id, validation, extraction.document_quality_confidence, context),
+        makeFact(path, null, [], document.document_id, validation, extraction.document_quality_confidence, context,readings),
       );
     }
   }

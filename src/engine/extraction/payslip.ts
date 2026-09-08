@@ -1,4 +1,5 @@
 import { z } from "zod";
+import {customerDocumentReadingSchema} from './customer-reading.ts';
 import {
   confidenceSchema,
   decimalStringSchema,
@@ -119,6 +120,7 @@ export const normalizedAdditionalComponentSchema = z
 
 export const normalizedPayslipExtractionSchema = z
   .object({
+    customer_readings:z.array(customerDocumentReadingSchema).max(100).optional(),
     extraction_id: z.uuid(),
     document_id: z.uuid(),
     status: extractionStatusSchema,

@@ -3,6 +3,7 @@ import { lstat, readFile, readdir, readlink } from "node:fs/promises";
 import path from "node:path";
 
 import { runSafeCommand } from "./process.mts";
+import { PUBLIC_SOURCE_ASSET_SHA256 } from "./public-source-assets.mts";
 import {
   assertTrustedGitRepository,
   trustedGitBuffer,
@@ -122,7 +123,6 @@ export async function inspectRepositorySourceSafety(repositoryRoot: string): Pro
   const root = path.resolve(repositoryRoot);
   const localEnvironmentFiles = await findLocalEnvironmentFiles(root);
   const trackedBlobs = await readTrackedGitBlobs(root);
-  const tracked = trackedBlobs.map(({ relative }) => relative);
   const untracked = nulPaths(await gitOutputBuffer(root, ["ls-files", "-z", "--others", "--exclude-standard"]));
   let trackedText = 0;
   let untrackedText = 0;
@@ -148,9 +148,11 @@ export async function inspectRepositorySourceSafety(repositoryRoot: string): Pro
     if (decoded.text) untrackedText += 1;
     secrets += countSecretPatterns(decoded.scans);
   }
-  const customerArtifacts = tracked
-    .map((value) => value.replaceAll("\\", "/"))
-    .filter((value) => CUSTOMER_ARTIFACT_PATH.test(value));
+  const customerArtifacts = trackedBlobs.filter(({ relative, bytes }) => {
+    const normalized = relative.replaceAll("\\", "/");
+    return CUSTOMER_ARTIFACT_PATH.test(normalized)
+      && PUBLIC_SOURCE_ASSET_SHA256[normalized] !== createHash("sha256").update(bytes).digest("hex");
+  });
   return Object.freeze({
     tracked_text_files_scanned: trackedText,
     untracked_text_files_scanned: untrackedText,

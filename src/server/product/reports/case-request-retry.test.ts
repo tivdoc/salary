@@ -11,6 +11,13 @@ function setup(){
  return {db,row,responses,calls};
 }
 describe('request retry service receipts',()=>{
+ it('requires and forwards the authenticated actor for a bound document confirmation',async()=>{
+  const s=setup();s.row.code='document_field:'+ 'a'.repeat(64);
+  await expect(answerCaseRequest({caseId,requestId,answer:'8'},s.db)).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
+  s.responses.case_request_answer_identified=[s.row];
+  await answerCaseRequest({caseId,requestId,answer:'8',identityId},s.db);
+  expect(s.calls.at(-1)).toEqual({fn:'case_request_answer_identified',args:{target_request:requestId,target_case:caseId,target_answer:'8',target_identity:identityId}});
+ });
  it('lets authoritative SQL acknowledge an original answer after response loss, including after expiry',async()=>{
   const s=setup();expect((await answerCaseRequest({caseId,requestId,answer:' 8 '},s.db))?.answer_text).toBe('8');
   expect(s.calls.at(-1)).toEqual({fn:'case_request_answer',args:{target_request:requestId,target_case:caseId,target_answer:'8'}});

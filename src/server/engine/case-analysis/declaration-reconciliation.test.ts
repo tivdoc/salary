@@ -83,6 +83,6 @@ describe('document and declaration reconciliation', () => {
     expect(fact.provenance.some(p => p.source_type === 'documented')).toBe(true);
     expect(fact.provenance.some(p => p.source_type === 'declared')).toBe(true);
     expect(fact.resolution).toBeNull();
-    expect(completed?.dependencies?.code_version).toBe('case-analysis@0.6.4');
+    expect(completed?.dependencies?.code_version).toBe('case-analysis@0.6.5');
   });
 });

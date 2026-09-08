@@ -134,7 +134,8 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           </p>
           {request.statement_month ? <p className="thread-card__meta">תקופת השאלה: {formatRequestMonth(request.statement_month)}</p> : null}
           <h2>{request.question}</h2>
-          {request.field_crop ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
+          {request.field_crop && !request.code.startsWith('document_field:') ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
+          {request.code.startsWith('document_field:') ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
           <AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={() => router.refresh()} />
         </div>
       ))}

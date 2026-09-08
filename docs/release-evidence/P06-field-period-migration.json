@@ -1,0 +1,7 @@
+{
+  "state": "APPLIED_ISOLATED_DEV",
+  "migration": "20260908202806_document_field_period_guard.sql",
+  "sha256": "91377881d6aa0c1cc69a52f557d942bde30dee3e8fd8e758dba630b5318f5ff6",
+  "scope": "Forward current document-period guard; previous migration bytes and role ACLs preserved",
+  "productionChanged": false
+}

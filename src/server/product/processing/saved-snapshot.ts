@@ -1,4 +1,5 @@
 import {savedDeclaredFacts} from './saved-request-facts';
+import {savedDocumentFieldReadings} from './saved-field-readings';
 import { z } from 'zod';
 import { immutableDocumentSchema } from '@/engine/domain/documents';
 import { normalizedPayslipExtractionSchema } from '@/engine/extraction/payslip';
@@ -72,7 +73,8 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
     original_filename:d.original_filename,mime_type:d.mime_type,size_bytes:Number(d.size),content_sha256:pinned.sha256,
     storage_path:`cases/${job.case_id}/documents/${pinned.version_id}/original.${extension}`,
     document_period:null,supersedes_document_id:null,created_at:new Date(String(d.created_at)).toISOString()}));
-   extractions.push(extraction);
+   const readings=savedDocumentFieldReadings({caseId:job.case_id,month:selectedMonth,policyVersion:SAVED_EXTRACTION_POLICY,journal:row.input,checkpoint:d.result});
+   extractions.push(readings.length?{...extraction,customer_readings:[...readings]}:extraction);
   }
   // Free-text questionnaire/request answers are preserved by the source hash.
   // They cannot be promoted into verified critical facts by this adapter.

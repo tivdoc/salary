@@ -11,6 +11,7 @@ import {
   uuidSchema,
 } from "../domain/primitives.ts";
 import { factPathSchema } from "./fact-paths.ts";
+import {customerDocumentReadingSchema} from '../extraction/customer-reading.ts';
 
 export const factSourceTypeSchema = z.enum(["documented", "declared", "derived", "inferred"]);
 export const factStatusSchema = z.enum([
@@ -97,6 +98,7 @@ export const evidenceReferenceSchema = z.discriminatedUnion("source_type", [
       // rung a person's reading or a text-verified parameter earns.
       read_by: z.enum(["machine", "person"]).optional(),
       verified: z.boolean().optional(),
+      customer_confirmation:customerDocumentReadingSchema.optional(),
     })
     .strict(),
   z

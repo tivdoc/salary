@@ -1,0 +1,28 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "actual web role cannot open a confirmation and a verified worker cannot open one in another case",
+    "SQL independently refuses a target that differs from its persisted extraction candidate",
+    "failure before commit rolls back both the question and its deferred immutable target",
+    "concurrent open and retry return one request bound to purchased February while the initial case month stays January",
+    "changing current document-month metadata invalidates the old reading even when immutable bytes and older checkpoint still match",
+    "unattributed original answers and a foreign authenticated identity are refused",
+    "concurrent answer and lost-response replay preserve one attributed version that the actual saved snapshot reads from the immutable journal",
+    "actual worker canonical PostgreSQL stages retain the identified reading under 0.6.5 while legal gates keep all monetary results absent; analysis fixture is rolled back",
+    "source metadata is tied to this exact document version and refuses the other customer",
+    "a negative correction removes confirmation in the next canonical input while preserving both original and corrected answers",
+    "web cannot rewrite the bound question and worker cannot mutate target history",
+    "replacement invalidates source and old target reuse without changing paid status or deleting answer history"
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "migration": "20260908192147_document_field_confirmations.sql",
+  "sha256": "02e4514626e558c366f48162b49cf41b23b0d9c8a5de3c6314a5f4027bb05cd9",
+  "periodGuardMigration": "20260908202806_document_field_period_guard.sql",
+  "periodGuardSha256": "91377881d6aa0c1cc69a52f557d942bde30dee3e8fd8e758dba630b5318f5ff6",
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual isolated DEV worker/peer/web SQL, saved snapshot and canonical PostgreSQL stages with synthetic document metadata and paid order. No Storage bytes, browser, legal activation or production.",
+  "productionChanged": false
+}

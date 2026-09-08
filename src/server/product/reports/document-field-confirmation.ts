@@ -1,0 +1,77 @@
+import {z} from 'zod';
+import {normalizedCandidateFieldSchema,normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
+import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
+
+const sha=z.string().regex(/^[a-f0-9]{64}$/u);
+const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
+export const DOCUMENT_FIELD_CONFIRMATION_ANSWERS=['כן, בדקתי במסמך והערך נכון','הערך שונה במסמך','לא ניתן לקרוא את השדה'] as const;
+export const confirmationFieldLabels={
+ base_monthly_salary:'שכר הבסיס החודשי',hourly_rate:'השכר לשעה',gross_salary:'שכר ברוטו',net_salary:'שכר נטו',
+ regular_hours:'מספר השעות הרגילות',overtime_125_hours:'שעות נוספות 125%',overtime_150_hours:'שעות נוספות 150%',
+ pension_base:'השכר המבוטח לפנסיה',travel_amount:'החזר הנסיעות',convalescence_amount:'דמי הבראה',
+ vacation_balance:'יתרת החופשה',sick_balance:'יתרת המחלה',
+} as const;
+const field=z.enum(Object.keys(confirmationFieldLabels) as [keyof typeof confirmationFieldLabels,...(keyof typeof confirmationFieldLabels)[]]);
+const checkpointSchema=z.object({schema_version:z.literal('tivdoc-saved-extraction-v1'),case_id:z.uuid(),product_document_id:z.uuid(),version_id:z.uuid(),
+ input_sha256:sha,expected_month:month,period_mismatch:z.boolean(),result_sha256:sha,
+ run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema}).passthrough()}).passthrough(),
+});
+export const documentFieldTargetSchema=z.object({schema_version:z.literal('document-field-confirmation-v1'),case_id:z.uuid(),product_document_id:z.uuid(),version_id:z.uuid(),
+ source_sha256:sha,month,policy_version:z.string().min(1).max(100),extraction_result_sha256:sha,
+ candidate:normalizedCandidateFieldSchema,target_sha256:sha,
+}).strict().superRefine((target,ctx)=>{
+ if(!field.safeParse(target.candidate.field).success||target.candidate.normalized_value===null)
+  ctx.addIssue({code:'custom',message:'Only a supported present document field can be confirmed'});
+ if(target.candidate.source.document_id!==target.version_id)ctx.addIssue({code:'custom',message:'Candidate must belong to the exact document version'});
+ const {target_sha256,...body}=target;
+ if(canonicalSha256(body)!==target_sha256)ctx.addIssue({code:'custom',message:'Confirmation target hash mismatch'});
+});
+export type DocumentFieldTarget=Readonly<z.infer<typeof documentFieldTargetSchema>>;
+
+/** Constructed from the saved checkpoint, not a browser's proposed value.
+ * A confirmation is a reading of one cell, not a legal or arithmetic approval. */
+export function documentFieldTarget(input:{checkpoint:unknown;policyVersion:string;candidateId:string}):DocumentFieldTarget {
+ const checkpoint=checkpointSchema.parse(input.checkpoint),extraction=checkpoint.run.result.final_extraction;
+ if(extraction.customer_readings!==undefined)throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
+ if(canonicalSha256(checkpoint.run.result)!==checkpoint.result_sha256||extraction.document_id!==checkpoint.version_id)throw Error('REQUEST_FIELD_SOURCE_MISMATCH');
+ const periods=extraction.fields.filter(f=>f.field==='salary_period');
+ if(checkpoint.period_mismatch||!periods.length||periods.some(p=>!p.normalized_value||`${p.normalized_value.year}-${String(p.normalized_value.month).padStart(2,'0')}`!==checkpoint.expected_month))throw Error('REQUEST_FIELD_PERIOD_UNKNOWN');
+ const candidates=extraction.fields.filter(f=>f.candidate_id===input.candidateId);
+ if(candidates.length!==1)throw Error('REQUEST_FIELD_CANDIDATE_AMBIGUOUS');
+ const body={schema_version:'document-field-confirmation-v1' as const,case_id:checkpoint.case_id,product_document_id:checkpoint.product_document_id,version_id:checkpoint.version_id,
+  source_sha256:checkpoint.input_sha256,month:checkpoint.expected_month,policy_version:input.policyVersion,extraction_result_sha256:checkpoint.result_sha256,candidate:candidates[0]};
+ return deepFreeze(documentFieldTargetSchema.parse({...body,target_sha256:canonicalSha256(body)}));
+}
+
+export function documentFieldQuestion(target:DocumentFieldTarget){
+ const saved=documentFieldTargetSchema.parse(target),candidate=saved.candidate;
+ const value=candidate.normalized_value;
+ // Display the normalized, hashed value. Raw OCR text is untrusted evidence,
+ // never a replacement instruction or an independently parsed salary amount.
+ let shown:string;
+ if(value&&typeof value==='object'&&'minor_units' in value){const minor=BigInt(value.minor_units),absolute=minor<BigInt(0)?-minor:minor;shown=`${minor<BigInt(0)?'-':''}${absolute/BigInt(100)}.${String(absolute%BigInt(100)).padStart(2,'0')} ${value.currency}`;}
+ else if(value&&typeof value==='object'&&'amount' in value)shown=`${value.amount} ${'unit' in value&&value.unit==='days'?'ימים':'unit' in value&&value.unit==='hours'?'שעות':'שעות בחודש'}`;
+ else throw Error('REQUEST_FIELD_VALUE_UNSUPPORTED');
+ return {code:`document_field:${saved.target_sha256}`,question:`בעמוד ${candidate.source.page} במסמך לחודש ${saved.month} קראנו ${confirmationFieldLabels[field.parse(candidate.field)]}: ${shown}. האם זה הערך שמופיע במסמך?`,
+  answer_kind:'choice' as const,options:[...DOCUMENT_FIELD_CONFIRMATION_ANSWERS],field_crop:candidate.field,blocking:false};
+}
+
+export type DocumentFieldReading={target:DocumentFieldTarget;requestId:string;answerRevision:number;identityId:string;answeredAt:string};
+/** Caller supplies the authenticated immutable answer row. Exact current
+ * source binding is checked again even if the customer previously confirmed.
+ * Negative/unknown answers are retained evidence and never mean numeric zero. */
+export function resolveDocumentFieldReading(input:{target:unknown;currentCheckpoint:unknown;policyVersion:string;caseId:string;month:string;
+ requestId:string;answerRevision:number;identityId:string;answeredAt:string;answer:string}):
+ {state:'confirmed_reading';reading:DocumentFieldReading}|{state:'unconfirmed'|'stale'} {
+ const target=documentFieldTargetSchema.parse(input.target);
+ z.uuid().parse(input.caseId);z.uuid().parse(input.requestId);z.uuid().parse(input.identityId);z.number().int().positive().parse(input.answerRevision);z.string().datetime({offset:true}).parse(input.answeredAt);
+ if(target.case_id!==input.caseId)throw Error('REQUEST_FIELD_CASE_MISMATCH');
+ if(!DOCUMENT_FIELD_CONFIRMATION_ANSWERS.includes(input.answer as typeof DOCUMENT_FIELD_CONFIRMATION_ANSWERS[number]))throw Error('REQUEST_ANSWER_INVALID');
+ if(target.month!==input.month||target.policy_version!==input.policyVersion)return {state:'stale'};
+ let current:DocumentFieldTarget;
+ try{current=documentFieldTarget({checkpoint:input.currentCheckpoint,policyVersion:input.policyVersion,candidateId:target.candidate.candidate_id});}
+ catch{return {state:'stale'};}
+ if(current.target_sha256!==target.target_sha256)return {state:'stale'};
+ if(input.answer!==DOCUMENT_FIELD_CONFIRMATION_ANSWERS[0])return {state:'unconfirmed'};
+ return deepFreeze({state:'confirmed_reading',reading:{target,requestId:input.requestId,answerRevision:input.answerRevision,identityId:input.identityId,answeredAt:input.answeredAt}});
+}

@@ -1,0 +1,6 @@
+{
+  "state": "APPLIED_ISOLATED_DEV",
+  "migration": "20260908192147_document_field_confirmations.sql",
+  "sha256": "02e4514626e558c366f48162b49cf41b23b0d9c8a5de3c6314a5f4027bb05cd9",
+  "productionChanged": false
+}

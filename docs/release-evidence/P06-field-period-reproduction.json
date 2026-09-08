@@ -1,0 +1,18 @@
+{
+  "verdict": "FAIL",
+  "checks": [
+    "actual web role cannot open a confirmation and a verified worker cannot open one in another case",
+    "SQL independently refuses a target that differs from its persisted extraction candidate",
+    "failure before commit rolls back both the question and its deferred immutable target",
+    "concurrent open and retry return one request bound to purchased February while the initial case month stays January"
+  ],
+  "failure": "promise resolved \"'faaa37d8-8075-4b1d-9de1-210dcf70a419'\" instead of rejecting",
+  "cleanupFailure": null,
+  "migration": "20260908192147_document_field_confirmations.sql",
+  "sha256": "02e4514626e558c366f48162b49cf41b23b0d9c8a5de3c6314a5f4027bb05cd9",
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual isolated DEV worker/peer/web SQL and saved-snapshot reader with synthetic document metadata and paid order. No Storage bytes, browser, legal activation or production.",
+  "productionChanged": false
+}
