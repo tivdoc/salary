@@ -1,0 +1,20 @@
+{
+  "origin": "https://salary-jew7zf36n-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "d6c2b16461ad0a4efde40cb4c3a34f689d61002d",
+  "checks": [
+    {
+      "name": "order proof uses isolated DEV with external payment disabled",
+      "passed": true
+    },
+    {
+      "name": "saved cumulative correction is pending on the full order; original price and initial order remain visible",
+      "passed": false,
+      "detail": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('בקשת החזר בעקבות תיקון', { exact: true }) to be visible\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "paymentWrites": 0,
+  "scope": "Owned synthetic paid order and cumulative correction ledger; seeded customer sessions and actual hosted page/DB. No provider charge/refund, canonical financial correctness or production.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

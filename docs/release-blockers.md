@@ -49,3 +49,5 @@ P03/P05 update 2026-09-08: durable saved extraction invocation, exact paid/fence
 
 
 2026-09-08 B-003 update: studio UI through 68d82cc is integrated in 17c668e and independently proved on the isolated Preview with 62 checks. Both exact-SHA CI runs pass. B-003 no longer blocks this integration; remaining P11 accessibility/user-study and protected-report acceptance are separate gaps. See the tracker and current P13/P06/P08 receipts. No release-branch production deployment.
+
+2026-09-08 Invoice4U contract update: the supplier commerce page now links to current GitBook/OpenAPI documentation. Refund request shape and QA base URL are documented, so that earlier schema-discovery blocker is resolved. Eight synthetic red tests exposed charge/refund/type/currency validation defects and the fix is locally proved. Live QA credentials, actual provider outcomes, merchant-specific uncertain-refund recovery and the unified dispatcher remain unproved/unfinished. See docs/invoice4u-current-contract.md; no authenticated provider request or customer message was sent.

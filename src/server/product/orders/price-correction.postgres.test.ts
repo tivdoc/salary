@@ -1,10 +1,11 @@
 import {it,expect,vi} from 'vitest';
 import pg from 'pg';
-import {randomUUID,randomBytes,createHash} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
+import {createOpaqueToken,hashSession} from '../case-access/crypto';
 import {offerSnapshot} from './contracts';
 import {issueSavedPriceQuote,type SavedPricingBasisReader} from './quote-ledger';
 import {acceptSavedPriceQuote} from './quoted-order';
@@ -123,8 +124,8 @@ it.skipIf(process.env.TIVDOC_PRICE_CORRECTION_DB_PROOF!=='1')('persists cumulati
   if(browserProof){
    const sessions:string[]=[],publicIds:string[]=[];
    for(let i=0;i<ids.length;i++){
-    const token=randomBytes(32).toString('base64url');sessions.push(token);
-    await owner.query('select public.case_access_session_create($1,$2,14400)',[identities[i],createHash('sha256').update('case-access-session|'+token).digest('hex')]);
+    const token=createOpaqueToken();sessions.push(token);
+    await owner.query('select public.case_access_session_create($1,$2,14400)',[identities[i],hashSession(token)]);
     publicIds.push((await owner.query('select public_id from public.cases where id=$1',[ids[i]])).rows[0].public_id);
    }
    const {verifyOrderRefundPreview}=await import('../../../../scripts/release-completion/preview-order-refunds.mts');

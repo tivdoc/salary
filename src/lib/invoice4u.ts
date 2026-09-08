@@ -1,7 +1,10 @@
 import "server-only";
 import type { Invoice4uClearingLog } from "./payment-verification";
 
-const INVOICE4U_API_BASE = "https://api.invoice4u.co.il/Services/ApiService.svc";
+const INVOICE4U_API_BASES = {
+  production: "https://api.invoice4u.co.il/Services/ApiService.svc",
+  qa: "https://apiqa.invoice4u.co.il/Services/ApiService.svc",
+} as const;
 
 type Fetcher = typeof fetch;
 
@@ -91,16 +94,22 @@ export function invoice4uErrorCode(error: unknown) {
 export class Invoice4uClient {
   private readonly apiKey: string;
   private readonly clearingCompanyType: number;
+  private readonly apiBase: string;
 
   constructor(
     apiKey = process.env.INVOICE4U_API_KEY,
     private readonly fetcher: Fetcher = fetch,
     clearingCompanyType = Number(process.env.INVOICE4U_CLEARING_COMPANY_TYPE),
+    environment = process.env.INVOICE4U_ENVIRONMENT ?? 'production',
   ) {
     if (!apiKey) throw new Invoice4uApiError("missing_api_key");
     if (![6, 7, 12, 15].includes(clearingCompanyType)) {
       throw new Invoice4uApiError("invalid_clearing_company_type");
     }
+    if (environment !== 'qa' && environment !== 'production') {
+      throw new Invoice4uApiError('invalid_provider_environment');
+    }
+    this.apiBase = INVOICE4U_API_BASES[environment];
     this.apiKey = apiKey;
     this.clearingCompanyType = clearingCompanyType;
   }
@@ -108,7 +117,7 @@ export class Invoice4uClient {
   private async post(path: string, body: Record<string, unknown>) {
     let response: Response;
     try {
-      response = await this.fetcher(`${INVOICE4U_API_BASE}/${path}`, {
+      response = await this.fetcher(`${this.apiBase}/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

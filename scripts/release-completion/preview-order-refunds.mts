@@ -2,12 +2,14 @@ import '../production-refusal.mjs';
 import assert from 'node:assert/strict';
 import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {chromium} from 'playwright';
+import {isOpaqueToken} from '../../src/server/product/case-access/crypto.ts';
 
 // Repin only after the implementation's exact CI and isolated deployment pass.
-const origin='https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='45cf30f178a86e45793e90e3789f225fe7024e9d';
+const origin='https://salary-jew7zf36n-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='d6c2b16461ad0a4efde40cb4c3a34f689d61002d';
 const directory='output/release-completion/preview-order-refunds';
 export async function verifyOrderRefundPreview(input:{publicId:string;foreignPublicId:string;session:string;foreignSession:string}){
+ assert.ok(isOpaqueToken(input.session)&&isOpaqueToken(input.foreignSession));
  const access=JSON.parse(readFileSync(process.env.TIVDOC_PREVIEW_BROWSER_STATE_FILE??'','utf8'));
  assert.equal(access.origins.length,0);assert.equal(access.cookies.length,1);assert.equal(access.cookies[0].name,'_vercel_jwt');assert.equal(access.cookies[0].domain,new URL(origin).hostname);
  assert.ok(origin.startsWith('https://salary-')&&origin.endsWith('-tivdoccom-5042s-projects.vercel.app'));
@@ -35,9 +37,12 @@ export async function verifyOrderRefundPreview(input:{publicId:string;foreignPub
    await page.reload();await page.getByText('בקשת החזר בעקבות תיקון',{exact:true}).waitFor();assert.equal(await page.getByText('בקשת החזר בעקבות תיקון',{exact:true}).count(),1);assert.equal(paymentWrites,0);
   });
   await check('another customer cannot open the order or see its adjustment in their own case',async()=>{
-   await context.addCookies([cookie(input.foreignSession)]);assert.equal((await page.goto(url))?.status(),404);
-   assert.equal((await page.goto(origin+`/case/${input.foreignPublicId}/orders`))?.status(),200);assert.equal(await page.getByText('בקשת החזר בעקבות תיקון',{exact:true}).count(),0);
-   await context.addCookies([cookie(input.session)]);
+   // Independent profiles model distinct customers without directly replacing
+   // a live page's cookie while its legitimate refresh request is in flight.
+   const foreign=await browser.newContext({storageState:access,locale:'he-IL',timezoneId:'Asia/Jerusalem'});
+   try{await foreign.addCookies([cookie(input.foreignSession)]);const other=await foreign.newPage();assert.equal((await other.goto(url))?.status(),404);
+    assert.equal((await other.goto(origin+`/case/${input.foreignPublicId}/orders`))?.status(),200);assert.equal(await other.getByText('בקשת החזר בעקבות תיקון',{exact:true}).count(),0);
+   }finally{await foreign.close();}
   });
   for(const width of [360,390,768,1440])await check(`pending refund and protected header fit ${width}px`,async()=>{
    await page.setViewportSize({width,height:900});await page.goto(url);await page.getByText('בקשת החזר בעקבות תיקון',{exact:true}).waitFor();

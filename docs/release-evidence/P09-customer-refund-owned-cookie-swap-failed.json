@@ -1,5 +1,5 @@
 {
-  "verdict": "PASS",
+  "verdict": "FAIL",
   "checks": [
     "unpaid order and entitlement without an exact verified payment cannot request money",
     "foreign case/identity, actual web and non-worker function privileges are refused",
@@ -14,7 +14,7 @@
     "actual customer snapshot exposes only one cumulative pending status on the corrected order, with no internal basis or initial-order adjustment",
     "foreign customer snapshot is refused and another owned case receives none of the correction data"
   ],
-  "failure": null,
+  "failure": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('בקשת החזר בעקבות תיקון', { exact: true }) to be visible\u001b[22m\n",
   "cleanupFailure": null,
   "database": "tivdoc_release_replay_20260907",
   "migration": "20260908172254_order_price_correction_intents.sql",
