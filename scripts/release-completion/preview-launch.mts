@@ -17,7 +17,7 @@ assert.equal(storageState.cookies[0].domain,new URL(origin).hostname);
 assert.equal(storageState.cookies[0].name,'_vercel_jwt');
 delete process.env.TIVDOC_PREVIEW_BROWSER_STATE;
 await mkdir(directory,{recursive:true});
-const browser=await chromium.launch({headless:true,channel:'chrome'});
+const browser=await chromium.launch({headless:true,...(process.platform==='win32'?{channel:'chrome'}:{})});
 const checks:{name:string;passed:boolean;detail?:string}[]=[];
 const pages:{path:string;width:number;status:number|null;horizontalOverflow:number;errors:string[]}[]=[];
 async function saveReceipt(){

@@ -10,7 +10,9 @@ export function isolatedPreviewDatabase(env:Readonly<Record<string,string|undefi
  let target:URL;
  try{target=new URL(value);}catch{return refuse();}
  if(target.protocol!=='postgresql:'&&target.protocol!=='postgres:')return refuse();
- if(target.hostname!=='aws-0-eu-central-1.pooler.supabase.com'||target.port!=='5432'
+ // Stateless one-statement RPCs can use Supavisor transaction pooling. Keep
+ // the previously verified session endpoint valid for explicit rollback.
+ if(target.hostname!=='aws-0-eu-central-1.pooler.supabase.com'||!['5432','6543'].includes(target.port)
   ||decodeURIComponent(target.username)!=='tivdoc_web_runtime.cpzrbidxftzqcfeqqusu'
   ||target.pathname!=='/tivdoc_release_replay_20260907'||!target.password
   ||target.hash||target.search!=='?sslmode=verify-full'
