@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
+import { ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { ArrowRight } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { FileText } from "@phosphor-icons/react/dist/csr/FileText";
 import { ChatText } from "@phosphor-icons/react/dist/csr/ChatText";
 import { MagnifyingGlass } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
@@ -9,49 +11,43 @@ const stages = [
     title: "קודם, מה שכתוב.",
     text: "תלוש שכר, חוזה ודוח נוכחות. כל מסמך נותן זווית אחרת על העבודה שלך.",
     label: "המסמכים",
-    icon: FileText,
   },
   {
     title: "ואז, מה שקורה באמת.",
     text: "השעות, התפקיד והתנאים בפועל. כמה תשובות משלימות את מה שהמסמכים לא מספרים.",
     label: "התשובות שלך",
-    icon: ChatText,
   },
   {
     title: "מחברים את הקצוות.",
     text: "מצליבים מקורות ובודקים את ההקשר. מידע חסר נשאר שאלה לבירור, ולא הופך לניחוש.",
     label: "הצלבת המידע",
-    icon: MagnifyingGlass,
   },
   {
     title: "רואים מה הצעד הבא.",
     text: "מה נבדק, על סמך מה, ומה עוד צריך להשלים. תמונה שאפשר להבין ולהמשיך ממנה.",
     label: "מבנה התוצר",
-    icon: ListChecks,
   },
 ];
 export function Process() {
   const [active, setActive] = useState(0);
   const [keyboard, setKeyboard] = useState(false);
-  const items = useRef<(HTMLLIElement | null)[]>([]);
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) {
-          setKeyboard(false);
-          setActive(Number((visible.target as HTMLElement).dataset.stage));
-        }
-      },
-      { rootMargin: "-25% 0px -40% 0px", threshold: [0, 0.4, 0.8] },
-    );
-    items.current.forEach((item) => {
-      if (item) observer.observe(item);
-    });
-    return () => observer.disconnect();
-  }, []);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  function choose(index: number, fromKeyboard = false) {
+    setKeyboard(fromKeyboard);
+    setActive(index);
+  }
+  function navigate(event: KeyboardEvent<HTMLButtonElement>) {
+    let next: number;
+    if (event.key === "ArrowLeft") next = (active + 1) % stages.length;
+    else if (event.key === "ArrowRight")
+      next = (active + stages.length - 1) % stages.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = stages.length - 1;
+    else return;
+    event.preventDefault();
+    choose(next, true);
+    tabs.current[next]?.focus();
+  }
   return (
     <section
       className="studio-process"
@@ -64,7 +60,36 @@ export function Process() {
           <br />
           <span>מחברים ביניהם.</span>
         </h2>
-        <div className="studio-process__layout">
+        <p className="process-intro">
+          בוחרים שלב ורואים איך המסמכים והתשובות מתחברים.
+        </p>
+        <div className="process-explorer">
+          <div
+            className="process-tabs"
+            role="tablist"
+            aria-label="שלבי הבדיקה"
+            aria-orientation="horizontal"
+          >
+            {stages.map((stage, index) => (
+              <button
+                key={stage.label}
+                type="button"
+                role="tab"
+                id={"process-tab-" + index}
+                aria-selected={active === index}
+                aria-controls="process-panel"
+                tabIndex={active === index ? 0 : -1}
+                ref={(node) => {
+                  tabs.current[index] = node;
+                }}
+                onClick={(event) => choose(index, event.detail === 0)}
+                onKeyDown={navigate}
+              >
+                <span aria-hidden="true">0{index + 1}</span>
+                {stage.label}
+              </button>
+            ))}
+          </div>
           <div
             className="assembly"
             data-phase={active}
@@ -105,39 +130,50 @@ export function Process() {
               <span>המחשת תהליך</span>
             </div>
           </div>
-          <ol className="studio-chapters">
-            {stages.map((stage, index) => (
-              <li
-                key={stage.title}
-                data-reveal
-                data-stage={index}
-                ref={(node) => {
-                  items.current[index] = node;
-                }}
+          <div
+            className="process-panel"
+            id="process-panel"
+            role="tabpanel"
+            aria-labelledby={"process-tab-" + active}
+            tabIndex={0}
+          >
+            <h3>{stages[active].title}</h3>
+            <p>{stages[active].text}</p>
+            <div className="process-pager">
+              <span aria-live="polite" aria-atomic="true">
+                שלב {active + 1} מתוך {stages.length}
+              </span>
+              <button
+                type="button"
+                disabled={active === 0}
+                aria-label="השלב הקודם"
+                onClick={(event) => choose(active - 1, event.detail === 0)}
               >
-                <button
-                  type="button"
-                  aria-pressed={active === index}
-                  aria-controls="process-illustration"
-                  onClick={(event) => {
-                    setKeyboard(event.detail === 0);
-                    setActive(index);
-                  }}
-                >
-                  <span className="chapter-index">0{index + 1}</span>
-                  <span className="chapter-copy">
-                    <strong>{stage.title}</strong>
-                    <span>{stage.text}</span>
-                  </span>
-                  <stage.icon
-                    className="chapter-icon"
-                    size={26}
-                    aria-hidden="true"
-                  />
-                </button>
-              </li>
-            ))}
-          </ol>
+                <ArrowRight size={22} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                disabled={active === stages.length - 1}
+                aria-label="השלב הבא"
+                onClick={(event) => choose(active + 1, event.detail === 0)}
+              >
+                <ArrowLeft size={22} aria-hidden="true" />
+              </button>
+            </div>
+            <a className="process-outcome" href="#what-you-get">
+              ומה מקבלים בסוף? <ArrowLeft size={18} aria-hidden="true" />
+            </a>
+          </div>
+          <noscript>
+            <ol>
+              {stages.map((stage) => (
+                <li key={stage.label}>
+                  <h3>{stage.title}</h3>
+                  <p>{stage.text}</p>
+                </li>
+              ))}
+            </ol>
+          </noscript>
         </div>
       </div>
     </section>

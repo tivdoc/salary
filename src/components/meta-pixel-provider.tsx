@@ -3,7 +3,10 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { trackMetaBrowserEvent, trackMetaViewContentOnce } from "@/lib/meta-browser";
+import {
+  trackMetaBrowserEvent,
+  trackMetaViewContentOnce,
+} from "@/lib/meta-browser";
 
 export function MetaPixelProvider({ pixelId }: { pixelId?: string }) {
   const pathname = usePathname();
@@ -20,7 +23,7 @@ export function MetaPixelProvider({ pixelId }: { pixelId?: string }) {
   const serializedPixelId = JSON.stringify(pixelId);
 
   return (
-    <Script id="tivdoc-meta-pixel" strategy="afterInteractive">
+    <Script id="tivdoc-meta-pixel" strategy="lazyOnload">
       {`
         !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
         n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;

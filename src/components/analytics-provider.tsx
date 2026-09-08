@@ -10,9 +10,9 @@ export function AnalyticsProvider() {
     <>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="tivdoc-ga4" strategy="afterInteractive">
+      <Script id="tivdoc-ga4" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}

@@ -201,13 +201,6 @@
 .studio-process {
   padding-block: 138px 100px;
 }
-.studio-process__layout {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 100px;
-  align-items: start;
-  margin-top: 70px;
-}
 .assembly {
   position: sticky;
   top: 140px;
@@ -346,71 +339,6 @@
   margin-inline-start: auto;
   color: var(--muted);
   font-size: 12px;
-}
-.studio-chapters {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.studio-chapters li {
-  min-height: 340px;
-  display: flex;
-  align-items: center;
-}
-.studio-chapters button {
-  display: grid;
-  grid-template-columns: 33px 1fr;
-  gap: 20px;
-  text-align: right;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  padding: 36px 0;
-  position: relative;
-  width: 100%;
-  border-bottom: 1px solid var(--border);
-}
-.chapter-index {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  padding-top: 9px;
-  color: var(--muted);
-  transition: color 200ms ease;
-}
-.chapter-copy strong {
-  display: block;
-  font-size: clamp(25px, 2.6vw, 36px);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  margin-bottom: 18px;
-}
-.chapter-copy > span {
-  display: block;
-  max-width: 370px;
-  font-size: 18px;
-  line-height: 1.8;
-  color: var(--muted);
-}
-.chapter-icon {
-  display: none;
-}
-.studio-chapters button[aria-pressed="true"] .chapter-index {
-  color: var(--coral-text);
-}
-.studio-chapters button::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: -1px;
-  width: 100%;
-  height: 2px;
-  background: var(--coral);
-  transform: scaleX(0);
-  transform-origin: right;
-  transition: transform 500ms var(--ease-studio);
-}
-.studio-chapters button[aria-pressed="true"]::after {
-  transform: scaleX(1);
 }
 .studio-film {
   padding: 60px 0 110px;
@@ -875,9 +803,6 @@
   .studio-site .public-header__inner {
     gap: 16px;
   }
-  .studio-process__layout {
-    gap: 40px;
-  }
   .assembly__canvas {
     transform: scale(0.85);
     transform-origin: center;
@@ -937,17 +862,8 @@
   .studio-hero__intro {
     font-size: 17px;
   }
-  .studio-process__layout {
-    gap: 20px;
-  }
   .assembly__canvas {
     transform: scale(0.72);
-  }
-  .chapter-copy strong {
-    font-size: 26px;
-  }
-  .chapter-copy > span {
-    font-size: 17px;
   }
 }
 @media (max-width: 767px) {
@@ -1041,11 +957,6 @@
   .studio-section-title {
     font-size: clamp(37px, 9.4vw, 56px);
   }
-  .studio-process__layout {
-    grid-template-columns: 1fr;
-    gap: 0;
-    margin-top: 38px;
-  }
   .assembly {
     position: relative;
     top: auto;
@@ -1108,31 +1019,6 @@
   }
   .assembly__caption > span:last-child {
     font-size: 11px;
-  }
-  .studio-chapters li {
-    min-height: 0;
-  }
-  .studio-chapters button {
-    gap: 10px;
-    padding: 35px 0;
-    grid-template-columns: 25px 1fr 25px;
-  }
-  .chapter-copy strong {
-    font-size: 25px;
-    margin-bottom: 14px;
-  }
-  .chapter-copy > span {
-    font-size: 16px;
-    line-height: 1.8;
-  }
-  .chapter-icon {
-    display: block;
-    color: var(--coral-text);
-    margin-top: 5px;
-  }
-  .chapter-index {
-    font-size: 11px;
-    padding-top: 6px;
   }
   .studio-film {
     padding: 30px 0 70px;
@@ -1335,9 +1221,220 @@
 
 /* Keep the artwork in its intrinsic square and avoid a clipped matte in dark mode. */
 @supports (width: 1cqw) {
- .lens-artwork { container-type: size; }
- .lens-artwork__object { display: grid; place-items: center; }
- .lens-artwork img { width: min(110cqw, 100cqh); height: auto; aspect-ratio: 1; transform: none; }
+  .lens-artwork {
+    container-type: size;
+  }
+  .lens-artwork__object {
+    display: grid;
+    place-items: center;
+  }
+  .lens-artwork img {
+    width: min(110cqw, 100cqh);
+    height: auto;
+    aspect-ratio: 1;
+    transform: none;
+  }
 }
-@media (prefers-color-scheme: dark) { .lens-artwork img { mask-image: none; border-radius: 12px; } }
-@media (max-width: 767px) { .lens-artwork { animation: none; } }
+@media (prefers-color-scheme: dark) {
+  .lens-artwork img {
+    mask-image: none;
+    border-radius: 12px;
+  }
+}
+@media (max-width: 767px) {
+  .lens-artwork {
+    animation: none;
+  }
+}
+
+/* Keep each process explanation beside its illustration, at every viewport. */
+.process-intro {
+  color: var(--muted);
+  font-size: 19px;
+  margin: 24px 0 42px;
+}
+.process-explorer {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 70px;
+  row-gap: 36px;
+  align-items: start;
+}
+.process-explorer .assembly {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  position: relative;
+  top: auto;
+}
+.process-tabs {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+}
+.process-tabs button {
+  background: none;
+  color: var(--muted);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 14px 4px 18px;
+  min-height: 76px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.process-tabs button span {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.process-tabs button[aria-selected="true"] {
+  color: var(--coral-text);
+  border-bottom-color: currentColor;
+  font-weight: 600;
+}
+.process-panel {
+  grid-column: 2;
+  padding: 8px 0;
+}
+.process-panel:focus-visible {
+  outline: 2px solid var(--coral-text);
+  outline-offset: 10px;
+}
+.process-panel h3 {
+  font-size: clamp(30px, 3vw, 44px);
+  margin: 0 0 20px;
+  line-height: 1.2;
+}
+.process-panel > p {
+  font-size: 20px;
+  line-height: 1.8;
+  color: var(--muted);
+  min-height: 108px;
+  margin: 0;
+  max-width: 39ch;
+}
+.process-pager {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+.process-pager > span {
+  color: var(--muted);
+  font-size: 14px;
+  margin-inline-end: auto;
+}
+.process-pager button {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+.process-pager button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.process-outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 28px;
+  padding-block: 10px;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.process-explorer noscript {
+  grid-column: 1 / -1;
+}
+.film-note {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 18px 0 0;
+}
+.studio-site .public-nav a[aria-current="location"]::after {
+  transform: scaleX(1);
+}
+@media (hover: hover) {
+  .process-pager button:not(:disabled):hover {
+    background: var(--paper-deep);
+  }
+  .process-tabs button:hover {
+    color: var(--ink);
+  }
+}
+@media (max-width: 1023px) {
+  .process-explorer {
+    column-gap: 32px;
+  }
+  .process-tabs button {
+    font-size: 12px;
+  }
+  .process-panel > p {
+    font-size: 18px;
+  }
+}
+@media (max-width: 767px) {
+  .process-intro {
+    font-size: 16px;
+    margin: 20px 0 24px;
+    max-width: 30ch;
+  }
+  .process-explorer {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 20px;
+  }
+  .process-tabs {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .process-tabs button {
+    font-size: 12px;
+    padding: 12px 2px 14px;
+    min-height: 74px;
+  }
+  .process-explorer .assembly {
+    grid-column: 1;
+    grid-row: 2;
+    margin-bottom: 0;
+  }
+  .process-explorer .assembly__canvas {
+    height: 280px;
+  }
+  .process-explorer .assembly__caption {
+    display: none;
+  }
+  .process-panel {
+    grid-column: 1;
+    grid-row: 3;
+    padding-top: 0;
+  }
+  .process-panel h3 {
+    font-size: 31px;
+    margin-bottom: 12px;
+  }
+  .process-panel > p {
+    font-size: 17px;
+    min-height: 92px;
+    line-height: 1.7;
+  }
+  .process-pager {
+    margin-top: 18px;
+  }
+  .process-outcome {
+    margin-top: 16px;
+  }
+  .price-sheet__heading {
+    flex-wrap: wrap;
+  }
+}
