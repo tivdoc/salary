@@ -27,3 +27,7 @@ The user requested a design and usability review followed by implementation. Thi
 ## Deployment
 
 Previous production / rollback target: https://salary-nshmw5oma-tivdoccom-5042s-projects.vercel.app (dpl_4CNGHNBCBBZa8rNrDZxFzkUxcwzV).
+
+Published to https://tivdoc.com from commit 6e0fc55. Deployment dpl_BAZuWfKRWSag5YpAvzP4dDptgdU4 / https://salary-qhq00nevw-tivdoccom-5042s-projects.vercel.app. Vercel build passed; protected HTML and health checked before promotion. Public browser checks passed at all six widths with no pageerror. Production Google and Meta bootstrap scripts loaded and both early-event queues were empty afterward. The no-JavaScript fallback exposes all four stage descriptions, and keyboard focus leaving the mobile header closes its menu. No service gates or production configuration were changed.
+
+Post-deployment public mobile Lighthouse: performance 67, accessibility 100, FCP 1.0 s, LCP 4.8 s, TBT 570 ms, CLS 0. Compared with this turn's public baseline (57, 100, 2.9 s, 7.1 s, 510 ms, 0), measured paint improved while total blocking time did not. These are individual lab runs, not field Core Web Vitals or proof of a general speed guarantee; further third-party/main-thread work remains possible.
