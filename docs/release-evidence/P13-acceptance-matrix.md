@@ -2,7 +2,7 @@
 
 ## Current evidence index — 2026-09-08
 
-Current integrated Preview: exact 45cf30f178a86e45793e90e3789f225fe7024e9d, https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app, dpl_6fpJkYMsbFRvxfFPUEVJudSJbSoM. Both CI runs 34255608069/34255602893 pass. All 91 hosted checks (44 public, 12 requests, 12 support, 12 uploads, 11 AI report), nine real Storage hashes and exact owned cleanup pass. AI publication also has nine actual worker/peer/web DB assertions. The protected header containment and downloaded PDF were visually inspected. See P13-45cf30f-integrated-preview.json.
+Exact ee4a8be9f90ba8ae93dbfe4a52ff003099919dcc passes CI 34265017223/34265013898 and all 99 hosted checks on https://salary-1vlhcfu08-tivdoccom-5042s-projects.vercel.app (dpl_CGKBZ9SWrLusgQYEm57mHmza28oA): 44 public, 12 requests, 12 support, 12 uploads, 11 AI report and eight customer refund-status checks. Nine actual AI-publication DB and 12 correction-ledger DB assertions pass. Nine real Storage objects were uploaded/read/hashed; all nine and ten owned synthetic cases/identities were removed, with owned machine sessions revoked. Mobile report/orders and the complete one-page PDF were visually inspected; the exact deployment 20-minute error query returned zero rows. P13-ee4a8be-integrated-preview.json binds all receipts to this source. Synthetic paid orders, pricing basis and projections do not prove canonical monetary correctness, live provider/OTP, legal activation or production readiness. No production or activation flags changed.
 
 Owner-seeded monetary projections and payments are synthetic. Historical v2 review terms, source activation and accuracy gates remain. No runtime projection write grant, real provider payment or production rollout was added.
 

@@ -1,5 +1,5 @@
 import {it,expect} from 'vitest';
-import {researchedVacationProration,VACATION_PRORATION_SPEC} from './release-vacation-proration';
+import {researchedVacationProration,VACATION_PRORATION_SPEC} from './release-vacation-proration.ts';
 const input={calendarYear:2026,annualGrossDays:16,employmentRelation:'whole_year',actualWorkdays:200,completeYearEvidence:true,section3Applicable:true};
 it.each([
  ['whole_year',0,0],['whole_year',12,0],['whole_year',13,1],['whole_year',144,11],['whole_year',199,15],['whole_year',200,16],['whole_year',240,16],

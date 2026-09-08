@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-1vlhcfu08-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "ee4a8be9f90ba8ae93dbfe4a52ff003099919dcc",
+  "origin": "https://salary-jew7zf36n-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "d6c2b16461ad0a4efde40cb4c3a34f689d61002d",
   "checks": [
     {
       "name": "order proof uses isolated DEV with external payment disabled",

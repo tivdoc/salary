@@ -1,6 +1,6 @@
 import {z} from 'zod';
-import {canonicalSha256} from '../rule-runtime/canonical';
-import {createRuleSpecPackage,executeRuleSpec,type RuleSpecInputValue} from '../legal-operations/rulespec';
+import {canonicalSha256} from '../rule-runtime/canonical.ts';
+import {createRuleSpecPackage,executeRuleSpec,type RuleSpecInputValue} from '../legal-operations/rulespec.ts';
 
 /** AI research only: Annual Vacation Law 3(b)/(c), in gross calendar days.
  * No conversion to net workdays, redemption, monetary gap or price. The caller
