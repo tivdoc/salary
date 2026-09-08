@@ -56,16 +56,28 @@ function unwrapWcfPayload(value: unknown): unknown {
   return current;
 }
 
+function referenceValue(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string" && (typeof value !== "number" || !Number.isSafeInteger(value))) {
+    throw new Invoice4uApiError("invalid_provider_response");
+  }
+  return String(value).trim() || null;
+}
+
+function consistentReference(values: unknown[]): string | null {
+  const references = values.map(referenceValue).filter((value) => value !== null);
+  if (new Set(references).size > 1) throw new Invoice4uApiError("invalid_provider_response");
+  return references[0] ?? null;
+}
+
 function openInfoValue(payload: Record<string, unknown>, key: string) {
-  if (!Array.isArray(payload.OpenInfo)) return null;
-  const item = payload.OpenInfo.find(
-    (candidate) =>
-      candidate &&
-      typeof candidate === "object" &&
-      (candidate as Record<string, unknown>).Key === key,
-  ) as Record<string, unknown> | undefined;
-  const value = item?.Value;
-  return typeof value === "string" || typeof value === "number" ? String(value).trim() : null;
+  const info = payload.OpenInfo;
+  if (Array.isArray(info)) {
+    return consistentReference(info.filter((item) => item && typeof item === "object" && item.Key === key)
+      .map((item) => item.Value));
+  }
+  if (info && typeof info === "object") return referenceValue((info as Record<string, unknown>)[key]);
+  return null;
 }
 
 function providerRejectionCode(payload: Record<string, unknown>) {
@@ -95,6 +107,7 @@ export class Invoice4uClient {
   private readonly apiKey: string;
   private readonly clearingCompanyType: number;
   private readonly apiBase: string;
+  private readonly isQaMode: boolean;
 
   constructor(
     apiKey = process.env.INVOICE4U_API_KEY,
@@ -110,6 +123,7 @@ export class Invoice4uClient {
       throw new Invoice4uApiError('invalid_provider_environment');
     }
     this.apiBase = INVOICE4U_API_BASES[environment];
+    this.isQaMode = environment === 'qa';
     this.apiKey = apiKey;
     this.clearingCompanyType = clearingCompanyType;
   }
@@ -138,6 +152,11 @@ export class Invoice4uClient {
   }
 
   async createCheckout(input: CheckoutInput): Promise<Invoice4uCheckout> {
+    const minor = Math.round(input.amount * 100);
+    if (!Number.isSafeInteger(minor) || minor <= 0 || minor / 100 !== input.amount) {
+      throw new Invoice4uApiError("invalid_checkout_amount");
+    }
+    if (input.currency !== "ILS") throw new Invoice4uApiError("invalid_checkout_currency");
     const response = await this.post("ProcessApiRequestV2", {
       request: {
         Invoice4UUserApiKey: this.apiKey,
@@ -149,7 +168,8 @@ export class Invoice4uClient {
         Sum: input.amount,
         Description: `Tivdoc salary ${input.kind=== "full"?"full report":"initial check"} (${input.caseId})`,
         PaymentsNum: 1,
-        Currency: input.currency,
+        Currency: "NIS",
+        IsQaMode: this.isQaMode,
         OrderIdClientUsage: input.orderId,
         IsDocCreate: true,
         DocHeadline: input.kind==="full"?"Tivdoc - דוח מלא":"Tivdoc - בדיקה ראשונית",
@@ -174,7 +194,7 @@ export class Invoice4uClient {
     const rejectionCode = providerRejectionCode(payload);
     if (rejectionCode) throw new Invoice4uApiError(rejectionCode);
 
-    const rawPaymentId = openInfoValue(payload, "PaymentId");
+    const rawPaymentId = consistentReference([openInfoValue(payload, "PaymentId"), payload.PaymentId]);
     const clearingLogId = openInfoValue(payload, "I4UClearingLogId");
     const paymentId = rawPaymentId && rawPaymentId !== "0" ? rawPaymentId : null;
     const url = typeof payload.ClearingRedirectUrl === "string" ? payload.ClearingRedirectUrl : "";

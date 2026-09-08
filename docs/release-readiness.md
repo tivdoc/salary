@@ -4,7 +4,7 @@ The release is **not an RC and not ready for live sales**. Work continues under 
 
 ## Source and deployed environment
 
-- Integration branch: `codex/tivdoc-release-completion`, [Draft PR #2](https://github.com/tivdoc/salary/pull/2), dependent on [upload-integrity PR #1](https://github.com/tivdoc/salary/pull/1). Latest implementation checkpoint: `37a3313ea0d606c6ca88589b20035bef43eb884e` (price-correction intake).
+- Integration branch: `codex/tivdoc-release-completion`, [Draft PR #2](https://github.com/tivdoc/salary/pull/2), dependent on [upload-integrity PR #1](https://github.com/tivdoc/salary/pull/1). Source includes the cumulative price-correction intake, customer pending status and supplier charge/checkout contract repairs. Exact implementation commits are recorded in Git and HANDOFF.md; source is newer than the separately identified Previews.
 - Parallel UI integrated through `85177bcf507c3820cc5f1131f4f438a56b1f504c`; its author's checkout is separate and unchanged by this task.
 - Verified [isolated Preview](https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app): exact `45cf30f178a86e45793e90e3789f225fe7024e9d`, deployment `dpl_6fpJkYMsbFRvxfFPUEVJudSJbSoM`. CI `34255608069` and `34255602893` pass. The later correction intake is not in this deployment.
 - Preview uses DEV project `cpzrbidxftzqcfeqqusu`, database `tivdoc_release_replay_20260907`, the actual server-side PostgreSQL adapter and DEV Storage. Sales, mail and extraction-provider flags remain disabled. No release-branch production rollout occurred.
