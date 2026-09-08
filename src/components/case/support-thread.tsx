@@ -30,10 +30,10 @@ function SupportForm({publicId,threadId}:{publicId:string;threadId?:string}){
   finally{working.current=false;setBusy(false);}
  }
  return <div className="thread-answer">
-  <label className="field" htmlFor={fieldId}>
-   <span>{threadId?'הוספת תשובה לפנייה':'פרטי הפנייה לתמיכה'}</span>
+  <div className="field">
+   <span><label htmlFor={fieldId}>{threadId?'הוספת תשובה לפנייה':'פרטי הפנייה לתמיכה'}</label></span>
    <textarea id={fieldId} dir="auto" aria-describedby={notice?`${fieldId}-status`:undefined} value={draft.message} onChange={e=>edit(e.target.value)} maxLength={2000} rows={4} disabled={!ready||busy||draft.pendingId!==null}/>
-  </label>
+  </div>
   <button className="button button--primary" type="button" disabled={!ready||busy||draft.message.trim().length<4} onClick={send}>{busy?'שומרים…':'שליחת הודעה'}</button>
   <p id={`${fieldId}-status`} role="status">{notice}</p>
  </div>;
