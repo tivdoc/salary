@@ -9,6 +9,8 @@ import type {
   Wave3Topic,
 } from "../wave3/contracts.ts";
 
+export const CASE_ANALYSIS_CODE_VERSION = "case-analysis@0.6.4" as const;
+
 export const CASE_ANALYSIS_STAGES = [
   "input_snapshot",
   "canonical_facts",
@@ -48,7 +50,7 @@ export type PinnedAnalysisDependencies = Readonly<{
   source_version_ids: readonly string[];
   parameter_version_ids: readonly string[];
   rule_spec_versions: readonly string[];
-  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1" | "case-analysis@0.6.2" | "case-analysis@0.6.3";
+  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1" | "case-analysis@0.6.2" | "case-analysis@0.6.3" | typeof CASE_ANALYSIS_CODE_VERSION;
   template_version: string;
 }>;
 

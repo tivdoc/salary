@@ -3,6 +3,7 @@ import type {
   PersistedCaseAnalysisRun,
   PinnedAnalysisDependencies,
 } from "../../../../../engine/case-analysis/contracts";
+import {CASE_ANALYSIS_CODE_VERSION} from "../../../../../engine/case-analysis/contracts";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
 import type {
   AnalysisResultBundle,
@@ -83,7 +84,7 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
          select
            private.canonical_text_uuid('analysis_run', $3), private.resolve_engine_case_id($1, $2),
            'full_investigation', 'running',
-           'canonical_case_analysis', 'case-analysis@0.6.3',
+           'canonical_case_analysis', '${CASE_ANALYSIS_CODE_VERSION}',
            nullif(current_setting('tivdoc.engine_git_sha', true), ''),
            'tivdoc-case-analysis-v0.6.0', 'tivdoc-canonical-persistence-v0.9.0', null,
            $6::jsonb, $5, $4, transaction_timestamp(), transaction_timestamp(),

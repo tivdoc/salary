@@ -1,0 +1,15 @@
+{
+  "sourceSha": "4d369691c0df1c87348ca64a4594462dc28f1144",
+  "file": "src/engine/case-analysis/service.ts",
+  "sha256": "f11f52a658e7a10803dccc68b8c2032cb27e226cca5ee0e4b5117638b92792f9",
+  "failedBeforeFix": 2,
+  "totalBeforeFix": 2,
+  "defect": "Canonical fact assembly kept only seven topic gate paths and declared paths, discarding other resolved document amounts/rates/periods.",
+  "afterFix": {
+    "localTests": 84,
+    "localFiles": 10,
+    "actualDbAssertions": 7,
+    "codeVersion": "case-analysis@0.6.4"
+  },
+  "scope": "Synthetic extraction and canonical stored stage; no real provider, legal activation or monetary-gap calculation."
+}

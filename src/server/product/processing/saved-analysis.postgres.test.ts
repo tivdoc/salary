@@ -63,8 +63,13 @@ it.skipIf(process.env.TIVDOC_SAVED_SOURCE_DB_PROOF!=='1')('persists real canonic
   expect(facts.filter(f=>f.provenance.some(p=>p.source_type==='declared'))).toHaveLength(13);
   expect(facts.find(f=>f.path==='employment.start_month')?.value).toBe('2024-07');
   expect(facts.find(f=>f.path==='employment.managerial_or_trust_role_declared')?.status).toBe('needs_confirmation');
-  expect(facts.some(f=>f.path==='employment.start_date')).toBe(false);
+  expect(facts.find(f=>f.path==='employment.start_date')).toMatchObject({status:'missing',value:null});
   checks.push('all thirteen saved questionnaire assertions reach the canonical persisted stage with declared provenance, no inferred dates or human confirmation');
+  expect(facts.find(f=>f.path==='compensation.gross_salary')?.value).toEqual({currency:'XTS',minor_units:100000});
+  expect(facts.find(f=>f.path==='compensation.net_salary')?.value).toEqual({currency:'XTS',minor_units:90000});
+  expect(facts.find(f=>f.path==='compensation.hourly_rate')).toMatchObject({status:'missing',value:null});
+  expect(first.dependencies?.code_version).toBe('case-analysis@0.6.4');
+  checks.push('canonical 0.6.4 retains resolved gross/net document amounts and explicit missing rate alongside declarations');
 
   await db.query('rollback to savepoint before_analysis');
   expect((await db.query('select count(*)::int n from public.analysis_runs where tenant_id=$1',[tenant])).rows[0].n).toBe(0);

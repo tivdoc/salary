@@ -1,6 +1,8 @@
 import {describe,it,expect,vi} from 'vitest';
 import {runSavedMonthAnalysis} from './saved-analysis';
-import {savedOrderSchema,type SavedOrderScope} from './saved-order-scope';
+import {savedOrderSchema,savedMonthIdempotencyKey,type SavedOrderScope} from './saved-order-scope';
+import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {SAVED_DRAFT_TEMPLATE} from './saved-draft-report';
 import type {SourceJob} from './source-dispatch';
 import type {PostgresAnalysisRepositories} from '@/server/platform/persistence/postgres/analysis';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
@@ -21,6 +23,10 @@ function setup(){
  return {order,current,cached,replay,input:{context,analysis:{caseAnalysis:{getCompletedByIdempotencyKey:cached}} as unknown as PostgresAnalysisRepositories,tenantId:`saved-case:${caseId}`,job,orderId:order.id,month:'2026-08'}};
 }
 describe('saved monthly analysis admission before replay',()=>{
+ it('does not reuse a pre-retention analysis key while retaining exact current retries',()=>{
+  const {input}=setup();const old=`saved-month:${canonicalSha256({job:input.job,order_id:input.orderId,month:input.month,template:SAVED_DRAFT_TEMPLATE,engine:'case-analysis@0.6.3'})}`;
+  const current=savedMonthIdempotencyKey(input.job,input.orderId,input.month);expect(current).not.toBe(old);expect(savedMonthIdempotencyKey(input.job,input.orderId,input.month)).toBe(current);
+ });
  it.each(['revoked entitlement','another order','changed offer'] as const)('refuses %s before reading cached results',async defect=>{
   const s=setup();
   if(defect==='revoked entitlement')s.current.length=0;

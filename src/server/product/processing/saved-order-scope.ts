@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {CASE_ANALYSIS_CODE_VERSION} from '@/engine/case-analysis/contracts';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {WAVE3_TOPICS} from '@/engine/wave3/contracts';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
@@ -12,7 +13,7 @@ export const savedOrderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full
 export type SavedOrderScope=z.infer<typeof savedOrderSchema>;
 
 export function savedMonthIdempotencyKey(job:SourceJob,orderId:string,month:string){
- return `saved-month:${canonicalSha256({job,order_id:orderId,month,template:SAVED_DRAFT_TEMPLATE,engine:'case-analysis@0.6.3'})}`;
+ return `saved-month:${canonicalSha256({job,order_id:orderId,month,template:SAVED_DRAFT_TEMPLATE,engine:CASE_ANALYSIS_CODE_VERSION})}`;
 }
 
 export function purchasedMonths(candidate:SavedOrderScope){

@@ -2,7 +2,6 @@
   "checks": [
     "canonical service writes seven stages and seven non-monetary results through real PostgreSQL adapters",
     "all thirteen saved questionnaire assertions reach the canonical persisted stage with declared provenance, no inferred dates or human confirmation",
-    "canonical 0.6.4 retains resolved gross/net document amounts and explicit missing rate alongside declarations",
     "rollback removes partial analysis/report while preserving source and extraction checkpoint",
     "retry and replay retain exact report bytes without a duplicate analysis run",
     "revoked selected entitlement refuses a cached monthly result; rollback restores exact replay without another analysis",

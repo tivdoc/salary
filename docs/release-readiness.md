@@ -37,3 +37,5 @@ The existing automatic ceiling remains 5,000 ILS per finding. With one initial m
 Use the full [acceptance matrix](release-evidence/P13-acceptance-matrix.md), [package tracker](release-completion-tracker.md) and [handoff](../HANDOFF.md) for individual results, failed runs and precise continuation boundaries. `Implemented`, `verified`, `ready to operate` and `deployed` remain separate states.
 
 Current payment binding checkpoint (base bfd61f6): 14 actual DEV assertions, 97 focused local checks plus three definer checks. Applied migration tail is 20260908182405_payment_reference_binding.sql (117 files), with unchanged execution ACLs. Fresh 80c4b2a replay now proves all 117 files; the 116-file predecessor is archived. The READY bfd61f6 Preview is not yet browser-proved and does not include the later binding change.
+
+Canonical input retention now preserves all resolved document fact paths under code version case-analysis@0.6.4; 84 focused tests and seven actual owner-transaction PostgreSQL assertions pass. This closes the loss of non-gate document fields, not paid/expected/gap semantics, legal activation or the projection writer.
