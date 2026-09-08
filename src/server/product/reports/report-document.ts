@@ -1,10 +1,11 @@
 import {z} from 'zod';
 import {canonicalSha256} from '../../../engine/rule-runtime/canonical';
 import {caseReportProjectionSchema,PROJECTION_TOPICS} from './case-report-projection';
+import {publicationDecision} from './publication-gate';
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
 /** Delivery envelope v2. Existing safe v1 projections stay readable without invented provenance. */
-export const reportDocumentSchema=z.object({
+const reportDocumentShape=z.object({
  schema_version:z.literal('tivdoc-report-document-v2'),
  id:z.uuid(),case_id:z.uuid(),order_id:z.uuid(),revision:z.number().int().positive(),
  input_sha256:hash,projection_sha256:hash,
@@ -14,7 +15,8 @@ export const reportDocumentSchema=z.object({
  findings:z.array(z.object({id:z.uuid(),topic:z.enum(PROJECTION_TOPICS),evidence_ids:z.array(z.uuid()).min(1),rule_versions:z.array(z.string().min(1)).min(1),parameter_versions:z.array(z.string().min(1)).min(1)}).strict()),
  publication:z.object({state:z.enum(['draft','approved','published','superseded']),approved_input_sha256:hash.nullable(),approval_actor_kind:z.enum(['human','automation']).nullable(),published_at:z.iso.datetime().nullable()}).strict(),
  correction_policy:z.literal('append_new_revision_preserve_published'),
-}).strict().superRefine((doc,ctx)=>{
+}).strict();
+function validateProvenance(doc:z.infer<typeof reportDocumentShape>,ctx:z.RefinementCtx){
  const fail=(message:string)=>ctx.addIssue({code:'custom',message});
  if(canonicalSha256(doc.projection)!==doc.projection_sha256)fail('projection_hash_mismatch');
  if(doc.purchased_period.from>doc.purchased_period.to)fail('purchased_period_reversed');
@@ -27,7 +29,36 @@ export const reportDocumentSchema=z.object({
  if(doc.publication.state==='published'){
   if(!doc.publication.published_at)fail('publication_time_missing');
   if(!doc.projection.topics.some(t=>t.gate==='checked'))fail('empty_report_not_deliverable');
-  if(doc.projection.report_kind==='full'&&doc.publication.approval_actor_kind!=='human')fail('full_report_requires_human_review');
+ }
+}
+/** Historical v2 keeps its purchased human-review requirement unchanged. */
+export const reportDocumentV2Schema=reportDocumentShape.superRefine((doc,ctx)=>{
+ validateProvenance(doc,ctx);
+ if(doc.publication.state==='published'&&doc.projection.report_kind==='full'&&doc.publication.approval_actor_kind!=='human')ctx.addIssue({code:'custom',message:'full_report_requires_human_review'});
+});
+/** v1.1 changes the service promise, not source activation or accuracy gates.
+ * An envelope is provenance, never permission to publish or a human attestation.
+ * The saved publisher must additionally load the exact paid v2 AI order. */
+export const AI_REPORT_DISCLOSURE='דוח באמצעות AI עם מקורות והסברים. הממצאים מתייחסים לנתונים שנבדקו; קבלת כסף מהמעסיק אינה מובטחת. שאלות ותיקונים נשמרים בתיק.';
+export const AI_PUBLICATION_POLICY='tivdoc-ai-publication-v1' as const;
+export const reportDocumentV3Schema=reportDocumentShape.extend({
+ schema_version:z.literal('tivdoc-report-document-v3'),
+ service_kind:z.literal('ai_assisted'),
+ publication_policy:z.literal(AI_PUBLICATION_POLICY),
+ order_offer_sha256:hash,
+ publication:z.object({state:z.enum(['draft','published','superseded']),approved_input_sha256:hash.nullable(),approval_actor_kind:z.literal('automation'),published_at:z.iso.datetime().nullable()}).strict(),
+}).strict().superRefine((doc,ctx)=>{
+ validateProvenance({...doc,schema_version:'tivdoc-report-document-v2'},ctx);
+ if(doc.publication.state!=='draft'){
+  if(doc.publication.approved_input_sha256!==doc.input_sha256||!doc.publication.published_at)ctx.addIssue({code:'custom',message:'ai_publication_receipt_required'});
+  // Only the old full-report human requirement changes. The existing automatic
+  // certainty, contradiction, source and per-finding ceiling rules still apply.
+  const decision=publicationDecision(doc.projection,{documentTrack:'automatic'});
+  for(const reason of decision.reasons.filter(r=>r!=='full_report'))ctx.addIssue({code:'custom',message:'ai_publication_blocked:'+reason});
+  for(const topic of doc.projection.topics){
+   if(topic.gate==='checked'&&!topic.basis_complete)ctx.addIssue({code:'custom',message:'ai_publication_incomplete_basis'});
+  }
  }
 });
+export const reportDocumentSchema=z.union([reportDocumentV2Schema,reportDocumentV3Schema]);
 export type ReportDocument=z.infer<typeof reportDocumentSchema>;

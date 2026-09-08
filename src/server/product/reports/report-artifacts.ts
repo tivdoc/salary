@@ -1,9 +1,11 @@
+import {AI_REPORT_DISCLOSURE} from './report-document';
 import {customerWording} from './report-wording';
 import {renderPermission,parseProjection} from './case-report-projection';
 import {renderDeterministicRtlDocument,hebrewTopicLabel,type RtlBlock} from '../../reports/deterministic-hebrew-pdf';
 import type {SavedReport} from './customer-reports';
 export function savedReportPdf(report:SavedReport):Uint8Array{
  const p=parseProjection(report.projection);const title=p.report_kind==='full'?'דוח מלא':'דוח ראשוני';const blocks:RtlBlock[]=[{kind:'heading',level:1,text:title},{kind:'table',columns:['פרטי הדוח','ערך'],rows:[['תיק',p.case_public_id],['חודשים שנבדקו',p.months_covered.join(', ')],['תאריך פרסום',report.publishedAt.slice(0,10)],['גרסה',String(report.document?.revision??'היסטורית')]]},{kind:'hash',label:'מזהה תוכן הדוח',value:report.sha256}];
+ if(report.document?.schema_version==='tivdoc-report-document-v3')blocks.push({kind:'paragraph',text:AI_REPORT_DISCLOSURE});
  for(const topic of p.topics){const permission=renderPermission(topic,p.report_kind);blocks.push({kind:'heading',level:2,text:hebrewTopicLabel(topic.topic)},{kind:'paragraph',text:permission.line});
   if(topic.gate==='checked'){if(permission.showsNumber&&topic.amount)blocks.push({kind:'table',columns:['סוג סכום','שקלים'],rows:[['פער שנבדק',(topic.amount.minor_units/100).toFixed(2)]]});if(permission.showsNumber&&topic.range)blocks.push({kind:'table',columns:['סוג סכום','שקלים'],rows:[['טווח שנבדק',`${(topic.range.low.minor_units/100).toFixed(2)}–${(topic.range.high.minor_units/100).toFixed(2)}`]]});for(const assumption of topic.assumptions)blocks.push({kind:'paragraph',text:assumption.statement});}
   const wording=customerWording(report.wording?.[topic.topic]);if(wording)blocks.push({kind:'paragraph',text:wording});
