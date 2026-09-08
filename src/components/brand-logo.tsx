@@ -10,7 +10,8 @@ export function BrandLogo() {
         width={1774}
         height={887}
         sizes="200px"
-        priority
+        fetchPriority="high"
+        loading="eager"
       />
     </span>
   );

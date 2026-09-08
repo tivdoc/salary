@@ -2,7 +2,9 @@
 import { productOffer } from "@/config/product-offer";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { List, X, ArrowLeft } from "@phosphor-icons/react";
+import { List } from "@phosphor-icons/react/dist/csr/List";
+import { X } from "@phosphor-icons/react/dist/csr/X";
+import { ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
 import { BrandLogo } from "@/components/brand-logo";
 import { TrackedLink } from "@/components/tracked-link";
 const links = [
@@ -11,7 +13,7 @@ const links = [
   ["pricing", "מחירים"],
   ["about", "מי אנחנו"],
 ];
-export function SiteHeader() {
+export function SiteHeader({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const toggle = useRef<HTMLButtonElement>(null);
   const header = useRef<HTMLElement>(null);
@@ -51,16 +53,23 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="public-header__actions">
-          <Link className="return-link" href="/check/received">
+          <Link
+            className="return-link"
+            href="/check/received"
+            prefetch={compact ? false : null}
+          >
             חזרה לבדיקה
           </Link>
-          <TrackedLink
-            className="button button--primary header-start"
-            href="/check"
-            eventName="start_check"
-          >
-            {productOffer.initial.available ? "התחלת בדיקה" : "זמינות השירות"} <ArrowLeft aria-hidden="true" />
-          </TrackedLink>
+          {!compact && (
+            <TrackedLink
+              className="button button--primary header-start"
+              href="/check"
+              eventName="start_check"
+            >
+              {productOffer.initial.available ? "התחלת בדיקה" : "זמינות השירות"}{" "}
+              <ArrowLeft aria-hidden="true" />
+            </TrackedLink>
+          )}
           <button
             className="menu-toggle"
             ref={toggle}
