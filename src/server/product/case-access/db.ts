@@ -6,6 +6,8 @@
 // sees which, and a test hands it a fake.
 import { isolatedPreviewDatabase } from './preview-database.ts';
 import { SUPABASE_ROOT_2021_CA } from './supabase-ca.ts';
+import pg from 'pg';
+import {attachDatabasePool} from '@vercel/functions';
 
 export type CaseAccessDb = Readonly<{
   provider: "supabase" | "postgres" | "fake";
@@ -67,8 +69,11 @@ let poolUrl: string | null = null;
 async function postgresPool(connectionString: string, tls?: Readonly<{ca:string;rejectUnauthorized:true}>): Promise<PgPoolLike> {
   const cacheKey = `${connectionString}:${tls?.ca ?? ""}`;
   if (pool && poolUrl === cacheKey) return pool;
-  const { default: pg } = await import("pg");
-  const created = new pg.Pool({ connectionString, ...(tls ? {ssl:tls} : {}), max: 2, connectionTimeoutMillis: 20_000, application_name: "tivdoc_case_access" });
+  // Construction/cache assignment must not yield: parallel cold requests used
+  // to create a separate pool each while awaiting the dynamic driver import.
+  const created = new pg.Pool({ connectionString, ...(tls ? {ssl:tls} : {}), max: 2, min:0, idleTimeoutMillis:5000, connectionTimeoutMillis: 20_000, application_name: "tivdoc_case_access" });
+  created.on('error',()=>console.error('CASE_ACCESS_POOL_IDLE_ERROR'));
+  attachDatabasePool(created);
   pool = created;
   poolUrl = cacheKey;
   return created;
@@ -118,6 +123,9 @@ let operationsPool:PgPoolLike|null=null;
 export async function resolveReportOperationsDb():Promise<CaseAccessDb|null>{
  if(override)return override;
  const url=process.env.TIVDOC_OPERATIONS_POSTGRES_URL;
- if(url){if(!operationsPool){const {default:pg}=await import('pg');operationsPool=new pg.Pool({connectionString:url,max:2,connectionTimeoutMillis:20000,application_name:'tivdoc_report_operations'});}return postgresCaseAccessDb(operationsPool);}
+ if(url){if(!operationsPool){
+  const created=new pg.Pool({connectionString:url,max:2,min:0,idleTimeoutMillis:5000,connectionTimeoutMillis:20000,application_name:'tivdoc_report_operations'});
+  created.on('error',()=>console.error('REPORT_OPERATIONS_POOL_IDLE_ERROR'));attachDatabasePool(created);operationsPool=created;
+ }return postgresCaseAccessDb(operationsPool);}
  return null;
 }

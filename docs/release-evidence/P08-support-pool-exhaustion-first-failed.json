@@ -1,0 +1,46 @@
+{
+  "origin": "https://salary-gpbszhds3-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "0e7c9d0aa1122a5dbbdf1f5f0a3ec87fab51c649",
+  "checks": [
+    {
+      "name": "customer opens case support with saved server state",
+      "passed": true
+    },
+    {
+      "name": "unsent support draft survives reload without creating a server thread",
+      "passed": true
+    },
+    {
+      "name": "lost completion response survives full reload and retries the same saved question without duplication",
+      "passed": true
+    },
+    {
+      "name": "an operations DB reply is visible after customer reload and customer can reopen it",
+      "passed": true
+    },
+    {
+      "name": "concurrent HTTP retries persist once and cross-case or foreign-origin requests are refused",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 360px",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 390px",
+      "passed": false
+    }
+  ],
+  "errors": [],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.",
+  "productionChanged": false,
+  "secretsIncluded": false,
+  "runtimeFailure": {
+    "limit": 15,
+    "code": "EMAXCONNSESSION",
+    "diagnosis": "Actual Vercel error log: session-mode maximum clients reached. Support persisted and recovered before the later page load failure.",
+    "deploymentId": "dpl_BJYg61ET86VsjieyH27o5aWU2u8Z",
+    "postgresCode": "XX000"
+  }
+}

@@ -7,8 +7,8 @@ import {chromium,type BrowserContext} from 'playwright';
 import {readDevEnvFile} from '../supabase-dev-guard/dev-credential.mts';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca.ts';
 
-const origin='https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='17c668ef480f1b70e612d8906a9b81d79073f121';
+const origin='https://salary-gpbszhds3-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='0e7c9d0aa1122a5dbbdf1f5f0a3ec87fab51c649';
 const directory='output/release-completion/preview-support';
 const env=readDevEnvFile();
 function client(key:string){const u=new URL(env.get(key)!);assert.equal(u.pathname,'/tivdoc_release_replay_20260907');assert.equal(u.hostname,'aws-0-eu-central-1.pooler.supabase.com');assert.ok(u.username.endsWith('.cpzrbidxftzqcfeqqusu'));u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000});}
@@ -16,12 +16,12 @@ const access=JSON.parse(readFileSync(process.env.TIVDOC_PREVIEW_BROWSER_STATE_FI
 assert.equal(access.origins.length,0);assert.equal(access.cookies.length,1);assert.equal(access.cookies[0].domain,new URL(origin).hostname);assert.equal(access.cookies[0].name,'_vercel_jwt');
 const db=client('TIVDOC_DEV_DATABASE_URL'),ops=client('TIVDOC_OPERATIONS_POSTGRES_URL');
 const ids=[randomUUID(),randomUUID()],identities:string[]=[],cases:{caseId:string;publicId:string;session:string}[]=[];
-const checks:{name:string;passed:boolean}[]=[],errors:string[]=[];
+const checks:{name:string;passed:boolean;detail?:string}[]=[],errors:string[]=[];
 let cleaned=false,context:BrowserContext|undefined;
 mkdirSync(directory,{recursive:true});
 const browser=await chromium.launch({headless:true,channel:'chrome'});
 const save=()=>writeFileSync(`${directory}/receipt.json`,JSON.stringify({origin,deployedSha,checks,errors,syntheticCasesRemoved:cleaned?2:0,scope:'Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.',productionChanged:false,secretsIncluded:false},null,2)+'\n');
-async function check(name:string,run:()=>Promise<void>){try{await run();checks.push({name,passed:true});console.log('PASS '+name);}catch(e){checks.push({name,passed:false});throw e;}finally{save();}}
+async function check(name:string,run:()=>Promise<void>){try{await run();checks.push({name,passed:true});console.log('PASS '+name);}catch(e){checks.push({name,passed:false,detail:e instanceof Error?e.message:'failed'});throw e;}finally{save();}}
 try{
  await Promise.all([db.connect(),ops.connect()]);
  await db.query('begin');
@@ -72,7 +72,7 @@ try{
   await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).fill('Independent unsent new support draft');
   await page.reload();
   await page.getByLabel('הוספת תשובה לפנייה',{exact:true}).waitFor();
-  await page.waitForFunction(()=>document.querySelectorAll('#support textarea')[1]?.textContent==='Synthetic customer follow-up');
+  await page.waitForFunction(()=>document.querySelectorAll<HTMLTextAreaElement>('#support textarea')[1]?.value==='Synthetic customer follow-up');
   assert.equal(await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).inputValue(),'Independent unsent new support draft');
   await page.locator('#support article').getByRole('button',{name:'שליחת הודעה',exact:true}).click();
   await page.locator('#support article li').getByText('Synthetic customer follow-up',{exact:true}).waitFor();await page.reload();
@@ -102,7 +102,16 @@ try{
   assert.equal((await db.query('select count(*)::int n from private.case_support_threads where case_id=$1',[ids[0]])).rows[0].n,3);
  });
  await check('support leaves case and payment status unchanged',async()=>{const rows=(await db.query('select status,payment_status from public.cases where id=any($1::uuid[])',[ids])).rows;assert.equal(rows.length,2);assert.ok(rows.every(c=>c.status==='under_review'&&c.payment_status==='verified'));});
-}catch(e){console.error(e instanceof Error?e.message:'proof failed');const failedPage=context?.pages()[0];if(failedPage){await failedPage.screenshot({path:`${directory}/failure.png`,fullPage:true}).catch(()=>{});console.log((await failedPage.locator('#support').innerText()).slice(0,2500));console.log(await failedPage.locator('#support textarea').evaluateAll(es=>es.map(e=>({label:e.parentElement?.textContent,value:(e as HTMLTextAreaElement).value}))));}process.exitCode=1;}
+ await check('logout revokes the real session and removes only tab-local support recovery',async()=>{
+  await page.getByLabel('פרטי הפנייה לתמיכה',{exact:true}).fill('Synthetic draft cleared on logout');
+  await page.evaluate(()=>sessionStorage.setItem('synthetic-unrelated-proof','preserved'));
+  assert.ok(await page.evaluate(()=>Object.keys(sessionStorage).some(k=>k.startsWith('tivdoc:support:v1:'))));
+  await page.getByRole('button',{name:'יציאה',exact:true}).click();await page.waitForURL(origin+'/login');
+  assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).some(k=>k.startsWith('tivdoc:support:v1:'))),false);
+  assert.equal(await page.evaluate(()=>sessionStorage.getItem('synthetic-unrelated-proof')),'preserved');
+  assert.equal((await context!.request.post(origin+route,{headers:{origin},data:{id:randomUUID(),action:'support_open',message:'Denied after logout'}})).status(),401);
+ });
+}catch(e){console.error(e instanceof Error?e.message:'proof failed');const failedPage=context?.pages()[0];if(failedPage){await failedPage.screenshot({path:`${directory}/failure.png`,fullPage:true}).catch(()=>{});if(await failedPage.locator('#support').isVisible())console.log((await failedPage.locator('#support').innerText()).slice(0,2500));}process.exitCode=1;}
 finally{
  await context?.close();await browser.close();await db.query('rollback').catch(()=>{});
  try{
