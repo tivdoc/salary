@@ -5,14 +5,14 @@ import {Invoice4uClient,invoice4uErrorCode} from '../../../lib/invoice4u';
 import {createPaymentReturnToken,hashPaymentReturnToken,getPaymentReturnUrl} from '../../../lib/payment';
 import {validateInvoice4uClearingLog,PaymentVerificationError} from '../../../lib/payment-verification';
 import {resolveCaseAccessDb,postgresCaseAccessDb,type CaseAccessDb} from '../case-access/db';
-import {offerSnapshot,orderRequestSchema,OrderError,type OrderRequest,type ProductOrder} from './contracts';
+import {offerSnapshot,orderRequestSchema,priceCorrectionStatusSchema,OrderError,type OrderRequest,type ProductOrder} from './contracts';
 async function storeOrThrow(db?:CaseAccessDb){const store=db??await resolveCaseAccessDb();if(!store)throw new OrderError('ORDER_STORE_UNAVAILABLE');return store;}
 export async function createOrder(input:{caseId:string;identityId:string|null;request:OrderRequest},db?:CaseAccessDb){
  const request=orderRequestSchema.parse(input.request);const store=await storeOrThrow(db);
  const result=await store.rpc<{value:ProductOrder}>('case_order_create',{target_case:input.caseId,target_identity:input.identityId,target_kind:request.kind,target_from:request.from+'-01',target_to:request.to+'-01',target_offer:offerSnapshot(request.kind)});
  if(!result[0]?.value)throw new OrderError('ORDER_NOT_CREATED');return result[0].value;
 }
-export async function customerOrders(caseId:string,identityId:string,db?:CaseAccessDb){const store=await storeOrThrow(db);const rows=await store.rpc<{value:ProductOrder[]}>('case_order_snapshot',{target_case:caseId,target_identity:identityId});if(!Array.isArray(rows[0]?.value))throw new OrderError('ORDER_STORE_UNAVAILABLE');return rows[0].value;}
+export async function customerOrders(caseId:string,identityId:string,db?:CaseAccessDb){const store=await storeOrThrow(db);const rows=await store.rpc<{value:ProductOrder[]}>('case_order_snapshot',{target_case:caseId,target_identity:identityId});if(!Array.isArray(rows[0]?.value))throw new OrderError('ORDER_STORE_UNAVAILABLE');return rows[0].value.map(order=>{if(order.price_correction==null)return order;const parsed=priceCorrectionStatusSchema.safeParse(order.price_correction);if(!parsed.success||order.kind!=='full'||order.state!=='paid'||!Number.isSafeInteger(order.amount_minor)||parsed.data.cumulative_refund_minor>order.amount_minor)throw new OrderError('ORDER_STORE_UNAVAILABLE');return {...order,price_correction:parsed.data};});}
 export async function orderCheckout(input:{caseId:string;identityId:string|null;orderId:string;termsAccepted:boolean},db?:CaseAccessDb,provider?:Pick<Invoice4uClient,"createCheckout">){
  if(!input.termsAccepted)throw new OrderError('ORDER_TERMS_REQUIRED');const store=await storeOrThrow(db);
  const rows=await store.rpc<{value:ProductOrder&{public_id:string}}>('case_order_get',{target_case:input.caseId,target_identity:input.identityId,target_order:input.orderId});const order=rows[0]?.value;if(!order)throw new OrderError('ORDER_FORBIDDEN');

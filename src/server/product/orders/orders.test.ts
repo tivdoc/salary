@@ -2,7 +2,7 @@ import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
 vi.mock('../../../lib/invoice4u',()=>({Invoice4uClient:class{},invoice4uErrorCode:()=>null}));
 import {legacyFullOfferFixture} from './fixtures/legacy-offer';
 import {offerSnapshot,orderRequestSchema} from './contracts';
-import {orderCheckout,reconcileOrders} from './service';
+import {orderCheckout,reconcileOrders,customerOrders} from './service';
 import {validateInvoice4uClearingLog} from '../../../lib/payment-verification';
 import type {CaseAccessDb} from '../case-access/db';
 const order={id:'order-one',case_id:'case-one',kind:'full',state:'awaiting_payment',amount_minor:14900,currency:'ILS',terms_version:'test',offer:legacyFullOfferFixture()};
@@ -16,4 +16,23 @@ describe('P09 order boundary',()=>{
  it('uses the saved price and leaves provider timeout uncertain',async()=>{const finished:unknown[]=[];const createCheckout=vi.fn(async(_input:unknown)=>{void _input;throw new Error('provider timeout');});const db=store((fn,args)=>{if(fn==='case_order_get')return order;if(fn==='case_order_checkout_begin')return {claimed:true,order,checkout:{provider_order_id:'provider-order-one'},contact:{public_id:'TV-TEST0001',first_name:'Synthetic',email:'test@example.invalid',phone:'0500000000'}};finished.push(args);return null;});await expect(orderCheckout(scope,db,{createCheckout})).rejects.toThrow('ORDER_CHECKOUT_UNCERTAIN');expect(createCheckout.mock.calls[0][0]).toMatchObject({amount:149,currency:'ILS',orderId:'provider-order-one'});expect(finished).toHaveLength(1);expect(finished[0]).toMatchObject({target_error:'checkout_persistence_unknown'});});
  it('rejects fractional minor units and a foreign provider order',()=>{const log={Amount:149,CurrencyName:'ILS',IsSuccess:true,PaymentId:'p1',Id:'log1',ClearingConfirmationNumber:'c1',OrderIdClientUsage:'o1'};expect(validateInvoice4uClearingLog(log,'log1',{amountMinor:14900,currency:'ILS',orderId:'o1'}).amount).toBe(149);expect(()=>validateInvoice4uClearingLog({...log,Amount:149.001},'log1',{amountMinor:14900,currency:'ILS'})).toThrow('amount_mismatch');expect(()=>validateInvoice4uClearingLog(log,'log1',{amountMinor:14900,currency:'ILS',orderId:'other'})).toThrow('transaction_reused');});
  it('provider pending results grant no entitlement',async()=>{const called:string[]=[];const db=store(fn=>{called.push(fn);return [{...order,provider_log_id:'log',provider_order_id:'p'}];});const provider={getClearingLogById:vi.fn(async()=>null)};expect(await reconcileOrders(db,provider as never)).toMatchObject({scanned:1,pending:1,verified:0});expect(called).toEqual(['case_order_payment_pending']);});
+});
+
+describe('customer correction status',()=>{
+ const pending={state:'requested',cumulative_refund_minor:15000,requested_at:'2026-09-08T12:00:00.000Z'};
+ it('returns a bounded cumulative request without claiming provider settlement',async()=>{
+  const saved={...order,state:'paid',amount_minor:33901,price_correction:pending};
+  expect(await customerOrders('case-one','identity-one',store(()=>[saved]))).toEqual([saved]);
+ });
+ it.each(['excess','settled','negative','internal_fields','unpaid'] as const)('refuses %s correction status from the store',async defect=>{
+  const saved={...order,state:defect==='unpaid'?'awaiting_payment':'paid',amount_minor:33901,price_correction:{...pending}};
+  if(defect==='excess')saved.price_correction.cumulative_refund_minor=33902;
+  if(defect==='negative')saved.price_correction.cumulative_refund_minor=-1;
+  if(defect==='settled')saved.price_correction.state='refunded';
+  if(defect==='internal_fields')Object.assign(saved.price_correction,{corrected_basis:{secret:'internal'}});
+  await expect(customerOrders('case-one','identity-one',store(()=>[saved]))).rejects.toThrow('ORDER_STORE_UNAVAILABLE');
+ });
+ it('preserves old orders without manufacturing a zero adjustment',async()=>{
+  expect(await customerOrders('case-one','identity-one',store(()=>[order]))).toEqual([order]);
+ });
 });

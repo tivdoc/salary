@@ -1,6 +1,6 @@
 import {it,expect,vi} from 'vitest';
 import pg from 'pg';
-import {randomUUID,createHash} from 'node:crypto';
+import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
@@ -19,6 +19,7 @@ it.skipIf(process.env.TIVDOC_PRICE_CORRECTION_DB_PROOF!=='1')('persists cumulati
  const ids=[randomUUID(),randomUUID()],identities:string[]=[],initialId=randomUUID(),tenant=`saved-case:${ids[0]}`,sid=`quote-proof:${randomUUID()}`,jti=randomUUID();
  const availabilityMarker=`synthetic-quoted-order:${ids[0]}`;
  const checks:string[]=[],migration='20260908172254_order_price_correction_intents.sql';let cleaned=false,seeded=false,failure:string|null=null,cleanupError:unknown;
+ const browserProof=process.env.TIVDOC_PRICE_CORRECTION_PREVIEW_PROOF==='1';
  writeFileSync(`../release-work/price-correction-owned-${ids[0]}.json`,JSON.stringify({ids,tenant,sid,jti,scope:'Synthetic price correction proof only; isolated DEV'}));
  const transact=async<T>(db:pg.Client,run:(context:PostgresTransactionContext)=>Promise<T>)=>{
   await db.query('begin');try{
@@ -35,6 +36,7 @@ it.skipIf(process.env.TIVDOC_PRICE_CORRECTION_DB_PROOF!=='1')('persists cumulati
  try{
   await Promise.all([owner.connect(),worker.connect(),peer.connect(),web.connect()]);
   if(process.env.TIVDOC_APPLY_PRICE_CORRECTION==='1'){await owner.query('begin');try{await owner.query(readFileSync('supabase/migrations/'+migration,'utf8'));await owner.query('commit');}catch(e){await owner.query('rollback');throw e;}}
+  if(process.env.TIVDOC_APPLY_CUSTOMER_CORRECTION==='1')await owner.query(readFileSync('supabase/migrations/20260908174231_customer_price_correction_status.sql','utf8'));
   await owner.query('begin');
   for(const id of ids){
    const email=`quote-proof-${id}@example.invalid`;
@@ -110,6 +112,24 @@ it.skipIf(process.env.TIVDOC_PRICE_CORRECTION_DB_PROOF!=='1')('persists cumulati
   await expect(web.query('select * from private.order_price_correction_queue')).rejects.toMatchObject({code:'42501'});
   expect((await owner.query('select count(*)::int n from private.order_price_correction_requests where order_id=$1 and state<>\'requested\'',[full.id])).rows[0].n).toBe(0);
   checks.push('actual runtime cannot mutate ledger history and web cannot read the private queue or assert provider settlement');
+  const customer=(await web.query('select public.case_order_snapshot($1,$2) value',[ids[0],identities[0]])).rows[0].value;
+  expect(customer.find((o:{id:string})=>o.id===full.id).price_correction).toEqual({state:'requested',cumulative_refund_minor:33901,requested_at:expect.any(String)});
+  expect(customer.find((o:{id:string})=>o.id===initialId).price_correction).toBe(null);
+  expect(JSON.stringify(customer.map((o:{price_correction:unknown})=>o.price_correction))).not.toMatch(/basis|input_sha|identity_id|quote_sha/);
+  checks.push('actual customer snapshot exposes only one cumulative pending status on the corrected order, with no internal basis or initial-order adjustment');
+  await expect(web.query('select public.case_order_snapshot($1,$2)',[ids[0],identities[1]])).rejects.toThrow('ORDER_FORBIDDEN');
+  expect((await web.query('select public.case_order_snapshot($1,$2) value',[ids[1],identities[1]])).rows[0].value).toEqual([]);
+  checks.push('foreign customer snapshot is refused and another owned case receives none of the correction data');
+  if(browserProof){
+   const sessions:string[]=[],publicIds:string[]=[];
+   for(let i=0;i<ids.length;i++){
+    const token=randomBytes(32).toString('base64url');sessions.push(token);
+    await owner.query('select public.case_access_session_create($1,$2,14400)',[identities[i],createHash('sha256').update('case-access-session|'+token).digest('hex')]);
+    publicIds.push((await owner.query('select public_id from public.cases where id=$1',[ids[i]])).rows[0].public_id);
+   }
+   const {verifyOrderRefundPreview}=await import('../../../../scripts/release-completion/preview-order-refunds.mts');
+   await verifyOrderRefundPreview({publicId:publicIds[0],foreignPublicId:publicIds[1],session:sessions[0],foreignSession:sessions[1]});
+  }
  }catch(e){failure=e instanceof Error?e.message:'proof_failed';throw e;}finally{
   await owner.query('rollback').catch(()=>{});
   if(seeded){await owner.query('begin');try{
@@ -124,7 +144,7 @@ it.skipIf(process.env.TIVDOC_PRICE_CORRECTION_DB_PROOF!=='1')('persists cumulati
    await owner.query('commit');cleaned=true;
   }catch(e){await owner.query('rollback');cleanupError=e;}}
   await Promise.allSettled([owner.end(),worker.end(),peer.end(),web.end()]);
-  writeFileSync('docs/release-evidence/P09-price-correction-db.json',JSON.stringify({verdict:cleaned&&checks.length===10&&!failure?'PASS':'FAIL',checks,failure,cleanupFailure:cleanupError instanceof Error?cleanupError.message:null,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,scope:'Actual worker/peer/web correction intake and cumulative queue. Injected synthetic basis and verified payment rows. No canonical monetary proof, refund dispatch/settlement, customer UI or production change.',productionChanged:false},null,2)+'\n');
+  writeFileSync('docs/release-evidence/P09-price-correction-db.json',JSON.stringify({verdict:cleaned&&checks.length===12&&!failure?'PASS':'FAIL',checks,failure,cleanupFailure:cleanupError instanceof Error?cleanupError.message:null,database:'tivdoc_release_replay_20260907',migration,migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),customerStatusMigration:'20260908174231_customer_price_correction_status.sql',customerStatusMigrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/20260908174231_customer_price_correction_status.sql')).digest('hex'),syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,scope:'Actual worker/peer/web correction intake, cumulative queue and customer SQL snapshot. Injected synthetic basis and verified payment rows. No canonical monetary proof or refund dispatch/settlement. Hosted customer browser is proved only when browserProof is true. No production change.',browserProof,productionChanged:false},null,2)+'\n');
   if(cleanupError)throw cleanupError;
  }
-},120000);
+},240000);

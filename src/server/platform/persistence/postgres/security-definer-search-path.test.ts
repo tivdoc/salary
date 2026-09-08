@@ -30,7 +30,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // P13 real owner upload exposed the request-close trigger's missing authority.
 // The new trigger-only definer has no runtime EXECUTE grant and binds order/case.
 // P09 internal quote context and credit reservation: verified worker/case only.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 239;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 240;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
