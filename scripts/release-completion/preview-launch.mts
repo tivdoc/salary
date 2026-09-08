@@ -67,14 +67,21 @@ try{
       assert.ok((await rows.nth(i).locator('td').nth(1).innerText()).includes(balance));
      }
     }
-    if(path==='/')assert.ok((await page.locator('body').innerText()).includes('פתיחת הזמנות חדשות אינה זמינה כרגע'));
+    if(path==='/'){
+     assert.ok((await page.locator('body').innerText()).includes('פתיחת הזמנות חדשות אינה זמינה כרגע'));
+     await page.locator('.lens-artwork img').evaluate(image=>{assertImage(image as HTMLImageElement);function assertImage(i:HTMLImageElement){if(!i.complete||i.naturalWidth===0)throw new Error('Artwork did not load');}});
+     const hero=await page.locator('#hero-title').boundingBox();assert.ok(hero&&hero.x>=0&&hero.x+hero.width<=width+1);
+     const explore=await page.locator('.studio-hero .studio-link').boundingBox();assert.ok(explore&&explore.y>=0&&explore.y+explore.height<=900,'Exploration link is outside the opening viewport');
+     assert.ok(await page.locator('header a[href="/cases"]').count()>0);
+     assert.ok(await page.locator('.studio-service a[href="/cases"]').count()>0);
+    }
    });
   }
  }
  await check('integrated explainer assets match the reviewed Git bytes',async()=>{
-  for(const name of ['tivdoc-explainer.mp4','tivdoc-explainer-poster.png','tivdoc-explainer.he.vtt']){
-   const response=await context!.request.get(origin+'/media/'+name);assert.equal(response.status(),200);
-   const expected=await readFile('public/media/'+name);
+  for(const name of ['media/tivdoc-explainer.mp4','media/tivdoc-explainer-poster.webp','media/tivdoc-explainer.he.vtt','brand/lens-study.webp']){
+   const response=await context!.request.get(origin+'/'+name);assert.equal(response.status(),200);
+   const expected=await readFile('public/'+name);
    const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
    assert.equal(hash(await response.body()),hash(expected),name);
   }
@@ -85,8 +92,8 @@ try{
   assert.equal(await video.getAttribute('autoplay'),null);assert.equal(await video.getAttribute('preload'),'none');
   assert.equal(await video.evaluate(node=>(node as HTMLVideoElement).paused),true);
   assert.equal(await video.locator('track[kind="captions"][srclang="he"]').count(),1);
-  await page.locator('.explanation-transcript summary').click();
-  assert.ok((await page.locator('.explanation-transcript').innerText()).includes('אינו הבטחה'));
+  await page.locator('#explainer-transcript summary').click();
+  assert.ok((await page.locator('#explainer-transcript').innerText()).includes('אינו הבטחה'));
   await video.evaluate(node=>node.scrollIntoView({block:'center'}));
   await video.evaluate(async node=>{const media=node as HTMLVideoElement;media.textTracks[0].mode='showing';await media.play();});
   await page.waitForFunction(()=>{const node=document.querySelector('video');return node&&node.currentTime>0;});
@@ -151,6 +158,56 @@ try{
   assert.equal(await toggle.getAttribute('aria-expanded'),'true');
   await page.keyboard.press('Escape');assert.equal(await toggle.getAttribute('aria-expanded'),'false');
   assert.equal(await toggle.evaluate(e=>e===document.activeElement),true);
+ });
+ for(const width of [390,1440])await check(`studio dark theme remains usable at ${width}px`,async()=>{
+  const dark=await browser.newContext({storageState,colorScheme:'dark',reducedMotion:'reduce',locale:'he-IL',viewport:{width,height:900}});
+  try{
+   const p=await dark.newPage();const darkErrors:string[]=[];p.on('pageerror',e=>darkErrors.push(e.message));
+   await p.goto(origin,{waitUntil:'networkidle'});
+   assert.equal(await p.evaluate(()=>matchMedia('(prefers-color-scheme: dark)').matches),true);
+   assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1);
+   assert.equal(await p.locator('.lens-artwork img').evaluate(n=>(n as HTMLImageElement).naturalWidth>0),true);
+   assert.equal(await p.locator('.price-tiers tbody tr').count(),4);
+   await p.screenshot({path:`${directory}/studio-dark-${width}.png`,fullPage:true});
+   await p.locator('#pricing').scrollIntoViewIfNeeded();await p.screenshot({path:`${directory}/studio-dark-pricing-${width}.png`});
+   assert.deepEqual(darkErrors,[]);
+  }finally{await dark.close();}
+ });
+ await check('studio process and report tabs respond to the keyboard',async()=>{
+  await page.setViewportSize({width:1440,height:900});await page.goto(origin,{waitUntil:'networkidle'});
+  const stages=page.locator('.studio-chapters button');assert.equal(await stages.count(),4);
+  for(let index=0;index<4;index++){
+   await stages.nth(index).focus();await page.keyboard.press('Enter');
+   assert.equal(await stages.nth(index).getAttribute('aria-pressed'),'true');
+   assert.equal(await page.locator('#process-illustration').getAttribute('data-phase'),String(index));
+  }
+  await page.locator('#report-tab-0').focus();await page.keyboard.press('ArrowLeft');
+  assert.equal(await page.locator('#report-tab-1').getAttribute('aria-selected'),'true');
+  assert.equal(await page.locator('#report-tab-1').evaluate(n=>n===document.activeElement),true);
+  assert.ok((await page.locator('#report-panel').innerText()).includes('בדיקת AI'));
+  await page.keyboard.press('Home');assert.equal(await page.locator('#report-tab-0').getAttribute('aria-selected'),'true');
+ });
+ await check('live reduced-motion preference cancels artwork and reveal animation',async()=>{
+  const moving=await browser.newContext({storageState,reducedMotion:'no-preference',viewport:{width:1440,height:900}});
+  try{
+   const p=await moving.newPage();await p.goto(origin,{waitUntil:'networkidle'});
+   const art=p.locator('.lens-artwork');const rect=await art.boundingBox();assert.ok(rect);
+   await p.mouse.move(rect.x+rect.width*0.75,rect.y+rect.height*0.4);
+   assert.ok((await p.locator('.lens-artwork__object').getAttribute('style'))?.includes('perspective'));
+   await p.emulateMedia({reducedMotion:'reduce'});
+   await p.waitForFunction(()=>getComputedStyle(document.querySelector('.lens-artwork__object')!).transform==='none');
+   await p.waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'));
+  }finally{await moving.close();}
+ });
+ await check('client navigation away from studio retains the legal page styling',async()=>{
+  await page.goto(origin+'/privacy',{waitUntil:'networkidle'});
+  const before=await page.locator('main').evaluate(n=>({font:getComputedStyle(n).fontFamily,color:getComputedStyle(n).color,width:n.getBoundingClientRect().width}));
+  await page.goto(origin,{waitUntil:'networkidle'});
+  await page.locator('.studio-principles a[href="/privacy"]').click();await page.waitForURL(origin+'/privacy');
+  assert.equal(await page.locator('.studio-site').count(),0);
+  const after=await page.locator('main').evaluate(n=>({font:getComputedStyle(n).fontFamily,color:getComputedStyle(n).color,width:n.getBoundingClientRect().width}));
+  assert.deepEqual(after,before);
+  await page.goBack();await page.locator('.studio-site #hero-title').waitFor();assert.deepEqual(errors,[]);
  });
  await check('questionnaire keeps a synthetic non-personal draft through offline editing and reload',async()=>{
   await page.goto(origin+'/check',{waitUntil:'domcontentloaded'});

@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent } from "react";
-import { FileText, Plus } from "@phosphor-icons/react";
+import { FileText } from "@phosphor-icons/react/dist/csr/FileText";
+import { Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { productOffer } from "@/config/product-offer";
 
 export function ReportPreview() {
@@ -25,18 +26,18 @@ export function ReportPreview() {
       aria-labelledby="report-title"
     >
       <div className="shell">
-        <div className="section-intro">
+        <div className="section-intro" data-reveal>
           <h2 id="report-title">
-            פחות סימני שאלה.
+            המידע מקבל סדר.
             <br />
-            יותר הבנה של מה שחשוב.
+            והצעד הבא מתבהר.
           </h2>
           <p>
             כך מתוכנן להיראות המידע בתוצר: מה נבדק, על מה הוא מבוסס ומה אפשר
             לעשות עכשיו.
           </p>
         </div>
-        <div className="report-preview__box">
+        <div className="report-preview__box" data-reveal>
           <div className="report-tabs" role="tablist" aria-label="מבנה התוצר">
             {["בדיקה ראשונית", "דוח מלא"].map((label, index) => (
               <button

@@ -1,87 +1,115 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
-import {
-  FileText,
-  ChatText,
-  MagnifyingGlass,
-  ListChecks,
-  ArrowLeft,
-} from "@phosphor-icons/react";
-
+import { FileText } from "@phosphor-icons/react/dist/csr/FileText";
+import { ChatText } from "@phosphor-icons/react/dist/csr/ChatText";
+import { MagnifyingGlass } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { ListChecks } from "@phosphor-icons/react/dist/csr/ListChecks";
 const stages = [
   {
-    title: "מתחילים במסמכים",
-    text: "תלוש שכר, מסמכי העסקה ודוח נוכחות, אם יש. כל מסמך מוסיף עוד חלק לתמונה.",
+    title: "קודם, מה שכתוב.",
+    text: "תלוש שכר, חוזה ודוח נוכחות. כל מסמך נותן זווית אחרת על העבודה שלך.",
+    label: "המסמכים",
     icon: FileText,
-    label: "מסמכים",
-    detail: "תלוש שכר + מסמכי העסקה",
-    note: "המידע מופיע בכמה מקומות. מחברים ביניהם.",
   },
   {
-    title: "משלימים את מה שלא כתוב",
-    text: "עונים על שאלות קצרות על שעות העבודה, התפקיד והתנאים בפועל.",
-    icon: ChatText,
+    title: "ואז, מה שקורה באמת.",
+    text: "השעות, התפקיד והתנאים בפועל. כמה תשובות משלימות את מה שהמסמכים לא מספרים.",
     label: "התשובות שלך",
-    detail: "איך נראה שבוע העבודה שלך?",
-    note: "גם מה שלא מופיע בתלוש יכול להיות רלוונטי.",
+    icon: ChatText,
   },
   {
-    title: "בודקים ומשווים",
-    text: "מצליבים את המידע. כשחסר בסיס לבדיקה, מציינים מה צריך להשלים.",
+    title: "מחברים את הקצוות.",
+    text: "מצליבים מקורות ובודקים את ההקשר. מידע חסר נשאר שאלה לבירור, ולא הופך לניחוש.",
+    label: "הצלבת המידע",
     icon: MagnifyingGlass,
-    label: "הצלבת מידע",
-    detail: "מסמך, תשובה והקשר",
-    note: "חסר מידע? מסמנים בירור, בלי לנחש סכום.",
   },
   {
-    title: "מבינים את הצעד הבא",
-    text: "התוצר מרכז את מה שנבדק, את המקורות ואת השאלות שעוד נותרו פתוחות.",
-    icon: ListChecks,
+    title: "רואים מה הצעד הבא.",
+    text: "מה נבדק, על סמך מה, ומה עוד צריך להשלים. תמונה שאפשר להבין ולהמשיך ממנה.",
     label: "מבנה התוצר",
-    detail: "ממצא ← מקור ← צעד הבא",
-    note: "מבדילים בין מה שנבדק לבין מה שעדיין לא ידוע.",
+    icon: ListChecks,
   },
 ];
-
 export function Process() {
   const [active, setActive] = useState(0);
+  const [keyboard, setKeyboard] = useState(false);
   const items = useRef<(HTMLLIElement | null)[]>([]);
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!window.matchMedia("(min-width: 769px)").matches) return;
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible)
+        if (visible) {
+          setKeyboard(false);
           setActive(Number((visible.target as HTMLElement).dataset.stage));
+        }
       },
-      { rootMargin: "-25% 0px -45% 0px", threshold: [0, 0.5, 1] },
+      { rootMargin: "-25% 0px -40% 0px", threshold: [0, 0.4, 0.8] },
     );
     items.current.forEach((item) => {
       if (item) observer.observe(item);
     });
     return () => observer.disconnect();
   }, []);
-  const stage = stages[active];
-  const Icon = stage.icon;
   return (
     <section
-      className="home-section process-v3"
+      className="studio-process"
       id="how-it-works"
       aria-labelledby="process-title"
     >
-      <div className="shell">
-        <div className="section-intro">
-          <h2 id="process-title">כל חלק מוסיף בהירות.</h2>
-          <p>ארבעה שלבים, מהמסמך הראשון ועד להבנת התוצאה.</p>
-        </div>
-        <div className="process-v3__grid">
-          <ol className="process-v3__list">
-            {stages.map((item, index) => (
+      <div className="studio-shell">
+        <h2 id="process-title" className="studio-section-title" data-reveal>
+          הפרטים כבר שם.
+          <br />
+          <span>מחברים ביניהם.</span>
+        </h2>
+        <div className="studio-process__layout">
+          <div
+            className="assembly"
+            data-phase={active}
+            data-keyboard={keyboard}
+            id="process-illustration"
+            aria-hidden="true"
+          >
+            <div className="assembly__canvas">
+              <div className="assembly__orbit" />
+              <div className="assembly__sheet assembly__sheet--one">
+                <FileText size={26} />
+                <span>תלוש שכר</span>
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="assembly__sheet assembly__sheet--two">
+                <ChatText size={26} />
+                <span>העבודה בפועל</span>
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="assembly__sheet assembly__sheet--three">
+                <ListChecks size={26} />
+                <span>התמונה שלך</span>
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="assembly__focus">
+                <MagnifyingGlass size={68} weight="light" />
+              </div>
+            </div>
+            <div className="assembly__caption">
+              <span>0{active + 1}</span>
+              <strong>{stages[active].label}</strong>
+              <span>המחשת תהליך</span>
+            </div>
+          </div>
+          <ol className="studio-chapters">
+            {stages.map((stage, index) => (
               <li
-                key={item.title}
+                key={stage.title}
+                data-reveal
                 data-stage={index}
                 ref={(node) => {
                   items.current[index] = node;
@@ -90,41 +118,26 @@ export function Process() {
                 <button
                   type="button"
                   aria-pressed={active === index}
-                  aria-controls="process-stage"
-                  onClick={() => setActive(index)}
+                  aria-controls="process-illustration"
+                  onClick={(event) => {
+                    setKeyboard(event.detail === 0);
+                    setActive(index);
+                  }}
                 >
-                  <span className="stage-number">0{index + 1}</span>
-                  <span>
-                    <strong>{item.title}</strong>
-                    <span>{item.text}</span>
+                  <span className="chapter-index">0{index + 1}</span>
+                  <span className="chapter-copy">
+                    <strong>{stage.title}</strong>
+                    <span>{stage.text}</span>
                   </span>
-                  <ArrowLeft aria-hidden="true" />
+                  <stage.icon
+                    className="chapter-icon"
+                    size={26}
+                    aria-hidden="true"
+                  />
                 </button>
-                <div className="process-mobile-note">
-                  <item.icon size={22} aria-hidden="true" />
-                  <span>{item.detail}</span>
-                </div>
               </li>
             ))}
           </ol>
-          <div className="process-v3__stage" id="process-stage">
-            <div className="process-illustration" key={active}>
-              <span className="stage-large-number" aria-hidden="true">
-                0{active + 1}
-              </span>
-              <div className="process-stage-paper">
-                <Icon size={42} weight="duotone" aria-hidden="true" />
-                <span>{stage.label}</span>
-                <strong>{stage.detail}</strong>
-                <div className="paper-lines" />
-                <div className="paper-lines short" />
-                <p>{stage.note}</p>
-              </div>
-            </div>
-            <p className="illustration-caption">
-              המחשת תהליך · אינה בדיקה פעילה
-            </p>
-          </div>
         </div>
       </div>
     </section>

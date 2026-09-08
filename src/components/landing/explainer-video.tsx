@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState} from 'react';
 
 /** Manual playback only. Returning to the page never resumes it implicitly. */
-export function ExplainerVideo() {
+export function ExplainerVideo({poster="/media/tivdoc-explainer-poster.png"}:{poster?:string}) {
  const video = useRef<HTMLVideoElement>(null);
  const [failed, setFailed] = useState(false);
  useEffect(() => {
@@ -19,7 +19,7 @@ export function ExplainerVideo() {
  }, []);
  return <>
   <video ref={video} className="explainer-video" controls playsInline preload="none"
-   poster="/media/tivdoc-explainer-poster.png" onError={() => setFailed(true)}
+   poster={poster} onError={() => setFailed(true)}
    aria-label="סרטון הסבר על התהליך המתוכנן, 30 שניות ללא קול">
    <source src="/media/tivdoc-explainer.mp4" type="video/mp4" onError={() => setFailed(true)} />
    <track kind="captions" src="/media/tivdoc-explainer.he.vtt" srcLang="he" label="עברית" />
