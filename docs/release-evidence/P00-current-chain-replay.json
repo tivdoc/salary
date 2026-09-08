@@ -1,7 +1,7 @@
 {
   "schema_version": "tivdoc-supabase-chain-replay-v0.10.9",
   "project_ref_verified": true,
-  "files_discovered": 113,
+  "files_discovered": 114,
   "files": [
     {
       "name": "202608220001_salary_mvp.sql",
@@ -793,9 +793,16 @@
       "sha256_lf": "04778d7cc7a73c635461a8f6700beb40f7759b4988826e4865e3bf427661d6ce",
       "byte_count": 4478,
       "applied_order": 113
+    },
+    {
+      "name": "20260908162320_ai_report_publication.sql",
+      "sha256_raw": "ec331ed662e7b2e2ee7ad2d2c433bf64b49b7ba2f7c1b6d27567872068b77075",
+      "sha256_lf": "ec331ed662e7b2e2ee7ad2d2c433bf64b49b7ba2f7c1b6d27567872068b77075",
+      "byte_count": 6945,
+      "applied_order": 114
     }
   ],
-  "files_applied": 111,
+  "files_applied": 112,
   "files_compensated": 2,
   "compensations": [
     {
@@ -855,8 +862,8 @@
   "failed_file": null,
   "failure_reason": null,
   "executing_role": "tivdoc_dev_migrator",
-  "database": "tivdoc_release_chain_20260908_bda6e04",
-  "sha": "bda6e04b97081b98c1d07185c8d8a74083b35f92",
+  "database": "tivdoc_release_chain_20260908_5a7b69e",
+  "sha": "5a7b69e533db037c51820012c485da8aabc42143",
   "sharedRoleProvisioningUnchanged": true,
   "scaffold": "Synthetic storage.buckets only; not live Storage API",
   "scope": "Fresh separate DEV database, existing shared runtime LOGIN provisioning preserved; listed managed-platform compensations are not an uncompensated superuser replay",

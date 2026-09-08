@@ -6,8 +6,8 @@ import {chromium,type Route} from 'playwright';
 import {PDFDocument} from 'pdf-lib';
 import {AI_REPORT_DISCLOSURE} from '../../src/server/product/reports/report-document.ts';
 
-const origin='https://salary-bvk457a2a-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='8aa8dea927e259d391d650c3a9b2ffd2d17c9bd7';
+const origin='https://salary-fjktz4ngs-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='5a7b69e533db037c51820012c485da8aabc42143';
 const directory='output/release-completion/preview-ai-report';
 export async function verifyAiReportPreview(input:{publicId:string;foreignPublicId:string;session:string;foreignSession:string;reportId:string;versionId:string;findingId:string;sourceSha256:string}){
  assert.ok(origin.startsWith('https://salary-')&&origin.endsWith('-tivdoccom-5042s-projects.vercel.app'));
@@ -52,6 +52,7 @@ export async function verifyAiReportPreview(input:{publicId:string;foreignPublic
   for(const width of [360,390,768,1440])await check(`published report survives reload in RTL at ${width}px`,async()=>{
    await page.setViewportSize({width,height:900});await page.reload();await page.locator('.report-service-disclosure').waitFor();
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1);assert.deepEqual(errors,[]);
+   assert.ok(await page.evaluate(()=>{const header=document.querySelector('.check-header')!.getBoundingClientRect();return [...document.querySelector('.check-header__top')!.children].every(n=>{const r=n.getBoundingClientRect();return r.height===0||r.bottom<=header.bottom+1;});}),'case header contains all wrapped controls');
    await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:`${directory}/report-${width}.png`,fullPage:false});
   });
   await check('unsent finding correction survives reload and stays scoped to that finding',async()=>{
@@ -62,11 +63,11 @@ export async function verifyAiReportPreview(input:{publicId:string;foreignPublic
   await check('lost correction response can retry after reload and the original report remains accessible',async()=>{
    let faulted=false;const attempts:string[]=[];
    page.on('request',r=>{if(r.url()===origin+route&&r.method()==='POST'&&r.postDataJSON()?.message)attempts.push(r.postDataJSON().id);});
-   const loseResponse=async(r:Route)=>{if(r.request().method()==='POST'&&r.request().postDataJSON()?.message){
+   const loseResponse=async(r:Route)=>{if(!faulted&&r.request().method()==='POST'&&r.request().postDataJSON()?.message){
     const response=await r.fetch();assert.equal(response.status(),202);assert.equal((await response.json()).state,'pending');
-    faulted=true;await page.unroute('**'+route,loseResponse);await r.abort('failed');
+    faulted=true;await r.abort('failed');
    }else await r.continue();};await page.route('**'+route,loseResponse);
-   await page.getByRole('button',{name:'שמירת בקשת בירור',exact:true}).click();await page.getByText(/לא הצלחנו לשמור|לא התקבל אישור שמירה/u).waitFor();
+   await page.getByRole('button',{name:'שמירת בקשת בירור',exact:true}).click();await page.getByText(/לא הצלחנו לשמור|לא התקבל אישור שמירה/u).waitFor();await page.unroute('**'+route,loseResponse);
    await page.reload();await page.locator(`#correction-${input.findingId} summary`).click();
    assert.equal(await page.getByRole('textbox',{name:'מה דורש בדיקה נוספת?'}).inputValue(),'Synthetic saved finding correction');
    await page.getByRole('button',{name:'שמירת בקשת בירור',exact:true}).click();await page.getByText('הבקשה נשמרה בשרשור התמיכה בתיק. הדוח הקיים נשמר עד לסיום הבדיקה.',{exact:true}).waitFor();
