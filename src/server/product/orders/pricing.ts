@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {productOffer} from '../../../lib/product-offer';
 import {canonicalSha256} from '../../../engine/rule-runtime/canonical';
-import {priceQuoteSchema} from './price-quote';
+import {priceQuoteSchema,type PriceQuote} from './price-quote';
 import {PROJECTION_TOPICS} from '../reports/case-report-projection';
 
 const minor=z.number().int().nonnegative().safe();
@@ -25,7 +25,8 @@ export type PricingBasis=z.infer<typeof pricingBasisSchema>;
 export type PricingResult={state:'amount_unknown';reason:string}|{state:'no_upgrade';basis_minor:number;reason:'below_threshold'}|{state:'eligible';basis_minor:number;total_minor:number;pricing_version:string};
 
 /** Pure commercial arithmetic. Incomplete or ambiguous inputs never disclose a tier. */
-export function priceSavedBasis(raw:unknown):PricingResult{
+export function priceSavedBasis(raw:unknown):PricingResult{return priceUnderPolicy(raw,productOffer().full_report.pricing);}
+function priceUnderPolicy(raw:unknown,policy:PriceQuote['pricing_policy']):PricingResult{
  const parsed=pricingBasisSchema.safeParse(raw);if(!parsed.success)return {state:'amount_unknown',reason:'invalid_saved_basis'};
  const basis=parsed.data;
  if(new Set(basis.checked_months).size!==basis.checked_months.length||new Set(basis.checked_topics).size!==basis.checked_topics.length)return {state:'amount_unknown',reason:'ambiguous_coverage'};
@@ -48,7 +49,6 @@ export function priceSavedBasis(raw:unknown):PricingResult{
   if(!Number.isSafeInteger(total))return {state:'amount_unknown',reason:'amount_overflow'};
  }
  if(economic.size===0)return {state:'amount_unknown',reason:'no_quantified_components'};
- const policy=productOffer().full_report.pricing;
  const tier=policy.tiers.findLast(t=>total>=t.minimum_basis_minor);
  return tier?{state:'eligible',basis_minor:total,total_minor:tier.total_minor,pricing_version:policy.version}:{state:'no_upgrade',basis_minor:total,reason:'below_threshold'};
 }
@@ -76,4 +76,19 @@ export function pricingRefundDifference(paid:{total_minor:number;upgrade_paid_mi
  if(corrected.state==='amount_unknown')return null;
  if(!Number.isSafeInteger(paid.total_minor)||!Number.isSafeInteger(paid.upgrade_paid_minor)||paid.upgrade_paid_minor<0||paid.total_minor<paid.upgrade_paid_minor)throw new Error('PRICING_PAID_SNAPSHOT_INVALID');
  return corrected.state==='no_upgrade'?paid.upgrade_paid_minor:Math.max(0,Math.min(paid.upgrade_paid_minor,paid.total_minor-corrected.total_minor));
+}
+
+/** Commercial correction arithmetic for the SAME originally checked scope.
+ * It does not establish payment, create a refund request or confirm settlement.
+ * A persisted paid-order adapter must bind this quote and canonical basis first.
+ * Historical purchases use their saved policy, never today's price table. */
+export function quoteCorrectionRefund(candidateQuote:unknown,candidateBasis:unknown){
+ const parsedQuote=priceQuoteSchema.safeParse(candidateQuote),parsedBasis=pricingBasisSchema.safeParse(candidateBasis);
+ if(!parsedQuote.success||!parsedBasis.success)return {state:'amount_unknown' as const,reason:'invalid_correction_basis_or_quote'};
+ const quote=parsedQuote.data,basis=parsedBasis.data;
+ const same=(a:readonly string[],b:readonly string[])=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
+ if(basis.case_id!==quote.case_id||basis.identity_id!==quote.identity_id||!same(basis.checked_months,quote.checked_months)||!same(basis.checked_topics,quote.checked_topics))return {state:'amount_unknown' as const,reason:'correction_scope_mismatch'};
+ const corrected=priceUnderPolicy(basis,quote.pricing_policy);if(corrected.state==='amount_unknown')return corrected;
+ return {state:'calculated' as const,pricing_version:quote.pricing_version,quote_sha256:quote.sha256,corrected_basis_sha256:canonicalSha256(basis),
+  refund_minor:pricingRefundDifference({total_minor:quote.total_minor,upgrade_paid_minor:quote.balance_minor},corrected)!};
 }

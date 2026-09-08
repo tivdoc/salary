@@ -1,5 +1,7 @@
 import {describe,expect,it} from 'vitest';
-import {priceSavedBasis,createPriceQuote,pricingRefundDifference,type PricingBasis} from './pricing';
+import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {priceQuoteSchema} from './price-quote';
+import {priceSavedBasis,createPriceQuote,pricingRefundDifference,quoteCorrectionRefund,type PricingBasis} from './pricing';
 const caseId='11111111-1111-4111-8111-111111111111',identityId='22222222-2222-4222-8222-222222222222';
 function basis(amount:number):PricingBasis{return {case_id:caseId,identity_id:identityId,analysis_version:'synthetic-analysis-1',input_sha256:'a'.repeat(64),checked_months:['2026-08'],checked_topics:['pension'],components:[{finding_id:'33333333-3333-4333-8333-333333333333',economic_key:'employer-pension-contribution',month:'2026-08',topic:'pension',kind:'fund_deposit',direction:amount?'employer_owes':'none',certainty:'high',active:true,basis_complete:true,amount,range:null,evidence_ids:['44444444-4444-4444-8444-444444444444'],rule_versions:['synthetic-rule-v1'],alternative_group:null}]};}
 function quoteInput(value=50_000){return {basis:basis(value),caseId,identityId,from:'2026-08',to:'2026-08',topics:['pension'],credit:{order_id:'55555555-5555-4555-8555-555555555555',case_id:caseId,identity_id:identityId,verified:true,paid_minor:999,already_consumed:false},now:new Date('2026-09-07T12:00:00.000Z')};}
@@ -20,4 +22,36 @@ describe('v1.1 commercial pricing, separate from legal calculation',()=>{
  it('refuses foreign and unverified credit and foreign saved analysis',()=>{const input=quoteInput();input.credit.identity_id='foreign';expect(()=>createPriceQuote(input)).toThrow('PRICING_CREDIT_UNVERIFIED');input.credit.identity_id=identityId;input.credit.verified=false;expect(()=>createPriceQuote(input)).toThrow('PRICING_CREDIT_UNVERIFIED');input.basis.case_id='77777777-7777-4777-8777-777777777777';expect(()=>createPriceQuote(input)).toThrow('PRICING_FORBIDDEN');});
  it('changes the quote fingerprint with source revision, without mutating an earlier snapshot',()=>{const input=quoteInput();const old=createPriceQuote(input);input.basis.input_sha256='b'.repeat(64);const next=createPriceQuote(input);expect(old).not.toEqual(next);expect(old).toMatchObject({input_sha256:'a'.repeat(64),balance_minor:8901});});
  it('requests only the downward tier difference; unknown is not zero and increases do not surcharge',()=>{const paid={total_minor:34900,upgrade_paid_minor:33901};expect(pricingRefundDifference(paid,priceSavedBasis(basis(500000)))).toBe(15000);expect(pricingRefundDifference(paid,priceSavedBasis(basis(49999)))).toBe(33901);expect(pricingRefundDifference(paid,{state:'amount_unknown',reason:'missing'})).toBeNull();expect(pricingRefundDifference({total_minor:9900,upgrade_paid_minor:8901},priceSavedBasis(basis(2000000)))).toBe(0);});
+});
+
+describe('correction uses the original quoted policy and checked scope',()=>{
+ it('keeps historical tier prices even when today would compute a different refund',()=>{
+  const original=createPriceQuote(quoteInput(2000000));if(original.state!=='eligible')throw Error('fixture');
+  const old=structuredClone(original);old.pricing_policy.version='historical-test';old.pricing_version='historical-test';
+  old.pricing_policy.tiers.forEach((tier,i)=>{tier.total_minor=[5000,10000,20000][i];});old.total_minor=20000;old.balance_minor=19001;
+  const {sha256:ignored,...payload}=old;void ignored;old.sha256=canonicalSha256(payload);priceQuoteSchema.parse(old);
+  const before=JSON.stringify(old);
+  expect(quoteCorrectionRefund(old,basis(500000))).toMatchObject({state:'calculated',pricing_version:'historical-test',refund_minor:10000,quote_sha256:old.sha256});
+  expect(pricingRefundDifference({total_minor:20000,upgrade_paid_minor:19001},priceSavedBasis(basis(500000)))).toBe(100);
+  expect(JSON.stringify(old)).toBe(before);
+ });
+ it.each([[49999,33901],[500000,15000],[2000000,0],[3000000,0]])('corrected %i yields only a bounded upgrade refund', (amount,refund)=>{
+  expect(quoteCorrectionRefund(createPriceQuote(quoteInput(2000000)),basis(amount))).toMatchObject({state:'calculated',refund_minor:refund});
+ });
+ it.each(['case','identity','months','topics'])('does not treat changed %s scope as a downward correction',kind=>{
+  const corrected=basis(49999);
+  if(kind==='case')corrected.case_id='66666666-6666-4666-8666-666666666666';
+  if(kind==='identity')corrected.identity_id='66666666-6666-4666-8666-666666666666';
+  if(kind==='months')corrected.checked_months=['2026-08','2026-09'];
+  if(kind==='topics')corrected.checked_topics=['pension','travel'];
+  expect(quoteCorrectionRefund(createPriceQuote(quoteInput()),corrected)).toEqual({state:'amount_unknown',reason:'correction_scope_mismatch'});
+ });
+ it.each(['low','missing','inactive','tampered_quote'])('keeps %s as unknown rather than a zero finding',kind=>{
+  const corrected=basis(0),quote=createPriceQuote(quoteInput());
+  if(kind==='low')corrected.components[0].certainty='low';
+  if(kind==='missing')corrected.components=[];
+  if(kind==='inactive')corrected.components[0].active=false;
+  if(kind==='tampered_quote'&&quote.state==='eligible')quote.balance_minor=1;
+  const result=quoteCorrectionRefund(quote,corrected);expect(result.state).toBe('amount_unknown');expect(result).not.toHaveProperty('refund_minor');
+ });
 });
