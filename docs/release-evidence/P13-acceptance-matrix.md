@@ -2,21 +2,21 @@
 
 ## Current evidence index — 2026-09-08
 
-Current integrated Preview: exact 948c33da5b8a3b317d88e4473cdcea5acda05cd0, https://salary-hr5ztifiq-tivdoccom-5042s-projects.vercel.app, dpl_6Rd71h98suRgmLft5z5oQqv34zk4. Both CI runs 34249060243/34249054997 pass. All 80 hosted checks (44 public, 12 requests, 12 support, 12 uploads), eight actual Storage hashes and exact owned cleanup pass. Parallel UI 85177bc process/menu changes are included. See P13-948c33d-integrated-preview.json.
+Current integrated Preview: exact 45cf30f178a86e45793e90e3789f225fe7024e9d, https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app, dpl_6fpJkYMsbFRvxfFPUEVJudSJbSoM. Both CI runs 34255608069/34255602893 pass. All 91 hosted checks (44 public, 12 requests, 12 support, 12 uploads, 11 AI report), nine real Storage hashes and exact owned cleanup pass. AI publication also has nine actual worker/peer/web DB assertions. The protected header containment and downloaded PDF were visually inspected. See P13-45cf30f-integrated-preview.json.
 
-Subsequent AI publication v3 has nine actual isolated DB assertions and 61 local tests, but is not yet browser-proved or deployed in that Preview. Owner-seeded projections are not canonical monetary evidence. Historical v2 review terms, source activation and accuracy gates remain. No runtime projection write grant was added.
+Owner-seeded monetary projections and payments are synthetic. Historical v2 review terms, source activation and accuracy gates remain. No runtime projection write grant, real provider payment or production rollout was added.
 
 | Criterion | Current evidence | Exact remaining boundary |
 |---|---|---|
 | E01 uploads | P13-studio-upload-browser.json; P13-studio-upload-storage.json: 12 browser checks, all eight actual current/retained object hashes; owned cleanup complete | Revalidate on final RC; no production rollout by this task |
-| E04 isolation | Two browser identities reject foreign uploads, requests and support; canonical host rejects foreign tenant/report and revoked session | Protected published-report/operations/customer lifecycle browser paths remain |
+| E04 isolation | Two browser identities reject foreign uploads, requests and support; canonical host rejects foreign tenant/report and revoked session | Operations/customer lifecycle browser paths remain; protected published report/PDF/source is now proved |
 | E05 saved facts | P06 saved month/revision authority and P05 saved extraction/runtime/host proofs | Generic critical-field confirmations, legal executor and monetary evidence semantics remain; no verified provider accuracy |
 | E07 durable work | P05-saved-worker-bundle-db.json: 34 actual DEV DB/Storage checks; clean 7618c7f bundle, two fresh Node replay processes, revocation refusal | Provider-enabled standalone execution, unknown provider reconciliation, managed machine lifecycle/scheduling and final full crash rehearsal remain |
 | E08 request lifecycle | P06-request-browser.json: 12 actual hosted checks including loss/retry/correction/expiry/month and independent HTTP races | Deployed sweep/reminder delivery remains |
 | E09 access | Seeded session, server refresh/revoke functions and protected ownership tested | No OTP delivery, provider/DNS or two-profile real login proof |
 | E12 commercial flow | 9 quote-ledger + 11 atomic-acceptance + 11 unstarted-cancellation/checkout-freshness PostgreSQL assertions; credit history, concurrent checkout/cancel and source/expiry guards | Trusted monetary basis, customer quote/cancel UI and actual provider reconciliation/refund remain |
-| E13 corrections | Immutable request corrections and canonical source revisions tested | AI v3 publication has nine isolated DB checks; canonical writer, browser publication and correction regeneration remain |
-| P11 UI | Studio integrated through parallel branch 85177bc; actual light/dark/mobile/keyboard/video/fallback/reduced-motion and client navigation checks | Protected report, full assistive technology/200% zoom, tagged PDF and real user study remain |
+| E13 corrections | Immutable request corrections and canonical source revisions tested | AI v3 publication has nine isolated DB and 11 hosted checks; canonical writer and correction regeneration remain |
+| P11 UI | Studio integrated through parallel branch 85177bc; actual light/dark/mobile/keyboard/video/fallback/reduced-motion and client navigation checks | Full assistive technology/200% zoom, tagged PDF and real user study remain |
 
 No P00–P13 completion, RC, provider delivery, human approval, live sale, worker deployment or release-branch production deployment is implied. Source/accuracy/provider activation dependencies are distinct from the unfinished internal implementation above.
 

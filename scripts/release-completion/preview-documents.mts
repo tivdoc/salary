@@ -5,8 +5,8 @@ import {randomUUID,createHash} from 'node:crypto';
 import {chromium,type Page,type BrowserContext} from 'playwright';
 import {PDFDocument,StandardFonts} from 'pdf-lib';
 
-const origin='https://salary-fjktz4ngs-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='5a7b69e533db037c51820012c485da8aabc42143';
+const origin='https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app';
+const deployedSha='45cf30f178a86e45793e90e3789f225fe7024e9d';
 const directory='output/release-completion/preview-documents';
 type Fixture={caseId:string;publicId:string;identity:string;session:string;requests:Record<string,string>};
 type Doc={id:string;version_id:string;slot:string;original_filename:string;document_type:string};

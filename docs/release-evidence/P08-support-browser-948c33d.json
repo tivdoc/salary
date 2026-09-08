@@ -1,6 +1,6 @@
 {
-  "origin": "https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "45cf30f178a86e45793e90e3789f225fe7024e9d",
+  "origin": "https://salary-hr5ztifiq-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "948c33da5b8a3b317d88e4473cdcea5acda05cd0",
   "checks": [
     {
       "name": "customer opens case support with saved server state",
@@ -58,7 +58,7 @@
       "focused": false,
       "y": -56.390625,
       "bottom": -10.796875,
-      "scrollY": 746,
+      "scrollY": 659,
       "transform": "matrix(1, 0, 0, 1, 0, -68.3906)"
     },
     {

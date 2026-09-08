@@ -20,7 +20,7 @@
   "browserProof": true,
   "storageUploaded": true,
   "storageRemoved": true,
-  "sourceSha256": "7e79c3cfbed867a6a11d0c252f2e40af5bec535886fb21c6e4dae3b63cf45f99",
+  "sourceSha256": "c1f92e56beba806575f18c4f3ef29d6b019336f89bc1114915d5acb8db1f9d4f",
   "scope": "Actual worker/peer/web SQL publication, synthetic paid report and seeded customer sessions; hosted browser/API/PDF and owned Storage bytes. No canonical monetary computation, legal activation, real payment/provider, runtime projection INSERT grant or production.",
   "productionChanged": false
 }

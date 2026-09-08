@@ -1,0 +1,52 @@
+{
+  "sha": "45cf30f178a86e45793e90e3789f225fe7024e9d",
+  "origin": "https://salary-ezhfzrike-tivdoccom-5042s-projects.vercel.app",
+  "deployment": "dpl_6fpJkYMsbFRvxfFPUEVJudSJbSoM",
+  "ready": true,
+  "ci": [
+    34255608069,
+    34255602893
+  ],
+  "results": [
+    {
+      "name": "P13-launch-preview.json",
+      "passed": 44
+    },
+    {
+      "name": "P06-request-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P08-support-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P13-studio-upload-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P08-ai-report-browser.json",
+      "passed": 11
+    }
+  ],
+  "totalBrowserChecks": 91,
+  "aiPublicationDbAssertions": 9,
+  "verifiedStorageObjects": 9,
+  "currentUploadObjects": 7,
+  "retainedUploadObjects": 1,
+  "reportSourceObjects": 1,
+  "syntheticCasesRemoved": 8,
+  "syntheticIdentitiesRemoved": 8,
+  "ownedCleanupComplete": true,
+  "inspectedScreenshots": [
+    "preview-ai-report/report-390.png",
+    "preview-ai-report/pdf-page-1.png"
+  ],
+  "runtimeErrorQuery": {
+    "since": "20m",
+    "limit": 100,
+    "count": 0
+  },
+  "scope": "Isolated DEV Preview, seeded QA sessions, actual HTTP/DB/Storage and AI report/PDF disclosure. Synthetic paid orders and projections, no canonical monetary computation, legal activation, live provider/OTP or production rollout.",
+  "productionChanged": false
+}
