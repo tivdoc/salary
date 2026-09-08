@@ -65,5 +65,5 @@ export async function reserveSavedQuoteCredit(context:PostgresTransactionContext
  z.uuid().parse(input.quoteId);z.uuid().parse(input.orderId);
  const result=await context.client.query(statement('price_quote_reserve',
   'select private.order_quote_reserve($1::uuid,$2::uuid) value',[input.quoteId,input.orderId]));
- return z.object({quote_id:z.uuid(),case_id:z.uuid(),order_id:z.uuid(),credit_order_id:z.uuid().nullable(),credit_minor:z.number().int().nonnegative().safe(),reserved_at:z.iso.datetime({offset:true})}).strict().parse(result.rows[0]?.value);
+ return z.object({quote_id:z.uuid(),case_id:z.uuid(),order_id:z.uuid(),credit_order_id:z.uuid().nullable(),credit_minor:z.number().int().nonnegative().safe(),reserved_at:z.iso.datetime({offset:true}),released_at:z.iso.datetime({offset:true}).nullable().default(null),release_reason:z.enum(['customer_changed_scope','source_changed','quote_expired']).nullable().default(null)}).strict().parse(result.rows[0]?.value);
 }
