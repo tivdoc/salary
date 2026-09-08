@@ -1,6 +1,8 @@
 import {z} from 'zod';
 import {productOffer} from '../../../lib/product-offer';
 import {canonicalSha256} from '../../../engine/rule-runtime/canonical';
+import {priceQuoteSchema} from './price-quote';
+import {PROJECTION_TOPICS} from '../reports/case-report-projection';
 
 const minor=z.number().int().nonnegative().safe();
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
@@ -8,9 +10,9 @@ const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 /** Internal saved-result contract, never an HTTP request or an engine input. */
 export const pricingBasisSchema=z.object({
  case_id:z.uuid(),identity_id:z.uuid(),analysis_version:z.string().min(1),input_sha256:hash,
- checked_months:z.array(month).min(1),checked_topics:z.array(z.string().min(1)).min(1),
+ checked_months:z.array(month).min(1).max(600),checked_topics:z.array(z.enum(PROJECTION_TOPICS)).min(1).max(7),
  components:z.array(z.object({
-  finding_id:z.uuid(),economic_key:z.string().min(1),month,topic:z.string().min(1),
+  finding_id:z.uuid(),economic_key:z.string().min(1),month,topic:z.enum(PROJECTION_TOPICS),
   kind:z.enum(['wage_gap','fund_deposit','unrealized_balance','possible_compensation','estimated_interest','legal_cost']),
   direction:z.enum(['employer_owes','employee_owes','none']),
   certainty:z.enum(['high','medium','low']),active:z.boolean(),basis_complete:z.boolean(),
@@ -61,11 +63,12 @@ export function createPriceQuote(input:{basis:PricingBasis;caseId:string;identit
  if(basis.checked_months.some(m=>m<input.from||m>input.to)||basis.checked_topics.some(t=>!input.topics.includes(t)))throw new Error('PRICING_PURCHASE_SCOPE');
  const result=priceSavedBasis(basis);if(result.state!=='eligible')return result;
  const credit=input.credit;
- if(!credit.verified||credit.case_id!==input.caseId||credit.identity_id!==input.identityId||!Number.isSafeInteger(credit.paid_minor)||credit.paid_minor<0)throw new Error('PRICING_CREDIT_UNVERIFIED');
+ if(!credit.verified||credit.case_id!==input.caseId||credit.identity_id!==input.identityId||!z.uuid().safeParse(credit.order_id).success||!Number.isSafeInteger(credit.paid_minor)||credit.paid_minor<0)throw new Error('PRICING_CREDIT_UNVERIFIED');
  const initialMinor=Number(productOffer().initial_check.price.amount.replace('.',''));
  const credited=credit.already_consumed?0:Math.min(initialMinor,credit.paid_minor,result.total_minor);
  const quote={...result,analysis_version:basis.analysis_version,input_sha256:basis.input_sha256,basis_sha256:canonicalSha256(basis),case_id:input.caseId,identity_id:input.identityId,checked_months:basis.checked_months,checked_topics:basis.checked_topics,purchased_period:{from:input.from,to:input.to},purchased_topics:[...input.topics],credit_order_id:credited?credit.order_id:null,credit_minor:credited,balance_minor:result.total_minor-credited,created_at:input.now.toISOString(),expires_at:new Date(input.now.getTime()+productOffer().full_report.pricing.quote_valid_days*86400000).toISOString()};
- return {...quote,sha256:canonicalSha256(quote)};
+ const snapshot={...quote,schema_version:'tivdoc-price-quote-v1' as const,pricing_policy:structuredClone(productOffer().full_report.pricing),initial_credit_cap_minor:initialMinor};
+ return priceQuoteSchema.parse({...snapshot,sha256:canonicalSha256(snapshot)});
 }
 
 /** Corrections can open a refund request; this never asserts provider settlement. */
