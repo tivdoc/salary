@@ -44,5 +44,27 @@ export async function proveSourceTracePostgres(input:{db:pg.Client;context:Postg
  await repository.assertFindingsDisabled({case_id:bundle.case_id,analysis_run_id:bundle.analysis_run_id});
  expect(bundle.topic_results.every(t=>t.amount===null)).toBe(true);
  checks.push('existing canonical findings remain absent; the arithmetic probe creates no report, amount, legal activation or price');
- return {checks,traceSha256:trace.trace_sha256,storedTraceSha256:saved[0].trace_sha256,scope:'Actual isolated DEV worker connection and saved canonical stages, synthetic +1 XTS arithmetic only. Trace/run are rolled back by the enclosing proof; no concurrent-process, OCR, monetary entitlement or publication proof.'};
+ let comparisonProof:unknown=null;
+ if(process.env.TIVDOC_SOURCE_COMPARISON_DB_PROOF==='1'){
+  const {sourceComparisonFixture}=await import('@/engine/findings/source-comparison.fixtures');
+  const {createSourceMonetaryComparison,sourceMonetaryComparisonSchema}=await import('@/engine/findings/source-comparison');
+  const comparisonFixture=sourceComparisonFixture('positive',facts);
+  const comparisonTrace=createSourceCalculationTrace({...comparisonFixture.traceInput,catalogSha256:bundle.catalog_sha256});
+  const comparisonCommand={...command,topic_results:[{...topicResult,trace:comparisonTrace}]};
+  await repository.persistTraces(comparisonCommand);await repository.persistTraces(comparisonCommand);
+  const comparisons=(await rows()).filter(row=>row.trace.trace_sha256===comparisonTrace.trace_sha256);
+  expect(comparisons).toHaveLength(1);
+  const fromDb=sourceCalculationTraceSchema.parse(comparisons[0].trace);
+  const comparison=createSourceMonetaryComparison({trace:fromDb,expectedRef:'result.amount',recordedRef:'fact.salary'});
+  expect(comparison.signed_difference).toEqual({currency:'XTS',minor_units:1});
+  expect(comparison.recorded).toEqual(facts.facts.find(f=>f.path==='compensation.base_monthly_salary')!.value);
+  expect(sourceMonetaryComparisonSchema.parse(JSON.parse(JSON.stringify(comparison)))).toEqual(comparison);
+  expect(comparison.is_finding).toBe(false);expect(comparison.pricing_allowed).toBe(false);
+  await repository.assertFindingsDisabled({case_id:bundle.case_id,analysis_run_id:bundle.analysis_run_id});
+  comparisonProof={checks:[
+   'actual saved worker facts feed explicit expected-minus-recorded RuleSpec subtraction; PostgreSQL retry preserves one comparison trace',
+   'comparison is independently reconstructed from returned SQL JSON with exact recorded amount and signed difference; no finding or pricing authority'],
+   comparisonSha256:comparison.sha256,traceSha256:comparisonTrace.trace_sha256,scope:'Synthetic +1 XTS arithmetic over actual canonical saved facts in isolated DEV. The enclosing transaction rolls it back; no meaningful legal expectation, fund transfer, publication or price proof.'};
+ }
+ return {checks,comparisonProof,traceSha256:trace.trace_sha256,storedTraceSha256:saved[0].trace_sha256,scope:'Actual isolated DEV worker connection and saved canonical stages, synthetic +1 XTS arithmetic only. Trace/run are rolled back by the enclosing proof; no concurrent-process, OCR, monetary entitlement or publication proof.'};
 }
