@@ -4,6 +4,8 @@ Base f273f81bb2f381a602cf8ffec54dcd0c2881e0a2; both base CI runs 34280165292/342
 
 Local suite: 3,033 tests pass, 37 skip, zero failures. New trace/domain and persistence tests total 36; focused report/persistence group passes. Final typecheck and changed-file lint pass. After staging, 22 foundation/trusted-Git tests pass under Vitest (an initial incorrect node --test invocation failed before running assertions and was corrected). Actual DB proof is pending immediately after this code checkpoint so its receipt can name the exact commit.
 
+The first exact-708226b DB run reached actual trace insert/retry/replay and foreign-tenant refusal, then the test expected SQLSTATE 42501 from the historical append-only trigger; it correctly returned P0001 with `Engine version history is append-only`. Fixed that assertion, without changing the trigger or production code. Failed receipts retained; both owned cases/identities were removed and machine session revoked, with no cleanup failure. The final all-assertions DB receipt remains pending the repeat run.
+
 ## P13 integrated field and history Preview — exact 115a2dd (2026-09-09)
 
 Preview https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app (dpl_9QfryeYWadFvYYmzzkuJzLB6BE1m) is READY from exact 115a2dde81e9a2a537590588e400cb2994965926. Both CI/build/closure runs pass (34278013129/34278008101; credential-free suite 2,971 pass/63 skip). Fresh separate DEV schema replay proves all 120 migrations, 118 raw and two documented managed-platform compensations; shared role provisioning unchanged.

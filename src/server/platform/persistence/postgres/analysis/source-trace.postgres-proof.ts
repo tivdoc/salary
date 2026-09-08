@@ -37,7 +37,7 @@ export async function proveSourceTracePostgres(input:{db:pg.Client;context:Postg
  expect(await rows()).toHaveLength(1);
  checks.push('another tenant cannot resolve the source stages or create a linked trace through the verified worker connection');
  await db.query('savepoint immutable_source_trace');
- await expect(db.query('update public.engine_calculation_trace_versions set trace=trace where tenant_id=$1',[tenant])).rejects.toMatchObject({code:'42501'});
+ await expect(db.query('update public.engine_calculation_trace_versions set trace=trace where tenant_id=$1',[tenant])).rejects.toMatchObject({code:'P0001',message:'Engine version history is append-only'});
  await db.query('rollback to savepoint immutable_source_trace');
  expect(await rows()).toEqual(saved);
  checks.push('the database refuses UPDATE and preserves the original trace bytes and hash');
