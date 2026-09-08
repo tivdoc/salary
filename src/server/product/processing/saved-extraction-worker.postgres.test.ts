@@ -268,7 +268,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
       if(bundleProof){
        const childEnv={PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,NODE_ENV:'development' as const,TIVDOC_SAVED_DRAFT_WORKER_ENABLED:'true',TIVDOC_SAVED_WORKER_REPLAY_ONLY:'true',TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED:'false',TIVDOC_SAVED_WORKER_CASE_ID:otherId,TIVDOC_SAVED_WORKER_IDENTITY:JSON.stringify(identity),TIVDOC_WORKER_POSTGRES_URL:connection.toString(),TIVDOC_SAVED_WORKER_DEV_TARGET:JSON.stringify({host:driver.target.host,port:driver.target.port,database:driver.target.database,project_ref:'cpzrbidxftzqcfeqqusu'})};
        runBundle=()=>spawnSync(process.execPath,['output/release-completion/saved-worker/worker.cjs'],{env:childEnv,encoding:'utf8',windowsHide:true,timeout:60000});
-       const unfinished=runBundle();expect(unfinished.status).toBe(1);expect(JSON.parse(String(unfinished.stderr)).code).toBe('SAVED_REPLAY_NOT_COMPLETE');
+       const unfinished=runBundle();expect(unfinished.status).toBe(1);expect(JSON.parse(String(unfinished.stdout)).code).toBe('SAVED_REPLAY_NOT_COMPLETE');
        expect((await owner.query('select job_id from public.engine_durable_jobs where tenant_id=$1',[otherTenant])).rows).toHaveLength(0);
        bundleChecks.push('replay of an unfinished case refuses and rolls back dispatch/claim, leaving no newly running job');
       }
@@ -300,7 +300,7 @@ it.skipIf(process.env.TIVDOC_SAVED_EXTRACTION_DB_PROOF!=='1')('durably composes 
       hostChecks.push('the host runs actual Storage through saved extraction, canonical draft and completion; replay uses the saved manifest with no new provider pass and another case report is invisible');
       await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[otherTenant]);await owner.query('update public.product_identity_sessions set revoked_at=now() where sid=$1 and tenant_id=$2',[otherSid,otherTenant]);await owner.query('commit');
       let reached=false;await expect(secondTransactions(async()=>{reached=true;})).rejects.toThrow();expect(reached).toBe(false);
-      if(runBundle){const child=runBundle();expect(child.status).toBe(1);expect(JSON.parse(String(child.stderr)).code).toBe('SAVED_WORKER_EXECUTION_FAILED');expect(String(child.stderr).includes(otherJti)).toBe(false);bundleChecks.push('a new executable process refuses the revoked machine session and emits only a safe failure code');}
+      if(runBundle){const child=runBundle();expect(child.status).toBe(1);expect(JSON.parse(String(child.stdout)).code).toBe('SAVED_WORKER_EXECUTION_FAILED');expect(String(child.stderr).includes(otherJti)).toBe(false);bundleChecks.push('a new executable process refuses the revoked machine session and emits only a safe failure code');}
       expect(hostDrivers.every(d=>d.metrics().active_clients===0)).toBe(true);
       hostChecks.push('revoking the machine session blocks its next transaction before work; all pooled clients have been released');
      }

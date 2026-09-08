@@ -19,5 +19,5 @@ async function main(){
 }
 main().catch(error=>{
  const safe=new Set(['SAVED_WORKER_CLEAN_BUILD_REQUIRED','SAVED_HOST_CONFIGURATION_INVALID','SAVED_REPLAY_NOT_COMPLETE']);
- console.error(JSON.stringify({worker:'saved_draft',state:'failed',code:error instanceof Error&&safe.has(error.message)?error.message:'SAVED_WORKER_EXECUTION_FAILED'}));process.exitCode=1;
+ console.log(JSON.stringify({worker:'saved_draft',state:'failed',code:error instanceof Error&&safe.has(error.message)?error.message:'SAVED_WORKER_EXECUTION_FAILED'}));process.exitCode=1;
 });

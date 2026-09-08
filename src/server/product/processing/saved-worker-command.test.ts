@@ -40,6 +40,6 @@ describe('saved worker command boundaries',()=>{
   for(const VERCEL_ENV of ['production','preview'])for(const entry of [file,'scripts/product-workers/saved-draft.mts','scripts/product-workers/build-saved-draft.mjs']){
    const result=spawnSync(process.execPath,['--experimental-strip-types',entry],{encoding:'utf8',env:{...env,VERCEL_ENV},windowsHide:true});expect(result.status,result.stderr).toBe(2);expect(result.stderr).toContain('PRODUCTION_ENVIRONMENT_REFUSED');
   }
-  const invalid=spawnSync(process.execPath,[file],{encoding:'utf8',env:{...env,TIVDOC_SAVED_DRAFT_WORKER_ENABLED:'true'},windowsHide:true});expect(invalid.status).toBe(1);expect(JSON.parse(invalid.stderr).code).toBe(manifest.dirty?'SAVED_WORKER_CLEAN_BUILD_REQUIRED':'SAVED_HOST_CONFIGURATION_INVALID');
+  const invalid=spawnSync(process.execPath,[file],{encoding:'utf8',env:{...env,TIVDOC_SAVED_DRAFT_WORKER_ENABLED:'true'},windowsHide:true});expect(invalid.status).toBe(1);expect(JSON.parse(invalid.stdout).code).toBe(manifest.dirty?'SAVED_WORKER_CLEAN_BUILD_REQUIRED':'SAVED_HOST_CONFIGURATION_INVALID');
  },30000);
 });
