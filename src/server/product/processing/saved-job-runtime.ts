@@ -128,6 +128,7 @@ export async function runSavedDraftOnce(input:Omit<Parameters<typeof runSavedDra
  catch(error){
   const failure=await input.transactions(context=>recordSavedJobFailure(context,lease,error));
   if(failure.state==='succeeded')return {state:'succeeded' as const,result:await runSavedDraftJob(lease)};
-  return {...failure,jobId:claim.jobId};
+  const state=z.enum(['retry_wait','dead_letter','cancelled']).parse(failure.state);
+  return {...failure,state,jobId:claim.jobId};
  }
 }
