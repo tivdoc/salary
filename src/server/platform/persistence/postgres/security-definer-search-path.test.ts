@@ -29,7 +29,8 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // See docs/release-evidence/P12-definer-surface.json; the empty search_path rule remains exhaustive.
 // P13 real owner upload exposed the request-close trigger's missing authority.
 // The new trigger-only definer has no runtime EXECUTE grant and binds order/case.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 229;
+// P09 internal quote context and credit reservation: verified worker/case only.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 231;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

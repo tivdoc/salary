@@ -14,7 +14,7 @@ This index supersedes old environment/pin references below; the original accepta
 | E07 durable work | P05-saved-worker-bundle-db.json: 34 actual DEV DB/Storage checks; clean 7618c7f bundle, two fresh Node replay processes, revocation refusal | Provider-enabled standalone execution, unknown provider reconciliation, managed machine lifecycle/scheduling and final full crash rehearsal remain |
 | E08 request lifecycle | P06-request-browser.json: 12 actual hosted checks including loss/retry/correction/expiry/month and independent HTTP races | Deployed sweep/reminder delivery remains |
 | E09 access | Seeded session, server refresh/revoke functions and protected ownership tested | No OTP delivery, provider/DNS or two-profile real login proof |
-| E12 commercial flow | Pricing threshold and no-leak arithmetic plus order/entitlement DB proofs | Trusted monetary basis, durable quote/atomic credit, provider settlement/refund and complete checkout browser journey remain |
+| E12 commercial flow | Pricing/history/freshness contracts plus P09-quote-ledger-db.json: nine actual worker/peer/web assertions for private saved quotes and atomic credit reservation | Trusted monetary basis, atomic quoted-order creation, customer quote/checkout, credit cancellation and provider settlement/refund remain |
 | E13 corrections | Immutable request corrections and canonical source revisions tested | Published customer report regeneration and versioned AI publication remain |
 | P11 UI | Studio integrated through parallel branch 68d82cc; actual light/dark/mobile/keyboard/video/fallback/reduced-motion and client navigation checks | Protected report, full assistive technology/200% zoom, tagged PDF and real user study remain |
 
