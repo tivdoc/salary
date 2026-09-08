@@ -1,0 +1,21 @@
+{
+  "verdict": "PASS",
+  "gitSha": "ddeff9ae34e9eb5ca0279cbc633d9849a58b9f24",
+  "proof": {
+    "checks": [
+      "actual saved worker facts feed explicit expected-minus-recorded RuleSpec subtraction; PostgreSQL retry preserves one comparison trace",
+      "comparison is independently reconstructed from returned SQL JSON with exact recorded amount and signed difference; no finding or pricing authority"
+    ],
+    "comparisonSha256": "50f555c79c4817ca13d836471e94c0d64d4cd4cbc83c8b343bccb527e595902e",
+    "traceSha256": "cdc0adb6677fd63bc7fc810acf2c491ba9a3fa69b87ee89a9db21f1e228e2816",
+    "scope": "Synthetic +1 XTS arithmetic over actual canonical saved facts in isolated DEV. The enclosing transaction rolls it back; no meaningful legal expectation, fund transfer, publication or price proof."
+  },
+  "failure": null,
+  "cleanupFailure": null,
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionRevoked": true,
+  "traceAndAnalysisRolledBack": true,
+  "browserProof": false,
+  "productionChanged": false
+}
