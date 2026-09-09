@@ -1,0 +1,17 @@
+{
+  "applicationCommit": "1fbf0f15987a971a54f8d042832786b5a44cb0fb",
+  "verdict": "FAIL",
+  "classification": "Browser proof reached its240-second harness deadline without a final receipt; subsequent independent browser read/reload and DB read prove the identified100 answer was saved. Full acceptance is not claimed by this failed run.",
+  "observedBeforeCleanup": {
+    "runs": 2,
+    "findings": 1,
+    "identified_hours_answers": 1
+  },
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "storageObjectsRemoved": 2,
+  "machineSessionsRevoked": 2,
+  "canonicalAuditRetained": true,
+  "cleanupFailure": null,
+  "productionChanged": false
+}

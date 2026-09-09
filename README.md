@@ -1,6 +1,6 @@
 # Tivdoc Salary
 
-Release branch status (2026-09-09): the bounded [DEV financial-flow task](docs/dev-financial-flow-handoff-2026-09-09-he.md) now has an actual DB/Storage engineering proof from uploaded synthetic PDF to computed financial HTML/PDF. It does not establish live OCR, legally activated customer analysis or production readiness. Historical website scope below remains historical.
+Release branch status (2026-09-09): the bounded [DEV financial-flow task](docs/dev-financial-flow-handoff-2026-09-09-he.md) is delivered with12 actual DB/Storage and11 hosted Preview checks, computed same-run financial HTML/PDF and saved synthetic examples. It is engineering-only: live OCR, legally activated customer analysis and production readiness remain unproven. Work stops at this delivery; historical website scope below remains historical.
 
 Hebrew RTL MVP for the Tivdoc Salary validation funnel:
 

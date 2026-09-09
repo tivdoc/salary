@@ -23,14 +23,14 @@ export async function verifyDevFinancialPreview(input:Input){
  const context=await browser.newContext({storageState:access,locale:'he-IL',timezoneId:'Asia/Jerusalem',viewport:{width:390,height:900},reducedMotion:'reduce'});
  const cookie=(session:string)=>({name:'tivdoc_case_session',value:session,domain:new URL(origin).hostname,path:'/',secure:true,httpOnly:true,sameSite:'Lax' as const});
  const own=input.cases[0],foreign=input.cases[1];await context.addCookies([cookie(own.session)]);
- const page=await context.newPage();page.setDefaultTimeout(20000);
+ const page=await context.newPage();page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(15000);
  const checks:{name:string;passed:boolean;detail?:string}[]=[],errors:string[]=[];
  page.on('pageerror',e=>errors.push(e.message));
  const save=()=>writeFileSync(`${directory}/${input.stage}-receipt.json`,JSON.stringify({origin,deployedSha,deploymentId,stage:input.stage,checks,errors,
   scope:'Actual generated DEV financial runs; hosted HTML/PDF/source/history and identified answer UI. Synthetic paid scope/session; injected OCR; no real payment, login OTP or production.',
   liveOcrProof:false,seededReport:false,productionChanged:false},null,2)+'\n');
- const check=async(name:string,operation:()=>Promise<void>)=>{try{await operation();checks.push({name,passed:true});console.log('PASS '+name);}
- catch(error){checks.push({name,passed:false,detail:error instanceof Error?error.message:'failed'});throw error;}finally{save();}};
+ const check=async(name:string,operation:()=>Promise<void>)=>{let timer:ReturnType<typeof setTimeout>|undefined;try{await Promise.race([operation(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('BROWSER_CHECK_DEADLINE: '+name)),45000);})]);checks.push({name,passed:true});console.log('PASS '+name);}
+ catch(error){checks.push({name,passed:false,detail:error instanceof Error?error.message:'failed'});throw error;}finally{if(timer)clearTimeout(timer);save();}};
  const reportUrl=origin+`/case/${own.publicId}/reports`;
  const api=(run:DevFinancialRun)=>origin+`/api/cases/${own.publicId}/reports?engineering=1&report=${run.run_id}`;
  try{
@@ -40,31 +40,36 @@ export async function verifyDevFinancialPreview(input:Input){
   });
   if(input.stage==='missing'){
    await check('current missing result and previous historical financial run reload from saved DB',async()=>{
-    assert.equal((await page.goto(reportUrl))?.status(),200);
+    assert.equal((await page.goto(reportUrl,{waitUntil:'domcontentloaded'}))?.status(),200);
     assert.equal(await page.locator('[data-financial-run]').count(),2);
     const current=page.locator('[data-current="true"]');assert.equal(await current.getAttribute('data-financial-run'),input.missing.run_id);
     await current.getByText('חסר קלט מאומת',{exact:true}).waitFor();
     assert.equal(await page.locator(`[data-financial-run="${input.initial.run_id}"]`).getAttribute('data-current'),'false');
    });
    await check('identified customer answers the analysis-generated exact June hours request through the hosted UI',async()=>{
-    assert.ok(input.missing.request_id);assert.equal((await page.goto(origin+`/case/${own.publicId}/thread`))?.status(),200);
+    assert.ok(input.missing.request_id);assert.equal((await page.goto(origin+`/case/${own.publicId}/thread`,{waitUntil:'domcontentloaded'}))?.status(),200);
     const card=page.locator(`#request-${input.missing.request_id}`);
     await card.getByText('תקופת השאלה: יוני 2026',{exact:true}).waitFor();
     await card.getByRole('spinbutton',{name:'תשובה',exact:true}).fill('100');
-    const submitted=page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/cases/${own.publicId}/requests`);
-    await card.getByRole('button',{name:'שליחת תשובה',exact:true}).click();
-    const response=await submitted;assert.equal(response.status(),200);assert.equal((await response.json()).ok,true);
+    const submitted=page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/cases/${own.publicId}/requests`,{timeout:15000});
+    await card.getByRole('button',{name:'שליחת תשובה',exact:true}).click({noWaitAfter:true,timeout:10000});
+    const response=await submitted;assert.equal(response.status(),200);console.log('PASS hosted answer HTTP status');
     await page.locator('.thread-answered__answer').getByText('100',{exact:true}).waitFor();
-    await page.reload();await page.locator('.thread-answered__answer').getByText('100',{exact:true}).waitFor();
-    await page.screenshot({path:`${directory}/answered-request.png`,fullPage:false});
+    await page.reload({waitUntil:'domcontentloaded'});await page.locator('.thread-answered__answer').getByText('100',{exact:true}).waitFor();
+    // Read the acknowledgement through an actual same-answer HTTP retry. The
+    // browser refresh can leave Playwright's original response body pending.
+    const retry=await context.request.post(origin+`/api/cases/${own.publicId}/requests`,{
+     headers:{Origin:origin},data:{requestId:input.missing.request_id,answer:'100',action:'answer',expectedRevision:0},timeout:15000});
+    assert.equal(retry.status(),200);assert.equal((await retry.json()).ok,true);
+    await page.screenshot({timeout:10000,path:`${directory}/answered-request.png`,fullPage:false});
    });
    await check('answer invalidates the previous financial results before the next worker run',async()=>{
-    assert.equal((await page.goto(reportUrl))?.status(),200);assert.equal(await page.locator('[data-current="true"]').count(),0);
+    assert.equal((await page.goto(reportUrl,{waitUntil:'domcontentloaded'}))?.status(),200);assert.equal(await page.locator('[data-current="true"]').count(),0);
    });
   }else{
    const run=input.answered;assert.ok(run);
    await check('one current financial run and both historical runs appear after reload with computed operands and amounts',async()=>{
-    assert.equal((await page.goto(reportUrl))?.status(),200);await page.reload();
+    assert.equal((await page.goto(reportUrl,{waitUntil:'domcontentloaded'}))?.status(),200);await page.reload({waitUntil:'domcontentloaded'});
     assert.equal(await page.locator('[data-financial-run]').count(),3);const current=page.locator('[data-current="true"]');
     assert.equal(await current.getAttribute('data-financial-run'),run.run_id);
     const text=await current.innerText();for(const value of ['3540.00','3300.00','240.00','35.40','100',run.source.version_id])assert.ok(text.includes(value));
@@ -92,14 +97,14 @@ export async function verifyDevFinancialPreview(input:Input){
     }finally{await other.close();}
    });
    for(const width of [390,1440])await check(`financial report remains readable on reload at ${width}px`,async()=>{
-    await page.setViewportSize({width,height:900});await page.reload();
+    await page.setViewportSize({width,height:900});await page.reload({waitUntil:'domcontentloaded'});
     assert.equal(await page.locator('html').getAttribute('dir'),'rtl');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1);
     assert.equal(await page.locator('[data-current="true"]').getAttribute('data-financial-run'),run.run_id);assert.deepEqual(errors,[]);
-    await page.screenshot({path:`${directory}/report-${width}.png`,fullPage:false});
+    await page.screenshot({timeout:10000,path:`${directory}/report-${width}.png`,fullPage:false});
    });
   }
   assert.deepEqual(errors,[]);
- }catch(error){await page.screenshot({path:`${directory}/${input.stage}-failure.png`,fullPage:false}).catch(()=>{});throw error;}
+ }catch(error){await page.screenshot({timeout:10000,path:`${directory}/${input.stage}-failure.png`,fullPage:false}).catch(()=>{});throw error;}
  finally{save();await context.close();await browser.close();}
  return checks;
 }

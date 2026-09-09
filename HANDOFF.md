@@ -1,3 +1,13 @@
+## Scoped DEV financial flow delivered; stop here — 2026-09-09
+
+Application 1fbf0f15987a971a54f8d042832786b5a44cb0fb passes both CI runs34316811245/34316813836:3181 tests,64 skips,typecheck/lint/build and48 closure checks. READY Preview: https://salary-3zlixydgx-tivdoccom-5042s-projects.vercel.app (dpl_HTsxNstUdoQ71EMrAGbPaGXG9nPF). Existing isolated DEV schema is124. No production action.
+
+Actual uploaded synthetic PDFs → injected V2/V2.1 extraction → source-bound confirmations → canonical parent → computed engineering finding → same-run HTML/PDF is proved. Final12 DB/Storage checks, two source-confirmation sets, independent Node restart and11 hosted checks pass. Missing hours answered through the actual UI and same-answer HTTP retry produce one answer revision and a new240ILS comparison; old runs stay historical, source bytes survive replacement, foreign reads fail. Two cases/identities/objects cleaned, two machine sessions revoked; zero errors in the exact deployment20-minute log query. PDFs and390/1440px screenshots visually inspected.
+
+The final proof used the unchanged application above with a local test-only browser harness adjustment (8bb8b80845a26f75da779b3ff766b3854f6f5f83e51ede9ff86304a1849fceb0); dirty=true is disclosed, not hidden. It bounds waits and checks acknowledgement via an actual HTTP retry after Playwright stalled reading a browser-owned response body. Delivery commit stores that harness, reports and evidence; application source is unchanged from Preview. Failed runs and their cleanup remain separate.
+
+See docs/dev-financial-flow-handoff-2026-09-09-he.md and docs/release-evidence/DEV-financial-delivery.json. Live OCR key is absent/empty; no live OCR, approved legal activation, managed worker lifecycle, real OTP/payment or customer-readiness claim. This is the final bounded-task delivery. STOP; historical instructions below do not authorize continuing P00–P13.
+
 ## DEV hosted missing-hours answer integration repair — 2026-09-09
 
 Exactfc510b4 passed CI34315973652/34315977979 (3176 tests,64 skips,build and48 closure checks) and deployed only to isolated Preview dpl_Ad9uECexvset7RifhKEyn4SXvpAj. Its clean DB/browser proof rendered both historical/current generated runs and the exact June missing-hours question, but the UI answer returned503: case-requests selected the legacy unidentified RPC for the DEV hours namespace. The SQL identity guard correctly refused. This is a product connection failure, not proof of a completed browser flow.

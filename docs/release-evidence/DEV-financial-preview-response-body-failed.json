@@ -1,5 +1,5 @@
 {
-  "verdict": "PASS",
+  "verdict": "FAIL",
   "gitSha": "1fbf0f15987a971a54f8d042832786b5a44cb0fb",
   "gitWorktreeDirty": true,
   "migration": "20260909043527_dev_financial_analysis_flow.sql",
@@ -16,14 +16,11 @@
     "concurrent retries and a newly opened independent worker connection return the identical committed report without duplicate findings or another provider pass; this is connection restart, not process restart",
     "a foreign customer cannot obtain the report payload or its source reference; the worker cannot use the customer RPC, web cannot read private rows, and the case worker cannot analyze another case",
     "explicit upload replacement preserves old bytes and history but immediately makes the old result non-current and refuses old-job publication",
-    "the second actual uploaded PDF has explicitly missing hours; the injected adapter preserves absence, and analysis opens one focused identified-answer request with no monetary finding, including concurrent replay without duplicate questions",
-    "an identified answer creates a new immutable input and analysis; retry keeps one answer revision, invalid correction is refused, and exact-source extraction is reused without another provider call",
-    "all three historical runs remain readable to their owner, with only the answered current input designated current; stored HTML and extracted PDF text contain the same run IDs and amounts",
-    "case/payment state and ordinary legal/publication gates remain unchanged; only engineering tables contain the generated financial findings"
+    "the second actual uploaded PDF has explicitly missing hours; the injected adapter preserves absence, and analysis opens one focused identified-answer request with no monetary finding, including concurrent replay without duplicate questions"
   ],
   "confirmationChecks": [
     {
-      "versionId": "a5ae0a13-e24d-40bb-912b-f431bd63f1f4",
+      "versionId": "1ac62020-e0dc-4fad-81b7-a545e823eaa6",
       "fields": [
         "base_monthly_salary",
         "gross_salary",
@@ -39,7 +36,7 @@
       "receiptReused": true
     },
     {
-      "versionId": "17b121e1-8b8f-4817-8745-68446627df15",
+      "versionId": "2e785c00-d059-43e7-a7d1-b921a8d83595",
       "fields": [
         "base_monthly_salary",
         "gross_salary",
@@ -58,82 +55,28 @@
     {
       "receipt": {
         "state": "replayed",
-        "runId": "e9be71f9-bf97-49ae-8e75-b9fde99c4e8f",
-        "runSha256": "d80278998f554777dcc9a7bf40877bc590f025cb4c772f5d99b41ffa0d66456b",
-        "htmlSha256": "3a73091594ad3c93acc95ed1ac5008ee9a052441e67e472e87444b070f79d84a",
-        "pdfSha256": "d754da0a89d1641d67a3fa010d67b2c78a7c3557cb5877dd9883266bb90b8ab9"
+        "runId": "551dd17f-90b6-4fbd-8d7f-b286e273bc73",
+        "runSha256": "5d5b7523572027d869d0722c05d8e80bfce67e3c180aebf06dc68499d5dc74ae",
+        "htmlSha256": "4b2b82efc0faa3aad5b1ca0ac40ad72526c91d19b39d883f2a2b5d327a4ef5d0",
+        "pdfSha256": "7dcfc541388e94716c1e28b7d6ee9c69305a7839c074e10bfe161cd6e22fe149"
       },
       "bundleSha256": "260e44cc1d2015f9a8f2f6237d4d646dbc0bdd42e8a1038558c812cdeedc7ae0",
       "scope": "New Node process with independent DB connection; same saved report and no provider/Storage port"
     }
   ],
-  "previewChecks": [
-    [
-      {
-        "name": "isolated Preview health preserves disabled external services",
-        "passed": true
-      },
-      {
-        "name": "current missing result and previous historical financial run reload from saved DB",
-        "passed": true
-      },
-      {
-        "name": "identified customer answers the analysis-generated exact June hours request through the hosted UI",
-        "passed": true
-      },
-      {
-        "name": "answer invalidates the previous financial results before the next worker run",
-        "passed": true
-      }
-    ],
-    [
-      {
-        "name": "isolated Preview health preserves disabled external services",
-        "passed": true
-      },
-      {
-        "name": "one current financial run and both historical runs appear after reload with computed operands and amounts",
-        "passed": true
-      },
-      {
-        "name": "hosted PDF is the exact stored calculated artifact and carries the same run and amounts as HTML",
-        "passed": true
-      },
-      {
-        "name": "both replaced and current source links return exact immutable uploaded bytes",
-        "passed": true
-      },
-      {
-        "name": "foreign actual customer cannot read HTML, PDF or either source",
-        "passed": true
-      },
-      {
-        "name": "financial report remains readable on reload at 390px",
-        "passed": true
-      },
-      {
-        "name": "financial report remains readable on reload at 1440px",
-        "passed": true
-      }
-    ]
-  ],
-  "failure": null,
+  "previewChecks": [],
+  "failure": "BROWSER_CHECK_DEADLINE: identified customer answers the analysis-generated exact June hours request through the hosted UI",
   "cleanupFailure": null,
   "runs": [
     {
-      "runId": "e9be71f9-bf97-49ae-8e75-b9fde99c4e8f",
+      "runId": "551dd17f-90b6-4fbd-8d7f-b286e273bc73",
       "inputRevision": 16,
       "state": "calculated"
     },
     {
-      "runId": "3e69487a-11f3-4393-8bfd-d9b0aee049c2",
+      "runId": "f955f0e0-6daf-4a8d-8510-0274e780f016",
       "inputRevision": 29,
       "state": "missing_input"
-    },
-    {
-      "runId": "205b3d5c-6716-4139-84f6-978694e4141c",
-      "inputRevision": 31,
-      "state": "calculated"
     }
   ],
   "providerKind": "injected V2 transport; no network OCR",
@@ -169,8 +112,15 @@
   "uploadProof": "Actual web-role reserve/commit and signed private Storage bytes; no browser HTTP upload route in this proof",
   "browserProofRequested": true,
   "processRestartProofRequested": true,
-  "browserProof": true,
+  "browserProof": false,
   "processRestartProof": true,
   "liveOcrProof": false,
-  "productionChanged": false
+  "productionChanged": false,
+  "diagnostic": {
+    "clickReturned": true,
+    "httpStatus": 200,
+    "stalledAt": "Playwright Response.json() for browser-owned fetch after UI refresh",
+    "savedAnswerVisibleInFailureScreenshot": true,
+    "repair": "Retain initial HTTP200 and saved UI/reload checks; validate JSON through actual same-answer authenticated HTTP retry. The DB harness also asserts a single immutable answer revision."
+  }
 }

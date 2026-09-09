@@ -1,5 +1,5 @@
 {
-  "verdict": "PASS",
+  "verdict": "FAIL",
   "gitSha": "1fbf0f15987a971a54f8d042832786b5a44cb0fb",
   "gitWorktreeDirty": true,
   "migration": "20260909043527_dev_financial_analysis_flow.sql",
@@ -16,14 +16,11 @@
     "concurrent retries and a newly opened independent worker connection return the identical committed report without duplicate findings or another provider pass; this is connection restart, not process restart",
     "a foreign customer cannot obtain the report payload or its source reference; the worker cannot use the customer RPC, web cannot read private rows, and the case worker cannot analyze another case",
     "explicit upload replacement preserves old bytes and history but immediately makes the old result non-current and refuses old-job publication",
-    "the second actual uploaded PDF has explicitly missing hours; the injected adapter preserves absence, and analysis opens one focused identified-answer request with no monetary finding, including concurrent replay without duplicate questions",
-    "an identified answer creates a new immutable input and analysis; retry keeps one answer revision, invalid correction is refused, and exact-source extraction is reused without another provider call",
-    "all three historical runs remain readable to their owner, with only the answered current input designated current; stored HTML and extracted PDF text contain the same run IDs and amounts",
-    "case/payment state and ordinary legal/publication gates remain unchanged; only engineering tables contain the generated financial findings"
+    "the second actual uploaded PDF has explicitly missing hours; the injected adapter preserves absence, and analysis opens one focused identified-answer request with no monetary finding, including concurrent replay without duplicate questions"
   ],
   "confirmationChecks": [
     {
-      "versionId": "a5ae0a13-e24d-40bb-912b-f431bd63f1f4",
+      "versionId": "dc748812-40ff-45f3-8192-cd416e2d0577",
       "fields": [
         "base_monthly_salary",
         "gross_salary",
@@ -39,7 +36,7 @@
       "receiptReused": true
     },
     {
-      "versionId": "17b121e1-8b8f-4817-8745-68446627df15",
+      "versionId": "cc415f13-be6e-4a49-a4ed-c648f33b4582",
       "fields": [
         "base_monthly_salary",
         "gross_salary",
@@ -58,82 +55,28 @@
     {
       "receipt": {
         "state": "replayed",
-        "runId": "e9be71f9-bf97-49ae-8e75-b9fde99c4e8f",
-        "runSha256": "d80278998f554777dcc9a7bf40877bc590f025cb4c772f5d99b41ffa0d66456b",
-        "htmlSha256": "3a73091594ad3c93acc95ed1ac5008ee9a052441e67e472e87444b070f79d84a",
-        "pdfSha256": "d754da0a89d1641d67a3fa010d67b2c78a7c3557cb5877dd9883266bb90b8ab9"
+        "runId": "4a937abf-2527-452d-80ab-874873429550",
+        "runSha256": "22665813e724795361c836fa654bd5ece59c0bd355010cc0e70dc695b14bd72b",
+        "htmlSha256": "8250f7399ed18f6b58b629588cf0a0a18ae2177de88a2644931a0b372d6abafe",
+        "pdfSha256": "8a4a2c67b0f70a3bfbe198b24bb046cd5a4dc6d23fb50f159e464e44cfbee4f6"
       },
       "bundleSha256": "260e44cc1d2015f9a8f2f6237d4d646dbc0bdd42e8a1038558c812cdeedc7ae0",
       "scope": "New Node process with independent DB connection; same saved report and no provider/Storage port"
     }
   ],
-  "previewChecks": [
-    [
-      {
-        "name": "isolated Preview health preserves disabled external services",
-        "passed": true
-      },
-      {
-        "name": "current missing result and previous historical financial run reload from saved DB",
-        "passed": true
-      },
-      {
-        "name": "identified customer answers the analysis-generated exact June hours request through the hosted UI",
-        "passed": true
-      },
-      {
-        "name": "answer invalidates the previous financial results before the next worker run",
-        "passed": true
-      }
-    ],
-    [
-      {
-        "name": "isolated Preview health preserves disabled external services",
-        "passed": true
-      },
-      {
-        "name": "one current financial run and both historical runs appear after reload with computed operands and amounts",
-        "passed": true
-      },
-      {
-        "name": "hosted PDF is the exact stored calculated artifact and carries the same run and amounts as HTML",
-        "passed": true
-      },
-      {
-        "name": "both replaced and current source links return exact immutable uploaded bytes",
-        "passed": true
-      },
-      {
-        "name": "foreign actual customer cannot read HTML, PDF or either source",
-        "passed": true
-      },
-      {
-        "name": "financial report remains readable on reload at 390px",
-        "passed": true
-      },
-      {
-        "name": "financial report remains readable on reload at 1440px",
-        "passed": true
-      }
-    ]
-  ],
-  "failure": null,
+  "previewChecks": [],
+  "failure": "BROWSER_CHECK_DEADLINE: identified customer answers the analysis-generated exact June hours request through the hosted UI",
   "cleanupFailure": null,
   "runs": [
     {
-      "runId": "e9be71f9-bf97-49ae-8e75-b9fde99c4e8f",
+      "runId": "4a937abf-2527-452d-80ab-874873429550",
       "inputRevision": 16,
       "state": "calculated"
     },
     {
-      "runId": "3e69487a-11f3-4393-8bfd-d9b0aee049c2",
+      "runId": "245d0071-3699-4ae1-862e-f9beaefaaafd",
       "inputRevision": 29,
       "state": "missing_input"
-    },
-    {
-      "runId": "205b3d5c-6716-4139-84f6-978694e4141c",
-      "inputRevision": 31,
-      "state": "calculated"
     }
   ],
   "providerKind": "injected V2 transport; no network OCR",
@@ -169,7 +112,7 @@
   "uploadProof": "Actual web-role reserve/commit and signed private Storage bytes; no browser HTTP upload route in this proof",
   "browserProofRequested": true,
   "processRestartProofRequested": true,
-  "browserProof": true,
+  "browserProof": false,
   "processRestartProof": true,
   "liveOcrProof": false,
   "productionChanged": false

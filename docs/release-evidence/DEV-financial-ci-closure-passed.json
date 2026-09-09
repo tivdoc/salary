@@ -1,0 +1,336 @@
+{
+  "schema_version": "tivdoc-production-closure-receipt-v2",
+  "unit": "L8-1 / D2; L9-2 / D2 (two environments)",
+  "status": "PASS",
+  "environments": [
+    {
+      "NODE_ENV": "production",
+      "VERCEL_ENV": "production",
+      "tivdoc_flags": "none",
+      "build": {
+        "build_id": "gomPYdkY0jGyWqn40orgg",
+        "server_tree_sha256": "45ac6665f0ae94ffd3d37a8565cdf577f68c40a042a3c06ab32095660ec56a22",
+        "server_files": 847
+      },
+      "checks_total": 24,
+      "checks_failed": [],
+      "entry_points_spawned": 166
+    },
+    {
+      "NODE_ENV": "production",
+      "VERCEL_ENV": "preview",
+      "tivdoc_flags": "none",
+      "build": {
+        "build_id": "CBRSwpq-Xa3x3Jn8i2WzU",
+        "server_tree_sha256": "acb2131637ec9fd2446541febf60406badf2351b5136890c49f39c19c49f1c81",
+        "server_files": 847
+      },
+      "checks_total": 24,
+      "checks_failed": [],
+      "entry_points_spawned": 166
+    }
+  ],
+  "identical_posture": true,
+  "checks": [
+    {
+      "environment": "production",
+      "name": "build_under_production_environment",
+      "passed": true,
+      "detail": "{\"exit\":0,\"vercel_env\":\"production\",\"tivdoc_flags_in_env\":0}"
+    },
+    {
+      "environment": "production",
+      "name": "build_hash_recorded",
+      "passed": true,
+      "detail": "{\"build_id\":\"gomPYdkY0jGyWqn40orgg\",\"server_tree_sha256\":\"45ac6665f0ae94ffd3d37a8565cdf577f68c40a042a3c06ab32095660ec56a22\",\"server_files\":847}"
+    },
+    {
+      "environment": "production",
+      "name": "module_graph_carries_no_script_or_reference_tenant_marker",
+      "passed": true,
+      "detail": "{\"markers_searched\":10,\"hits\":{},\"chunks_bundling_a_script_module\":[]}"
+    },
+    {
+      "environment": "production",
+      "name": "deployment_trace_carries_no_customer_material_that_could_deploy",
+      "passed": true,
+      "detail": "{\"traced_in_repository\":334,\"git_tracked\":323,\"local_only_cannot_deploy\":11,\"customer_paths_named_by_local_evidence\":0,\"customer_paths_tracked\":[]}"
+    },
+    {
+      "environment": "production",
+      "name": "scripts_in_the_deployment_trace_are_data_references_that_refuse_production",
+      "passed": true,
+      "detail": "{\"scripts_named\":[\"scripts/canonical-persistence-v091/foundation/migration-portability-amendment.json\",\"scripts/full-local-system-marathon/browser-e2e-runtime.mts\",\"scripts/full-local-system-marathon/durable-browser-e2e-runtime.mts\",\"scripts/full-local-system-marathon/durable-browser-e2e-runtime.test.mjs\",\"scripts/product-integration/e2e/harness.mts\",\"scripts/product-integration/e2e/negative.mts\",\"scripts/product-integration/e2e/synthetic.mts\",\"scripts/product-integration/routes/route-service-map.json\",\"scripts/supabase-dev-guard/dev-platform-receipt.json\"],\"bundled_as_modules\":[],\"entry_points_among_them\":[\"scripts/product-integration/e2e/negative.mts\",\"scripts/product-integration/e2e/synthetic.mts\"],\"unguarded\":[]}"
+    },
+    {
+      "environment": "production",
+      "name": "server_started_under_production_environment",
+      "passed": true,
+      "detail": "{\"port\":43409,\"vercel_env\":\"production\"}"
+    },
+    {
+      "environment": "production",
+      "name": "closed_api_routes_answer_one_404_shape",
+      "passed": true,
+      "detail": "{\"routes\":[\"GET /api/operations/legal-review/queue=404:0b\",\"GET /api/operations/legal-review/topics=404:0b\",\"GET /api/operations/shadow/summary=404:0b\",\"GET /api/operations/ground-truth/queue=404:0b\",\"GET /api/operations/anything-at-all=404:0b\",\"POST /api/operations/legal-review/actions=404:0b\",\"POST /api/operations/session=404:0b\",\"DELETE /api/operations/session=404:0b\",\"POST /api/portal/session=404:0b\",\"DELETE /api/portal/session=404:0b\",\"GET /api/portal/cases=404:0b\",\"POST /api/portal/anything-at-all=404:0b\"],\"distinct_shapes\":1,\"headers\":{\"cache-control\":\"private, no-store, max-age=0\",\"content-security-policy\":\"default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:\",\"cross-origin-opener-policy\":\"same-origin\",\"cross-origin-resource-policy\":\"same-origin\",\"permissions-policy\":\"camera=(), microphone=(), geolocation=(), payment=()\",\"referrer-policy\":\"no-referrer\",\"transfer-encoding\":\"chunked\",\"x-content-type-options\":\"nosniff\",\"x-frame-options\":\"DENY\",\"x-robots-tag\":\"noindex, nofollow, noarchive\"}}"
+    },
+    {
+      "environment": "production",
+      "name": "closed_api_routes_carry_refusal_headers",
+      "passed": true,
+      "detail": "{\"present\":[\"cache-control\",\"content-security-policy\",\"cross-origin-resource-policy\",\"permissions-policy\",\"referrer-policy\",\"x-content-type-options\",\"x-robots-tag\"],\"merged\":{\"cache-control\":\"private, no-store, max-age=0\",\"content-security-policy\":\"default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:\",\"cross-origin-opener-policy\":\"same-origin\",\"cross-origin-resource-policy\":\"same-origin\",\"permissions-policy\":\"camera=(), microphone=(), geolocation=(), payment=()\",\"referrer-policy\":\"no-referrer\",\"transfer-encoding\":\"chunked\",\"x-content-type-options\":\"nosniff\",\"x-frame-options\":\"DENY\",\"x-robots-tag\":\"noindex, nofollow, noarchive\"}}"
+    },
+    {
+      "environment": "production",
+      "name": "paths_outside_the_app_answer_the_framework_404",
+      "passed": true,
+      "detail": "[\"/api/portal-v07/cases=404:14468b\",\"/api/internal-ops-v07/cases=404:14468b\"]"
+    },
+    {
+      "environment": "production",
+      "name": "legal_pages_answer_404",
+      "passed": true,
+      "detail": "[\"/operations=404\",\"/portal=404\",\"/internal-ops-v07=404\"]"
+    },
+    {
+      "environment": "production",
+      "name": "the_public_pages_and_health_still_answer",
+      "passed": true,
+      "detail": "[\"/=200\",\"/privacy=200\",\"/terms=200\",\"/robots.txt=200\",\"/sitemap.xml=200\",\"/api/health=200\"]"
+    },
+    {
+      "environment": "production",
+      "name": "every_route_main_serves_is_product_classified",
+      "passed": true,
+      "detail": "{\"main_ref\":\"origin/main\",\"main_route_files\":20,\"product_assignments\":39,\"only_on_main\":[],\"added_on_branch\":[\"src/app/accessibility/page.tsx\",\"src/app/account/page.tsx\",\"src/app/api/account/route.ts\",\"src/app/api/cases/[token]/reports/route.ts\",\"src/app/api/cases/[token]/requests/route.ts\",\"src/app/api/cases/[token]/upload-session/route.ts\",\"src/app/api/cases/access/request/route.ts\",\"src/app/api/cases/access/resend/route.ts\",\"src/app/api/cases/access/verify/route.ts\",\"src/app/api/cases/reminders/off/route.ts\",\"src/app/api/notifications/resend/route.ts\",\"src/app/case/[token]/documents/page.tsx\",\"src/app/case/[token]/orders/page.tsx\",\"src/app/case/[token]/page.tsx\",\"src/app/case/[token]/reports/page.tsx\",\"src/app/case/[token]/thread/page.tsx\",\"src/app/cases/page.tsx\",\"src/app/check/reminders/off/page.tsx\",\"src/app/login/page.tsx\"],\"only_in_split\":[]}"
+    },
+    {
+      "environment": "production",
+      "name": "product_routes_answer_as_main_answers",
+      "passed": true,
+      "detail": "{\"probes\":[\"GET /=200 (main: 200)\",\"GET /check=200 (main: 200)\",\"GET /check/upload=307 (main: 307)\",\"GET /check/payment=307 (main: 307)\",\"GET /check/received=307 (main: 307)\",\"GET /privacy=200 (main: 200)\",\"GET /terms=200 (main: 200)\",\"GET /robots.txt=200 (main: 200)\",\"GET /sitemap.xml=200 (main: 200)\",\"GET /opengraph-image=200 (main: 200)\",\"POST /api/cases=400 (main: 400)\",\"GET /api/cases/resume=200 (main: 200)\",\"GET /api/cases/status=401 (main: 401)\",\"POST /api/documents/sign=401 (main: 401)\",\"POST /api/documents/complete=401 (main: 401)\",\"POST /api/funnel/session=400 (main: 400)\",\"GET /api/health=200 (main: 200)\",\"POST /api/payments/start=403 (main: 403)\",\"GET /api/payments/return=307 (main: 3xx)\",\"POST /api/payments/reconcile=401 (main: 401)\",\"GET /case/0000000000000000000000=200 (main: 200)\",\"GET /login=200 (main: 200)\",\"GET /cases=307 (main: 307)\",\"GET /case/TV-PROBE001/thread=307 (main: 307)\",\"GET /case/TV-PROBE001/documents=307 (main: 307)\",\"GET /case/TV-PROBE001/reports=307 (main: 307)\",\"POST /api/cases/TV-PROBE001/requests=403 (main: 403)\",\"GET /api/cases/TV-PROBE001/requests?source=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa=404 (main: 404)\",\"POST /api/cases/TV-PROBE001/upload-session=401 (main: 401)\",\"GET /check/reminders/off=200 (main: 200)\",\"GET /api/cases/TV-TEST0001/reports=404 (main: 404)\",\"POST /api/notifications/resend=503 (main: 503)\",\"POST /api/cases/reminders/off=200 (main: 200)\",\"POST /api/cases/access/request=400 (main: 400)\",\"POST /api/cases/access/verify=400 (main: 400)\",\"POST /api/cases/access/resend=401 (main: 401)\",\"GET /case/TV-PROBE001/orders=307 (main: 307)\",\"GET /account=307 (main: 307)\",\"POST /api/account=403 (main: 403)\",\"GET /accessibility=200 (main: 200)\"],\"mismatches\":[]}"
+    },
+    {
+      "environment": "production",
+      "name": "engine_routes_answer_the_product_404",
+      "passed": true,
+      "detail": "{\"routes\":[\"CEP-006 GET /operations=404:page\",\"CEP-007 GET /portal=404:page\",\"CEP-020 GET /api/operations/differential-probe=404:0b\",\"CEP-021 POST /api/operations/session=404:0b\",\"CEP-025 GET /api/portal/differential-probe=404:0b\",\"CEP-026 POST /api/portal/session=404:0b\"]}"
+    },
+    {
+      "environment": "production",
+      "name": "shadow_flags_throw_under_production_with_any_flag_on",
+      "passed": true,
+      "detail": "three flags, three throws"
+    },
+    {
+      "environment": "production",
+      "name": "shadow_flags_default_off",
+      "passed": true,
+      "detail": "{\"enabled\":false,\"synthetic_enabled\":false,\"public_enabled\":false}"
+    },
+    {
+      "environment": "production",
+      "name": "product_route_flags_default_off_and_classify_disabled",
+      "passed": true,
+      "detail": "{\"portalUi\":false,\"portalApi\":false,\"operationsUi\":false,\"operationsApi\":false}"
+    },
+    {
+      "environment": "production",
+      "name": "product_route_flags_refuse_vercel_when_on",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "production",
+      "name": "customer_processing_customer_shadow_and_delivery_default_off",
+      "passed": true,
+      "detail": "{\"TIVDOC_INTERNAL_OPS_UI_ENABLED\":false,\"TIVDOC_INTERNAL_OPS_API_ENABLED\":false,\"TIVDOC_SYNTHETIC_OPS_ENABLED\":false,\"TIVDOC_PUBLIC_FIXTURE_OPS_ENABLED\":false,\"TIVDOC_MANUAL_REPORT_EXPORT_ENABLED\":false,\"TIVDOC_CUSTOMER_PROCESSING_ENABLED\":false,\"TIVDOC_CUSTOMER_SHADOW_ENABLED\":false,\"TIVDOC_PRODUCTION_DELIVERY_ENABLED\":false}"
+    },
+    {
+      "environment": "production",
+      "name": "synthetic_ops_flags_throw_under_production",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "production",
+      "name": "durable_runtime_refuses_vercel",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "production",
+      "name": "hermetic_runtime_refuses_vercel",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "production",
+      "name": "every_entry_point_carries_the_guard_first",
+      "passed": true,
+      "detail": "{\"entry_points\":166,\"unguarded\":[]}"
+    },
+    {
+      "environment": "production",
+      "name": "every_entry_point_refuses_by_execution",
+      "passed": true,
+      "detail": "{\"spawned\":166,\"python_available\":true,\"not_refused\":[]}"
+    },
+    {
+      "environment": "preview",
+      "name": "build_under_production_environment",
+      "passed": true,
+      "detail": "{\"exit\":0,\"vercel_env\":\"preview\",\"tivdoc_flags_in_env\":0}"
+    },
+    {
+      "environment": "preview",
+      "name": "build_hash_recorded",
+      "passed": true,
+      "detail": "{\"build_id\":\"CBRSwpq-Xa3x3Jn8i2WzU\",\"server_tree_sha256\":\"acb2131637ec9fd2446541febf60406badf2351b5136890c49f39c19c49f1c81\",\"server_files\":847}"
+    },
+    {
+      "environment": "preview",
+      "name": "module_graph_carries_no_script_or_reference_tenant_marker",
+      "passed": true,
+      "detail": "{\"markers_searched\":10,\"hits\":{},\"chunks_bundling_a_script_module\":[]}"
+    },
+    {
+      "environment": "preview",
+      "name": "deployment_trace_carries_no_customer_material_that_could_deploy",
+      "passed": true,
+      "detail": "{\"traced_in_repository\":334,\"git_tracked\":323,\"local_only_cannot_deploy\":11,\"customer_paths_named_by_local_evidence\":0,\"customer_paths_tracked\":[]}"
+    },
+    {
+      "environment": "preview",
+      "name": "scripts_in_the_deployment_trace_are_data_references_that_refuse_production",
+      "passed": true,
+      "detail": "{\"scripts_named\":[\"scripts/canonical-persistence-v091/foundation/migration-portability-amendment.json\",\"scripts/full-local-system-marathon/browser-e2e-runtime.mts\",\"scripts/full-local-system-marathon/durable-browser-e2e-runtime.mts\",\"scripts/full-local-system-marathon/durable-browser-e2e-runtime.test.mjs\",\"scripts/product-integration/e2e/harness.mts\",\"scripts/product-integration/e2e/negative.mts\",\"scripts/product-integration/e2e/synthetic.mts\",\"scripts/product-integration/routes/route-service-map.json\",\"scripts/supabase-dev-guard/dev-platform-receipt.json\"],\"bundled_as_modules\":[],\"entry_points_among_them\":[\"scripts/product-integration/e2e/negative.mts\",\"scripts/product-integration/e2e/synthetic.mts\"],\"unguarded\":[]}"
+    },
+    {
+      "environment": "preview",
+      "name": "server_started_under_production_environment",
+      "passed": true,
+      "detail": "{\"port\":37389,\"vercel_env\":\"preview\"}"
+    },
+    {
+      "environment": "preview",
+      "name": "closed_api_routes_answer_one_404_shape",
+      "passed": true,
+      "detail": "{\"routes\":[\"GET /api/operations/legal-review/queue=404:0b\",\"GET /api/operations/legal-review/topics=404:0b\",\"GET /api/operations/shadow/summary=404:0b\",\"GET /api/operations/ground-truth/queue=404:0b\",\"GET /api/operations/anything-at-all=404:0b\",\"POST /api/operations/legal-review/actions=404:0b\",\"POST /api/operations/session=404:0b\",\"DELETE /api/operations/session=404:0b\",\"POST /api/portal/session=404:0b\",\"DELETE /api/portal/session=404:0b\",\"GET /api/portal/cases=404:0b\",\"POST /api/portal/anything-at-all=404:0b\"],\"distinct_shapes\":1,\"headers\":{\"cache-control\":\"private, no-store, max-age=0\",\"content-security-policy\":\"default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:\",\"cross-origin-opener-policy\":\"same-origin\",\"cross-origin-resource-policy\":\"same-origin\",\"permissions-policy\":\"camera=(), microphone=(), geolocation=(), payment=()\",\"referrer-policy\":\"no-referrer\",\"transfer-encoding\":\"chunked\",\"x-content-type-options\":\"nosniff\",\"x-frame-options\":\"DENY\",\"x-robots-tag\":\"noindex, nofollow, noarchive\"}}"
+    },
+    {
+      "environment": "preview",
+      "name": "closed_api_routes_carry_refusal_headers",
+      "passed": true,
+      "detail": "{\"present\":[\"cache-control\",\"content-security-policy\",\"cross-origin-resource-policy\",\"permissions-policy\",\"referrer-policy\",\"x-content-type-options\",\"x-robots-tag\"],\"merged\":{\"cache-control\":\"private, no-store, max-age=0\",\"content-security-policy\":\"default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:\",\"cross-origin-opener-policy\":\"same-origin\",\"cross-origin-resource-policy\":\"same-origin\",\"permissions-policy\":\"camera=(), microphone=(), geolocation=(), payment=()\",\"referrer-policy\":\"no-referrer\",\"transfer-encoding\":\"chunked\",\"x-content-type-options\":\"nosniff\",\"x-frame-options\":\"DENY\",\"x-robots-tag\":\"noindex, nofollow, noarchive\"}}"
+    },
+    {
+      "environment": "preview",
+      "name": "paths_outside_the_app_answer_the_framework_404",
+      "passed": true,
+      "detail": "[\"/api/portal-v07/cases=404:14468b\",\"/api/internal-ops-v07/cases=404:14468b\"]"
+    },
+    {
+      "environment": "preview",
+      "name": "legal_pages_answer_404",
+      "passed": true,
+      "detail": "[\"/operations=404\",\"/portal=404\",\"/internal-ops-v07=404\"]"
+    },
+    {
+      "environment": "preview",
+      "name": "the_public_pages_and_health_still_answer",
+      "passed": true,
+      "detail": "[\"/=200\",\"/privacy=200\",\"/terms=200\",\"/robots.txt=200\",\"/sitemap.xml=200\",\"/api/health=200\"]"
+    },
+    {
+      "environment": "preview",
+      "name": "every_route_main_serves_is_product_classified",
+      "passed": true,
+      "detail": "{\"main_ref\":\"origin/main\",\"main_route_files\":20,\"product_assignments\":39,\"only_on_main\":[],\"added_on_branch\":[\"src/app/accessibility/page.tsx\",\"src/app/account/page.tsx\",\"src/app/api/account/route.ts\",\"src/app/api/cases/[token]/reports/route.ts\",\"src/app/api/cases/[token]/requests/route.ts\",\"src/app/api/cases/[token]/upload-session/route.ts\",\"src/app/api/cases/access/request/route.ts\",\"src/app/api/cases/access/resend/route.ts\",\"src/app/api/cases/access/verify/route.ts\",\"src/app/api/cases/reminders/off/route.ts\",\"src/app/api/notifications/resend/route.ts\",\"src/app/case/[token]/documents/page.tsx\",\"src/app/case/[token]/orders/page.tsx\",\"src/app/case/[token]/page.tsx\",\"src/app/case/[token]/reports/page.tsx\",\"src/app/case/[token]/thread/page.tsx\",\"src/app/cases/page.tsx\",\"src/app/check/reminders/off/page.tsx\",\"src/app/login/page.tsx\"],\"only_in_split\":[]}"
+    },
+    {
+      "environment": "preview",
+      "name": "product_routes_answer_as_main_answers",
+      "passed": true,
+      "detail": "{\"probes\":[\"GET /=200 (main: 200)\",\"GET /check=200 (main: 200)\",\"GET /check/upload=307 (main: 307)\",\"GET /check/payment=307 (main: 307)\",\"GET /check/received=307 (main: 307)\",\"GET /privacy=200 (main: 200)\",\"GET /terms=200 (main: 200)\",\"GET /robots.txt=200 (main: 200)\",\"GET /sitemap.xml=200 (main: 200)\",\"GET /opengraph-image=200 (main: 200)\",\"POST /api/cases=400 (main: 400)\",\"GET /api/cases/resume=200 (main: 200)\",\"GET /api/cases/status=401 (main: 401)\",\"POST /api/documents/sign=401 (main: 401)\",\"POST /api/documents/complete=401 (main: 401)\",\"POST /api/funnel/session=400 (main: 400)\",\"GET /api/health=200 (main: 200)\",\"POST /api/payments/start=403 (main: 403)\",\"GET /api/payments/return=307 (main: 3xx)\",\"POST /api/payments/reconcile=401 (main: 401)\",\"GET /case/0000000000000000000000=200 (main: 200)\",\"GET /login=200 (main: 200)\",\"GET /cases=307 (main: 307)\",\"GET /case/TV-PROBE001/thread=307 (main: 307)\",\"GET /case/TV-PROBE001/documents=307 (main: 307)\",\"GET /case/TV-PROBE001/reports=307 (main: 307)\",\"POST /api/cases/TV-PROBE001/requests=403 (main: 403)\",\"GET /api/cases/TV-PROBE001/requests?source=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa=404 (main: 404)\",\"POST /api/cases/TV-PROBE001/upload-session=401 (main: 401)\",\"GET /check/reminders/off=200 (main: 200)\",\"GET /api/cases/TV-TEST0001/reports=404 (main: 404)\",\"POST /api/notifications/resend=503 (main: 503)\",\"POST /api/cases/reminders/off=200 (main: 200)\",\"POST /api/cases/access/request=400 (main: 400)\",\"POST /api/cases/access/verify=400 (main: 400)\",\"POST /api/cases/access/resend=401 (main: 401)\",\"GET /case/TV-PROBE001/orders=307 (main: 307)\",\"GET /account=307 (main: 307)\",\"POST /api/account=403 (main: 403)\",\"GET /accessibility=200 (main: 200)\"],\"mismatches\":[]}"
+    },
+    {
+      "environment": "preview",
+      "name": "engine_routes_answer_the_product_404",
+      "passed": true,
+      "detail": "{\"routes\":[\"CEP-006 GET /operations=404:page\",\"CEP-007 GET /portal=404:page\",\"CEP-020 GET /api/operations/differential-probe=404:0b\",\"CEP-021 POST /api/operations/session=404:0b\",\"CEP-025 GET /api/portal/differential-probe=404:0b\",\"CEP-026 POST /api/portal/session=404:0b\"]}"
+    },
+    {
+      "environment": "preview",
+      "name": "shadow_flags_throw_under_production_with_any_flag_on",
+      "passed": true,
+      "detail": "three flags, three throws"
+    },
+    {
+      "environment": "preview",
+      "name": "shadow_flags_default_off",
+      "passed": true,
+      "detail": "{\"enabled\":false,\"synthetic_enabled\":false,\"public_enabled\":false}"
+    },
+    {
+      "environment": "preview",
+      "name": "product_route_flags_default_off_and_classify_disabled",
+      "passed": true,
+      "detail": "{\"portalUi\":false,\"portalApi\":false,\"operationsUi\":false,\"operationsApi\":false}"
+    },
+    {
+      "environment": "preview",
+      "name": "product_route_flags_refuse_vercel_when_on",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "preview",
+      "name": "customer_processing_customer_shadow_and_delivery_default_off",
+      "passed": true,
+      "detail": "{\"TIVDOC_INTERNAL_OPS_UI_ENABLED\":false,\"TIVDOC_INTERNAL_OPS_API_ENABLED\":false,\"TIVDOC_SYNTHETIC_OPS_ENABLED\":false,\"TIVDOC_PUBLIC_FIXTURE_OPS_ENABLED\":false,\"TIVDOC_MANUAL_REPORT_EXPORT_ENABLED\":false,\"TIVDOC_CUSTOMER_PROCESSING_ENABLED\":false,\"TIVDOC_CUSTOMER_SHADOW_ENABLED\":false,\"TIVDOC_PRODUCTION_DELIVERY_ENABLED\":false}"
+    },
+    {
+      "environment": "preview",
+      "name": "synthetic_ops_flags_throw_under_production",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "preview",
+      "name": "durable_runtime_refuses_vercel",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "preview",
+      "name": "hermetic_runtime_refuses_vercel",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "environment": "preview",
+      "name": "every_entry_point_carries_the_guard_first",
+      "passed": true,
+      "detail": "{\"entry_points\":166,\"unguarded\":[]}"
+    },
+    {
+      "environment": "preview",
+      "name": "every_entry_point_refuses_by_execution",
+      "passed": true,
+      "detail": "{\"spawned\":166,\"python_available\":true,\"not_refused\":[]}"
+    }
+  ],
+  "checks_total": 48,
+  "checks_failed": [],
+  "entry_points_spawned": 332,
+  "counters": {
+    "live_provider_calls": 0,
+    "openai_calls": 0,
+    "database_connections": 0,
+    "deployments": 0
+  },
+  "started_at": "2026-09-09T05:58:06.641Z",
+  "finished_at": "2026-09-09T05:59:14.666Z",
+  "receipt_sha256": "09dff3e37112a9625de27206b4c4870474b660f1db88f95bab929caaa716966b"
+}
