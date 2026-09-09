@@ -1,3 +1,13 @@
+## Scoped DEV financial-flow task resumed — P06 base repaired (2026-09-09)
+
+The owner now authorizes only one DEV saved-payslip-to-financial-report flow, plus repairing the 695cc25 base and P06. This supersedes the pause below and does not resume all P00–P13. Two agents have separated ownership; parent owns migrations/deployments and serialized heavy verification. Current remote release base remained695cc25, clean; other task commits were not overwritten.
+
+Both failed CI jobs had TS2322 at saved-field-requests.ts: the PostgreSQL adapter intentionally accepts scalar parameters, not topic arrays. The request now binds a JSON scalar and expands it in SQL. Full typecheck, 44 focused tests and lint of four changed files pass. P06 migration122 (20260909040919) was tested in a real rollback and then applied to existing isolated DEV via CLI. Actual worker/web DB proof passes15 existing +8 purchased-topic checks; necessary salary/pension questions still open in the matching paid month, wrong-month/revoked/unpinned/foreign/stale scopes refuse. Two cases/identities removed, machine revoked. Advisors:0ERROR/12existingWARN. Current runtime Preview remains ea0875a; no code deployment or production changes yet.
+
+Retained failure evidence: CLI multi-command prepared-statement refusal (no DDL), then fixture head spread included changed_at and strict schema correctly rejected it; fixed explicit job projection. P06-field-topic-{baseline,migration,advisors,db}.json bind scope. Original695cc25 defect and failed fixture receipt remain. The synthetic paid-order fixture now explicitly captures purchased scope, as real payment transitions do.
+
+Selected next scope: June2026 minimum wage. Independent source/code review is docs/dev-financial-flow-source-review.md. Real catalog/parameter activation and live OCR remain unavailable. Implement an explicit QA/isolated-DEV financial analysis run linked to canonical source facts, with computed engineering finding and same-run customer HTML/PDF; no seeded finding/report, no activation or signature invented. Literal missinghours needs a source-bound identified numeric answer. Stop at this task's saved acceptance/blocker delivery.
+
 ## Owner-requested stop and interim handoff — 2026-09-09
 
 Development is **paused by explicit owner instruction**, superseding historical instructions below to continue autonomously. See [the complete interim handoff](docs/interim-handoff-2026-09-09-he.md) for package status, failures, branch relationships and the bounded next recommendation. No new development or full verification loop is authorized in this stopping sequence.

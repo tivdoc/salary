@@ -1,0 +1,42 @@
+{
+  "state": "PASS",
+  "base": "695cc25672b6c0d423645ea2148b33af2a2e7f36",
+  "ciFailureRuns": [
+    34310255129,
+    34310253165
+  ],
+  "rootCause": "TS2322: string[] was passed to intentionally scalar-only PostgresParameter",
+  "fix": "Serialize one bound JSON string and expand text[] in SQL; keep contract unchanged",
+  "typecheck": {
+    "command": "npx tsc --noEmit -p tsconfig.json",
+    "exitCode": 0
+  },
+  "focused": {
+    "files": 4,
+    "passed": 44
+  },
+  "lintChangedFiles": {
+    "files": 4,
+    "exitCode": 0
+  },
+  "db": {
+    "priorChecks": 15,
+    "topicChecks": 8,
+    "verdict": "PASS",
+    "cleanupCases": 2,
+    "cleanupIdentities": 2,
+    "machineRevoked": true
+  },
+  "migration": {
+    "appliedDev": true,
+    "ddlRollback": true,
+    "existingSchemaUpgrade": true,
+    "count": 122
+  },
+  "failedAttempts": [
+    "CLI prepared statement refused multiple SQL commands before DDL; single atomic DO wrapper succeeded",
+    "DB proof helper spread changed_at into strict SourceJob; fixed explicit projection, both failed fixture cases and identities cleaned"
+  ],
+  "productionChanged": false,
+  "newPreview": false
+}

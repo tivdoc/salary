@@ -25,7 +25,7 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
  // One versioned database policy is shared with the write boundary. Neither
  // the browser nor a caller-provided topic list authorizes opening a request.
  const scope=await context.client.query(statement('saved_field_question_scope',
-  'select private.document_field_question_fields_v1($1::text[]) fields',[topics]));
+  'select private.document_field_question_fields_v1(array(select jsonb_array_elements_text($1::jsonb))) fields',[JSON.stringify(topics)]));
  if(scope.rows.length!==1)throw Error('REQUEST_FIELD_SCOPE_ACK');
  const allowed=new Set(z.array(z.enum(Object.keys(confirmationFieldLabels) as [keyof typeof confirmationFieldLabels,...(keyof typeof confirmationFieldLabels)[]]))
   .max(12).refine(fields=>new Set(fields).size===fields.length).parse(scope.rows[0].fields));

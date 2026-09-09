@@ -24,7 +24,7 @@ function setup(){
  ports.orders.mockResolvedValue([order]);
  const state:{allowed:unknown;rows?:Record<string,unknown>[];opened:string[];topics:unknown[]}={allowed:['base_monthly_salary','hourly_rate','gross_salary','net_salary','regular_hours'],opened:[],topics:[]};
  const context:PostgresTransactionContext={transaction_id:'field-unit',client:{async query(s){
-  if(s.name==='saved_field_question_scope'){state.topics.push(s.values[0]);const rows=state.rows??[{fields:state.allowed}];return {rows,row_count:rows.length};}
+  if(s.name==='saved_field_question_scope'){expect(typeof s.values[0]).toBe('string');state.topics.push(JSON.parse(String(s.values[0])));const rows=state.rows??[{fields:state.allowed}];return {rows,row_count:rows.length};}
   if(s.name==='saved_field_request_open'){state.opened.push(JSON.parse(String(s.values[3])).candidate.field);return {rows:[{id:randomUUID()}],row_count:1};}
   throw Error('UNEXPECTED_QUERY:'+s.name);
  }}};

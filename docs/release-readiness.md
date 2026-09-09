@@ -1,3 +1,5 @@
+> 2026-09-09 scoped task resumed: P06 base repaired; 44 local + 23 actual DB checks pass, migration122 upgraded on isolated DEV. Verified Preview still ea0875a. One QA engineering financial flow is now being implemented; real activation/production remain closed. See HANDOFF.md and P06-field-topic-baseline.json.
+
 > **2026-09-09 owner-requested stop:** Development is paused. The [interim handoff](interim-handoff-2026-09-09-he.md) supersedes continuation instructions and status labels below. Latest P06 scope code has 38 focused passes only; candidate migration 122 is NOT applied/executed, and DB fix, typecheck/lint and hosted proof are pending. Verified Preview remains ea0875a (123 checks); do not deploy the WIP application on the current 121-migration schema. No production rollout.
 
 # Tivdoc release readiness — 2026-09-09
