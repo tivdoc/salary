@@ -1,0 +1,825 @@
+{
+  "verdict": "PASS",
+  "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+  "gitWorktreeDirty": false,
+  "schemaVersion": "127 / 20260909155945",
+  "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+  "checks": [
+    "an independently scheduled Node process reads the capability registry before any upload; harness invokes no worker or calculation",
+    "three injected pre-save failures reach durable terminal failure with bounded attempts; source and extraction remain available and no financial finding/report commits",
+    "one explicit capability-authorized retry and its replay preserve attempts/history and produce the independently expected 240 ILS engineering result through the scheduled runner",
+    "successive independent scheduler processes reuse durable state without duplicate findings, reports or provider invocations",
+    "foreign customer identity and direct web-role private-table access are refused",
+    "actual explicit replacement preserves old bytes/history and immediately makes the old report non-current before the next scheduled run",
+    "scheduled extraction preserves truly missing hours and opens the focused month/source question after known fixture readings are answered",
+    "identified answer and exact retry create one answer revision; a later scheduler tick creates the new run/report with the same 240 ILS result and preserves historical runs",
+    "the identified customer RPC returns matching saved HTML/PDF bytes for the selected run and rejects a foreign reader of that run and its source reference",
+    "HTML and extracted PDF text use the same current analysis and amounts; exactly two immutable source invocations cover both uploads without provider replay on answers/retries",
+    "ordinary canonical report records are generated as drafts from actual parent runs; inactive legal gates, case status and synthetic payment state are preserved"
+  ],
+  "runs": [
+    {
+      "runId": "7286a0af-916a-486e-8746-376a8badca00",
+      "inputRevision": 16,
+      "state": "calculated"
+    },
+    {
+      "runId": "0f3e4bb5-6c7a-4f86-8d64-ca0e442c903e",
+      "inputRevision": 29,
+      "state": "missing_input"
+    },
+    {
+      "runId": "d651540b-12e3-4e04-85cb-24f1eeb90b3a",
+      "inputRevision": 31,
+      "state": "calculated"
+    }
+  ],
+  "confirmationChecks": [
+    {
+      "versionId": "48db3695-d321-4113-9f10-d7866d75a121",
+      "fields": [
+        "salary_type",
+        "salary_period",
+        "base_monthly_salary",
+        "gross_salary",
+        "net_salary",
+        "hourly_rate",
+        "regular_hours"
+      ],
+      "actor": "automated_known_synthetic_fixture_identity",
+      "humanReview": false,
+      "confidenceModified": false
+    },
+    {
+      "versionId": "1f49946b-a83e-4dde-a3c5-91b2e53f88fc",
+      "fields": [
+        "salary_type",
+        "salary_period",
+        "base_monthly_salary",
+        "gross_salary",
+        "net_salary",
+        "hourly_rate"
+      ],
+      "actor": "automated_known_synthetic_fixture_identity",
+      "humanReview": false,
+      "confidenceModified": false
+    }
+  ],
+  "notificationChecks": [
+    {
+      "versionId": "48db3695-d321-4113-9f10-d7866d75a121",
+      "generatedFieldEvents": 7,
+      "providerAccepted": 2,
+      "staleIntentsScrubbed": 5,
+      "deliveryConfirmed": false
+    },
+    {
+      "versionId": "1f49946b-a83e-4dde-a3c5-91b2e53f88fc",
+      "generatedFieldEvents": 6,
+      "providerAccepted": 2,
+      "staleIntentsScrubbed": 4,
+      "deliveryConfirmed": false
+    },
+    {
+      "generatedEngineeringRun": "7286a0af-916a-486e-8746-376a8badca00",
+      "pausedBeforeClaim": true,
+      "replacedSourceIntentScrubbed": true,
+      "providerAttempted": false
+    },
+    {
+      "generatedMissingRequest": "183d7e40-7e2d-45c8-b1d6-26f00fb623ef",
+      "payloadSha256": "0a1dda198082f9bf0245add692de80e48fb859104d458381986c5b30c9cc39e2",
+      "providerAccepted": true,
+      "deliveryConfirmed": false
+    },
+    {
+      "generatedEngineeringRun": "d651540b-12e3-4e04-85cb-24f1eeb90b3a",
+      "payloadSha256": "4d2411d81fecf87320e8c6375d5e07c6e0c783b5e4136da2d382ea6b9f1dadea",
+      "providerAccepted": true,
+      "deliveryConfirmed": false,
+      "recipientSnapshotMismatchRefused": true
+    }
+  ],
+  "tickReceipts": [
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 12820,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:23:37.306Z",
+      "finishedAt": "2026-09-09T16:23:38.082Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 16888,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:24:12.978Z",
+      "finishedAt": "2026-09-09T16:24:13.621Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 25884,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:24:37.053Z",
+      "finishedAt": "2026-09-09T16:24:37.723Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 17632,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:24:53.535Z",
+      "finishedAt": "2026-09-09T16:24:54.230Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 14412,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:25:10.174Z",
+      "finishedAt": "2026-09-09T16:25:10.831Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 18916,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:25:37.164Z",
+      "finishedAt": "2026-09-09T16:25:37.824Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 16568,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:25:53.653Z",
+      "finishedAt": "2026-09-09T16:25:54.356Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 28456,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:26:10.209Z",
+      "finishedAt": "2026-09-09T16:26:10.846Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 8756,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:26:37.086Z",
+      "finishedAt": "2026-09-09T16:26:37.743Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 17740,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:26:53.562Z",
+      "finishedAt": "2026-09-09T16:26:54.256Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 20428,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [
+        "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+      ],
+      "faults": [],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "succeeded",
+          "jobId": "saved_e8369cf2614211ae39b737d6b8d88bdcd2f1857adeb06dc1e29608a48a37115e",
+          "manifestSha256": "bf6a7bb18f93615f297cd4bcd52c7eeaea6250277db33ba9eb175eac0d7ac5f6"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:27:10.098Z",
+      "finishedAt": "2026-09-09T16:27:26.828Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": true,
+        "accepted": [
+          {
+            "payloadSha256": "ee2b3bc3afb2bf434aef1952dbfda3e9e89ba9b6f859316e96819eae69378377",
+            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "template": "document_request"
+          },
+          {
+            "payloadSha256": "1fa2b4ea10b694808a9c5c7f402383df79230b62f41717ec0edeb3afd11c5867",
+            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "template": "document_request"
+          }
+        ],
+        "queued": 7,
+        "attemptStates": [
+          "provider_accepted",
+          "provider_accepted"
+        ],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 20392,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [
+        "before_financial_save"
+      ],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "retry_wait",
+          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
+          "lastError": "processing_failed"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:27:37.332Z",
+      "finishedAt": "2026-09-09T16:27:50.658Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 5876,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:28:06.512Z",
+      "finishedAt": "2026-09-09T16:28:07.162Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 2080,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [
+        "before_financial_save"
+      ],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "retry_wait",
+          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
+          "lastError": "processing_failed"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:28:22.955Z",
+      "finishedAt": "2026-09-09T16:28:36.115Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 3864,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [
+        "before_financial_save"
+      ],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "dead_letter",
+          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
+          "lastError": "processing_failed"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:29:37.142Z",
+      "finishedAt": "2026-09-09T16:29:50.574Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 10436,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "succeeded",
+          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
+          "manifestSha256": "b8c18213e1b86adcb917ddb2cfb7937615e443a4c91b969ee9815f4f7741aab8"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:30:06.457Z",
+      "finishedAt": "2026-09-09T16:30:20.795Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 1,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 21296,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:30:36.604Z",
+      "finishedAt": "2026-09-09T16:30:37.207Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 7748,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:31:37.165Z",
+      "finishedAt": "2026-09-09T16:31:37.906Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 17020,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [
+        "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3",
+        "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+      ],
+      "faults": [],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "succeeded",
+          "jobId": "saved_521d64fc05c44b8c78b273b5a6b229a1438c2f01d497778fc9e065981dfe4069",
+          "manifestSha256": "dc899508b5ac2a923f350488fcef184ca3f14220b403971a7e8ffc5251e7ce87"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:31:53.724Z",
+      "finishedAt": "2026-09-09T16:32:10.388Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [
+          {
+            "payloadSha256": "9137c9c5c7d869916a4b62e8838d97ef2bb6c9d175b711ee08c2dbda63dff204",
+            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "template": "document_request"
+          },
+          {
+            "payloadSha256": "9583b8becb5e0c53329910baad609e60bc5422fdf2dd7eae2ec567132c7252e5",
+            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "template": "document_request"
+          }
+        ],
+        "queued": 6,
+        "attemptStates": [
+          "provider_accepted",
+          "provider_accepted"
+        ],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 24608,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "succeeded",
+          "jobId": "saved_a0f3a644414f652e64da6345f245cc2f3e1dbcd9903a41da82442878d25a7753",
+          "manifestSha256": "1177a53dc81b807bf3a0c615537fa64c4b985afe13d7dbe5e8e5557ff7988626"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:32:26.212Z",
+      "finishedAt": "2026-09-09T16:32:41.724Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [
+          {
+            "payloadSha256": "0a1dda198082f9bf0245add692de80e48fb859104d458381986c5b30c9cc39e2",
+            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "template": "document_request"
+          }
+        ],
+        "queued": 1,
+        "attemptStates": [
+          "provider_accepted"
+        ],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 8484,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [
+        {
+          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "state": "succeeded",
+          "jobId": "saved_830438acbec74145161b7add52f07c1dabc21487969f7f15088bfd377e889024",
+          "manifestSha256": "ba47443ae4260ebcdddbdec46d91ef3361bfb2ed99a241565c3693aaf373391f"
+        }
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:33:38.266Z",
+      "finishedAt": "2026-09-09T16:33:53.831Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [
+          {
+            "payloadSha256": "4d2411d81fecf87320e8c6375d5e07c6e0c783b5e4136da2d382ea6b9f1dadea",
+            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "template": "report_ready"
+          }
+        ],
+        "queued": 1,
+        "attemptStates": [
+          "provider_accepted"
+        ],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+      "pid": 19704,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "faults": [],
+      "items": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:34:09.723Z",
+      "finishedAt": "2026-09-09T16:34:10.392Z",
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": false,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      },
+      "dirtyBuild": false
+    }
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "inputFixtures": [
+    {
+      "name": "synthetic-june-2026-100-hours.pdf",
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "name": "synthetic-june-2026-missing-hours.pdf",
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    }
+  ],
+  "independentExpected": {
+    "month": "2026-06",
+    "regularHours": "100",
+    "baseMinor": 330000,
+    "expectedMinor": 354000,
+    "gapMinor": 24000,
+    "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+    "humanLegalApproval": false
+  },
+  "externallyScheduledProcessRequested": true,
+  "externallyScheduledProcess": true,
+  "processRestartProof": true,
+  "previewProofRequested": true,
+  "previewProof": true,
+  "previewChecks": [
+    [
+      {
+        "name": "isolated Preview health preserves disabled external services",
+        "passed": true
+      },
+      {
+        "name": "current missing result and previous historical financial run reload from saved DB",
+        "passed": true
+      },
+      {
+        "name": "identified customer answers the analysis-generated exact June hours request through the hosted UI",
+        "passed": true
+      },
+      {
+        "name": "answer invalidates the previous financial results before the next worker run",
+        "passed": true
+      }
+    ],
+    [
+      {
+        "name": "isolated Preview health preserves disabled external services",
+        "passed": true
+      },
+      {
+        "name": "one current financial run and both historical runs appear after reload with computed operands and amounts",
+        "passed": true
+      },
+      {
+        "name": "hosted PDF is the exact stored calculated artifact and carries the same run and amounts as HTML",
+        "passed": true
+      },
+      {
+        "name": "both replaced and current source links return exact immutable uploaded bytes",
+        "passed": true
+      },
+      {
+        "name": "foreign actual customer cannot read HTML, PDF or either source",
+        "passed": true
+      },
+      {
+        "name": "financial report remains readable on reload at 390px",
+        "passed": true
+      },
+      {
+        "name": "financial report remains readable on reload at 1440px",
+        "passed": true
+      }
+    ]
+  ],
+  "abruptClaimCrashRequested": true,
+  "expiredLeaseRecoveryProof": true,
+  "crashChecks": [
+    {
+      "oldJobId": "saved_e8369cf2614211ae39b737d6b8d88bdcd2f1857adeb06dc1e29608a48a37115e",
+      "oldFence": 1,
+      "crashedPid": 9456,
+      "attempts": 2,
+      "elapsedMs": 202355,
+      "clockModified": false
+    }
+  ],
+  "automaticNotificationProof": true,
+  "notificationProvider": "injected_notification_test",
+  "actualEmailDelivery": false,
+  "browserIdentityProof": "Supplied synthetic case session cookies; no OTP login claim",
+  "liveOcrProof": false,
+  "providerKind": "injected_test_provider",
+  "ordinaryCanonicalPublication": "draft_only",
+  "humanApprovalsInvented": false,
+  "syntheticCasesRemoved": 2,
+  "identitiesRemoved": 2,
+  "machineSessionsRevoked": 2,
+  "storageObjectsRemoved": 2,
+  "capabilityRevoked": true,
+  "canonicalAndBudgetAuditRetained": true,
+  "productionChanged": false
+}

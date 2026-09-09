@@ -36,7 +36,7 @@ export function renderDevFinancialArtifacts(candidate:unknown){
  const explanation='ההנחות הסינתטיות: עובד בגיר בשכר שעתי, מסגרת כללית של 182 שעות, חודש ידוע ורכיב בסיס יחיד עבור השעות הרגילות. אין כאן הוכחה שהדין חל או שהמעסיק חייב כסף.';
  const html=`<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>${title}</title><body><h1>${title}</h1><p>${escape(devFinancialDisclosure(run))}</p><p>${explanation}</p><table><tbody>${rows.map(r=>`<tr><th>${escape(r[0])}</th><td><bdi>${escape(r[1])}</bdi></td></tr>`).join('')}</tbody></table><p>SHA-256 מקור: <bdi>${run.source.source_sha256}</bdi></p><p>מקור פרמטר: <a href="${escape(DEV_MINIMUM_WAGE_POLICY.source.url)}">ביטוח לאומי — טבלת שכר מינימום</a></p><p>המקור משמש להשוואה הנדסית; הכלל והפרמטר אינם פעילים בשירות.</p>${run.reading?'<p>מספר השעות הוזן בתשובת לקוח מזוהה, ולא נקרא בידי ספק OCR.</p>':''}</body></html>`;
  const blocks:RtlBlock[]=[{kind:'heading',level:1,text:title},{kind:'paragraph',text:devFinancialDisclosure(run)},{kind:'paragraph',text:explanation},
-  {kind:'table',columns:['פרט','ערך'],rows:rows.filter(r=>r[0]!=='SHA-256 עקבת חישוב')},
+  {kind:'table',columns:['פרט','ערך'],rows:rows.filter(r=>r[0]!=='SHA-256 עקבת חישוב'),...(run.extraction_provenance?{wrap_cells:true}:{})},
   ...(run.calculation.state==='calculated'?[{kind:'hash' as const,label:'SHA-256 עקבת חישוב',value:run.calculation.trace.trace_sha256}]:[]),
   {kind:'hash',label:'SHA-256 מקור',value:run.source.source_sha256},
   {kind:'paragraph',text:'מקור פרמטר: ביטוח לאומי — טבלת שכר מינימום. הכלל והפרמטר אינם פעילים בשירות.'},

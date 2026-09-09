@@ -381,7 +381,7 @@ export type RtlBlock =
   | Readonly<{ kind: "heading"; text: string; level: 1 | 2 }>
   | Readonly<{ kind: "paragraph"; text: string }>
   | Readonly<{ kind: "rule" }>
-  | Readonly<{ kind: "table"; columns: readonly string[]; rows: readonly (readonly string[])[] }>
+  | Readonly<{ kind: "table"; columns: readonly string[]; rows: readonly (readonly string[])[]; wrap_cells?: boolean }>
   | Readonly<{ kind: "hash"; label: string; value: string }>;
 
 export type RtlDocument = Readonly<{
@@ -458,6 +458,32 @@ function measure(ctx: PdfContext, text: string, size: number): number {
   return encodeRun(ctx, text).width * size / 1000;
 }
 
+/** Split only at complete Unicode symbols, preferring the last whitespace
+ * that fits. No trimming, ellipsis or identifier shortening is permitted. */
+function wrapMeasuredCell(ctx: PdfContext, text: string, size: number, width: number): readonly string[] {
+  if (!Number.isFinite(width) || width <= 0) throw new Error("RTL_TABLE_CELL_TOO_NARROW");
+  const symbols = [...text];
+  const lines: string[] = [];
+  let start = 0;
+  while (start < symbols.length) {
+    let end = start;
+    let measured = 0;
+    let wordEnd = start;
+    while (end < symbols.length) {
+      const nextWidth = measure(ctx, symbols[end], size);
+      if (measured + nextWidth > width) break;
+      measured += nextWidth;
+      if (/\s/u.test(symbols[end])) wordEnd = end + 1;
+      end += 1;
+    }
+    if (end === start) throw new Error("RTL_TABLE_CELL_TOO_NARROW");
+    if (end < symbols.length && wordEnd > start) end = wordEnd;
+    lines.push(symbols.slice(start, end).join(""));
+    start = end;
+  }
+  return lines.length > 0 ? lines : [""];
+}
+
 export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Array {
   const fontBytes = readPinnedFont();
   const metrics = parseTrueType(fontBytes);
@@ -507,6 +533,49 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
     // nothing and looks like something went missing. Nothing is drawn.
     if (block.rows.length === 0) continue;
     const width = (PAGE_WIDTH - MARGIN * 2) / block.columns.length;
+    if (block.wrap_cells === true) {
+      if (block.columns.length === 0 || block.rows.some((row) => row.length !== block.columns.length)) {
+        throw new Error("RTL_TABLE_COLUMN_COUNT_INVALID");
+      }
+      const headers = block.columns.map((column) => wrapMeasuredCell(ctx, column, 8.4, width - 8));
+      const headerLines = Math.max(...headers.map((column) => column.length));
+      const headerHeight = headerLines * LINE_HEIGHT + 4;
+      const fullBodyHeight = PAGE_HEIGHT - MARGIN - BOTTOM - headerHeight;
+      if (fullBodyHeight < LINE_HEIGHT) throw new Error("RTL_TABLE_HEADER_TOO_TALL");
+      const wrappedHeader = () => {
+        fillRect(ctx, MARGIN, y - headerHeight + 2, PAGE_WIDTH - MARGIN * 2, headerHeight - 2, "0.93 0.95 0.96");
+        headers.forEach((column, index) => column.forEach((text, row) => {
+          drawCell(ctx, text, PAGE_WIDTH - MARGIN - index * width - 4, y - 11 - row * LINE_HEIGHT, 8.4, "0.06 0.14 0.22");
+        }));
+        y -= headerHeight;
+      };
+      const continuedTable = () => { newPage(); wrappedHeader(); };
+      room(headerHeight + LINE_HEIGHT);
+      wrappedHeader();
+      for (const row of block.rows) {
+        const cells = row.map((cell) => wrapMeasuredCell(ctx, cell, 8.2, width - 8));
+        const rowLines = Math.max(...cells.map((cell) => cell.length));
+        // Keep an ordinary row together. Rows taller than a fresh page are
+        // split into bounded fragments, each below a repeated table header.
+        if (rowLines * LINE_HEIGHT <= fullBodyHeight && y - rowLines * LINE_HEIGHT < BOTTOM) continuedTable();
+        let offset = 0;
+        while (offset < rowLines) {
+          if (y - LINE_HEIGHT < BOTTOM) continuedTable();
+          const count = Math.min(rowLines - offset, Math.floor((y - BOTTOM) / LINE_HEIGHT));
+          cells.forEach((cell, index) => {
+            for (let lineIndex = 0; lineIndex < count; lineIndex += 1) {
+              const text = cell[offset + lineIndex];
+              if (text !== undefined) drawCell(ctx, text, PAGE_WIDTH - MARGIN - index * width - 4, y - 9 - lineIndex * LINE_HEIGHT, 8.2, "0.12 0.18 0.24");
+            }
+          });
+          y -= count * LINE_HEIGHT;
+          line(ctx, MARGIN, y + 1, PAGE_WIDTH - MARGIN, y + 1, "0.90 0.92 0.93", 0.3);
+          offset += count;
+        }
+      }
+      y -= 8;
+      continue;
+    }
     const header = () => {
       fillRect(ctx, MARGIN, y - 15, PAGE_WIDTH - MARGIN * 2, 15, "0.93 0.95 0.96");
       block.columns.forEach((column, index) => {
