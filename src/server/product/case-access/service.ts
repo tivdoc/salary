@@ -150,10 +150,12 @@ async function identityOf(db: CaseAccessDb, contact: NormalizedContact): Promise
 }
 
 async function recordNotification(db: CaseAccessDb, input: Readonly<{ case_id: string | null; identity_id: string | null; channel: ContactChannel; template: NotificationTemplate; outcome: NotificationOutcome }>): Promise<void> {
-  await db.rpc("case_notification_record", {
+  const directReceipt=input.outcome.provider==='resend'&&input.outcome.state==='sent'&&input.outcome.provider_message_id;
+  await db.rpc(directReceipt?"case_notification_record_provider":"case_notification_record", {
     target_case: input.case_id, target_identity: input.identity_id, target_channel: input.channel, target_template: input.template,
     target_state: input.outcome.state, target_provider: input.outcome.provider, target_payload_sha256: input.outcome.payload_sha256,
     target_error_code: input.outcome.error_code,
+    ...(directReceipt?{target_provider_message_id:input.outcome.provider_message_id}:{}),
   });
 }
 

@@ -14,12 +14,15 @@ const eventSchema=z.object({event_key:z.string(),event_kind:z.enum(['request_req
 /** Uses the existing encrypted outbox and Resend idempotency/fencing protocol.
  * Configuration and DB both restrict DEV destinations. Provider acceptance is
  * never returned as delivery; authenticated webhooks alone record delivery. */
-export async function runAutomaticNotificationPass(input:{db:CaseAccessDb;capability:string;secret:string;origin:string;provider:NotificationProvider}){
+export async function runAutomaticNotificationPass(input:{db:CaseAccessDb;capability:string;secret:string;origin:string;provider:NotificationProvider;enqueueEventKeys?:readonly string[]}){
  const url=new URL(input.origin);if(url.protocol!=='https:'||!url.hostname.endsWith('.vercel.app'))throw Error('MANAGED_NOTIFICATION_ORIGIN');
  if(Buffer.from(input.secret,'base64').length!==32)throw Error('NOTIFICATION_KEY_INVALID');
  const events=z.array(eventSchema).max(10).parse(await input.db.rpc('case_notification_managed_pending',{target_capability:input.capability}));
  let queued=0;
- for(const event of events){
+ // Optional enqueue-only narrowing still comes from authenticated pending
+ // RPC. Delivery still drains existing authorized capability claims; this is
+ // not a claim filter. Enqueue/claim independently recheck source and authority.
+ for(const event of events.filter(event=>input.enqueueEventKeys===undefined||input.enqueueEventKeys.includes(event.event_key))){
   const contact=normalizeContact(event.contact);if(recipientRefusal(event.contact)||!contact)continue;
   const request=event.event_kind==='request_required',engineering=event.event_kind==='engineering_report_ready';
   const link=request?`${url.origin}/case/${event.public_id}/thread?requestId=${event.request_id}`:`${url.origin}/case/${event.public_id}/reports?${engineering?'engineering=1&':''}report=${event.report_id}`;

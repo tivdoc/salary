@@ -1,5 +1,9 @@
 import {expect,it,vi} from 'vitest';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,randomBytes} from 'node:crypto';
+import {setTimeout as delay} from 'node:timers/promises';
+import {postgresCaseAccessDb} from '../case-access/db';
+import {resendProvider} from '../case-access/resend-provider';
+import {runAutomaticNotificationPass} from './automatic-dev-notifications';
 import {readFileSync,writeFileSync,mkdirSync,openSync,closeSync,fsyncSync,unlinkSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import pg from 'pg';
@@ -17,7 +21,7 @@ import {documentFieldTargetSchema,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from '../
 import {createLiveExtractionRuntime} from './live-extraction-runtime';
 import {readSavedExtractionProvenance} from './live-extraction-provenance';
 import {assertLiveExtractionBudgetModel,parseLiveExtractionBudgetLedger,preflightLiveExtractionRequest,
- reserveLiveExtractionPass,recordLiveExtractionPassReceipt,summarizeLiveExtractionBudget,LIVE_EXTRACTION_BUDGET_POLICY,LIVE_EXTRACTION_REVIEWED_RETRY,
+ reserveLiveExtractionPass,recordLiveExtractionPassReceipt,summarizeLiveExtractionBudget,LIVE_EXTRACTION_BUDGET_POLICY,LIVE_EXTRACTION_REVIEWED_RETRY,LIVE_EXTRACTION_AGGREGATE_RETRY,
  type LiveExtractionReviewedRetry} from './live-extraction-budget';
 import type {OpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
 import {claimSavedDraftJob} from './saved-job-runtime';
@@ -31,7 +35,12 @@ vi.mock('server-only',()=>({}));
 it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV reports from stored synthetic files read by the actual SDK and identified literal confirmations',async()=>{
  if(process.env.VERCEL||process.env.NODE_ENV!=='test')throw Error('DEV_FINANCIAL_PROOF_BOUNDARY');
  const retain=process.env.TIVDOC_DEV_FINANCIAL_LIVE_RETAIN==='1';
- const retryRequested=process.env.TIVDOC_LIVE_APPROVED_ATTEMPT==='2';
+ const attempt=process.env.TIVDOC_LIVE_APPROVED_ATTEMPT;
+ const retryRequested=attempt==='2'||attempt==='3';
+ const liveNotifications=process.env.TIVDOC_DEV_FINANCIAL_LIVE_NOTIFICATIONS==='1';
+ const browserAnswer=process.env.TIVDOC_DEV_FINANCIAL_LIVE_BROWSER_ANSWER==='1';
+ if((liveNotifications||browserAnswer)&&!retain)throw Error('OWNER_RETAIN_REQUIRED');
+ if(browserAnswer&&!liveNotifications)throw Error('LIVE_NOTIFICATION_REQUIRED');
  if(process.env.TIVDOC_LIVE_APPROVED_ATTEMPT!==undefined&&!retryRequested)throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
  const ownerRecipientFile=process.env.TIVDOC_DEV_OWNER_RECIPIENT_FILE??'../release-work/dev-owner-recipient.json';
  const ownerEmail=retain?z.object({verifiedBy:z.literal('explicit owner authorization'),allowlist:z.tuple([z.email()])})
@@ -53,17 +62,34 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
  if(ledger.model!==runtime.provider.model||ledger.reservations.length+4>LIVE_EXTRACTION_BUDGET_POLICY.maxPasses
   ||(ledger.reservations.length+4)*LIVE_EXTRACTION_BUDGET_POLICY.perPassReservedMicroUsd>LIVE_EXTRACTION_BUDGET_POLICY.maxReservedMicroUsd
   ||ledger.reservations.some(row=>inputs.some(input=>input.sha256===row.sourceSha256)
-   &&(!retryRequested||row.reviewedRetry!==undefined||row.outcome==='reserved_unknown')))throw Error('LIVE_BUDGET_REPLAY_OR_CAPACITY');
+   &&(!retryRequested||row.reviewedRetry?.attemptRevision===Number(attempt)||row.outcome==='reserved_unknown')))throw Error('LIVE_BUDGET_REPLAY_OR_CAPACITY');
  const ledgerBefore=summarizeLiveExtractionBudget(ledger);let budgetLock:number|undefined;
  const persistLedger=()=>{const handle=openSync(ledgerPath,'w');try{writeFileSync(handle,JSON.stringify(ledger,null,2)+'\n');fsyncSync(handle);}finally{closeSync(handle);}};
  const schemaEvidence:unknown[]=[],providerAttempts:{sourceSha256:string;passKind:string;receiptConfirmed:boolean}[]=[];
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim().length>0;
- const reviewedRetry:LiveExtractionReviewedRetry|undefined=retryRequested?{version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:2,
-  reasonCode:LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode,codeRevision:process.env.TIVDOC_LIVE_RETRY_CODE_REVISION??''}:undefined;
+ const reviewedRetry:LiveExtractionReviewedRetry|undefined=retryRequested?{...(attempt==='3'?LIVE_EXTRACTION_AGGREGATE_RETRY:{version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:2 as const,reasonCode:LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode}),codeRevision:process.env.TIVDOC_LIVE_RETRY_CODE_REVISION??''}:undefined;
  if(reviewedRetry&&(reviewedRetry.codeRevision!==gitSha||dirty))throw Error('LIVE_BUDGET_RETRY_CODE_REVISION');
+ const notificationEvidence:unknown[]=[];
+ const notificationCapability=liveNotifications?randomBytes(32).toString('base64url'):null;
+ const preview=liveNotifications?z.object({id:z.string(),url:z.string(),target:z.literal('preview'),readyState:z.literal('READY'),sha:z.literal(gitSha)}).parse(JSON.parse(readFileSync('../release-work/preview-deployment.json','utf8'))):null;
+ const notificationSecret=process.env.TIVDOC_NOTIFICATION_ENCRYPTION_KEY;
+ if(liveNotifications&&(process.env.TIVDOC_NOTIFICATION_PROVIDER!=='resend'||!process.env.RESEND_API_KEY||!process.env.TIVDOC_NOTIFICATION_FROM||!notificationSecret||Buffer.from(notificationSecret,'base64').length!==32||process.env.DELIVERY_RECIPIENT_ALLOWLIST?.trim()!==ownerEmail))throw Error('LIVE_OWNER_NOTIFICATION_CONFIGURATION');
  let seeded=false,cleaned=false,storageCleaned=false,removedIdentities=0,removedCases=0,activeTransactions=0,failBeforeSave=false,completed=false,retained=false,phase='preflight',failure:unknown=null,cleanupFailure:unknown=null;
- const own=()=>writeFileSync(ownedFile,JSON.stringify({caseIds:cases.map(c=>c.id),identities:cases.map(c=>c.identity).filter(Boolean),cases,paths,retained,gitSha,directory,qaLabel:'Synthetic DEV live financial flow',scope:'Only these fresh QA cases and object paths in isolated DEV; machine credentials are private. Preserve existing identities. No customer session or OTP was created.'},null,2));
+ const own=()=>writeFileSync(ownedFile,JSON.stringify({caseIds:cases.map(c=>c.id),identities:cases.map(c=>c.identity).filter(Boolean),cases,paths,retained,gitSha,directory,qaLabel:'Synthetic DEV live financial flow',notificationCapabilitySha256:notificationCapability?fixtureSha(notificationCapability):null,scope:'Only these fresh QA cases and object paths in isolated DEV; machine credentials are private. Preserve existing identities. No customer session or OTP was created.'},null,2));
  own();
+ const notifyLive=async(eventKey:string)=>{
+  if(!liveNotifications)return;
+  const db=postgresCaseAccessDb({query:(sql,values)=>worker.query(sql,values?[...values]:[])});
+  const input={db,capability:notificationCapability!,secret:notificationSecret!,origin:'https://'+preview!.url,provider:resendProvider(process.env.RESEND_API_KEY!,process.env.TIVDOC_NOTIFICATION_FROM!),enqueueEventKeys:[eventKey]};
+  const result=await runAutomaticNotificationPass(input);expect(result.queued).toBe(1);expect(result.attempts).toHaveLength(1);expect(result.attempts[0]).toMatchObject({state:'provider_accepted',provider:'resend'});
+  const providerId=result.attempts[0].provider_message_id;expect(providerId).toBeTruthy();
+  const repeated=await runAutomaticNotificationPass(input);expect(repeated.attempts).toEqual([]);
+  let delivery:Record<string,unknown>|undefined;
+  for(let i=0;i<20;i++){delivery=(await owner.query('select state,provider_message_id,delivered_at,encrypted_payload is null payload_cleared from private.case_notification_outbox where provider_message_id=$1',[providerId])).rows[0];if(delivery?.state==='delivered')break;await delay(1000);}
+  const events=(await owner.query('select event_id,kind,occurred_at,received_at from private.case_notification_webhooks where provider_message_id=$1 order by occurred_at',[providerId])).rows;
+  notificationEvidence.push({eventKey,providerId,result,delivery,events,preview});writeFileSync(`${directory}/live-notifications.json`,JSON.stringify(notificationEvidence,null,2));
+  expect(delivery).toMatchObject({state:'delivered',payload_cleared:true});expect(events.some(e=>e.kind==='email.delivered')).toBe(true);
+ };
  const transactions=(db:pg.Client):SavedWorkerTransactions=>async operation=>{
   await db.query('begin');activeTransactions++;
   try{await db.query('select * from private.runtime_context_install($1,$2,$3)',[primary.sid,primary.jti,'dev-financial-live-proof']);await db.query("select set_config('tivdoc.engine_git_sha',$1,true)",[gitSha]);
@@ -162,7 +188,11 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
    await owner.query('select public.case_access_identity_link($1,$2)',[c.identity,c.id]);
    const offer=offerSnapshot('initial');await owner.query("insert into private.product_orders(id,case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,$2,'initial','2026-06-01','2026-06-01',$3,'ILS',$4,$5,array['minimum_wage'],$6,'paid',now())",[c.orderId,c.id,offer.amount_minor,offer,offer.sha256,offer.terms_version]);await owner.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[c.orderId]);
    await owner.query("select private.capture_case_input($1,'synthetic_dev_financial_paid_scope')",[c.id]);await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.dev.financial.worker',$3,now()-interval '1 minute',now()+interval '30 minutes',$4,now())",[`saved-case:${c.id}`,c.sid,c.jti,canonicalSha256({sid:c.sid,jti:c.jti})]);
-  }await owner.query('commit');seeded=true;own();
+  }if(liveNotifications){
+   await owner.query("insert into private.managed_dev_worker_capabilities(capability_sha256,expires_at,notification_recipients) values($1,clock_timestamp()+interval '30 minutes',$2::text[])",[fixtureSha(notificationCapability!),[fixtureSha('email|'+ownerEmail)]]);
+   await owner.query('insert into private.managed_dev_worker_cases(case_id,identity_id,session_sid,capability_sha256) values($1,$2,$3,$4)',[primary.id,primary.identity,primary.sid,fixtureSha(notificationCapability!)]);
+  }
+  await owner.query('commit');seeded=true;own();
   phase='initial-upload-extract';const first=await upload(inputs[0]);const firstRawLease=await claim();const extractedFirst=await extract(firstRawLease,first);expect(providerHashes).toContain(inputs[0].sha256);
   inspectCheckpoint('initial',extractedFirst.result,first);
   checks.push('actual web reservation, non-upsert signed Storage transfer, byte validation and commit feed the actual durable V2 extraction adapter and saved receipt; provider response is from the actual SDK, with persisted response/model/request/source receipts');
@@ -197,11 +227,18 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
   const requestId=missing.run.request_id!;const answer=(value:string,identity=primary.identity)=>web.query('select * from public.case_request_answer_identified($1,$2,$3,$4)',[requestId,primary.id,identity,value]);
   await expect(answer('100',cases[1].identity)).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');for(const bad of ['0','183','1e2','010','01.5'])await expect(answer(bad)).rejects.toThrow('REQUEST_ANSWER_INVALID');
   phase='identified-missing-answer';
-  await answer('100');await answer('100');expect((await owner.query('select count(*)::int n from private.case_request_answer_versions where request_id=$1',[requestId])).rows[0].n).toBe(1);
+  await notifyLive('request:'+requestId);
+  if(browserAnswer){
+   writeFileSync(`${directory}/browser-answer-pending.json`,JSON.stringify({publicId:primary.publicId,requestId,expectedSyntheticAnswer:'100',preview,gitSha}));
+   console.log('LIVE_OWNER_BROWSER_ANSWER_PENDING',primary.publicId,requestId);
+   let answeredInBrowser=false;for(let i=0;i<300;i++){const saved=(await owner.query('select answer_text as answer from private.case_request_answer_versions where request_id=$1 order by revision desc limit 1',[requestId])).rows[0];if(saved){expect(saved.answer).toBe('100');answeredInBrowser=true;break;}await delay(1000);}
+   expect(answeredInBrowser).toBe(true);
+  }else await answer('100');
+  await answer('100');expect((await owner.query('select count(*)::int n from private.case_request_answer_versions where request_id=$1',[requestId])).rows[0].n).toBe(1);
   await expect(web.query("select public.case_request_edit($1,$2,$3,'0',1,'correction')",[primary.id,requestId,primary.identity])).rejects.toThrow('REQUEST_ANSWER_INVALID');
   await expect(calculate(missingLease.job)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');const answerLease=await claim(),beforeAnswer=providerHashes.length;
   expect((await extract(answerLease,second)).reused).toBe(true);expect(providerHashes).toHaveLength(beforeAnswer);const answered=await calculate(answerLease.job);
-  expect(answered.run.run_id).not.toBe(missing.run.run_id);expect(answered.run.input_revision).toBeGreaterThan(missing.run.input_revision);expect(answered.run.calculation).toMatchObject({state:'calculated',expectedMinor:354000,recordedMinor:330000,gapMinor:24000});expect(answered.run.reading).toMatchObject({identity_id:primary.identity,request_id:requestId,answer_revision:1,answer:'100'});await recordArtifacts('answered-calculated',answered);
+  expect(answered.run.run_id).not.toBe(missing.run.run_id);expect(answered.run.input_revision).toBeGreaterThan(missing.run.input_revision);expect(answered.run.calculation).toMatchObject({state:'calculated',expectedMinor:354000,recordedMinor:330000,gapMinor:24000});expect(answered.run.reading).toMatchObject({identity_id:primary.identity,request_id:requestId,answer_revision:1,answer:'100'});await recordArtifacts('answered-calculated',answered);await notifyLive('engineering:'+answered.run.run_id);
   checks.push('an identified answer creates a new immutable input and analysis; retry keeps one answer revision, invalid correction is refused, and exact-source extraction is reused without another provider call');
   expect(await counts()).toEqual({runs:3,findings:2});const history=await customer();expect(history).toHaveLength(3);expect(history.filter(r=>r.current)).toHaveLength(1);expect(parseDevFinancialRun(history.find(r=>r.current)!.payload).run_id).toBe(answered.run.run_id);
   checks.push('all three historical runs remain readable to their owner, with only the answered current input designated current; stored HTML and extracted PDF text contain the same run IDs and amounts');
@@ -215,8 +252,10 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
   extractor.extractPreparedPass=forward;
   await Promise.all([owner,worker,peer,web,...(restarted?[restarted]:[])].map(db=>db.query('rollback').catch(()=>{})));
   try{if(seeded){
-   retained=retain&&completed&&!failure;const removable=retained?[cases[1]]:cases;
-   await owner.query('begin');for(const c of cases){
+   retained=retain&&runs.length>0; // Preserve an actual saved run for bounded browser inspection even if a later check failed.
+   // Failure remains FAIL in the receipt; retained data never means completed acceptance.
+   const removable=retained?[cases[1]]:cases;
+   await owner.query('begin');if(notificationCapability)await owner.query('update private.managed_dev_worker_capabilities set enabled=false where capability_sha256=$1',[fixtureSha(notificationCapability)]);for(const c of cases){
     await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[`saved-case:${c.id}`]);
     await owner.query("update public.engine_durable_jobs set state='cancelled',cancellation_requested=true,lease_owner=null,lease_expires_at=null,revision=revision+1 where tenant_id=$1 and canonical_case_id=$2 and state in ('queued','leased','running','retry_wait')",[`saved-case:${c.id}`,c.id]);
     await owner.query('update public.product_identity_sessions set revoked_at=coalesce(revoked_at,now()) where tenant_id=$1 and sid=$2',[`saved-case:${c.id}`,c.sid]);
@@ -236,7 +275,7 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
   }finally{
    const verified=completed&&!failure&&!cleanupFailure&&cleaned&&(storageCleaned||retained)&&confirmationChecks.length===2&&provenanceChecks.length===2;
    writeFileSync(`${directory}/live-financial-db-proof.json`,JSON.stringify({verdict:verified?'PASS':'FAIL',checkedAt:new Date().toISOString(),gitSha,gitWorktreeDirty:dirty,
-    schemaEvidence,checks,confirmationChecks,provenanceChecks,failure,cleanupFailure,runs,
+    schemaEvidence,checks,confirmationChecks,provenanceChecks,failure,cleanupFailure,runs,notificationEvidence,browserAnswerRequested:browserAnswer,
     providerKind:'openai_live',providerInvocationEntered:providerAttempts.length,providerReceiptConfirmedCalls:providerAttempts.filter(v=>v.receiptConfirmed).length,
     providerCalled:providerAttempts.some(v=>v.receiptConfirmed)?true:providerAttempts.length?null:false,
     providerReceipts,distinctProviderInputs:[...new Set(providerHashes)],budgetBefore:ledgerBefore,budgetAfter:summarizeLiveExtractionBudget(ledger),reviewedRetry:reviewedRetry??null,

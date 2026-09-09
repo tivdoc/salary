@@ -46,3 +46,13 @@ it('refuses an invalid origin and encryption key before accessing the outbox',as
  const s=fixture();await expect(runAutomaticNotificationPass({db:s.db,provider:s.provider,capability:'synthetic',secret,origin:'https://foreign.invalid'})).rejects.toThrow('MANAGED_NOTIFICATION_ORIGIN');
  await expect(runAutomaticNotificationPass({db:s.db,provider:s.provider,capability:'synthetic',secret:'invalid',origin})).rejects.toThrow('NOTIFICATION_KEY_INVALID');expect(s.queries).toHaveLength(0);
 });
+
+it('an optional event selection narrows authenticated pending events and cannot enqueue an invented event',async()=>{
+ const a=randomUUID(),b=randomUUID();const event=(id:string)=>({event_key:'request:'+id,event_kind:'request_required',case_id:randomUUID(),public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:id,report_id:null});
+ const s=fixture([event(a),event(b)]);
+ const pass=(enqueueEventKeys:readonly string[])=>runAutomaticNotificationPass({db:s.db,provider:s.provider,capability:'synthetic',secret,origin,enqueueEventKeys});
+ expect(await pass(['request:'+a,'request:'+randomUUID()])).toMatchObject({queued:1});
+ expect(s.queries.filter(q=>q.fn==='case_notification_managed_enqueue').map(q=>q.args.target_event)).toEqual(['request:'+a]);
+ expect(await pass([])).toMatchObject({queued:0});
+ expect(s.queries.filter(q=>q.fn==='case_notification_managed_enqueue')).toHaveLength(1);
+});

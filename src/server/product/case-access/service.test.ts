@@ -252,3 +252,15 @@ describe("login and recovery by contact (U2)", () => {
     expect((await resendCaseLink(CASE.id, db)).outcome).toBe("resend_limited");
   });
 });
+
+it('passes actual direct provider acceptance IDs to the durable receipt boundary',async()=>{
+ const base=fakeCaseAccessDb([UNVERIFIED]);const providerId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';const records:Record<string,unknown>[]=[];
+ const db={provider:'fake' as const,async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>):Promise<readonly T[]>{
+  if(fn==='case_notification_record_provider'){records.push({...args});const {target_provider_message_id,...legacy}=args;expect(target_provider_message_id).toBe(providerId);return base.rpc<T>('case_notification_record',legacy);}
+  return base.rpc<T>(fn,args);
+ }};
+ installNotificationProviderForTests({id:'resend',async send(){return {ok:true,provider_message_id:providerId};}});
+ await requestFunnelCode({caseId:UNVERIFIED.id,request:requestWithIp('203.0.113.20')},db);
+ expect(records).toHaveLength(1);expect(records[0]).toMatchObject({target_case:UNVERIFIED.id,target_provider:'resend',target_state:'sent',target_template:'access_code',target_provider_message_id:providerId});
+ expect(JSON.stringify(records)).not.toContain('קוד הכניסה');
+});

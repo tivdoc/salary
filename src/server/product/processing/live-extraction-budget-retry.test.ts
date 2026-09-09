@@ -64,3 +64,16 @@ describe('one reviewed attempt keeps all original paid or unknown reservations',
   expect(()=>reserve(ledger,approval.sourceSha256s[1])).toThrow('LIVE_BUDGET_EXHAUSTED');
  });
 });
+
+it('attempt 3 requires a completed earlier reviewed attempt and preserves its paid receipts',()=>{
+ const attempt3={version:approval.version,attemptRevision:3 as const,reasonCode:'aggregate_total_isolation_after_ef03418' as const,codeRevision:'c'.repeat(40)};
+ const before=priorEight();const input={sourceSha256:approval.sourceSha256s[0],requestSha256:hash('synthetic-budget-request'),passKind:'first_pass' as const,now:later,reviewedRetry:attempt3};
+ expect(()=>reserveLiveExtractionPass({...input,ledger:before})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+ const pending=reserve(before);expect(()=>reserveLiveExtractionPass({...input,ledger:pending})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+ const afterTwo=recordLiveExtractionPassReceipt(pending,receipt(approval.sourceSha256s[0],'synthetic-attempt-two',later));
+ const afterThree=reserveLiveExtractionPass({...input,ledger:afterTwo});
+ expect(afterThree.reservations.slice(0,9)).toEqual(afterTwo.reservations);expect(summarizeLiveExtractionBudget(afterThree).reservedPasses).toBe(10);
+ expect(()=>parseLiveExtractionBudgetLedger({...afterThree,reservations:afterThree.reservations.filter(r=>r.reviewedRetry?.attemptRevision!==2)})).toThrow('LIVE_BUDGET_RETRY_HISTORY_INVALID');
+ const saved=recordLiveExtractionPassReceipt(afterThree,receipt(approval.sourceSha256s[0],'synthetic-attempt-three',later));
+ expect(()=>reserveLiveExtractionPass({...input,ledger:saved})).toThrow('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
+});
