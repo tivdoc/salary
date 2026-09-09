@@ -1,3 +1,9 @@
+## DEV real-provider/canonical package active — 2026-09-09
+
+The owner's new bounded request supersedes the historical STOP below. Base2ebddb75ab8e0a6ee8beb9e50895c2929b5c1339 on codex/tivdoc-release-completion; started17:21:32UTC, safe saved handoff no later than21:21:32UTC. No Production changes. Root owns provider secrets, notification ingress, canonical integration, migrations and deployments; calculation_audit owns live corpus/mapping/budget; p06_base owns unsigned minimum-wage source/component package. Heavy builds run serially.
+
+New account access is concretely blocked at Resend's password step and OpenAI's403 platform challenge. Existing Vercel secret writes succeeded for branch Preview encryption/owner allowlist/isolated webhook DSN. No live provider call or delivered message. A separate disabled DEV callback project was created without touching the salary project's protection. See docs/dev-provider-configuration-2026-09-09.md, docs/live-provider-extraction-2026-09-09.md and the June2026 canonical review dossier. Work is not yet delivered; source pins, component rules, corpus fixes and transport are being integrated and verified.
+
 ## Automatic DEV package delivered — STOP (2026-09-09)
 
 The bounded automatic DEV package is delivered; do not resume P00–P13 or another package automatically. See docs/automatic-dev-flow-handoff-2026-09-09-he.md and docs/release-evidence/DEV-automatic-delivery.json. Tested application71be72242d8af06c04bd7359946efb62e6372f2a passes both CI34378468781/34378463143. Exact READY Preview salary-acl7tou5v-tivdoccom-5042s-projects.vercel.app / dpl_FntJf39hsrR1ozoK2tE12jsD9Ah8 uses isolated DEV schema127 (20260909155945). Delivery after that application changes docs/evidence only; no Production action.

@@ -7,6 +7,10 @@ function environment():Record<string,string|undefined>{return {
  NEXT_PUBLIC_SUPABASE_URL:'https://cpzrbidxftzqcfeqqusu.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'synthetic-storage',OPENAI_API_KEY:'synthetic-key',TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED:'true',
 };}
 describe('managed DEV host configuration',()=>{
+ it('accepts the explicitly priced live corpus snapshot, without accepting a drifting alias or arbitrary model',()=>{
+  expect(managedWorkerConfig({...environment(),OPENAI_EXTRACTION_MODEL:'gpt-4o-mini-2024-07-18'}).enabled).toBe(true);
+  for(const model of ['gpt-4o-mini','unreviewed-model'])expect(()=>managedWorkerConfig({...environment(),OPENAI_EXTRACTION_MODEL:model})).toThrow('MANAGED_DEV_CONFIGURATION_INVALID');
+ });
  it('disabled configuration is effect-free without requiring credentials',()=>expect(managedWorkerConfig({})).toEqual({enabled:false}));
  it('accepts only the fixed worker DEV target and removes URL TLS overrides',()=>{
   const result=managedWorkerConfig(environment());expect(result.enabled).toBe(true);if(!result.enabled)throw Error();

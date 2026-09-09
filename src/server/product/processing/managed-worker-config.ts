@@ -33,7 +33,9 @@ export function managedWorkerControlConfig(env:Environment){
 export function managedWorkerConfig(env:Environment){
  const control=managedWorkerControlConfig(env);if(!control.enabled)return control;
  if(env.TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED!=='true'||!env.OPENAI_API_KEY?.trim())throw Error('MANAGED_DEV_PROVIDER_UNCONFIGURED');
- if((env.OPENAI_EXTRACTION_MODEL??DEFAULT_OPENAI_EXTRACTION_MODEL)!==DEFAULT_OPENAI_EXTRACTION_MODEL)throw Error('MANAGED_DEV_CONFIGURATION_INVALID');
+ // Explicit snapshots only. The dated mini model has a reviewed bounded live
+ // corpus budget; configuring it must match API, worker and proof settings.
+ if(![DEFAULT_OPENAI_EXTRACTION_MODEL,'gpt-4o-mini-2024-07-18'].includes(env.OPENAI_EXTRACTION_MODEL??DEFAULT_OPENAI_EXTRACTION_MODEL))throw Error('MANAGED_DEV_CONFIGURATION_INVALID');
  if(!z.coerce.number().int().min(1000).max(120000).safeParse(env.OPENAI_EXTRACTION_TIMEOUT_MS?.trim()||120000).success)throw Error('MANAGED_DEV_CONFIGURATION_INVALID');
  const storageKey=env.SUPABASE_SERVICE_ROLE_KEY?.trim();if(!storageKey)throw Error('MANAGED_DEV_STORAGE_UNCONFIGURED');
  return {...control,storageKey};
