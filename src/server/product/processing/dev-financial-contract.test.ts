@@ -6,6 +6,7 @@ import {employmentSnapshotSchema,type EmploymentSnapshot} from '@/engine/facts/s
 import {calculateDevMinimumWage,DEV_MINIMUM_WAGE_POLICY} from '@/engine/calculations/dev-minimum-wage';
 import {devArtifactSha,renderDevFinancialArtifacts} from '../reports/dev-financial-artifacts';
 import {savedMonthIdempotencyKey} from './saved-order-scope';
+import {JUNE2026_REVIEW_CATALOG_SHA256} from '@/engine/legal-operations/june2026-catalog';
 import {DEV_FINANCIAL_SCHEMA,DEV_FINANCIAL_DISCLOSURE,devFinancialFacts,devFinancialFinding,
  devHoursReadingSchema,parseDevFinancialRun,type DevHoursReading} from './dev-financial-contract';
 
@@ -49,7 +50,7 @@ function candidate(options:{parent?:EmploymentSnapshot;reading?:DevHoursReading|
  const job={schema_version:'saved-case-work-v1' as const,case_id:id.case,revision,input_sha256:inputHash,mode:'draft' as const};
  return {schema_version:DEV_FINANCIAL_SCHEMA,authority:'engineering_only' as const,run_id:runId,case_id:id.case,public_id:'TV-1234ABCD',
   order_id:id.order,input_revision:revision,input_sha256:inputHash,month:'2026-06' as const,parent_run_id:parent.analysis_run_id,
-  parent_result_sha256:parentResultHash,parent_key:savedMonthIdempotencyKey(job,id.order,'2026-06'),
+  parent_result_sha256:parentResultHash,parent_key:savedMonthIdempotencyKey(job,id.order,'2026-06'),parent_key_catalog_sha256:JUNE2026_REVIEW_CATALOG_SHA256,
   parent_facts:parent,parent_facts_sha256:canonicalSha256(parent),facts,facts_sha256:canonicalSha256(facts),reading:answer,
   source:{document_id:id.document,version_id:id.source,source_sha256:sourceHash,checkpoint_sha256:checkpointHash,
    path:`cases/${id.case}/versions/${id.source}.pdf`,mime:'application/pdf' as const,size:1234,page:3},
@@ -62,6 +63,12 @@ function pdfLogicalText(bytes:Uint8Array){
 }
 
 describe('DEV financial snapshot and source contract',()=>{
+ it('requires the exact explicit catalog dependency of a new parent key',()=>{
+  const p=candidate();expect(parseDevFinancialRun(p).parent_key_catalog_sha256).toBe(JUNE2026_REVIEW_CATALOG_SHA256);
+  expect(()=>parseDevFinancialRun({...p,parent_key_catalog_sha256:'0'.repeat(64)})).toThrow('DEV_FINANCIAL_PARENT_KEY');
+  const {parent_key_catalog_sha256,...missing}=p;expect(parent_key_catalog_sha256).toBeTruthy();
+  expect(()=>parseDevFinancialRun(missing)).toThrow('DEV_FINANCIAL_PARENT_KEY');
+ });
  it('binds the independently specified 240.00 result and finding to the same new financial run',()=>{
   const p=candidate(),run=parseDevFinancialRun(p);
   expect(run.run_id).not.toBe(run.parent_run_id);

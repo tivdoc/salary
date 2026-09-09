@@ -1,6 +1,5 @@
 import {z} from 'zod';
 import {createHash} from 'node:crypto';
-import {savedMonthIdempotencyKey} from './saved-order-scope';
 import {employmentSnapshotSchema,type EmploymentSnapshot} from '@/engine/facts/snapshot';
 import {canonicalFactSchema} from '@/engine/facts/contracts';
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
@@ -18,7 +17,7 @@ export type DevHoursReading=z.infer<typeof devHoursReadingSchema>;
 const sourceSchema=z.object({document_id:z.uuid(),version_id:z.uuid(),source_sha256:hash,checkpoint_sha256:hash,
  path:z.string(),mime:z.enum(['application/pdf','image/png','image/jpeg']),size:z.number().int().positive().max(10*1024*1024),page:z.number().int().positive()}).strict();
 const shape=z.object({schema_version:z.literal(DEV_FINANCIAL_SCHEMA),authority:z.literal('engineering_only'),run_id:z.uuid(),case_id:z.uuid(),public_id:z.string().regex(/^TV-[A-Z0-9]{8}$/u),
- order_id:z.uuid(),input_revision:z.number().int().positive(),input_sha256:hash,month:z.literal('2026-06'),parent_run_id:z.uuid(),parent_result_sha256:hash,parent_key:z.string(),
+ order_id:z.uuid(),input_revision:z.number().int().positive(),input_sha256:hash,month:z.literal('2026-06'),parent_run_id:z.uuid(),parent_result_sha256:hash,parent_key:z.string(),parent_key_catalog_sha256:hash.optional(),
  parent_facts:employmentSnapshotSchema,parent_facts_sha256:hash,facts:employmentSnapshotSchema,facts_sha256:hash,reading:devHoursReadingSchema.nullable(),source:sourceSchema,
  policy_sha256:hash,created_at:z.iso.datetime({offset:true}),calculation:z.unknown(),finding:z.unknown(),request_id:z.uuid().nullable(),
  scenario:z.literal('synthetic_adult_hourly_general_182_regular_base_only'),extraction_provider:z.enum(['injected_test_provider','openai_live','not_configured','unproven_legacy']),
@@ -57,7 +56,13 @@ export function parseDevFinancialRun(candidate:unknown){
  }
  assertDevFinancialScenario(p.parent_facts,p.source.version_id);
  if(devFinancialSourcePage(p.parent_facts,p.source.version_id)!==p.source.page)throw Error('DEV_FINANCIAL_SOURCE_PAGE');
- if(p.parent_key!==savedMonthIdempotencyKey({schema_version:'saved-case-work-v1',case_id:p.case_id,revision:p.input_revision,input_sha256:p.input_sha256,mode:'draft'},p.order_id,'2026-06'))throw Error('DEV_FINANCIAL_PARENT_KEY');
+ // This v1 historical wire contract must never validate a saved report with
+ // today's mutable catalog. Older artifacts have the original recipe; newer
+ // artifacts pin the catalog dependency used by their parent key explicitly.
+ const expectedParentKey=`saved-month:${canonicalSha256({job:{schema_version:'saved-case-work-v1',case_id:p.case_id,revision:p.input_revision,input_sha256:p.input_sha256,mode:'draft'},
+  order_id:p.order_id,month:'2026-06',template:'saved-source-analysis-draft-v1',engine:'case-analysis@0.6.5',
+  ...(p.parent_key_catalog_sha256?{review_catalog_sha256:p.parent_key_catalog_sha256}:{})})}`;
+ if(p.parent_key!==expectedParentKey)throw Error('DEV_FINANCIAL_PARENT_KEY');
  if(p.parent_facts.case_id!==p.case_id||p.parent_facts.analysis_run_id!==p.parent_run_id||canonicalSha256(p.parent_facts)!==p.parent_facts_sha256
   ||p.policy_sha256!==canonicalSha256(DEV_MINIMUM_WAGE_POLICY))throw Error('DEV_FINANCIAL_PARENT_BINDING');
  if(p.reading&&(p.reading.version_id!==p.source.version_id||p.reading.checkpoint_sha256!==p.source.checkpoint_sha256||p.reading.request_id!==p.request_id))throw Error('DEV_FINANCIAL_READING_BINDING');

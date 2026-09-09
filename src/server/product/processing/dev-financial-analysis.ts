@@ -10,6 +10,7 @@ import {sourceJobSchema,type SourceJob} from './source-dispatch';
 import {runSavedWorkerMonth} from './saved-worker';
 import {readSavedExtractionProvenance} from './live-extraction-provenance';
 import {savedMonthIdempotencyKey} from './saved-order-scope';
+import {JUNE2026_REVIEW_CATALOG_SHA256} from '@/engine/legal-operations/june2026-catalog';
 import {savedAnalysisId} from './saved-draft-report';
 import {DEV_FINANCIAL_SCHEMA,devFinancialFacts,devFinancialFinding,devHoursReadingSchema,devHoursRequestCode,parseDevFinancialRun,assertDevFinancialScenario,devFinancialSourcePage} from './dev-financial-contract';
 
@@ -60,7 +61,7 @@ export async function runSavedDevFinancialMonth(input:{context:PostgresTransacti
  }
  const run=parseDevFinancialRun({schema_version:DEV_FINANCIAL_SCHEMA,authority:'engineering_only',run_id:runId,case_id:job.case_id,public_id:source.public_id,
   order_id:input.orderId,input_revision:job.revision,input_sha256:job.input_sha256,month:'2026-06',parent_run_id:parent.bundle.analysis_run_id,parent_result_sha256:parent.bundle.result_sha256,parent_key:savedMonthIdempotencyKey(job,input.orderId,'2026-06'),
-  parent_facts:parentFacts,parent_facts_sha256:canonicalSha256(parentFacts),facts,facts_sha256:canonicalSha256(facts),reading,
+  parent_key_catalog_sha256:JUNE2026_REVIEW_CATALOG_SHA256,parent_facts:parentFacts,parent_facts_sha256:canonicalSha256(parentFacts),facts,facts_sha256:canonicalSha256(facts),reading,
   source:{document_id:source.document_id,version_id:source.version_id,source_sha256:source.source_sha256,checkpoint_sha256:source.checkpoint_sha256,path:source.path,mime:source.mime,size:source.size,page:devFinancialSourcePage(parentFacts,source.version_id)},
   policy_sha256:canonicalSha256(DEV_MINIMUM_WAGE_POLICY),created_at:parentFacts.created_at,calculation,finding:devFinancialFinding(runId,calculation),request_id:requestId,
   scenario:'synthetic_adult_hourly_general_182_regular_base_only',extraction_provider:provenance.kind,extraction_provenance:provenance});
