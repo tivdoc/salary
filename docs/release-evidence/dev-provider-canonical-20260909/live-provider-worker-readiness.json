@@ -1,0 +1,9 @@
+{
+  "sameInternalConfigurationSource": true,
+  "privateOverlayWritten": true,
+  "workerEnabled": false,
+  "outboxEnabled": false,
+  "providerKeysPresent": false,
+  "modelAvailabilityVerified": false,
+  "schedulerChanged": false
+}

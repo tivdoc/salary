@@ -1,0 +1,16 @@
+{
+  "at": "2026-09-09T19:10:09.482Z",
+  "deployment": {
+    "id": "dpl_HLPwjZyHPupt2VThza9ZV7KAUnSE",
+    "url": "salary-ekh8i0mbo-tivdoccom-5042s-projects.vercel.app",
+    "sha": "f0d8081ddf02fd308c14710fefe1218ac1c608f4"
+  },
+  "shareExpires": 1788995407,
+  "exchangeStatus": 307,
+  "exchangeRedirectOrigin": "https://salary-ekh8i0mbo-tivdoccom-5042s-projects.vercel.app",
+  "status": 503,
+  "applicationReached": true,
+  "providerEvent": false,
+  "providerAcceptance": false,
+  "delivery": false
+}
