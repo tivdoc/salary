@@ -123,7 +123,9 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           <p>
             {blocking.length > 0
               ? "יש שאלה שאנחנו ממתינים לתשובה עליה כדי להמשיך. שעון הזמנים עצור עד שתענה."
-              : "יש שאלה שתשפר את הדיוק. אפשר לענות בכל רגע — היא לא מעכבת את הבדיקה."}
+              : open.some(request=>request.code.startsWith('minimum_wage_june2026:'))
+                ? "השאלות נועדו להשלמת מידע על תקופת העבודה ורכיבי השכר. התשובות נשמרות בתיק."
+                : "יש שאלה שתשפר את הדיוק. אפשר לענות בכל רגע — היא לא מעכבת את הבדיקה."}
           </p>
         )}
       </div>
@@ -131,12 +133,13 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
       {open.map((request) => (
         <div className={`received-card thread-card${request.blocking ? " thread-card--blocking" : ""}`} key={request.id} id={`request-${request.id}`}>
           <p className="thread-card__meta">
-            {request.blocking ? "ממתינים לתשובה כדי להמשיך" : "לא מעכב את הבדיקה"} · נשאל ב־{formatRequestDate(request.opened_at)} · פתוח עד {formatRequestDate(request.expires_at)}
+            {request.blocking ? "ממתינים לתשובה כדי להמשיך" : request.code.startsWith('minimum_wage_june2026:')?"נדרש מידע להמשך הבירור":"לא מעכב את הבדיקה"} · נשאל ב־{formatRequestDate(request.opened_at)} · פתוח עד {formatRequestDate(request.expires_at)}
           </p>
           {request.statement_month ? <p className="thread-card__meta">תקופת השאלה: {formatRequestMonth(request.statement_month)}</p> : null}
           <h2>{request.question}</h2>
-          {request.field_crop && !request.code.startsWith('document_field:') ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
+          {request.field_crop && !request.code.startsWith('document_field:') && !request.code.startsWith('minimum_wage_june2026:') ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
           {request.code.startsWith('document_field:') ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
+          {request.code.startsWith('minimum_wage_june2026:') ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת התלוש שאליו מתייחסת השאלה</a><br />התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.</p> : null}
           <AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={() => router.refresh()} />
         </div>
       ))}

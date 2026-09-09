@@ -12,7 +12,7 @@ export const JUNE2026_REVIEW_CATALOG_SHA256=legalOperationsSha256({
  catalog:'tivdoc.real.june2026.review-candidate',version:'1.0.0',
  inherited_catalog_sha256:REAL_CATALOG_SHA256,source_set_sha256:JUNE2026_SOURCE_SET_SHA256,
  policy_sha256:JUNE2026_MINIMUM_WAGE_POLICY_SHA256,
- review_diagnostic_version:'saved-june2026-review-v1',
+ review_diagnostic_version:'saved-june2026-review-v2',
 });
 export class June2026ReviewCatalog implements LegalRuleCatalogPort {
  readonly #fallback=new LegalOperationsCatalog();

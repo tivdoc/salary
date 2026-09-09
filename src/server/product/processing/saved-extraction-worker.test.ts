@@ -4,12 +4,13 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {runSavedWorkerExtraction,recordSavedExtractionResult,type SavedWorkerTransactions} from './saved-extraction-worker';
 import {SOURCE_JOB_KIND} from './source-dispatch';
-const ports=vi.hoisted(()=>({extract:vi.fn(),checkpoint:vi.fn(),admit:vi.fn(),fields:vi.fn()}));
+const ports=vi.hoisted(()=>({extract:vi.fn(),checkpoint:vi.fn(),admit:vi.fn(),fields:vi.fn(),june:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('@/server/engine/extraction/saved-payslip',()=>({extractSavedPayslip:ports.extract}));
 vi.mock('./saved-admission',()=>({savedCaseTenant:(id:string)=>`saved-case:${id}`,admitSavedSource:ports.admit}));
 vi.mock('./extraction-checkpoint',()=>({saveExtractionCheckpoint:ports.checkpoint}));
 vi.mock('./saved-field-requests',()=>({openSavedDocumentFieldRequests:ports.fields}));
+vi.mock('./saved-june2026-collection',()=>({openSavedJune2026Collection:ports.june}));
 vi.mock('./saved-order-scope',()=>({readSavedOrders:async()=>[{}],purchasedMonths:()=>['2025-01']}));
 beforeEach(()=>{vi.resetAllMocks();ports.admit.mockResolvedValue({});});
 
@@ -52,6 +53,7 @@ describe('durable saved extraction orchestration',()=>{
   expect(first.reused).toBe(false);expect(retry.reused).toBe(true);expect(first.invocationId).toBe(retry.invocationId);
   expect(ports.extract).toHaveBeenCalledTimes(1);expect(ports.checkpoint).toHaveBeenCalledTimes(2);
   expect(ports.fields).toHaveBeenCalledTimes(2);expect(ports.fields.mock.calls[0][2]).toBe(s.result);
+  expect(ports.june).toHaveBeenCalledTimes(2);expect(ports.june.mock.calls[0][2]).toBe(s.result);
   expect(ports.extract.mock.calls[0][0].context.created_at).toBe('2026-09-08T00:00:00.000Z');
  });
  it('reuses a legacy checkpoint without inventing a new invocation or provider expense',async()=>{

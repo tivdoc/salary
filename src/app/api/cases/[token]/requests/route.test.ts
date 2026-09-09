@@ -32,7 +32,11 @@ it('rejects foreign Origin and foreign case before accepting a reading',async()=
 it('uses session identity and scoped case, ignoring forged body identity fields',async()=>{
  expect((await POST(post(),context())).status).toBe(200);expect(state.answer).toHaveBeenCalledExactlyOnceWith({caseId:'case-a',identityId:'owner',requestId,answer:'כן, בדקתי במסמך והערך נכון'});
 });
-it('reports a stale source as a recoverable conflict instead of accepting the old reading',async()=>{
- state.answer.mockRejectedValue(Error('CASE_ACCESS_DB_RPC_FAILED:case_request_answer_identified:REQUEST_FIELD_SOURCE_CHANGED'));
+it.each(['REQUEST_FIELD_SOURCE_CHANGED','JUNE_COLLECTION_SOURCE_OR_SCOPE_CHANGED'])('reports a stale source as a recoverable conflict: %s',async code=>{
+ state.answer.mockRejectedValue(Error('CASE_ACCESS_DB_RPC_FAILED:case_request_answer_identified:'+code));
  const response=await POST(post(),context());expect(response.status).toBe(409);expect((await response.json()).code).toBe('request_edit_conflict');
+});
+it('reports an invalid typed June answer without leaking database detail',async()=>{
+ state.answer.mockRejectedValue(Error('CASE_ACCESS_DB_RPC_FAILED:case_request_answer_identified:JUNE_COLLECTION_ANSWER_INVALID'));
+ const response=await POST(post(),context());expect(response.status).toBe(400);expect((await response.json()).code).toBe('request_answer_invalid');
 });

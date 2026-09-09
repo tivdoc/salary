@@ -11,6 +11,7 @@ import {SavedCaseSnapshot} from './saved-snapshot';
 import {SavedAnalysisDraftBuilder,SAVED_DRAFT_TEMPLATE,savedAnalysisId} from './saved-draft-report';
 import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
 import {buildSavedJune2026ReviewDiagnostic} from './saved-minimum-wage-review';
+import {readSavedJune2026Collection} from './saved-june2026-collection';
 
 const monthSchema=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 /** Execute one purchased month through the existing CaseAnalysisService and
@@ -37,6 +38,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const snapshots=new SavedCaseSnapshot(input.context,job,input.month),snapshot=await snapshots.read();
  const end=new Date(Date.UTC(Number(input.month.slice(0,4)),Number(input.month.slice(5,7)),0)).toISOString().slice(0,10);
  const now=new Date(String(row.created_at)).toISOString();
+ const collection=input.month==='2026-06'&&order.topics.includes('minimum_wage')?await readSavedJune2026Collection(input.context,job):null;
  const command:CaseAnalysisCommand={case_id:job.case_id,case_revision:z.coerce.number().int().positive().parse(row.engine_revision),
   document_snapshot_id:snapshot.document_snapshot_id,document_snapshot_sha256:snapshot.document_snapshot_sha256,
   extraction_snapshot_id:snapshot.extraction_snapshot_id,extraction_snapshot_sha256:snapshot.extraction_snapshot_sha256,
@@ -50,7 +52,12 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   // reachable here; unexpected activation requires a reviewed production binding.
   executor:{async execute(){throw new Error('SAVED_RULE_EXECUTOR_NOT_ACTIVATED');}},
   reportBuilder:new SavedAnalysisDraftBuilder(),reportRegistration:input.analysis.reports,
-  reviewDiagnostics:buildSavedJune2026ReviewDiagnostic,
+  reviewDiagnostics:args=>{
+   const diagnostic=buildSavedJune2026ReviewDiagnostic(args);
+   return diagnostic&&collection?{...diagnostic,collection,
+    blockers:{...diagnostic.blockers,technical:['canonical_component_fact_and_executor_admission_not_connected']},
+    customer_requests_created:collection.resolutions.length>0}:diagnostic;
+  },
   logs:{write(){}},templateVersion:SAVED_DRAFT_TEMPLATE});
  const bundle=await service.runCaseAnalysis(command);
  const completed=await service.getCompletedRun(bundle.analysis_run_id);

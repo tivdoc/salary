@@ -4,12 +4,12 @@ import {JUNE2026_APPLICABILITY_REQUESTS} from '@/engine/minimum-wage-june2026/ev
 import {JUNE2026_MINIMUM_WAGE_POLICY_SHA256,JUNE2026_SOURCE_SET_SHA256} from '@/engine/minimum-wage-june2026/sources';
 import {JUNE2026_SOURCE_VERSION_IDS} from '@/engine/minimum-wage-june2026/admission';
 
-export const SAVED_JUNE_REVIEW_VERSION='saved-june2026-review-v1';
+export const SAVED_JUNE_REVIEW_VERSION='saved-june2026-review-v2';
 /** Saved under review_pending by CaseAnalysisService in the current source's
  * existing transaction. This keeps the concrete missing input and row sources
  * with that run, without inventing confirmations from generic questionnaire
  * text or the model's semantic labels. It creates no customer requests yet. */
-export const buildSavedJune2026ReviewDiagnostic:NonNullable<CaseAnalysisServiceDependencies['reviewDiagnostics']>=({command,stored,facts,bundle})=>{
+export const buildSavedJune2026ReviewDiagnostic=({command,stored,facts,bundle}:Parameters<NonNullable<CaseAnalysisServiceDependencies['reviewDiagnostics']>>[0])=>{
  if(command.mode!=='real'||command.period.start_date!=='2026-06-01'||command.period.end_date!=='2026-06-30'||!command.requested_topics.includes('minimum_wage'))return null;
  if(facts.case_id!==command.case_id||facts.analysis_run_id!==bundle.analysis_run_id||canonicalSha256(facts)!==bundle.facts_snapshot_sha256)throw Error('SAVED_JUNE_REVIEW_SNAPSHOT_MISMATCH');
  const documents=stored.documents.map(document=>{

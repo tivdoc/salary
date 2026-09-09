@@ -1,7 +1,8 @@
 # DEV provider configuration — 9 September2026
 
 Current package starts at `2ebddb75ab8e0a6ee8beb9e50895c2929b5c1339` on
-`codex/tivdoc-release-completion`. No Production deployment or database change.
+`codex/tivdoc-release-completion`. The existing Tivdoc Production application and
+database were not changed. See the isolated ingress deployment incident below.
 Final source/schema/deployment receipts belong in the package handoff, not this
 configuration guide. Configuration is not evidence of provider delivery.
 
@@ -45,14 +46,26 @@ the bounded live corpus runner; no claim is made that the account has access.
 The existing default model is unchanged. See the live extraction package for the
 price snapshot,22-pass limit and conservative$0.5544 maximum reservation.
 
-## Narrow public webhook ingress
+## Narrow webhook ingress — code prepared, public deployment blocked
 
 The existing application remains protected. A separate project,
 `tivdoc-dev-resend-ingress` (`prj_v8VNYB9JmkpvA004VSUEZmF8PlSA`), was created in the
 same Vercel team for one public, signed DEV callback. It contains no DB, storage,
 customer session, OpenAI credential, email-sending credential or customer UI.
-Only Preview deployments are permitted for this package; the function itself
+Only Preview deployments are authorized for this package; the function itself
 refuses `VERCEL_ENV` other than `preview`.
+
+Two first deployments in this **new isolated project** were unexpectedly
+classified by Vercel as `production`: first with the API target omitted, then
+with explicit `target:'preview'`. They were immediately deleted:
+`dpl_6kGtt1xyQKP9myyb1cFQbS43BRHi` and
+`dpl_5ACV1ih99U6aGvy4gEUk6KR9GsLG`. Neither had provider secrets, database
+credentials, enabled ingress or customer data; the handler refuses Production.
+The existing salary Production project/deployment was not changed. No third
+deployment was attempted. There is currently **no public supplier endpoint** in
+this project. Do not claim that the Preview webhook problem is fully resolved.
+The exact immutable salary Preview transport works separately with a scoped
+cookie exchange. A supported Preview-only ingress deployment remains necessary.
 
 `src/server/product/case-access/dev-resend-ingress.ts` accepts only
 `POST /api/resend`, up to64KiB, and verifies the original Resend/Svix signature

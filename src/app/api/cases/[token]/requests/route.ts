@@ -88,8 +88,8 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    if(error instanceof Error&&/REQUEST_FIELD_SOURCE_CHANGED$/.test(error.message))return NextResponse.json({code:'request_edit_conflict',error:'המסמך השתנה מאז פתיחת השאלה. צריך לטעון את השאלה העדכנית.'},{status:409});
-    if(error instanceof Error&&/REQUEST_(ANSWER|EDIT)_INVALID$/.test(error.message))return NextResponse.json({error:'התשובה אינה מתאימה לשאלה',code:'request_answer_invalid'},{status:400});
+    if(error instanceof Error&&/(REQUEST_FIELD_SOURCE_CHANGED|JUNE_COLLECTION_SOURCE_OR_SCOPE_CHANGED)$/.test(error.message))return NextResponse.json({code:'request_edit_conflict',error:'המסמך או היקף הבדיקה השתנו מאז פתיחת השאלה. צריך לטעון את השאלה העדכנית.'},{status:409});
+    if(error instanceof Error&&/(REQUEST_(ANSWER|EDIT)_INVALID|JUNE_COLLECTION_ANSWER_INVALID)$/.test(error.message))return NextResponse.json({error:'התשובה אינה מתאימה לשאלה',code:'request_answer_invalid'},{status:400});
     if(error instanceof Error&&/REQUEST_EDIT_(CONFLICT|CLOSED)$/.test(error.message))return NextResponse.json({error:'התשובה או הטיוטה השתנו. אפשר לטעון את המצב שנשמר לפני שליחה נוספת.',code:'request_edit_conflict'},{status:409});
     if (error instanceof RequestAnswerError) return NextResponse.json({ error: "התשובה אינה מתאימה לשאלה", code: "request_answer_invalid" }, { status: 400 });
     console.error("Answering a case request failed", error instanceof Error ? error.name : "error");

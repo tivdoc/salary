@@ -7,6 +7,7 @@ import {CASE_ANALYSIS_CODE_VERSION} from '@/engine/case-analysis/contracts';
 import type {SourceJob} from './source-dispatch';
 import type {PostgresAnalysisRepositories} from '@/server/platform/persistence/postgres/analysis';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
+vi.mock('server-only',()=>({}));
 
 vi.mock('./source-dispatch',async importOriginal=>({...await importOriginal<typeof import('./source-dispatch')>(),lockCurrentSource:vi.fn(async()=>{})}));
 const caseId='11111111-1111-4111-8111-111111111111';
