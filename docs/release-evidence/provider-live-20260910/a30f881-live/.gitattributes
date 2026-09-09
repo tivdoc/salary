@@ -1,0 +1,4 @@
+# Preserve the bytes hashed by these immutable evidence receipts.
+*.json -text
+*.txt -text
+*.html -text

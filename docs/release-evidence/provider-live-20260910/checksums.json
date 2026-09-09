@@ -1,0 +1,226 @@
+{
+  "schemaVersion": "tivdoc-provider-evidence-checksums-v1",
+  "generatedAt": "2026-09-09T22:44:52.018Z",
+  "applicationSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "dispatchDriverSha": "512b2a21eae9fa37f32431c8ec1ca81f41f90fff",
+  "hashMeaning": "SHA256 of staged Git blob bytes; also records current working bytes. Scoped attributes preserve JSON/TXT/HTML receipts, not repository-wide normalization.",
+  "continuationChainVerified": true,
+  "files": [
+    {
+      "path": "a30f881-live/.gitattributes",
+      "bytes": 104,
+      "gitBlobSha256": "35588736633bae90901579ce21d5b3aaf8442707ce62ca3df20ad3e48ec96692",
+      "workingBytesSha256": "f7a5855af227e70a81732a5aed078e37376c48776f7df157267f7ef59fd1dcc2"
+    },
+    {
+      "path": "a30f881-live/README.md",
+      "bytes": 3149,
+      "gitBlobSha256": "29aae0654b7ef3537c324169e0e92095bcae0360332dc766cfd20471760d3018",
+      "workingBytesSha256": "a9fa4601a4cc79749023d8766db442c7a8497da35becbe644f3837764563b2d6"
+    },
+    {
+      "path": "a30f881-live/browser-report-proof.json",
+      "bytes": 943,
+      "gitBlobSha256": "b14ecba5f8e624a87771f0b579cc08e7eaf63e56774bc036af2f031d95a0d487",
+      "workingBytesSha256": "b14ecba5f8e624a87771f0b579cc08e7eaf63e56774bc036af2f031d95a0d487"
+    },
+    {
+      "path": "a30f881-live/canonical-audit.json",
+      "bytes": 4225,
+      "gitBlobSha256": "fd68ca965e72ef3fa10f7747e460df522b98f5fcfe96700525c024583998717e",
+      "workingBytesSha256": "fd68ca965e72ef3fa10f7747e460df522b98f5fcfe96700525c024583998717e"
+    },
+    {
+      "path": "a30f881-live/clear-generated-confirmations.json",
+      "bytes": 9023,
+      "gitBlobSha256": "f7c180ce315e836639cf60d0c846db5aad20df355d585b46ec20f1fc2433154a",
+      "workingBytesSha256": "f7c180ce315e836639cf60d0c846db5aad20df355d585b46ec20f1fc2433154a"
+    },
+    {
+      "path": "a30f881-live/completion-browser-proof.json",
+      "bytes": 1603,
+      "gitBlobSha256": "c0cd181007c4238d6026c056e13b193919dd79498fd3c25a02af89f33f12f079",
+      "workingBytesSha256": "c0cd181007c4238d6026c056e13b193919dd79498fd3c25a02af89f33f12f079"
+    },
+    {
+      "path": "a30f881-live/dispatch-continuation-PASS.json",
+      "bytes": 2195,
+      "gitBlobSha256": "e8184868ce70092a9477553e169dcc084d70fc0090fd4869485a713c869d158b",
+      "workingBytesSha256": "e8184868ce70092a9477553e169dcc084d70fc0090fd4869485a713c869d158b"
+    },
+    {
+      "path": "a30f881-live/hebrew-live-proof.json",
+      "bytes": 10681,
+      "gitBlobSha256": "8847ac18ad12ca25c3b70f9a1b24b4c809458b35764e80db467a9cc2eb59aacd",
+      "workingBytesSha256": "8847ac18ad12ca25c3b70f9a1b24b4c809458b35764e80db467a9cc2eb59aacd"
+    },
+    {
+      "path": "a30f881-live/hebrew-quality-review.json",
+      "bytes": 10835,
+      "gitBlobSha256": "d4cdbcccb558a94b025c749a5d22b0bbb70f2a39f05ecf0061cab803bec29321",
+      "workingBytesSha256": "d4cdbcccb558a94b025c749a5d22b0bbb70f2a39f05ecf0061cab803bec29321"
+    },
+    {
+      "path": "a30f881-live/independent-oracle.json",
+      "bytes": 373,
+      "gitBlobSha256": "ea70a117dbaa3a6283e8913d3bfbd9a416ec984e3bb20b1a0fdb8c1f9dd8aee6",
+      "workingBytesSha256": "ea70a117dbaa3a6283e8913d3bfbd9a416ec984e3bb20b1a0fdb8c1f9dd8aee6"
+    },
+    {
+      "path": "a30f881-live/initial-calculated-render.png",
+      "bytes": 161463,
+      "gitBlobSha256": "a88a6d4af89acfe1a6c270d38b0fd8925506efe759eb83db0ff777d69aa0fb23",
+      "workingBytesSha256": "a88a6d4af89acfe1a6c270d38b0fd8925506efe759eb83db0ff777d69aa0fb23"
+    },
+    {
+      "path": "a30f881-live/initial-calculated.html",
+      "bytes": 3022,
+      "gitBlobSha256": "418e5773073745311897477552643cca2d1b060c3ad65fa1c5b6680f353a2d9f",
+      "workingBytesSha256": "418e5773073745311897477552643cca2d1b060c3ad65fa1c5b6680f353a2d9f"
+    },
+    {
+      "path": "a30f881-live/initial-calculated.json",
+      "bytes": 117671,
+      "gitBlobSha256": "cd2166b7c3039b445534217f210087294497e86303b509149f7ad73966467011",
+      "workingBytesSha256": "cd2166b7c3039b445534217f210087294497e86303b509149f7ad73966467011"
+    },
+    {
+      "path": "a30f881-live/initial-calculated.pdf",
+      "bytes": 779414,
+      "gitBlobSha256": "4689563afa2cc20ed8e4f50de6b312f0ba5391c5705e4c64ac4094721152a2f1",
+      "workingBytesSha256": "4689563afa2cc20ed8e4f50de6b312f0ba5391c5705e4c64ac4094721152a2f1"
+    },
+    {
+      "path": "a30f881-live/initial-extraction.json",
+      "bytes": 61841,
+      "gitBlobSha256": "f4fd66b9a20b437dbfa8f80393894577486c696d68343fcc496dc6c2169d4c89",
+      "workingBytesSha256": "f4fd66b9a20b437dbfa8f80393894577486c696d68343fcc496dc6c2169d4c89"
+    },
+    {
+      "path": "a30f881-live/live-financial-db-proof.json",
+      "bytes": 18103,
+      "gitBlobSha256": "bb68031164dbeb9e14d81bef2c52fc4d4f25e893605863e7493197e261c026e0",
+      "workingBytesSha256": "bb68031164dbeb9e14d81bef2c52fc4d4f25e893605863e7493197e261c026e0"
+    },
+    {
+      "path": "a30f881-live/missing-extraction.json",
+      "bytes": 90073,
+      "gitBlobSha256": "d55a112387e61ae175a70c6b0fb1ff6f3d08833e9c734f7d37eec94682931102",
+      "workingBytesSha256": "d55a112387e61ae175a70c6b0fb1ff6f3d08833e9c734f7d37eec94682931102"
+    },
+    {
+      "path": "a30f881-live/missing-generated-confirmations.json",
+      "bytes": 5292,
+      "gitBlobSha256": "26d95751dca1e5815a4b9fd458368b5c41b840947b2cdab3f77c2164cbc84886",
+      "workingBytesSha256": "26d95751dca1e5815a4b9fd458368b5c41b840947b2cdab3f77c2164cbc84886"
+    },
+    {
+      "path": "a30f881-live/notification-cleanup-recovery.json",
+      "bytes": 1275,
+      "gitBlobSha256": "7b138469b71406f103a4db075ae44ffb4b4cd6b2102f364863d9124d92795cc3",
+      "workingBytesSha256": "7b138469b71406f103a4db075ae44ffb4b4cd6b2102f364863d9124d92795cc3"
+    },
+    {
+      "path": "a30f881-live/notification-driver-original-FAIL.json",
+      "bytes": 3643,
+      "gitBlobSha256": "b09ea215d9d7166cead3c2f152fb1efa765ff9ef16df27af6d239cfe51fd2f8c",
+      "workingBytesSha256": "b09ea215d9d7166cead3c2f152fb1efa765ff9ef16df27af6d239cfe51fd2f8c"
+    },
+    {
+      "path": "a30f881-live/otp-live-proof.json",
+      "bytes": 5891,
+      "gitBlobSha256": "8fd8067d2440b759a1d48c2c1b58119e0f79fa3236e7a27a342443fcd999233e",
+      "workingBytesSha256": "8fd8067d2440b759a1d48c2c1b58119e0f79fa3236e7a27a342443fcd999233e"
+    },
+    {
+      "path": "a30f881-live/provider-attempts.json",
+      "bytes": 478,
+      "gitBlobSha256": "564ffd516cab83a9ada76e6a8fae8b4bcefcfce87f9d30b7242848e647f6126c",
+      "workingBytesSha256": "564ffd516cab83a9ada76e6a8fae8b4bcefcfce87f9d30b7242848e647f6126c"
+    },
+    {
+      "path": "a30f881-live/provider-budget-ledger.json",
+      "bytes": 43292,
+      "gitBlobSha256": "a01122f0ec039e97aa41464965de9a3961dcde2f168d0725d77513b3f28c6bda",
+      "workingBytesSha256": "a01122f0ec039e97aa41464965de9a3961dcde2f168d0725d77513b3f28c6bda"
+    },
+    {
+      "path": "a30f881-live/runtime-stop.json",
+      "bytes": 282,
+      "gitBlobSha256": "23c1392b4cb0dd176ce570a39a2a4f3018a103dfae2a404ef70ef527bec47525",
+      "workingBytesSha256": "23c1392b4cb0dd176ce570a39a2a4f3018a103dfae2a404ef70ef527bec47525"
+    },
+    {
+      "path": "a30f881-live/schema131-contract-proof.json",
+      "bytes": 781,
+      "gitBlobSha256": "c99049ce7a8e1ff6af71e059ad48f651997fb5b762b15f2a0e52e045130d81f6",
+      "workingBytesSha256": "c99049ce7a8e1ff6af71e059ad48f651997fb5b762b15f2a0e52e045130d81f6"
+    },
+    {
+      "path": "a30f881-live/secret-hygiene.json",
+      "bytes": 267,
+      "gitBlobSha256": "0f70b66bfddddb5f86dced9380858eea968024d7fd9c87560f7e0c12c3a78f49",
+      "workingBytesSha256": "0f70b66bfddddb5f86dced9380858eea968024d7fd9c87560f7e0c12c3a78f49"
+    },
+    {
+      "path": "a30f881-live/synthetic-live-table-june-2026-clear.pdf",
+      "bytes": 3512,
+      "gitBlobSha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+      "workingBytesSha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb"
+    },
+    {
+      "path": "a30f881-live/synthetic-live-table-june-2026-missing-hours.pdf",
+      "bytes": 3623,
+      "gitBlobSha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+      "workingBytesSha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5"
+    },
+    {
+      "path": "delivery.json",
+      "bytes": 3006,
+      "gitBlobSha256": "1e0f5f3d51790de4c3bb0ed0eafbb203a38b2d514b756b1d328bd44e9865f65c",
+      "workingBytesSha256": "1e0f5f3d51790de4c3bb0ed0eafbb203a38b2d514b756b1d328bd44e9865f65c"
+    },
+    {
+      "path": "dev-sender-dns.json",
+      "bytes": 1411,
+      "gitBlobSha256": "4348b8c54ecbb7471f87a37caa4b36a56f74779c6d27e9bf085bf4bc15edeb44",
+      "workingBytesSha256": "4348b8c54ecbb7471f87a37caa4b36a56f74779c6d27e9bf085bf4bc15edeb44"
+    },
+    {
+      "path": "official-source/.gitattributes",
+      "bytes": 104,
+      "gitBlobSha256": "a0af8418d917cd0f88292a9be46019054a9648f35568202a731b83cb81a17760",
+      "workingBytesSha256": "50110d79446814fb79bd73eb0370d2243210bbba5d42e41290803e2dd3bd0ab8"
+    },
+    {
+      "path": "official-source/README.md",
+      "bytes": 2619,
+      "gitBlobSha256": "36459b5dd9258384c5f960b9bcbf65816472d237ce1900dc1c4ba50e077c9098",
+      "workingBytesSha256": "36459b5dd9258384c5f960b9bcbf65816472d237ce1900dc1c4ba50e077c9098"
+    },
+    {
+      "path": "official-source/gazette14324-cross-reference-page2.txt",
+      "bytes": 294,
+      "gitBlobSha256": "bde966d267a5cd8c01464be4e1edf860db8bf910dad7d46b6b23153098994600",
+      "workingBytesSha256": "bde966d267a5cd8c01464be4e1edf860db8bf910dad7d46b6b23153098994600"
+    },
+    {
+      "path": "official-source/ministry-labor-wage-update-20260316-official-mirror.pdf",
+      "bytes": 270545,
+      "gitBlobSha256": "c0b2206b891dd35dea319f72b7b0582b26a2b9ca8fb5e0f57f3602a29b27ba33",
+      "workingBytesSha256": "c0b2206b891dd35dea319f72b7b0582b26a2b9ca8fb5e0f57f3602a29b27ba33"
+    },
+    {
+      "path": "official-source/unsigned-supplement.json",
+      "bytes": 3354,
+      "gitBlobSha256": "41fcacceb987fb3adfeec637f44e2ffdd0ed2d032056a6fc7ca364453f1d20ab",
+      "workingBytesSha256": "41fcacceb987fb3adfeec637f44e2ffdd0ed2d032056a6fc7ca364453f1d20ab"
+    },
+    {
+      "path": "otp-real-delivery.json",
+      "bytes": 1386,
+      "gitBlobSha256": "cf39e6ea3c28de0de55623fbefcff58fd6510aade12c63c1f4eeb1c04ac93cbe",
+      "workingBytesSha256": "cf39e6ea3c28de0de55623fbefcff58fd6510aade12c63c1f4eeb1c04ac93cbe"
+    }
+  ]
+}

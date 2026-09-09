@@ -1,3 +1,9 @@
+## Real provider package — saved partial delivery, STOP (2026-09-10)
+
+See [final Hebrew handoff](docs/provider-live-final-handoff-2026-09-10-he.md) and [evidence](docs/release-evidence/provider-live-20260910/a30f881-live/README.md). Exact application a30f881dca092bbec91cb48aae7fdfc670d0ee5f / DEV schema131 / READY salary-ivlzv8ge9 Preview. Real OpenAI produced a source-bound 240 ILS engineering report; actual OTP login and completion-mail delivery/webhooks plus UI answer are proved. Source replacement makes that report historical. The full live missing-input-to-updated-report flow remains FAIL; no report-ready email or canonical legal activation is claimed. Dispatch continuation passes on 512b2a21eae9fa37f32431c8ec1ca81f41f90fff with test-only application diff. Original FAIL receipts remain.
+
+Temporary webhook disabled, relay/tunnel stopped, scheduler Disabled, QA machines revoked and owned jobs cancelled. QA sample retained privately; owner credentials stay private. Custom sender DNS, essential missing-field transcription/classification, extraction quality and canonical financial activation remain open. No Production change. Do not automatically resume P00–P13 or another package. Historical entries below describe earlier checkpoints.
+
 ## Live provider package resumed by owner - 2026-09-09 20:35 UTC
 
 Active work and evidence: [live integration](docs/provider-live-integration-2026-09-09.md). Resend plugin access is restored. Previous restart STOP below is superseded for this bounded package only.

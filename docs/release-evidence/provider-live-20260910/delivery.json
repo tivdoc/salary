@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "tivdoc-live-provider-partial-delivery-v1",
+  "checkedAt": "2026-09-09T22:43:40.035Z",
+  "verdict": "PARTIAL_FULL_FLOW_FAILED",
+  "branch": "codex/tivdoc-release-completion",
+  "baseSha": "61788690388c53bca736506a3ada65fa432c2f9b",
+  "applicationSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "notificationDriverSha": "f01d1ec941faca8bfd269a1519b00b084a8c4689",
+  "dispatchDriverSha": "512b2a21eae9fa37f32431c8ec1ca81f41f90fff",
+  "schema": 131,
+  "schemaTail": "20260909212737_direct_resend_provider_receipts.sql",
+  "preview": {
+    "id": "dpl_BhassBYLKav3j3huRTktvTYoeD7g",
+    "url": "https://salary-ivlzv8ge9-tivdoccom-5042s-projects.vercel.app"
+  },
+  "pr": "https://github.com/tivdoc/salary/pull/2",
+  "actualProviders": [
+    "OpenAI:gpt-4o-mini-2024-07-18",
+    "Resend:owner-only-testing-sender"
+  ],
+  "sourceSynthetic": true,
+  "paymentSynthetic": true,
+  "initialSourceConfirmations": "automated identified synthetic fixture confirmations; no human review",
+  "customerOtpSessionInjected": false,
+  "initialReportSeeded": false,
+  "acceptance": {
+    "realOtpBrowserLogin": "PASS",
+    "actualCompletionDeliveryAndWebhook": "PASS",
+    "uiAnswerAndRefresh": "PASS",
+    "answerAndDispatchRetry": "PASS_DB",
+    "sourceToInitialEngineeringFinancialReport": "PASS_WITH_IDENTIFIED_FIXTURE_CONFIRMATIONS",
+    "sameRunHtmlPdfAmounts": "PASS_DB_AND_LOCAL; browser_attachment_blocked",
+    "replacementStalePublicationRefusal": "PASS_DB",
+    "foreignReportAndSourceReadRefusal": "PASS_DB",
+    "updatedReportAfterMissingInputAnswer": "FAIL_MISSING_VALID_BASE_AND_SALARY_TYPE",
+    "reportReadyNotification": "NOT_SENT_STALE_REPORT_REFUSED",
+    "hebrewAdditionalComponentsQuality": "FAIL",
+    "liveRasterQuality": "FAIL_PRIOR_R2",
+    "liveNoGapReport": "NOT_PROVED",
+    "automaticLiveManagedWorkerFlow": "NOT_PROVED",
+    "canonicalLegalFinancialActivation": "NOT_ACTIVE"
+  },
+  "cleanup": {
+    "temporaryWebhookDisabled": true,
+    "relayAndTunnelStopped": true,
+    "scheduler": "Disabled",
+    "ownedQaJobs": "cancelled",
+    "ownedMachineSessions": "revoked",
+    "qaCaseRetained": "TV-73299C08",
+    "providerCredentials": "private DEV only"
+  },
+  "remaining": {
+    "technical": [
+      "source-bound essential field transcription/classification without changing OCR checkpoints",
+      "Hebrew/scan extraction quality",
+      "admitted applicability and component resolver, activated canonical executor/findings/report bridge",
+      "persistent DEV callback and managed live orchestration proof"
+    ],
+    "sourceEvidence": [
+      "Gazette origin bytes/authenticity",
+      "operative period/applicability/182 versus186 and rounding decision"
+    ],
+    "humanPolicy": [
+      "existing trusted source/parameter/rule/golden/activation decisions; no invented approval"
+    ],
+    "ownerActions": [
+      "Cloudflare access to apply exactly three prepared devmail.tivdoc.com DNS records"
+    ]
+  },
+  "productionChanged": false,
+  "stopAfterDelivery": true
+}

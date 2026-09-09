@@ -43,3 +43,8 @@ Commit6154dca updates migration-tail and definer-count expectations to reviewed 
 One reviewed attempt4 is prepared only after this concrete fix, with the original22-pass/$5 ceiling and all13 prior reservations retained. Budget guards19 pass; live DB harness import is one opt-in skip. No attempt4 has run at this checkpoint.
 
 A dedicated devmail.tivdoc.com domain was created in the existing Resend account. DNS is Cloudflare-managed; Domain Connect currently opens Cloudflare Login. No DNS records or root mail configuration were changed. The exact three public DEV verification records are in release-evidence/provider-live-20260910/dev-sender-dns.json. Custom sender remains inactive; owner Gmail alone remains enabled with the testing sender.
+
+
+## 2026-09-10 — final saved partial delivery; stop
+
+See [final handoff](provider-live-final-handoff-2026-09-10-he.md). a30f881/schema131 actual OTP, signed direct/outbox delivery, initial live engineering report and current-source UI answer are proved. Full financial attempt4 remains FAIL; Hebrew quality fails and no report-ready message was sent. A test-only continuation on512b2a2 proves current-input dispatch and idempotency with exact owned cleanup, without another provider call. Temporary relay/tunnel/webhook are disabled; no Production change. The final handoff supersedes provisional states above and records all remaining technical and external blockers.

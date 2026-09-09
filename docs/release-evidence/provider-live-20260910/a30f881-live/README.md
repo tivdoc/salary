@@ -16,3 +16,5 @@ This directory preserves an overall **FAIL**, with independently observed succes
 - `runtime-stop.json`: temporary webhook disabled, relay/tunnel stopped, scheduler Disabled. Credentials remain only in private DEV configuration; no persistent live callback service is claimed.
 
 Application `a30f881dca092bbec91cb48aae7fdfc670d0ee5f`; exact Preview `salary-ivlzv8ge9-tivdoccom-5042s-projects.vercel.app`, deployment `dpl_BhassBYLKav3j3huRTktvTYoeD7g`; isolated DEV schema131. Test-driver commits can be later without an application diff. Final handoff identifies each proof's actual driver SHA. No Production change.
+
+`dispatch-continuation-PASS.json` independently verifies the saved actual answer/delivery, no-op answer retry, one new current-input dispatch and no-op dispatch retry. Only its newly created job was cancelled and machine revoked. This continuation calls no provider and produces no new analysis or report; original FAIL receipts remain unchanged.
