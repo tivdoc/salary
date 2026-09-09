@@ -1,0 +1,31 @@
+{
+  "origin": "https://salary-git-codex-website-review-full-tivdoccom-5042s-projects.vercel.app",
+  "checks": [
+    {
+      "width": 360,
+      "pageHeight": 8678
+    },
+    {
+      "width": 390,
+      "pageHeight": 8559
+    },
+    {
+      "width": 768,
+      "pageHeight": 6914
+    },
+    {
+      "width": 1440,
+      "pageHeight": 7054
+    },
+    {
+      "video": "play, pause, seek, captions and pause offscreen passed"
+    },
+    {
+      "mediaError": "visible error and written fallback passed"
+    }
+  ],
+  "errors": [],
+  "zoom200": "CSS zoom and reflow",
+  "menu": "passed",
+  "reducedMotion": "passed"
+}
