@@ -95,13 +95,14 @@ function moneyMinorUnits(field: NormalizedCandidateField | undefined) {
 function representedComponentIds(extraction: NormalizedPayslipExtraction) {
   const represented = new Set<string>();
   const amountProjections = [
-    ["base_monthly_salary", "base_salary"],
-    ["travel_amount", "travel"],
-    ["convalescence_amount", "convalescence"],
+    ["base_monthly_salary", ["base_salary", "hourly_base"]],
+    ["travel_amount", ["travel"]],
+    ["convalescence_amount", ["convalescence"]],
   ] as const;
-  for (const [fieldName, semanticKind] of amountProjections) {
+  for (const [fieldName, semanticKinds] of amountProjections) {
     const fields = extraction.fields.filter(field => field.field === fieldName);
-    const components = extraction.additional_components.filter(component => component.semantic_kind === semanticKind);
+    const components = extraction.additional_components.filter(component => component.amount_raw !== null
+      && semanticKinds.some(kind => kind === component.semantic_kind));
     // V2 preserves a payroll row and projects its amount into a known field.
     // Without an explicit row ID, collapse only an unambiguous one-to-one
     // projection. Duplicate/conflicting observations retain their own gates.
@@ -393,7 +394,10 @@ export function validatePayslipGate0(
     const componentAmounts = knownComponentFields.map(moneyMinorUnits).filter((value): value is number => value !== null);
     const represented = representedComponentIds(extraction);
     const additionalAmounts = extraction.additional_components
-      .filter((component) => !represented.has(component.component_id))
+      // Retain all transcribed rows, but explicit deductions are not gross
+      // earnings. Unknown/other rows still participate; labels cannot bypass
+      // reconciliation. Deductions remain checked against gross/net above.
+      .filter((component) => component.semantic_kind !== "deduction" && !represented.has(component.component_id))
       .map((component) => component.amount?.minor_units ?? 0);
     if (gross !== null && grossField && componentAmounts.length > 0) {
       const componentSum = [...componentAmounts, ...additionalAmounts].reduce((sum, value) => sum + value, 0);

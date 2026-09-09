@@ -1,0 +1,19 @@
+{
+  "state": "synthetic_hebrew_inputs_generated_and_text_checked",
+  "pdfCount": 3,
+  "rasterCount": 1,
+  "providerCalled": false,
+  "liveOcrProved": false,
+  "humanReview": false,
+  "actualScannerCapture": false,
+  "renderer": "pypdfium2",
+  "pdfAuthoring": "reportlab",
+  "textVerification": "pdfplumber",
+  "visualReview": {
+    "status": "ai_render_inspection_passed",
+    "reviewerType": "AI agent, not a human signoff",
+    "reviewedRenders": ["he-clear-render.png", "hebrew-corpus-contact-sheet.png"],
+    "result": "Hebrew labels and separate numeric columns are legible; no observed overlap or clipping. Missing and contradictory values remain visible in the respective variants.",
+    "humanApproval": false
+  }
+}

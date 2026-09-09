@@ -129,7 +129,7 @@ export function mapOpenAiV2Output(input: {
     amount?: PayslipFieldKey;
   }>>> = {
     base_salary: { amount: "base_monthly_salary" },
-    hourly_base: { quantity: "regular_hours", rate: "hourly_rate" },
+    hourly_base: { quantity: "regular_hours", rate: "hourly_rate", amount: "base_monthly_salary" },
     overtime_125: { quantity: "overtime_125_hours" },
     overtime_150: { quantity: "overtime_150_hours" },
     travel: { amount: "travel_amount" },
