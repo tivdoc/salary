@@ -1,0 +1,61 @@
+{
+  "method": "Fresh loaded page at 1000px viewport height, fonts loaded, reduced motion, disclosures closed. Visible word count uses main.innerText split on whitespace; excludes dialog content until opened. Before remote Preview vs after local production build.",
+  "comparisons": [
+    {
+      "width": 360,
+      "before": {
+        "width": 360,
+        "height": 8678,
+        "visibleWords": 591
+      },
+      "after": {
+        "height": 5101,
+        "visibleWords": 324
+      },
+      "heightReductionPercent": 41.2,
+      "visibleWordReductionPercent": 45.2
+    },
+    {
+      "width": 390,
+      "before": {
+        "width": 390,
+        "height": 8559,
+        "visibleWords": 591
+      },
+      "after": {
+        "height": 4949,
+        "visibleWords": 324
+      },
+      "heightReductionPercent": 42.2,
+      "visibleWordReductionPercent": 45.2
+    },
+    {
+      "width": 768,
+      "before": {
+        "width": 768,
+        "height": 6914,
+        "visibleWords": 595
+      },
+      "after": {
+        "height": 3967,
+        "visibleWords": 324
+      },
+      "heightReductionPercent": 42.6,
+      "visibleWordReductionPercent": 45.5
+    },
+    {
+      "width": 1440,
+      "before": {
+        "width": 1440,
+        "height": 7054,
+        "visibleWords": 595
+      },
+      "after": {
+        "height": 3874,
+        "visibleWords": 324
+      },
+      "heightReductionPercent": 45.1,
+      "visibleWordReductionPercent": 45.5
+    }
+  ]
+}

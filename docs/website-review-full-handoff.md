@@ -1,3 +1,5 @@
+> Latest information-hierarchy revision and remote verification: [website-information-flow.md](website-information-flow.md). Earlier measurements and layout descriptions below are historical.
+
 # Tivdoc — integrated website review, 8 September 2026
 
 ## Current source and scope

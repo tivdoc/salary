@@ -1,0 +1,44 @@
+{
+  "origin": "https://salary-git-codex-website-review-full-tivdoccom-5042s-projects.vercel.app",
+  "checks": [
+    {
+      "width": 360,
+      "height": 5101,
+      "visibleWords": 324,
+      "process": "four stages and keyboard passed",
+      "report": "seven topics in dialog; Escape/focus passed",
+      "price": "scope/range visible; table accessible",
+      "faq": 4
+    },
+    {
+      "width": 390,
+      "height": 4949,
+      "visibleWords": 324,
+      "process": "four stages and keyboard passed",
+      "report": "seven topics in dialog; Escape/focus passed",
+      "price": "scope/range visible; table accessible",
+      "faq": 4
+    },
+    {
+      "width": 768,
+      "height": 3967,
+      "visibleWords": 324,
+      "process": "four stages and keyboard passed",
+      "report": "seven topics in dialog; Escape/focus passed",
+      "price": "scope/range visible; table accessible",
+      "faq": 4
+    },
+    {
+      "width": 1440,
+      "height": 3874,
+      "visibleWords": 324,
+      "process": "four stages and keyboard passed",
+      "report": "seven topics in dialog; Escape/focus passed",
+      "price": "scope/range visible; table accessible",
+      "faq": 4
+    }
+  ],
+  "errors": [],
+  "video": "intent-only, play/pause, captions, close stops playback, source-error transcript",
+  "accessibility": "modal focus and Escape, menu, 200% CSS reflow, dark/reduced motion"
+}

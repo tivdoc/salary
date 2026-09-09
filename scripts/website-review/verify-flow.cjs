@@ -127,9 +127,8 @@ fs.mkdirSync(output, { recursive: true });
       assert(
         await reportTrigger.evaluate((el) => el === document.activeElement),
       );
-      assert.equal(
-        await page.evaluate(() => document.documentElement.style.overflow),
-        "",
+      await page.waitForFunction(
+        () => document.documentElement.style.overflow === "",
       );
       await page.locator(".pricing-details>summary").click();
       for (const price of ["99 ₪", "199 ₪", "349 ₪"])
@@ -186,6 +185,7 @@ fs.mkdirSync(output, { recursive: true });
       .locator("dialog[open]")
       .screenshot({ path: output + "/video-mobile.png" });
     await page.keyboard.press("Escape");
+    await page.locator("video").waitFor({ state: "detached" });
     assert.equal(
       await page.locator("video").count(),
       0,
