@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "tivdoc-live-extraction-corpus-v1",
+  "synthetic": true,
+  "humanReview": false,
+  "legalGoldenApproval": false,
+  "providerCalled": false,
+  "files": [
+    {
+      "id": "clear",
+      "path": "docs/release-evidence/automatic-dev-live-extraction/live-ocr-clear-june-2026.pdf",
+      "sha256": "2fa82b32745a51044242bb334c1de8d5bec913d26280cf3729e2833a9cd7bd0d",
+      "sizeBytes": 3600,
+      "mimeType": "application/pdf",
+      "oracle": {
+        "id": "clear",
+        "hours": [
+          "100"
+        ],
+        "baseMinor": 330000,
+        "hourlyRateMinor": 3300,
+        "expectedMinor": 354000,
+        "gapMinor": 24000,
+        "outcome": "readable",
+        "equation": "100 * 3540 - 330000 = 24000"
+      }
+    },
+    {
+      "id": "missing-hours",
+      "path": "docs/release-evidence/automatic-dev-live-extraction/live-ocr-missing-hours-june-2026.pdf",
+      "sha256": "cd6efdc3f6393af43924643f90bd729d114daa7d6a53bb42fe33844e1f381894",
+      "sizeBytes": 3650,
+      "mimeType": "application/pdf",
+      "oracle": {
+        "id": "missing-hours",
+        "hours": [],
+        "baseMinor": 330000,
+        "hourlyRateMinor": 3300,
+        "expectedMinor": null,
+        "gapMinor": null,
+        "outcome": "essential_input_missing",
+        "equation": "No monetary result before the missing-hours answer; an identified answer of 100 implies 24000 minor units."
+      }
+    },
+    {
+      "id": "ambiguous-hours",
+      "path": "docs/release-evidence/automatic-dev-live-extraction/live-ocr-ambiguous-hours-june-2026.pdf",
+      "sha256": "6202b33b45d00b2ba226bce31aade4cccedff5fc7474fb3968832c57d6c699e9",
+      "sizeBytes": 3754,
+      "mimeType": "application/pdf",
+      "oracle": {
+        "id": "ambiguous-hours",
+        "hours": [
+          "100",
+          "110"
+        ],
+        "baseMinor": 330000,
+        "hourlyRateMinor": 3300,
+        "expectedMinor": null,
+        "gapMinor": null,
+        "outcome": "conflicting_observations",
+        "equation": "No monetary result while two regular-hours observations disagree."
+      }
+    },
+    {
+      "id": "zero-gap",
+      "path": "docs/release-evidence/automatic-dev-live-extraction/live-ocr-zero-gap-june-2026.pdf",
+      "sha256": "b09930a924b148ae1d7c670142eb69afc48b7fecf9fc3ad06bcd493e7903e562",
+      "sizeBytes": 3619,
+      "mimeType": "application/pdf",
+      "oracle": {
+        "id": "zero-gap",
+        "hours": [
+          "100"
+        ],
+        "baseMinor": 354000,
+        "hourlyRateMinor": 3540,
+        "expectedMinor": 354000,
+        "gapMinor": 0,
+        "outcome": "readable",
+        "equation": "100 * 3540 - 354000 = 0"
+      }
+    },
+    {
+      "id": "replacement",
+      "path": "docs/release-evidence/automatic-dev-live-extraction/live-ocr-replacement-june-2026.pdf",
+      "sha256": "077b3dafd5be2eb0f8167419711d79a922c06a10c027ef79fc596082b618a275",
+      "sizeBytes": 3627,
+      "mimeType": "application/pdf",
+      "oracle": {
+        "id": "replacement",
+        "hours": [
+          "120"
+        ],
+        "baseMinor": 396000,
+        "hourlyRateMinor": 3300,
+        "expectedMinor": 424800,
+        "gapMinor": 28800,
+        "outcome": "readable",
+        "equation": "120 * 3540 - 396000 = 28800"
+      }
+    },
+    {
+      "id": "scan-clear",
+      "path": "docs/release-evidence/automatic-dev-live-extraction/live-ocr-scan-clear-june-2026.png",
+      "sha256": "87a41089ab8d3b1d3cf7d8ebb94113fe029095bd6ff516813051afc5fa2a0278",
+      "sizeBytes": 54679,
+      "mimeType": "image/png",
+      "oracle": {
+        "id": "clear",
+        "hours": [
+          "100"
+        ],
+        "baseMinor": 330000,
+        "hourlyRateMinor": 3300,
+        "expectedMinor": 354000,
+        "gapMinor": 24000,
+        "outcome": "readable",
+        "equation": "100 * 3540 - 330000 = 24000"
+      },
+      "derivedFromSha256": "2fa82b32745a51044242bb334c1de8d5bec913d26280cf3729e2833a9cd7bd0d",
+      "syntheticRasterSimulation": true,
+      "actualCameraCapture": false
+    },
+    {
+      "id": "photo-simulation-clear",
+      "path": "docs/release-evidence/automatic-dev-live-extraction/live-ocr-photo-simulation-clear-june-2026.jpg",
+      "sha256": "594bf393f2ccbce226d7256ff4cc0044fac4a152961d583d86e8fec4ea0965c3",
+      "sizeBytes": 79061,
+      "mimeType": "image/jpeg",
+      "oracle": {
+        "id": "clear",
+        "hours": [
+          "100"
+        ],
+        "baseMinor": 330000,
+        "hourlyRateMinor": 3300,
+        "expectedMinor": 354000,
+        "gapMinor": 24000,
+        "outcome": "readable",
+        "equation": "100 * 3540 - 330000 = 24000"
+      },
+      "derivedFromSha256": "2fa82b32745a51044242bb334c1de8d5bec913d26280cf3729e2833a9cd7bd0d",
+      "syntheticRasterSimulation": true,
+      "actualCameraCapture": false
+    }
+  ]
+}

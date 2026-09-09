@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "tivdoc-live-provider-proof-v1",
+  "state": "BLOCKED_CONFIGURATION",
+  "checkedAt": "2026-09-09T15:28:45.301Z",
+  "gitSha": "70e13b9964ab360185970de1a601bbf843ff9e2a",
+  "worktreeDirty": true,
+  "providerCalled": false,
+  "providerKind": null,
+  "configuration": {
+    "state": "blocked",
+    "code": "LIVE_EXTRACTION_PROVIDER_UNCONFIGURED"
+  },
+  "results": [],
+  "failures": [],
+  "productionChanged": false,
+  "databaseChanged": false,
+  "humanConfirmations": false,
+  "scope": "Actual API extraction only; synthetic English PDFs and raster simulations. This does not prove a real Israeli payslip, customer identity, payment or legal activation."
+}

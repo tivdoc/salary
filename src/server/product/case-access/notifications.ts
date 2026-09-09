@@ -1,22 +1,11 @@
-// UX Run 1 / U4. The one outbound channel a case has: the contact it gave.
-// Three templates — the case link, the access code, and "the report is ready"
-// (the site brief's addition, fired by report_published once the S3.2
-// contract exists; until then from /operations by hand, in S6).
-//
-// There is no email or SMS provider in this repository, and this run adds
-// none: the sender resolves a provider by configuration, and the only ones
-// that exist are a file sink for the local runtime and tests (refused under a
-// production or preview deployment) and "none", which fails every send in a
-// recorded way so the received screen can offer a resend. A real provider is
-// a configuration and an adapter later, not a change to any caller.
-//
-// The database row a send leaves carries the template, the channel, the
-// provider, the outcome and a digest of the payload — never the payload: the
-// token and the code exist in the message and nowhere else.
+// Configured Resend email transport, bounded local test sink, or explicit failure.
+// A sent outcome records provider acceptance only; delivery requires a webhook.
+// Codes/tokens stay in the message or encrypted outbox, never audit payloads.
 import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import type { ContactChannel } from "./crypto.ts";
+import { resendProvider } from './resend-provider.ts';
 
 export type NotificationTemplate = "case_link" | "access_code" | "report_ready" | "document_request" | "abandonment_reminder";
 
@@ -29,6 +18,7 @@ export type NotificationMessage = Readonly<{
 }>;
 
 export type NotificationOutcome = Readonly<{
+  /** Historical `sent` means provider acceptance, never confirmed delivery. */
   state: "queued" | "sent" | "failed" | "refused";
   provider: string;
   error_code: string | null;
@@ -162,6 +152,14 @@ export function installNotificationProviderForTests(provider: NotificationProvid
 
 export function resolveNotificationProvider(): NotificationProvider {
   if (providerOverride) return providerOverride;
+  const provider = process.env.TIVDOC_NOTIFICATION_PROVIDER?.trim();
+  if (provider === 'resend') {
+    return resendProvider(process.env.RESEND_API_KEY?.trim() ?? '', process.env.TIVDOC_NOTIFICATION_FROM?.trim() ?? '');
+  }
+  if (provider && provider !== 'file_sink' && provider !== 'none') return {
+    id: 'none', async send() { return {ok:false, error_code:'notification_provider_invalid'}; },
+  };
+  if (provider === 'none') return noProvider;
   const sink = process.env.TIVDOC_NOTIFY_SINK_PATH;
   if (sink) return fileSinkProvider(sink);
   return noProvider;
@@ -198,7 +196,9 @@ function normalizeRecipient(value: string): string {
 }
 
 export function isProductionDelivery(): boolean {
-  return process.env.VERCEL_ENV === "production" || (process.env.NODE_ENV === "production" && process.env.VERCEL === "1");
+  // Next sets NODE_ENV=production in Preview too. Only explicit deployment
+  // metadata may authorize customer delivery; missing metadata fails closed.
+  return process.env.VERCEL_ENV === "production";
 }
 
 /** Why this recipient may not be written to, or null when it may. */

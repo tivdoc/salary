@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-09-09T15:05:20.636Z",
+  "projectId": "prj_kmqJ74IuBrc5hI9J93RpcUkNMBW7",
+  "branch": "codex/tivdoc-release-completion",
+  "productionChanged": false,
+  "providerCalled": false,
+  "secretValuesIncluded": false,
+  "entries": [
+    {
+      "name": "OPENAI_API_KEY",
+      "target": [
+        "preview"
+      ],
+      "branch": "codex/tivdoc-release-completion",
+      "state": "blank",
+      "privatePath": null
+    }
+  ]
+}

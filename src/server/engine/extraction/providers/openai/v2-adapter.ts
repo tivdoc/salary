@@ -21,7 +21,7 @@ import {
 import { toSafeEngineLog, type SafeEngineLog } from "@/server/engine/safe-logging";
 import { preprocessPayslipDocument, type PreparedPayslipDocument } from "../../preprocessing";
 import { resolveOpenAiExtractionConfig, type OpenAiExtractionConfig } from "./config";
-import { classifyOpenAiError, type OpenAiExtractionErrorCode } from "./errors";
+import { classifyOpenAiError, openAiExtractionErrorCodeSchema, type OpenAiExtractionErrorCode } from "./errors";
 import { createFailedOpenAiExtractionResult } from "./mapper";
 import { isSupportedOpenAiDocumentMimeType } from "./request";
 import { mapOpenAiV2Output, type MappedOpenAiV2Pass } from "./v2-mapper";
@@ -31,12 +31,16 @@ import {
 } from "./v2-prompt";
 import { buildOpenAiV2ResponsesRequest, type OpenAiV2ResponsesRequest } from "./v2-request";
 import type { OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {createOpenAiProviderReceipt,safeProviderIdentifier,type OpenAiProviderReceipt} from './provider-receipt';
 
 export type OpenAiV2TransportResponse = Readonly<{
   id: string;
   status: string;
   outputParsed: OpenAiPayslipV2StructuredOutput | null;
   usage: Readonly<{ input_tokens: number; output_tokens: number; total_tokens: number }> | null;
+  model?:string|null;
+  requestId?:string|null;
 }>;
 
 export interface OpenAiV2ResponsesTransport {
@@ -51,6 +55,8 @@ function createOpenAiV2SdkTransport(input: { apiKey: string; timeoutMs: number }
         id: response.id,
         status: response.status ?? "failed",
         outputParsed: response.output_parsed,
+        model: response.model,
+        requestId: response._request_id,
         usage: response.usage == null
           ? null
           : {
@@ -70,12 +76,27 @@ function uuidFrom(seed: string) {
   return `${hex.slice(0, 8).join("")}-${hex.slice(8, 12).join("")}-${hex.slice(12, 16).join("")}-${hex.slice(16, 20).join("")}-${hex.slice(20).join("")}`;
 }
 
+function providerPagesMatch(output:OpenAiPayslipV2StructuredOutput,actualPages:number){
+  if(output.page_count!==actualPages)return false;
+  const visit=(value:unknown):boolean=>{
+    if(Array.isArray(value))return value.every(visit);
+    if(value&&typeof value==='object'){
+      const row=value as Record<string,unknown>;
+      if('page' in row&&row.page!==null&&(typeof row.page!=='number'||!Number.isInteger(row.page)||row.page<1||row.page>actualPages))return false;
+      return Object.values(row).every(visit);
+    }
+    return true;
+  };
+  return visit(output);
+}
+
 type SafeLogSink = (entry: SafeEngineLog) => void;
 
 export class OpenAiPayslipV2PassExtractor {
   readonly providerId = "openai";
   readonly extractorVersion: string;
   private readonly transport: OpenAiV2ResponsesTransport | null;
+  private readonly origin:OpenAiProviderReceipt['origin'];
 
   constructor(
     private readonly config: OpenAiExtractionConfig,
@@ -88,6 +109,7 @@ export class OpenAiPayslipV2PassExtractor {
     } = {},
   ) {
     this.extractorVersion = options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION;
+    this.origin=options.transport?'injected_test_provider':config.apiKey?'openai_live':'not_configured';
     this.transport = options.transport ?? (config.apiKey
       ? createOpenAiV2SdkTransport({ apiKey: config.apiKey, timeoutMs: config.timeoutMs })
       : null);
@@ -100,6 +122,10 @@ export class OpenAiPayslipV2PassExtractor {
     kind: "first_pass" | "targeted_recovery";
     requestedFields: readonly PayslipFieldKey[];
     prepared: PreparedPayslipDocument;
+    requestHash?:string|null;
+    response?:OpenAiV2TransportResponse;
+    providerError?:unknown;
+    sourcePageCount?:number;
   }): MappedOpenAiV2Pass {
     const clock = this.options.clock ?? (() => new Date());
     const durationClock = this.options.durationClock ?? (() => performance.now());
@@ -137,6 +163,8 @@ export class OpenAiPayslipV2PassExtractor {
     }));
     return {
       extraction,
+      provider_receipt:this.receipt({request:input.request,kind:input.kind,extraction,requestHash:input.requestHash??null,
+        response:input.response,error:input.providerError,sourcePageCount:input.sourcePageCount}),
       salary_type_assessment: { documented: null, inferred: null },
       critical_context: { required_fields: input.requestedFields },
       pension_section_visible: false,
@@ -144,36 +172,74 @@ export class OpenAiPayslipV2PassExtractor {
     };
   }
 
+  private receipt(input:{request:ExtractionRequest;kind:'first_pass'|'targeted_recovery';extraction:MappedOpenAiV2Pass['extraction'];
+    requestHash:string|null;response?:OpenAiV2TransportResponse;error?:unknown;sourcePageCount?:number}){
+    const error=typeof input.error==='object'&&input.error!==null?input.error as Record<string,unknown>:{};
+    const extraction=input.extraction;
+    return createOpenAiProviderReceipt({
+      schema_version:'tivdoc-openai-provider-receipt-v1',origin:this.origin,
+      case_id:input.request.case_id,analysis_run_id:input.request.analysis_run_id,document_id:input.request.document.document_id,
+      extraction_id:input.request.extraction_id,source_sha256:input.request.document.content_sha256,
+      source_size_bytes:input.request.document.size_bytes,source_mime_type:input.request.document.mime_type,
+      ...(input.sourcePageCount===undefined?{}:{source_page_count:input.sourcePageCount}),
+      request_sha256:input.requestHash,raw_extraction_sha256:canonicalSha256(extraction),pass_kind:input.kind,
+      requested_model:this.config.model,actual_model:safeProviderIdentifier(input.response?.model),
+      extractor_version:this.extractorVersion,prompt_version:input.kind==='first_pass'?OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION:OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+      provider_response_id:safeProviderIdentifier(input.response?.id),provider_request_id:safeProviderIdentifier(input.response?.requestId??error.requestID),
+      provider_attempted:input.requestHash!==null,status:extraction.status==='failed'?'failed':'completed',
+      error_code:extraction.status==='failed'?openAiExtractionErrorCodeSchema.parse(extraction.error_code):null,
+      http_status:typeof error.status==='number'&&Number.isInteger(error.status)&&error.status>=100&&error.status<=599?error.status:null,
+      duration_ms:extraction.operation.duration_ms,token_usage:input.response?.usage??null,
+      cost:{status:'not_returned_by_provider',amount_usd:null},created_at:extraction.extracted_at,
+    });
+  }
+
   async extractPreparedPass(input: {
     request: ExtractionRequest;
     prepared: PreparedPayslipDocument;
     kind: "first_pass" | "targeted_recovery";
     requestedFields: readonly PayslipFieldKey[];
+    sourcePageCount?:number;
   }): Promise<MappedOpenAiV2Pass> {
     const request = extractionRequestSchema.parse(input.request);
     const durationClock = this.options.durationClock ?? (() => performance.now());
     const clock = this.options.clock ?? (() => new Date());
     const startedAt = durationClock();
+    if(input.sourcePageCount!==undefined&&(!Number.isInteger(input.sourcePageCount)||input.sourcePageCount<1||input.sourcePageCount>12))
+      throw new TypeError('EXTRACTION_SOURCE_PAGE_COUNT_INVALID');
     if (!this.transport) return this.failed({ ...input, request, startedAt, code: "openai_not_configured" });
     if (!isSupportedOpenAiDocumentMimeType(request.document.mime_type)) {
       return this.failed({ ...input, request, startedAt, code: "unsupported_document" });
     }
+    const original=input.prepared.original;
+    if(original.bytes.byteLength!==request.document.size_bytes||original.mime_type!==request.document.mime_type
+      ||original.sha256!==request.document.content_sha256
+      ||createHash('sha256').update(original.bytes).digest('hex')!==request.document.content_sha256
+      ||input.prepared.crops.some(crop=>createHash('sha256').update(crop.image.bytes).digest('hex')!==crop.image.sha256))
+      throw new TypeError('EXTRACTION_PREPARED_SOURCE_MISMATCH');
+    let requestHash:string|null=null;
+    let received:OpenAiV2TransportResponse|undefined;
     try {
-      const response = await this.transport.parse(buildOpenAiV2ResponsesRequest({
+      const providerRequest=buildOpenAiV2ResponsesRequest({
         model: this.config.model,
         prepared: input.prepared,
         kind: input.kind,
         requested_fields: input.requestedFields,
-      }));
+      });
+      requestHash=canonicalSha256(providerRequest);
+      const response = await this.transport.parse(providerRequest);
+      received=response;
       if (response.status !== "completed" || response.outputParsed === null) {
-        return this.failed({ ...input, request, startedAt, code: "provider_invalid_response" });
+        return this.failed({ ...input, request, startedAt, code: "provider_invalid_response",requestHash,response });
       }
+      if(input.sourcePageCount!==undefined&&!providerPagesMatch(response.outputParsed,input.sourcePageCount))
+        return this.failed({...input,request,startedAt,code:'provider_source_page_mismatch',requestHash,response});
       const now = clock().toISOString();
       const durationMs = Math.max(0, Math.round(durationClock() - startedAt));
       const mapped = mapOpenAiV2Output({
         request,
         output: response.outputParsed,
-        model: this.config.model,
+        model: response.model??this.config.model,
         extractorVersion: this.extractorVersion,
         durationMs,
         providerResponseId: response.id,
@@ -204,9 +270,9 @@ export class OpenAiPayslipV2PassExtractor {
         region_count: input.prepared.crops.length,
         preprocessing_version: input.prepared.metadata.preprocessing_version,
       }));
-      return mapped;
+      return {...mapped,provider_receipt:this.receipt({request,kind:input.kind,extraction:mapped.extraction,requestHash,response,sourcePageCount:input.sourcePageCount})};
     } catch (error) {
-      return this.failed({ ...input, request, startedAt, code: classifyOpenAiError(error) });
+      return this.failed({ ...input, request, startedAt, code: classifyOpenAiError(error),requestHash,response:received,providerError:error });
     }
   }
 }

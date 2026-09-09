@@ -9,6 +9,7 @@ import {
 import type { Gate0CriticalContext } from "@/engine/extraction/validation";
 import { salaryTypeAssessmentSchema, type SalaryTypeAssessment } from "@/engine/extraction/v2";
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import type {OpenAiProviderReceipt} from './provider-receipt';
 
 type ValueCandidate = OpenAiPayslipV2StructuredOutput["totals"]["gross_candidates"][number];
 type ModelConfidence = ValueCandidate["confidence"];
@@ -45,6 +46,7 @@ function candidateSource(input: {
 }
 
 export type MappedOpenAiV2Pass = Readonly<{
+  provider_receipt?:OpenAiProviderReceipt;
   extraction: ReturnType<typeof extractionResultSchema.parse>;
   salary_type_assessment: SalaryTypeAssessment;
   critical_context: Gate0CriticalContext;

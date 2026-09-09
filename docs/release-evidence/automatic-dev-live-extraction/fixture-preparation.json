@@ -1,0 +1,13 @@
+{
+  "state": "synthetic_inputs_generated_and_text_checked",
+  "pdfCount": 5,
+  "rasterCount": 2,
+  "providerCalled": false,
+  "liveOcrProved": false,
+  "actualCameraCapture": false,
+  "renderer": "pypdfium2",
+  "textVerification": "pdfplumber",
+  "visualReview": "assistant_rendered_contact_sheet_reviewed",
+  "visualReviewHumanApproval": false,
+  "visualReviewNotes": "All seven synthetic inputs rendered with readable source amounts, no observed clipping or overlap. This is an AI visual inspection, not a human or legal approval."
+}

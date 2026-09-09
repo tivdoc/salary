@@ -1,3 +1,15 @@
+## Automatic DEV extraction/configuration checkpoint — 2026-09-09
+
+Live extraction factory, source-bound provider receipts, true-page validation and seven independent synthetic input files are implemented. The existing Resend adapter is now selected by explicit configuration. Preview delivery now always requires the recipient allowlist even under NODE_ENV=production.126 focused tests and full typecheck pass. Live OCR and email remain blocked: no usable key/sender found in the inspected relevant local and same-project development/Preview configuration. No real provider call or production action.
+
+Worker/canonical/notification orchestration is still in progress in the same working tree. The new migration125 passed isolated existing-DEV DDL rollback/ACL probes but is NOT applied at this checkpoint. A real timed Windows Task Scheduler probe succeeded; its task is disabled pending the actual automated proof. This does not yet prove automatic case processing.
+
+## Automatic DEV flow package active — 2026-09-09
+
+The owner explicitly authorized a new bounded package from70e13b9964ab360185970de1a601bbf843ff9e2a: automatic DEV login/upload/extraction/requests/analysis/report, superseding the historical STOP below. Start15:01:52UTC; safe saved handoff by19:01:52UTC. No Production changes, no continuation of allP00–P13.
+
+Root owns migrations, deployment, authentication/notifications and canonical report integration. calculation_audit owns live extraction/provider receipts; p06_base owns the existing queue managed driver/operations view. Heavy tests/builds run serially. Source and provider activation remain separate; injected evidence cannot prove live OCR or delivery. New package state: docs/automatic-dev-flow-handoff-2026-09-09-he.md.
+
 ## Scoped DEV financial flow delivered; stop here — 2026-09-09
 
 Application 1fbf0f15987a971a54f8d042832786b5a44cb0fb passes both CI runs34316811245/34316813836:3181 tests,64 skips,typecheck/lint/build and48 closure checks. READY Preview: https://salary-3zlixydgx-tivdoccom-5042s-projects.vercel.app (dpl_HTsxNstUdoQ71EMrAGbPaGXG9nPF). Existing isolated DEV schema is124. No production action.

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import {createHash} from 'node:crypto';
 
 vi.mock("server-only", () => ({}));
 
@@ -90,11 +91,11 @@ const output: OpenAiPayslipV2StructuredOutput = {
 };
 
 const prepared: PreparedPayslipDocument = {
-  original: { bytes: new Uint8Array([1, 2]), mime_type: "image/png", sha256: "a".repeat(64) },
+  original: { bytes: new Uint8Array([1, 2]), mime_type: "image/png", sha256: createHash('sha256').update(new Uint8Array([1,2])).digest('hex') },
   processed_full_page: null,
   crops: [{
     region: "pension",
-    image: { bytes: new Uint8Array([3, 4]), mime_type: "image/png", width: 100, height: 100, sha256: "b".repeat(64) },
+    image: { bytes: new Uint8Array([3, 4]), mime_type: "image/png", width: 100, height: 100, sha256: createHash('sha256').update(new Uint8Array([3,4])).digest('hex') },
   }],
   metadata: {
     preprocessing_version: "payslip-raster-preprocess-1",
@@ -189,6 +190,21 @@ describe("OpenAI payslip V2 schema and mapping", () => {
   });
 });
 describe("OpenAI payslip V2 requests and safe logging", () => {
+  it.each(['bytes','declared-hash','size','mime','crop'] as const)('refuses a changed prepared %s before invoking a provider',async changed=>{
+    const parse=vi.fn();
+    const extractor=new OpenAiPayslipV2PassExtractor({apiKey:'test-only',model:'test-model',timeoutMs:1000},{transport:{parse}});
+    const source=structuredClone(prepared);
+    const request={...fixture.request,document:{...fixture.request.document,mime_type:source.original.mime_type,
+      content_sha256:source.original.sha256,size_bytes:source.original.bytes.length}};
+    if(changed==='bytes')source.original.bytes[0]=99;
+    if(changed==='declared-hash')request.document.content_sha256='0'.repeat(64);
+    if(changed==='size')request.document.size_bytes++;
+    if(changed==='mime')request.document.mime_type='application/pdf';
+    if(changed==='crop')source.crops[0].image.bytes[0]=99;
+    await expect(extractor.extractPreparedPass({request,prepared:source,kind:'first_pass',requestedFields:[]})).rejects.toThrow('EXTRACTION_PREPARED_SOURCE_MISMATCH');
+    expect(parse).not.toHaveBeenCalled();
+  });
+
   it("creates the V2.1 pass extractor with an independently versioned provider record", () => {
     const extractor = createOpenAiPayslipV21ExtractorFromEnv({});
     expect(extractor.extractorVersion).toBe("2.1");
@@ -229,7 +245,8 @@ describe("OpenAI payslip V2 requests and safe logging", () => {
       },
     );
     await extractor.extractPreparedPass({
-      request: fixture.request,
+      request: {...fixture.request,document:{...fixture.request.document,mime_type:prepared.original.mime_type,
+        content_sha256:prepared.original.sha256,size_bytes:prepared.original.bytes.length}},
       prepared,
       kind: "targeted_recovery",
       requestedFields: ["pension_base"],
