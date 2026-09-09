@@ -20,9 +20,7 @@ export function ReportPreview() {
           <p>מה ראינו, על מה הסתמכנו ומה עדיין צריך לברר.</p>
         </div>
         <p className="sample-disclosure">
-          <strong>{samples.label}.</strong> הדוגמה מוצגת ברכיב הדוח של המערכת
-          ונבדקה מול חוזה הנתונים שלו. זו טיוטת הדגמה, לא בדיקה של לקוח ולא
-          הוכחה שהמנוע מוכן לפרסום דוחות.
+          דוגמה להמחשה על נתונים סינתטיים; אינה דוח של לקוח.
         </p>
         <ReportExampleTabs>
           {samples.reports.map((document, i) => {
@@ -38,7 +36,7 @@ export function ReportPreview() {
                   <p>
                     {i === 0
                       ? "בדוגמה: יוני 2026, נושא אחד נבדק ונושא נוסף ממתין להשלמה. בראשוני נבדקים עד שלושה נושאים בחודש שנבחר."
-                      : "בדוגמה זו נבדק אותו חודש בלבד. החבילה המורחבת מתייחסת לתקופה שמופיעה בהזמנה, ומוסיפה מקורות מפורטים, PDF ונוסח בירור — בלי להרחיב את הכיסוי בדיעבד."}
+                      : "בדוגמה זו נבדק אותו חודש בלבד. בדוח מלא, היקף התקופה יופיע בהצעה לצד מקורות מפורטים, PDF ונוסח בירור."}
                   </p>
                 </div>
                 <details className="sample-finding" open>
@@ -84,21 +82,12 @@ export function ReportPreview() {
                         <dt>סידור עבודה רגיל</dt>
                         <dd>לא נמסר</dd>
                       </dl>
-                      <small>שדה מקושר: {document.evidence[0].field}</small>
-                      {i === 1 ? (
-                        <details>
-                          <summary>פרטי המקור והגרסה</summary>
-                          <p>גרסת מקור: {document.evidence[0].fact_version}</p>
-                          <p>טביעת תוכן מאומתת של מסמך ההדגמה:</p>
-                          <code>{samples.sourceSha256}</code>
-                        </details>
-                      ) : null}
                     </figure>
                   </div>
                 </details>
                 <details className="sample-coverage">
                   <summary>
-                    לפתיחת הדוח ברכיב המערכת: כיסוי, מצב כל נושא והחוסרים
+                    כל הנושאים שנבדקו ומה נותר להשלים
                   </summary>
                   <ReportView projection={projection} embedded />
                 </details>

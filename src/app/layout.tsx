@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans_Hebrew } from "next/font/google";
-import { AnalyticsProvider } from "@/components/analytics-provider";
 import { AttributionProvider } from "@/components/attribution-provider";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 import { MetaPixelProvider } from "@/components/meta-pixel-provider";
+import { EXTERNAL_MEASUREMENT_ENABLED } from "@/lib/measurement-policy";
 import "./globals.css";
 import "./website.css";
 
@@ -48,8 +49,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <a className="skip-link" href="#main-content">דלג לתוכן הראשי</a>
         {children}
         <AttributionProvider />
-        <AnalyticsProvider />
-        <MetaPixelProvider pixelId={process.env.NEXT_PUBLIC_META_PIXEL_ID} />
+        {EXTERNAL_MEASUREMENT_ENABLED ? (
+          <>
+            <AnalyticsProvider />
+            <MetaPixelProvider pixelId={process.env.NEXT_PUBLIC_META_PIXEL_ID} />
+          </>
+        ) : null}
       </body>
     </html>
   );

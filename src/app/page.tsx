@@ -19,7 +19,7 @@ import { ReportPreview } from "@/components/landing/report-preview";
 import { Faq } from "@/components/landing/faq";
 import { LandingView } from "@/components/landing/landing-view";
 import { StudioMotion } from "@/components/landing/studio-motion";
-import { fullPrice, initialPrice, productOffer } from "@/config/product-offer";
+import { initialPrice, productOffer } from "@/config/product-offer";
 import "./studio.css";
 
 export default async function Home() {
@@ -142,9 +142,9 @@ export default async function Home() {
                   <h3>דוח מלא</h3>
                   <span>עדיין לא זמין לרכישה</span>
                 </div>
-                <p className="price-sheet__amount">
-                  <bdi>{fullPrice}</bdi>
-                  <span>מחיר כולל ראשוני לפי מדרגת הפער המבוסס</span>
+                <p className="price-sheet__tier-note">
+                  המחיר נקבע לפי הפער שאפשר לבסס.
+                  <a href="#price-tiers">למדרגות המחיר בהמשך</a>
                 </p>
                 <p className="price-sheet__scope">
                   בדיקת AI עם מקורות, הסברים ואפשרות לתיקון.
