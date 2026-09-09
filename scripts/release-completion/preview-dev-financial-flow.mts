@@ -51,7 +51,9 @@ export async function verifyDevFinancialPreview(input:Input){
     const card=page.locator(`#request-${input.missing.request_id}`);
     await card.getByText('תקופת השאלה: יוני 2026',{exact:true}).waitFor();
     await card.getByRole('spinbutton',{name:'תשובה',exact:true}).fill('100');
+    const submitted=page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/cases/${own.publicId}/requests`);
     await card.getByRole('button',{name:'שליחת תשובה',exact:true}).click();
+    const response=await submitted;assert.equal(response.status(),200);assert.equal((await response.json()).ok,true);
     await page.locator('.thread-answered__answer').getByText('100',{exact:true}).waitFor();
     await page.reload();await page.locator('.thread-answered__answer').getByText('100',{exact:true}).waitFor();
     await page.screenshot({path:`${directory}/answered-request.png`,fullPage:false});

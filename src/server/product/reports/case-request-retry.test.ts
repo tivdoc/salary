@@ -30,6 +30,28 @@ describe('request retry service receipts',()=>{
   await answerCaseRequest({caseId,requestId,answer:'8',identityId},s.db);
   expect(s.calls.at(-1)).toEqual({fn:'case_request_answer_identified',args:{target_request:requestId,target_case:caseId,target_answer:'8',target_identity:identityId}});
  });
+ it('answers saved DEV financial hours through the identified RPC',async()=>{
+  const s=setup();s.row.code='dev_financial_hours:'+ 'b'.repeat(64);s.row.answer_text='100';
+  s.responses.case_request_answer_identified=[s.row];
+  expect((await answerCaseRequest({caseId,requestId,answer:' 100 ',identityId},s.db))?.answer_text).toBe('100');
+  expect(s.calls.at(-1)).toEqual({fn:'case_request_answer_identified',args:{target_request:requestId,target_case:caseId,target_answer:'100',target_identity:identityId}});
+  expect(s.calls.some(c=>c.fn==='case_request_answer')).toBe(false);
+ });
+ it('refuses DEV financial hours without an identity before either answer RPC',async()=>{
+  const s=setup();s.row.code='dev_financial_hours:'+ 'b'.repeat(64);
+  await expect(answerCaseRequest({caseId,requestId,answer:'100'},s.db)).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
+  expect(s.calls.map(c=>c.fn)).toEqual(['case_request_list','case_request_revision_list']);
+ });
+ it('does not query document-field source states for DEV financial hours',async()=>{
+  const s=setup();s.row.code='dev_financial_hours:'+ 'b'.repeat(64);
+  expect((await listCaseRequests(caseId,s.db,identityId))[0].code).toBe(s.row.code);
+  expect(s.calls.map(c=>c.fn)).toEqual(['case_request_list','case_request_revision_list']);
+ });
+ it.each(['regular_day_hours_unknown','dev_financial_hours_other'])('retains the ordinary answer RPC for %s even with an identity',async code=>{
+  const s=setup();s.row.code=code;
+  await answerCaseRequest({caseId,requestId,answer:'8',identityId},s.db);
+  expect(s.calls.at(-1)).toEqual({fn:'case_request_answer',args:{target_request:requestId,target_case:caseId,target_answer:'8'}});
+ });
  it('lets authoritative SQL acknowledge an original answer after response loss, including after expiry',async()=>{
   const s=setup();expect((await answerCaseRequest({caseId,requestId,answer:' 8 '},s.db))?.answer_text).toBe('8');
   expect(s.calls.at(-1)).toEqual({fn:'case_request_answer',args:{target_request:requestId,target_case:caseId,target_answer:'8'}});

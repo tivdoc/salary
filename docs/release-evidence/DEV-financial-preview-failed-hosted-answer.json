@@ -1,0 +1,30 @@
+{
+  "origin": "https://salary-r1xk0cc4v-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "fc510b48b6280549547f46497aa7be39db909be6",
+  "deploymentId": "dpl_Ad9uECexvset7RifhKEyn4SXvpAj",
+  "stage": "missing",
+  "checks": [
+    {
+      "name": "isolated Preview health preserves disabled external services",
+      "passed": true
+    },
+    {
+      "name": "current missing result and previous historical financial run reload from saved DB",
+      "passed": true
+    },
+    {
+      "name": "identified customer answers the analysis-generated exact June hours request through the hosted UI",
+      "passed": false,
+      "detail": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.thread-answered__answer').getByText('100', { exact: true }) to be visible\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "scope": "Actual generated DEV financial runs; hosted HTML/PDF/source/history and identified answer UI. Synthetic paid scope/session; injected OCR; no real payment, login OTP or production.",
+  "liveOcrProof": false,
+  "seededReport": false,
+  "productionChanged": false,
+  "classification": "Product integration regression: answerCaseRequest chose the legacy unidentified RPC for dev_financial_hours; DB identity guard refused, HTTP503. The synthetic question and historical/current generated reports rendered correctly.",
+  "observedHttpStatus": 503,
+  "repair": "Use existing identified-answer RPC for the exact DEV hours namespace; preserve SQL identity/source guards.",
+  "cleanupReceipt": "DEV-financial-flow-failed-hosted-answer.json"
+}

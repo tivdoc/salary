@@ -109,7 +109,7 @@ export async function answerCaseRequest(
   // The locked SQL operation owns expiry and exact-original retry semantics.
   // A stale browser clock or lost successful response is not a second answer.
   const answer = validateRequestAnswer(request, input.answer);
-  const bound=request.code.startsWith('document_field:');
+  const bound=request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:');
   if(bound&&!input.identityId)throw new Error('REQUEST_FIELD_FORBIDDEN');
   const rows = await store.rpc<RequestRow>(bound?"case_request_answer_identified":"case_request_answer", {
     target_request: input.requestId,

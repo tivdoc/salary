@@ -1,3 +1,9 @@
+## DEV hosted missing-hours answer integration repair — 2026-09-09
+
+Exactfc510b4 passed CI34315973652/34315977979 (3176 tests,64 skips,build and48 closure checks) and deployed only to isolated Preview dpl_Ad9uECexvset7RifhKEyn4SXvpAj. Its clean DB/browser proof rendered both historical/current generated runs and the exact June missing-hours question, but the UI answer returned503: case-requests selected the legacy unidentified RPC for the DEV hours namespace. The SQL identity guard correctly refused. This is a product connection failure, not proof of a completed browser flow.
+
+The existing identified-answer RPC now handles that exact namespace; the DB identity/source guard is unchanged. A focused regression first reproduced the wrong RPC and missing-identity behavior. The browser proof now checks the answer HTTP acknowledgement before waiting for saved UI. Failed receipts retain9 integrated DB checks,2 hosted passes and successful fresh-process replay; both owned cases/identities/objects were cleaned and two machine sessions revoked. Full hosted acceptance must be repeated on this next checkpoint. No migration or production action.
+
 ## DEV report deployment boundary repair — 2026-09-09
 
 CI on13f1429 passed typecheck/lint/unit/build but both closure runs (34315155095/34315150490) rejected a reference-tenant legal-quality import in the report bundle. The original48-check receipt is retained; 46 checks passed and the module graph failed in both modes. The closure scanner and all route/activation guards remain unchanged.
