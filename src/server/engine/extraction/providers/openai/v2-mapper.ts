@@ -10,6 +10,7 @@ import type { Gate0CriticalContext } from "@/engine/extraction/validation";
 import { salaryTypeAssessmentSchema, type SalaryTypeAssessment } from "@/engine/extraction/v2";
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import type {OpenAiProviderReceipt} from './provider-receipt';
+import {classifyOpenAiV2AggregateTotalRows} from './v2-aggregate-totals';
 
 type ValueCandidate = OpenAiPayslipV2StructuredOutput["totals"]["gross_candidates"][number];
 type ModelConfidence = ValueCandidate["confidence"];
@@ -224,7 +225,7 @@ export function mapOpenAiV2Output(input: {
   if (!allowed || allowed.has("salary_period")) requiredFields.push("salary_period");
   if(!documentedPairValid&&(!allowed||allowed.has('salary_type')))requiredFields.push('salary_type');
 
-  const extraction = extractionResultSchema.parse({
+  const extraction = classifyOpenAiV2AggregateTotalRows(extractionResultSchema.parse({
     extraction_id: input.request.extraction_id,
     document_id: documentId,
     status: fields.length > 1 ? "completed" : "partial",
@@ -249,7 +250,7 @@ export function mapOpenAiV2Output(input: {
     },
     extracted_at: input.extractedAt,
     error_code: null,
-  });
+  }));
   return {
     extraction,
     salary_type_assessment: salaryTypeAssessment,

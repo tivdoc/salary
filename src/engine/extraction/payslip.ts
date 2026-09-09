@@ -10,6 +10,7 @@ import {
 } from "../domain/primitives.ts";
 import {
   candidateSourceSchema,
+  aggregateTotalObservationSchema,
   candidateWarningSchema,
   detectedDocumentTypeSchema,
   documentQualityMetricsSchema,
@@ -129,6 +130,7 @@ export const normalizedPayslipExtractionSchema = z
     quality_metrics: documentQualityMetricsSchema,
     fields: z.array(normalizedCandidateFieldSchema),
     additional_components: z.array(normalizedAdditionalComponentSchema),
+    aggregate_total_observations:z.array(aggregateTotalObservationSchema).max(3).optional(),
     sensitive_metadata: z.array(sensitiveMetadataCandidateSchema),
     earnings_components_complete: z.boolean(),
     warnings: z.array(domainCodeSchema),
