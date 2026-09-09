@@ -1,9 +1,9 @@
 {
   "verdict": "PASS",
-  "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+  "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
   "gitWorktreeDirty": false,
   "schemaVersion": "127 / 20260909155945",
-  "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+  "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
   "checks": [
     "an independently scheduled Node process reads the capability registry before any upload; harness invokes no worker or calculation",
     "three injected pre-save failures reach durable terminal failure with bounded attempts; source and extraction remain available and no financial finding/report commits",
@@ -19,24 +19,24 @@
   ],
   "runs": [
     {
-      "runId": "7286a0af-916a-486e-8746-376a8badca00",
+      "runId": "2abdc73e-61c1-4e6e-8dfa-a00839aeb3a9",
       "inputRevision": 16,
       "state": "calculated"
     },
     {
-      "runId": "0f3e4bb5-6c7a-4f86-8d64-ca0e442c903e",
+      "runId": "c965c520-d999-4239-8045-11d6eebdf26f",
       "inputRevision": 29,
       "state": "missing_input"
     },
     {
-      "runId": "d651540b-12e3-4e04-85cb-24f1eeb90b3a",
+      "runId": "844d1da7-e840-4d62-8ae8-106da67f0c02",
       "inputRevision": 31,
       "state": "calculated"
     }
   ],
   "confirmationChecks": [
     {
-      "versionId": "48db3695-d321-4113-9f10-d7866d75a121",
+      "versionId": "a7ea780a-3b16-4b36-bda4-e846edd50647",
       "fields": [
         "salary_type",
         "salary_period",
@@ -51,7 +51,7 @@
       "confidenceModified": false
     },
     {
-      "versionId": "1f49946b-a83e-4dde-a3c5-91b2e53f88fc",
+      "versionId": "51f063f6-21c0-4a64-a778-a3073ba46b5b",
       "fields": [
         "salary_type",
         "salary_period",
@@ -67,34 +67,34 @@
   ],
   "notificationChecks": [
     {
-      "versionId": "48db3695-d321-4113-9f10-d7866d75a121",
+      "versionId": "a7ea780a-3b16-4b36-bda4-e846edd50647",
       "generatedFieldEvents": 7,
       "providerAccepted": 2,
       "staleIntentsScrubbed": 5,
       "deliveryConfirmed": false
     },
     {
-      "versionId": "1f49946b-a83e-4dde-a3c5-91b2e53f88fc",
+      "versionId": "51f063f6-21c0-4a64-a778-a3073ba46b5b",
       "generatedFieldEvents": 6,
       "providerAccepted": 2,
       "staleIntentsScrubbed": 4,
       "deliveryConfirmed": false
     },
     {
-      "generatedEngineeringRun": "7286a0af-916a-486e-8746-376a8badca00",
+      "generatedEngineeringRun": "2abdc73e-61c1-4e6e-8dfa-a00839aeb3a9",
       "pausedBeforeClaim": true,
       "replacedSourceIntentScrubbed": true,
       "providerAttempted": false
     },
     {
-      "generatedMissingRequest": "183d7e40-7e2d-45c8-b1d6-26f00fb623ef",
-      "payloadSha256": "0a1dda198082f9bf0245add692de80e48fb859104d458381986c5b30c9cc39e2",
+      "generatedMissingRequest": "8b18a420-c305-4b4c-80fc-cd9586bb9583",
+      "payloadSha256": "0c2178e909df4e64302c84d22db2c159d9d0817722fd1ce48174b4cf04c6ab45",
       "providerAccepted": true,
       "deliveryConfirmed": false
     },
     {
-      "generatedEngineeringRun": "d651540b-12e3-4e04-85cb-24f1eeb90b3a",
-      "payloadSha256": "4d2411d81fecf87320e8c6375d5e07c6e0c783b5e4136da2d382ea6b9f1dadea",
+      "generatedEngineeringRun": "844d1da7-e840-4d62-8ae8-106da67f0c02",
+      "payloadSha256": "d0120ef445dec58573ec2cc03a6afe1bef1b8385f967858c87a0ce0500361eb0",
       "providerAccepted": true,
       "deliveryConfirmed": false,
       "recipientSnapshotMismatchRefused": true
@@ -103,16 +103,16 @@
   "tickReceipts": [
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 12820,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 17256,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:23:37.306Z",
-      "finishedAt": "2026-09-09T16:23:38.082Z",
+      "startedAt": "2026-09-09T16:47:37.299Z",
+      "finishedAt": "2026-09-09T16:47:38.041Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -126,16 +126,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 16888,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 23504,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:24:12.978Z",
-      "finishedAt": "2026-09-09T16:24:13.621Z",
+      "startedAt": "2026-09-09T16:48:12.920Z",
+      "finishedAt": "2026-09-09T16:48:13.605Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -149,16 +149,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 25884,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 15220,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:24:37.053Z",
-      "finishedAt": "2026-09-09T16:24:37.723Z",
+      "startedAt": "2026-09-09T16:48:37.418Z",
+      "finishedAt": "2026-09-09T16:48:38.048Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -172,16 +172,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 17632,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 18776,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:24:53.535Z",
-      "finishedAt": "2026-09-09T16:24:54.230Z",
+      "startedAt": "2026-09-09T16:48:53.877Z",
+      "finishedAt": "2026-09-09T16:48:54.569Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -195,16 +195,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 14412,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 16392,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:25:10.174Z",
-      "finishedAt": "2026-09-09T16:25:10.831Z",
+      "startedAt": "2026-09-09T16:49:10.410Z",
+      "finishedAt": "2026-09-09T16:49:11.060Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -218,16 +218,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 18916,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 23764,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:25:37.164Z",
-      "finishedAt": "2026-09-09T16:25:37.824Z",
+      "startedAt": "2026-09-09T16:49:37.305Z",
+      "finishedAt": "2026-09-09T16:49:37.973Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -241,16 +241,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 16568,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 25720,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:25:53.653Z",
-      "finishedAt": "2026-09-09T16:25:54.356Z",
+      "startedAt": "2026-09-09T16:49:53.777Z",
+      "finishedAt": "2026-09-09T16:49:54.455Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -264,16 +264,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 28456,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 1712,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:26:10.209Z",
-      "finishedAt": "2026-09-09T16:26:10.846Z",
+      "startedAt": "2026-09-09T16:50:10.268Z",
+      "finishedAt": "2026-09-09T16:50:10.919Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -287,16 +287,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 8756,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 19316,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:26:37.086Z",
-      "finishedAt": "2026-09-09T16:26:37.743Z",
+      "startedAt": "2026-09-09T16:50:37.309Z",
+      "finishedAt": "2026-09-09T16:50:37.974Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -310,16 +310,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 17740,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 25268,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:26:53.562Z",
-      "finishedAt": "2026-09-09T16:26:54.256Z",
+      "startedAt": "2026-09-09T16:50:53.781Z",
+      "finishedAt": "2026-09-09T16:50:54.465Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -333,9 +333,9 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 20428,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 18692,
       "providerKind": "injected_test_provider",
       "providerHashes": [
         "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
@@ -343,28 +343,28 @@
       "faults": [],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "succeeded",
-          "jobId": "saved_e8369cf2614211ae39b737d6b8d88bdcd2f1857adeb06dc1e29608a48a37115e",
-          "manifestSha256": "bf6a7bb18f93615f297cd4bcd52c7eeaea6250277db33ba9eb175eac0d7ac5f6"
+          "jobId": "saved_2707ace37b5963096417e4251f37df1823119a7142e8510a414a6ba662681b7a",
+          "manifestSha256": "41bd25e5b91fb7e95c468f582a1f95572a5f3820ba702f597cf3b12e60cad3e7"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:27:10.098Z",
-      "finishedAt": "2026-09-09T16:27:26.828Z",
+      "startedAt": "2026-09-09T16:51:10.305Z",
+      "finishedAt": "2026-09-09T16:51:26.879Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
         "recipientMismatchRefused": true,
         "accepted": [
           {
-            "payloadSha256": "ee2b3bc3afb2bf434aef1952dbfda3e9e89ba9b6f859316e96819eae69378377",
-            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "payloadSha256": "3baff65d09add18e872de7306f4c12d1dddf7b32677534eda83ba1e6940c3de8",
+            "recipientSha256": "a0b1532c4192221d91e10a7be6f0d75783c45b150c627115dd06cbbff95deaee",
             "template": "document_request"
           },
           {
-            "payloadSha256": "1fa2b4ea10b694808a9c5c7f402383df79230b62f41717ec0edeb3afd11c5867",
-            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "payloadSha256": "c428465b56e3854e602360e2f4fce0a867a5c7e16f9fa2211714dafb74b203ad",
+            "recipientSha256": "a0b1532c4192221d91e10a7be6f0d75783c45b150c627115dd06cbbff95deaee",
             "template": "document_request"
           }
         ],
@@ -379,9 +379,9 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 20392,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 24912,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [
@@ -389,15 +389,15 @@
       ],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "retry_wait",
-          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
+          "jobId": "saved_f3f21f8615f3c2870b9cffa09674a1033ae676a2ba20b3c7df1225b45d65af8f",
           "lastError": "processing_failed"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:27:37.332Z",
-      "finishedAt": "2026-09-09T16:27:50.658Z",
+      "startedAt": "2026-09-09T16:51:37.337Z",
+      "finishedAt": "2026-09-09T16:51:50.967Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -411,16 +411,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 5876,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 24732,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:28:06.512Z",
-      "finishedAt": "2026-09-09T16:28:07.162Z",
+      "startedAt": "2026-09-09T16:52:06.784Z",
+      "finishedAt": "2026-09-09T16:52:07.460Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -434,9 +434,9 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 2080,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 14032,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [
@@ -444,15 +444,15 @@
       ],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "retry_wait",
-          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
+          "jobId": "saved_f3f21f8615f3c2870b9cffa09674a1033ae676a2ba20b3c7df1225b45d65af8f",
           "lastError": "processing_failed"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:28:22.955Z",
-      "finishedAt": "2026-09-09T16:28:36.115Z",
+      "startedAt": "2026-09-09T16:52:23.278Z",
+      "finishedAt": "2026-09-09T16:52:36.992Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -466,9 +466,9 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 3864,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 17176,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [
@@ -476,15 +476,15 @@
       ],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "dead_letter",
-          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
+          "jobId": "saved_f3f21f8615f3c2870b9cffa09674a1033ae676a2ba20b3c7df1225b45d65af8f",
           "lastError": "processing_failed"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:29:37.142Z",
-      "finishedAt": "2026-09-09T16:29:50.574Z",
+      "startedAt": "2026-09-09T16:53:37.383Z",
+      "finishedAt": "2026-09-09T16:53:51.139Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -498,23 +498,23 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 10436,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 27876,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "succeeded",
-          "jobId": "saved_0a9b6bd9352b2dc47a518e6650765cc7a8824bd8050f9beb21c6a475195c4d15",
-          "manifestSha256": "b8c18213e1b86adcb917ddb2cfb7937615e443a4c91b969ee9815f4f7741aab8"
+          "jobId": "saved_f3f21f8615f3c2870b9cffa09674a1033ae676a2ba20b3c7df1225b45d65af8f",
+          "manifestSha256": "30fec2701c5941f6d7b8fcfcce8dddcf1613d1da4ddf4be36f9b35ca2049f6ea"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:30:06.457Z",
-      "finishedAt": "2026-09-09T16:30:20.795Z",
+      "startedAt": "2026-09-09T16:54:06.994Z",
+      "finishedAt": "2026-09-09T16:54:22.180Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": true,
@@ -528,16 +528,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 21296,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 19112,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:30:36.604Z",
-      "finishedAt": "2026-09-09T16:30:37.207Z",
+      "startedAt": "2026-09-09T16:54:38.007Z",
+      "finishedAt": "2026-09-09T16:54:38.723Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": true,
@@ -551,16 +551,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 7748,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 1348,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:31:37.165Z",
-      "finishedAt": "2026-09-09T16:31:37.906Z",
+      "startedAt": "2026-09-09T16:55:37.378Z",
+      "finishedAt": "2026-09-09T16:55:38.013Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": true,
@@ -574,9 +574,9 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 17020,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 22340,
       "providerKind": "injected_test_provider",
       "providerHashes": [
         "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3",
@@ -585,28 +585,28 @@
       "faults": [],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "succeeded",
-          "jobId": "saved_521d64fc05c44b8c78b273b5a6b229a1438c2f01d497778fc9e065981dfe4069",
-          "manifestSha256": "dc899508b5ac2a923f350488fcef184ca3f14220b403971a7e8ffc5251e7ce87"
+          "jobId": "saved_5fa56619b6a3148af146f99f680a9d6d8b3a2c7bcfc778f4ba398aa93e465bee",
+          "manifestSha256": "0642fe1c54a38a9e6ac76d3f611faa45e36f4e0fb35844a1ee846447a9096f08"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:31:53.724Z",
-      "finishedAt": "2026-09-09T16:32:10.388Z",
+      "startedAt": "2026-09-09T16:55:53.839Z",
+      "finishedAt": "2026-09-09T16:56:10.391Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
         "recipientMismatchRefused": false,
         "accepted": [
           {
-            "payloadSha256": "9137c9c5c7d869916a4b62e8838d97ef2bb6c9d175b711ee08c2dbda63dff204",
-            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "payloadSha256": "8d037255c0557a281ebcdac351442d0275f9f0c4a31fae2389fd7e845578fce0",
+            "recipientSha256": "a0b1532c4192221d91e10a7be6f0d75783c45b150c627115dd06cbbff95deaee",
             "template": "document_request"
           },
           {
-            "payloadSha256": "9583b8becb5e0c53329910baad609e60bc5422fdf2dd7eae2ec567132c7252e5",
-            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "payloadSha256": "d66432d335c02be4425383e7b2a372526682aa22083b07e316eb1176decf3468",
+            "recipientSha256": "a0b1532c4192221d91e10a7be6f0d75783c45b150c627115dd06cbbff95deaee",
             "template": "document_request"
           }
         ],
@@ -621,31 +621,31 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 24608,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 25276,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "succeeded",
-          "jobId": "saved_a0f3a644414f652e64da6345f245cc2f3e1dbcd9903a41da82442878d25a7753",
-          "manifestSha256": "1177a53dc81b807bf3a0c615537fa64c4b985afe13d7dbe5e8e5557ff7988626"
+          "jobId": "saved_deda33c3832397779c709f7173557d5469616cb4f07f377e72af2e68d3a176d5",
+          "manifestSha256": "b6f1ee9605c0f29a8b3b4fab9f04e0fca2233864fa971503bdbb4243ddb75a6e"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:32:26.212Z",
-      "finishedAt": "2026-09-09T16:32:41.724Z",
+      "startedAt": "2026-09-09T16:56:26.355Z",
+      "finishedAt": "2026-09-09T16:56:41.161Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
         "recipientMismatchRefused": false,
         "accepted": [
           {
-            "payloadSha256": "0a1dda198082f9bf0245add692de80e48fb859104d458381986c5b30c9cc39e2",
-            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "payloadSha256": "0c2178e909df4e64302c84d22db2c159d9d0817722fd1ce48174b4cf04c6ab45",
+            "recipientSha256": "a0b1532c4192221d91e10a7be6f0d75783c45b150c627115dd06cbbff95deaee",
             "template": "document_request"
           }
         ],
@@ -659,31 +659,31 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 8484,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 24448,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [
         {
-          "caseId": "c4bfeca6-6acd-484c-b2e0-9a4a01456276",
+          "caseId": "f5cd05fc-76e6-49f8-9edb-d353dab2fa6f",
           "state": "succeeded",
-          "jobId": "saved_830438acbec74145161b7add52f07c1dabc21487969f7f15088bfd377e889024",
-          "manifestSha256": "ba47443ae4260ebcdddbdec46d91ef3361bfb2ed99a241565c3693aaf373391f"
+          "jobId": "saved_7f64dad8db04f9001834c287c758de1e145a5ad11fd31a3d6fd153ab2f4c944d",
+          "manifestSha256": "66c97a4f85dc7d19255905541a18c35d37cd238d35fd27fcf27a98816cd6a3a2"
         }
       ],
       "failure": null,
-      "startedAt": "2026-09-09T16:33:38.266Z",
-      "finishedAt": "2026-09-09T16:33:53.831Z",
+      "startedAt": "2026-09-09T16:57:37.738Z",
+      "finishedAt": "2026-09-09T16:57:53.894Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
         "recipientMismatchRefused": false,
         "accepted": [
           {
-            "payloadSha256": "4d2411d81fecf87320e8c6375d5e07c6e0c783b5e4136da2d382ea6b9f1dadea",
-            "recipientSha256": "bed823e4e3ba6b42dc1cc9a4e4548fac80c1abcfb0efbdfd446a3aac7f39e162",
+            "payloadSha256": "d0120ef445dec58573ec2cc03a6afe1bef1b8385f967858c87a0ce0500361eb0",
+            "recipientSha256": "a0b1532c4192221d91e10a7be6f0d75783c45b150c627115dd06cbbff95deaee",
             "template": "report_ready"
           }
         ],
@@ -697,16 +697,16 @@
     },
     {
       "schema_version": "managed-dev-synthetic-tick-v1",
-      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
-      "gitSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
-      "pid": 19704,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 11844,
       "providerKind": "injected_test_provider",
       "providerHashes": [],
       "faults": [],
       "items": [],
       "failure": null,
-      "startedAt": "2026-09-09T16:34:09.723Z",
-      "finishedAt": "2026-09-09T16:34:10.392Z",
+      "startedAt": "2026-09-09T16:58:09.761Z",
+      "finishedAt": "2026-09-09T16:58:10.439Z",
       "notifications": {
         "providerKind": "injected_notification_test",
         "claimPaused": false,
@@ -799,11 +799,11 @@
   "expiredLeaseRecoveryProof": true,
   "crashChecks": [
     {
-      "oldJobId": "saved_e8369cf2614211ae39b737d6b8d88bdcd2f1857adeb06dc1e29608a48a37115e",
+      "oldJobId": "saved_2707ace37b5963096417e4251f37df1823119a7142e8510a414a6ba662681b7a",
       "oldFence": 1,
-      "crashedPid": 9456,
+      "crashedPid": 9124,
       "attempts": 2,
-      "elapsedMs": 202355,
+      "elapsedMs": 202321,
       "clockModified": false
     }
   ],

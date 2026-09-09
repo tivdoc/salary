@@ -1,0 +1,56 @@
+{
+  "checkedAt": "2026-09-09T15:14:24.482Z",
+  "branch": "codex/tivdoc-release-completion",
+  "productionChanged": false,
+  "providerCalled": false,
+  "secretValuesIncluded": false,
+  "remote": [],
+  "local": [
+    {
+      "source": "process",
+      "name": "RESEND_API_KEY",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "RESEND_FROM_EMAIL",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "RESEND_FROM",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "RESEND_WEBHOOK_SECRET",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "TIVDOC_NOTIFICATION_ENCRYPTION_KEY",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "TIVDOC_NOTIFICATION_PROVIDER",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "TIVDOC_NOTIFICATION_FROM",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "DELIVERY_RECIPIENT_ALLOWLIST",
+      "configured": false
+    },
+    {
+      "source": "process",
+      "name": "TIVDOC_NOTIFICATION_OUTBOX_ENABLED",
+      "configured": false
+    }
+  ],
+  "userMachineInspection": "command_failed"
+}

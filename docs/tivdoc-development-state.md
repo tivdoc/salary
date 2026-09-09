@@ -1,6 +1,6 @@
 # Tivdoc development state
 
-Current scoped task delivered and stopped (2026-09-09): [DEV financial-flow handoff](dev-financial-flow-handoff-2026-09-09-he.md). Application 1fbf0f15987a971a54f8d042832786b5a44cb0fb, isolated schema124,12 integrated DB checks and11 exact-Preview checks pass. The synthetic engineering pipeline computes its findings and HTML/PDF; live OCR/legal activation and managed customer service remain unproven. Delivery includes a disclosed test-only harness adjustment and actual generated examples. The historical rolling queue below is not authorization to resume P00–P13.
+Current bounded package delivered and stopped (2026-09-09): [automatic DEV handoff](automatic-dev-flow-handoff-2026-09-09-he.md). Tested application71be72242d8af06c04bd7359946efb62e6372f2a, isolated schema127 and exact salary-acl7tou5v Preview pass11 DB/Storage,5 notification and11 hosted checks, plus6 replacement-during-lease and8 OTP-service checks. Actual external scheduling/restart and same-run computed HTML/PDF are proved. OCR/email transport, payments and browser sessions remain synthetic; live providers and canonical legal activation are blocked. The QA scheduler is disabled after cleanup. Delivery changes docs/evidence only. No Production action, no automatic continuation of the historical P00–P13 queue below. Earlier [financial-flow proof](dev-financial-flow-handoff-2026-09-09-he.md) remains separately attributed.
 
 - wave: 2 of the rolling queue — journey-scope closure of `B-28` and `B-38`
 - base: 0e3c700b7dd9e603fc389d733fdc55672693aa13

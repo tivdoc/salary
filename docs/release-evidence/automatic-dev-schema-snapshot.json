@@ -1,0 +1,87 @@
+{
+  "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+  "context": {
+    "database": "tivdoc_release_replay_20260907",
+    "principal": "tivdoc_dev_migrator",
+    "observed_at": "2026-09-09T16:58:58.820Z"
+  },
+  "applicationSchema": "127 / 20260909155945",
+  "fileChainCount": 127,
+  "appliedUpgradeEvidence": [
+    "automatic-dev-migration.json",
+    "automatic-dev-notifications-migration.json",
+    "automatic-dev-snapshot-migration.json"
+  ],
+  "latestMigrationFiles": [
+    {
+      "name": "20260909151533_automatic_dev_worker_registry.sql",
+      "sha256": "0a280fa29890553ff5b7f52c8dd1f0c642b9d76ffc042be6d964f0f31e0e7e2d"
+    },
+    {
+      "name": "20260909154033_automatic_dev_notifications.sql",
+      "sha256": "a350349caaaee47ac082f5c35010f5eda2c31191b11b902fd2ddef23bd3abb51"
+    },
+    {
+      "name": "20260909155945_automatic_dev_notification_snapshot.sql",
+      "sha256": "d69d17a653ab450a9d6b95c7ac9cf248bee80a3aa562f9bbc0a1ef4ef96e45e0"
+    }
+  ],
+  "runtimeFunctions": [
+    {
+      "signature": "case_notification_managed_claim(text,uuid)",
+      "definitionSha256": "991e8a8f76d1499dea60f42c99761669b95cb1c95bd14cbd57b9dec14fdc1120"
+    },
+    {
+      "signature": "case_notification_managed_enqueue(text,text,text,jsonb,timestamp with time zone,uuid,uuid,text)",
+      "definitionSha256": "eb9ca75ad518fe9db0e507710324297c6f313a201489154a9e7ebccf31ea8cf9"
+    },
+    {
+      "signature": "case_notification_managed_pending(text)",
+      "definitionSha256": "a240617b05e60db66fcedd5175f99d3f1b5da97e6688e185941c949641a6d59f"
+    },
+    {
+      "signature": "private.automatic_dev_canonical_draft_save(jsonb,text,text)",
+      "definitionSha256": "c20f4633448459a9e2a103f984415e9277b31ad943cd039dedb02c59eaf081fc"
+    },
+    {
+      "signature": "private.dev_financial_save(jsonb,text,text,text)",
+      "definitionSha256": "60da1bc5845622c76546a98ae4e64aa35cee903f023984fc174e55e91e8c8f46"
+    },
+    {
+      "signature": "private.managed_dev_notification_event_current(uuid,text)",
+      "definitionSha256": "e3cf5022f90cb9411a4ada86f76c64a83af66544b22ee6c7d4e094d18a0cf3ca"
+    },
+    {
+      "signature": "private.managed_dev_worker_admit_claim(uuid,text,bigint)",
+      "definitionSha256": "c9a9b8d715cb4cf4d17f48e09f981515636d949596ceb0ee3e2b9e0e64c825b4"
+    },
+    {
+      "signature": "private.managed_dev_worker_candidates(text,integer)",
+      "definitionSha256": "011d818af6b519002bc2b55dfa041bf23d273e5f9c4e1b9549e28448b800228a"
+    },
+    {
+      "signature": "private.managed_dev_worker_capability(text)",
+      "definitionSha256": "7b25fe007ea6cb03e4adf6a12284e1c7f1e80293ef9ccc5e3731ba5215950221"
+    },
+    {
+      "signature": "private.managed_dev_worker_enrollment_guard()",
+      "definitionSha256": "af6b19cfc2930b246ad82ed84f195f1bf0b2f4e19f85391b9a07fd51e76a5670"
+    },
+    {
+      "signature": "private.managed_dev_worker_note(uuid,text,bigint,text)",
+      "definitionSha256": "585aece319e1a65b341f07fe24307dd3e79cd0f61038a298fe709ccc23cb24e9"
+    },
+    {
+      "signature": "private.managed_dev_worker_retry(text,uuid,text,bigint)",
+      "definitionSha256": "d3dfd3edc1663824d246fa00477c2a1c85242d95a14cf7024f2a6d436bf58156"
+    },
+    {
+      "signature": "private.managed_dev_worker_status(text)",
+      "definitionSha256": "a92c3adddaa6bd3c1e40b68658c8617e37c4e8c0a8fd724554d49324dec202a3"
+    }
+  ],
+  "runtimeFingerprintSha256": "61a7489c4935c0649ad42c3adf6075f29e74e02bde807d70dc01f4e7ac16ebe6",
+  "migrationLedgerCountClaimed": false,
+  "fresh127ReplayProved": false,
+  "productionChanged": false
+}

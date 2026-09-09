@@ -1,8 +1,8 @@
 {
   "verdict": "PASS",
-  "gitSha": "eb472ddb80acb28a8acdf6f24fe39284d07f66a4",
+  "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
   "gitWorktreeDirty": true,
-  "runId": "47b3b5fc-7788-467a-add9-4878fc0f8524",
+  "runId": "13a659d6-fed3-44f3-b083-4298995b2f34",
   "checks": [
     "actual access service queues one encrypted OTP; invalid capability, a valid foreign recipient capability and the web role cannot claim it",
     "injected provider acceptance produces sent state without delivery; a repeated managed pass sends no duplicate and clears encrypted OTP bytes",

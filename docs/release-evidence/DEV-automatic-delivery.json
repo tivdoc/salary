@@ -1,0 +1,282 @@
+{
+  "state": "ENGINEERING_AUTOMATIC_DEV_PROVED_LIVE_CUSTOMER_FLOW_BLOCKED",
+  "recordedAt": "2026-09-09T17:10:03.138Z",
+  "baseSha": "70e13b9964ab360185970de1a601bbf843ff9e2a",
+  "testedApplicationSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+  "branch": "codex/tivdoc-release-completion",
+  "pullRequest": "https://github.com/tivdoc/salary/pull/2",
+  "ci": [
+    {
+      "conclusion": "success",
+      "databaseId": 34378468781,
+      "headSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "status": "completed",
+      "url": "https://github.com/tivdoc/salary/actions/runs/34378468781"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 34378463143,
+      "headSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "status": "completed",
+      "url": "https://github.com/tivdoc/salary/actions/runs/34378463143"
+    }
+  ],
+  "preview": {
+    "id": "dpl_FntJf39hsrR1ozoK2tE12jsD9Ah8",
+    "url": "salary-acl7tou5v-tivdoccom-5042s-projects.vercel.app",
+    "target": "preview",
+    "readyState": "READY",
+    "sha": "71be72242d8af06c04bd7359946efb62e6372f2a"
+  },
+  "schema": {
+    "version": "127 / 20260909155945",
+    "runtimeFingerprintSha256": "61a7489c4935c0649ad42c3adf6075f29e74e02bde807d70dc01f4e7ac16ebe6",
+    "existingUpgradeProved": true,
+    "fresh127ReplayProved": false
+  },
+  "proofs": {
+    "main": {
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "checks": 11,
+      "notificationChecks": 5,
+      "browserChecks": 11,
+      "cleanBuild": true,
+      "actualCrashRecovery": [
+        {
+          "oldJobId": "saved_2707ace37b5963096417e4251f37df1823119a7142e8510a414a6ba662681b7a",
+          "oldFence": 1,
+          "crashedPid": 9124,
+          "attempts": 2,
+          "elapsedMs": 202321,
+          "clockModified": false
+        }
+      ]
+    },
+    "replacement": {
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "checks": 6,
+      "cleanBuild": true
+    },
+    "otp": {
+      "runId": "13a659d6-fed3-44f3-b083-4298995b2f34",
+      "checks": 8,
+      "sourceUnchangedFromTestedApplication": true,
+      "evidenceOnlyDirtyPathsAtStart": [
+        "docs/release-evidence/DEV-managed-worker-db.json"
+      ]
+    }
+  },
+  "executedServices": {
+    "supabaseDatabase": true,
+    "privateSupabaseStorage": true,
+    "vercelPreview": true,
+    "osTaskScheduler": true,
+    "openaiLive": false,
+    "resendLive": false,
+    "providerOriginatedWebhook": false,
+    "actualMailboxDelivery": false,
+    "realPayment": false
+  },
+  "syntheticPrerequisites": [
+    "verified QA identity and owned machine/capability enrollment",
+    "paid June2026 minimum-wage order",
+    "injected extraction transport",
+    "known-field fixture confirmations",
+    "injected notification transport and signed synthetic webhook",
+    "browser case session cookies"
+  ],
+  "canonicalState": "actual same-parent product projections saved as draft only; no active financial findings or customer publication",
+  "liveBlockers": [
+    "authorized nonblank OpenAI key and verified model access",
+    "authorized Resend key, verified sender, shared encryption key, exact owner-recipient allowlist, signed webhook and protected ingress",
+    "canonical source/version/period/population applicability, active parameter/rule/executor and activation attestation under current policy"
+  ],
+  "remainingVerification": [
+    "live seven-input OCR corpus including raster simulations",
+    "real inbox OTP/recovery and actual delivery/webhook HTTP",
+    "authenticated local operations browser",
+    "live-provider in-flight interruption",
+    "real payroll applicability and canonical financial activation"
+  ],
+  "visualReview": {
+    "reviewer": "AI assistant inspection, no human approval",
+    "pdfPages": 3,
+    "customerWidths": [
+      390,
+      1440
+    ],
+    "providerIdentifierClippingFixed": true,
+    "legacyByteCompatibilityTests": 2,
+    "wrappingAndFinancialFocusedTests": 45,
+    "initialFailurePreserved": "docs/release-evidence/automatic-dev-first-5726684"
+  },
+  "cleanup": {
+    "latestProofCasesRemoved": 5,
+    "latestProofIdentitiesRemoved": 5,
+    "latestProofStorageObjectsRemoved": 4,
+    "machineAndCapabilitiesRevoked": true,
+    "canonicalAndBudgetAuditRetained": true,
+    "schedulerState": "Disabled",
+    "lastTaskResult": 0,
+    "manifestEnabled": false
+  },
+  "artifacts": [
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/answered-calculated.html",
+      "bytes": 3249,
+      "sha256": "d328cdbd8944a3e94599b038d8db85895d576d36dc68beb49d8f15dc195a3142"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/answered-calculated.json",
+      "bytes": 114351,
+      "sha256": "714dac5128b3edb4449c408c4f8f30d349745a85daf763ad8a423d4926917849"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/answered-calculated.pdf",
+      "bytes": 781385,
+      "sha256": "6d045af17bb94f90d0e53ad62926f33a1e8c4db004cb0933621a7bb3cbcd0b69"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/answered-fixed-review-1.png",
+      "bytes": 154856,
+      "sha256": "f4b0e111cc808e6a895990e7549e7a824e3bc481635491a97e88de6406594764"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/answered-request.png",
+      "bytes": 39304,
+      "sha256": "d34b208033973a6651b8663a4ac63aa19cf8357b17146e4a67e3b05f0b21e057"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/completed-receipt.json",
+      "bytes": 1393,
+      "sha256": "a58ebc1086a6d166514b51a9f1f538d083d5365f23b61b40f2ecc959372e23be"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/initial-calculated.html",
+      "bytes": 3060,
+      "sha256": "4187d77f3d49b366f51c12ef6bb42c4bfd0e6e0ddb37214472bf6d106a8308dc"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/initial-calculated.json",
+      "bytes": 117620,
+      "sha256": "4ab906452270e1cbbc4c34380055a9eb8cbf600fefe683642e400456f8c471ec"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/initial-calculated.pdf",
+      "bytes": 779787,
+      "sha256": "579da008a0613c7c6ff5ff18aa3d485ac956242eb9f1bc7b54db21a8142ff023"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/initial-fixed-review-1.png",
+      "bytes": 140699,
+      "sha256": "295d15cb1a064b8adf6aff4fa52bd3e2939b3e866f23f0e86aa42fee70e22537"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/live-worker-build.json",
+      "bytes": 16933,
+      "sha256": "19a529da9777370481693e77504794ec70f15ab195d466f7c0438a4297dde924"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/missing-fixed-review-1.png",
+      "bytes": 110348,
+      "sha256": "6765cfa4d4d438f85fb20db0526382ed08d337a3f0cd5c0ccbd3c93d6af58d85"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/missing-hours.html",
+      "bytes": 2332,
+      "sha256": "7c17cb2507fa4ba0b86bd25737ba12659b53d947956f852c9cb76cbd7a7eb2b3"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/missing-hours.json",
+      "bytes": 45964,
+      "sha256": "752164dd342e389434dc9a40591d4e7c9df49d741119db3b02526ec405d784dc"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/missing-hours.pdf",
+      "bytes": 774576,
+      "sha256": "12b29b97019ad5cfec84fdad0c740a647eac06866ba268e1d6766577fb37bd87"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/missing-receipt.json",
+      "bytes": 1046,
+      "sha256": "06a78317f2078d4f1b6e8138e8ea940183423b6bf20c9960bdad71215747615b"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/README.md",
+      "bytes": 1862,
+      "sha256": "9d260f8cb425ab7f17a84a7dd798a2748f1d61f60dc6ae1053e67de0b7a6bb2e"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/replacement-answered-calculated.html",
+      "bytes": 3249,
+      "sha256": "37732bdb19ffd04cec1cf74a9d36e1e18e63a5898bef2de46d4abd773859112c"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/replacement-answered-calculated.json",
+      "bytes": 114346,
+      "sha256": "45d727591aa58ac454b660f2868fbc86663722b1e572a3c77e4c1d33ae4836b2"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/replacement-answered-calculated.pdf",
+      "bytes": 781384,
+      "sha256": "c0cb1026d4b848e1a27390e2b64850f7e084cdaa5cf2f74185f4082d3da53032"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/replacement-missing-hours.html",
+      "bytes": 2332,
+      "sha256": "bf4ff889fccbbeb894b1341253bc65af4e20facfbf7750cb1e57b9ab006b1b23"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/replacement-missing-hours.json",
+      "bytes": 45963,
+      "sha256": "c494f9904c1c73822f555170722d263efab780fe1c40c716e48d3dc2a70b7e14"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/replacement-missing-hours.pdf",
+      "bytes": 774575,
+      "sha256": "bc6f8c14ebdaa76710eec46d80ff392590050d7c58e4a52213d6124ea91b18c2"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/review-1.png",
+      "bytes": 155240,
+      "sha256": "557ab4ddfa46b2c8192b2894e5c12b89b97cf443f4379b6aece064ce63dd9a5a"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/synthetic-june-2026-100-hours.pdf",
+      "bytes": 1409,
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/replacement/synthetic-june-2026-missing-hours.pdf",
+      "bytes": 1428,
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/report-1440.png",
+      "bytes": 139297,
+      "sha256": "f3837892a143445d36be0b7742e81c065e9e7ebb87e4428f017b56c25a29988a"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/report-390.png",
+      "bytes": 45222,
+      "sha256": "fe7f056adfae3c1d5dc175a3f77b9412f9e9c99d731ff7f5a55e5234b14ea9bf"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/synthetic-june-2026-100-hours.pdf",
+      "bytes": 1409,
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/synthetic-june-2026-missing-hours.pdf",
+      "bytes": 1428,
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    },
+    {
+      "path": "docs/release-evidence/automatic-dev-example-71be722/synthetic-worker-build.json",
+      "bytes": 16961,
+      "sha256": "1fe17b5f54eead5ef891007a7a6be1134c4357b52c4057d7e72b1c18830f868e"
+    }
+  ],
+  "productionChanged": false,
+  "continueAutomatically": false
+}
