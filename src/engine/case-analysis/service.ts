@@ -3,8 +3,8 @@ import { employmentSnapshotSchema, type EmploymentSnapshot } from "../facts/snap
 import { resolvedPayslipFactPaths, resolvePayslipSnapshot } from "../extraction/resolver.ts";
 import { validatePayslipGate0 } from "../extraction/validation.ts";
 import { canonicalSha256, canonicalStringify, deepFreeze } from "../rule-runtime/canonical.ts";
-import { ruleInputSnapshotSchema, type RuleInputSnapshot } from "../wave1/contracts.ts";
-import { createCanonicalRuleInputSnapshot } from "../rule-input/snapshot.ts";
+import type { RuleInputSnapshot } from "../wave1/contracts.ts";
+import { createTopicRuleInputSnapshot } from "../rule-input/snapshot.ts";
 import { evaluateLegalReadiness, type LegalReadinessCandidate, type LegalReadinessCase } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
 import type {
   AnalysisResultBundle,
@@ -240,12 +240,7 @@ function projectFacts(input: Readonly<{
 }
 
 function projectRuleInputs(facts: EmploymentSnapshot, topics: readonly Wave3Topic[]): readonly RuleInputSnapshot[] {
-  const canonical = createCanonicalRuleInputSnapshot(facts);
-  return topics.map((topic) => ruleInputSnapshotSchema.parse({
-    snapshot_id: `rule-input:${facts.analysis_run_id}:${topic}`,
-    snapshot_version: `${canonical.reference.snapshot_version}:${topic}`,
-    snapshot_sha256: canonicalSha256({ topic, canonical_rule_input: canonical.reference }),
-  }));
+  return topics.map((topic) => createTopicRuleInputSnapshot(facts, topic));
 }
 
 function independentlyEvaluateReadiness(selection: LegalCatalogSelection) {

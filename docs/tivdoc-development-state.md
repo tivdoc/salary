@@ -1,3 +1,7 @@
+## Paused for owner-requested restart — 2026-09-09 20:33 UTC
+
+See [the restart checkpoint](provider-restart-checkpoint-2026-09-09.md). OpenAI is now configured privately and actual SDK calls ran; three corpus scenarios failed. New parser/prompt offline tests passed, but no live report/OTP/Resend delivery exists. This WIP checkpoint retains two new failing source-guard regression tests; no full checks or deployment were run. Existing DEV schema130 and old f0d8081 Preview are unchanged. Stop safely for restart; do not resume P00–P13. Historical STOP and no-key statements below describe earlier deliveries, not the current provider configuration.
+
 # Tivdoc development state
 
 Current bounded package delivered partially and stopped (2026-09-09): [provider/canonical handoff](dev-provider-canonical-handoff-2026-09-09-he.md), applicationf0d8081ddf02fd308c14710fefe1218ac1c608f4, READY same-SHA Preview salary-ekh8i0mbo, isolated DEV schema130. Both CI34393211199/34393204420 pass3472tests,69skips,typecheck/lint/build and48closure checks. Clean99432cb/schema130 actual DB proof covers scoped June questions, concurrent retry, correction history and current-source/foreign/replacement refusal; all server/engine/API/migration source is unchanged inf0d8081. Thirty actual role/function checks pass. Anonymous login was visually checked at1280/390 after fixing the sidebar CSS scope. No owner OTP session was injected or proved.

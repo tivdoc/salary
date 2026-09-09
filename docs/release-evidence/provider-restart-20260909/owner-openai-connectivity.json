@@ -1,0 +1,46 @@
+{
+  "startedAt": "2026-09-09T20:14:30.005Z",
+  "model": "gpt-4o-mini-2024-07-18",
+  "reservedUsd": 0.0252,
+  "maxGenerationCalls": 1,
+  "maxOutputTokens": 16,
+  "generationAttempted": true,
+  "credentialVerified": true,
+  "modelAvailable": true,
+  "providerCost": null,
+  "production": false,
+  "steps": [
+    {
+      "kind": "model_access",
+      "status": 200,
+      "requestId": "31899dcb-1499-40b3-8457-3d171b7e3b67",
+      "durationMs": 946,
+      "errorCode": null,
+      "errorType": null
+    },
+    {
+      "kind": "generation",
+      "status": 200,
+      "requestId": "req_e550b2dc42504171bf54ffc257bd127b",
+      "durationMs": 3942,
+      "errorCode": null,
+      "errorType": null
+    }
+  ],
+  "generationSucceeded": true,
+  "responseId": "resp_0e39a4acf865711b016aa1be28951c87d287d58fad6c7f61c8",
+  "responseModel": "gpt-4o-mini-2024-07-18",
+  "usage": {
+    "input_tokens": 16,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 18
+  },
+  "outputMatched": true
+}

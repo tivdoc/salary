@@ -1,0 +1,19 @@
+{
+  "at": "2026-09-09T20:15:33.171Z",
+  "project": "prj_kmqJ74IuBrc5hI9J93RpcUkNMBW7",
+  "branch": "codex/tivdoc-release-completion",
+  "environment": "preview",
+  "changes": [
+    {
+      "name": "OPENAI_API_KEY",
+      "configured": true
+    },
+    {
+      "name": "OPENAI_EXTRACTION_MODEL",
+      "configured": true
+    }
+  ],
+  "productionChanged": false,
+  "workerAndLocalSameKey": true,
+  "existingPreviewNeedsRedeploy": true
+}

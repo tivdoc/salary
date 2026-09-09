@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "tivdoc-live-provider-proof-v2",
+  "state": "FAIL",
+  "checkedAt": "2026-09-09T20:17:30.586Z",
+  "gitSha": "588da79fc1b6841efc5962c4a507f141ac4e0286",
+  "worktreeDirty": true,
+  "selection": "legacy",
+  "selectedIds": [
+    "clear"
+  ],
+  "providerCalled": true,
+  "providerInvocationEntered": 2,
+  "providerReceiptConfirmedCalls": 2,
+  "providerAttemptedOrUnknown": true,
+  "providerKind": "openai_live",
+  "configuration": {
+    "kind": "openai_live",
+    "model": "gpt-4o-mini-2024-07-18",
+    "extractorVersion": "2.1",
+    "policyVersion": "tivdoc-openai-live-runtime-v1"
+  },
+  "budget": {
+    "policy": {
+      "version": "tivdoc-live-corpus-budget-v1",
+      "model": "gpt-4o-mini-2024-07-18",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-4o-mini",
+      "pricingCheckedAt": "2026-09-09",
+      "pricingValidUntil": "2026-09-16T00:00:00Z",
+      "inputTokenCeiling": 128000,
+      "outputTokenCeiling": 10000,
+      "inputUsdPerMillion": 0.15,
+      "outputUsdPerMillion": 0.6,
+      "perPassReservedMicroUsd": 25200,
+      "maxReservedMicroUsd": 5000000,
+      "maxPasses": 22,
+      "maxSourceBytes": 1048576,
+      "maxPages": 1,
+      "maxRasterWidth": 2500,
+      "maxRasterHeight": 3600,
+      "maxRasterPixels": 9000000,
+      "maxImagesPerRequest": 5,
+      "maxImageBytes": 2097152,
+      "maxRequestTextBytes": 64000,
+      "sdkRetries": 0
+    },
+    "reservedPasses": 2,
+    "reservedUpperBoundUsd": 0.0504,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "unknownOutcomes": 0
+  },
+  "results": [
+    {
+      "id": "clear",
+      "sourceSha256": "2fa82b32745a51044242bb334c1de8d5bec913d26280cf3729e2833a9cd7bd0d",
+      "state": "failed",
+      "provenance": {
+        "kind": "openai_live",
+        "providerAttempted": true,
+        "allPassesSucceeded": true,
+        "checkpointResultSha256": "162e1fb85e69db9d467499136e4faddaabb4e36b426ed480b4d1382b2c4a9e2c",
+        "receipts": [
+          {
+            "schema_version": "tivdoc-openai-provider-receipt-v1",
+            "origin": "openai_live",
+            "case_id": "b15c9a1b-aec3-4f4d-b9c2-cf0dbc9305b4",
+            "analysis_run_id": "05b3c64b-cb64-44fc-9802-b42b18ee7641",
+            "document_id": "b194f4ae-0cd5-4754-ac15-6ff44f2878ff",
+            "extraction_id": "b2062d5b-241b-4241-a763-e5c49cfb9c6b",
+            "source_sha256": "2fa82b32745a51044242bb334c1de8d5bec913d26280cf3729e2833a9cd7bd0d",
+            "source_size_bytes": 3600,
+            "source_mime_type": "application/pdf",
+            "source_page_count": 1,
+            "request_sha256": "d28e6ba89b82a31a9e195e9080c0847db7ee1701750e5c0bee0e079922f3edd2",
+            "raw_extraction_sha256": "2aa9af88f0d110722b5f7734a788e7205850020a31a65dcbb0575b4547b3e372",
+            "pass_kind": "first_pass",
+            "requested_model": "gpt-4o-mini-2024-07-18",
+            "actual_model": "gpt-4o-mini-2024-07-18",
+            "extractor_version": "2.1",
+            "prompt_version": "payslip-extraction-openai-v2-first-r2",
+            "provider_response_id": "resp_066154cbb3cb972e016aa1becf170c87d0892e732f0f00c5ac",
+            "provider_request_id": "req_083abaf06ce4495090a801d36f226144",
+            "provider_attempted": true,
+            "status": "completed",
+            "error_code": null,
+            "http_status": null,
+            "duration_ms": 9025,
+            "token_usage": {
+              "input_tokens": 3146,
+              "output_tokens": 750,
+              "total_tokens": 3896
+            },
+            "cost": {
+              "status": "not_returned_by_provider",
+              "amount_usd": null
+            },
+            "created_at": "2026-09-09T20:17:25.810Z",
+            "receipt_sha256": "2840a172e4b0aaf624c154615e07dcd723a15138a4882ef65b497010fbf016ee"
+          },
+          {
+            "schema_version": "tivdoc-openai-provider-receipt-v1",
+            "origin": "openai_live",
+            "case_id": "b15c9a1b-aec3-4f4d-b9c2-cf0dbc9305b4",
+            "analysis_run_id": "05b3c64b-cb64-44fc-9802-b42b18ee7641",
+            "document_id": "b194f4ae-0cd5-4754-ac15-6ff44f2878ff",
+            "extraction_id": "3fef3f13-713f-4f49-a746-3704f21682a7",
+            "source_sha256": "2fa82b32745a51044242bb334c1de8d5bec913d26280cf3729e2833a9cd7bd0d",
+            "source_size_bytes": 3600,
+            "source_mime_type": "application/pdf",
+            "source_page_count": 1,
+            "request_sha256": "d0318f24b9e54e00da03c6402e66ab0034d082eb4c0002e7adfade9530c957a4",
+            "raw_extraction_sha256": "9e98d6017dfe7fa66c21ea9bc83ebde219d4ffc8ab8ac44908290d9def538ff5",
+            "pass_kind": "targeted_recovery",
+            "requested_model": "gpt-4o-mini-2024-07-18",
+            "actual_model": "gpt-4o-mini-2024-07-18",
+            "extractor_version": "2.1",
+            "prompt_version": "payslip-extraction-openai-v2-recovery-r2",
+            "provider_response_id": "resp_09fb56089cdbd08e016aa1bed6a34087d29f5a9ed93b489458",
+            "provider_request_id": "req_e0e215a4c49d42208f04d4fb3be824dc",
+            "provider_attempted": true,
+            "status": "completed",
+            "error_code": null,
+            "http_status": null,
+            "duration_ms": 4363,
+            "token_usage": {
+              "input_tokens": 3181,
+              "output_tokens": 196,
+              "total_tokens": 3377
+            },
+            "cost": {
+              "status": "not_returned_by_provider",
+              "amount_usd": null
+            },
+            "created_at": "2026-09-09T20:17:30.382Z",
+            "receipt_sha256": "999c38d52c83e65b1ff3154aa1d4eb8f4422afdc89eae19a5d406710d45e5586"
+          }
+        ]
+      },
+      "oracleComparison": {
+        "passed": false,
+        "failures": [
+          "FIELD_salary_period",
+          "FIELD_base_monthly_salary",
+          "FIELD_hourly_rate",
+          "FIELD_regular_hours"
+        ],
+        "observedFieldCount": 5,
+        "observedComponentCount": 6,
+        "financialResultGenerated": false,
+        "legalReadinessProved": false
+      },
+      "errorKind": "AssertionError"
+    }
+  ],
+  "failures": [
+    "clear"
+  ],
+  "productionChanged": false,
+  "databaseChanged": false,
+  "humanConfirmations": false,
+  "scope": "Actual API extraction only; synthetic English/Hebrew PDFs and raster simulations. Extra components are outside the narrow financial scenario. No actual employee payslip, customer identity, payment or legal activation is proved."
+}

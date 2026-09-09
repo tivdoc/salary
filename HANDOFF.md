@@ -1,3 +1,7 @@
+## Paused for owner-requested restart — 2026-09-09 20:33 UTC
+
+See [the restart checkpoint](docs/provider-restart-checkpoint-2026-09-09.md). OpenAI is now configured privately and actual SDK calls ran; three corpus scenarios failed. New parser/prompt offline tests passed, but no live report/OTP/Resend delivery exists. This WIP checkpoint retains two new failing source-guard regression tests; no full checks or deployment were run. Existing DEV schema130 and old f0d8081 Preview are unchanged. Stop safely for restart; do not resume P00–P13. Historical STOP and no-key statements below describe earlier deliveries, not the current provider configuration.
+
 ## DEV providers / canonical June package delivered partially — STOP (2026-09-09)
 
 The owner's bounded package from2ebddb75ab8e0a6ee8beb9e50895c2929b5c1339 is saved; stop here, do not resume P00–P13 or another package. See [the final Hebrew handoff](docs/dev-provider-canonical-handoff-2026-09-09-he.md) and [machine-readable evidence](docs/release-evidence/dev-provider-canonical-20260909/delivery.json). Applicationf0d8081ddf02fd308c14710fefe1218ac1c608f4 passes both CI34393211199/34393204420:3472tests,69credential-gated skips,typecheck/lint/build and48closure checks. READY Preview dpl_HLPwjZyHPupt2VThza9ZV7KAUnSE / salary-ekh8i0mbo-tivdoccom-5042s-projects.vercel.app uses that exact source. Final delivery after it changes docs/evidence only.

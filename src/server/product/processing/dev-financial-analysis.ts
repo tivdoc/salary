@@ -12,6 +12,7 @@ import {readSavedExtractionProvenance} from './live-extraction-provenance';
 import {savedMonthIdempotencyKey} from './saved-order-scope';
 import {JUNE2026_REVIEW_CATALOG_SHA256} from '@/engine/legal-operations/june2026-catalog';
 import {savedAnalysisId} from './saved-draft-report';
+import {assertDevFinancialExtractionSource} from './dev-financial-source';
 import {DEV_FINANCIAL_SCHEMA,devFinancialFacts,devFinancialFinding,devHoursReadingSchema,devHoursRequestCode,parseDevFinancialRun,assertDevFinancialScenario,devFinancialSourcePage} from './dev-financial-contract';
 
 /** Call inside the provisioned worker transaction. The actual DB boundary
@@ -29,17 +30,7 @@ export async function runSavedDevFinancialMonth(input:{context:PostgresTransacti
  // The real V2 adapter retains base/hourly rows in additional_components.
  // Permit exactly one paid base row and at most one quantity/rate-only row;
  // a second paid component would invalidate this deliberately narrow scenario.
- const bases=extraction.additional_components.filter(c=>c.semantic_kind==='base_salary');
- const hourly=extraction.additional_components.filter(c=>c.semantic_kind==='hourly_base');
- const baseValue=extraction.fields.find(f=>f.field==='base_monthly_salary')?.normalized_value;
- if(extraction.document_id!==source.version_id||!extraction.earnings_components_complete
-  ||bases.length!==1||hourly.length>1||bases.length+hourly.length!==extraction.additional_components.length
-  ||!bases[0].amount||canonicalSha256(bases[0].amount)!==canonicalSha256(baseValue??null)
-  ||hourly.some(c=>c.amount_raw!==null||c.amount!==null||c.percentage_raw!==null)
-  // V2's documented "high" row score is 0.94. Canonical input confirmation
-  // and the existing P95 critical-field gate remain separately enforced.
-  ||extraction.additional_components.some(c=>c.confidence<0.94||c.warning_flags.length||c.normalization_warnings.length)
-  ||extraction.fields.find(f=>f.field==='salary_type')?.normalized_value!=='hourly')throw Error('DEV_FINANCIAL_SCENARIO_UNSUPPORTED');
+ assertDevFinancialExtractionSource(extraction,source.version_id);
  const parent=input.parent??await runSavedWorkerMonth({context,job,orderId:input.orderId,month:'2026-06'});
  if(!parent.bundle)throw Error('DEV_FINANCIAL_PARENT_REQUIRED');
  const parentFacts=employmentSnapshotSchema.parse(z.object({facts:z.unknown()}).parse(parent.stages.find(s=>s.stage==='canonical_facts')?.payload).facts);

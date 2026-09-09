@@ -7,6 +7,10 @@ import {
   type SalaryPeriod,
 } from "./payslip.ts";
 
+// Reprocessing existing raw evidence must record this policy separately and
+// keep the original immutable checkpoint and provider receipt unchanged.
+export const PAYSLIP_NORMALIZATION_POLICY_VERSION = "payslip-normalization-v2-explicit-full-month";
+
 const hebrewMonths: Readonly<Record<string, number>> = {
   ינואר: 1,
   פברואר: 2,
@@ -118,6 +122,16 @@ function isoDate(year: number, month: number, day: number) {
 
 export function normalizeSalaryPeriod(raw: string): SalaryPeriod | null {
   const value = raw.normalize("NFKC").trim().replace(/\s+/g, " ");
+  // A full, explicit local date range is documentary evidence of one month.
+  // Never infer a month from a partial span or reverse conflicting OCR order.
+  const fullMonthRange = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[-–—]\s*(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (fullMonthRange) {
+    const [, firstDay, firstMonth, firstYear, lastDay, lastMonth, lastYear] = fullMonthRange.map(Number);
+    if (firstYear !== lastYear || firstMonth !== lastMonth || firstDay !== 1 || firstYear < 1000
+      || firstMonth < 1 || firstMonth > 12 || lastDay !== new Date(Date.UTC(firstYear, firstMonth, 0)).getUTCDate()) return null;
+    const startDate = isoDate(firstYear, firstMonth, firstDay), endDate = isoDate(lastYear, lastMonth, lastDay);
+    return startDate && endDate ? {year:firstYear,month:firstMonth,start_date:startDate,end_date:endDate} : null;
+  }
   let year: number;
   let month: number;
   const monthYear = value.match(/^(\d{1,2})[/.\-](\d{2}|\d{4})$/);
