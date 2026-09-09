@@ -1,10 +1,14 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import {employmentSnapshotSchema,type EmploymentSnapshot} from '../facts/snapshot.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
-import {MINIMUM_WAGE_HOURLY_SPEC} from '../legal-quality/sensitivity-rulespecs.ts';
+import {legalOperationsSha256} from '../legal-operations/canonical.ts';
 import {sourceCalculationTraceSchema} from './source-trace.ts';
 import {sourceMonetaryComparisonSchema} from '../findings/source-comparison.ts';
 import {calculateDevMinimumWage,DEV_MINIMUM_WAGE_PARAMETER,DEV_MINIMUM_WAGE_POLICY,DEV_MINIMUM_WAGE_RULE} from './dev-minimum-wage.ts';
+
+// A production-reachable engineering calculator must not load reference-tenant
+// sensitivity packages, including indirectly through an inherited manifest.
+vi.mock('../legal-quality/sensitivity-rulespecs.ts',()=>{throw Error('REFERENCE_TENANT_RUNTIME_MUST_NOT_LOAD');});
 
 // Independently constructed synthetic source readings. No legal fixture
 // catalog, precomputed finding, report or human attestation is injected.
@@ -117,9 +121,31 @@ describe('one-month DEV minimum-wage comparison',()=>{
   expect(sourceMonetaryComparisonSchema.safeParse({...falseSeed,sha256:canonicalSha256(falseSeed)}).success).toBe(false);
  });
 
- it('preserves inactive/source-only authority and the original RuleSpec',()=>{
-  expect(MINIMUM_WAGE_HOURLY_SPEC.rule_spec_version).toBe('1.0.0');
-  expect(MINIMUM_WAGE_HOURLY_SPEC.nodes).toHaveLength(1);
+ it('keeps a standalone engineering manifest with pinned parent provenance only',()=>{
+  expect(DEV_MINIMUM_WAGE_RULE.rule_spec_version).toBe('1.1.0');
+  expect(DEV_MINIMUM_WAGE_RULE.source_version_ids).toEqual([DEV_MINIMUM_WAGE_POLICY.source.sourceVersionId]);
+  expect(DEV_MINIMUM_WAGE_RULE.effective_period).toEqual({from:'2026-06-01',to:'2026-06-30'});
+  expect(DEV_MINIMUM_WAGE_POLICY.parentRule).toEqual({
+   id:'il.rulespec.minimum.wage.hourly.entitlement',version:'1.0.0',
+   sha256:'182e85ff6de7d2e12260878bd25f3dc2bae39d5e4f5f7eaf25b5b9df8a9d48ce',
+   relationship:'historical_arithmetic_reference_only',
+  });
+  expect(DEV_MINIMUM_WAGE_RULE.content_sha256).not.toBe(DEV_MINIMUM_WAGE_POLICY.parentRule.sha256);
+  expect(DEV_MINIMUM_WAGE_PARAMETER.decision_id).toBe('tivdoc.dev.engineering.decision.minimum_wage_hourly_182');
+  expect(DEV_MINIMUM_WAGE_POLICY.engineeringDecision).toMatchObject({authority:'synthetic_scenario_selection_only',humanApproval:false});
+  expect(DEV_MINIMUM_WAGE_RULE.golden_case_set_sha256).toBe(legalOperationsSha256(DEV_MINIMUM_WAGE_POLICY.validationBinding));
+  expect(DEV_MINIMUM_WAGE_POLICY.validationBinding).toMatchObject({authority:'engineering_tests_only',approvedLegalGoldenSet:false,approvedLegalGoldenCaseIds:[]});
+  expect(JSON.stringify(calculated())).not.toContain('legal.reference.il');
+ });
+
+ it('pins the historical parent identity and content hash accurately without a production import',async()=>{
+  // Explicitly load the historical package only inside this provenance test.
+  // The hoisted throwing mock still guards imports made by the calculator.
+  const {MINIMUM_WAGE_HOURLY_SPEC:parent}=await vi.importActual<typeof import('../legal-quality/sensitivity-rulespecs.ts')>('../legal-quality/sensitivity-rulespecs.ts');
+  expect(DEV_MINIMUM_WAGE_POLICY.parentRule).toMatchObject({id:parent.rule_spec_id,version:parent.rule_spec_version,sha256:parent.content_sha256});
+ });
+
+ it('preserves inactive/source-only authority without creating activation or legal approval',()=>{
   expect(DEV_MINIMUM_WAGE_RULE.catalog_boundary).toBe('real_inactive');
   expect(DEV_MINIMUM_WAGE_PARAMETER.support_roles).toEqual(['official_implementation']);
   expect(DEV_MINIMUM_WAGE_PARAMETER.bindings.rule_spec_sha256).toBe(DEV_MINIMUM_WAGE_RULE.content_sha256);

@@ -5,7 +5,6 @@ import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {frozen,legalOperationsSha256} from '../legal-operations/canonical.ts';
 import {parameterCandidateSchema,type ParameterCandidate} from '../legal-operations/contracts.ts';
 import {createRuleSpecPackage,type RuleSpecPackage} from '../legal-operations/rulespec.ts';
-import {MINIMUM_WAGE_HOURLY_SPEC} from '../legal-quality/sensitivity-rulespecs.ts';
 import {createSourceCalculationTrace,type SourceCalculationTrace} from './source-trace.ts';
 import {createSourceMonetaryComparison,type SourceMonetaryComparison} from '../findings/source-comparison.ts';
 
@@ -13,7 +12,7 @@ import {createSourceMonetaryComparison,type SourceMonetaryComparison} from '../f
  * The archived hashes identify existing dossier records. Their raw historical
  * HTML/PDF bytes were not reverified against the fresh page in this review. */
 export const DEV_MINIMUM_WAGE_POLICY=frozen({
- schemaVersion:'tivdoc-dev-minimum-wage-policy-v1',
+ schemaVersion:'tivdoc-dev-minimum-wage-policy-v2',
  engineeringOnly:true,activationAllowed:false,pricingAllowed:false,
  topic:'minimum_wage',month:'2026-06',currency:'ILS',
  hourlyRateMinor:3540,maximumRegularHours:182,maximumHoursDecimalPlaces:4,
@@ -31,7 +30,16 @@ export const DEV_MINIMUM_WAGE_POLICY=frozen({
   dossierSha256:'1354756f6b87ec1454a93b0e96cc7c4020946143d6174bf1183bfec90945ce19',
   archivedRawBytesReverified:false,
  },
- parentRule:{id:MINIMUM_WAGE_HOURLY_SPEC.rule_spec_id,version:MINIMUM_WAGE_HOURLY_SPEC.rule_spec_version,sha256:MINIMUM_WAGE_HOURLY_SPEC.content_sha256},
+ // Pinned historical provenance, not a runtime dependency or inherited legal
+ // authority. The standalone rule below declares every executable field.
+ parentRule:{id:'il.rulespec.minimum.wage.hourly.entitlement',version:'1.0.0',
+  sha256:'182e85ff6de7d2e12260878bd25f3dc2bae39d5e4f5f7eaf25b5b9df8a9d48ce',
+  relationship:'historical_arithmetic_reference_only'},
+ engineeringDecision:{id:'tivdoc.dev.engineering.decision.minimum_wage_hourly_182',
+  authority:'synthetic_scenario_selection_only',humanApproval:false},
+ validationBinding:{schemaVersion:'tivdoc-dev-minimum-wage-validation-binding-v1',
+  authority:'engineering_tests_only',approvedLegalGoldenSet:false,approvedLegalGoldenCaseIds:[],
+  testSourcePath:'src/engine/calculations/dev-minimum-wage.test.ts'},
  sourceReviewPath:'docs/dev-financial-flow-source-review.md',
  requiredScenarioAssumptions:[
   'synthetic_adult_hourly_employee_general_182_framework',
@@ -43,14 +51,17 @@ export const DEV_MINIMUM_WAGE_POLICY=frozen({
  humanAttestations:[],legalGoldenApproval:false,
 } as const);
 
-const {content_sha256:parentHash,...parentRule}=MINIMUM_WAGE_HOURLY_SPEC;
-void parentHash;
 /** Keep the input's actual hours_per_month unit; only the RuleSpec explicitly
- * divides by one of that unit to create the dimensionless scaling operand. */
+ * divides by one of that unit to create the dimensionless scaling operand.
+ * This is a standalone engineering manifest. Historical parent provenance
+ * neither supplies executable fields nor imports a reference-tenant catalog. */
 export const DEV_MINIMUM_WAGE_RULE:RuleSpecPackage=createRuleSpecPackage({
- ...parentRule,
- rule_spec_id:'il.rulespec.minimum.wage.hourly.dev.comparison',rule_spec_version:'1.0.0',
+ schema_version:'tivdoc-rulespec-v0.6.0',
+ rule_spec_id:'il.rulespec.minimum.wage.hourly.dev.comparison',rule_spec_version:'1.1.0',
+ topic:'minimum_wage',catalog_boundary:'real_inactive',
+ source_version_ids:[DEV_MINIMUM_WAGE_POLICY.source.sourceVersionId],
  effective_period:{from:'2026-06-01',to:'2026-06-30'},
+ sectors:['general'],populations:['general'],
  facts:[
   {ref_id:'fact.regular.hours',value_kind:'rational',unit:'hours_per_month'},
   {ref_id:'fact.recorded.base.pay',value_kind:'money',unit:'currency.ils'},
@@ -64,6 +75,10 @@ export const DEV_MINIMUM_WAGE_RULE:RuleSpecPackage=createRuleSpecPackage({
   {node_id:'expected.minus.recorded',operation:'subtract',left_ref:'expected.regular.pay',right_ref:'fact.recorded.base.pay'},
  ],
  output_ref:'expected.minus.recorded',
+ // The required legacy hash slot binds an explicit absence-of-approval
+ // declaration, not a legal golden set or the former reference templates.
+ golden_case_set_sha256:legalOperationsSha256(DEV_MINIMUM_WAGE_POLICY.validationBinding),
+ resource_policy:{max_steps:8,max_depth:4,max_aggregate_items:8,max_integer_digits:32},
 });
 
 const parameterSeed={
@@ -89,7 +104,7 @@ const parameterSeed={
   golden_cases_sha256:DEV_MINIMUM_WAGE_RULE.golden_case_set_sha256,
   reviewer_decisions_sha256:legalOperationsSha256({engineeringOnly:true,humanAttestations:[],activationAllowed:false}),
  },
- decision_id:'legal.reference.il.decision.min_wage_hourly_divisor',branch:'182',
+ decision_id:DEV_MINIMUM_WAGE_POLICY.engineeringDecision.id,branch:'182',
 };
 export const DEV_MINIMUM_WAGE_PARAMETER:ParameterCandidate=frozen(parameterCandidateSchema.parse({
  ...parameterSeed,candidate_sha256:legalOperationsSha256(parameterSeed),

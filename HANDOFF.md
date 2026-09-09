@@ -1,3 +1,9 @@
+## DEV report deployment boundary repair — 2026-09-09
+
+CI on13f1429 passed typecheck/lint/unit/build but both closure runs (34315155095/34315150490) rejected a reference-tenant legal-quality import in the report bundle. The original48-check receipt is retained; 46 checks passed and the module graph failed in both modes. The closure scanner and all route/activation guards remain unchanged.
+
+The calculator now declares its entire inactive engineering RuleSpec1.1.0; policyv2 records the historical parent ID/hash only as provenance, a scenario-only decision and explicit absence of an approved legal golden set. No research runtime is imported. Focused calculator/contract/HTTP verification passes79 tests. Old QA artifacts were cleaned; the final DEV proof will generate fresh results using the new policy. Exact CI/Preview remains pending this checkpoint; no production action.
+
 ## Scoped DEV financial flow — engineering DB proof passes (2026-09-09)
 
 The bounded owner task now has an actual uploaded-PDF → V2/V2.1 injected extraction → identified synthetic cell confirmations → canonical parent → computed financial run/finding → same-run HTML/PDF path. See [the scoped handoff](docs/dev-financial-flow-handoff-2026-09-09-he.md). This does not activate real legal analysis or continue all P00–P13.
