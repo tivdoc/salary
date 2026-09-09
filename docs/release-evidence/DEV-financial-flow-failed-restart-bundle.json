@@ -1,0 +1,83 @@
+{
+  "verdict": "FAIL",
+  "gitSha": "686a66c362a88a2fee18322a3dd060d38ad44399",
+  "gitWorktreeDirty": true,
+  "migration": "20260909043527_dev_financial_analysis_flow.sql",
+  "migrationSha256": "4c850becd0cb7dbcf86b1552ecdb390088a190280cd5ec51cb9867bd0f3ce1b8",
+  "schemaTail": "20260909050400_document_metadata_readings.sql",
+  "schemaTailSha256": "eca5224233af913111f7d8a62ed782943796cf993573751d6e61972cc7ae67d6",
+  "schemaMigrationCount": 124,
+  "checks": [
+    "actual web reservation, non-upsert signed Storage transfer, byte validation and commit feed the actual durable V2 extraction adapter and saved receipt; provider output is explicitly injected",
+    "the actual SQL write boundary refuses a missing-hours question when the persisted extraction already contains regular hours",
+    "raw V2 high-confidence candidates remain unconfirmed and cannot produce a financial run; the original canonical confirmation gate refuses them",
+    "failure immediately before financial save rolls back parent analysis, financial result and finding while the committed source and extraction receipt remain available",
+    "a hand-set independent 100-hour and 3300-ILS fixture produces 3540 ILS expected and 240 ILS difference from its actual canonical parent and exact saved document version; no finding or report was seeded",
+    "concurrent retries and a newly opened independent worker connection return the identical committed report without duplicate findings or another provider pass; this is connection restart, not process restart"
+  ],
+  "confirmationChecks": [
+    {
+      "versionId": "f9998c47-e746-40d2-9309-546699c19ede",
+      "fields": [
+        "base_monthly_salary",
+        "gross_salary",
+        "hourly_rate",
+        "net_salary",
+        "regular_hours",
+        "salary_period",
+        "salary_type"
+      ],
+      "actor": "automated_known_synthetic_fixture_identity",
+      "humanReview": false,
+      "ocrConfidenceModified": false,
+      "receiptReused": true
+    }
+  ],
+  "processChecks": [],
+  "previewChecks": [],
+  "failure": "Build failed with 1 error:\nscripts/supabase-dev-guard/dev-credential.mts:269:21: ERROR: Top-level await is currently not supported with the \"cjs\" output format",
+  "cleanupFailure": null,
+  "runs": [
+    {
+      "runId": "366a4e94-889e-4f4e-86bb-ada5b0382cfd",
+      "inputRevision": 16,
+      "state": "calculated"
+    }
+  ],
+  "providerKind": "injected V2 transport; no network OCR",
+  "providerPasses": 1,
+  "distinctProviderInputs": [
+    "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+  ],
+  "independentExpected": {
+    "month": "2026-06",
+    "regularHours": "100",
+    "baseMinor": 330000,
+    "expectedMinor": 354000,
+    "gapMinor": 24000,
+    "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+    "humanLegalApproval": false
+  },
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionsRevoked": 2,
+  "storageObjectsRemoved": 1,
+  "sourceFiles": [
+    {
+      "name": "synthetic-june-2026-100-hours.pdf",
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "name": "synthetic-june-2026-missing-hours.pdf",
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    }
+  ],
+  "canonicalAuditRetained": true,
+  "uploadProof": "Actual web-role reserve/commit and signed private Storage bytes; no browser HTTP upload route in this proof",
+  "browserProofRequested": false,
+  "processRestartProofRequested": true,
+  "browserProof": false,
+  "processRestartProof": false,
+  "liveOcrProof": false,
+  "productionChanged": false
+}

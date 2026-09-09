@@ -1,3 +1,13 @@
+## Scoped DEV financial flow — engineering DB proof passes (2026-09-09)
+
+The bounded owner task now has an actual uploaded-PDF → V2/V2.1 injected extraction → identified synthetic cell confirmations → canonical parent → computed financial run/finding → same-run HTML/PDF path. See [the scoped handoff](docs/dev-financial-flow-handoff-2026-09-09-he.md). This does not activate real legal analysis or continue all P00–P13.
+
+Existing isolated DEV schema was upgraded through124 after rollback/ACL/scope probes. P06 passes15+8 actual DB checks again. The financial harness passes12 integrated checks, two sets of exact-source confirmations, and independent Node-process replay: three immutable runs, two findings, only one current result,240ILS independently expected difference. Two QA cases/identities and two Storage objects were removed; two machine sessions revoked. No finding/report was seeded. The confidence0.95 and reconciliation gates remain in place.
+
+The real adapter exposed two integration gaps: salary type/full-period readings lacked a question path, and gross reconciliation double-counted a known field's retained payroll row. Metadata collectionv2 preservesv1 and adds the two scoped questions. Conservative one-to-one row matching fixes the double count; 74 extraction tests pass, including22 new regressions. Failed proof receipts retain the row-score, metadata, double-count, unavailable pdftotext and CJS credential-CLI harness failures. Full lint passes with one pre-existing warning. Financial PDF was visually inspected after moving its long trace hash into a hash block.
+
+Current source checkpoint still needs exact CI/Preview verification. Last deployed Preview remains ea0875a until the next explicit checkpoint is verified; no production action. Actual branch-specific OCR credential is empty and local OCR credential absent. All provider receipts in this flow are injected, and fixture confirmations are automated synthetic-identity actions, not human/legal attestations.
+
 ## Scoped DEV financial-flow task resumed — P06 base repaired (2026-09-09)
 
 The owner now authorizes only one DEV saved-payslip-to-financial-report flow, plus repairing the 695cc25 base and P06. This supersedes the pause below and does not resume all P00–P13. Two agents have separated ownership; parent owns migrations/deployments and serialized heavy verification. Current remote release base remained695cc25, clean; other task commits were not overwritten.

@@ -1,3 +1,5 @@
+import {DevFinancialReport} from "@/components/case/dev-financial-report";
+import {devFinancialCustomerReports,devFinancialPreviewEnabled} from "@/server/product/reports/dev-financial-customer";
 import { AI_REPORT_DISCLOSURE } from "@/server/product/reports/report-document";
 import { ReportOpen } from "@/components/case/report-open";
 import { ReportFindingActions } from "@/components/case/report-finding-actions";
@@ -30,9 +32,15 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
   let saved: CustomerReports | null = null;
   try { saved = await customerReports(item.case_id, session.identity_id, item.public_id); } catch { /* Distinct from an empty report list. */ }
 
+  let engineering:Awaited<ReturnType<typeof devFinancialCustomerReports>>=[];
+  let engineeringUnavailable=false;
+  if(devFinancialPreviewEnabled())try{engineering=await devFinancialCustomerReports(item.case_id,session.identity_id);}catch{engineeringUnavailable=true;}
+
   return (
     <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
-      {saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
+      {engineeringUnavailable?<p role="alert">לא ניתן לטעון את דוחות הניסוי ההנדסי כרגע. זו אינה תוצאת ניתוח.</p>:null}
+      {engineering.map(report=><DevFinancialReport key={report.run.run_id} report={report}/>)}
+      {engineering.length>0 ? null : saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
         : saved.reports.length === 0 ? <div><h1>הדוח עדיין לא מוכן</h1>{saved.checkPeriodMonth ? <p>חודש הבדיקה: <bdi>{saved.checkPeriodMonth}</bdi></p> : null}<p>כשיפורסם דוח לתיק, הוא יופיע כאן. אפשר לראות את המצב והבקשות בעמוד התיק.</p></div>
         : saved.reports.map((report) => <article key={report.id} aria-label={`דוח שפורסם ${report.publishedAt}`}>
           <ReportOpen publicId={item.public_id} reportId={report.id}/><p>פורסם: {new Date(report.publishedAt).toLocaleDateString('he-IL')} · גרסה {report.document?.revision??'היסטורית'}{report.state==='superseded'?' · הוחלפה בגרסה חדשה':report.state==='recheck_required'?' · בבדיקה חוזרת':''}</p>

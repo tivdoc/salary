@@ -7,6 +7,7 @@ const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
 export const DOCUMENT_FIELD_CONFIRMATION_ANSWERS=['כן, בדקתי במסמך והערך נכון','הערך שונה במסמך','לא ניתן לקרוא את השדה'] as const;
 export const confirmationFieldLabels={
+ salary_type:'סוג השכר',salary_period:'תקופת השכר',
  base_monthly_salary:'שכר הבסיס החודשי',hourly_rate:'השכר לשעה',gross_salary:'שכר ברוטו',net_salary:'שכר נטו',
  regular_hours:'מספר השעות הרגילות',overtime_125_hours:'שעות נוספות 125%',overtime_150_hours:'שעות נוספות 150%',
  pension_base:'השכר המבוטח לפנסיה',travel_amount:'החזר הנסיעות',convalescence_amount:'דמי הבראה',
@@ -50,7 +51,9 @@ export function documentFieldQuestion(target:DocumentFieldTarget){
  // Display the normalized, hashed value. Raw OCR text is untrusted evidence,
  // never a replacement instruction or an independently parsed salary amount.
  let shown:string;
- if(value&&typeof value==='object'&&'minor_units' in value){const minor=BigInt(value.minor_units),absolute=minor<BigInt(0)?-minor:minor;shown=`${minor<BigInt(0)?'-':''}${absolute/BigInt(100)}.${String(absolute%BigInt(100)).padStart(2,'0')} ${value.currency}`;}
+ if(candidate.field==='salary_type'&&candidate.normalized_value!==null)shown=({monthly:'חודשי',hourly:'שעתי',mixed:'משולב'} as const)[candidate.normalized_value];
+ else if(candidate.field==='salary_period'&&candidate.normalized_value!==null)shown=`מ־${candidate.normalized_value.start_date} עד ${candidate.normalized_value.end_date}`;
+ else if(value&&typeof value==='object'&&'minor_units' in value){const minor=BigInt(value.minor_units),absolute=minor<BigInt(0)?-minor:minor;shown=`${minor<BigInt(0)?'-':''}${absolute/BigInt(100)}.${String(absolute%BigInt(100)).padStart(2,'0')} ${value.currency}`;}
  else if(value&&typeof value==='object'&&'amount' in value)shown=`${value.amount} ${'unit' in value&&value.unit==='days'?'ימים':'unit' in value&&value.unit==='hours'?'שעות':'שעות בחודש'}`;
  else throw Error('REQUEST_FIELD_VALUE_UNSUPPORTED');
  return {code:`document_field:${saved.target_sha256}`,question:`בעמוד ${candidate.source.page} במסמך לחודש ${formatRequestMonth(saved.month)} קראנו ${confirmationFieldLabels[field.parse(candidate.field)]}: ${shown}. האם זה הערך שמופיע במסמך?`,

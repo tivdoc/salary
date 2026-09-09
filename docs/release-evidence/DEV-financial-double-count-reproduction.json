@@ -1,0 +1,23 @@
+{
+  "verdict": "REPRODUCED_BEFORE_FIX",
+  "base": "686a66c362a88a2fee18322a3dd060d38ad44399",
+  "testFile": "src/engine/extraction/validation-components.test.ts",
+  "tests": 20,
+  "failed": 8,
+  "passed": 12,
+  "exitCode": 1,
+  "actualIssue": "gross_component_mismatch",
+  "input": "one3300ILSbasefield+itsretained3300ILSrow;gross3300ILS",
+  "expected": "same source row counted once; real extra rows remain counted",
+  "reportedBy": "independent calculation_audit subagent",
+  "productionChanged": false,
+  "afterFix": {
+    "tests": 74,
+    "files": 4,
+    "newRegressionTests": 22,
+    "passed": 74,
+    "failed": 0,
+    "command": "node ./node_modules/vitest/vitest.mjs run src/engine/extraction/validation-components.test.ts src/engine/extraction/extraction.test.ts src/engine/extraction/v2.test.ts src/engine/extraction/v21.test.ts --maxWorkers=1 --reporter=verbose",
+    "confidenceThresholdChanged": false
+  }
+}

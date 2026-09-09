@@ -1,0 +1,14 @@
+{
+  "state": "APPLIED_ISOLATED_DEV",
+  "migration": "20260909050400_document_metadata_readings.sql",
+  "sha256": "eca5224233af913111f7d8a62ed782943796cf993573751d6e61972cc7ae67d6",
+  "schemaCount": 124,
+  "ddlRollbackVerified": true,
+  "existingSchemaUpgradeVerified": true,
+  "previousV1PolicyUnchanged": true,
+  "scopeAndAclProbes": true,
+  "database": "tivdoc_release_replay_20260907",
+  "project": "cpzrbidxftzqcfeqqusu",
+  "productionChanged": false,
+  "sha256Lf": "eca5224233af913111f7d8a62ed782943796cf993573751d6e61972cc7ae67d6"
+}

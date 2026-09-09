@@ -92,6 +92,42 @@ function moneyMinorUnits(field: NormalizedCandidateField | undefined) {
   return (field.normalized_value as { minor_units: number }).minor_units;
 }
 
+function representedComponentIds(extraction: NormalizedPayslipExtraction) {
+  const represented = new Set<string>();
+  const amountProjections = [
+    ["base_monthly_salary", "base_salary"],
+    ["travel_amount", "travel"],
+    ["convalescence_amount", "convalescence"],
+  ] as const;
+  for (const [fieldName, semanticKind] of amountProjections) {
+    const fields = extraction.fields.filter(field => field.field === fieldName);
+    const components = extraction.additional_components.filter(component => component.semantic_kind === semanticKind);
+    // V2 preserves a payroll row and projects its amount into a known field.
+    // Without an explicit row ID, collapse only an unambiguous one-to-one
+    // projection. Duplicate/conflicting observations retain their own gates.
+    if (fields.length !== 1 || components.length !== 1) continue;
+    const field = fields[0], component = components[0];
+    const value = field.normalized_value as { currency: string; minor_units: number } | null;
+    if (!value || !component.amount || component.amount_raw === null
+      || value.currency !== component.amount.currency || value.minor_units !== component.amount.minor_units
+      || field.raw_value.trim() !== component.amount_raw.trim()
+      || field.extraction_method !== component.extraction_method
+      || field.source.document_id !== extraction.document_id
+      || field.source.document_id !== component.source.document_id || field.source.page !== component.source.page) continue;
+    const fieldBox = field.source.bounding_box, componentBox = component.source.bounding_box;
+    if (fieldBox || componentBox) {
+      if (!fieldBox || !componentBox
+        || fieldBox.coordinate_space !== componentBox.coordinate_space
+        || fieldBox.x !== componentBox.x || fieldBox.y !== componentBox.y
+        || fieldBox.width !== componentBox.width || fieldBox.height !== componentBox.height) continue;
+    }
+    // Text fragments deliberately differ: the field carries evidence label +
+    // raw value, while the retained component carries the payroll row label.
+    represented.add(component.component_id);
+  }
+  return represented;
+}
+
 function hoursAmount(field: NormalizedCandidateField | undefined) {
   if (!field || !hoursFields.has(field.field) || field.normalized_value === null) return null;
   return (field.normalized_value as { amount: string }).amount;
@@ -355,7 +391,10 @@ export function validatePayslipGate0(
       .map((field) => firstField(extraction, field))
       .filter((field): field is NormalizedCandidateField => field !== undefined);
     const componentAmounts = knownComponentFields.map(moneyMinorUnits).filter((value): value is number => value !== null);
-    const additionalAmounts = extraction.additional_components.map((component) => component.amount?.minor_units ?? 0);
+    const represented = representedComponentIds(extraction);
+    const additionalAmounts = extraction.additional_components
+      .filter((component) => !represented.has(component.component_id))
+      .map((component) => component.amount?.minor_units ?? 0);
     if (gross !== null && grossField && componentAmounts.length > 0) {
       const componentSum = [...componentAmounts, ...additionalAmounts].reduce((sum, value) => sum + value, 0);
       if (nearPowerOfTenScale(BigInt(gross), BigInt(componentSum))) {

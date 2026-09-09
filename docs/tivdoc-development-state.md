@@ -1,5 +1,7 @@
 # Tivdoc development state
 
+Current scoped work (2026-09-09): [DEV financial-flow handoff](dev-financial-flow-handoff-2026-09-09-he.md). Base695cc25 CI repaired in686a66c; isolated schema124 upgrade and P06 purchased-scope DB checks pass. Uploaded synthetic PDF → injected V2 extraction → identified reading → computed engineering financial run → HTML/PDF DB proof passes, including stale/history/concurrent and independent process replay. Real OCR/legal activation and exact new Preview proof remain separate. The historical rolling queue below is not authorization to resume P00–P13.
+
 - wave: 2 of the rolling queue — journey-scope closure of `B-28` and `B-38`
 - base: 0e3c700b7dd9e603fc389d733fdc55672693aa13
 - head: pending

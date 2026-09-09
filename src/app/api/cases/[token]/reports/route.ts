@@ -1,3 +1,4 @@
+import {devFinancialCustomerReports,devFinancialPreviewEnabled} from '@/server/product/reports/dev-financial-customer';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {customerReports} from '@/server/product/reports/customer-reports';
@@ -17,6 +18,20 @@ export async function GET(request:Request,context:Context){
  try{
   const owner=await scope(context);if(!owner)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
   const url=new URL(request.url);const id=z.uuid().safeParse(url.searchParams.get('report'));if(!id.success)return new Response(null,{status:404});
+  if(url.searchParams.get('engineering')==='1'){
+   if(!devFinancialPreviewEnabled())return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   const [report]=await devFinancialCustomerReports(owner.item.case_id,owner.identity,id.data);
+   if(!report)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   if(!url.searchParams.has('version')){
+    if(!report.pdf)throw Error('DEV_FINANCIAL_PDF_MISSING');
+    return new Response(report.pdf,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="Tivdoc-dev-${report.run.run_id}.pdf"`}});
+   }
+   if(url.searchParams.get('version')!==report.run.source.version_id)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   const source=report.run.source,{data,error}=await getSupabaseAdmin().storage.from('salary-documents').download(source.path);
+   if(error||!data||data.size!==source.size)throw Error('DEV_FINANCIAL_SOURCE_MISSING');
+   const bytes=Buffer.from(await data.arrayBuffer());if(createHash('sha256').update(bytes).digest('hex')!==source.source_sha256)throw Error('DEV_FINANCIAL_SOURCE_CHANGED');
+   return new Response(bytes,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':source.mime,'Content-Disposition':`attachment; filename="source-${source.version_id}.${source.mime==='application/pdf'?'pdf':source.mime==='image/png'?'png':'jpg'}"`}});
+  }
   const saved=await customerReports(owner.item.case_id,owner.identity,owner.item.public_id);const report=saved.reports.find(r=>r.id===id.data);if(!report)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
   if(!url.searchParams.has('version'))return new Response(Buffer.from(savedReportPdf(report)),{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="Tivdoc-${owner.item.public_id}.pdf"`}});
   const version=z.uuid().safeParse(url.searchParams.get('version'));if(!version.success)return new Response(null,{status:404});

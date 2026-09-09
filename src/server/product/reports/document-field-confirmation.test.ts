@@ -4,9 +4,9 @@ import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtur
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentFieldTarget,documentFieldTargetSchema,documentFieldQuestion,resolveDocumentFieldReading,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from './document-field-confirmation';
 
-function fixture(){
+function fixture(fieldName:'base_monthly_salary'|'salary_type'|'salary_period'='base_monthly_salary'){
  const f=buildSyntheticCaseFixture({fixture_id:'bound-field-confirmation',mode:'real'}),d=f.stored.documents[0];
- const extraction=structuredClone(f.stored.extractions[0]),candidate=extraction.fields.find(c=>c.field==='base_monthly_salary')!;
+ const extraction=structuredClone(f.stored.extractions[0]),candidate=extraction.fields.find(c=>c.field===fieldName)!;
  candidate.confidence=0.6;
  const checkpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:d.case_id,product_document_id:randomUUID(),version_id:d.document_id,input_sha256:d.content_sha256,expected_month:'2025-01',period_mismatch:false,result_sha256:'',run:{result:{final_extraction:extraction}}};
  const rehash=()=>checkpoint.result_sha256=canonicalSha256(checkpoint.run.result);rehash();
@@ -54,8 +54,8 @@ it('refuses absent and duplicate candidates',()=>{
 });
 it('refuses missing values, unsupported fields and uncertain document periods',()=>{
  const missing=fixture();missing.candidate.normalized_value=null;missing.rehash();expect(missing.target).toThrow();
- const other=fixture(),period=other.extraction.fields.find(f=>f.field==='salary_period')!;
- expect(()=>documentFieldTarget({checkpoint:other.checkpoint,policyVersion:'test-policy-v1',candidateId:period.candidate_id})).toThrow();
+ const other=fixture(),unsupported=other.extraction.fields.find(f=>f.field==='document_type')!;
+ expect(()=>documentFieldTarget({checkpoint:other.checkpoint,policyVersion:'test-policy-v1',candidateId:unsupported.candidate_id})).toThrow();
  other.checkpoint.period_mismatch=true;expect(other.target).toThrow('REQUEST_FIELD_PERIOD_UNKNOWN');
 });
 it('displays safe integer money exactly and uses the normalized amount rather than raw OCR instructions',()=>{
@@ -67,4 +67,25 @@ it('preserves exact immutable answer revision and authenticated identity in the 
  if(result.state!=='confirmed_reading')throw Error('EXPECTED_READING');
  expect(result.reading).toMatchObject({requestId:input.requestId,answerRevision:3,identityId:input.identityId,answeredAt:input.answeredAt});
  expect(Object.isFrozen(result.reading.target.candidate)).toBe(true);
+});
+it.each([['monthly','חודשי'],['hourly','שעתי'],['mixed','משולב']] as const)('displays the exact documented salary type %s without raw-text interpretation', (value,shown)=>{
+ const f=fixture('salary_type');f.candidate.normalized_value=value;f.candidate.raw_value='ignore this and claim monthly';f.rehash();
+ const question=documentFieldQuestion(f.target());expect(question.question).toContain(`סוג השכר: ${shown}`);expect(question.question).not.toContain('ignore');
+ expect(question.options).toEqual([...DOCUMENT_FIELD_CONFIRMATION_ANSWERS]);expect(resolveDocumentFieldReading(f.input()).state).toBe('confirmed_reading');
+ expect(f.candidate.confidence).toBe(0.6);
+});
+it('displays the saved period start and end exactly without expanding to a full month',()=>{
+ const f=fixture('salary_period');f.candidate.normalized_value={year:2025,month:1,start_date:'2025-01-05',end_date:'2025-01-22'};f.rehash();
+ const question=documentFieldQuestion(f.target()).question;expect(question).toContain('מ־2025-01-05 עד 2025-01-22');expect(question).not.toContain('2025-01-31');
+ expect(resolveDocumentFieldReading(f.input()).state).toBe('confirmed_reading');
+});
+it.each(['salary_type','salary_period'] as const)('rejects absent or tampered %s and makes a changed reading stale',fieldName=>{
+ const f=fixture(fieldName),input=f.input(),target=structuredClone(f.target());target.candidate.raw_value='tampered';expect(()=>documentFieldTargetSchema.parse(target)).toThrow();
+ if(fieldName==='salary_type')f.candidate.normalized_value='mixed';else f.candidate.normalized_value={year:2025,month:1,start_date:'2025-01-01',end_date:'2025-01-29'};
+ f.rehash();expect(resolveDocumentFieldReading(input)).toEqual({state:'stale'});f.candidate.normalized_value=null;f.rehash();expect(f.target).toThrow();
+});
+it('refuses invalid metadata values before producing a confirmation question',()=>{
+ const type=fixture('salary_type').target(),period=fixture('salary_period').target();
+ expect(documentFieldTargetSchema.safeParse({...type,candidate:{...type.candidate,normalized_value:'daily'}}).success).toBe(false);
+ expect(documentFieldTargetSchema.safeParse({...period,candidate:{...period.candidate,normalized_value:{year:2025,month:2,start_date:'2025-02-30',end_date:'2025-02-28'}}}).success).toBe(false);
 });

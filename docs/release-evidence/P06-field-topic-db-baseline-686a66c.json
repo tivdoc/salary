@@ -27,7 +27,7 @@
     "suspending the exact pension entitlement cannot be substituted by the still-active salary purchase",
     "restoring the scoped entitlement again permits the necessary fields; rollback leaves no fixture questions before the separate concurrency and history proof"
   ],
-  "gitSha": "686a66c362a88a2fee18322a3dd060d38ad44399",
+  "gitSha": "695cc25672b6c0d423645ea2148b33af2a2e7f36",
   "topicScopeMigration": "20260909040919_document_field_purchased_topic_scope.sql",
   "topicScopeSha256": "855149bc605fac3453f12da4e8e2e324d75cf76c87b87977f78e0a4a3a1a8474",
   "failure": null,
