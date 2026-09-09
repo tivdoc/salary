@@ -7,6 +7,13 @@ function errorRecord(error: unknown): Record<string, unknown> {
   return typeof error === "object" && error !== null ? error as Record<string, unknown> : {};
 }
 
+/** Called only after the provider's structured contract has parsed. The bounded
+ * code distinguishes a local mapping failure without serializing error text,
+ * raw fields, or misclassifying a local exception as a provider outage. */
+export function classifyOpenAiMappingError(error:unknown):OpenAiExtractionErrorCode{
+ return errorRecord(error).name==='ZodError'?'local_mapping_validation_failed':'local_mapping_failed';
+}
+
 export function classifyOpenAiError(error: unknown): OpenAiExtractionErrorCode {
   const record = errorRecord(error);
   const status = typeof record.status === "number" ? record.status : null;

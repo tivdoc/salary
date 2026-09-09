@@ -16,6 +16,7 @@ type ModelConfidence = ValueCandidate["confidence"];
 
 const modelConfidence = { high: 0.94, medium: 0.72, low: 0.42 } as const;
 const qualityConfidence = { high: 0.96, medium: 0.76, low: 0.48 } as const;
+export const OPENAI_V2_SALARY_TYPE_MAPPING_POLICY='payslip-v2-salary-type-branch-isolation-v1' as const;
 
 function uuidFrom(seed: string) {
   const hex = createHash("sha256").update(seed).digest("hex").slice(0, 32).split("");
@@ -66,12 +67,15 @@ export function mapOpenAiV2Output(input: {
   allowedFields?: readonly PayslipFieldKey[];
 }): MappedOpenAiV2Pass {
   const output = openAiPayslipV2StructuredOutputSchema.parse(input.output);
-  if ((output.salary_type.documented_value === null) !== (output.salary_type.documented_raw_value === null)) {
-    throw new TypeError("Documented salary type value and raw evidence must be present together");
-  }
-  if ((output.salary_type.inferred_value === null) !== (output.salary_type.inference_basis.length === 0)) {
-    throw new TypeError("Inferred salary type and its basis must be present together");
-  }
+  // A malformed optional assessment is not evidence against unrelated cells.
+  // Omit only the invalid branch; never invent raw evidence or promote an
+  // inference into the documentary field. Keep the diagnostic in the receipt's
+  // hashed raw extraction, with no blanket confidence penalty on valid fields.
+  const documentedPairValid=(output.salary_type.documented_value===null)===(output.salary_type.documented_raw_value===null);
+  const inferredPairValid=(output.salary_type.inferred_value===null)===(output.salary_type.inference_basis.length===0)
+    &&new Set(output.salary_type.inference_basis).size===output.salary_type.inference_basis.length;
+  const salaryDiagnostics=[...(!documentedPairValid?['salary_type_documented_pair_invalid']:[]),
+    ...(!inferredPairValid?['salary_type_inferred_pair_invalid']:[])];
   const documentId = input.request.document.document_id;
   const allowed = input.allowedFields ? new Set(input.allowedFields) : null;
   const fields: RawCandidateField[] = [];
@@ -110,7 +114,7 @@ export function mapOpenAiV2Output(input: {
 
   let documentedCandidateId: string | null = null;
   if (
-    output.salary_type.documented_value !== null &&
+    documentedPairValid && output.salary_type.documented_value !== null &&
     output.salary_type.documented_raw_value !== null &&
     (!allowed || allowed.has("salary_type"))
   ) {
@@ -198,7 +202,7 @@ export function mapOpenAiV2Output(input: {
           candidate_id: documentedCandidateId,
         }
       : null,
-    inferred: output.salary_type.inferred_value && (!allowed || allowed.has("salary_type"))
+    inferred: inferredPairValid && output.salary_type.inferred_value && (!allowed || allowed.has("salary_type"))
       ? {
           value: output.salary_type.inferred_value,
           confidence: candidateConfidence(
@@ -218,6 +222,7 @@ export function mapOpenAiV2Output(input: {
   const pensionVisible = output.pension.visible && (!allowed || [...allowed].some((field) => field.startsWith("pension_") || field.startsWith("severance_")));
   const requiredFields: PayslipFieldKey[] = [];
   if (!allowed || allowed.has("salary_period")) requiredFields.push("salary_period");
+  if(!documentedPairValid&&(!allowed||allowed.has('salary_type')))requiredFields.push('salary_type');
 
   const extraction = extractionResultSchema.parse({
     extraction_id: input.request.extraction_id,
@@ -235,7 +240,7 @@ export function mapOpenAiV2Output(input: {
     additional_components: additionalComponents,
     sensitive_metadata: [],
     earnings_components_complete: output.earnings_components_complete,
-    warnings: output.warnings,
+    warnings: [...new Set([...output.warnings,...salaryDiagnostics])],
     provider: { provider_id: "openai", extractor_version: input.extractorVersion, model_version: input.model },
     operation: {
       duration_ms: input.durationMs,

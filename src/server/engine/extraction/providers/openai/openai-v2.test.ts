@@ -11,6 +11,7 @@ import { createOpenAiPayslipV21ExtractorFromEnv } from "./v21-adapter";
 import { mapOpenAiV2Output } from "./v2-mapper";
 import { buildOpenAiV2ResponsesRequest } from "./v2-request";
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import {classifyOpenAiMappingError} from './errors';
 
 const fixture = syntheticPayslipFixtures[0];
 
@@ -190,6 +191,20 @@ describe("OpenAI payslip V2 schema and mapping", () => {
   });
 });
 describe("OpenAI payslip V2 requests and safe logging", () => {
+  it.each(['mapping','provider-contract'] as const)('distinguishes a %s failure without exposing response content',async stage=>{
+    const source=structuredClone(output),logs:unknown[]=[];
+    if(stage==='mapping')source.totals.gross_candidates[0].warnings=['ambiguous_value','ambiguous_value'];
+    else source.totals.gross_candidates[0].raw_value='';
+    const extractor=new OpenAiPayslipV2PassExtractor({apiKey:'synthetic-test-key',model:'synthetic-model',timeoutMs:1000},
+      {transport:{async parse(){return {id:'synthetic-response-only',status:'completed',outputParsed:source,usage:null};}},log:entry=>logs.push(entry)});
+    const result=await extractor.extractPreparedPass({request:{...fixture.request,document:{...fixture.request.document,
+      mime_type:prepared.original.mime_type,content_sha256:prepared.original.sha256,size_bytes:prepared.original.bytes.length}},
+      prepared,kind:'first_pass',requestedFields:[]});
+    expect(result.extraction.error_code).toBe(stage==='mapping'?'local_mapping_validation_failed':'structured_output_validation_failed');
+    expect(result.provider_receipt?.provider_response_id).toBe('synthetic-response-only');
+    expect(JSON.stringify(logs)).not.toMatch(/raw_value|source_label|synthetic-test-key|file_data|image_url/);
+    expect(classifyOpenAiMappingError(new TypeError('private source text must never be logged'))).toBe('local_mapping_failed');
+  });
   it.each(['bytes','declared-hash','size','mime','crop'] as const)('refuses a changed prepared %s before invoking a provider',async changed=>{
     const parse=vi.fn();
     const extractor=new OpenAiPayslipV2PassExtractor({apiKey:'test-only',model:'test-model',timeoutMs:1000},{transport:{parse}});

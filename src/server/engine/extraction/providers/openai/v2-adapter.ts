@@ -21,7 +21,7 @@ import {
 import { toSafeEngineLog, type SafeEngineLog } from "@/server/engine/safe-logging";
 import { preprocessPayslipDocument, type PreparedPayslipDocument } from "../../preprocessing";
 import { resolveOpenAiExtractionConfig, type OpenAiExtractionConfig } from "./config";
-import { classifyOpenAiError, openAiExtractionErrorCodeSchema, type OpenAiExtractionErrorCode } from "./errors";
+import { classifyOpenAiError, classifyOpenAiMappingError, openAiExtractionErrorCodeSchema, type OpenAiExtractionErrorCode } from "./errors";
 import { createFailedOpenAiExtractionResult } from "./mapper";
 import { isSupportedOpenAiDocumentMimeType } from "./request";
 import { mapOpenAiV2Output, type MappedOpenAiV2Pass } from "./v2-mapper";
@@ -30,7 +30,7 @@ import {
   OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
 } from "./v2-prompt";
 import { buildOpenAiV2ResponsesRequest, type OpenAiV2ResponsesRequest } from "./v2-request";
-import type { OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {createOpenAiProviderReceipt,safeProviderIdentifier,type OpenAiProviderReceipt} from './provider-receipt';
 
@@ -236,9 +236,11 @@ export class OpenAiPayslipV2PassExtractor {
         return this.failed({...input,request,startedAt,code:'provider_source_page_mismatch',requestHash,response});
       const now = clock().toISOString();
       const durationMs = Math.max(0, Math.round(durationClock() - startedAt));
-      const mapped = mapOpenAiV2Output({
+      const output=openAiPayslipV2StructuredOutputSchema.parse(response.outputParsed);
+      let mapped:MappedOpenAiV2Pass;
+      try{mapped = mapOpenAiV2Output({
         request,
-        output: response.outputParsed,
+        output,
         model: response.model??this.config.model,
         extractorVersion: this.extractorVersion,
         durationMs,
@@ -246,7 +248,9 @@ export class OpenAiPayslipV2PassExtractor {
         tokenUsage: response.usage,
         extractedAt: now,
         ...(input.kind === "targeted_recovery" ? { allowedFields: input.requestedFields } : {}),
-      });
+      });}catch(error){
+        return this.failed({...input,request,startedAt,code:classifyOpenAiMappingError(error),requestHash,response});
+      }
       (this.options.log ?? (() => undefined))(toSafeEngineLog({
         event: "payslip_extraction",
         timestamp: now,

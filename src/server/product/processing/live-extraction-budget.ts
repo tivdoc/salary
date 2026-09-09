@@ -22,9 +22,17 @@ export const LIVE_EXTRACTION_BUDGET_POLICY=Object.freeze({
  sdkRetries:0,
 } as const);
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
+export const LIVE_EXTRACTION_REVIEWED_RETRY=Object.freeze({
+ version:'tivdoc-live-reviewed-attempt-v1',attemptRevision:2,reasonCode:'salary_type_mapping_isolation_after_14719d1',
+ sourceSha256s:['4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb',
+  '520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5'] as const,
+} as const);
+const reviewedRetrySchema=z.object({version:z.literal(LIVE_EXTRACTION_REVIEWED_RETRY.version),attemptRevision:z.literal(2),
+ reasonCode:z.literal(LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict();
+export type LiveExtractionReviewedRetry=z.infer<typeof reviewedRetrySchema>;
 const reservation=z.object({key:z.string(),sourceSha256:sha,requestSha256:sha,passKind:z.enum(['first_pass','targeted_recovery']),
  reservedMicroUsd:z.literal(25200),reservedAt:z.iso.datetime({offset:true}),
- receipt:z.unknown().nullable(),outcome:z.enum(['reserved_unknown','receipt_recorded'])}).strict();
+ receipt:z.unknown().nullable(),outcome:z.enum(['reserved_unknown','receipt_recorded']),reviewedRetry:reviewedRetrySchema.optional()}).strict();
 const ledgerSchema=z.object({version:z.literal('tivdoc-live-corpus-budget-v1'),model:z.literal('gpt-4o-mini-2024-07-18'),
  reservations:z.array(reservation).max(22)}).strict();
 export type LiveExtractionBudgetLedger=z.infer<typeof ledgerSchema>;
@@ -41,26 +49,43 @@ export function assertLiveExtractionBudgetModel(model:string,now:string){
 export function parseLiveExtractionBudgetLedger(input:unknown){
  const parsed=ledgerSchema.parse(input);
  if(new Set(parsed.reservations.map(r=>r.key)).size!==parsed.reservations.length
-  ||parsed.reservations.some(r=>r.key!==`${r.sourceSha256}:${r.passKind}`))throw Error('LIVE_BUDGET_LEDGER_INVALID');
+  ||parsed.reservations.some(r=>r.key!==`${r.sourceSha256}:${r.passKind}${r.reviewedRetry?':attempt-2':''}`
+   ||(r.reviewedRetry&&!LIVE_EXTRACTION_REVIEWED_RETRY.sourceSha256s.some(source=>source===r.sourceSha256))))throw Error('LIVE_BUDGET_LEDGER_INVALID');
+ for(const row of parsed.reservations.filter(r=>r.reviewedRetry)){
+  if(!parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&!prior.reviewedRetry)
+   ||parsed.reservations.some(other=>other.sourceSha256===row.sourceSha256&&other.reviewedRetry
+    &&other.reviewedRetry.codeRevision!==row.reviewedRetry!.codeRevision))throw Error('LIVE_BUDGET_RETRY_HISTORY_INVALID');
+ }
  return parsed;
 }
 export function reserveLiveExtractionPass(input:{ledger:LiveExtractionBudgetLedger;sourceSha256:string;requestSha256:string;
- passKind:'first_pass'|'targeted_recovery';now:string}){
+ passKind:'first_pass'|'targeted_recovery';now:string;reviewedRetry?:LiveExtractionReviewedRetry}){
  const ledger=parseLiveExtractionBudgetLedger(input.ledger);assertLiveExtractionBudgetModel(ledger.model,input.now);
- const key=`${input.sourceSha256}:${input.passKind}`;
- if(ledger.reservations.some(row=>row.key===key))throw Error('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
+ const reviewedRetry=input.reviewedRetry===undefined?undefined:reviewedRetrySchema.parse(input.reviewedRetry);
+ const previous=ledger.reservations.filter(row=>row.sourceSha256===input.sourceSha256);
+ if(reviewedRetry&&(!LIVE_EXTRACTION_REVIEWED_RETRY.sourceSha256s.some(source=>source===input.sourceSha256)
+  ||!previous.some(row=>!row.reviewedRetry)||previous.some(row=>row.outcome==='reserved_unknown')
+  ||previous.some(row=>row.reviewedRetry&&row.reviewedRetry.codeRevision!==reviewedRetry.codeRevision)))throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
+ const key=`${input.sourceSha256}:${input.passKind}${reviewedRetry?':attempt-2':''}`;
+ if(ledger.reservations.some(row=>row.key===key)
+  ||(!reviewedRetry&&previous.some(row=>row.passKind===input.passKind)))throw Error('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
  if(ledger.reservations.length>=LIVE_EXTRACTION_BUDGET_POLICY.maxPasses
   ||(ledger.reservations.length+1)*LIVE_EXTRACTION_BUDGET_POLICY.perPassReservedMicroUsd>LIVE_EXTRACTION_BUDGET_POLICY.maxReservedMicroUsd)
   throw Error('LIVE_BUDGET_EXHAUSTED');
  return parseLiveExtractionBudgetLedger({...ledger,reservations:[...ledger.reservations,{key,sourceSha256:input.sourceSha256,
   requestSha256:input.requestSha256,passKind:input.passKind,reservedMicroUsd:LIVE_EXTRACTION_BUDGET_POLICY.perPassReservedMicroUsd,
-  reservedAt:input.now,receipt:null,outcome:'reserved_unknown'}]});
+   reservedAt:input.now,receipt:null,outcome:'reserved_unknown',...(reviewedRetry?{reviewedRetry}:{})}]});
 }
 export function recordLiveExtractionPassReceipt(ledger:LiveExtractionBudgetLedger,receipt:OpenAiProviderReceipt){
  receipt=parseOpenAiProviderReceipt(receipt);
- const parsed=parseLiveExtractionBudgetLedger(ledger),key=`${receipt.source_sha256}:${receipt.pass_kind}`;
- const row=parsed.reservations.find(r=>r.key===key);
- if(!row||row.outcome!=='reserved_unknown'||receipt.origin!=='openai_live'||receipt.request_sha256!==row.requestSha256
+ const parsed=parseLiveExtractionBudgetLedger(ledger);
+ const pending=parsed.reservations.filter(r=>r.sourceSha256===receipt.source_sha256&&r.passKind===receipt.pass_kind
+  &&r.requestSha256===receipt.request_sha256&&r.outcome==='reserved_unknown');
+ const row=pending[0];
+ const responseAlreadyRecorded=receipt.provider_response_id!==null&&parsed.reservations.some(r=>r.outcome==='receipt_recorded'
+  &&(r.receipt as {provider_response_id?:unknown}|null)?.provider_response_id===receipt.provider_response_id);
+ if(pending.length!==1||!row||responseAlreadyRecorded||Date.parse(receipt.created_at)<Date.parse(row.reservedAt)
+  ||receipt.origin!=='openai_live'||receipt.request_sha256!==row.requestSha256
   ||receipt.requested_model!==parsed.model||(receipt.actual_model!==null&&receipt.actual_model!==parsed.model)
   ||(receipt.token_usage&&(receipt.token_usage.input_tokens>LIVE_EXTRACTION_BUDGET_POLICY.inputTokenCeiling
    ||receipt.token_usage.output_tokens>LIVE_EXTRACTION_BUDGET_POLICY.outputTokenCeiling)))throw Error('LIVE_BUDGET_RECEIPT_OUTSIDE_BOUND');

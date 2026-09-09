@@ -17,7 +17,8 @@ import {documentFieldTargetSchema,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from '../
 import {createLiveExtractionRuntime} from './live-extraction-runtime';
 import {readSavedExtractionProvenance} from './live-extraction-provenance';
 import {assertLiveExtractionBudgetModel,parseLiveExtractionBudgetLedger,preflightLiveExtractionRequest,
- reserveLiveExtractionPass,recordLiveExtractionPassReceipt,summarizeLiveExtractionBudget,LIVE_EXTRACTION_BUDGET_POLICY} from './live-extraction-budget';
+ reserveLiveExtractionPass,recordLiveExtractionPassReceipt,summarizeLiveExtractionBudget,LIVE_EXTRACTION_BUDGET_POLICY,LIVE_EXTRACTION_REVIEWED_RETRY,
+ type LiveExtractionReviewedRetry} from './live-extraction-budget';
 import type {OpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
 import {claimSavedDraftJob} from './saved-job-runtime';
 import {runSavedWorkerExtraction,type SavedWorkerTransactions} from './saved-extraction-worker';
@@ -30,8 +31,10 @@ vi.mock('server-only',()=>({}));
 it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV reports from stored synthetic files read by the actual SDK and identified literal confirmations',async()=>{
  if(process.env.VERCEL||process.env.NODE_ENV!=='test')throw Error('DEV_FINANCIAL_PROOF_BOUNDARY');
  const retain=process.env.TIVDOC_DEV_FINANCIAL_LIVE_RETAIN==='1';
+ const retryRequested=process.env.TIVDOC_LIVE_APPROVED_ATTEMPT==='2';
+ if(process.env.TIVDOC_LIVE_APPROVED_ATTEMPT!==undefined&&!retryRequested)throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
  const ownerRecipientFile=process.env.TIVDOC_DEV_OWNER_RECIPIENT_FILE??'../release-work/dev-owner-recipient.json';
- const ownerEmail=retain?z.object({verifiedBy:z.literal('connected Gmail profile'),allowlist:z.tuple([z.email()])})
+ const ownerEmail=retain?z.object({verifiedBy:z.literal('explicit owner authorization'),allowlist:z.tuple([z.email()])})
   .parse(JSON.parse(readFileSync(ownerRecipientFile,'utf8'))).allowlist[0].trim().toLowerCase():null;
  const runtime=createLiveExtractionRuntime();if(runtime.state!=='configured')throw Error(runtime.code);
  assertLiveExtractionBudgetModel(runtime.provider.model,new Date().toISOString());
@@ -49,11 +52,15 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
  let ledger=parseLiveExtractionBudgetLedger(JSON.parse(readFileSync(ledgerPath,'utf8')));
  if(ledger.model!==runtime.provider.model||ledger.reservations.length+4>LIVE_EXTRACTION_BUDGET_POLICY.maxPasses
   ||(ledger.reservations.length+4)*LIVE_EXTRACTION_BUDGET_POLICY.perPassReservedMicroUsd>LIVE_EXTRACTION_BUDGET_POLICY.maxReservedMicroUsd
-  ||ledger.reservations.some(row=>inputs.some(input=>input.sha256===row.sourceSha256)))throw Error('LIVE_BUDGET_REPLAY_OR_CAPACITY');
+  ||ledger.reservations.some(row=>inputs.some(input=>input.sha256===row.sourceSha256)
+   &&(!retryRequested||row.reviewedRetry!==undefined||row.outcome==='reserved_unknown')))throw Error('LIVE_BUDGET_REPLAY_OR_CAPACITY');
  const ledgerBefore=summarizeLiveExtractionBudget(ledger);let budgetLock:number|undefined;
  const persistLedger=()=>{const handle=openSync(ledgerPath,'w');try{writeFileSync(handle,JSON.stringify(ledger,null,2)+'\n');fsyncSync(handle);}finally{closeSync(handle);}};
  const schemaEvidence:unknown[]=[],providerAttempts:{sourceSha256:string;passKind:string;receiptConfirmed:boolean}[]=[];
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim().length>0;
+ const reviewedRetry:LiveExtractionReviewedRetry|undefined=retryRequested?{version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:2,
+  reasonCode:LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode,codeRevision:process.env.TIVDOC_LIVE_RETRY_CODE_REVISION??''}:undefined;
+ if(reviewedRetry&&(reviewedRetry.codeRevision!==gitSha||dirty))throw Error('LIVE_BUDGET_RETRY_CODE_REVISION');
  let seeded=false,cleaned=false,storageCleaned=false,removedIdentities=0,removedCases=0,activeTransactions=0,failBeforeSave=false,completed=false,retained=false,phase='preflight',failure:unknown=null,cleanupFailure:unknown=null;
  const own=()=>writeFileSync(ownedFile,JSON.stringify({caseIds:cases.map(c=>c.id),identities:cases.map(c=>c.identity).filter(Boolean),cases,paths,retained,gitSha,directory,qaLabel:'Synthetic DEV live financial flow',scope:'Only these fresh QA cases and object paths in isolated DEV; machine credentials are private. Preserve existing identities. No customer session or OTP was created.'},null,2));
  own();
@@ -74,7 +81,7 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
    throw Error('LIVE_BUDGET_UNAPPROVED_SOURCE');
   const preflight=await preflightLiveExtractionRequest({model:runtime.provider.model,prepared:input.prepared,
    sourceSha256:source.sha256,kind:input.kind,requestedFields:input.requestedFields,now:new Date().toISOString()});
-  ledger=reserveLiveExtractionPass({ledger,sourceSha256:source.sha256,requestSha256:preflight.requestSha256,passKind:input.kind,now:new Date().toISOString()});persistLedger();
+  ledger=reserveLiveExtractionPass({ledger,sourceSha256:source.sha256,requestSha256:preflight.requestSha256,passKind:input.kind,now:new Date().toISOString(),reviewedRetry});persistLedger();
   const attempt={sourceSha256:source.sha256,passKind:input.kind,receiptConfirmed:false};providerAttempts.push(attempt);providerHashes.push(source.sha256);
   writeFileSync(`${directory}/provider-attempts.json`,JSON.stringify(providerAttempts,null,2)+'\n');
   const pass=await forward(input);
@@ -232,7 +239,7 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
     schemaEvidence,checks,confirmationChecks,provenanceChecks,failure,cleanupFailure,runs,
     providerKind:'openai_live',providerInvocationEntered:providerAttempts.length,providerReceiptConfirmedCalls:providerAttempts.filter(v=>v.receiptConfirmed).length,
     providerCalled:providerAttempts.some(v=>v.receiptConfirmed)?true:providerAttempts.length?null:false,
-    providerReceipts,distinctProviderInputs:[...new Set(providerHashes)],budgetBefore:ledgerBefore,budgetAfter:summarizeLiveExtractionBudget(ledger),
+    providerReceipts,distinctProviderInputs:[...new Set(providerHashes)],budgetBefore:ledgerBefore,budgetAfter:summarizeLiveExtractionBudget(ledger),reviewedRetry:reviewedRetry??null,
     independentExpected:DEV_FINANCIAL_ORACLE,syntheticCasesRemoved:removedCases,syntheticIdentitiesRemoved:removedIdentities,
     machineSessionsRevoked:cleaned?2:0,storageObjectsRemoved:storageCleaned?paths.length:0,
     sourceFiles:inputs.map(i=>({name:i.name,sha256:i.sha256})),canonicalAuditRetained:true,retainedForOwnerBrowser:retained,

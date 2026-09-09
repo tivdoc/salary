@@ -1,8 +1,8 @@
 import {describe,it,expect} from 'vitest';
-import {normalizeSalaryPeriod,normalizePayslipExtraction,PAYSLIP_NORMALIZATION_POLICY_VERSION} from './normalization';
-import {syntheticPayslipFixtures} from './fixtures/source-fixtures';
-import {validatePayslipGate0} from './validation';
-import {assessExtractionConfidence} from './confidence-policy';
+import {normalizeSalaryPeriod,normalizePayslipExtraction,PAYSLIP_NORMALIZATION_POLICY_VERSION} from './normalization.ts';
+import {syntheticPayslipFixtures} from './fixtures/source-fixtures.ts';
+import {validatePayslipGate0} from './validation.ts';
+import {assessExtractionConfidence} from './confidence-policy.ts';
 
 // Exact visible raw period returned by the live SDK for legacy clear and the
 // Hebrew raster on 2026-09-09. This test reuses only the literal string; it is
