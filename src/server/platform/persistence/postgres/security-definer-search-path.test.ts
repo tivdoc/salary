@@ -35,7 +35,12 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // and capability definitions, then one snapshot-bound enqueue replacement.
 // All14 are reviewed against the exact DEV/role/recipient gates and exhaustive
 // empty-search-path assertion below; no function or migration is excluded.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 274;
+// June collection128–130: current-source predicate and answer trigger are
+// internal-only; request opening is verified-worker-only; state reads use the
+// existing identified web/service boundary. Four new definitions, all covered
+// by the exhaustive assertion and the actual DEV ACL receipt in the handoff.
+// The forward migrations replace existing function bodies and retain ACLs.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 278;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

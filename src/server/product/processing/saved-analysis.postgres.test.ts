@@ -1,4 +1,5 @@
-import {it,expect} from 'vitest';
+import {it,expect,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
 import pg from 'pg';
 import {randomUUID} from 'node:crypto';
 import {writeFileSync} from 'node:fs';

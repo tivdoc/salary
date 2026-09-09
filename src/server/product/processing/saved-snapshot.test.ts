@@ -1,4 +1,5 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresStatement,PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
