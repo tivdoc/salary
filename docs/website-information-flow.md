@@ -1,3 +1,5 @@
+> Latest revision: [salary-first opening and five-question order](website-salary-opening.md). The previous order and density measurements below are historical.
+
 # Website information flow — 9 September 2026
 
 Application source: a92151ae3a6392634aaf44149b45c9f4890e1602. Vercel Git Preview dpl_F6dyhYakhBVTnuAzY1CdfD28tvo4 is READY and was tested remotely. Branch: codex/website-review-full; integration PR: https://github.com/tivdoc/salary/pull/3 .
