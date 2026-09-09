@@ -29,9 +29,14 @@ export async function deliverNotificationOutbox(db:CaseAccessDb,workerId:string,
  key(secret);
  const rows=await db.rpc<{delivery_id:string;encrypted_payload:unknown;fencing_token:number}>('case_notification_outbox_claim',{target_worker:workerId});
  const row=rows[0];if(!row)return null;
+ return deliverClaimedNotification(db,row,workerId,secret,provider);
+}
+
+/** Shared receipt path; the caller has already acquired its appropriately scoped lease. */
+export async function deliverClaimedNotification(db:CaseAccessDb,row:{delivery_id:string;encrypted_payload:unknown;fencing_token:number},workerId:string,secret:string,provider:NotificationProvider):Promise<NotificationOutcome>{
  const message=decryptNotification(row.encrypted_payload,row.delivery_id,secret);
  const outcome=await sendNotification(message,provider);
- await db.rpc('case_notification_outbox_finish',{target_id:row.delivery_id,target_worker:workerId,target_fence:row.fencing_token,target_provider_id:outcome.provider_message_id??null,target_error:outcome.error_code??(outcome.state==='sent'?'provider_receipt_missing':null)});
+ await db.rpc('case_notification_outbox_finish',{target_id:row.delivery_id,target_worker:workerId,target_fence:row.fencing_token,target_provider_id:outcome.provider_message_id??null,target_error:outcome.error_code??(outcome.state==='sent'&&!outcome.provider_message_id?'provider_receipt_missing':null)});
  return outcome;
 }
 

@@ -1,0 +1,10 @@
+{
+  "runId": "603d1e29-a93a-41a0-a280-877ec1b35d3c",
+  "removedCases": 2,
+  "removedRemainingIdentity": 1,
+  "revokedCapabilities": 2,
+  "retainedBudgetAudit": true,
+  "originalEightChecksPassed": true,
+  "reason": "test cleanup omitted required tenant context; recovered with original RLS intact",
+  "productionChanged": false
+}

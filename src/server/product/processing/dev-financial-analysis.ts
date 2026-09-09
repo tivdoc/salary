@@ -8,6 +8,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {renderDevFinancialArtifacts} from '../reports/dev-financial-artifacts';
 import {sourceJobSchema,type SourceJob} from './source-dispatch';
 import {runSavedWorkerMonth} from './saved-worker';
+import {readSavedExtractionProvenance} from './live-extraction-provenance';
 import {savedMonthIdempotencyKey} from './saved-order-scope';
 import {savedAnalysisId} from './saved-draft-report';
 import {DEV_FINANCIAL_SCHEMA,devFinancialFacts,devFinancialFinding,devHoursReadingSchema,devHoursRequestCode,parseDevFinancialRun,assertDevFinancialScenario,devFinancialSourcePage} from './dev-financial-contract';
@@ -15,7 +16,7 @@ import {DEV_FINANCIAL_SCHEMA,devFinancialFacts,devFinancialFinding,devHoursReadi
 /** Call inside the provisioned worker transaction. The actual DB boundary
  * requires an allowlisted DEV database and synthetic QA case. No live catalog,
  * canonical finding writer or ordinary report publication gate is changed. */
-export async function runSavedDevFinancialMonth(input:{context:PostgresTransactionContext;job:SourceJob;orderId:string}){
+export async function runSavedDevFinancialMonth(input:{context:PostgresTransactionContext;job:SourceJob;orderId:string;parent?:Awaited<ReturnType<typeof runSavedWorkerMonth>>}){
  const job=sourceJobSchema.parse(input.job);z.uuid().parse(input.orderId);
  const {context}=input;
  const selected=await context.client.query(statement('dev_financial_admit','select private.dev_financial_admit($1::uuid,$2::uuid,$3,$4) source',[job.case_id,input.orderId,job.revision,job.input_sha256]));
@@ -23,6 +24,7 @@ export async function runSavedDevFinancialMonth(input:{context:PostgresTransacti
  const source=z.object({document_id:z.uuid(),version_id:z.uuid(),source_sha256:z.string(),checkpoint_sha256:z.string(),path:z.string(),mime:z.string(),size:z.coerce.number(),public_id:z.string(),request_id:z.uuid().nullable(),
   checkpoint:z.object({run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema})})}),input:z.object({answers:z.array(z.record(z.string(),z.unknown())).optional()})}).parse(selected.rows[0].source);
  const extraction=source.checkpoint.run.result.final_extraction;
+ const provenance=readSavedExtractionProvenance(z.object({checkpoint:z.unknown()}).parse(selected.rows[0].source).checkpoint);
  // The real V2 adapter retains base/hourly rows in additional_components.
  // Permit exactly one paid base row and at most one quantity/rate-only row;
  // a second paid component would invalidate this deliberately narrow scenario.
@@ -37,7 +39,7 @@ export async function runSavedDevFinancialMonth(input:{context:PostgresTransacti
   // and the existing P95 critical-field gate remain separately enforced.
   ||extraction.additional_components.some(c=>c.confidence<0.94||c.warning_flags.length||c.normalization_warnings.length)
   ||extraction.fields.find(f=>f.field==='salary_type')?.normalized_value!=='hourly')throw Error('DEV_FINANCIAL_SCENARIO_UNSUPPORTED');
- const parent=await runSavedWorkerMonth({context,job,orderId:input.orderId,month:'2026-06'});
+ const parent=input.parent??await runSavedWorkerMonth({context,job,orderId:input.orderId,month:'2026-06'});
  if(!parent.bundle)throw Error('DEV_FINANCIAL_PARENT_REQUIRED');
  const parentFacts=employmentSnapshotSchema.parse(z.object({facts:z.unknown()}).parse(parent.stages.find(s=>s.stage==='canonical_facts')?.payload).facts);
  assertDevFinancialScenario(parentFacts,source.version_id);
@@ -61,7 +63,7 @@ export async function runSavedDevFinancialMonth(input:{context:PostgresTransacti
   parent_facts:parentFacts,parent_facts_sha256:canonicalSha256(parentFacts),facts,facts_sha256:canonicalSha256(facts),reading,
   source:{document_id:source.document_id,version_id:source.version_id,source_sha256:source.source_sha256,checkpoint_sha256:source.checkpoint_sha256,path:source.path,mime:source.mime,size:source.size,page:devFinancialSourcePage(parentFacts,source.version_id)},
   policy_sha256:canonicalSha256(DEV_MINIMUM_WAGE_POLICY),created_at:parentFacts.created_at,calculation,finding:devFinancialFinding(runId,calculation),request_id:requestId,
-  scenario:'synthetic_adult_hourly_general_182_regular_base_only',extraction_provider:'injected_test_provider'});
+  scenario:'synthetic_adult_hourly_general_182_regular_base_only',extraction_provider:provenance.kind,extraction_provenance:provenance});
  const artifacts=renderDevFinancialArtifacts(run);
  const result=await context.client.query(statement('dev_financial_save','select private.dev_financial_save($1::jsonb,$2,$3,$4) value',
   [JSON.stringify(run),canonicalSha256(run),artifacts.html,Buffer.from(artifacts.pdf).toString('base64')]));

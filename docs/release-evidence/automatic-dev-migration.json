@@ -1,0 +1,11 @@
+{
+  "state": "APPLIED_ISOLATED_DEV",
+  "migration": "20260909151533_automatic_dev_worker_registry.sql",
+  "sha256": "0a280fa29890553ff5b7f52c8dd1f0c642b9d76ffc042be6d964f0f31e0e7e2d",
+  "database": "tivdoc_release_replay_20260907",
+  "project": "cpzrbidxftzqcfeqqusu",
+  "ddlRollbackVerified": true,
+  "upgradeVerified": true,
+  "policyAndAclProbes": true,
+  "productionChanged": false
+}

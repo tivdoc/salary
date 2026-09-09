@@ -9,7 +9,7 @@ import type {DevFinancialRun} from '../../src/server/product/processing/dev-fina
 import type {ReservedFile} from '../../src/server/product/documents/upload.ts';
 
 type Input={stage:'missing'|'completed';cases:{publicId:string;session:string}[];first:ReservedFile;second:ReservedFile;
- initial:DevFinancialRun;missing:DevFinancialRun;answered?:DevFinancialRun;directory:string;gitSha:string};
+ initial:DevFinancialRun;missing:DevFinancialRun;answered?:DevFinancialRun;directory:string;gitSha:string;automatic?:boolean};
 /** Called by the actual DB/Storage flow before its exact QA cleanup. It neither
  * seeds analysis nor supplies a financial result; it reads the hosted customer
  * projection and enters one identified missing-input answer through its UI. */
@@ -64,7 +64,7 @@ export async function verifyDevFinancialPreview(input:Input){
     await page.screenshot({timeout:10000,path:`${directory}/answered-request.png`,fullPage:false});
    });
    await check('answer invalidates the previous financial results before the next worker run',async()=>{
-    assert.equal((await page.goto(reportUrl,{waitUntil:'domcontentloaded'}))?.status(),200);assert.equal(await page.locator('[data-current="true"]').count(),0);
+    assert.equal((await page.goto(reportUrl,{waitUntil:'domcontentloaded'}))?.status(),200);if(input.automatic){assert.equal(await page.locator(`[data-financial-run="${input.initial.run_id}"][data-current="true"], [data-financial-run="${input.missing.run_id}"][data-current="true"]`).count(),0);}else assert.equal(await page.locator('[data-current="true"]').count(),0);
    });
   }else{
    const run=input.answered;assert.ok(run);

@@ -1,4 +1,4 @@
-import {DEV_FINANCIAL_DISCLOSURE} from '@/server/product/processing/dev-financial-contract';
+import {devFinancialDisclosure} from '@/server/product/processing/dev-financial-contract';
 import {DEV_MINIMUM_WAGE_POLICY} from '@/engine/calculations/dev-minimum-wage';
 import {devFinancialRows} from '@/server/product/reports/dev-financial-artifacts';
 import type {DevCustomerFinancialReport} from '@/server/product/reports/dev-financial-customer';
@@ -6,7 +6,7 @@ import type {DevCustomerFinancialReport} from '@/server/product/reports/dev-fina
 export function DevFinancialReport({report}:{report:DevCustomerFinancialReport}){
  const {run,current}=report,url=`/api/cases/${run.public_id}/reports?engineering=1&report=${run.run_id}`;
  return <article aria-label="דוח ניסוי הנדסי" data-financial-run={run.run_id} data-current={String(current)} style={{minWidth:0,overflowWrap:'anywhere'}}>
-  <h1>דוח כספי — ניסוי הנדסי בלבד</h1><p>{DEV_FINANCIAL_DISCLOSURE}</p>
+  <h1>דוח כספי — ניסוי הנדסי בלבד</h1><p>{devFinancialDisclosure(run)}</p>
   {!current?<p role="status">גרסה היסטורית — הקלט השתנה. אין לראות בה תוצאה עדכנית.</p>:null}
   <p>ההנחות הסינתטיות: עובד בגיר בשכר שעתי, מסגרת כללית של 182 שעות, חודש ידוע ורכיב בסיס יחיד עבור השעות הרגילות. אין כאן הוכחה שהדין חל או שהמעסיק חייב כסף.</p>
   <table style={{width:'100%',tableLayout:'fixed'}}><thead><tr><th style={{width:'35%'}}>פרט</th><th>ערך</th></tr></thead><tbody>{devFinancialRows(run).map(([label,value])=><tr key={label}><th>{label}</th><td><bdi>{value}</bdi></td></tr>)}</tbody></table>

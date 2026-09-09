@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {DEV_FINANCIAL_DISCLOSURE,parseDevFinancialRun,type DevFinancialRun} from '../processing/dev-financial-contract';
+import {devFinancialDisclosure,parseDevFinancialRun,type DevFinancialRun} from '../processing/dev-financial-contract';
 import {DEV_MINIMUM_WAGE_POLICY,DEV_MINIMUM_WAGE_RULE} from '@/engine/calculations/dev-minimum-wage';
 import {renderDeterministicRtlDocument,type RtlBlock} from '@/server/reports/deterministic-hebrew-pdf';
 
@@ -8,6 +8,7 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export function devMoney(minor:number){const value=BigInt(minor),absolute=value<BigInt(0)?-value:value;return `${value<BigInt(0)?'-':''}${absolute/BigInt(100)}.${String(absolute%BigInt(100)).padStart(2,'0')}`;}
 export function devFinancialRows(run:DevFinancialRun):string[][]{
  const rows=[['חודש','יוני 2026'],['מזהה הניתוח הכספי',run.run_id],['מזהה ניתוח המקור',run.parent_run_id],['גרסת קלט',String(run.input_revision)],['מסמך',run.source.document_id],['גרסת מסמך',run.source.version_id],['עמוד',String(run.source.page)],['כלל',`${DEV_MINIMUM_WAGE_RULE.rule_spec_id}@${DEV_MINIMUM_WAGE_RULE.rule_spec_version}`],['גרסת פרמטר',DEV_MINIMUM_WAGE_POLICY.parameterVersion]];
+ if(run.extraction_provenance)rows.push(['מקור החילוץ',run.extraction_provider],['עקבות ספק',run.extraction_provenance.receipts.map(r=>`${r.actual_model??r.requested_model}; ${r.provider_request_id??r.provider_response_id??'ללא מזהה ספק'}`).join('; ')]);
  if(run.calculation.state==='calculated'){
   const hours=run.calculation.trace.inputs.find(i=>i.input_id==='fact.regular.hours')?.value;
   const rate=run.calculation.trace.inputs.find(i=>i.input_id==='parameter.hourly.floor')?.value;
@@ -33,8 +34,8 @@ export function devFinancialRows(run:DevFinancialRun):string[][]{
 export function renderDevFinancialArtifacts(candidate:unknown){
  const run=parseDevFinancialRun(candidate),rows=devFinancialRows(run),title='דוח כספי — ניסוי הנדסי בלבד';
  const explanation='ההנחות הסינתטיות: עובד בגיר בשכר שעתי, מסגרת כללית של 182 שעות, חודש ידוע ורכיב בסיס יחיד עבור השעות הרגילות. אין כאן הוכחה שהדין חל או שהמעסיק חייב כסף.';
- const html=`<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>${title}</title><body><h1>${title}</h1><p>${DEV_FINANCIAL_DISCLOSURE}</p><p>${explanation}</p><table><tbody>${rows.map(r=>`<tr><th>${escape(r[0])}</th><td><bdi>${escape(r[1])}</bdi></td></tr>`).join('')}</tbody></table><p>SHA-256 מקור: <bdi>${run.source.source_sha256}</bdi></p><p>מקור פרמטר: <a href="${escape(DEV_MINIMUM_WAGE_POLICY.source.url)}">ביטוח לאומי — טבלת שכר מינימום</a></p><p>המקור משמש להשוואה הנדסית; הכלל והפרמטר אינם פעילים בשירות.</p>${run.reading?'<p>מספר השעות הוזן בתשובת לקוח מזוהה, ולא נקרא בידי ספק OCR.</p>':''}</body></html>`;
- const blocks:RtlBlock[]=[{kind:'heading',level:1,text:title},{kind:'paragraph',text:DEV_FINANCIAL_DISCLOSURE},{kind:'paragraph',text:explanation},
+ const html=`<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>${title}</title><body><h1>${title}</h1><p>${escape(devFinancialDisclosure(run))}</p><p>${explanation}</p><table><tbody>${rows.map(r=>`<tr><th>${escape(r[0])}</th><td><bdi>${escape(r[1])}</bdi></td></tr>`).join('')}</tbody></table><p>SHA-256 מקור: <bdi>${run.source.source_sha256}</bdi></p><p>מקור פרמטר: <a href="${escape(DEV_MINIMUM_WAGE_POLICY.source.url)}">ביטוח לאומי — טבלת שכר מינימום</a></p><p>המקור משמש להשוואה הנדסית; הכלל והפרמטר אינם פעילים בשירות.</p>${run.reading?'<p>מספר השעות הוזן בתשובת לקוח מזוהה, ולא נקרא בידי ספק OCR.</p>':''}</body></html>`;
+ const blocks:RtlBlock[]=[{kind:'heading',level:1,text:title},{kind:'paragraph',text:devFinancialDisclosure(run)},{kind:'paragraph',text:explanation},
   {kind:'table',columns:['פרט','ערך'],rows:rows.filter(r=>r[0]!=='SHA-256 עקבת חישוב')},
   ...(run.calculation.state==='calculated'?[{kind:'hash' as const,label:'SHA-256 עקבת חישוב',value:run.calculation.trace.trace_sha256}]:[]),
   {kind:'hash',label:'SHA-256 מקור',value:run.source.source_sha256},

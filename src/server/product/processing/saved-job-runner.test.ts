@@ -4,7 +4,7 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {SOURCE_JOB_KIND} from './source-dispatch';
-import {runSavedDraftJob} from './saved-job-runner';
+import {runSavedDraftJob,type SavedMonthCompletion} from './saved-job-runner';
 
 const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn(),extract:vi.fn(),month:vi.fn(),complete:vi.fn()}));
 vi.mock('server-only',()=>({}));
@@ -63,9 +63,23 @@ describe('saved draft job consumer',()=>{
   expect(s.state.heartbeats).toBe(5);expect(s.state.outbox).toBe(1);
  });
  it('replays a completed job through the durable manifest without OCR, analysis or a heartbeat',async()=>{
-  const s=setup();s.row.state='succeeded';s.row.lease_valid=false;
-  expect((await runSavedDraftJob(s.input)).completion.replayed).toBe(true);
+  const s=setup(),onMonth=vi.fn();s.row.state='succeeded';s.row.lease_valid=false;
+  expect((await runSavedDraftJob({...s.input,onMonth})).completion.replayed).toBe(true);
   expect(ports.extract).not.toHaveBeenCalled();expect(ports.month).not.toHaveBeenCalled();expect(s.state.heartbeats).toBe(0);
+  expect(onMonth).not.toHaveBeenCalled();
+ });
+ it('composes the optional managed month effect with the exact canonical parent before completion',async()=>{
+  const s=setup(),onMonth=vi.fn<SavedMonthCompletion>(async({context,job,orderId,month,parent})=>{
+   expect(context.transaction_id).toBe('unit');expect(s.state.depth).toBe(1);
+   expect(job).toEqual(s.row.payload);expect(s.state.receipts).toContain(orderId+':'+month);
+   expect(parent).toEqual({});expect(ports.complete).not.toHaveBeenCalled();
+  });
+  await runSavedDraftJob({...s.input,onMonth});expect(onMonth).toHaveBeenCalledTimes(3);expect(s.state.outbox).toBe(1);
+ });
+ it('rolls back the canonical parent and withholds terminal success when managed composition fails',async()=>{
+  const s=setup(),onMonth=vi.fn(async()=>{throw Error('MANAGED_COMPOSITION_FAILED');});
+  await expect(runSavedDraftJob({...s.input,onMonth})).rejects.toThrow('MANAGED_COMPOSITION_FAILED');
+  expect(s.state.receipts).toEqual([]);expect(ports.complete).not.toHaveBeenCalled();expect(s.state.outbox).toBe(0);
  });
  it.each(['foreign_case','wrong_kind','payload_changed','stale_fence','wrong_worker','expired','cancelled'])(
   'refuses %s before provider work',async mutation=>{

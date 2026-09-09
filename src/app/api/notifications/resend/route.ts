@@ -3,12 +3,21 @@ import {guardStableHttpEntrypoint} from '@/server/platform/capabilities/stable-h
 import {refusedEntrypoint} from '@/server/product/routes/http-common';
 import {verifyResendWebhook} from '@/server/product/case-access/resend-webhook';
 import {resolveCaseAccessDb,postgresCaseAccessDb} from '@/server/product/case-access/db';
+import {isolatedPreviewWebhookDatabase} from '@/server/product/case-access/preview-webhook-database';
+import {SUPABASE_ROOT_2021_CA} from '@/server/product/case-access/supabase-ca';
+import {attachDatabasePool} from '@vercel/functions';
+import pg from 'pg';
 export const runtime='nodejs';
 let webhookPool:import('pg').Pool|undefined;
 async function webhookStore(){
- const connectionString=process.env.TIVDOC_NOTIFICATION_WEBHOOK_POSTGRES_URL;
+ const preview=process.env.VERCEL_ENV==='preview';
+ const connectionString=preview?isolatedPreviewWebhookDatabase(process.env):process.env.TIVDOC_NOTIFICATION_WEBHOOK_POSTGRES_URL;
+ if(preview&&!connectionString)return null;
  if(!connectionString)return resolveCaseAccessDb();
- if(!webhookPool){const {default:pg}=await import('pg');webhookPool=new pg.Pool({connectionString,max:2,connectionTimeoutMillis:15000,application_name:'tivdoc_webhook'});}
+ if(!webhookPool){
+  webhookPool=new pg.Pool({connectionString,...(preview?{ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA}}:{}),max:2,min:0,idleTimeoutMillis:5000,connectionTimeoutMillis:15000,application_name:'tivdoc_webhook'});
+  webhookPool.on('error',()=>console.error('NOTIFICATION_WEBHOOK_POOL_IDLE_ERROR'));attachDatabasePool(webhookPool);
+ }
  return postgresCaseAccessDb(webhookPool);
 }
 export async function POST(request:Request){

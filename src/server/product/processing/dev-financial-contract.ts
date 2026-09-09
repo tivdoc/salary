@@ -6,6 +6,7 @@ import {canonicalFactSchema} from '@/engine/facts/contracts';
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {calculateDevMinimumWage,DEV_MINIMUM_WAGE_POLICY,type DevMinimumWageResult} from '@/engine/calculations/dev-minimum-wage';
 import {savedAnalysisId} from './saved-draft-report';
+import {parseOpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 export const DEV_FINANCIAL_SCHEMA='tivdoc-dev-financial-run-v1' as const;
@@ -20,7 +21,8 @@ const shape=z.object({schema_version:z.literal(DEV_FINANCIAL_SCHEMA),authority:z
  order_id:z.uuid(),input_revision:z.number().int().positive(),input_sha256:hash,month:z.literal('2026-06'),parent_run_id:z.uuid(),parent_result_sha256:hash,parent_key:z.string(),
  parent_facts:employmentSnapshotSchema,parent_facts_sha256:hash,facts:employmentSnapshotSchema,facts_sha256:hash,reading:devHoursReadingSchema.nullable(),source:sourceSchema,
  policy_sha256:hash,created_at:z.iso.datetime({offset:true}),calculation:z.unknown(),finding:z.unknown(),request_id:z.uuid().nullable(),
- scenario:z.literal('synthetic_adult_hourly_general_182_regular_base_only'),extraction_provider:z.literal('injected_test_provider')}).strict();
+ scenario:z.literal('synthetic_adult_hourly_general_182_regular_base_only'),extraction_provider:z.enum(['injected_test_provider','openai_live','not_configured','unproven_legacy']),
+ extraction_provenance:z.object({kind:z.enum(['injected_test_provider','openai_live','not_configured','unproven_legacy']),providerAttempted:z.boolean(),allPassesSucceeded:z.boolean(),checkpointResultSha256:hash,receipts:z.array(z.unknown().transform(parseOpenAiProviderReceipt)).max(2)}).strict().optional()}).strict();
 
 export function devFinancialFacts(parent:EmploymentSnapshot,runId:string,reading:DevHoursReading|null):EmploymentSnapshot{
  let facts=[...parent.facts];
@@ -45,6 +47,14 @@ export function devFinancialFinding(runId:string,result:DevMinimumWageResult){
 }
 export function parseDevFinancialRun(candidate:unknown){
  const p=shape.parse(candidate);
+ if(!p.extraction_provenance&&p.extraction_provider!=='injected_test_provider')throw Error('DEV_FINANCIAL_PROVIDER_PROVENANCE_REQUIRED');
+ if(p.extraction_provenance){const evidence=p.extraction_provenance;
+  for(const receipt of evidence.receipts)if(receipt.source_page_count!==undefined)for(const fact of p.parent_facts.facts)for(const item of fact.provenance)if(item.source_type==='documented'&&item.source_reference.document_id===p.source.version_id&&(item.source_reference.locator?.page??1)>receipt.source_page_count)throw Error('DEV_FINANCIAL_PROVIDER_PAGE');
+  if(evidence.kind!==p.extraction_provider||evidence.receipts.some(r=>r.origin!==evidence.kind||r.case_id!==p.case_id||r.document_id!==p.source.version_id||r.source_sha256!==p.source.source_sha256||r.source_size_bytes!==p.source.size||r.source_mime_type!==p.source.mime||(r.source_page_count!==undefined&&p.source.page>r.source_page_count))
+   ||(evidence.kind==='unproven_legacy'?evidence.receipts.length!==0:evidence.receipts.length<1)
+   ||evidence.providerAttempted!==evidence.receipts.some(r=>r.provider_attempted)
+   ||evidence.allPassesSucceeded!==(evidence.receipts.length>0&&evidence.receipts.every(r=>r.status==='completed')))throw Error('DEV_FINANCIAL_PROVIDER_BINDING');
+ }
  assertDevFinancialScenario(p.parent_facts,p.source.version_id);
  if(devFinancialSourcePage(p.parent_facts,p.source.version_id)!==p.source.page)throw Error('DEV_FINANCIAL_SOURCE_PAGE');
  if(p.parent_key!==savedMonthIdempotencyKey({schema_version:'saved-case-work-v1',case_id:p.case_id,revision:p.input_revision,input_sha256:p.input_sha256,mode:'draft'},p.order_id,'2026-06'))throw Error('DEV_FINANCIAL_PARENT_KEY');
@@ -81,3 +91,11 @@ export function devFinancialSourcePage(facts:EmploymentSnapshot,versionId:string
 }
 
 export function devHoursRequestCode(caseId:string,orderId:string,versionId:string,checkpointSha:string){return 'dev_financial_hours:'+createHash('sha256').update([caseId,orderId,versionId,checkpointSha].join('|')).digest('hex');}
+
+/** Legacy saved bytes keep their original disclosure; new receipts choose the
+ * precise provider claim shared by HTML, PDF and customer view. */
+export function devFinancialDisclosure(run:DevFinancialRun){
+ if(!run.extraction_provenance)return DEV_FINANCIAL_DISCLOSURE;
+ const provider=run.extraction_provider==='openai_live'?'בוצעה קריאה לספק חילוץ חי':run.extraction_provider==='injected_test_provider'?'ספק החילוץ מוזרק לבדיקת תוכנה':run.extraction_provider==='not_configured'?'ספק חילוץ לא הוגדר':'אין עקבת ספק מוכחת לחילוץ ההיסטורי';
+ return `ניסוי הנדסי בסביבת הפיתוח — מסמך סינתטי; ${provider}. הכלל לא הופעל לשירות. זו אינה קביעה של חוב של המעסיק או הוכחת כשירות לניתוח תלוש לקוח אמיתי.`;
+}

@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {admitSavedSource,savedCaseTenant} from './saved-admission';
-import {SOURCE_JOB_KIND,sourceJobSchema} from './source-dispatch';
+import {SOURCE_JOB_KIND,sourceJobSchema,type SourceJob} from './source-dispatch';
 import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import {runSavedWorkerExtraction,type SavedWorkerTransactions} from './saved-extraction-worker';
 import {runSavedWorkerMonth} from './saved-worker';
@@ -11,6 +11,7 @@ import {completeSavedDraftJob} from './saved-job-completion';
 
 type Lease={jobId:string;workerId:string;fencingToken:number};
 type ExtractionInput=Parameters<typeof runSavedWorkerExtraction>[0];
+export type SavedMonthCompletion=(input:{context:PostgresTransactionContext;job:SourceJob;orderId:string;month:string;parent:Awaited<ReturnType<typeof runSavedWorkerMonth>>})=>Promise<void>;
 export class SavedJobMissingDocuments extends Error {
  constructor(readonly months:readonly string[]){super('SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED');}
 }
@@ -89,6 +90,7 @@ export async function runSavedDraftJob(input:Lease&{
  transactions:SavedWorkerTransactions;storage:ExtractionInput['storage'];
  providerEnabled:boolean;extractor?:ExtractionInput['extractor'];signal?:AbortSignal;
  heartbeat?:{intervalMs:number;leaseMs:number};
+ onMonth?:SavedMonthCompletion;
 }){
  z.string().min(1).parse(input.jobId);z.string().min(1).parse(input.workerId);z.number().int().positive().parse(input.fencingToken);
  const timing=input.heartbeat??{intervalMs:10000,leaseMs:60000};
@@ -117,7 +119,11 @@ export async function runSavedDraftJob(input:Lease&{
    healthy();await transactions(async context=>{
     const current=await admit(context,input);
     if(current.completed)throw new Error('SAVED_JOB_ALREADY_COMPLETED');
-    await runSavedWorkerMonth({context,job:current.job,...scope});
+    const parent=await runSavedWorkerMonth({context,job:current.job,...scope});
+    // Optional managed DEV composition shares the canonical parent transaction.
+    // A refused or interrupted completion rolls back this month and cannot be
+    // acknowledged by the terminal finalizer. Historical success is read-only.
+    await input.onMonth?.({context,job:current.job,...scope,parent});
     // A long analysis must not commit after cancellation/expiry that occurred
     // while calculating. The same transaction rolls its stages back on refusal.
     await renew(context,input,timing.leaseMs);

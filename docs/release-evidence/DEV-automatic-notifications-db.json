@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "gitSha": "eb472ddb80acb28a8acdf6f24fe39284d07f66a4",
+  "gitWorktreeDirty": true,
+  "runId": "47b3b5fc-7788-467a-add9-4878fc0f8524",
+  "checks": [
+    "actual access service queues one encrypted OTP; invalid capability, a valid foreign recipient capability and the web role cannot claim it",
+    "injected provider acceptance produces sent state without delivery; a repeated managed pass sends no duplicate and clears encrypted OTP bytes",
+    "actual issued code opens an identity session and only its owned case; foreign identity, report access and reuse of the consumed OTP are refused",
+    "production signature verifier rejects tampered/expired signatures; verified synthetic webhook and exact replay persist one delivered event, with foreign web-role and mismatched replay refused",
+    "real database expiry rejects the generated OTP; only this owned fixture expiry is moved into the past, with no fake service clock or TTL bypass",
+    "all configured incorrect attempts are counted in DB and the actual valid code remains refused after lockout",
+    "removing the owned identity/case link prevents queued case-bound delivery; after link restoration an expired intention is scrubbed without a provider call",
+    "deleting only the owned synthetic identity removes its queued OTP and a later scoped pass sends nothing"
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "schemaRequired": "20260909154033",
+  "otpIssuedAndVerified": true,
+  "providerKind": "injected_notification_db_test",
+  "providerAccepted": 3,
+  "realEmailDelivery": false,
+  "actualOwnerInbox": false,
+  "authenticatedWebhookProof": true,
+  "webhookHttpRoute": false,
+  "generatedFieldOrReportNotificationDbProof": false,
+  "syntheticCasesRemoved": 2,
+  "identitiesRemoved": 2,
+  "capabilitiesRevoked": true,
+  "budgetAuditRetained": true,
+  "productionChanged": false
+}

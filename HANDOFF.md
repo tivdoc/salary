@@ -1,3 +1,7 @@
+## Automatic DEV integration checkpoint — 2026-09-09
+
+Existing isolated DEV schema upgraded through127 (`20260909155945`) after rollback/ACL probes. Managed existing-queue driver, atomic bounded claim registry, same-parent canonical draft/engineering report connection, operations UI and source-current encrypted notifications are implemented.126+114 focused checks in earlier waves,23 notification/webhook/DB checks and102 final focused checks passed; full typecheck and changed-file lint pass. Actual DB OTP proof has8 checks, with injected provider/signed test webhook only. Its first cleanup failed due missing tenant context, then recovered and passed with RLS intact. No live OCR/email/provider key is available and no legal activation has been granted. Full scheduled DB/Storage/Preview proof is pending the clean integration commit; test code is not evidence of that outcome. See docs/automatic-dev-flow-handoff-2026-09-09-he.md.
+
 ## Automatic DEV extraction/configuration checkpoint — 2026-09-09
 
 Live extraction factory, source-bound provider receipts, true-page validation and seven independent synthetic input files are implemented. The existing Resend adapter is now selected by explicit configuration. Preview delivery now always requires the recipient allowlist even under NODE_ENV=production.126 focused tests and full typecheck pass. Live OCR and email remain blocked: no usable key/sender found in the inspected relevant local and same-project development/Preview configuration. No real provider call or production action.
