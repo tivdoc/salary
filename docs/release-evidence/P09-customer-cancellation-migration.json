@@ -1,0 +1,7 @@
+{
+  "state": "APPLIED_ISOLATED_DEV",
+  "migration": "20260908220956_customer_unstarted_order_cancellation.sql",
+  "sha256": "9dc79ff21d8f6a7d9098cbba38c563df588aa76849a42c6d3440999ada634d80",
+  "candidateDdlRolledBackBeforeApply": true,
+  "productionChanged": false
+}

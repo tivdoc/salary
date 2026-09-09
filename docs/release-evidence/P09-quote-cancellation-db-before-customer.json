@@ -1,12 +1,12 @@
 {
   "verdict": "PASS",
   "checks": [
-    "the private worker cancellation RPC rejects foreign identity/case and all non-worker roles",
+    "foreign identity/case and actual non-worker roles cannot cancel or release a credit",
     "failure before commit restores both the awaiting order and its credit reservation",
     "concurrent cancellation is idempotent, appends one event and retains the original quote/credit history",
     "a fresh quote reuses the initial credit for the same scope while the cancelled order remains immutable history",
     "a real web checkout claim, including creating/uncertain/ready fixture outcomes, prevents credit release",
-    "actual web checkout racing authorized cancellation cannot both create a provider attempt and release credit",
+    "actual web checkout racing worker cancellation cannot both create a provider attempt and release credit",
     "changed input also blocks reopening an already-created checkout without releasing its reserved credit",
     "source change between acceptance and checkout blocks provider claim; an unstarted stale order can still be cancelled",
     "an owner-seeded historically accepted expired quote fails checkout against the real database clock",

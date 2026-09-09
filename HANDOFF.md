@@ -1,3 +1,9 @@
+## P09 customer cancellation DB proof and browser preparation — 2026-09-09
+
+Exact 567b1bca36263f1ccf33c454ddf66a8ade93b162 passes eight customer cancellation and all 11 existing quote-ledger PostgreSQL assertions. Applied the forward migration only to guarded isolated DEV after candidate DDL rollback; 121 migrations, 253 source definer declarations. Two owned synthetic cases/identities removed, machine revoked, no cleanup failures. Advisors report zero errors and 12 warnings. No live supplier, production or sale flag change.
+
+Both 567b1bc CI runs 34285706164/34285702600 failed the single stale migration-tail assertion (3,032 tests passed, 63 skipped); the assertion now names the actual tail without changing applied migration bytes. All 44 focused route/order/chain/definer checks, full typecheck and changed-file lint pass. Added an exact-commit Preview harness for response loss after committed customer cancellation, stable retry, foreign profiles and saved RTL history at four widths. Hosted execution and fresh 121-file replay follow this checkpoint; the existing 110 hosted checks remain exclusively exact 115a2dd. Continue P00–P13 after this bounded verification.
+
 ## P09 customer cancellation of an unstarted order — 2026-09-09
 
 Base 8230b10d74496b8bcb9fdcaefa5a9f22aab5e0c2; both CI runs 34284209775/34284205898 pass. Added session-bound same-origin `cancel_unstarted` to existing CEP-022, strict scoped acknowledgement, and a customer action on the saved order page. A forward migration extracts the existing locked ledger operation without broadening the worker API, adds a private customer boundary/public invoker, records actual customer identity and computes a revocable display hint. Any checkout attempt/payment/entitlement/refund still prevents cancellation/credit release. No sale/refund/provider call is added. User-entered identity, price, reason or credit cannot enter this action.

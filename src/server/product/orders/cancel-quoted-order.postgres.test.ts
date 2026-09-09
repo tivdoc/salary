@@ -1,6 +1,6 @@
 import {it,expect,vi} from 'vitest';
 import pg from 'pg';
-import {randomUUID,createHash} from 'node:crypto';
+import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
@@ -19,6 +19,9 @@ it.skipIf(process.env.TIVDOC_QUOTE_CANCEL_DB_PROOF!=='1')('cancels only unstarte
  const owner=client('TIVDOC_DEV_DATABASE_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),peer=client('TIVDOC_WORKER_POSTGRES_URL'),web=client('TIVDOC_WEB_POSTGRES_URL');
  const customerProof=process.env.TIVDOC_CUSTOMER_CANCEL_DB_PROOF==='1',customerPeer=customerProof?client('TIVDOC_WEB_POSTGRES_URL'):null,customerChecks:string[]=[];
  const customerMigration='20260908220956_customer_unstarted_order_cancellation.sql';
+ const browserProof=process.env.TIVDOC_CUSTOMER_CANCEL_PREVIEW_PROOF==='1',sessions:string[]=[],publicIds:string[]=[];
+ let browserChecks:unknown=null;
+ if(browserProof&&!customerProof)throw Error('CUSTOMER_CANCEL_PROOF_SCOPE_REQUIRED');
  const ids=[randomUUID(),randomUUID()],identities:string[]=[],initialId=randomUUID(),tenant=`saved-case:${ids[0]}`,sid=`quote-proof:${randomUUID()}`,jti=randomUUID();
  const availabilityMarker=`synthetic-quoted-order:${ids[0]}`;
  const checks:string[]=[],migration='20260908153942_quote_unstarted_cancellation.sql';let cleaned=false,seeded=false,failure:string|null=null,cleanupError:unknown;
@@ -51,6 +54,7 @@ it.skipIf(process.env.TIVDOC_QUOTE_CANCEL_DB_PROOF!=='1')('cancels only unstarte
    await owner.query("insert into public.cases(id,first_name,email,phone,is_qa,status,payment_status,contact_verified_at,check_period_month) values($1,'Synthetic quote cancellation',$2,'0500000000',true,'under_review','verified',now(),'2020-01-01')",[id,email]);
    const identity=(await owner.query("select public.case_access_identity_upsert('email',$1,$2) id",[createHash('sha256').update('email|'+email).digest('hex'),email])).rows[0].id;identities.push(identity);
    await owner.query('select public.case_access_identity_link($1,$2)',[identity,id]);
+   if(browserProof){const session=randomBytes(16).toString('base64url');sessions.push(session);publicIds.push((await owner.query('select public_id from public.cases where id=$1',[id])).rows[0].public_id);await owner.query('select public.case_access_session_create($1,$2,14400)',[identity,createHash('sha256').update('case-access-session|'+session).digest('hex')]);}
   }
   const initialOffer=offerSnapshot('initial');
   await owner.query("insert into private.product_orders(id,case_id,kind,period_from,period_to,amount_minor,currency,offer,offer_sha256,topics,terms_version,state,verified_at) values($1,$2,'initial','2020-01-01','2020-01-01',999,'ILS',$3,$4,array['pension'],$5,'paid',now())",[initialId,ids[0],initialOffer,initialOffer.sha256,initialOffer.terms_version]);
@@ -142,6 +146,18 @@ it.skipIf(process.env.TIVDOC_QUOTE_CANCEL_DB_PROOF!=='1')('cancels only unstarte
   await owner.query("update private.product_orders set state='paid',verified_at=now() where id=$1",[replacement.id]);await expect(cancel(worker,replacement.id)).rejects.toThrow('ORDER_CANCEL_REQUIRES_RECONCILIATION');
   checks.push('synthetic paid order cannot be treated as an unstarted cancellation or release its credit');
   if(customerProof){await expect(customerCancel(web,replacement.id)).rejects.toThrow('ORDER_CANCEL_REQUIRES_RECONCILIATION');expect((await customerView(replacement.id)).can_cancel_unstarted).toBe(false);customerChecks.push('paid orders cannot be cancelled or release initial credit through the customer action');}
+  if(browserProof){
+   await customerCancel(web,expiredOrder);
+   const browserQuote=await issue('2020-04'),browserOrder=(await accept(worker,browserQuote.id)).order;
+   const otherStates=async()=>(await owner.query('select id,state from private.product_orders where case_id=$1 and id<>$2 order by id',[ids[0],browserOrder.id])).rows;
+   const before=await otherStates();
+   const {verifyOrderCancellationPreview}=await import('../../../../scripts/release-completion/preview-order-cancellation.mts');
+   browserChecks=await verifyOrderCancellationPreview({expectedGitSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),publicId:publicIds[0],foreignPublicId:publicIds[1],session:sessions[0],foreignSession:sessions[1],orderId:browserOrder.id,initialOrderId:initialId});
+   expect((await owner.query('select state from private.product_orders where id=$1',[browserOrder.id])).rows[0].state).toBe('cancelled');
+   expect((await owner.query("select actor from private.order_events where order_id=$1 and kind='cancelled_before_checkout'",[browserOrder.id])).rows).toEqual([{actor:`customer:${identities[0]}`}]);
+   expect((await owner.query('select count(*)::int n from private.order_checkouts where order_id=$1',[browserOrder.id])).rows[0].n).toBe(0);
+   expect(await otherStates()).toEqual(before);
+  }
   const final=(await owner.query('select count(*)::int n from private.order_quote_reservations where credit_order_id=$1 and released_at is null',[initialId])).rows[0].n;expect(final).toBe(1);
   checks.push('exactly one active initial-credit reservation remains after cancellation, replacement and checkout races');
  }catch(e){failure=e instanceof Error?e.message:'proof_failed';throw e;}finally{
@@ -158,8 +174,8 @@ it.skipIf(process.env.TIVDOC_QUOTE_CANCEL_DB_PROOF!=='1')('cancels only unstarte
    await owner.query('commit');cleaned=true;
   }catch(e){await owner.query('rollback');cleanupError=e;}}
   await Promise.allSettled([owner.end(),worker.end(),peer.end(),web.end(),customerPeer?.end()]);
-  if(customerProof)writeFileSync('docs/release-evidence/P09-customer-cancellation-db.json',JSON.stringify({verdict:cleaned&&customerChecks.length===8&&!failure&&!cleanupError?'PASS':'FAIL',gitSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:customerChecks,failure,cleanupFailure:cleanupError instanceof Error?cleanupError.message:null,migration:customerMigration,migrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/'+customerMigration)).digest('hex'),syntheticCasesRemoved:cleaned?2:0,syntheticIdentitiesRemoved:cleaned?identities.length:0,machineSessionRevoked:cleaned,browserProof:false,scope:'Actual isolated DEV worker and two web connections; synthetic injected quote basis, payment and readiness. Customer SQL cancellation/rollback/concurrency/history and checkout-claim race, not customer HTTP or provider settlement.',productionChanged:false},null,2)+'\n');
+  if(customerProof)writeFileSync('docs/release-evidence/P09-customer-cancellation-db.json',JSON.stringify({verdict:cleaned&&customerChecks.length===8&&!failure&&!cleanupError&&(!browserProof||browserChecks)?'PASS':'FAIL',gitSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:customerChecks,browserChecks,failure,cleanupFailure:cleanupError instanceof Error?cleanupError.message:null,migration:customerMigration,migrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/'+customerMigration)).digest('hex'),syntheticCasesRemoved:cleaned?2:0,syntheticIdentitiesRemoved:cleaned?identities.length:0,machineSessionRevoked:cleaned,browserProof,scope:browserProof?'Actual isolated DEV worker/two web connections and hosted authenticated UI/HTTP cancellation, lost response/retry/reload. Injected synthetic quote basis, payment and readiness; no actual provider settlement, live monetary correctness or production.':'Actual isolated DEV worker and two web connections; synthetic injected quote basis, payment and readiness. Customer SQL cancellation/rollback/concurrency/history and checkout-claim race, not customer HTTP or provider settlement.',productionChanged:false},null,2)+'\n');
   writeFileSync('docs/release-evidence/P09-quote-cancellation-db.json',JSON.stringify({verdict:cleaned&&checks.length===11&&!failure?'PASS':'FAIL',checks,failure,cleanupFailure:cleanupError instanceof Error?cleanupError.message:null,database:'tivdoc_release_replay_20260907',migration,checkoutRetryMigration:'20260908154530_quoted_checkout_retry_freshness.sql',checkoutRetryMigrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/20260908154530_quoted_checkout_retry_freshness.sql')).digest('hex'),migration_sha256:createHash('sha256').update(readFileSync('supabase/migrations/'+migration)).digest('hex'),syntheticCasesRemoved:cleaned?2:0,machineSessionRevoked:cleaned,scope:'Actual worker/peer/web roles; injected synthetic monetary basis and synthetic verified payment row. Synthetic payslip metadata only; no Storage/provider transport. Actual web checkout-claim function is exercised, not customer HTTP/browser or provider settlement. No canonical monetary proof or production change.',productionChanged:false},null,2)+'\n');
   if(cleanupError)throw cleanupError;
  }
-},120000);
+},process.env.TIVDOC_CUSTOMER_CANCEL_PREVIEW_PROOF==='1'?360000:120000);
