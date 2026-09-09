@@ -1,3 +1,9 @@
+## P09 exact customer cancellation Preview — 163bc3c (2026-09-09)
+
+Both CI runs 34306005257/34306002859 pass on exact 163bc3cb22126cea0dbbb093d5efc874927a67ab. Its isolated Preview https://salary-qweapotgg-tivdoccom-5042s-projects.vercel.app (dpl_33koACBwHjhkupRtPggBwqZp2GsN) passes all ten hosted cancellation checks, including response loss after committed HTTP cancellation, stable replay, foreign identity and four RTL widths. Actual 8 customer + 11 existing quote-ledger DB checks pass; two owned cases/identities removed and machine revoked with no cleanup failure. Unstarted and cancelled mobile cards visually inspected. Fresh separate schema replays all 121 migrations: 119 raw plus the same two managed-platform compensations, shared role provisioning unchanged. No actual provider call, canonical quote basis, financial correctness or production rollout is claimed.
+
+P09-customer-cancellation-preview.json and the exact DB receipts bind this result. The earlier integrated 110 hosted checks remain exclusively exact 115a2dd, not a claim that all journeys were rerun on 163bc3c. Work continues on focused document-source replacement after an unreadable/negative reading, canonical monetary composition and remaining P00–P13.
+
 # P13 acceptance matrix — work in progress
 
 ## Current evidence index — 2026-09-09

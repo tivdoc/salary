@@ -8,12 +8,13 @@ The release is **not an RC and not ready for live sales**. Work continues under 
 - Parallel UI integrated through `85177bcf507c3820cc5f1131f4f438a56b1f504c`; its author's checkout is separate and unchanged by this task.
 - Verified [isolated Preview](https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app): exact `115a2dde81e9a2a537590588e400cb2994965926`, deployment `dpl_9QfryeYWadFvYYmzzkuJzLB6BE1m`. CI `34278013129` and `34278008101` pass. Includes source-bound field confirmations/history, payment reference binding, canonical input retention and inactive vacation research.
 - Preview uses DEV project `cpzrbidxftzqcfeqqusu`, database `tivdoc_release_replay_20260907`, the actual server-side PostgreSQL adapter and DEV Storage. Sales, mail and extraction-provider flags remain disabled. No release-branch production rollout occurred.
-- Current fresh schema proof: `tivdoc_release_chain_20260908_115a2dd`, 120 migrations, 118 raw and two explicitly recorded managed-platform compensations. Shared role provisioning unchanged. This separate database contains no customer fixtures.
+- Current fresh schema proof: `tivdoc_release_chain_20260908_163bc3c`, 121 migrations, 119 raw and two explicitly recorded managed-platform compensations. Shared role provisioning unchanged. This separate database contains no customer fixtures.
 
 ## Implemented versus verified
 
 | Capability | Implemented | Verified | Ready to operate / deployed |
 |---|---|---|---|
+| Customer unstarted cancellation | Session-bound selected-order action, locked credit release and truthful response-loss retry | Exact 163bc3c: 8 customer + 11 quote-ledger DB checks, 10 hosted checks, owned cleanup | Focused DEV Preview salary-qweapotgg; no provider call or production rollout |
 | Calculation source provenance | Distinct fact/parameter pins, exact RuleSpec replay, full saved-stage and case/run binding; historical trace compatibility | 36 new local assertions; six actual DEV DB assertions on exact 054ddaf, with retry/rollback/foreign-tenant/immutability and complete fixture cleanup | Arithmetic foundation only; not deployed, no unpaid-gap writer, real rule activation or pricing reader |
 | Expected versus recorded comparison | Explicit source-traced RuleSpec subtraction; recorded component provenance, signed result and refusal of entitlement/rate relabelling | 11 new local assertions, 57 focused; two actual comparison assertions plus repeated six trace/15 field checks on exact ddeff9a, full cleanup | Arithmetic evidence only; not a Finding, actual transfer or pricing basis; not deployed |
 | Saved document addition/replacement and selected late completion | Immutable versions, reservations, case-wide limits, explicit replacement and exact request linkage | Hosted UI → HTTP → actual DB/Storage, retry after transferred bytes, two tabs, foreign-case refusal; 12 current checks, 8 object hashes | Verified in the named DEV Preview; no production rollout |
@@ -31,7 +32,7 @@ Historical focused refund Preview d6c2b16 and full 45cf30f receipts remain archi
 
 ## Remaining work and external dependencies
 
-Ordinary unfinished engineering: canonical paid/expected/gap semantics and evidence binding; saved monetary projection and quote reader; corrected report regeneration; customer quote/cancel and configured owner presentation; one provider reconciliation path accounting for customer requests and cumulative corrections; managed worker lifecycle/scheduler; contact-change verification and complete privacy purge/accounting separation; operational cost/Storage controls; remaining offline/shadow/rollout acceptance.
+Ordinary unfinished engineering: canonical paid/expected/gap semantics and evidence binding; saved monetary projection and quote reader; corrected report regeneration; customer quote and configured owner presentation; one provider reconciliation path accounting for customer requests and cumulative corrections; managed worker lifecycle/scheduler; contact-change verification and complete privacy purge/accounting separation; operational cost/Storage controls; remaining offline/shadow/rollout acceptance.
 
 External dependencies are scoped in [release blockers](release-blockers.md): authorized OCR credentials and measured calibration; genuine source/parameter/golden activation evidence; Resend sender/DNS/webhook/test-recipient configuration; verified Invoice4U checkout, receipt and refund contract. No AI decision is recorded as a person's attestation. The six real unserved customers remain real and unserved unless an actual delivery is separately proved; they are never QA fixtures.
 
