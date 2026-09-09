@@ -4,60 +4,54 @@ export function Trust() {
   return (
     <section className="studio-trust" id="about" aria-labelledby="about-title">
       <div className="studio-shell">
-        <div className="trust-heading">
-          <p className="studio-eyebrow">אפשר לבדוק גם אותנו</p>
-          <h2 id="about-title">
-            ברור מה נבדק.
-            <br />
-            ברור על מה מסתמכים.
-          </h2>
-          <p>
-            בדיקת AI עם מקורות והסברים. התמיכה מטפלת בשאלות ובתיקונים; אין הבטחה
-            שאיש מקצוע בודק כל דוח.
-          </p>
-        </div>
+        <h2 id="about-title" className="studio-section-title">
+          למה לסמוך עלינו
+        </h2>
+        <p className="trust-limit">
+          השירות נעזר ב־AI; אין הבטחה שאיש מקצוע בודק כל דוח.
+        </p>
         <div className="trust-grid">
           <article>
-            <span className="trust-index">01 / אחריות</span>
-            <h3>יש כתובת לפנייה.</h3>
-            <p>
-              מפעילת השירות: תקראלוקס
-              <br />
-              ח״פ 317067916
-              <br />
-              אורן 4, נשר
-            </p>
+            <span className="trust-index">01</span>
+            <h3>מקורות ברורים</h3>
+            <p>אפשר לראות על מה מבוסס כל ממצא.</p>
+            <details>
+              <summary>שיטת הבדיקה</summary>
+              <p>
+                מצליבים מסמכים ותשובות בתחום שנכלל בבדיקה. חוסר מידע מצוין ליד
+                הממצא, וחישוב מוצג רק כשיש בסיס מספיק.
+              </p>
+              <Link prefetch={false} href="/terms">
+                תנאי השירות
+              </Link>
+            </details>
+          </article>
+          <article>
+            <span className="trust-index">02</span>
+            <h3>כתובת לפנייה</h3>
             <a href={"mailto:" + productOffer.supportEmail}>
               {productOffer.supportEmail}
             </a>
+            <details>
+              <summary>המפעיל ובקשות תיקון</summary>
+              <p>תקראלוקס · ח״פ 317067916 · אורן 4, נשר.</p>
+              <p>
+                לשאלה או לתיקון אפשר לפנות מתוך התיק או לדוא״ל השירות עם מספר
+                התיק.
+              </p>
+            </details>
           </article>
           <article>
-            <span className="trust-index">02 / ראיות</span>
-            <h3>מהמסמך להסבר.</h3>
-            <p>
-              בדוגמה, שדה חסר במקור משאיר את הסכום לא ידוע. אפשר לפתוח את המקור
-              ואת מצב הנושאים ולראות את ההבחנה.
-            </p>
-            <a href="#what-you-get">לממצא ולמקור בדוגמה ←</a>
-          </article>
-          <article>
-            <span className="trust-index">03 / תיקון ופרטיות</span>
-            <h3>אפשר לשאול. אפשר לתקן.</h3>
-            <p>
-              לקוחות יכולים לפנות מתוך התיק או לדוא״ל השירות עם מספר התיק. בקשות
-              לעיון, תיקון או מחיקת מידע מטופלות בהתאם למדיניות.
-            </p>
-            <a
-              href={
-                "mailto:" +
-                productOffer.supportEmail +
-                "?subject=" +
-                encodeURIComponent("שאלה או בקשת תיקון")
-              }
-            >
-              שאלה או בקשת תיקון ←
-            </a>
-            <Link href="/privacy">שמירת מסמכים ומדיניות פרטיות</Link>
+            <span className="trust-index">03</span>
+            <h3>פרטיות</h3>
+            <p>מסמכים ודוחות מוצגים לאחר בדיקת הרשאה.</p>
+            <details>
+              <summary>שמירת מידע והזכויות שלך</summary>
+              <p>בקשות לעיון, תיקון ומחיקת מידע מטופלות בהתאם למדיניות.</p>
+              <Link prefetch={false} href="/privacy">
+                למדיניות הפרטיות המלאה
+              </Link>
+            </details>
           </article>
         </div>
       </div>
