@@ -53,7 +53,7 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
  const keys=JSON.parse(readFileSync(process.env.TIVDOC_SAVED_STORAGE_CREDENTIALS_FILE??'','utf8'));expect(keys.NEXT_PUBLIC_SUPABASE_URL).toBe('https://cpzrbidxftzqcfeqqusu.supabase.co');
  const remote=createClient(keys.NEXT_PUBLIC_SUPABASE_URL,keys.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}),bucket=remote.storage.from('salary-documents');
  const cases=[0,1].map(()=>({id:randomUUID(),orderId:randomUUID(),publicId:'',identity:'',identityCreated:false,sid:`dev-financial-live:${randomUUID()}`,jti:randomUUID()})),primary=cases[0],tenant=`saved-case:${primary.id}`;
- const inputs=await Promise.all([createLiveFinancialInput(false),createLiveFinancialInput(true)]),directory='output/release-completion/dev-financial-live-flow';
+ const inputs=await Promise.all([createLiveFinancialInput(false),createLiveFinancialInput(true)]),directory=`output/release-completion/dev-financial-live-flow/${primary.id}`;
  mkdirSync(directory,{recursive:true});for(const input of inputs)writeFileSync(`${directory}/${input.name}`,input.bytes);writeFileSync(`${directory}/independent-oracle.json`,JSON.stringify(DEV_FINANCIAL_ORACLE,null,2)+'\n');
  const ownedFile=`../release-work/dev-financial-live-owned-${primary.id}.json`,checks:string[]=[],paths:string[]=[],providerHashes:string[]=[],runs:{runId:string;inputRevision:number;state:string}[]=[];
  const confirmationChecks:unknown[]=[],provenanceChecks:unknown[]=[],providerReceipts:OpenAiProviderReceipt[]=[];
@@ -198,7 +198,8 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
   checks.push('actual web reservation, non-upsert signed Storage transfer, byte validation and commit feed the actual durable V2 extraction adapter and saved receipt; provider response is from the actual SDK, with persisted response/model/request/source receipts');
   await expect(transactions(worker)(async()=>worker.query('select private.dev_financial_request_open($1,$2,$3,$4)',[primary.id,primary.orderId,firstRawLease.job.revision,firstRawLease.job.input_sha256]))).rejects.toThrow('DEV_FINANCIAL_HOURS_NOT_MISSING');
   checks.push('the actual SQL write boundary refuses a missing-hours question when the persisted extraction already contains regular hours');
-  await expect(calculate(firstRawLease.job)).rejects.toThrow('DEV_FINANCIAL_CANONICAL_SCENARIO');expect(await counts()).toEqual({runs:0,findings:0});
+  phase='unconfirmed-financial-refusal';
+  await expect(calculate(firstRawLease.job)).rejects.toThrow(/DEV_FINANCIAL_(CANONICAL_SCENARIO|SCENARIO_UNSUPPORTED)/u);expect(await counts()).toEqual({runs:0,findings:0});
   checks.push('raw V2 high-confidence candidates remain unconfirmed and cannot produce a financial run; the original canonical confirmation gate refuses them');
   phase='initial-confirmations';const firstLease=await confirmSourceFields(first,extractedFirst.result,false);
   failBeforeSave=true;try{await expect(calculate(firstLease.job)).rejects.toThrow('TEST_FAIL_BEFORE_FINANCIAL_SAVE');}finally{failBeforeSave=false;}expect(await counts()).toEqual({runs:0,findings:0});

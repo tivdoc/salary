@@ -40,7 +40,9 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // existing identified web/service boundary. Four new definitions, all covered
 // by the exhaustive assertion and the actual DEV ACL receipt in the handoff.
 // The forward migrations replace existing function bodies and retain ACLs.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 278;
+// Direct Resend receipts131: two new functions and two redeclarations.
+// Actual DEV ACL, collision and lock-order probes cover the live permissions.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 282;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -79,6 +81,17 @@ describe("security definer search_path contract", () => {
   it("counts the definer surface so a new one cannot arrive unnoticed", async () => {
     const definitions = await securityDefinerDefinitions();
     expect(definitions).toHaveLength(EXPECTED_SECURITY_DEFINER_DEFINITIONS);
+  });
+
+  it("accounts for all four reviewed direct-receipt declarations", async () => {
+    const definitions = await securityDefinerDefinitions();
+    expect(definitions.filter((definition) => definition.file === "20260909212737_direct_resend_provider_receipts.sql")
+      .map((definition) => definition.name).sort()).toEqual([
+      "private.apply_direct_notification_events",
+      "private.apply_notification_events",
+      "public.case_notification_outbox_finish",
+      "public.case_notification_record_provider",
+    ]);
   });
 
   it("never schema-qualifies a parser construct", async () => {
