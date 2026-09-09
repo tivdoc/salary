@@ -1,6 +1,6 @@
 {
   "schemaVersion": "tivdoc-provider-evidence-checksums-v1",
-  "generatedAt": "2026-09-09T22:44:52.018Z",
+  "generatedAt": "2026-09-09T22:45:35.926Z",
   "applicationSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
   "dispatchDriverSha": "512b2a21eae9fa37f32431c8ec1ca81f41f90fff",
   "hashMeaning": "SHA256 of staged Git blob bytes; also records current working bytes. Scoped attributes preserve JSON/TXT/HTML receipts, not repository-wide normalization.",
@@ -8,9 +8,9 @@
   "files": [
     {
       "path": "a30f881-live/.gitattributes",
-      "bytes": 104,
-      "gitBlobSha256": "35588736633bae90901579ce21d5b3aaf8442707ce62ca3df20ad3e48ec96692",
-      "workingBytesSha256": "f7a5855af227e70a81732a5aed078e37376c48776f7df157267f7ef59fd1dcc2"
+      "bytes": 384,
+      "gitBlobSha256": "b21affd7b76f333fe661fce5dbcae676aecd5935c87126c656a0caa50615feff",
+      "workingBytesSha256": "ef1d51ecf64b061e51fbf65c8c4c4f1337c6c2886a51555d72a4140dbc7857f8"
     },
     {
       "path": "a30f881-live/README.md",
@@ -188,9 +188,9 @@
     },
     {
       "path": "official-source/.gitattributes",
-      "bytes": 104,
-      "gitBlobSha256": "a0af8418d917cd0f88292a9be46019054a9648f35568202a731b83cb81a17760",
-      "workingBytesSha256": "50110d79446814fb79bd73eb0370d2243210bbba5d42e41290803e2dd3bd0ab8"
+      "bytes": 296,
+      "gitBlobSha256": "f4530770d99650da6fd83192a7fe36a3ee5e88e4cef3045cba381e7aff5a6372",
+      "workingBytesSha256": "93fa40d8386a858727d710229ba1347dbb7fcb280c4389c1b5b1bdaf737b13e9"
     },
     {
       "path": "official-source/README.md",
