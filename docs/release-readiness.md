@@ -1,3 +1,5 @@
+> **2026-09-09 owner-requested stop:** Development is paused. The [interim handoff](interim-handoff-2026-09-09-he.md) supersedes continuation instructions and status labels below. Latest P06 scope code has 38 focused passes only; candidate migration 122 is NOT applied/executed, and DB fix, typecheck/lint and hosted proof are pending. Verified Preview remains ea0875a (123 checks); do not deploy the WIP application on the current 121-migration schema. No production rollout.
+
 # Tivdoc release readiness — 2026-09-09
 
 The release is **not an RC and not ready for live sales**. Development continues under the owner-approved [v1.1 decisions](release-specs/tivdoc-launch-decisions-and-next-task-v1.1-he.md). Implementation, verification, readiness and deployment are distinct below.

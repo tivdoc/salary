@@ -31,7 +31,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // The new trigger-only definer has no runtime EXECUTE grant and binds order/case.
 // P09 internal quote context and credit reservation: verified worker/case only.
 // Customer cancellation: private customer boundary plus two existing function redeclarations.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 253;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 254;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
