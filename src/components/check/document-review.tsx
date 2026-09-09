@@ -38,7 +38,7 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
   return data;
 }
 
-export function DocumentReview({ initial, initialRequestId }: { initial: UploadSnapshot; initialRequestId?: string }) {
+export function DocumentReview({ initial, initialRequestId, replacementVersionId }: { initial: UploadSnapshot; initialRequestId?: string; replacementVersionId?: string }) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState(initial);
   const [chosen, setChosen] = useState<Chosen[]>([]);
@@ -187,12 +187,14 @@ export function DocumentReview({ initial, initialRequestId }: { initial: UploadS
         <h1>{paid ? "השלמת מסמכים לתיק" : "נראה שהתלוש קריא — לפני שמשלמים."}</h1>
         <p>אפשר לשמור עד {capacity.maxPayslips} תלושים בתיק. הבדיקה הראשונית מתייחסת לחודש אחד; היקף הדוח המלא נקבע בהזמנה ששולמה.</p>
       </div>
+      {replacementVersionId && !snapshot.documents.some(doc => doc.version_id === replacementVersionId) ? <p role="alert">המסמך של השאלה כבר השתנה. חזרו לשאלות בתיק כדי לראות את המצב העדכני; לא נבחר מסמך אחר להחלפה.</p> : null}
       {snapshot.documents.length > 0 ? <section aria-label="מסמכים שמורים">
         <h2>המסמכים השמורים בתיק</h2>
         <ul className="document-review__list">{snapshot.documents.map((doc) => <li className="document-card" key={doc.id}>
           <FilePdf aria-hidden="true" />
           <div className="document-card__body">
             <p className="document-card__name">{doc.original_filename}</p>
+            {doc.version_id === replacementVersionId ? <p role="status">זה המסמך של השאלה. להחלפתו, בחרו קובץ דרך ״החלפת מסמך״ בכרטיס זה. שאר המסמכים נשמרים בתיק.</p> : null}
             <p>{labels[doc.document_type]} · {formatSize(doc.size)}{doc.period_month ? ` · ${monthLabel(doc.period_month)}` : ""}</p>
             <p role="status">{replaced.has(doc.id) ? "נבחר קובץ להחלפה. המסמך השמור נשאר עד לסיום." : "שמור בתיק"}</p>
           </div>

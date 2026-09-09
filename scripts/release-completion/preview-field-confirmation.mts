@@ -5,10 +5,10 @@ import {createHash} from 'node:crypto';
 import {chromium} from 'playwright';
 import {DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from '../../src/server/product/reports/document-field-confirmation.ts';
 
-const deployedSha='115a2dde81e9a2a537590588e400cb2994965926';
 const directory='output/release-completion/preview-field-confirmation';
-type Phase='open'|'stale-open'|'answer'|'correct'|'stale-answer';
-export async function verifyFieldConfirmationPreview(input:{phase:Phase;publicId:string;foreignPublicId:string;session:string;foreignSession:string;requestId:string;question:string;sourceSha256:string}){
+type Phase='open'|'stale-open'|'answer'|'correct'|'replace'|'stale-answer';
+export async function verifyFieldConfirmationPreview(input:{phase:Phase;publicId:string;foreignPublicId:string;session:string;foreignSession:string;requestId:string;question:string;sourceSha256:string;expectedGitSha:string;replacement?:{documentId:string;versionId:string;bytes:Uint8Array}}){
+ const deployedSha=input.expectedGitSha;assert.match(deployedSha,/^[a-f0-9]{40}$/u);
  const deployment=JSON.parse(readFileSync(process.env.TIVDOC_FIELD_PREVIEW_DEPLOYMENT_FILE??'','utf8'));
  assert.equal(deployment.sha,deployedSha);assert.equal(deployment.readyState,'READY');assert.notEqual(deployment.target,'production');
  const origin='https://'+deployment.url;assert.match(origin,/^https:\/\/salary-[a-z0-9]+-tivdoccom-5042s-projects\.vercel\.app$/u);
@@ -68,11 +68,37 @@ export async function verifyFieldConfirmationPreview(input:{phase:Phase;publicId
     await page.locator('.thread-answered__answer').getByText(DOCUMENT_FIELD_CONFIRMATION_ANSWERS[1],{exact:true}).waitFor();await page.reload();
     assert.equal((await page.locator('.thread-answered__answer').innerText()).trim(),DOCUMENT_FIELD_CONFIRMATION_ANSWERS[1]);
    });
+  }else if(input.phase==='replace'){
+   const replacement=input.replacement;assert.ok(replacement);
+   const endpoint=`/api/cases/${input.publicId}/upload-session?sourceRequestId=${input.requestId}`;
+   await check('source replacement navigation refuses foreign identity and cross-origin requests',async()=>{
+    const foreign=await browser.newContext({storageState:access});try{await foreign.addCookies([cookie(input.foreignSession)]);assert.equal((await foreign.request.post(origin+endpoint,{headers:{origin}})).status(),404);}finally{await foreign.close();}
+    assert.equal((await context.request.post(origin+endpoint,{headers:{origin:'https://foreign.example'}})).status(),403);
+   });
+   await check('negative source answer opens only its exact stored document for explicit replacement',async()=>{
+    await page.getByRole('button',{name:'החלפת המסמך של השאלה',exact:true}).click();await page.waitForURL(origin+`/check/upload?replaceVersionId=${replacement.versionId}`);
+    await page.getByText('זה המסמך של השאלה. להחלפתו, בחרו קובץ דרך ״החלפת מסמך״ בכרטיס זה. שאר המסמכים נשמרים בתיק.',{exact:true}).waitFor();
+    assert.equal(await page.getByText(input.question,{exact:true}).count(),0);
+   });
+   let updatedVersion:string|undefined;
+   await check('explicit file replacement commits through signed Storage upload and returns saved case documents',async()=>{
+    await page.getByLabel('החלפת synthetic.pdf',{exact:true}).setInputFiles({name:'synthetic-replacement.pdf',mimeType:'application/pdf',buffer:Buffer.from(replacement.bytes)});
+    await page.getByText('החלפה ממתינה',{exact:false}).waitFor();
+    const completed=page.waitForResponse(r=>r.url()===origin+'/api/documents/complete'&&r.request().method()==='POST');
+    await page.getByRole('button',{name:'שמירה וחזרה לתיק',exact:true}).click();const response=await completed;assert.equal(response.status(),200);
+    const snapshot=await response.json();assert.equal(snapshot.publicId,input.publicId);assert.equal(snapshot.documents.length,1);
+    const document=snapshot.documents.find((d:{id:string})=>d.id===replacement.documentId);assert.ok(document);assert.notEqual(document.version_id,replacement.versionId);assert.match(document.version_id,/^[a-f0-9-]{36}$/u);updatedVersion=document.version_id;
+    assert.equal(document.original_filename,'synthetic-replacement.pdf');assert.equal(document.period_month,'2025-02');
+    await page.waitForURL(origin+`/case/${input.publicId}/documents`);await page.getByText('synthetic-replacement.pdf',{exact:true}).waitFor();await page.reload();await page.getByText('synthetic-replacement.pdf',{exact:true}).waitFor();
+    await page.screenshot({path:`${directory}/replaced-source-390.png`,fullPage:true});
+   });
+   assert.ok(updatedVersion);return {updatedVersion};
   }else{
    await check('replacement keeps answered history with explicit stale-source explanation and refuses the old source endpoint',async()=>{
     await page.getByText('התשובה נשמרה ביחס למסמך הקודם. היא אינה מאשרת נתונים מהמסמך העדכני.',{exact:true}).waitFor();
     assert.equal((await page.locator('.thread-answered__answer').innerText()).trim(),DOCUMENT_FIELD_CONFIRMATION_ANSWERS[1]);assert.equal(await page.getByText('תיקון התשובה',{exact:true}).count(),0);
     assert.equal((await context.request.get(origin+route+'?source='+input.requestId)).status(),404);
+    if(input.replacement){assert.equal(await page.getByRole('button',{name:'החלפת המסמך של השאלה',exact:true}).count(),0);assert.equal((await context.request.post(origin+`/api/cases/${input.publicId}/upload-session?sourceRequestId=${input.requestId}`,{headers:{origin}})).status(),409);}
     await page.screenshot({path:`${directory}/historical-field-390.png`,fullPage:true});
    });
   }

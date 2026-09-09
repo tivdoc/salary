@@ -25,7 +25,8 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
  const doc=fixture.stored.documents[0],extraction=structuredClone(fixture.stored.extractions[0]);
  const period=extraction.fields.find(f=>f.field==='salary_period')!;period.normalized_value={year:2025,month:2,start_date:'2025-02-01',end_date:'2025-02-28'};
  const candidate=extraction.fields.find(f=>f.field==='base_monthly_salary')!;candidate.confidence=0.6;
- const browserProof=process.env.TIVDOC_FIELD_CONFIRMATION_PREVIEW_PROOF==='1',sessions:string[]=[],publicIds:string[]=[],storagePaths:string[]=[],sourcePath=`cases/${caseId}/versions/${doc.document_id}.pdf`;
+ const browserProof=process.env.TIVDOC_FIELD_CONFIRMATION_PREVIEW_PROOF==='1',replacementProof=process.env.TIVDOC_FIELD_REPLACEMENT_PREVIEW_PROOF==='1',sessions:string[]=[],publicIds:string[]=[],storagePaths:string[]=[],sourcePath=`cases/${caseId}/versions/${doc.document_id}.pdf`;
+ if(replacementProof&&!browserProof)throw Error('FIELD_REPLACEMENT_REQUIRES_BROWSER');
  let sourceHash=doc.content_sha256,sourceSize=100,sourceBytes:Uint8Array|undefined,bucket:ReturnType<ReturnType<typeof createClient>['storage']['from']>|undefined,storageUploaded=false,storageRemoved=false;
  if(browserProof){const pdf=await PDFDocument.create();for(let p=0;p<candidate.source.page;p++)pdf.addPage();pdf.getPages().at(-1)!.drawText('SYNTHETIC SOURCE - February 2025 - Base salary: '+JSON.stringify(candidate.normalized_value),{x:25,y:750,size:10});sourceBytes=await pdf.save();sourceSize=sourceBytes.length;sourceHash=createHash('sha256').update(sourceBytes).digest('hex');}
  const checkpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:caseId,product_document_id:docId,version_id:doc.document_id,input_sha256:sourceHash,expected_month:'2025-02',period_mismatch:false,requires_confirmation:true,
@@ -35,7 +36,7 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
  const migration='20260908192147_document_field_confirmations.sql';let seeded=false,cleaned=false,failure:string|null=null,cleanupFailure:string|null=null;
  let sourceTraceProof:unknown=null;
  writeFileSync(`../release-work/field-confirmation-owned-${caseId}.json`,JSON.stringify({caseIds:[caseId,otherId],identities,tenant,sid,docId,orderId,sourcePath,browserProof,scope:'Owned isolated DEV metadata and optional exact synthetic Storage object'}));
- const preview=async(phase:'open'|'stale-open'|'answer'|'correct'|'stale-answer',id:string)=>{if(!browserProof)return;const {verifyFieldConfirmationPreview}=await import('../../../../scripts/release-completion/preview-field-confirmation.mts');await verifyFieldConfirmationPreview({phase,publicId:publicIds[0],foreignPublicId:publicIds[1],session:sessions[0],foreignSession:sessions[1],requestId:id,question:question.question,sourceSha256:sourceHash});};
+ const preview=async(phase:'open'|'stale-open'|'answer'|'correct'|'replace'|'stale-answer',id:string)=>{if(!browserProof)return;const {verifyFieldConfirmationPreview}=await import('../../../../scripts/release-completion/preview-field-confirmation.mts');return await verifyFieldConfirmationPreview({phase,publicId:publicIds[0],foreignPublicId:publicIds[1],session:sessions[0],foreignSession:sessions[1],requestId:id,question:question.question,sourceSha256:sourceHash,expectedGitSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),...(replacementProof?{replacement:{documentId:docId,versionId:doc.document_id,bytes:sourceBytes!}}:{})});};
  const transact=async<T>(db:pg.Client,run:(context:PostgresTransactionContext)=>Promise<T>)=>{await db.query('begin');try{
   await db.query('select * from private.runtime_context_install($1,$2,$3)',[sid,jti,'field-confirmation-proof']);
   await db.query("select set_config('tivdoc.engine_git_sha',$1,true)",[execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()]);
@@ -128,10 +129,22 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
   await expect(web.query("update public.case_requests set question='changed question' where id=$1",[id])).rejects.toThrow('CASE_REQUEST_ALREADY_ANSWERED');
   await expect(worker.query('update private.document_field_targets set target=target where request_id=$1',[id])).rejects.toMatchObject({code:'42501'});
   checks.push('web cannot rewrite the bound question and worker cannot mutate target history');
+  if(replacementProof){
+   try{
+   const changed=await preview('replace',id);expect(changed?.updatedVersion).toBeDefined();
+   const actual=(await owner.query('select version_id,storage_path,content_sha256 from public.documents where id=$1',[docId])).rows[0];expect(actual.version_id).toBe(changed!.updatedVersion);expect(actual.content_sha256).toBe(sourceHash);expect(actual.storage_path).toBe(`cases/${caseId}/versions/${actual.version_id}.pdf`);storagePaths.push(actual.storage_path);
+   }finally{
+    // A transferred object also needs owned cleanup if HTTP completion fails.
+    // Inventory only this run's newly-created case prefix, never other cases.
+    const inventory=await bucket!.list(`cases/${caseId}/versions`);if(inventory.error)throw Error('OWNED_FIELD_REPLACEMENT_INVENTORY_FAILED');
+    for(const item of inventory.data??[]){expect(item.name).toMatch(/^[a-f0-9-]{36}\.pdf$/u);const path=`cases/${caseId}/versions/${item.name}`;if(!storagePaths.includes(path))storagePaths.push(path);}
+   }
+  }else{
   const replacement=randomUUID(),replacementPath=`cases/${caseId}/versions/${replacement}.pdf`;
   if(browserProof){const uploaded=await bucket!.upload(replacementPath,sourceBytes!,{contentType:'application/pdf',upsert:false});if(uploaded.error)throw Error('OWNED_FIELD_REPLACEMENT_UPLOAD_FAILED');storagePaths.push(replacementPath);}
   await owner.query('begin');await owner.query('create policy field_replacement on public.documents for update to tivdoc_dev_migrator using(true) with check(true)');
   await owner.query('update public.documents set version_id=$1,storage_path=$2 where id=$3',[replacement,replacementPath,docId]);await owner.query('drop policy field_replacement on public.documents');await owner.query('commit');
+  }
   await expect(open(worker)).rejects.toThrow('REQUEST_FIELD_SOURCE_CHANGED');expect((await web.query('select public.case_request_document_source($1,$2,$3) value',[caseId,identities[0],id])).rows[0].value).toBeNull();
   expect(await visibility()).toEqual([{request_id:id,source_current:false}]);
   expect((await owner.query('select count(*)::int n from private.case_request_answer_versions where request_id=$1',[id])).rows[0].n).toBe(2);

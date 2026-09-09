@@ -4,6 +4,9 @@ import { listIdentityCases, resolveIdentitySession } from "@/server/product/case
 import { readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { refusedEntrypoint } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
+import { requestDocumentSourceMetadata } from "@/server/product/reports/request-document-source";
+import { sameOriginSessionRequest } from "@/server/product/case-access/session-actions";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +51,20 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     return NextResponse.json({ error: "לא נמצא תיק", code: "case_not_found" }, { status: 404 });
   }
 
+  let next = "/check/upload";
+  const sourceRequestId = new URL(request.url).searchParams.get("sourceRequestId");
+  if (sourceRequestId !== null) {
+    if (!sameOriginSessionRequest(request)) return NextResponse.json({code:"request_forbidden"},{status:403});
+    if (!z.uuid().safeParse(sourceRequestId).success) return NextResponse.json({code:"request_not_found"},{status:404});
+    try {
+      const source = await requestDocumentSourceMetadata({caseId:found.case_id,identityId:session.identity_id,requestId:sourceRequestId});
+      if (!source) return NextResponse.json({code:"request_source_changed"},{status:409,headers:{"Cache-Control":"no-store"}});
+      next += `?replaceVersionId=${source.version}`;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("REQUEST_FIELD_FORBIDDEN")) return NextResponse.json({code:"request_not_found"},{status:404});
+      return NextResponse.json({code:"upload_session_failed"},{status:503});
+    }
+  }
   try {
     await setCaseCookie(found.case_id);
   } catch (error) {
@@ -59,7 +76,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
   }
 
   return NextResponse.json(
-    { ok: true, next: "/check/upload" },
+    { ok: true, next },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

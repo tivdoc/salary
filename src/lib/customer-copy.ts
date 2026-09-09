@@ -27,6 +27,7 @@ export const CUSTOMER_ERROR_COPY: Readonly<Record<string, string>> = Object.free
   // S2.3: reaching the upload screen from a case screen.
   reminder_opt_out_failed: "לא הצלחנו לבטל את התזכורות כרגע. אפשר לנסות שוב, או פשוט להתעלם מההודעה.",
   upload_session_failed: "לא הצלחנו לפתוח את מסך צירוף המסמך. אפשר לנסות שוב.",
+  request_source_changed: "המסמך של השאלה כבר השתנה. יש לטעון מחדש את השאלות בתיק לפני החלפה נוספת.",
   payment_start_failed: "לא הצלחנו לפתוח את עמוד התשלום. אפשר לנסות שוב.",
   request_answer_failed: "לא התקבל אישור שמירה. התשובה נשארה כאן ואפשר לנסות שוב.",
   request_answer_invalid: "התשובה אינה מתאימה לשאלה. צריך לבדוק את הערך ולנסות שוב.",

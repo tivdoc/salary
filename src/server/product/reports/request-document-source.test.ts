@@ -1,7 +1,7 @@
 import {beforeEach,it,expect,vi} from 'vitest';
 import {createHash,randomUUID} from 'node:crypto';
 import type {CaseAccessDb} from '../case-access/db';
-import {loadRequestDocumentSource} from './request-document-source';
+import {loadRequestDocumentSource,requestDocumentSourceMetadata} from './request-document-source';
 const ports=vi.hoisted(()=>({download:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('@/lib/supabase-admin',()=>({getSupabaseAdmin:()=>({storage:{from:()=>({download:ports.download})}})}));
@@ -19,6 +19,12 @@ it('reads scoped metadata before Storage and returns only the exact verified byt
 });
 it('does not read Storage when the scoped SQL lookup refuses the identity',async()=>{
  const s=setup();s.rpc.mockRejectedValueOnce(Error('REQUEST_FIELD_FORBIDDEN'));await expect(loadRequestDocumentSource(s.input,s.db)).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');expect(ports.download).not.toHaveBeenCalled();
+});
+it('resolves replacement metadata without downloading document bytes',async()=>{
+ const s=setup();expect(await requestDocumentSourceMetadata(s.input,s.db)).toMatchObject({version:s.source.version});expect(ports.download).not.toHaveBeenCalled();
+});
+it('refuses multiple source receipts before choosing or downloading a document',async()=>{
+ const s=setup();s.rpc.mockResolvedValueOnce([{value:s.source},{value:s.source}]);await expect(requestDocumentSourceMetadata(s.input,s.db)).rejects.toThrow('REQUEST_FIELD_SOURCE_AMBIGUOUS');expect(ports.download).not.toHaveBeenCalled();
 });
 it.each(['foreign-path','version','mime','size'] as const)('refuses %s metadata before Storage',change=>{
  const s=setup();if(change==='foreign-path')s.source.path=`cases/${randomUUID()}/versions/${s.source.version}.pdf`;if(change==='version')s.source.version=randomUUID();if(change==='mime')s.source.mime='text/html';if(change==='size')s.source.size=10*1024*1024+1;
