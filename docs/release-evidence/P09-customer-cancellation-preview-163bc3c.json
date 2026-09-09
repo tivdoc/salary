@@ -1,7 +1,7 @@
 {
-  "origin": "https://salary-249wckccu-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "ea0875a5eb633acbb4435c04217a0d13dbffcecb",
-  "deploymentId": "dpl_6xrS9bt6xNLkUaKbnSKSVGrnHjHs",
+  "origin": "https://salary-qweapotgg-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "163bc3cb22126cea0dbbb093d5efc874927a67ab",
+  "deploymentId": "dpl_33koACBwHjhkupRtPggBwqZp2GsN",
   "checks": [
     {
       "name": "cancellation Preview is exact isolated DEV with external payment disabled",
@@ -51,5 +51,20 @@
   ],
   "scope": "Owned synthetic quote/order/payment/readiness and seeded customer sessions. Actual hosted UI/HTTP/DEV cancellation, lost response/retry/reload. No live quote basis, provider checkout/refund, financial correctness or production.",
   "productionChanged": false,
-  "secretsIncluded": false
+  "secretsIncluded": false,
+  "ciRuns": [
+    34306005257,
+    34306002859
+  ],
+  "ci": "PASS",
+  "visualInspection": [
+    "unstarted-order.png",
+    "cancelled-390.png"
+  ],
+  "cleanup": {
+    "syntheticCases": 2,
+    "syntheticIdentities": 2,
+    "machineRevoked": true,
+    "failure": null
+  }
 }

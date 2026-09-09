@@ -53,11 +53,8 @@
     },
     {
       "name": "explicit file replacement commits through signed Storage upload and returns saved case documents",
-      "passed": true
-    },
-    {
-      "name": "replacement keeps answered history with explicit stale-source explanation and refuses the old source endpoint",
-      "passed": true
+      "passed": false,
+      "detail": "page.waitForResponse: Timeout 20000ms exceeded while waiting for event \"response\""
     }
   ],
   "errors": [],

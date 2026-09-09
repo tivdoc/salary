@@ -1,6 +1,6 @@
 {
   "verdict": "PASS",
-  "gitSha": "ea0875a5eb633acbb4435c04217a0d13dbffcecb",
+  "gitSha": "163bc3cb22126cea0dbbb093d5efc874927a67ab",
   "checks": [
     "customer RPC rejects foreign identity/case, initial orders and unprivileged roles; web cannot invoke the common ledger helper or forge its audit actor",
     "authorized saved order snapshot offers cancellation only for the exact unstarted v2 order",

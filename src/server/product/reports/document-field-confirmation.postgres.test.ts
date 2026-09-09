@@ -58,7 +58,9 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
   }
   await owner.query('begin');
   for(const id of [caseId,otherId]){const email=`field-${id}@example.invalid`;
-   await owner.query("insert into public.cases(id,first_name,email,phone,is_qa,status,payment_status,contact_verified_at,check_period_month) values($1,'Synthetic field confirmation',$2,'0500000000',true,'under_review','verified',now(),'2025-01-01')",[id,email]);
+   // The upload journey must start with a retained payslip for its primary
+   // month. Metadata-only proofs still use January to test independent scope.
+   await owner.query("insert into public.cases(id,first_name,email,phone,is_qa,status,payment_status,contact_verified_at,check_period_month) values($1,'Synthetic field confirmation',$2,'0500000000',true,'under_review','verified',now(),$3::date)",[id,email,replacementProof?'2025-02-01':'2025-01-01']);
    const identity=(await owner.query("select public.case_access_identity_upsert('email',$1,$2) id",[createHash('sha256').update('email|'+email).digest('hex'),email])).rows[0].id;identities.push(identity);await owner.query('select public.case_access_identity_link($1,$2)',[identity,id]);
    if(browserProof){const session=randomBytes(16).toString('base64url');sessions.push(session);publicIds.push((await owner.query('select public_id from public.cases where id=$1',[id])).rows[0].public_id);await owner.query('select public.case_access_session_create($1,$2,14400)',[identity,createHash('sha256').update('case-access-session|'+session).digest('hex')]);}
   }
@@ -130,6 +132,7 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
   await expect(worker.query('update private.document_field_targets set target=target where request_id=$1',[id])).rejects.toMatchObject({code:'42501'});
   checks.push('web cannot rewrite the bound question and worker cannot mutate target history');
   if(replacementProof){
+   expect((await owner.query('select exists(select 1 from public.cases c join public.documents d on d.case_id=c.id and d.period_month=c.check_period_month where c.id=$1 and c.is_qa) valid',[caseId])).rows[0].valid).toBe(true);
    try{
    const changed=await preview('replace',id);expect(changed?.updatedVersion).toBeDefined();
    const actual=(await owner.query('select version_id,storage_path,content_sha256 from public.documents where id=$1',[docId])).rows[0];expect(actual.version_id).toBe(changed!.updatedVersion);expect(actual.content_sha256).toBe(sourceHash);expect(actual.storage_path).toBe(`cases/${caseId}/versions/${actual.version_id}.pdf`);storagePaths.push(actual.storage_path);

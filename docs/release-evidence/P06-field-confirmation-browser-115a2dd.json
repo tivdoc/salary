@@ -1,7 +1,7 @@
 {
-  "origin": "https://salary-249wckccu-tivdoccom-5042s-projects.vercel.app",
-  "deployedSha": "ea0875a5eb633acbb4435c04217a0d13dbffcecb",
-  "deploymentId": "dpl_6xrS9bt6xNLkUaKbnSKSVGrnHjHs",
+  "origin": "https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "115a2dde81e9a2a537590588e400cb2994965926",
+  "deploymentId": "dpl_9QfryeYWadFvYYmzzkuJzLB6BE1m",
   "checks": [
     {
       "name": "exact stored field, normalized value and purchased February question opens with reading-only disclosure",
@@ -44,18 +44,6 @@
       "passed": true
     },
     {
-      "name": "source replacement navigation refuses foreign identity and cross-origin requests",
-      "passed": true
-    },
-    {
-      "name": "negative source answer opens only its exact stored document for explicit replacement",
-      "passed": true
-    },
-    {
-      "name": "explicit file replacement commits through signed Storage upload and returns saved case documents",
-      "passed": true
-    },
-    {
       "name": "replacement keeps answered history with explicit stale-source explanation and refuses the old source endpoint",
       "passed": true
     }
@@ -63,5 +51,17 @@
   "errors": [],
   "scope": "Owned synthetic source PDF, stored extraction, paid order and seeded authenticated sessions; hosted source/reading/history journey. No live OCR, OTP, legal activation, monetary calculation or production.",
   "productionChanged": false,
-  "secretsIncluded": false
+  "secretsIncluded": false,
+  "verdict": "PASS",
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "storageObjectsRemoved": 2,
+  "machineSessionRevoked": true,
+  "visualsInspected": [
+    "field-390.png",
+    "historical-field-390.png"
+  ],
+  "pdfVisual": "Complete one-page actual synthetic source PDF rendered and visually inspected; explicit SYNTHETIC SOURCE label and XTS fixture value match the stored candidate",
+  "exactDeploymentErrorRows": 0,
+  "errorLogWindow": "20 minutes after field verification"
 }

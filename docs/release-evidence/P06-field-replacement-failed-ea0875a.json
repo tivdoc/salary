@@ -1,5 +1,5 @@
 {
-  "verdict": "PASS",
+  "verdict": "FAIL",
   "checks": [
     "actual web role cannot open a confirmation and a verified worker cannot open one in another case",
     "SQL independently refuses a target that differs from its persisted extraction candidate",
@@ -13,11 +13,9 @@
     "actual worker canonical PostgreSQL stages retain the identified reading under 0.6.5 while legal gates keep all monetary results absent; analysis fixture is rolled back",
     "source metadata is tied to this exact document version and refuses the other customer",
     "a negative correction removes confirmation in the next canonical input while preserving both original and corrected answers",
-    "web cannot rewrite the bound question and worker cannot mutate target history",
-    "answered replaced-source visibility is historical while both immutable answer versions remain intact",
-    "replacement invalidates source and old target reuse without changing paid status or deleting answer history"
+    "web cannot rewrite the bound question and worker cannot mutate target history"
   ],
-  "failure": null,
+  "failure": "page.waitForResponse: Timeout 20000ms exceeded while waiting for event \"response\"",
   "cleanupFailure": null,
   "migration": "20260908192147_document_field_confirmations.sql",
   "sha256": "02e4514626e558c366f48162b49cf41b23b0d9c8a5de3c6314a5f4027bb05cd9",
@@ -31,8 +29,8 @@
   "browserProof": true,
   "storageUploaded": true,
   "storageRemoved": true,
-  "storageObjectsRemoved": 2,
-  "sourceSha256": "ac4a6d829d92620d605dd254681906a621e33e3fb862007a40bf9f3bea9320e4",
+  "storageObjectsRemoved": 1,
+  "sourceSha256": "527a8ef2545d6700f016c1f14b904e0a6bfa3a9e271076d9961219edd63bb73e",
   "scope": "Actual isolated DEV worker/peer/web SQL, actual Storage PDF, seeded customer sessions and hosted reading/correction/history; saved snapshot and canonical PostgreSQL stages. Synthetic extraction and paid order, no live OCR/OTP, legal activation, monetary calculation or production.",
   "productionChanged": false
 }
