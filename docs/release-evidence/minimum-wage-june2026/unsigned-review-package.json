@@ -1,0 +1,1291 @@
+{
+  "activation": {
+    "allowed": false,
+    "approved_by": null,
+    "signed_envelope": null
+  },
+  "blank_source_decision": {
+    "decided_at": null,
+    "decision": null,
+    "packet_id": "IL_MINIMUM_WAGE_JUNE2026_SOURCE_REVIEW",
+    "packet_sha256": "45f2ae770af17521d1ee2f32d2a982cbf955f930dcba756fa7b6fd6c9b2d7ce3",
+    "reason": null,
+    "required_decisions": [
+      "artifact_authenticity",
+      "content_transcription_accuracy",
+      "effective_interval",
+      "sector_population_applicability",
+      "authority_precedence"
+    ],
+    "reviewer_id": null,
+    "reviewer_role": null,
+    "schema_version": "tivdoc-blank-source-decision-template-v0.6.0",
+    "signature_sha256": null,
+    "template_id": "IL_MINIMUM_WAGE_JUNE2026_BLANK_DECISION"
+  },
+  "bundle_sha256": "df084a639c392122ebc7d7761b9941fe3eb86ab388f2fe7b2693d4c56129dd98",
+  "candidate_families": [
+    {
+      "approval_status": "unsigned",
+      "component_count": 1,
+      "golden_cases_sha256": "824d3cefce6f2b636d5e2c44192ca502c43631aa4e942f8e84485e39c81f692d",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "13aafca9bf836a4a505dad1f7dae8885216aa5ded5574dc49039b8016aae08b0",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.1"
+        },
+        {
+          "candidate_sha256": "f4fd65fe9c8d50d117ce962cc296a83bf8c294924c8f70d4aef9b21054c99752",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.1"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.1",
+      "rule_spec_sha256": "39449b097518628c10fd8d2498575fccc64fd7edc63a06bad3964f4d25c56580",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 2,
+      "golden_cases_sha256": "565f4b8c54bf46f1fab32ff17150aa34878210d8af36f93c4f952f7624737ab8",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "5364820ecbd0f4d00b1f70ed31c9afc0bd598e063ca1b7ffcd8411b84b4e99a3",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.2"
+        },
+        {
+          "candidate_sha256": "bb0b242e6ddfec20848f130d799cb017e011c2e4ed17b85cb6c56ff2149588b0",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.2"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.2",
+      "rule_spec_sha256": "8f7210f2b5d778bb382cb9d3bc64c1519eeed9f5e16a829739ddbb7b1dfe42ab",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 3,
+      "golden_cases_sha256": "531613722d7356c82640dac826ba68b7ab64a90a237575f7af6d3f9a92362930",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "24d0bb51b471ab50f544b448c89b525609155827902d4718193723b2bfef85e2",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.3"
+        },
+        {
+          "candidate_sha256": "96c9fee794c2858a37d2b65424d2f7b6653980ce925604572109b8dfe5e02618",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.3"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.3",
+      "rule_spec_sha256": "fc45e77c4446ec73161e8cbe0ee9def6c4c9706b55fd5c1c1896f8211b735aeb",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 4,
+      "golden_cases_sha256": "2ff3ab5454711b9850fee62af60015bfc278b65512bdd21d9ba363b7aaac35e5",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "2cd34e37290854d4c8f5d14bbb90e0c4c341b8bb47de0209eef07038b673c5d8",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.4"
+        },
+        {
+          "candidate_sha256": "bf994555ebb1838c708c317e3517535e35b412718bb15d8996a8d1a400c46243",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.4"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.4",
+      "rule_spec_sha256": "d29676035e87d7c78f0b0d92b67032a0bdf63a046214a59d61f9722f3be9685c",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 5,
+      "golden_cases_sha256": "17a74ff1c2074d53352f983cd458cd020803a7cf6637fab1888cdf1b17c8ff8e",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "28a7ac9780437d04bb0039b72514b95a306bdef13d76e278e65ae5da9ed33f20",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.5"
+        },
+        {
+          "candidate_sha256": "2b5e81e0635cc4732b507897bd09ef07f6dc47914941baa91fc7dab2b5c75352",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.5"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.5",
+      "rule_spec_sha256": "c5ddd8dc7e2cdec93d84afb882700a998b41fe13189a41c7053eb46b960d9064",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 6,
+      "golden_cases_sha256": "96853200db90e8530b814c308f380a09a0b361d3873f085d225e1f477b4371f4",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "d2620b25589549aa0b972a2981107e0a87d6a0a78fa514cc86ec48d496105188",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.6"
+        },
+        {
+          "candidate_sha256": "6bc41f5f3b11ab9fb3eb91b3189a8a7ab45d78e2d8905656983ccda9640995eb",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.6"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.6",
+      "rule_spec_sha256": "1aaedb0fbdc8f27cf3f04d149ca440c88172b115df5a2b548db33756a63d225e",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 7,
+      "golden_cases_sha256": "7e67c20f1898104c594294c80251cf5d6c3c5c8d2bdbdb46dc0b477dbc9cefed",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "8da053898a5d864200f6648e8ea47a4c9b6306b5115819a56137d6228f22f38b",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.7"
+        },
+        {
+          "candidate_sha256": "fe5b06784f89dd7b40ca2c6567aad5539949518e69cd37c0c7dbe8a27e3e2abc",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.7"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.7",
+      "rule_spec_sha256": "88812217e27b46d414898b317335d6518091958580990ddbec4bbfebc8e5b4a0",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 8,
+      "golden_cases_sha256": "4f407e51c51bfe3e17158b1383a13fa0c7d3e25b87fecc4fd477ae66eae359da",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "0f5340bca21c3a4eacaa12e93c047ab2ce10cac51f1998b8da895e97eae5d557",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.8"
+        },
+        {
+          "candidate_sha256": "c5306e5a81af4e342b32ba927e61fb48590aaa6a1c784a59cfe0614e280deada",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.8"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.8",
+      "rule_spec_sha256": "fa6907a2f2494be2e7da4835f4a310d067d2ee9c3d0b4282c42a787d90bf50fb",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 9,
+      "golden_cases_sha256": "514a9762bc624de356c78fe470770ee2e1958cf9844c90dd148527bb05f4d428",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "5be39a3eebd936beb90d0e712d65130a3de1963c9ebc8a80c63170f42474dfdf",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.9"
+        },
+        {
+          "candidate_sha256": "905a1fd6cf4e7d579ab5e03465175becd0a1c5b45c15d84fd27b8112c9ce11a2",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.9"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.9",
+      "rule_spec_sha256": "914ddc78c5aff498ff470e0c74e2ee5470caf44068101a87bafabe464d966b9d",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 10,
+      "golden_cases_sha256": "4d5ef906099d3b375c911a245026ab6ae8ad72f7aaaf557a53dbfd289ace7b7e",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "ea2e2df2cc39588d049281d25fd20b95fd859a2b5a8af6c1eb99551b941ba4e4",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.10"
+        },
+        {
+          "candidate_sha256": "9961c2403d6efa927139b2277d8b543e810a4e1c40a9955521c875da677b044a",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.10"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.10",
+      "rule_spec_sha256": "092c752c961bcf709e78ae299743a948feb529a997b4920cf1946098f473a8e1",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 11,
+      "golden_cases_sha256": "24c28c4121c3f2ac053b6aaf743660df8607ba72baa30f424dee2593cc825fd0",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "46eb9e5fee9af201c46d665c74c82c21e6576f7f90c78b24e0d3226ed65c593d",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.11"
+        },
+        {
+          "candidate_sha256": "260b9ace03106f8d3631245d173e5afa99e74f0f1821985fdecaffe31769f682",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.11"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.11",
+      "rule_spec_sha256": "cb2f7017c10a8cb2ee0e5224d1305f3b8aaaf884d132236da464749beb771de5",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 12,
+      "golden_cases_sha256": "2dcb76b2dccc24ae5e29579e5531d7f6d708d212ebc331e516e9378fe3fb0647",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "7e489f90c8a75f7258c2a6dec5f9f31b593e79070efe91239c9c4bc8648596fb",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.12"
+        },
+        {
+          "candidate_sha256": "83c51dfe965ecc4d81b015667a6624aae3ae7d50e4c531a446682a6e0e3fd4d2",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.12"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.12",
+      "rule_spec_sha256": "294843d900bbde1cc3402600a3564425a8d8c17dc8637861b9dbcbabbe29b4b3",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 13,
+      "golden_cases_sha256": "2c8754d2690ef766663aebe660163d7b8ce9af241e867212f01fe5fb84922c9f",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "032d292f4a8836f8b73576deb2cd22762004983d23acac328d24c251d5f094f2",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.13"
+        },
+        {
+          "candidate_sha256": "514476ab22b6f27e04a98e71720fc6f2ec9d66a86f681caee893aee1d70eab25",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.13"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.13",
+      "rule_spec_sha256": "0815ad13c7a35ba5eb174dca646bbaf00c06ea926d5ed9b540bd15afefb068a1",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 14,
+      "golden_cases_sha256": "936f07095e19fa04e359af351cef40171a73a597078e412d15279cf495d478c3",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "c9d8cbec53c3381f39a807e42fae3bddd3748da86eec8f5938ddbd8f077e7c77",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.14"
+        },
+        {
+          "candidate_sha256": "26ef3036b296f8df2ea9092bf8e91150f0106389c88a21c675ece46b1acb61dd",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.14"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.14",
+      "rule_spec_sha256": "ffa0f343f2c88c394518c4ac034d6eb7134bd76ea10964a9dd63a11675f414a7",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 15,
+      "golden_cases_sha256": "f9e84ba0a9205cd2ff466425af8f513886c559799dbd1daa4e727717a772621c",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "2662accc3b955e42acf4b28649113ebe99b5899f43b052f6b826801c61d82722",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.15"
+        },
+        {
+          "candidate_sha256": "09f51921212db0068cde3d073d112a938578d8756924ea92d4a11aae2e30f99e",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.15"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.15",
+      "rule_spec_sha256": "1adc2ba3de16f49315c4cf32d514cb4844683bbef7cb2ac256abb7a018d835d6",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 16,
+      "golden_cases_sha256": "5ea5f1614d9b04739d8dae8ded9b1a39805bb809a6b194098bd1c0eed832fecd",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "a0fbd8a43e2cbe80fec0202d650fe941916a67f669806cc1fc2d56e601b56e20",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.16"
+        },
+        {
+          "candidate_sha256": "46290cc671b1572cabed5804ed9c42fbc161689151a0e22a8da263c6997477f9",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.16"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.16",
+      "rule_spec_sha256": "1909113a1da3f3182263c39181838118495ccd6222159dde61c5f497e1becec2",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 17,
+      "golden_cases_sha256": "438f1d18d21a5339b204230526b86fcc0f86e19a9dfb46bb5e8fd0b364ba6c5c",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "7a4fec634d3dc32a5448d10eafcf4c7f0e14658c58e0ba26cdddfdf4e0e6f4c4",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.17"
+        },
+        {
+          "candidate_sha256": "1a25a3566dde674529b2587229de3deb9f958e97f4173689f85b0580814ec815",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.17"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.17",
+      "rule_spec_sha256": "2353cee57e3665d6608cd2f88d2f260ca6866f5f8b859cb03f3fe43d3f559209",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 18,
+      "golden_cases_sha256": "a3adbc8f2562fd9c202872463140d5d227c356f0d70f0e13a705bde37af6d1fe",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "9525cd182c7f1537e776f8f9cc8f8684ec26e8343930898a3decfe434df5a96a",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.18"
+        },
+        {
+          "candidate_sha256": "e36532ee3f861b72875f70fe7db65595406030413ec6d9eec4f3fa03d6fae0f2",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.18"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.18",
+      "rule_spec_sha256": "42e52e662e97a2f5b35093bd4ebc7d2b90303cdef9bd4456b43faec6a3847395",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 19,
+      "golden_cases_sha256": "06fc70074f535c9041424a99b3ab675f6b8613d78deaa1c5806b61db0541efd0",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "ec9e77fc79757aa9103eaf6da6a304b1cc535988aa9fe6b8e2693da1594d89ec",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.19"
+        },
+        {
+          "candidate_sha256": "0df74eb40a79a8beea802b19b73d8476f8076c9ae1a9392b4dc337137ec02fd0",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.19"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.19",
+      "rule_spec_sha256": "59fafb958c1d5406cbd7246a874d36c27d32d422c0678a22849672344f70eb1c",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 20,
+      "golden_cases_sha256": "65bfe738d5d5d25ea8adf43349b18827028fc2f20ae8b41b70411886b4f07b74",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "85cc1132165d64aad20be66cdf6153e7fe405ea352d7d033c9389e6771234605",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.20"
+        },
+        {
+          "candidate_sha256": "78c95a6e342c7ea1972b7c1966e9316897da998ac68b9ff715cd2d72ce010369",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.20"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.20",
+      "rule_spec_sha256": "92a8870966405d710831055c8028d61ef827b279a0a82ed9e084060c13c55032",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 21,
+      "golden_cases_sha256": "4c359a6a86eb1cc16967ba91f3092bba1a826154271a041c9a37207ee14d4a79",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "8c8530b82003c78a79ef3fc003d9c6d868627539bdfb050582abf86789f7c545",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.21"
+        },
+        {
+          "candidate_sha256": "0d73fc6939cbcd55397b31d8acfe3687ef234a7410cdd3a903293aacbabe1dc3",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.21"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.21",
+      "rule_spec_sha256": "294f8b89d96c825e22e0ec9381a1975748b864b5773422ec6b8c83a8eb0d6f17",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 22,
+      "golden_cases_sha256": "abc6325806cc18317a1f53f8287f4faae3377f3d86e6828b45ae688afb37d312",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "9dc935795056f4c1ed83edbb1f16f79583dd6ca2705c64294e5185fb63182dc9",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.22"
+        },
+        {
+          "candidate_sha256": "baffa3f4b57be2b7c6f8b367e7da14d22c757e33deea3cc4edfb10fe48b5e7f1",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.22"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.22",
+      "rule_spec_sha256": "8aa6333356f70e6560aa28e39ffef347b71c4efd6f8c94a5b29625140bc55893",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 23,
+      "golden_cases_sha256": "d8534a296695f1203f6c7779392bda296402070ae04f01b8ef9b830b38fa609b",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "0a5ab53780e73c824bf8584ab04933dd6165cb803d5eabf3f34c4cd74994c1a4",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.23"
+        },
+        {
+          "candidate_sha256": "88fff77031ff3d9e0acdec6810b6dd6554a6a3d1a13289980ec380928ba8000c",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.23"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.23",
+      "rule_spec_sha256": "5ff4ca28d181a4b1cd5bd9927cb0713e58e9b8094f54e08aad83d34135d5e78f",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 24,
+      "golden_cases_sha256": "95e29ddcb21ecab1cd0bf61344e71b5ca200a2cd96438770452368701be89d04",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "ab859466e9adc97dfc84f44b0424769e68d55a4932662248633d131ba9c1eb9f",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.24"
+        },
+        {
+          "candidate_sha256": "11e03798bf51a97e3ec3651920bad628c83ca5745b11e4225a2d427e4e9dcfae",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.24"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.24",
+      "rule_spec_sha256": "5a9da6f73c1926688ce2d47e80b6bafefac3c13b1d306d8cc0f711c3027737ae",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 25,
+      "golden_cases_sha256": "f9f5f164e739c59972a17fd68ea38de4f949793149844cfcfd99574ce5f76a93",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "02f2d04076f5beca816921eb77164d80a3954b024a4450d30157a9f960c98b92",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.25"
+        },
+        {
+          "candidate_sha256": "86c55744b1e1f37a0876915a358a4884bd37a9aceab34c746cee27604fdb1dad",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.25"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.25",
+      "rule_spec_sha256": "3fcbbc499745de3d45028f17fa38c10f95499b10b55c685074d1f19c2f93b26f",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 26,
+      "golden_cases_sha256": "ca2e411b6353ef990e507506b63c3d8f8acf10a81eb694b46eed2f33d997e062",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "80f5e50ab0d4a5b945ec87a4030d6d7679f148977e3fa2c6e74d2342dc2034e8",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.26"
+        },
+        {
+          "candidate_sha256": "a1ca23fa36179edeb52e131f9345ff7093d1705f9b968a2d1d312fac238ea030",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.26"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.26",
+      "rule_spec_sha256": "872aa2ad90846df27232507ba0b7cb8ebcea841fbb32258f943d9a36f2b65a11",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 27,
+      "golden_cases_sha256": "6adaeee264dab977c7e601442695e3ea7a921067aaff98eaf257f43473b861b9",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "472b7ac2060fed872d0b204b008760934e2b458247ee51275f6888238edc9ee8",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.27"
+        },
+        {
+          "candidate_sha256": "fcad5802a68324cfddbeb4fcdca732e5503a75f16b8e0cad7d1ce99c71672313",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.27"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.27",
+      "rule_spec_sha256": "cc46f777bd53f0b184e023e6f3604314b3438f05a1aa781314cc5ddcc7ba0561",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 28,
+      "golden_cases_sha256": "041c1692ab76a70bc132bb85f4c4a1c8470093cda1b58bb6bcfe085dc78d34d2",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "7093ab97eadd1f9ecacd22882be4ee0001ff5f6880e809472d7a397168705dee",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.28"
+        },
+        {
+          "candidate_sha256": "2f937ad1cd9c35ab31710ffa233248a992e586c58cd261ecfba76f6c780ed718",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.28"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.28",
+      "rule_spec_sha256": "8387a33604528c09cf74cd767b9141d96a6e79b9846d6b9047acb434e4e557a2",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 29,
+      "golden_cases_sha256": "de98d5d8875e4c57bc6aff44da98d216c77a25575e1018c2f1c3d7fae98bc80a",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "7bef5c4241b63c595f0fef4ea2999f281ff6910192a153831fe2231bafd24457",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.29"
+        },
+        {
+          "candidate_sha256": "bf093abca52d344b19a792e68608a1d21e308c5a73099425a76b1d131fc3e100",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.29"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.29",
+      "rule_spec_sha256": "970b880a5ceea61322f53bd39b3904b8ae5d19463306e8ef376216af1c49314c",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 30,
+      "golden_cases_sha256": "27f8817c48de0fe017259652be3997e72cb5b7b42565bd73c387dea236699650",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "7527ab0298566b2a134edd1ab9e420ef8bbb9fefcadf1f09cfa1b7eaf976348e",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.30"
+        },
+        {
+          "candidate_sha256": "5a1993b036620e4de1dd9da93ca29cd08e1e00b5febd270d1f089f99bb1885ed",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.30"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.30",
+      "rule_spec_sha256": "c03bbfa7082e6538093cbf9c45bcce357fec98cb566b70832672c0a2dd3e104f",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 31,
+      "golden_cases_sha256": "2c9b5230a48c2a4b24fc3dfa275e3506aede930a3c56ecd7592cc62e0b5cd8e5",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "84bd3fe3a973a1e3910b16c8c58ffec34f9e0cfd8f09da8257d6158229c37465",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.31"
+        },
+        {
+          "candidate_sha256": "0edef3778176787f6d0c6e1401c50969a37360056175cf7c5197e22f252720a9",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.31"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.31",
+      "rule_spec_sha256": "fec80222e6683c9fdb1bfe48d811fce90f7ebb4d7bd7b3e0e0762bd486d8625a",
+      "rule_spec_version": "1.0.0"
+    },
+    {
+      "approval_status": "unsigned",
+      "component_count": 32,
+      "golden_cases_sha256": "4a18eb6b1e53da2cc138dcdbb36d34c92945ddf350e928e850b46c50cd21cfdf",
+      "parameter_candidates": [
+        {
+          "candidate_sha256": "0f4fb51d155ba71911910246541ff2fe096c50ca0a9f6e7efb1c518b0a1d1561",
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.32"
+        },
+        {
+          "candidate_sha256": "fbeecbe762f75f62b17d4b0ab5f7c31552d6d939e37601f2e7b7080b46ec1aee",
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.32"
+        }
+      ],
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.32",
+      "rule_spec_sha256": "db8df2b5d50197d4610459e3a49fc3b78f4d17e933bf683ac586e1c5b7d65c56",
+      "rule_spec_version": "1.0.0"
+    }
+  ],
+  "customer_analysis_ready": false,
+  "one_component_artifacts": {
+    "activationAllowed": false,
+    "goldenCases": {
+      "cases": [
+        {
+          "case_id": "one_hundred_hours",
+          "expected_output": {
+            "currency": "ILS",
+            "kind": "money",
+            "minor_units": 24058
+          },
+          "facts": [
+            {
+              "ref_id": "fact.regular.hours",
+              "value": {
+                "denominator": "1",
+                "kind": "rational",
+                "numerator": "100",
+                "unit": "hours_per_month"
+              }
+            },
+            {
+              "ref_id": "fact.component.1",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 330000
+              }
+            }
+          ],
+          "parameters": [
+            {
+              "ref_id": "parameter.monthly.floor",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 644385
+              }
+            },
+            {
+              "ref_id": "parameter.month.hours",
+              "value": {
+                "denominator": "1",
+                "kind": "rational",
+                "numerator": "182",
+                "unit": "hours_per_month"
+              }
+            }
+          ]
+        },
+        {
+          "case_id": "full_182_hours",
+          "expected_output": {
+            "currency": "ILS",
+            "kind": "money",
+            "minor_units": 0
+          },
+          "facts": [
+            {
+              "ref_id": "fact.regular.hours",
+              "value": {
+                "denominator": "1",
+                "kind": "rational",
+                "numerator": "182",
+                "unit": "hours_per_month"
+              }
+            },
+            {
+              "ref_id": "fact.component.1",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 644385
+              }
+            }
+          ],
+          "parameters": [
+            {
+              "ref_id": "parameter.monthly.floor",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 644385
+              }
+            },
+            {
+              "ref_id": "parameter.month.hours",
+              "value": {
+                "denominator": "1",
+                "kind": "rational",
+                "numerator": "182",
+                "unit": "hours_per_month"
+              }
+            }
+          ]
+        },
+        {
+          "case_id": "half_hour",
+          "expected_output": {
+            "currency": "ILS",
+            "kind": "money",
+            "minor_units": 170
+          },
+          "facts": [
+            {
+              "ref_id": "fact.regular.hours",
+              "value": {
+                "denominator": "10",
+                "kind": "rational",
+                "numerator": "5",
+                "unit": "hours_per_month"
+              }
+            },
+            {
+              "ref_id": "fact.component.1",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 1600
+              }
+            }
+          ],
+          "parameters": [
+            {
+              "ref_id": "parameter.monthly.floor",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 644385
+              }
+            },
+            {
+              "ref_id": "parameter.month.hours",
+              "value": {
+                "denominator": "1",
+                "kind": "rational",
+                "numerator": "182",
+                "unit": "hours_per_month"
+              }
+            }
+          ]
+        },
+        {
+          "case_id": "over_recorded",
+          "expected_output": {
+            "currency": "ILS",
+            "kind": "money",
+            "minor_units": -5942
+          },
+          "facts": [
+            {
+              "ref_id": "fact.regular.hours",
+              "value": {
+                "denominator": "1",
+                "kind": "rational",
+                "numerator": "100",
+                "unit": "hours_per_month"
+              }
+            },
+            {
+              "ref_id": "fact.component.1",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 360000
+              }
+            }
+          ],
+          "parameters": [
+            {
+              "ref_id": "parameter.monthly.floor",
+              "value": {
+                "currency": "ILS",
+                "kind": "money",
+                "minor_units": 644385
+              }
+            },
+            {
+              "ref_id": "parameter.month.hours",
+              "value": {
+                "denominator": "1",
+                "kind": "rational",
+                "numerator": "182",
+                "unit": "hours_per_month"
+              }
+            }
+          ]
+        }
+      ],
+      "content_sha256": "824d3cefce6f2b636d5e2c44192ca502c43631aa4e942f8e84485e39c81f692d",
+      "golden_case_set_id": "il.minimum.wage.june2026.arithmetic.cases.1",
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.1",
+      "rule_spec_version": "1.0.0",
+      "schema_version": "tivdoc-rulespec-golden-case-set-v0.6.0"
+    },
+    "humanApproved": false,
+    "parameterInputs": [
+      {
+        "ref_id": "parameter.monthly.floor",
+        "value": {
+          "currency": "ILS",
+          "kind": "money",
+          "minor_units": 644385
+        }
+      },
+      {
+        "ref_id": "parameter.month.hours",
+        "value": {
+          "denominator": "1",
+          "kind": "rational",
+          "numerator": "182",
+          "unit": "hours_per_month"
+        }
+      }
+    ],
+    "parameters": [
+      {
+        "bindings": {
+          "citations_sha256": "45c55a22ea28b49eeaa18e4b875f9b9aa5c926fa80413b31e1e8e8ecf5360cb7",
+          "golden_cases_sha256": "824d3cefce6f2b636d5e2c44192ca502c43631aa4e942f8e84485e39c81f692d",
+          "interval_sha256": "31a681e34ecb5564ae7e0b46446687ce69a6743076471652b664f9a46d092943",
+          "parameter_set_sha256": "96d55c965ac599945807a98b02a2dc13ba61bdda60934d5ab1014cfb5e36e001",
+          "reviewer_decisions_sha256": "65fee8113fa447a9271dcd6d3fd393c1752ffa2bc15451e198707cbd3d0c8b8a",
+          "rule_spec_sha256": "39449b097518628c10fd8d2498575fccc64fd7edc63a06bad3964f4d25c56580",
+          "scope_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+          "source_bytes_sha256": "cf8403e6748eeb5919f49cff1eacfd0e502482cb64d75dbc1b7d7ff21b654d3d"
+        },
+        "branch": "monthly_times_hours_over_182",
+        "candidate_sha256": "13aafca9bf836a4a505dad1f7dae8885216aa5ded5574dc49039b8016aae08b0",
+        "decision_id": "il.minimum.wage.june2026.unsigned.exact182",
+        "effective_from": "2026-06-01",
+        "effective_to": "2026-06-30",
+        "operative_source_version_ids": [
+          "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+          "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84",
+          "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a"
+        ],
+        "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+        "parameter_version": "1.0.1",
+        "populations": [
+          "adult_general"
+        ],
+        "rounding_policy": "exact",
+        "schema_version": "tivdoc-parameter-candidate-v0.6.0",
+        "sectors": [
+          "general_private"
+        ],
+        "support_roles": [
+          "primary_binding"
+        ],
+        "topic": "minimum_wage",
+        "unit": "currency.ils",
+        "value": {
+          "kind": "money",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 644385
+          }
+        }
+      },
+      {
+        "bindings": {
+          "citations_sha256": "45c55a22ea28b49eeaa18e4b875f9b9aa5c926fa80413b31e1e8e8ecf5360cb7",
+          "golden_cases_sha256": "824d3cefce6f2b636d5e2c44192ca502c43631aa4e942f8e84485e39c81f692d",
+          "interval_sha256": "31a681e34ecb5564ae7e0b46446687ce69a6743076471652b664f9a46d092943",
+          "parameter_set_sha256": "96d55c965ac599945807a98b02a2dc13ba61bdda60934d5ab1014cfb5e36e001",
+          "reviewer_decisions_sha256": "65fee8113fa447a9271dcd6d3fd393c1752ffa2bc15451e198707cbd3d0c8b8a",
+          "rule_spec_sha256": "39449b097518628c10fd8d2498575fccc64fd7edc63a06bad3964f4d25c56580",
+          "scope_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+          "source_bytes_sha256": "cf8403e6748eeb5919f49cff1eacfd0e502482cb64d75dbc1b7d7ff21b654d3d"
+        },
+        "branch": "monthly_times_hours_over_182",
+        "candidate_sha256": "f4fd65fe9c8d50d117ce962cc296a83bf8c294924c8f70d4aef9b21054c99752",
+        "decision_id": "il.minimum.wage.june2026.unsigned.exact182",
+        "effective_from": "2026-06-01",
+        "effective_to": "2026-06-30",
+        "operative_source_version_ids": [
+          "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+          "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84",
+          "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a"
+        ],
+        "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+        "parameter_version": "1.0.1",
+        "populations": [
+          "adult_general"
+        ],
+        "rounding_policy": "exact",
+        "schema_version": "tivdoc-parameter-candidate-v0.6.0",
+        "sectors": [
+          "general_private"
+        ],
+        "support_roles": [
+          "primary_binding"
+        ],
+        "topic": "minimum_wage",
+        "unit": "hours_per_month",
+        "value": {
+          "denominator": "1",
+          "kind": "rational",
+          "numerator": "182",
+          "unit": "hours_per_month"
+        }
+      }
+    ],
+    "rule": {
+      "catalog_boundary": "real_inactive",
+      "content_sha256": "39449b097518628c10fd8d2498575fccc64fd7edc63a06bad3964f4d25c56580",
+      "effective_period": {
+        "from": "2026-06-01",
+        "to": "2026-06-30"
+      },
+      "facts": [
+        {
+          "ref_id": "fact.regular.hours",
+          "unit": "hours_per_month",
+          "value_kind": "rational"
+        },
+        {
+          "ref_id": "fact.component.1",
+          "unit": "currency.ils",
+          "value_kind": "money"
+        }
+      ],
+      "golden_case_set_sha256": "824d3cefce6f2b636d5e2c44192ca502c43631aa4e942f8e84485e39c81f692d",
+      "nodes": [
+        {
+          "left_ref": "fact.regular.hours",
+          "node_id": "regular.month.fraction",
+          "operation": "divide",
+          "right_ref": "parameter.month.hours"
+        },
+        {
+          "money_ref": "parameter.monthly.floor",
+          "node_id": "expected.regular.pay",
+          "operation": "money.scale",
+          "rational_ref": "regular.month.fraction",
+          "rounding": "half_up"
+        },
+        {
+          "node_id": "recorded.eligible.pay",
+          "operation": "aggregate.bounded",
+          "refs": [
+            "fact.component.1"
+          ]
+        },
+        {
+          "left_ref": "expected.regular.pay",
+          "node_id": "expected.minus.recorded",
+          "operation": "subtract",
+          "right_ref": "recorded.eligible.pay"
+        }
+      ],
+      "output_ref": "expected.minus.recorded",
+      "parameters": [
+        {
+          "parameter_id": "il.minimum_wage.monthly.june2026.candidate",
+          "parameter_version": "1.0.1",
+          "ref_id": "parameter.monthly.floor",
+          "unit": "currency.ils",
+          "value_kind": "money"
+        },
+        {
+          "parameter_id": "il.minimum_wage.hourly_divisor.june2026.candidate",
+          "parameter_version": "1.0.1",
+          "ref_id": "parameter.month.hours",
+          "unit": "hours_per_month",
+          "value_kind": "rational"
+        }
+      ],
+      "populations": [
+        "adult_general"
+      ],
+      "resource_policy": {
+        "max_aggregate_items": 32,
+        "max_depth": 3,
+        "max_integer_digits": 32,
+        "max_steps": 4
+      },
+      "rule_spec_id": "il.rulespec.minimum.wage.june2026.components.1",
+      "rule_spec_version": "1.0.0",
+      "schema_version": "tivdoc-rulespec-v0.6.0",
+      "sectors": [
+        "general_private"
+      ],
+      "source_version_ids": [
+        "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+        "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84",
+        "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a",
+        "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02"
+      ],
+      "topic": "minimum_wage"
+    }
+  },
+  "packet": {
+    "completeness_status": "blocked",
+    "decision_template_id": "IL_MINIMUM_WAGE_JUNE2026_BLANK_DECISION",
+    "generated_at": "2026-09-09T18:00:00.000Z",
+    "known_conflicts": [
+      "Law section1 retains186; proposed182 branch relies on the2018 extension order2.8 and requires the employee to be within its scope.",
+      "Published hourly35.40 versus exact6443.85/182: candidate100h gap240.58 differs from engineering fixture240.00. No operative rounding mandate acquired."
+    ],
+    "missing_official_material": [
+      "Original-origin copy or authenticated provenance for Yalkut14324 p4496; current bytes are a reproduced primary instrument.",
+      "Operative direction resolving hourly intermediate rounding versus exact182 division and final-agora rounding.",
+      "June2026 continuation/no-repeal verification for the2018 order including its sunset provision."
+    ],
+    "packet_id": "IL_MINIMUM_WAGE_JUNE2026_SOURCE_REVIEW",
+    "packet_sha256": "45f2ae770af17521d1ee2f32d2a982cbf955f930dcba756fa7b6fd6c9b2d7ce3",
+    "packet_version": "1.0.0",
+    "parse_failures": [],
+    "quarantines": [],
+    "reviewer_questions": [
+      "Verify the exact archived artifact bytes and full-document text chunks, including Gazette column order and the law consolidation lineage.",
+      "Confirm6443.85 from2026-04-01 and whether the2018 order182 divisor applies to the proposed June2026 hourly adult general-private scope.",
+      "Resolve35.40 intermediate rounding versus full-precision182 division and justify final-agora half-up with its authority and examples.",
+      "Approve or reject included/excluded component classes under law3(a)-(b), treatment of unknown commission/nonstandard remuneration under3(d), and the ordinary-hours-only boundary.",
+      "Confirm the required employee evidence for age, all30(a) exceptions, adapted wage and better arrangements; a generic job-title answer cannot decide the legal classification."
+    ],
+    "schema_version": "tivdoc-source-review-packet-v0.6.0",
+    "scope_complete_as_of": "2026-09-09",
+    "sources": [
+      {
+        "artifact_sha256": "4674f07928a2397b626db362c6c9b98b7c4e77e693e397463fdabd83c7f4f161",
+        "authority_role": "primary_binding",
+        "chunk_sha256s": [
+          "78c56ddc92a3c91725376e27bd06cb769bf9660899c82f7dc26873adb89401d8"
+        ],
+        "hash_availability": "verified_hashes_present",
+        "immutable_source_record_sha256": "4458ec7223cb6497adbdc80fd8888fdf9293b74a510ea30dfc6f3137c7d6364f",
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested."
+        ],
+        "proposed_effective_periods": [
+          {
+            "from": "2026-06-01",
+            "status": "unverified",
+            "to": "2026-06-30"
+          }
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "publication_metadata": {
+          "publication_reference": "Minimum Wage Law 1987; NII consolidated copy, section6(1) footnote4",
+          "published_at": null
+        },
+        "source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2"
+      },
+      {
+        "artifact_sha256": "d99d1f420b8427f9734da2252791b0937478810a56ffd09939b39908cdd23787",
+        "authority_role": "primary_binding",
+        "chunk_sha256s": [
+          "f795acf90318c6f33d12099741295b14a4667cd29285b356621d112ab6263aed"
+        ],
+        "hash_availability": "verified_hashes_present",
+        "immutable_source_record_sha256": "613d9443f2a63ab35f879eadf049d586bc91efcddd5259fa2ba808d5a427690d",
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested."
+        ],
+        "proposed_effective_periods": [
+          {
+            "from": "2018-04-01",
+            "status": "unverified",
+            "to": null
+          }
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "publication_metadata": {
+          "publication_reference": "Yalkut Hapirsumim7732 pp6284-6285",
+          "published_at": "2018-03-19"
+        },
+        "source_version_id": "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84"
+      },
+      {
+        "artifact_sha256": "65af7940d69a7c1ea96ae9008d44132a140866010f281ac49fc5779f61bdb679",
+        "authority_role": "primary_binding",
+        "chunk_sha256s": [
+          "80907fa359f8668d4d3d95ab8e0d8253102d77f502cec90d0c7849637fedbf63"
+        ],
+        "hash_availability": "verified_hashes_present",
+        "immutable_source_record_sha256": "f9529d59c8873203a81ffd221729c09457868a693a6ab30142658ab78d210be3",
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested.",
+          "Primary notice reproduced on a nonofficial host; original-origin authenticity remains unattested."
+        ],
+        "proposed_effective_periods": [
+          {
+            "from": "2026-04-01",
+            "status": "unverified",
+            "to": null
+          }
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "publication_metadata": {
+          "publication_reference": "Yalkut Hapirsumim14324 p4496; signed2026-03-03",
+          "published_at": "2026-03-04"
+        },
+        "source_version_id": "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a"
+      },
+      {
+        "artifact_sha256": "63bb67d11d02ae1377d3979a5028303c9905900c998106263570046cecc5edb2",
+        "authority_role": "official_implementation",
+        "chunk_sha256s": [],
+        "hash_availability": "chunks_unavailable",
+        "immutable_source_record_sha256": "ec5ff9665cbe6b35cd87bef1b8aa708825229169e7aa4a9ed275b0909403d6df",
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested.",
+          "Official corroboration HTML has no pinned parsed review chunk and is not an operative parameter source."
+        ],
+        "proposed_effective_periods": [
+          {
+            "from": "2026-04-01",
+            "status": "unverified",
+            "to": null
+          }
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "publication_metadata": {
+          "publication_reference": "NII adult minimum-wage table; effective2026-04-01",
+          "published_at": null
+        },
+        "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02"
+      }
+    ],
+    "topic": "minimum_wage",
+    "usable_for_rules": false
+  },
+  "pending_parameter_reviews": {
+    "attestations": [],
+    "distinct_human_reviewers_per_candidate": 2
+  },
+  "pending_rule_reviews": {
+    "independent_golden_approval": null,
+    "semantic_approval": null
+  },
+  "policy": {
+    "activationAllowed": false,
+    "ai_interpretation": true,
+    "calculation": "monthly_minimum_times_regular_hours_divided_by_182",
+    "divisor": 182,
+    "excluded_components": [
+      "seniority",
+      "family",
+      "shift_premium",
+      "productivity_premium",
+      "thirteenth_salary",
+      "annual_bonus",
+      "expense_reimbursement",
+      "overtime",
+      "weekly_rest",
+      "paid_absence"
+    ],
+    "human_attestations": [],
+    "included_components": [
+      "base_salary",
+      "cost_of_living",
+      "fixed_work_supplement"
+    ],
+    "maximum_components": 32,
+    "maximum_regular_hours": 182,
+    "missing_operative_rounding_instruction": true,
+    "monthly_minimum_minor": 644385,
+    "notice_original_origin_authenticity_attested": false,
+    "period": {
+      "end_date": "2026-06-30",
+      "start_date": "2026-06-01"
+    },
+    "population": "adult_general",
+    "pricingAllowed": false,
+    "published_hourly_corroboration_minor": 3540,
+    "published_hourly_is_not_intermediate_operand": true,
+    "rounding": "half_up_at_final_agora_only",
+    "schema_version": "tivdoc-june2026-minimum-wage-candidate-policy-v1",
+    "scope_semantics": "ordinary_hours_and_documented_eligible_pay_only_not_total_employer_debt",
+    "sector": "general_private",
+    "source_set_sha256": "b3bab3079230a7e9253e5e386b1d9313d6abcb4ae414c98f65f1f8ec9ba0d3f3"
+  },
+  "policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+  "schema_version": "tivdoc-june2026-minimum-wage-unsigned-review-bundle-v1",
+  "source_chunks": [
+    {
+      "boundary": "entire_pypdf_layout_text_including_explicit_pdf_page_markers",
+      "file": "minimum-wage-law-nii.pdf.txt",
+      "sha256": "78c56ddc92a3c91725376e27bd06cb769bf9660899c82f7dc26873adb89401d8",
+      "source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2"
+    },
+    {
+      "boundary": "entire_pypdf_layout_text_including_explicit_pdf_page_markers",
+      "file": "workweek-order-yalkut-7732-osh.pdf.txt",
+      "sha256": "f795acf90318c6f33d12099741295b14a4667cd29285b356621d112ab6263aed",
+      "source_version_id": "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84"
+    },
+    {
+      "boundary": "entire_pypdf_layout_text_including_explicit_pdf_page_markers",
+      "file": "minimum-wage-notice-yalkut-14324-industry.pdf.txt",
+      "sha256": "80907fa359f8668d4d3d95ab8e0d8253102d77f502cec90d0c7849637fedbf63",
+      "source_version_id": "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a"
+    }
+  ]
+}

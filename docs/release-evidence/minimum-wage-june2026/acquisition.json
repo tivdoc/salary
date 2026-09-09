@@ -1,0 +1,71 @@
+{
+  "schema_version": "tivdoc-minimum-wage-june2026-acquisition-v1",
+  "sources": [
+    {
+      "file": "minimum-wage-law-nii.pdf",
+      "url": "https://www.btl.gov.il/Laws1/00_0021_000000.pdf",
+      "resolved_url": "https://www.btl.gov.il/Laws1/00_0021_000000.pdf",
+      "observed_at": "2026-09-09T17:28:04.010255+00:00",
+      "http_status": 200,
+      "bytes": 111812,
+      "sha256": "4674f07928a2397b626db362c6c9b98b7c4e77e693e397463fdabd83c7f4f161",
+      "human_reviewed": false,
+      "activation_state": "inactive",
+      "page_count": 5,
+      "parsed_file": "minimum-wage-law-nii.pdf.txt",
+      "parsed_sha256": "78c56ddc92a3c91725376e27bd06cb769bf9660899c82f7dc26873adb89401d8",
+      "parser": "pypdf-layout",
+      "parser_version": "6.10.0"
+    },
+    {
+      "file": "workweek-order-yalkut-7732-osh.pdf",
+      "url": "https://www.osh.org.il/UploadedImages/03_2018/yp_7732.pdf",
+      "resolved_url": "https://www.osh.org.il/UploadedImages/03_2018/yp_7732.pdf",
+      "observed_at": "2026-09-09T17:28:05.425503+00:00",
+      "http_status": 200,
+      "bytes": 142140,
+      "sha256": "d99d1f420b8427f9734da2252791b0937478810a56ffd09939b39908cdd23787",
+      "human_reviewed": false,
+      "activation_state": "inactive",
+      "page_count": 8,
+      "parsed_file": "workweek-order-yalkut-7732-osh.pdf.txt",
+      "parsed_sha256": "f795acf90318c6f33d12099741295b14a4667cd29285b356621d112ab6263aed",
+      "parser": "pypdf-layout",
+      "parser_version": "6.10.0"
+    },
+    {
+      "file": "minimum-wage-rates-nii.html",
+      "url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%99%D7%A0%D7%99%D7%9E%D7%95%D7%9D.aspx",
+      "resolved_url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%99%D7%A0%D7%99%D7%9E%D7%95%D7%9D.aspx",
+      "observed_at": "2026-09-09T17:28:06.137498+00:00",
+      "http_status": 200,
+      "bytes": 218465,
+      "sha256": "63bb67d11d02ae1377d3979a5028303c9905900c998106263570046cecc5edb2",
+      "human_reviewed": false,
+      "activation_state": "inactive"
+    },
+    {
+      "file": "minimum-wage-notice-yalkut-14324-industry.pdf",
+      "url": "https://industry.org.il/files/work/jpg/%D7%99%D7%9C%D7%A7%D7%95%D7%985_3.pdf",
+      "resolved_url": "https://industry.org.il/files/work/jpg/%D7%99%D7%9C%D7%A7%D7%95%D7%985_3.pdf",
+      "observed_at": "2026-09-09T17:32:06.668820+00:00",
+      "http_status": 200,
+      "bytes": 64624,
+      "sha256": "65af7940d69a7c1ea96ae9008d44132a140866010f281ac49fc5779f61bdb679",
+      "human_reviewed": false,
+      "activation_state": "inactive",
+      "page_count": 2,
+      "parsed_file": "minimum-wage-notice-yalkut-14324-industry.pdf.txt",
+      "parsed_sha256": "80907fa359f8668d4d3d95ab8e0d8253102d77f502cec90d0c7849637fedbf63",
+      "parser": "pypdf-layout",
+      "parser_version": "6.10.0",
+      "origin_status": "primary_gazette_document_republished_by_employers_association_not_official_origin"
+    },
+    {
+      "file": "hourly-enforcement-policy-gov.pdf",
+      "url": "https://www.gov.il/BlobFolder/policy/instructions-regarding-hourly-minimum-wage-in-light-a-shorten-work-week/he/workers-rights_enforcement-and-exercise-of-rights_minimum-wage-enforcement-procedure.pdf",
+      "status": "failed",
+      "error": "HTTPError: HTTP Error 403: Forbidden"
+    }
+  ]
+}

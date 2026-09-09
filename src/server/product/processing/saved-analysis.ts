@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {CaseAnalysisService} from '@/engine/case-analysis/service';
-import {LegalOperationsCatalog} from '@/engine/legal-operations/catalog';
+import {June2026ReviewCatalog} from '@/engine/legal-operations/june2026-catalog';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {CaseAnalysisCommand} from '@/engine/wave3/contracts';
 import type {PostgresAnalysisRepositories} from '@/server/platform/persistence/postgres/analysis';
@@ -10,6 +10,7 @@ import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatc
 import {SavedCaseSnapshot} from './saved-snapshot';
 import {SavedAnalysisDraftBuilder,SAVED_DRAFT_TEMPLATE,savedAnalysisId} from './saved-draft-report';
 import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
+import {buildSavedJune2026ReviewDiagnostic} from './saved-minimum-wage-review';
 
 const monthSchema=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 /** Execute one purchased month through the existing CaseAnalysisService and
@@ -44,11 +45,12 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   sector:'unverified',population:'unverified',mode:'real',idempotency_key:key};
  const service=new CaseAnalysisService({clock:{now:()=>now},ids:{derive:savedAnalysisId},
   hashes:{hashCanonical:canonicalSha256,hashBytes:b=>createHash('sha256').update(b).digest('hex')},
-  snapshots,repository:input.analysis.caseAnalysis,legalCatalog:new LegalOperationsCatalog(),
+  snapshots,repository:input.analysis.caseAnalysis,legalCatalog:new June2026ReviewCatalog(),
   // The current real catalog has zero active rules. No fixture executor is
   // reachable here; unexpected activation requires a reviewed production binding.
   executor:{async execute(){throw new Error('SAVED_RULE_EXECUTOR_NOT_ACTIVATED');}},
   reportBuilder:new SavedAnalysisDraftBuilder(),reportRegistration:input.analysis.reports,
+  reviewDiagnostics:buildSavedJune2026ReviewDiagnostic,
   logs:{write(){}},templateVersion:SAVED_DRAFT_TEMPLATE});
  const bundle=await service.runCaseAnalysis(command);
  const completed=await service.getCompletedRun(bundle.analysis_run_id);

@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {CASE_ANALYSIS_CODE_VERSION} from '@/engine/case-analysis/contracts';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {WAVE3_TOPICS} from '@/engine/wave3/contracts';
+import {JUNE2026_REVIEW_CATALOG_SHA256} from '@/engine/legal-operations/june2026-catalog';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {SAVED_DRAFT_TEMPLATE} from './saved-draft-report';
 import type {SourceJob} from './source-dispatch';
@@ -13,7 +14,8 @@ export const savedOrderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full
 export type SavedOrderScope=z.infer<typeof savedOrderSchema>;
 
 export function savedMonthIdempotencyKey(job:SourceJob,orderId:string,month:string){
- return `saved-month:${canonicalSha256({job,order_id:orderId,month,template:SAVED_DRAFT_TEMPLATE,engine:CASE_ANALYSIS_CODE_VERSION})}`;
+ return `saved-month:${canonicalSha256({job,order_id:orderId,month,template:SAVED_DRAFT_TEMPLATE,engine:CASE_ANALYSIS_CODE_VERSION,
+  ...(month==='2026-06'?{review_catalog_sha256:JUNE2026_REVIEW_CATALOG_SHA256}:{})})}`;
 }
 
 export function purchasedMonths(candidate:SavedOrderScope){

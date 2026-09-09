@@ -69,6 +69,10 @@ export type CaseAnalysisServiceDependencies = Readonly<{
   reportRegistration: ReportRegistrationPort;
   logs: CaseAnalysisLogPort;
   templateVersion: string;
+  /** Optional review-only observations from the already verified snapshot.
+   * Persisted with the original immutable review stage; never activation,
+   * customer answers, findings or report publication authority. */
+  reviewDiagnostics?: (input: Readonly<{command:CaseAnalysisCommand;stored:StoredCaseInputSnapshot;facts:EmploymentSnapshot;bundle:AnalysisResultBundle}>) => unknown;
 }>;
 
 function sortStrings(values: readonly string[]) {
@@ -503,6 +507,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       report_sha256: report.report_sha256,
       auto_approved: false,
       export_eligible_before_review: false,
+      ...(this.dependencies.reviewDiagnostics ? {diagnostics:this.dependencies.reviewDiagnostics({command,stored,facts,bundle})} : {}),
     });
     await this.dependencies.repository.complete({ analysis_run_id: analysisRunId, selections, dependencies, bundle, report });
     this.dependencies.logs.write({
