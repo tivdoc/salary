@@ -1,0 +1,17 @@
+{
+  "commit": "d611fc0d2ec43062266bca61e928a7437f6ee8a0",
+  "runs": [
+    34314850044,
+    34314847764
+  ],
+  "failedStage": "Unit and guard suites",
+  "failedSuite": "src/app/api/cases/[token]/reports/route.test.ts",
+  "failure": "unmocked new server-only reader imported in Vitest",
+  "typecheckPassed": true,
+  "otherTestsPassed": 3167,
+  "skipped": 64,
+  "repair": "Mock the new server-side report port in the HTTP unit; retain application server-only marker and add four engineering auth/byte/disabled/corruption checks",
+  "targetedHttpTestsPassed": 7,
+  "changedTestLintPassed": true,
+  "applicationRuntimeChanged": false
+}
