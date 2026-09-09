@@ -1,3 +1,7 @@
+## Live provider package resumed by owner - 2026-09-09 20:35 UTC
+
+Active work and evidence: [live integration](docs/provider-live-integration-2026-09-09.md). Resend plugin access is restored. Previous restart STOP below is superseded for this bounded package only.
+
 ## Paused for owner-requested restart — 2026-09-09 20:33 UTC
 
 See [the restart checkpoint](docs/provider-restart-checkpoint-2026-09-09.md). OpenAI is now configured privately and actual SDK calls ran; three corpus scenarios failed. New parser/prompt offline tests passed, but no live report/OTP/Resend delivery exists. This WIP checkpoint retains two new failing source-guard regression tests; no full checks or deployment were run. Existing DEV schema130 and old f0d8081 Preview are unchanged. Stop safely for restart; do not resume P00–P13. Historical STOP and no-key statements below describe earlier deliveries, not the current provider configuration.

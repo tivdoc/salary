@@ -2,6 +2,7 @@ import 'server-only';
 import {z} from 'zod';
 import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
 import {ruleInputSnapshotSchema} from '@/engine/wave1/contracts';
+import {createTopicRuleInputSnapshot} from '@/engine/rule-input/snapshot';
 import {canonicalSha256, deepFreeze} from '@/engine/rule-runtime/canonical';
 import {prepareJune2026AdmittedContext} from '@/engine/minimum-wage-june2026/admitted-context';
 import {decodeCommand, decodeStage} from '@/server/platform/persistence/postgres/analysis/validation';
@@ -19,8 +20,7 @@ const runSchema = z.object({analysis_run_id: z.uuid(), case_id: z.uuid(), comman
 const checkpointRowSchema = z.object({product_document_id: z.uuid(), version_id: z.uuid(), content_sha256: sha, mime_type: z.string(),
   size: z.coerce.number().int().safe().positive(), checkpoint_input_sha256: sha, checkpoint_result_sha256: sha, result: z.unknown()});
 const factsStageSchema = z.object({facts: employmentSnapshotSchema, facts_snapshot_sha256: sha}).strict();
-const unsupported = ['multiple_documents', 'legacy_source_provenance', 'legacy_source_page_count', 'extraction_incomplete'] as const;
-type Unsupported = typeof unsupported[number];
+type Unsupported = 'multiple_documents' | 'legacy_source_provenance' | 'legacy_source_page_count' | 'extraction_incomplete';
 
 function blocked(code: Unsupported, caseId: string, analysisRunId: string) {
   return deepFreeze({schema_version: 'saved-june2026-factual-context-v1', state: 'context_blocked' as const, code,
@@ -71,13 +71,18 @@ export async function loadSavedJune2026AdmittedContext(input: {
   const stages = stageRows.rows.map(decodeStage);
   if (stages.length !== 3 || new Set(stages.map(stage => stage.stage)).size !== 3) throw Error('SAVED_JUNE_CONTEXT_STAGES_REQUIRED');
   const canonicalStage = factsStageSchema.parse(stages.find(stage => stage.stage === 'canonical_facts')?.payload);
+  if (canonicalStage.facts.case_id !== job.case_id || canonicalStage.facts.analysis_run_id !== analysisRunId
+    || canonicalSha256(canonicalStage.facts) !== canonicalStage.facts_snapshot_sha256) throw Error('SAVED_JUNE_CONTEXT_CANONICAL_STAGE');
   const ruleInputs = z.object({rule_inputs: z.array(ruleInputSnapshotSchema).min(1).max(7)}).strict().parse(stages.find(stage => stage.stage === 'rule_inputs')?.payload).rule_inputs;
   const topicIndex = command.requested_topics.indexOf('minimum_wage');
-  if (topicIndex < 0 || ruleInputs.length !== command.requested_topics.length) throw Error('SAVED_JUNE_CONTEXT_RULE_INPUTS');
-  const inputStage = z.object({command_sha256: sha, document_snapshot_sha256: sha, extraction_snapshot_sha256: sha, declared_fact_snapshot_sha256: sha})
+  if (topicIndex < 0 || ruleInputs.length !== command.requested_topics.length
+    || command.requested_topics.some((topic, index) => canonicalSha256(createTopicRuleInputSnapshot(canonicalStage.facts, topic)) !== canonicalSha256(ruleInputs[index]))) throw Error('SAVED_JUNE_CONTEXT_RULE_INPUTS');
+  const inputStage = z.object({command_sha256: sha, document_snapshot_sha256: sha, extraction_snapshot_sha256: sha, declared_fact_snapshot_sha256: sha,
+    created_at: z.iso.datetime({offset: true})})
     .parse(stages.find(stage => stage.stage === 'input_snapshot')?.payload);
   if (inputStage.command_sha256 !== run.command_sha256 || inputStage.document_snapshot_sha256 !== command.document_snapshot_sha256
-    || inputStage.extraction_snapshot_sha256 !== command.extraction_snapshot_sha256 || inputStage.declared_fact_snapshot_sha256 !== command.declared_fact_snapshot_sha256) throw Error('SAVED_JUNE_CONTEXT_INPUT_STAGE');
+    || inputStage.extraction_snapshot_sha256 !== command.extraction_snapshot_sha256 || inputStage.declared_fact_snapshot_sha256 !== command.declared_fact_snapshot_sha256
+    || inputStage.created_at !== canonicalStage.facts.created_at) throw Error('SAVED_JUNE_CONTEXT_INPUT_STAGE');
   // This reuses the existing journal/source/currentness checks and reconstructs
   // document readings from their authenticated request+answer revision, rather
   // than trusting a confirmation-shaped object in a canonical fact.

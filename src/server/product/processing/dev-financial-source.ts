@@ -7,10 +7,14 @@ export function assertDevFinancialExtractionSource(extraction:NormalizedPayslipE
  const bases=extraction.additional_components.filter(c=>c.semantic_kind==='base_salary');
  const hourly=extraction.additional_components.filter(c=>c.semantic_kind==='hourly_base');
  const baseValue=extraction.fields.find(f=>f.field==='base_monthly_salary')?.normalized_value;
+ const paidHourly=bases.length===0&&hourly.length===1&&extraction.additional_components.length===1
+  &&hourly[0].amount_raw!==null&&hourly[0].amount!==null&&hourly[0].percentage_raw===null;
+ const separateBase=bases.length===1&&hourly.length<=1&&bases.length+hourly.length===extraction.additional_components.length
+  &&hourly.every(c=>c.amount_raw===null&&c.amount===null&&c.percentage_raw===null);
+ const paid=paidHourly?hourly[0]:bases[0];
  if(extraction.document_id!==versionId||!extraction.earnings_components_complete
-  ||bases.length!==1||hourly.length>1||bases.length+hourly.length!==extraction.additional_components.length
-  ||!bases[0].amount||canonicalSha256(bases[0].amount)!==canonicalSha256(baseValue??null)
-  ||hourly.some(c=>c.amount_raw!==null||c.amount!==null||c.percentage_raw!==null)
+  ||(!paidHourly&&!separateBase)
+  ||!paid?.amount||canonicalSha256(paid.amount)!==canonicalSha256(baseValue??null)
   ||extraction.additional_components.some(c=>c.confidence<0.94||c.warning_flags.length||c.normalization_warnings.length)
   ||extraction.fields.find(f=>f.field==='salary_type')?.normalized_value!=='hourly')throw Error('DEV_FINANCIAL_SCENARIO_UNSUPPORTED');
 }

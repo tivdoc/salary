@@ -12,6 +12,7 @@ import {SavedAnalysisDraftBuilder,SAVED_DRAFT_TEMPLATE,savedAnalysisId} from './
 import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
 import {buildSavedJune2026ReviewDiagnostic} from './saved-minimum-wage-review';
 import {readSavedJune2026Collection} from './saved-june2026-collection';
+import {loadSavedJune2026AdmittedContext} from './saved-june2026-admitted-context';
 
 const monthSchema=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 /** Execute one purchased month through the existing CaseAnalysisService and
@@ -52,11 +53,13 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   // reachable here; unexpected activation requires a reviewed production binding.
   executor:{async execute(){throw new Error('SAVED_RULE_EXECUTOR_NOT_ACTIVATED');}},
   reportBuilder:new SavedAnalysisDraftBuilder(),reportRegistration:input.analysis.reports,
-  reviewDiagnostics:args=>{
+  reviewDiagnostics:async args=>{
    const diagnostic=buildSavedJune2026ReviewDiagnostic(args);
-   return diagnostic&&collection?{...diagnostic,collection,
-    blockers:{...diagnostic.blockers,technical:['canonical_component_fact_and_executor_admission_not_connected']},
-    customer_requests_created:collection.resolutions.length>0}:diagnostic;
+   if(!diagnostic||!collection)return diagnostic;
+   const factualContext=await loadSavedJune2026AdmittedContext({context:input.context,job,orderId:order.id,analysisRunId:args.bundle.analysis_run_id});
+   return {...diagnostic,collection,factual_context:factualContext,
+    blockers:{...diagnostic.blockers,technical:['canonical_executor_admission_not_connected']},
+    customer_requests_created:collection.resolutions.length>0};
   },
   logs:{write(){}},templateVersion:SAVED_DRAFT_TEMPLATE});
  const bundle=await service.runCaseAnalysis(command);

@@ -8,9 +8,21 @@ const response=(status:number,code:string)=>Response.json({code},{status,headers
  * are never accepted. The application independently verifies the original
  * provider signature and records the receipt under its existing DB guards. */
 export async function handleDevResendIngress(request:Request,env:Env,transport:typeof fetch=fetch):Promise<Response>{
+ if(env.VERCEL_ENV!=='preview'||env.TIVDOC_DEV_INGRESS_ENABLED!=='true')return response(503,'ingress_disabled');
+ return forwardSignedDevEvent(request,env,transport);
+}
+/** Explicit local test relay, not a deployment or a replacement for Preview
+ * protection. Only its signed-event endpoint is exposed by the temporary tunnel.
+ * The local process receives no DB, storage or sending credential. */
+export async function handleLocalDevResendIngress(request:Request,env:Env,transport:typeof fetch=fetch):Promise<Response>{
+ const expires=Date.parse(env.TIVDOC_DEV_LOCAL_INGRESS_EXPIRES??'');
+ if(env.VERCEL||env.VERCEL_ENV||env.NODE_ENV!=='development'||env.TIVDOC_DEV_LOCAL_INGRESS_ENABLED!=='true'
+  ||!Number.isFinite(expires)||expires<=Date.now()||expires>Date.now()+4*60*60*1000)return response(503,'local_ingress_disabled');
+ return forwardSignedDevEvent(request,env,transport);
+}
+async function forwardSignedDevEvent(request:Request,env:Env,transport:typeof fetch):Promise<Response>{
  if(new URL(request.url).pathname!=='/api/resend')return response(404,'not_found');
  if(request.method!=='POST')return response(405,'method_not_allowed');
- if(env.VERCEL_ENV!=='preview'||env.TIVDOC_DEV_INGRESS_ENABLED!=='true')return response(503,'ingress_disabled');
  const secret=env.RESEND_WEBHOOK_SECRET,share=env.TIVDOC_DEV_PREVIEW_SHARE_SECRET;
  const origin=env.TIVDOC_DEV_PREVIEW_ORIGIN;
  if(!secret||!share||!/^[A-Za-z0-9_-]{20,128}$/u.test(share)||!origin

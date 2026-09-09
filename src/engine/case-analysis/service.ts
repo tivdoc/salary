@@ -502,7 +502,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       report_sha256: report.report_sha256,
       auto_approved: false,
       export_eligible_before_review: false,
-      ...(this.dependencies.reviewDiagnostics ? {diagnostics:this.dependencies.reviewDiagnostics({command,stored,facts,bundle})} : {}),
+      ...(this.dependencies.reviewDiagnostics ? {diagnostics:await this.dependencies.reviewDiagnostics({command,stored,facts,bundle})} : {}),
     });
     await this.dependencies.repository.complete({ analysis_run_id: analysisRunId, selections, dependencies, bundle, report });
     this.dependencies.logs.write({

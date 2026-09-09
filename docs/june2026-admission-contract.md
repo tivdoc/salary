@@ -73,6 +73,41 @@ assessment policy have admitted the run. The implementation neither accepts an
 require a person to review every case: a future deterministic assessment policy
 can have explicit approved semantics and provenance.
 
+## Saved server loader
+
+`loadSavedJune2026AdmittedContext({context, job, orderId, analysisRunId})` in
+`src/server/product/processing/saved-june2026-admitted-context.ts` now implements
+the server-side assembly boundary. Its inputs contain no caller-supplied facts,
+command or confirmations. It verifies the provisioned worker principal and
+tenant, locks the current source and rechecks the exact active paid entitlement.
+The persisted run joins its document/extraction/declaration snapshot IDs to the
+actual immutable input-version row; its command and idempotency key also bind
+the selected order and job. The saved pin comes from that row rather than a
+copy of the current pin.
+
+The loader reads the three actual persisted stages, checks their outer hashes,
+canonical inner facts hash/case/run and ordinary topic references, and binds
+their timestamps and snapshot hashes. These checks happen before compatibility
+fallbacks. `SavedCaseSnapshot.loadPinned` then reconstructs the saved document
+and reading confirmations from the actual journal. Each confirmation retained
+in the canonical facts must exactly match a reconstructed request/revision;
+an invented machine `verified: true` without such a confirmation is refused.
+Existing canonical confirmed facts without a claimed verified reading keep
+their original status and provenance; the loader does not upgrade them.
+
+`readSavedExtractionProvenance` supplies the actual source page count and
+provider provenance, also checked against saved byte size, MIME type and
+document version/hash. Old receipts without provenance or page count, multiple
+documents and incomplete extraction return explicit `context_blocked` reasons.
+They cannot claim factual or legal admission. Malformed or foreign records,
+stale revisions, missing entitlements and mismatched hashes continue to throw;
+compatibility handling does not hide integrity failures.
+
+The checked-in schema supports the loader's joins. The SQL was reviewed against
+those definitions, but this subtask did not execute it against a database.
+The root task owns callback wiring, the analysis fingerprint change, and actual
+DB/Preview verification.
+
 ## Verification scope
 
 Local focused result: `admitted-context.test.ts` passed **41/41**; ESLint passed
@@ -82,6 +117,17 @@ are pure synthetic tests; they do not prove that a server loaded a persisted
 stage or authenticated a request. That proof belongs to the scoped saved
 adapter's separate DB/integration evidence. No DB/build/Preview run was made by
 this subtask.
+
+After resuming from checkpoint `6178869`, the new server loader's focused suite
+passed **25/25**, and ESLint passed for its two files with zero warnings. These
+tests use a recording SQL adapter while executing the real saved snapshot,
+reading reconstruction, extraction provenance and context implementations.
+Their receipt objects are produced by `extractSavedPayslip` with an explicitly
+injected provider transport. They establish neither real database authority nor
+live OCR. They include old journal revisions and forged canonical confirmations
+with recomputed hashes, a less-permissive persisted fact status, revoked scope,
+foreign worker identity, source receipt mismatch and typed legacy/multiple
+document fallback.
 
 Focused tests cover actual context materialization and reuse of its operand
 bindings by the existing v1 source trace. The arithmetic oracle is independently
