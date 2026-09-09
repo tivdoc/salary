@@ -78,3 +78,65 @@ export function buildJune2026MinimumWageReviewPackage() {
   };
   return frozen({...bundle, bundle_sha256: legalOperationsSha256(bundle)});
 }
+
+/** Review-only forward version. The original source/catalog/rule pins and the
+ * v1.0.0 handoff remain immutable; a parsed supplement does not activate them. */
+export const JUNE2026_NII_RATE_REVIEW_CHUNK = frozen({
+  source_version_id: 'IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02',
+  review_version_id: 'IL_MIN_WAGE_OFFICIAL_RATES@20260910.63bb67d11d02.review1',
+  artifact_file: 'minimum-wage-rates-nii.html',
+  artifact_sha256: '63bb67d11d02ae1377d3979a5028303c9905900c998106263570046cecc5edb2',
+  file: 'minimum-wage-rates-nii-review-1.1.0.txt',
+  sha256: 'e79d522eeb8f77a229b53d971dfff7a19e7ba6cb8d97f3f442ea076ee0f51213',
+  boundary: 'Adult current-rate list, two complete table header rows with tooltip definitions, and first row effective2026-04-01; DOM order and cell spans preserved.',
+  parser: 'python-stdlib-html.parser', parser_version: '1.0.0',
+  effective_from: '2026-04-01', effective_to: null,
+  knowledge_available_from: '2026-09-09',
+  authority_role: 'official_implementation' as const,
+  human_transcription_attested: false, operative_parameter_authority: false,
+});
+
+export function buildJune2026MinimumWageReviewAddendum() {
+  const previous = buildJune2026MinimumWageReviewPackage();
+  const chunk = JUNE2026_NII_RATE_REVIEW_CHUNK;
+  const packetSeed = {
+    ...previous.packet,
+    packet_version: '1.1.0', generated_at: '2026-09-09T21:20:00.000Z',
+    sources: previous.packet.sources.map(source => source.source_version_id !== chunk.source_version_id ? source : ({
+      ...source, source_version_id: chunk.review_version_id,
+      immutable_source_record_sha256: legalOperationsSha256({previous_source_record_sha256: source.immutable_source_record_sha256, review_chunk: chunk}),
+      chunk_sha256s: [chunk.sha256], hash_availability: 'verified_hashes_present' as const,
+      lifecycle_blockers: source.lifecycle_blockers.filter(blocker => !blocker.startsWith('Official corroboration HTML has no pinned parsed review chunk')),
+    })),
+    reviewer_questions: [...previous.packet.reviewer_questions,
+      'Compare the complete table headers with the2026 row and adult summary list: daily5=297.4, daily6=257.75, hourly186=34.64, hourly182=35.4, monthly=6443.85. A pinned transcription is not a human accuracy attestation.',
+      'The Ministry2023 enforcement position states182 and a rounded published hourly amount, while reserving contrary court decisions. Assess its continuing2026 relevance and the rounding inference; indexed text was located but its PDF bytes were not acquired.',
+    ],
+  };
+  // Recompute only the forward packet. Neither the previous packet SHA nor an
+  // unsigned arithmetic candidate becomes a current legal selection.
+  const {packet_sha256: priorPacketHash, ...packetBody} = packetSeed; void priorPacketHash;
+  const packet = reviewPacketSchema.parse({...packetBody, packet_sha256: legalOperationsSha256(packetBody)});
+  const seed = {
+    schema_version: 'tivdoc-june2026-minimum-wage-review-addendum-v1',
+    prior_bundle_sha256: previous.bundle_sha256, prior_packet_sha256: previous.packet.packet_sha256,
+    packet, blank_source_decision: buildBlankDecisionTemplate(packet),
+    source_chunks: [...previous.source_chunks, {
+      source_version_id: chunk.review_version_id, file: chunk.file, sha256: chunk.sha256, boundary: chunk.boundary,
+    }],
+    nii_rate_review: chunk,
+    arithmetic_candidate_policy_sha256: previous.policy_sha256,
+    arithmetic_candidate_source_pins_unchanged: true,
+    reviewed_catalog_source_pins_updated: false,
+    technical_handoff_required: [
+      'Authenticated applicability and component assessments; customer declarations remain legally unreviewed.',
+      'Active versioned source/parameter/rule/golden resolver and admitted sector/population.',
+      'Same-run ordinary executor context before execution, exact source trace and compatible executor result contract.',
+      'Canonical financial report projection/publication path; existing draft-only RPC continues to reject calculated parents.',
+      'New DB/browser proof for canonical amount, replacement, correction, retry and current-source publication.',
+    ],
+    activation: {approved_by: null, signed_envelope: null, allowed: false},
+    customer_analysis_ready: false,
+  };
+  return frozen({...seed, bundle_sha256: legalOperationsSha256(seed)});
+}

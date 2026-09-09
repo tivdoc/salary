@@ -1,0 +1,243 @@
+{
+  "schema_version": "tivdoc-june2026-minimum-wage-review-addendum-v1",
+  "prior_bundle_sha256": "df084a639c392122ebc7d7761b9941fe3eb86ab388f2fe7b2693d4c56129dd98",
+  "prior_packet_sha256": "45f2ae770af17521d1ee2f32d2a982cbf955f930dcba756fa7b6fd6c9b2d7ce3",
+  "packet": {
+    "schema_version": "tivdoc-source-review-packet-v0.6.0",
+    "packet_id": "IL_MINIMUM_WAGE_JUNE2026_SOURCE_REVIEW",
+    "packet_version": "1.1.0",
+    "topic": "minimum_wage",
+    "generated_at": "2026-09-09T21:20:00.000Z",
+    "scope_complete_as_of": "2026-09-09",
+    "completeness_status": "blocked",
+    "sources": [
+      {
+        "source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+        "immutable_source_record_sha256": "4458ec7223cb6497adbdc80fd8888fdf9293b74a510ea30dfc6f3137c7d6364f",
+        "artifact_sha256": "4674f07928a2397b626db362c6c9b98b7c4e77e693e397463fdabd83c7f4f161",
+        "chunk_sha256s": [
+          "78c56ddc92a3c91725376e27bd06cb769bf9660899c82f7dc26873adb89401d8"
+        ],
+        "hash_availability": "verified_hashes_present",
+        "authority_role": "primary_binding",
+        "publication_metadata": {
+          "publication_reference": "Minimum Wage Law 1987; NII consolidated copy, section6(1) footnote4",
+          "published_at": null
+        },
+        "proposed_effective_periods": [
+          {
+            "from": "2026-06-01",
+            "to": "2026-06-30",
+            "status": "unverified"
+          }
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested."
+        ]
+      },
+      {
+        "source_version_id": "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84",
+        "immutable_source_record_sha256": "613d9443f2a63ab35f879eadf049d586bc91efcddd5259fa2ba808d5a427690d",
+        "artifact_sha256": "d99d1f420b8427f9734da2252791b0937478810a56ffd09939b39908cdd23787",
+        "chunk_sha256s": [
+          "f795acf90318c6f33d12099741295b14a4667cd29285b356621d112ab6263aed"
+        ],
+        "hash_availability": "verified_hashes_present",
+        "authority_role": "primary_binding",
+        "publication_metadata": {
+          "publication_reference": "Yalkut Hapirsumim7732 pp6284-6285",
+          "published_at": "2018-03-19"
+        },
+        "proposed_effective_periods": [
+          {
+            "from": "2018-04-01",
+            "to": null,
+            "status": "unverified"
+          }
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested."
+        ]
+      },
+      {
+        "source_version_id": "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a",
+        "immutable_source_record_sha256": "f9529d59c8873203a81ffd221729c09457868a693a6ab30142658ab78d210be3",
+        "artifact_sha256": "65af7940d69a7c1ea96ae9008d44132a140866010f281ac49fc5779f61bdb679",
+        "chunk_sha256s": [
+          "80907fa359f8668d4d3d95ab8e0d8253102d77f502cec90d0c7849637fedbf63"
+        ],
+        "hash_availability": "verified_hashes_present",
+        "authority_role": "primary_binding",
+        "publication_metadata": {
+          "publication_reference": "Yalkut Hapirsumim14324 p4496; signed2026-03-03",
+          "published_at": "2026-03-04"
+        },
+        "proposed_effective_periods": [
+          {
+            "from": "2026-04-01",
+            "to": null,
+            "status": "unverified"
+          }
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested.",
+          "Primary notice reproduced on a nonofficial host; original-origin authenticity remains unattested."
+        ]
+      },
+      {
+        "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260910.63bb67d11d02.review1",
+        "immutable_source_record_sha256": "fa24dee45163176c2220164abc0463dea94c128a46e393f0f6fc8d0c8273f982",
+        "artifact_sha256": "63bb67d11d02ae1377d3979a5028303c9905900c998106263570046cecc5edb2",
+        "chunk_sha256s": [
+          "e79d522eeb8f77a229b53d971dfff7a19e7ba6cb8d97f3f442ea076ee0f51213"
+        ],
+        "hash_availability": "verified_hashes_present",
+        "authority_role": "official_implementation",
+        "publication_metadata": {
+          "publication_reference": "NII adult minimum-wage table; effective2026-04-01",
+          "published_at": null
+        },
+        "proposed_effective_periods": [
+          {
+            "from": "2026-04-01",
+            "to": null,
+            "status": "unverified"
+          }
+        ],
+        "proposed_sectors": [
+          "general_private"
+        ],
+        "proposed_populations": [
+          "adult_general"
+        ],
+        "lifecycle_blockers": [
+          "Human source decisions and signed attestations absent; activation inactive.",
+          "June2026 validity, authority precedence and employee applicability have not been human-attested."
+        ]
+      }
+    ],
+    "known_conflicts": [
+      "Law section1 retains186; proposed182 branch relies on the2018 extension order2.8 and requires the employee to be within its scope.",
+      "Published hourly35.40 versus exact6443.85/182: candidate100h gap240.58 differs from engineering fixture240.00. No operative rounding mandate acquired."
+    ],
+    "quarantines": [],
+    "parse_failures": [],
+    "missing_official_material": [
+      "Original-origin copy or authenticated provenance for Yalkut14324 p4496; current bytes are a reproduced primary instrument.",
+      "Operative direction resolving hourly intermediate rounding versus exact182 division and final-agora rounding.",
+      "June2026 continuation/no-repeal verification for the2018 order including its sunset provision."
+    ],
+    "reviewer_questions": [
+      "Verify the exact archived artifact bytes and full-document text chunks, including Gazette column order and the law consolidation lineage.",
+      "Confirm6443.85 from2026-04-01 and whether the2018 order182 divisor applies to the proposed June2026 hourly adult general-private scope.",
+      "Resolve35.40 intermediate rounding versus full-precision182 division and justify final-agora half-up with its authority and examples.",
+      "Approve or reject included/excluded component classes under law3(a)-(b), treatment of unknown commission/nonstandard remuneration under3(d), and the ordinary-hours-only boundary.",
+      "Confirm the required employee evidence for age, all30(a) exceptions, adapted wage and better arrangements; a generic job-title answer cannot decide the legal classification.",
+      "Compare the complete table headers with the2026 row and adult summary list: daily5=297.4, daily6=257.75, hourly186=34.64, hourly182=35.4, monthly=6443.85. A pinned transcription is not a human accuracy attestation.",
+      "The Ministry2023 enforcement position states182 and a rounded published hourly amount, while reserving contrary court decisions. Assess its continuing2026 relevance and the rounding inference; indexed text was located but its PDF bytes were not acquired."
+    ],
+    "decision_template_id": "IL_MINIMUM_WAGE_JUNE2026_BLANK_DECISION",
+    "usable_for_rules": false,
+    "packet_sha256": "3d32598ae4e352ef80d3f106a6f0d8a618c2ddc6cf96f3c2c8500d5dffab7426"
+  },
+  "blank_source_decision": {
+    "schema_version": "tivdoc-blank-source-decision-template-v0.6.0",
+    "template_id": "IL_MINIMUM_WAGE_JUNE2026_BLANK_DECISION",
+    "packet_id": "IL_MINIMUM_WAGE_JUNE2026_SOURCE_REVIEW",
+    "packet_sha256": "3d32598ae4e352ef80d3f106a6f0d8a618c2ddc6cf96f3c2c8500d5dffab7426",
+    "required_decisions": [
+      "artifact_authenticity",
+      "content_transcription_accuracy",
+      "effective_interval",
+      "sector_population_applicability",
+      "authority_precedence"
+    ],
+    "reviewer_id": null,
+    "reviewer_role": null,
+    "decision": null,
+    "decided_at": null,
+    "reason": null,
+    "signature_sha256": null
+  },
+  "source_chunks": [
+    {
+      "source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+      "file": "minimum-wage-law-nii.pdf.txt",
+      "sha256": "78c56ddc92a3c91725376e27bd06cb769bf9660899c82f7dc26873adb89401d8",
+      "boundary": "entire_pypdf_layout_text_including_explicit_pdf_page_markers"
+    },
+    {
+      "source_version_id": "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84",
+      "file": "workweek-order-yalkut-7732-osh.pdf.txt",
+      "sha256": "f795acf90318c6f33d12099741295b14a4667cd29285b356621d112ab6263aed",
+      "boundary": "entire_pypdf_layout_text_including_explicit_pdf_page_markers"
+    },
+    {
+      "source_version_id": "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a",
+      "file": "minimum-wage-notice-yalkut-14324-industry.pdf.txt",
+      "sha256": "80907fa359f8668d4d3d95ab8e0d8253102d77f502cec90d0c7849637fedbf63",
+      "boundary": "entire_pypdf_layout_text_including_explicit_pdf_page_markers"
+    },
+    {
+      "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260910.63bb67d11d02.review1",
+      "file": "minimum-wage-rates-nii-review-1.1.0.txt",
+      "sha256": "e79d522eeb8f77a229b53d971dfff7a19e7ba6cb8d97f3f442ea076ee0f51213",
+      "boundary": "Adult current-rate list, two complete table header rows with tooltip definitions, and first row effective2026-04-01; DOM order and cell spans preserved."
+    }
+  ],
+  "nii_rate_review": {
+    "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02",
+    "review_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260910.63bb67d11d02.review1",
+    "artifact_file": "minimum-wage-rates-nii.html",
+    "artifact_sha256": "63bb67d11d02ae1377d3979a5028303c9905900c998106263570046cecc5edb2",
+    "file": "minimum-wage-rates-nii-review-1.1.0.txt",
+    "sha256": "e79d522eeb8f77a229b53d971dfff7a19e7ba6cb8d97f3f442ea076ee0f51213",
+    "boundary": "Adult current-rate list, two complete table header rows with tooltip definitions, and first row effective2026-04-01; DOM order and cell spans preserved.",
+    "parser": "python-stdlib-html.parser",
+    "parser_version": "1.0.0",
+    "effective_from": "2026-04-01",
+    "effective_to": null,
+    "knowledge_available_from": "2026-09-09",
+    "authority_role": "official_implementation",
+    "human_transcription_attested": false,
+    "operative_parameter_authority": false
+  },
+  "arithmetic_candidate_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+  "arithmetic_candidate_source_pins_unchanged": true,
+  "reviewed_catalog_source_pins_updated": false,
+  "technical_handoff_required": [
+    "Authenticated applicability and component assessments; customer declarations remain legally unreviewed.",
+    "Active versioned source/parameter/rule/golden resolver and admitted sector/population.",
+    "Same-run ordinary executor context before execution, exact source trace and compatible executor result contract.",
+    "Canonical financial report projection/publication path; existing draft-only RPC continues to reject calculated parents.",
+    "New DB/browser proof for canonical amount, replacement, correction, retry and current-source publication."
+  ],
+  "activation": {
+    "approved_by": null,
+    "signed_envelope": null,
+    "allowed": false
+  },
+  "customer_analysis_ready": false,
+  "bundle_sha256": "9b146f272fe42a98e6f5ff3045f9f1e9ecff75dedffa029e3c8c5dab43c66ce1"
+}
