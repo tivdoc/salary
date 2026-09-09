@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-09-09T21:48:01.654Z",
+  "gitSha": "c5217762d069b32146289f4f14397042c1af16c0",
+  "preview": "https://salary-jizphd2ko-tivdoccom-5042s-projects.vercel.app",
+  "schema": 131,
+  "identityFixture": true,
+  "codeSeeded": false,
+  "sessionSeeded": false,
+  "browserLogin": true,
+  "browserRefresh": true,
+  "mailFolder": "Spam",
+  "currentProductReceipt": [
+    {
+      "id": "d2444d62-7607-4929-8e59-8a52e3d64c89",
+      "template": "access_code",
+      "state": "delivered",
+      "provider": "resend",
+      "provider_message_id": "15de2ddd-9083-41ed-89a7-a94c1eadee91",
+      "error_code": null,
+      "created_at": "2026-09-09T21:45:10.465Z"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "msg_3J6nJFizdb61RjRmXwl4fhnjvdX",
+      "provider_message_id": "15de2ddd-9083-41ed-89a7-a94c1eadee91",
+      "kind": "email.sent",
+      "occurred_at": "2026-09-09T21:45:10.647Z",
+      "received_at": "2026-09-09T21:45:13.351Z"
+    },
+    {
+      "event_id": "msg_3J6nJLSDHIdNyooMLt3nsRCQIsJ",
+      "provider_message_id": "15de2ddd-9083-41ed-89a7-a94c1eadee91",
+      "kind": "email.delivered",
+      "occurred_at": "2026-09-09T21:45:11.334Z",
+      "received_at": "2026-09-09T21:45:13.726Z"
+    }
+  ],
+  "consumedCodeReplay": [
+    {
+      "outcome": "none",
+      "code_id": null,
+      "token_id": null
+    }
+  ],
+  "outboxProof": false,
+  "productionChanged": false
+}

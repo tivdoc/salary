@@ -77,3 +77,22 @@ it('attempt 3 requires a completed earlier reviewed attempt and preserves its pa
  const saved=recordLiveExtractionPassReceipt(afterThree,receipt(approval.sourceSha256s[0],'synthetic-attempt-three',later));
  expect(()=>reserveLiveExtractionPass({...input,ledger:saved})).toThrow('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
 });
+
+it('recovery-confirmation attempt 4 requires the recorded failure history and keeps all spending',()=>{
+ const source=approval.sourceSha256s[0];
+ const attempt3={version:approval.version,attemptRevision:3 as const,reasonCode:'aggregate_total_isolation_after_ef03418' as const,codeRevision:'c'.repeat(40)};
+ const attempt4={version:approval.version,attemptRevision:4 as const,reasonCode:'identified_recovery_confirmation_after_c521776' as const,codeRevision:'d'.repeat(40)};
+ const input={sourceSha256:source,requestSha256:hash('synthetic-budget-request'),passKind:'first_pass' as const,now:later,reviewedRetry:attempt4};
+ const afterTwo=recordLiveExtractionPassReceipt(reserve(priorEight()),receipt(source,'synthetic-two',later));
+ expect(()=>reserveLiveExtractionPass({...input,ledger:afterTwo})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+ const pendingThree=reserveLiveExtractionPass({...input,ledger:afterTwo,reviewedRetry:attempt3});
+ expect(()=>reserveLiveExtractionPass({...input,ledger:pendingThree})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+ const afterThree=recordLiveExtractionPassReceipt(pendingThree,receipt(source,'synthetic-three',later));
+ const pendingFour=reserveLiveExtractionPass({...input,ledger:afterThree});
+ expect(pendingFour.reservations.slice(0,10)).toEqual(afterThree.reservations);
+ expect(summarizeLiveExtractionBudget(pendingFour)).toMatchObject({reservedPasses:11,reservedUpperBoundUsd:.2772});
+ expect(()=>parseLiveExtractionBudgetLedger({...pendingFour,reservations:pendingFour.reservations.filter(r=>r.reviewedRetry?.attemptRevision!==3)})).toThrow('LIVE_BUDGET_RETRY_HISTORY_INVALID');
+ const completed=recordLiveExtractionPassReceipt(pendingFour,receipt(source,'synthetic-four',later));
+ expect(()=>reserveLiveExtractionPass({...input,ledger:completed})).toThrow('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
+ expect(()=>reserveLiveExtractionPass({...input,ledger:completed,reviewedRetry:{...attempt4,codeRevision:'e'.repeat(40)}})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+});

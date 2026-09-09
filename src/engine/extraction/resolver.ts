@@ -167,7 +167,7 @@ function makeFact(
   // impossible values, duplicate candidates and cross-source conflicts retain
   // their original gates. No professional/legal approval is inferred.
   const confirmed=fields.every(field=>readings.has(field.candidate_id)&&
-    fieldAssessment(validation,field.candidate_id)?.issue_codes.every(code=>['low_field_confidence','moderate_field_confidence','ocr_value_ambiguous'].includes(code)));
+    fieldAssessment(validation,field.candidate_id)?.issue_codes.every(code=>['low_field_confidence','moderate_field_confidence','ocr_value_ambiguous','recovery_reading_confirmation_required'].includes(code)));
   return canonicalFactSchema.parse({
     fact_id: factId,
     case_id: context.case_id,

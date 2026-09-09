@@ -244,6 +244,9 @@ export function validatePayslipGate0(
     if (field.warning_flags.includes("ocr_ambiguous") || field.warning_flags.includes("possible_scale_error")) {
       addIssue("ocr_value_ambiguous", "requires_confirmation", "confirmation", [field], "OCR evidence indicates an ambiguous value or scale.");
     }
+    if (field.warning_flags.includes("recovery_reading_confirmation_required")) {
+      addIssue("recovery_reading_confirmation_required", "requires_confirmation", "confirmation", [field], "This recovery-only observation requires an identified document reading; model confidence alone cannot confirm it.");
+    }
 
     if (field.field === "salary_period") {
       const period = field.normalized_value as { month: number; year: number };

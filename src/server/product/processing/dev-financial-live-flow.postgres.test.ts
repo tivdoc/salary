@@ -21,7 +21,7 @@ import {documentFieldTargetSchema,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from '../
 import {createLiveExtractionRuntime} from './live-extraction-runtime';
 import {readSavedExtractionProvenance} from './live-extraction-provenance';
 import {assertLiveExtractionBudgetModel,parseLiveExtractionBudgetLedger,preflightLiveExtractionRequest,
- reserveLiveExtractionPass,recordLiveExtractionPassReceipt,summarizeLiveExtractionBudget,LIVE_EXTRACTION_BUDGET_POLICY,LIVE_EXTRACTION_REVIEWED_RETRY,LIVE_EXTRACTION_AGGREGATE_RETRY,
+ reserveLiveExtractionPass,recordLiveExtractionPassReceipt,summarizeLiveExtractionBudget,LIVE_EXTRACTION_BUDGET_POLICY,LIVE_EXTRACTION_REVIEWED_RETRY,LIVE_EXTRACTION_AGGREGATE_RETRY,LIVE_EXTRACTION_RECOVERY_RETRY,
  type LiveExtractionReviewedRetry} from './live-extraction-budget';
 import type {OpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
 import {claimSavedDraftJob} from './saved-job-runtime';
@@ -36,7 +36,7 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
  if(process.env.VERCEL||process.env.NODE_ENV!=='test')throw Error('DEV_FINANCIAL_PROOF_BOUNDARY');
  const retain=process.env.TIVDOC_DEV_FINANCIAL_LIVE_RETAIN==='1';
  const attempt=process.env.TIVDOC_LIVE_APPROVED_ATTEMPT;
- const retryRequested=attempt==='2'||attempt==='3';
+ const retryRequested=attempt==='2'||attempt==='3'||attempt==='4';
  const liveNotifications=process.env.TIVDOC_DEV_FINANCIAL_LIVE_NOTIFICATIONS==='1';
  const browserAnswer=process.env.TIVDOC_DEV_FINANCIAL_LIVE_BROWSER_ANSWER==='1';
  if((liveNotifications||browserAnswer)&&!retain)throw Error('OWNER_RETAIN_REQUIRED');
@@ -67,7 +67,7 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
  const persistLedger=()=>{const handle=openSync(ledgerPath,'w');try{writeFileSync(handle,JSON.stringify(ledger,null,2)+'\n');fsyncSync(handle);}finally{closeSync(handle);}};
  const schemaEvidence:unknown[]=[],providerAttempts:{sourceSha256:string;passKind:string;receiptConfirmed:boolean}[]=[];
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim().length>0;
- const reviewedRetry:LiveExtractionReviewedRetry|undefined=retryRequested?{...(attempt==='3'?LIVE_EXTRACTION_AGGREGATE_RETRY:{version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:2 as const,reasonCode:LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode}),codeRevision:process.env.TIVDOC_LIVE_RETRY_CODE_REVISION??''}:undefined;
+ const reviewedRetry:LiveExtractionReviewedRetry|undefined=retryRequested?{...(attempt==='4'?LIVE_EXTRACTION_RECOVERY_RETRY:attempt==='3'?LIVE_EXTRACTION_AGGREGATE_RETRY:{version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:2 as const,reasonCode:LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode}),codeRevision:process.env.TIVDOC_LIVE_RETRY_CODE_REVISION??''}:undefined;
  if(reviewedRetry&&(reviewedRetry.codeRevision!==gitSha||dirty))throw Error('LIVE_BUDGET_RETRY_CODE_REVISION');
  const notificationEvidence:unknown[]=[];
  const notificationCapability=liveNotifications?randomBytes(32).toString('base64url'):null;

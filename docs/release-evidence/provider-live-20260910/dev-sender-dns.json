@@ -1,0 +1,35 @@
+{
+  "createdAt": "2026-09-09T21:54:24.318Z",
+  "domain": "devmail.tivdoc.com",
+  "domainId": "c3a86e20-15af-409a-aa85-ae5cfca9174a",
+  "region": "ap-northeast-1",
+  "dashboard": "https://resend.com/domains/add/c3a86e20-15af-409a-aa85-ae5cfca9174a",
+  "state": "awaiting_dns_owner_login",
+  "dnsChanged": false,
+  "receivingEnabled": false,
+  "customSenderEnabled": false,
+  "currentSender": "Tivdoc DEV <onboarding@resend.dev>",
+  "currentOnlyTestRecipient": "tivdoc.com@gmail.com",
+  "records": [
+    {
+      "type": "TXT",
+      "name": "resend._domainkey.devmail.tivdoc.com",
+      "value": "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC/6XNB+qTtgwccpBkHW4+aQRP7HD/AAwNIRqI7Kub0Yo0Loso9eqvxckltRKthx9CbtLRF+5St8lh5CdoMW3IDfkov9oajjhBs0syaUDZ42Fau5uPCt0nVZ2OSJW4gjsyzUW3cb3YZwcrguili7jhmkN7nzSUFC5nPRKXkK5Ed0QIDAQAB",
+      "ttl": "Auto"
+    },
+    {
+      "type": "MX",
+      "name": "send.devmail.tivdoc.com",
+      "value": "feedback-smtp.ap-northeast-1.amazonses.com",
+      "priority": 10,
+      "ttl": "Auto"
+    },
+    {
+      "type": "TXT",
+      "name": "send.devmail.tivdoc.com",
+      "value": "v=spf1 include:amazonses.com ~all",
+      "ttl": "Auto"
+    }
+  ],
+  "scope": "DEV subdomain only. Do not alter root MX/SPF/DMARC. DKIM value is public verification material, not a private API key. No billing or Production change."
+}

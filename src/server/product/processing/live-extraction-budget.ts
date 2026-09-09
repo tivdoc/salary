@@ -28,7 +28,9 @@ export const LIVE_EXTRACTION_REVIEWED_RETRY=Object.freeze({
   '520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5'] as const,
 } as const);
 export const LIVE_EXTRACTION_AGGREGATE_RETRY=Object.freeze({version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:3,reasonCode:'aggregate_total_isolation_after_ef03418'} as const);
+export const LIVE_EXTRACTION_RECOVERY_RETRY=Object.freeze({version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:4,reasonCode:'identified_recovery_confirmation_after_c521776'} as const);
 const reviewedRetrySchema=z.discriminatedUnion('attemptRevision',[
+ z.object({version:z.literal(LIVE_EXTRACTION_RECOVERY_RETRY.version),attemptRevision:z.literal(4),reasonCode:z.literal(LIVE_EXTRACTION_RECOVERY_RETRY.reasonCode),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict(),
  z.object({version:z.literal(LIVE_EXTRACTION_REVIEWED_RETRY.version),attemptRevision:z.literal(2),reasonCode:z.literal(LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict(),
  z.object({version:z.literal(LIVE_EXTRACTION_AGGREGATE_RETRY.version),attemptRevision:z.literal(3),reasonCode:z.literal(LIVE_EXTRACTION_AGGREGATE_RETRY.reasonCode),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict(),
 ]);
@@ -60,6 +62,7 @@ export function parseLiveExtractionBudgetLedger(input:unknown){
     &&other.reviewedRetry.attemptRevision===row.reviewedRetry!.attemptRevision&&other.reviewedRetry.codeRevision!==row.reviewedRetry!.codeRevision))throw Error('LIVE_BUDGET_RETRY_HISTORY_INVALID');
  }
  if(parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&!parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&prior.reviewedRetry?.attemptRevision===2)))throw Error('LIVE_BUDGET_RETRY_HISTORY_INVALID');
+ if(parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===4)&&(!parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&row.outcome==='receipt_recorded')||parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===4&&!parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&prior.reviewedRetry?.attemptRevision===2))))throw Error('LIVE_BUDGET_RETRY_HISTORY_INVALID');
  return parsed;
 }
 export function reserveLiveExtractionPass(input:{ledger:LiveExtractionBudgetLedger;sourceSha256:string;requestSha256:string;
@@ -71,6 +74,7 @@ export function reserveLiveExtractionPass(input:{ledger:LiveExtractionBudgetLedg
   ||!previous.some(row=>!row.reviewedRetry)||previous.some(row=>row.outcome==='reserved_unknown')
   ||previous.some(row=>row.reviewedRetry&&row.reviewedRetry.attemptRevision===reviewedRetry.attemptRevision&&row.reviewedRetry.codeRevision!==reviewedRetry.codeRevision)))throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
  if(reviewedRetry?.attemptRevision===3&&!previous.some(row=>row.reviewedRetry?.attemptRevision===2))throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
+ if(reviewedRetry?.attemptRevision===4&&(!previous.some(row=>row.reviewedRetry?.attemptRevision===2)||!ledger.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&row.outcome==='receipt_recorded')||ledger.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&row.outcome==='reserved_unknown')))throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
  const key=`${input.sourceSha256}:${input.passKind}${reviewedRetry?`:attempt-${reviewedRetry.attemptRevision}`:''}`;
  if(ledger.reservations.some(row=>row.key===key)
   ||(!reviewedRetry&&previous.some(row=>row.passKind===input.passKind)))throw Error('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
