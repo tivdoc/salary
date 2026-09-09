@@ -1,0 +1,14 @@
+{
+  "month": "2026-06",
+  "regularHours": "100",
+  "hourlyRateMinor": 3300,
+  "baseMinor": 330000,
+  "grossMinor": 330000,
+  "deductionsMinor": 0,
+  "netMinor": 330000,
+  "expectedMinor": 354000,
+  "gapMinor": 24000,
+  "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+  "humanLegalApproval": false,
+  "sourceIsSynthetic": true
+}

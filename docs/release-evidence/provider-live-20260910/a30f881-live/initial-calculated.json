@@ -1,0 +1,2937 @@
+{
+  "schema_version": "tivdoc-dev-financial-run-v1",
+  "authority": "engineering_only",
+  "run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "public_id": "TV-73299C08",
+  "order_id": "49f5a3e0-6f68-4ebe-993c-a9b3191be8a1",
+  "input_revision": 16,
+  "input_sha256": "0f6e4faf5de6dae05750cf2b07b604be99d61bd8e00cb5eed4364393fa35aaac",
+  "month": "2026-06",
+  "parent_run_id": "e896f3cf-ec5e-4383-83ab-e297c403286e",
+  "parent_result_sha256": "4ca827293ff2f193b47bef60b9d2d3631c746dbdd8202cbc3e71a7517f043274",
+  "parent_key": "saved-month:aa1957be8733a0dceb07e2ad1b918c79b2cac6c4d56a1e229edcac7f349eae74",
+  "parent_key_catalog_sha256": "3f878560e747c53af70711257b148affa287c70af244a3e8195c321adac02aef",
+  "parent_facts": {
+    "snapshot_id": "89da0d76-9fbe-4e49-87ed-ea268f0967c9",
+    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+    "analysis_run_id": "e896f3cf-ec5e-4383-83ab-e297c403286e",
+    "schema_version": "1.0.0",
+    "facts": [
+      {
+        "fact_id": "4c07b5b3-03ab-48b4-8e4d-c261dddbb0cf",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Regular hourly base: 3,300.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "a7500cb7-f96c-4c71-926d-db4c261f4707",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "4e1992cbceeed1c9acc096a68c8a581d9e8e2983419cb95fc50e2ab2a9a8f343",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "07ffd6daedfa17ae370e3190580fb455ac383f0e86405deeae69082ff7c74fe1",
+              "month": "2026-06",
+              "request_id": "3aac139d-d878-4a7d-9cff-da4b2b69ac6c",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:19.831371+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.base_monthly_salary",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 330000
+        }
+      },
+      {
+        "fact_id": "a83dd1a1-55a0-44f9-82dd-b3e0bc51df6e",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Gross salary (ILS): 3,300.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "b42fd414-dda4-4090-8d8d-09ccf0870d57",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "aa652b1708bdc86d3bb83c55ccf1db819316ce3b47f47f3dc3c7d42a8a2b9f2b",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "5410439badba593843e82b4cd612742bc7b2e493210fa75eacb1e76433749ac8",
+              "month": "2026-06",
+              "request_id": "c2476b12-a329-478d-824b-232e0b3e17f1",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:19.949389+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.gross_salary",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 330000
+        }
+      },
+      {
+        "fact_id": "a450728a-0819-4734-86f5-4bf5d4bcdbbb",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Regular hourly base: 33.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "b939284c-d9ff-4806-9845-354511614d9b",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "36448f291eed8b6297e3ea19e0acbe0a845a5b1e8b8221fc588b16422f67eaec",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "9c75897297e84857323f4028965ae8427045a89a8fd8df15d67447992ac4473b",
+              "month": "2026-06",
+              "request_id": "b4fc7127-cd77-4404-aa4f-c4f8913b7cdf",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.019442+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.hourly_rate",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 3300
+        }
+      },
+      {
+        "fact_id": "45e85ca7-423e-4b9d-8d70-738cfa61fe04",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Net salary (ILS): 3,300.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "8841ed98-a2be-4196-bad4-2a5ff37ab2ad",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "670e6c6b7e6af984c1157eebdf6051853cafb13227c5ecdb55efe4c07e0209c6",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "8d23e42d40e7fdb1f5cda3460d73d667069251e7f3f3e8f6a56913a961af9685",
+              "month": "2026-06",
+              "request_id": "68c52b1f-bbee-4cda-8dac-0a1efe1275cf",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.093308+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.net_salary",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 330000
+        }
+      },
+      {
+        "fact_id": "28ec1d32-156f-41bd-8b87-e22a94b7fba7",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Salary type: hourly"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "9d524262-982d-4f8e-9377-f0722d4ebc3b",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "fc260409bdfe1f5ed57e5a231c0e0f786ac5c4065f919110e7eeab637f661901",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "b981a6932f3a033ec034f693a503e49535d6b89ef12d2488491e7e6aacf7023b",
+              "month": "2026-06",
+              "request_id": "57fb41c0-cdb4-4580-a470-937ecdc39758",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.301411+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.salary_type",
+        "value": "hourly"
+      },
+      {
+        "fact_id": "077e8cb4-27b2-4780-8c23-c83df1b2901e",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "convalescence.payment",
+        "value": null
+      },
+      {
+        "fact_id": "e2bf24d9-3a93-4e8d-82b4-9e663254c33b",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Salary period: 06/2026"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "50ced6d1-edc4-4227-bc25-f89bd9ee6979",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "530087d9415e5aa7423ecb5ad3fdd979a38e05e2fb10b47d561515532d7763af",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "624eea92f13b8a64de73c26505026d4235d891fa8df4729def82e6c26c1d11e5",
+              "month": "2026-06",
+              "request_id": "59a64357-30fe-4c36-8e4c-06f7f3f07cc7",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.233296+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "documents.period",
+        "value": {
+          "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+          "period": {
+            "start_date": "2026-06-01",
+            "end_date": "2026-06-30"
+          }
+        }
+      },
+      {
+        "fact_id": "256c0129-c59b-47e6-8018-42066b655ef2",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "employment.start_date",
+        "value": null
+      },
+      {
+        "fact_id": "331dba33-5b7c-4d5e-814a-38de49812ca3",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "leave.sick_balance",
+        "value": null
+      },
+      {
+        "fact_id": "cfe3e9cd-6881-48cc-816c-1f17e58ea471",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "leave.vacation_balance",
+        "value": null
+      },
+      {
+        "fact_id": "8fe45c27-d31a-461f-8bc8-fe851fd2b332",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "pension.base_salary",
+        "value": null
+      },
+      {
+        "fact_id": "137be78d-bae9-408b-8825-d2ff77c5f31c",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "pension.contributions",
+        "value": null
+      },
+      {
+        "fact_id": "8cfa2afe-c0cd-43b4-8d1c-39fdb4c40437",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "pension.severance_contribution",
+        "value": null
+      },
+      {
+        "fact_id": "1ebf6de7-e9d5-4182-836c-ce3a956baeb4",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "travel.reimbursement",
+        "value": null
+      },
+      {
+        "fact_id": "60dbce7a-5109-4dd4-83a3-48b13f9d2f0c",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.overtime_125_hours",
+        "value": null
+      },
+      {
+        "fact_id": "39a5bc01-e90e-40c8-89b9-a5e12a66db4f",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.overtime_150_hours",
+        "value": null
+      },
+      {
+        "fact_id": "d96c3a41-9e77-4481-81d2-2fca888a0b20",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.overtime_hours",
+        "value": null
+      },
+      {
+        "fact_id": "50053297-be49-47d7-8d9f-a49e2da848ad",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Regular hourly base: 100"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "f5a43a69-1ec7-4588-a34a-bd8d836320fc",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "04ebdd93a762e1403e86c934d3d39e95283f7ab2a6f16c8fd6a5c1ef4a609b0c",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "2ee6c1e10a383b2f0f9ce41f5b4a87838e662c62203083146b482882f9dd8d89",
+              "month": "2026-06",
+              "request_id": "f141eab4-0332-44ae-b4f0-c15a2edac92f",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.163465+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.regular_hours",
+        "value": {
+          "amount": "100",
+          "unit": "hours_per_month"
+        }
+      }
+    ],
+    "created_at": "2026-09-09T22:09:20.301Z"
+  },
+  "parent_facts_sha256": "f4cc0ac14db38150cdbf2de4bba165d225015fb2381e7a6665280a085290c4a0",
+  "facts": {
+    "snapshot_id": "6464a33b-260e-470d-8f06-413d2bf941df",
+    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+    "analysis_run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+    "schema_version": "1.0.0",
+    "facts": [
+      {
+        "fact_id": "4c07b5b3-03ab-48b4-8e4d-c261dddbb0cf",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Regular hourly base: 3,300.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "a7500cb7-f96c-4c71-926d-db4c261f4707",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "4e1992cbceeed1c9acc096a68c8a581d9e8e2983419cb95fc50e2ab2a9a8f343",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "07ffd6daedfa17ae370e3190580fb455ac383f0e86405deeae69082ff7c74fe1",
+              "month": "2026-06",
+              "request_id": "3aac139d-d878-4a7d-9cff-da4b2b69ac6c",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:19.831371+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.base_monthly_salary",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 330000
+        }
+      },
+      {
+        "fact_id": "a83dd1a1-55a0-44f9-82dd-b3e0bc51df6e",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Gross salary (ILS): 3,300.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "b42fd414-dda4-4090-8d8d-09ccf0870d57",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "aa652b1708bdc86d3bb83c55ccf1db819316ce3b47f47f3dc3c7d42a8a2b9f2b",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "5410439badba593843e82b4cd612742bc7b2e493210fa75eacb1e76433749ac8",
+              "month": "2026-06",
+              "request_id": "c2476b12-a329-478d-824b-232e0b3e17f1",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:19.949389+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.gross_salary",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 330000
+        }
+      },
+      {
+        "fact_id": "a450728a-0819-4734-86f5-4bf5d4bcdbbb",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Regular hourly base: 33.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "b939284c-d9ff-4806-9845-354511614d9b",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "36448f291eed8b6297e3ea19e0acbe0a845a5b1e8b8221fc588b16422f67eaec",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "9c75897297e84857323f4028965ae8427045a89a8fd8df15d67447992ac4473b",
+              "month": "2026-06",
+              "request_id": "b4fc7127-cd77-4404-aa4f-c4f8913b7cdf",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.019442+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.hourly_rate",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 3300
+        }
+      },
+      {
+        "fact_id": "45e85ca7-423e-4b9d-8d70-738cfa61fe04",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Net salary (ILS): 3,300.00"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "8841ed98-a2be-4196-bad4-2a5ff37ab2ad",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "670e6c6b7e6af984c1157eebdf6051853cafb13227c5ecdb55efe4c07e0209c6",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "8d23e42d40e7fdb1f5cda3460d73d667069251e7f3f3e8f6a56913a961af9685",
+              "month": "2026-06",
+              "request_id": "68c52b1f-bbee-4cda-8dac-0a1efe1275cf",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.093308+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.net_salary",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 330000
+        }
+      },
+      {
+        "fact_id": "28ec1d32-156f-41bd-8b87-e22a94b7fba7",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Salary type: hourly"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "9d524262-982d-4f8e-9377-f0722d4ebc3b",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "fc260409bdfe1f5ed57e5a231c0e0f786ac5c4065f919110e7eeab637f661901",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "b981a6932f3a033ec034f693a503e49535d6b89ef12d2488491e7e6aacf7023b",
+              "month": "2026-06",
+              "request_id": "57fb41c0-cdb4-4580-a470-937ecdc39758",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.301411+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "compensation.salary_type",
+        "value": "hourly"
+      },
+      {
+        "fact_id": "077e8cb4-27b2-4780-8c23-c83df1b2901e",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "convalescence.payment",
+        "value": null
+      },
+      {
+        "fact_id": "e2bf24d9-3a93-4e8d-82b4-9e663254c33b",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Salary period: 06/2026"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "50ced6d1-edc4-4227-bc25-f89bd9ee6979",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "530087d9415e5aa7423ecb5ad3fdd979a38e05e2fb10b47d561515532d7763af",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "624eea92f13b8a64de73c26505026d4235d891fa8df4729def82e6c26c1d11e5",
+              "month": "2026-06",
+              "request_id": "59a64357-30fe-4c36-8e4c-06f7f3f07cc7",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.233296+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "documents.period",
+        "value": {
+          "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+          "period": {
+            "start_date": "2026-06-01",
+            "end_date": "2026-06-30"
+          }
+        }
+      },
+      {
+        "fact_id": "256c0129-c59b-47e6-8018-42066b655ef2",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "employment.start_date",
+        "value": null
+      },
+      {
+        "fact_id": "331dba33-5b7c-4d5e-814a-38de49812ca3",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "leave.sick_balance",
+        "value": null
+      },
+      {
+        "fact_id": "cfe3e9cd-6881-48cc-816c-1f17e58ea471",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "leave.vacation_balance",
+        "value": null
+      },
+      {
+        "fact_id": "8fe45c27-d31a-461f-8bc8-fe851fd2b332",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "pension.base_salary",
+        "value": null
+      },
+      {
+        "fact_id": "137be78d-bae9-408b-8825-d2ff77c5f31c",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "pension.contributions",
+        "value": null
+      },
+      {
+        "fact_id": "8cfa2afe-c0cd-43b4-8d1c-39fdb4c40437",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "pension.severance_contribution",
+        "value": null
+      },
+      {
+        "fact_id": "1ebf6de7-e9d5-4182-836c-ce3a956baeb4",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "travel.reimbursement",
+        "value": null
+      },
+      {
+        "fact_id": "60dbce7a-5109-4dd4-83a3-48b13f9d2f0c",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.overtime_125_hours",
+        "value": null
+      },
+      {
+        "fact_id": "39a5bc01-e90e-40c8-89b9-a5e12a66db4f",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.overtime_150_hours",
+        "value": null
+      },
+      {
+        "fact_id": "d96c3a41-9e77-4481-81d2-2fca888a0b20",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "missing",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+            },
+            "read_by": "machine",
+            "verified": false
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.overtime_hours",
+        "value": null
+      },
+      {
+        "fact_id": "50053297-be49-47d7-8d9f-a49e2da848ad",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "status": "confirmed",
+        "provenance": [
+          {
+            "source_type": "documented",
+            "source_reference": {
+              "kind": "document",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "locator": {
+                "page": 1,
+                "text_span": "Regular hourly base: 100"
+              }
+            },
+            "read_by": "machine",
+            "verified": true,
+            "customer_confirmation": {
+              "actor_kind": "customer",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "candidate_id": "f5a43a69-1ec7-4588-a34a-bd8d836320fc",
+              "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+              "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+              "candidate_sha256": "04ebdd93a762e1403e86c934d3d39e95283f7ab2a6f16c8fd6a5c1ef4a609b0c",
+              "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+              "target_sha256": "2ee6c1e10a383b2f0f9ce41f5b4a87838e662c62203083146b482882f9dd8d89",
+              "month": "2026-06",
+              "request_id": "f141eab4-0332-44ae-b4f0-c15a2edac92f",
+              "answer_revision": 1,
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "confirmed_at": "2026-09-09T22:09:20.163465+00:00"
+            }
+          }
+        ],
+        "confidence": 1,
+        "conflicting_fact_ids": [],
+        "resolution": null,
+        "created_at": "2026-09-09T22:09:20.301Z",
+        "path": "work.regular_hours",
+        "value": {
+          "amount": "100",
+          "unit": "hours_per_month"
+        }
+      }
+    ],
+    "created_at": "2026-09-09T22:09:20.301Z"
+  },
+  "facts_sha256": "0a4044412979e7283f18b72703fd0580548d54060bd974d45c1ddee740226437",
+  "reading": null,
+  "source": {
+    "document_id": "5a067c04-4dec-4060-8ea8-4361fd3d2840",
+    "version_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+    "checkpoint_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+    "path": "cases/87eb4418-7d9f-4b68-aa86-82be059295ac/versions/15597edc-5c38-4edb-ba91-71125bb307ae.pdf",
+    "mime": "application/pdf",
+    "size": 3512,
+    "page": 1
+  },
+  "policy_sha256": "cc042919b2b372b1e17b80a90dfd5354252394b4856ffdcb1a61e8b8d5a7340d",
+  "created_at": "2026-09-09T22:09:20.301Z",
+  "calculation": {
+    "state": "calculated",
+    "expectedMinor": 354000,
+    "recordedMinor": 330000,
+    "gapMinor": 24000,
+    "trace": {
+      "schema_version": "tivdoc-source-calculation-trace-v1",
+      "authority": "arithmetic_provenance_only",
+      "calculation_id": "d227b0d6-ff4c-4e2d-84d6-c9e460cd414c",
+      "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+      "analysis_run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+      "calculated_at": "2026-09-09T22:09:20.301Z",
+      "rule": {
+        "rule_id": "il.rulespec.minimum.wage.hourly.dev.comparison",
+        "rule_version": "1.1.0"
+      },
+      "rule_package": {
+        "schema_version": "tivdoc-rulespec-v0.6.0",
+        "rule_spec_id": "il.rulespec.minimum.wage.hourly.dev.comparison",
+        "rule_spec_version": "1.1.0",
+        "topic": "minimum_wage",
+        "catalog_boundary": "real_inactive",
+        "source_version_ids": [
+          "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0"
+        ],
+        "effective_period": {
+          "from": "2026-06-01",
+          "to": "2026-06-30"
+        },
+        "sectors": [
+          "general"
+        ],
+        "populations": [
+          "general"
+        ],
+        "facts": [
+          {
+            "ref_id": "fact.regular.hours",
+            "value_kind": "rational",
+            "unit": "hours_per_month"
+          },
+          {
+            "ref_id": "fact.recorded.base.pay",
+            "value_kind": "money",
+            "unit": "currency.ils"
+          }
+        ],
+        "parameters": [
+          {
+            "ref_id": "parameter.hourly.floor",
+            "value_kind": "money",
+            "unit": "currency.ils",
+            "parameter_id": "il.minimum_wage.hourly",
+            "parameter_version": "2026.1.0"
+          }
+        ],
+        "nodes": [
+          {
+            "node_id": "unit.one.regular.hour",
+            "operation": "constant.rational",
+            "value": "1",
+            "unit": "hours_per_month"
+          },
+          {
+            "node_id": "regular.hours.multiplier",
+            "operation": "divide",
+            "left_ref": "fact.regular.hours",
+            "right_ref": "unit.one.regular.hour"
+          },
+          {
+            "node_id": "expected.regular.pay",
+            "operation": "money.scale",
+            "money_ref": "parameter.hourly.floor",
+            "rational_ref": "regular.hours.multiplier",
+            "rounding": "half_up"
+          },
+          {
+            "node_id": "expected.minus.recorded",
+            "operation": "subtract",
+            "left_ref": "expected.regular.pay",
+            "right_ref": "fact.recorded.base.pay"
+          }
+        ],
+        "output_ref": "expected.minus.recorded",
+        "golden_case_set_sha256": "9bfdf02243cc63f19a764faf963a2e78dfc8aa5ca8c49413c8fa3a7227e321c8",
+        "resource_policy": {
+          "max_steps": 8,
+          "max_depth": 4,
+          "max_aggregate_items": 8,
+          "max_integer_digits": 32
+        },
+        "content_sha256": "676e15e0b4318ea216639d91d07288c0560eedfeaa5b81a9225503aca42ee3eb"
+      },
+      "facts_snapshot": {
+        "snapshot_id": "6464a33b-260e-470d-8f06-413d2bf941df",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "analysis_run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+        "schema_version": "1.0.0",
+        "facts": [
+          {
+            "fact_id": "4c07b5b3-03ab-48b4-8e4d-c261dddbb0cf",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "confirmed",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Regular hourly base: 3,300.00"
+                  }
+                },
+                "read_by": "machine",
+                "verified": true,
+                "customer_confirmation": {
+                  "actor_kind": "customer",
+                  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "candidate_id": "a7500cb7-f96c-4c71-926d-db4c261f4707",
+                  "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                  "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                  "candidate_sha256": "4e1992cbceeed1c9acc096a68c8a581d9e8e2983419cb95fc50e2ab2a9a8f343",
+                  "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                  "target_sha256": "07ffd6daedfa17ae370e3190580fb455ac383f0e86405deeae69082ff7c74fe1",
+                  "month": "2026-06",
+                  "request_id": "3aac139d-d878-4a7d-9cff-da4b2b69ac6c",
+                  "answer_revision": 1,
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "confirmed_at": "2026-09-09T22:09:19.831371+00:00"
+                }
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "compensation.base_monthly_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "fact_id": "a83dd1a1-55a0-44f9-82dd-b3e0bc51df6e",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "confirmed",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Gross salary (ILS): 3,300.00"
+                  }
+                },
+                "read_by": "machine",
+                "verified": true,
+                "customer_confirmation": {
+                  "actor_kind": "customer",
+                  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "candidate_id": "b42fd414-dda4-4090-8d8d-09ccf0870d57",
+                  "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                  "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                  "candidate_sha256": "aa652b1708bdc86d3bb83c55ccf1db819316ce3b47f47f3dc3c7d42a8a2b9f2b",
+                  "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                  "target_sha256": "5410439badba593843e82b4cd612742bc7b2e493210fa75eacb1e76433749ac8",
+                  "month": "2026-06",
+                  "request_id": "c2476b12-a329-478d-824b-232e0b3e17f1",
+                  "answer_revision": 1,
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "confirmed_at": "2026-09-09T22:09:19.949389+00:00"
+                }
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "compensation.gross_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "fact_id": "a450728a-0819-4734-86f5-4bf5d4bcdbbb",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "confirmed",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Regular hourly base: 33.00"
+                  }
+                },
+                "read_by": "machine",
+                "verified": true,
+                "customer_confirmation": {
+                  "actor_kind": "customer",
+                  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "candidate_id": "b939284c-d9ff-4806-9845-354511614d9b",
+                  "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                  "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                  "candidate_sha256": "36448f291eed8b6297e3ea19e0acbe0a845a5b1e8b8221fc588b16422f67eaec",
+                  "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                  "target_sha256": "9c75897297e84857323f4028965ae8427045a89a8fd8df15d67447992ac4473b",
+                  "month": "2026-06",
+                  "request_id": "b4fc7127-cd77-4404-aa4f-c4f8913b7cdf",
+                  "answer_revision": 1,
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "confirmed_at": "2026-09-09T22:09:20.019442+00:00"
+                }
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "compensation.hourly_rate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            }
+          },
+          {
+            "fact_id": "45e85ca7-423e-4b9d-8d70-738cfa61fe04",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "confirmed",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Net salary (ILS): 3,300.00"
+                  }
+                },
+                "read_by": "machine",
+                "verified": true,
+                "customer_confirmation": {
+                  "actor_kind": "customer",
+                  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "candidate_id": "8841ed98-a2be-4196-bad4-2a5ff37ab2ad",
+                  "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                  "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                  "candidate_sha256": "670e6c6b7e6af984c1157eebdf6051853cafb13227c5ecdb55efe4c07e0209c6",
+                  "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                  "target_sha256": "8d23e42d40e7fdb1f5cda3460d73d667069251e7f3f3e8f6a56913a961af9685",
+                  "month": "2026-06",
+                  "request_id": "68c52b1f-bbee-4cda-8dac-0a1efe1275cf",
+                  "answer_revision": 1,
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "confirmed_at": "2026-09-09T22:09:20.093308+00:00"
+                }
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "compensation.net_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "fact_id": "28ec1d32-156f-41bd-8b87-e22a94b7fba7",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "confirmed",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Salary type: hourly"
+                  }
+                },
+                "read_by": "machine",
+                "verified": true,
+                "customer_confirmation": {
+                  "actor_kind": "customer",
+                  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "candidate_id": "9d524262-982d-4f8e-9377-f0722d4ebc3b",
+                  "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                  "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                  "candidate_sha256": "fc260409bdfe1f5ed57e5a231c0e0f786ac5c4065f919110e7eeab637f661901",
+                  "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                  "target_sha256": "b981a6932f3a033ec034f693a503e49535d6b89ef12d2488491e7e6aacf7023b",
+                  "month": "2026-06",
+                  "request_id": "57fb41c0-cdb4-4580-a470-937ecdc39758",
+                  "answer_revision": 1,
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "confirmed_at": "2026-09-09T22:09:20.301411+00:00"
+                }
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "compensation.salary_type",
+            "value": "hourly"
+          },
+          {
+            "fact_id": "077e8cb4-27b2-4780-8c23-c83df1b2901e",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "convalescence.payment",
+            "value": null
+          },
+          {
+            "fact_id": "e2bf24d9-3a93-4e8d-82b4-9e663254c33b",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "confirmed",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Salary period: 06/2026"
+                  }
+                },
+                "read_by": "machine",
+                "verified": true,
+                "customer_confirmation": {
+                  "actor_kind": "customer",
+                  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "candidate_id": "50ced6d1-edc4-4227-bc25-f89bd9ee6979",
+                  "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                  "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                  "candidate_sha256": "530087d9415e5aa7423ecb5ad3fdd979a38e05e2fb10b47d561515532d7763af",
+                  "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                  "target_sha256": "624eea92f13b8a64de73c26505026d4235d891fa8df4729def82e6c26c1d11e5",
+                  "month": "2026-06",
+                  "request_id": "59a64357-30fe-4c36-8e4c-06f7f3f07cc7",
+                  "answer_revision": 1,
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "confirmed_at": "2026-09-09T22:09:20.233296+00:00"
+                }
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "documents.period",
+            "value": {
+              "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+              "period": {
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-30"
+              }
+            }
+          },
+          {
+            "fact_id": "256c0129-c59b-47e6-8018-42066b655ef2",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "employment.start_date",
+            "value": null
+          },
+          {
+            "fact_id": "331dba33-5b7c-4d5e-814a-38de49812ca3",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "leave.sick_balance",
+            "value": null
+          },
+          {
+            "fact_id": "cfe3e9cd-6881-48cc-816c-1f17e58ea471",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "leave.vacation_balance",
+            "value": null
+          },
+          {
+            "fact_id": "8fe45c27-d31a-461f-8bc8-fe851fd2b332",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "pension.base_salary",
+            "value": null
+          },
+          {
+            "fact_id": "137be78d-bae9-408b-8825-d2ff77c5f31c",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "pension.contributions",
+            "value": null
+          },
+          {
+            "fact_id": "8cfa2afe-c0cd-43b4-8d1c-39fdb4c40437",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "pension.severance_contribution",
+            "value": null
+          },
+          {
+            "fact_id": "1ebf6de7-e9d5-4182-836c-ce3a956baeb4",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "travel.reimbursement",
+            "value": null
+          },
+          {
+            "fact_id": "60dbce7a-5109-4dd4-83a3-48b13f9d2f0c",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "work.overtime_125_hours",
+            "value": null
+          },
+          {
+            "fact_id": "39a5bc01-e90e-40c8-89b9-a5e12a66db4f",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "work.overtime_150_hours",
+            "value": null
+          },
+          {
+            "fact_id": "d96c3a41-9e77-4481-81d2-2fca888a0b20",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                },
+                "read_by": "machine",
+                "verified": false
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "work.overtime_hours",
+            "value": null
+          },
+          {
+            "fact_id": "50053297-be49-47d7-8d9f-a49e2da848ad",
+            "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+            "status": "confirmed",
+            "provenance": [
+              {
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Regular hourly base: 100"
+                  }
+                },
+                "read_by": "machine",
+                "verified": true,
+                "customer_confirmation": {
+                  "actor_kind": "customer",
+                  "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                  "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                  "candidate_id": "f5a43a69-1ec7-4588-a34a-bd8d836320fc",
+                  "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                  "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                  "candidate_sha256": "04ebdd93a762e1403e86c934d3d39e95283f7ab2a6f16c8fd6a5c1ef4a609b0c",
+                  "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                  "target_sha256": "2ee6c1e10a383b2f0f9ce41f5b4a87838e662c62203083146b482882f9dd8d89",
+                  "month": "2026-06",
+                  "request_id": "f141eab4-0332-44ae-b4f0-c15a2edac92f",
+                  "answer_revision": 1,
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "confirmed_at": "2026-09-09T22:09:20.163465+00:00"
+                }
+              }
+            ],
+            "confidence": 1,
+            "conflicting_fact_ids": [],
+            "resolution": null,
+            "created_at": "2026-09-09T22:09:20.301Z",
+            "path": "work.regular_hours",
+            "value": {
+              "amount": "100",
+              "unit": "hours_per_month"
+            }
+          }
+        ],
+        "created_at": "2026-09-09T22:09:20.301Z"
+      },
+      "facts_snapshot_sha256": "0a4044412979e7283f18b72703fd0580548d54060bd974d45c1ddee740226437",
+      "rule_input_sha256": "3442d386723d833327c3b4ab9bbda784b015d1c07a2192f0781e7c4a4328d572",
+      "catalog_sha256": "00dc415b75fe46ccb5b67bb527b60e9b433e2991e472e1a7a7bfbab11fbd389a",
+      "parameters": [
+        {
+          "schema_version": "tivdoc-parameter-candidate-v0.6.0",
+          "parameter_id": "il.minimum_wage.hourly",
+          "parameter_version": "2026.1.0",
+          "topic": "minimum_wage",
+          "value": {
+            "kind": "money",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 3540
+            }
+          },
+          "unit": "currency.ils",
+          "rounding_policy": "exact",
+          "effective_from": "2026-04-01",
+          "effective_to": null,
+          "sectors": [
+            "general"
+          ],
+          "populations": [
+            "general"
+          ],
+          "operative_source_version_ids": [
+            "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0"
+          ],
+          "support_roles": [
+            "official_implementation"
+          ],
+          "bindings": {
+            "source_bytes_sha256": "de435ae0b5ae7bbe97a5d1967f376e0a58c4969044f2a426d3f769ed49eb502e",
+            "citations_sha256": "4359ed8cb9bd121e3ff67cfb297beded49098992aa8509a3b7a2013b0f32bc64",
+            "interval_sha256": "d5f94b9731d296ab44da8ce82b9e3aba5949fdcc8fe533e93794c67c5436cd3e",
+            "scope_sha256": "44f385e3ab6655f2fd1037d6f098d2a15cb9e92659fcc194021e5347bee7a50d",
+            "parameter_set_sha256": "d82c361f71e9599a6c34457b1bb69ceddb9176a5aa4015107a58794a593f007b",
+            "rule_spec_sha256": "676e15e0b4318ea216639d91d07288c0560eedfeaa5b81a9225503aca42ee3eb",
+            "golden_cases_sha256": "9bfdf02243cc63f19a764faf963a2e78dfc8aa5ca8c49413c8fa3a7227e321c8",
+            "reviewer_decisions_sha256": "ec98ac2555b98a88b03995082cac915dba45dbe6ff68c1bd2dd060c7c2f337cd"
+          },
+          "candidate_sha256": "9dc1f2313fb6d0f49bf4eadc754fb83e5e2bbe73e87b481bffaf487496f91176",
+          "decision_id": "tivdoc.dev.engineering.decision.minimum_wage_hourly_182",
+          "branch": "182"
+        }
+      ],
+      "inputs": [
+        {
+          "input_id": "fact.regular.hours",
+          "source": {
+            "kind": "fact",
+            "fact_id": "50053297-be49-47d7-8d9f-a49e2da848ad",
+            "value_path": []
+          },
+          "value": {
+            "kind": "rational",
+            "numerator": "100",
+            "denominator": "1",
+            "unit": "hours_per_month"
+          },
+          "source_sha256": "4e3798ed82c6141053cd1661d289c61785277efe50e24615a5dff36309300e6f"
+        },
+        {
+          "input_id": "fact.recorded.base.pay",
+          "source": {
+            "kind": "fact",
+            "fact_id": "4c07b5b3-03ab-48b4-8e4d-c261dddbb0cf",
+            "value_path": []
+          },
+          "value": {
+            "kind": "money",
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "source_sha256": "7186cfe1e5af0f2a2cb6f8ad8b71cb24d85084300af57a8082efddc0e93077a0"
+        },
+        {
+          "input_id": "parameter.hourly.floor",
+          "source": {
+            "kind": "parameter",
+            "parameter_id": "il.minimum_wage.hourly",
+            "parameter_version": "2026.1.0"
+          },
+          "value": {
+            "kind": "money",
+            "currency": "ILS",
+            "minor_units": 3540
+          },
+          "source_sha256": "9dc1f2313fb6d0f49bf4eadc754fb83e5e2bbe73e87b481bffaf487496f91176"
+        }
+      ],
+      "steps": [
+        {
+          "step_id": "unit.one.regular.hour",
+          "operation": "constant.rational",
+          "input_refs": [],
+          "result": {
+            "kind": "rational",
+            "numerator": "1",
+            "denominator": "1",
+            "unit": "hours_per_month"
+          }
+        },
+        {
+          "step_id": "regular.hours.multiplier",
+          "operation": "divide",
+          "input_refs": [
+            "fact.regular.hours",
+            "unit.one.regular.hour"
+          ],
+          "result": {
+            "kind": "rational",
+            "numerator": "100",
+            "denominator": "1",
+            "unit": "ratio"
+          }
+        },
+        {
+          "step_id": "expected.regular.pay",
+          "operation": "money.scale",
+          "input_refs": [
+            "parameter.hourly.floor",
+            "regular.hours.multiplier"
+          ],
+          "result": {
+            "kind": "money",
+            "currency": "ILS",
+            "minor_units": 354000
+          }
+        },
+        {
+          "step_id": "expected.minus.recorded",
+          "operation": "subtract",
+          "input_refs": [
+            "expected.regular.pay",
+            "fact.recorded.base.pay"
+          ],
+          "result": {
+            "kind": "money",
+            "currency": "ILS",
+            "minor_units": 24000
+          }
+        }
+      ],
+      "execution_output": {
+        "kind": "money",
+        "currency": "ILS",
+        "minor_units": 24000
+      },
+      "execution_trace_sha256": "c780892946c8e38d5e529e5be841eefc04ca6cdc3463de45ffb62f63f9cc7c57",
+      "execution_result_sha256": "f95fe4ed769b344d761a9f01eaf465f8bc443ebdcbb24b8e36f5df68c2c27913",
+      "output": {
+        "kind": "money",
+        "value": {
+          "currency": "ILS",
+          "minor_units": 24000
+        }
+      },
+      "trace_sha256": "067d3d53ef870ddf719c9d058928e39760b0cc60d29dac29fd1e1e5b2e6d2673"
+    },
+    "comparison": {
+      "schema_version": "tivdoc-source-monetary-comparison-v1",
+      "authority": "arithmetic_provenance_only",
+      "output_semantics": "expected_minus_recorded",
+      "is_finding": false,
+      "pricing_allowed": false,
+      "trace": {
+        "schema_version": "tivdoc-source-calculation-trace-v1",
+        "authority": "arithmetic_provenance_only",
+        "calculation_id": "d227b0d6-ff4c-4e2d-84d6-c9e460cd414c",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "analysis_run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+        "calculated_at": "2026-09-09T22:09:20.301Z",
+        "rule": {
+          "rule_id": "il.rulespec.minimum.wage.hourly.dev.comparison",
+          "rule_version": "1.1.0"
+        },
+        "rule_package": {
+          "schema_version": "tivdoc-rulespec-v0.6.0",
+          "rule_spec_id": "il.rulespec.minimum.wage.hourly.dev.comparison",
+          "rule_spec_version": "1.1.0",
+          "topic": "minimum_wage",
+          "catalog_boundary": "real_inactive",
+          "source_version_ids": [
+            "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0"
+          ],
+          "effective_period": {
+            "from": "2026-06-01",
+            "to": "2026-06-30"
+          },
+          "sectors": [
+            "general"
+          ],
+          "populations": [
+            "general"
+          ],
+          "facts": [
+            {
+              "ref_id": "fact.regular.hours",
+              "value_kind": "rational",
+              "unit": "hours_per_month"
+            },
+            {
+              "ref_id": "fact.recorded.base.pay",
+              "value_kind": "money",
+              "unit": "currency.ils"
+            }
+          ],
+          "parameters": [
+            {
+              "ref_id": "parameter.hourly.floor",
+              "value_kind": "money",
+              "unit": "currency.ils",
+              "parameter_id": "il.minimum_wage.hourly",
+              "parameter_version": "2026.1.0"
+            }
+          ],
+          "nodes": [
+            {
+              "node_id": "unit.one.regular.hour",
+              "operation": "constant.rational",
+              "value": "1",
+              "unit": "hours_per_month"
+            },
+            {
+              "node_id": "regular.hours.multiplier",
+              "operation": "divide",
+              "left_ref": "fact.regular.hours",
+              "right_ref": "unit.one.regular.hour"
+            },
+            {
+              "node_id": "expected.regular.pay",
+              "operation": "money.scale",
+              "money_ref": "parameter.hourly.floor",
+              "rational_ref": "regular.hours.multiplier",
+              "rounding": "half_up"
+            },
+            {
+              "node_id": "expected.minus.recorded",
+              "operation": "subtract",
+              "left_ref": "expected.regular.pay",
+              "right_ref": "fact.recorded.base.pay"
+            }
+          ],
+          "output_ref": "expected.minus.recorded",
+          "golden_case_set_sha256": "9bfdf02243cc63f19a764faf963a2e78dfc8aa5ca8c49413c8fa3a7227e321c8",
+          "resource_policy": {
+            "max_steps": 8,
+            "max_depth": 4,
+            "max_aggregate_items": 8,
+            "max_integer_digits": 32
+          },
+          "content_sha256": "676e15e0b4318ea216639d91d07288c0560eedfeaa5b81a9225503aca42ee3eb"
+        },
+        "facts_snapshot": {
+          "snapshot_id": "6464a33b-260e-470d-8f06-413d2bf941df",
+          "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+          "analysis_run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+          "schema_version": "1.0.0",
+          "facts": [
+            {
+              "fact_id": "4c07b5b3-03ab-48b4-8e4d-c261dddbb0cf",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "confirmed",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "locator": {
+                      "page": 1,
+                      "text_span": "Regular hourly base: 3,300.00"
+                    }
+                  },
+                  "read_by": "machine",
+                  "verified": true,
+                  "customer_confirmation": {
+                    "actor_kind": "customer",
+                    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "candidate_id": "a7500cb7-f96c-4c71-926d-db4c261f4707",
+                    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                    "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                    "candidate_sha256": "4e1992cbceeed1c9acc096a68c8a581d9e8e2983419cb95fc50e2ab2a9a8f343",
+                    "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                    "target_sha256": "07ffd6daedfa17ae370e3190580fb455ac383f0e86405deeae69082ff7c74fe1",
+                    "month": "2026-06",
+                    "request_id": "3aac139d-d878-4a7d-9cff-da4b2b69ac6c",
+                    "answer_revision": 1,
+                    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                    "confirmed_at": "2026-09-09T22:09:19.831371+00:00"
+                  }
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "compensation.base_monthly_salary",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            },
+            {
+              "fact_id": "a83dd1a1-55a0-44f9-82dd-b3e0bc51df6e",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "confirmed",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "locator": {
+                      "page": 1,
+                      "text_span": "Gross salary (ILS): 3,300.00"
+                    }
+                  },
+                  "read_by": "machine",
+                  "verified": true,
+                  "customer_confirmation": {
+                    "actor_kind": "customer",
+                    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "candidate_id": "b42fd414-dda4-4090-8d8d-09ccf0870d57",
+                    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                    "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                    "candidate_sha256": "aa652b1708bdc86d3bb83c55ccf1db819316ce3b47f47f3dc3c7d42a8a2b9f2b",
+                    "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                    "target_sha256": "5410439badba593843e82b4cd612742bc7b2e493210fa75eacb1e76433749ac8",
+                    "month": "2026-06",
+                    "request_id": "c2476b12-a329-478d-824b-232e0b3e17f1",
+                    "answer_revision": 1,
+                    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                    "confirmed_at": "2026-09-09T22:09:19.949389+00:00"
+                  }
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "compensation.gross_salary",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            },
+            {
+              "fact_id": "a450728a-0819-4734-86f5-4bf5d4bcdbbb",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "confirmed",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "locator": {
+                      "page": 1,
+                      "text_span": "Regular hourly base: 33.00"
+                    }
+                  },
+                  "read_by": "machine",
+                  "verified": true,
+                  "customer_confirmation": {
+                    "actor_kind": "customer",
+                    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "candidate_id": "b939284c-d9ff-4806-9845-354511614d9b",
+                    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                    "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                    "candidate_sha256": "36448f291eed8b6297e3ea19e0acbe0a845a5b1e8b8221fc588b16422f67eaec",
+                    "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                    "target_sha256": "9c75897297e84857323f4028965ae8427045a89a8fd8df15d67447992ac4473b",
+                    "month": "2026-06",
+                    "request_id": "b4fc7127-cd77-4404-aa4f-c4f8913b7cdf",
+                    "answer_revision": 1,
+                    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                    "confirmed_at": "2026-09-09T22:09:20.019442+00:00"
+                  }
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "compensation.hourly_rate",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 3300
+              }
+            },
+            {
+              "fact_id": "45e85ca7-423e-4b9d-8d70-738cfa61fe04",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "confirmed",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "locator": {
+                      "page": 1,
+                      "text_span": "Net salary (ILS): 3,300.00"
+                    }
+                  },
+                  "read_by": "machine",
+                  "verified": true,
+                  "customer_confirmation": {
+                    "actor_kind": "customer",
+                    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "candidate_id": "8841ed98-a2be-4196-bad4-2a5ff37ab2ad",
+                    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                    "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                    "candidate_sha256": "670e6c6b7e6af984c1157eebdf6051853cafb13227c5ecdb55efe4c07e0209c6",
+                    "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                    "target_sha256": "8d23e42d40e7fdb1f5cda3460d73d667069251e7f3f3e8f6a56913a961af9685",
+                    "month": "2026-06",
+                    "request_id": "68c52b1f-bbee-4cda-8dac-0a1efe1275cf",
+                    "answer_revision": 1,
+                    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                    "confirmed_at": "2026-09-09T22:09:20.093308+00:00"
+                  }
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "compensation.net_salary",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            },
+            {
+              "fact_id": "28ec1d32-156f-41bd-8b87-e22a94b7fba7",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "confirmed",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "locator": {
+                      "page": 1,
+                      "text_span": "Salary type: hourly"
+                    }
+                  },
+                  "read_by": "machine",
+                  "verified": true,
+                  "customer_confirmation": {
+                    "actor_kind": "customer",
+                    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "candidate_id": "9d524262-982d-4f8e-9377-f0722d4ebc3b",
+                    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                    "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                    "candidate_sha256": "fc260409bdfe1f5ed57e5a231c0e0f786ac5c4065f919110e7eeab637f661901",
+                    "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                    "target_sha256": "b981a6932f3a033ec034f693a503e49535d6b89ef12d2488491e7e6aacf7023b",
+                    "month": "2026-06",
+                    "request_id": "57fb41c0-cdb4-4580-a470-937ecdc39758",
+                    "answer_revision": 1,
+                    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                    "confirmed_at": "2026-09-09T22:09:20.301411+00:00"
+                  }
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "compensation.salary_type",
+              "value": "hourly"
+            },
+            {
+              "fact_id": "077e8cb4-27b2-4780-8c23-c83df1b2901e",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "convalescence.payment",
+              "value": null
+            },
+            {
+              "fact_id": "e2bf24d9-3a93-4e8d-82b4-9e663254c33b",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "confirmed",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "locator": {
+                      "page": 1,
+                      "text_span": "Salary period: 06/2026"
+                    }
+                  },
+                  "read_by": "machine",
+                  "verified": true,
+                  "customer_confirmation": {
+                    "actor_kind": "customer",
+                    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "candidate_id": "50ced6d1-edc4-4227-bc25-f89bd9ee6979",
+                    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                    "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                    "candidate_sha256": "530087d9415e5aa7423ecb5ad3fdd979a38e05e2fb10b47d561515532d7763af",
+                    "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                    "target_sha256": "624eea92f13b8a64de73c26505026d4235d891fa8df4729def82e6c26c1d11e5",
+                    "month": "2026-06",
+                    "request_id": "59a64357-30fe-4c36-8e4c-06f7f3f07cc7",
+                    "answer_revision": 1,
+                    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                    "confirmed_at": "2026-09-09T22:09:20.233296+00:00"
+                  }
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "documents.period",
+              "value": {
+                "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                "period": {
+                  "start_date": "2026-06-01",
+                  "end_date": "2026-06-30"
+                }
+              }
+            },
+            {
+              "fact_id": "256c0129-c59b-47e6-8018-42066b655ef2",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "employment.start_date",
+              "value": null
+            },
+            {
+              "fact_id": "331dba33-5b7c-4d5e-814a-38de49812ca3",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "leave.sick_balance",
+              "value": null
+            },
+            {
+              "fact_id": "cfe3e9cd-6881-48cc-816c-1f17e58ea471",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "leave.vacation_balance",
+              "value": null
+            },
+            {
+              "fact_id": "8fe45c27-d31a-461f-8bc8-fe851fd2b332",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "pension.base_salary",
+              "value": null
+            },
+            {
+              "fact_id": "137be78d-bae9-408b-8825-d2ff77c5f31c",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "pension.contributions",
+              "value": null
+            },
+            {
+              "fact_id": "8cfa2afe-c0cd-43b4-8d1c-39fdb4c40437",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "pension.severance_contribution",
+              "value": null
+            },
+            {
+              "fact_id": "1ebf6de7-e9d5-4182-836c-ce3a956baeb4",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "travel.reimbursement",
+              "value": null
+            },
+            {
+              "fact_id": "60dbce7a-5109-4dd4-83a3-48b13f9d2f0c",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "work.overtime_125_hours",
+              "value": null
+            },
+            {
+              "fact_id": "39a5bc01-e90e-40c8-89b9-a5e12a66db4f",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "work.overtime_150_hours",
+              "value": null
+            },
+            {
+              "fact_id": "d96c3a41-9e77-4481-81d2-2fca888a0b20",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae"
+                  },
+                  "read_by": "machine",
+                  "verified": false
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "work.overtime_hours",
+              "value": null
+            },
+            {
+              "fact_id": "50053297-be49-47d7-8d9f-a49e2da848ad",
+              "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+              "status": "confirmed",
+              "provenance": [
+                {
+                  "source_type": "documented",
+                  "source_reference": {
+                    "kind": "document",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "locator": {
+                      "page": 1,
+                      "text_span": "Regular hourly base: 100"
+                    }
+                  },
+                  "read_by": "machine",
+                  "verified": true,
+                  "customer_confirmation": {
+                    "actor_kind": "customer",
+                    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+                    "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+                    "candidate_id": "f5a43a69-1ec7-4588-a34a-bd8d836320fc",
+                    "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+                    "normalized_extraction_sha256": "f56d8dab45c0af692967b791593008341434720355b1768de23a228efb3ad7ed",
+                    "candidate_sha256": "04ebdd93a762e1403e86c934d3d39e95283f7ab2a6f16c8fd6a5c1ef4a609b0c",
+                    "extraction_result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+                    "target_sha256": "2ee6c1e10a383b2f0f9ce41f5b4a87838e662c62203083146b482882f9dd8d89",
+                    "month": "2026-06",
+                    "request_id": "f141eab4-0332-44ae-b4f0-c15a2edac92f",
+                    "answer_revision": 1,
+                    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                    "confirmed_at": "2026-09-09T22:09:20.163465+00:00"
+                  }
+                }
+              ],
+              "confidence": 1,
+              "conflicting_fact_ids": [],
+              "resolution": null,
+              "created_at": "2026-09-09T22:09:20.301Z",
+              "path": "work.regular_hours",
+              "value": {
+                "amount": "100",
+                "unit": "hours_per_month"
+              }
+            }
+          ],
+          "created_at": "2026-09-09T22:09:20.301Z"
+        },
+        "facts_snapshot_sha256": "0a4044412979e7283f18b72703fd0580548d54060bd974d45c1ddee740226437",
+        "rule_input_sha256": "3442d386723d833327c3b4ab9bbda784b015d1c07a2192f0781e7c4a4328d572",
+        "catalog_sha256": "00dc415b75fe46ccb5b67bb527b60e9b433e2991e472e1a7a7bfbab11fbd389a",
+        "parameters": [
+          {
+            "schema_version": "tivdoc-parameter-candidate-v0.6.0",
+            "parameter_id": "il.minimum_wage.hourly",
+            "parameter_version": "2026.1.0",
+            "topic": "minimum_wage",
+            "value": {
+              "kind": "money",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 3540
+              }
+            },
+            "unit": "currency.ils",
+            "rounding_policy": "exact",
+            "effective_from": "2026-04-01",
+            "effective_to": null,
+            "sectors": [
+              "general"
+            ],
+            "populations": [
+              "general"
+            ],
+            "operative_source_version_ids": [
+              "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0"
+            ],
+            "support_roles": [
+              "official_implementation"
+            ],
+            "bindings": {
+              "source_bytes_sha256": "de435ae0b5ae7bbe97a5d1967f376e0a58c4969044f2a426d3f769ed49eb502e",
+              "citations_sha256": "4359ed8cb9bd121e3ff67cfb297beded49098992aa8509a3b7a2013b0f32bc64",
+              "interval_sha256": "d5f94b9731d296ab44da8ce82b9e3aba5949fdcc8fe533e93794c67c5436cd3e",
+              "scope_sha256": "44f385e3ab6655f2fd1037d6f098d2a15cb9e92659fcc194021e5347bee7a50d",
+              "parameter_set_sha256": "d82c361f71e9599a6c34457b1bb69ceddb9176a5aa4015107a58794a593f007b",
+              "rule_spec_sha256": "676e15e0b4318ea216639d91d07288c0560eedfeaa5b81a9225503aca42ee3eb",
+              "golden_cases_sha256": "9bfdf02243cc63f19a764faf963a2e78dfc8aa5ca8c49413c8fa3a7227e321c8",
+              "reviewer_decisions_sha256": "ec98ac2555b98a88b03995082cac915dba45dbe6ff68c1bd2dd060c7c2f337cd"
+            },
+            "candidate_sha256": "9dc1f2313fb6d0f49bf4eadc754fb83e5e2bbe73e87b481bffaf487496f91176",
+            "decision_id": "tivdoc.dev.engineering.decision.minimum_wage_hourly_182",
+            "branch": "182"
+          }
+        ],
+        "inputs": [
+          {
+            "input_id": "fact.regular.hours",
+            "source": {
+              "kind": "fact",
+              "fact_id": "50053297-be49-47d7-8d9f-a49e2da848ad",
+              "value_path": []
+            },
+            "value": {
+              "kind": "rational",
+              "numerator": "100",
+              "denominator": "1",
+              "unit": "hours_per_month"
+            },
+            "source_sha256": "4e3798ed82c6141053cd1661d289c61785277efe50e24615a5dff36309300e6f"
+          },
+          {
+            "input_id": "fact.recorded.base.pay",
+            "source": {
+              "kind": "fact",
+              "fact_id": "4c07b5b3-03ab-48b4-8e4d-c261dddbb0cf",
+              "value_path": []
+            },
+            "value": {
+              "kind": "money",
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "source_sha256": "7186cfe1e5af0f2a2cb6f8ad8b71cb24d85084300af57a8082efddc0e93077a0"
+          },
+          {
+            "input_id": "parameter.hourly.floor",
+            "source": {
+              "kind": "parameter",
+              "parameter_id": "il.minimum_wage.hourly",
+              "parameter_version": "2026.1.0"
+            },
+            "value": {
+              "kind": "money",
+              "currency": "ILS",
+              "minor_units": 3540
+            },
+            "source_sha256": "9dc1f2313fb6d0f49bf4eadc754fb83e5e2bbe73e87b481bffaf487496f91176"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "unit.one.regular.hour",
+            "operation": "constant.rational",
+            "input_refs": [],
+            "result": {
+              "kind": "rational",
+              "numerator": "1",
+              "denominator": "1",
+              "unit": "hours_per_month"
+            }
+          },
+          {
+            "step_id": "regular.hours.multiplier",
+            "operation": "divide",
+            "input_refs": [
+              "fact.regular.hours",
+              "unit.one.regular.hour"
+            ],
+            "result": {
+              "kind": "rational",
+              "numerator": "100",
+              "denominator": "1",
+              "unit": "ratio"
+            }
+          },
+          {
+            "step_id": "expected.regular.pay",
+            "operation": "money.scale",
+            "input_refs": [
+              "parameter.hourly.floor",
+              "regular.hours.multiplier"
+            ],
+            "result": {
+              "kind": "money",
+              "currency": "ILS",
+              "minor_units": 354000
+            }
+          },
+          {
+            "step_id": "expected.minus.recorded",
+            "operation": "subtract",
+            "input_refs": [
+              "expected.regular.pay",
+              "fact.recorded.base.pay"
+            ],
+            "result": {
+              "kind": "money",
+              "currency": "ILS",
+              "minor_units": 24000
+            }
+          }
+        ],
+        "execution_output": {
+          "kind": "money",
+          "currency": "ILS",
+          "minor_units": 24000
+        },
+        "execution_trace_sha256": "c780892946c8e38d5e529e5be841eefc04ca6cdc3463de45ffb62f63f9cc7c57",
+        "execution_result_sha256": "f95fe4ed769b344d761a9f01eaf465f8bc443ebdcbb24b8e36f5df68c2c27913",
+        "output": {
+          "kind": "money",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 24000
+          }
+        },
+        "trace_sha256": "067d3d53ef870ddf719c9d058928e39760b0cc60d29dac29fd1e1e5b2e6d2673"
+      },
+      "expected_ref": "expected.regular.pay",
+      "recorded_ref": "fact.recorded.base.pay",
+      "expected": {
+        "currency": "ILS",
+        "minor_units": 354000
+      },
+      "recorded": {
+        "currency": "ILS",
+        "minor_units": 330000
+      },
+      "signed_difference": {
+        "currency": "ILS",
+        "minor_units": 24000
+      },
+      "source_semantics": "recorded_document_amount_is_not_payment_settlement",
+      "sha256": "595684354a035f10bc8c4510f9995438d6509be4561ec8c0f6b2e70f6e21df3a"
+    },
+    "policy": {
+      "schemaVersion": "tivdoc-dev-minimum-wage-policy-v2",
+      "engineeringOnly": true,
+      "activationAllowed": false,
+      "pricingAllowed": false,
+      "topic": "minimum_wage",
+      "month": "2026-06",
+      "currency": "ILS",
+      "hourlyRateMinor": 3540,
+      "maximumRegularHours": 182,
+      "maximumHoursDecimalPlaces": 4,
+      "parameterIdentity": "il.minimum_wage.hourly",
+      "parameterVersion": "2026.1.0",
+      "parameterState": "derived_engineering_binding_not_registered_or_attested",
+      "source": {
+        "sourceVersionId": "IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0",
+        "authorityRole": "official_implementation",
+        "independentlyOperative": false,
+        "url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/%D7%A9%D7%9B%D7%A8%20%D7%9E%D7%99%D7%A0%D7%99%D7%9E%D7%95%D7%9D.aspx",
+        "accessedDate": "2026-09-09",
+        "effectiveFrom": "2026-04-01",
+        "locator": "logical-page-1; IL_MIN_WAGE_OFFICIAL_RATES@discovery-v0#0002-ec7402f2ab89",
+        "archivedArtifactSha256": "1d8c2d67faabc435f66b76ccf45dda94d5c16a96c534f6bc7732d4f70366946b",
+        "archivedParsedSha256": "d4c01a484bb0b8ca6efeca33f839204346c26da118a3a1577eb68dfab34cdd1d",
+        "dossierPath": "src/engine/legal-knowledge/review-dossier/minimum-wage-evidence.v0.4.json",
+        "dossierSha256": "1354756f6b87ec1454a93b0e96cc7c4020946143d6174bf1183bfec90945ce19",
+        "archivedRawBytesReverified": false
+      },
+      "parentRule": {
+        "id": "il.rulespec.minimum.wage.hourly.entitlement",
+        "version": "1.0.0",
+        "sha256": "182e85ff6de7d2e12260878bd25f3dc2bae39d5e4f5f7eaf25b5b9df8a9d48ce",
+        "relationship": "historical_arithmetic_reference_only"
+      },
+      "engineeringDecision": {
+        "id": "tivdoc.dev.engineering.decision.minimum_wage_hourly_182",
+        "authority": "synthetic_scenario_selection_only",
+        "humanApproval": false
+      },
+      "validationBinding": {
+        "schemaVersion": "tivdoc-dev-minimum-wage-validation-binding-v1",
+        "authority": "engineering_tests_only",
+        "approvedLegalGoldenSet": false,
+        "approvedLegalGoldenCaseIds": [],
+        "testSourcePath": "src/engine/calculations/dev-minimum-wage.test.ts"
+      },
+      "sourceReviewPath": "docs/dev-financial-flow-source-review.md",
+      "requiredScenarioAssumptions": [
+        "synthetic_adult_hourly_employee_general_182_framework",
+        "one_complete_known_payroll_period_june_2026",
+        "recorded_base_component_covers_exactly_the_regular_hours",
+        "no_other_eligible_regular_pay_components_or_special_regime"
+      ],
+      "semantics": "expected_minus_recorded_component_not_proven_unpaid_debt",
+      "humanAttestations": [],
+      "legalGoldenApproval": false
+    }
+  },
+  "finding": {
+    "id": "02ba5d05-2ed1-41e5-83e3-ce23888c68ab",
+    "analysis_run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+    "authority": "engineering_only",
+    "topic": "minimum_wage",
+    "expected_minor": 354000,
+    "recorded_minor": 330000,
+    "gap_minor": 24000,
+    "trace_sha256": "067d3d53ef870ddf719c9d058928e39760b0cc60d29dac29fd1e1e5b2e6d2673",
+    "comparison_sha256": "f6da4d8e67a42217a9aadd94dff882171e1f3fe56eb5c92252ca3b8da7d5149a"
+  },
+  "request_id": null,
+  "scenario": "synthetic_adult_hourly_general_182_regular_base_only",
+  "extraction_provider": "openai_live",
+  "extraction_provenance": {
+    "kind": "openai_live",
+    "providerAttempted": true,
+    "allPassesSucceeded": true,
+    "checkpointResultSha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+    "receipts": [
+      {
+        "schema_version": "tivdoc-openai-provider-receipt-v1",
+        "origin": "openai_live",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "analysis_run_id": "0433b91a-69e5-4a18-8a96-9ca4fdd6f364",
+        "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+        "extraction_id": "db16edf7-0dd7-46d4-baea-0f61a8632a8b",
+        "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+        "source_size_bytes": 3512,
+        "source_mime_type": "application/pdf",
+        "source_page_count": 1,
+        "request_sha256": "361410d321f77a59322ae8e17e4769b3839662235d457f14b0d2e1c733502e77",
+        "raw_extraction_sha256": "dd73a1e081b6756af2ae4cf8db442d35a819526a2d95d7ba18cd947f1a6d8073",
+        "pass_kind": "first_pass",
+        "requested_model": "gpt-4o-mini-2024-07-18",
+        "actual_model": "gpt-4o-mini-2024-07-18",
+        "extractor_version": "2.1",
+        "prompt_version": "payslip-extraction-openai-v2-first-r3",
+        "provider_response_id": "resp_07d4caa4093effb5016aa1d90091fc87d2a0997cbe1208775b",
+        "provider_request_id": "req_7d7ae0415c3a43c98e350a57d7976c22",
+        "provider_attempted": true,
+        "status": "completed",
+        "error_code": null,
+        "http_status": null,
+        "duration_ms": 6240,
+        "token_usage": {
+          "input_tokens": 40323,
+          "output_tokens": 460,
+          "total_tokens": 40783
+        },
+        "cost": {
+          "status": "not_returned_by_provider",
+          "amount_usd": null
+        },
+        "created_at": "2026-09-09T22:09:10.111Z",
+        "receipt_sha256": "64afcb0ebf60cb4c9e6bca171cabb571d50007fa2b263db5a4d35358752ad5e7"
+      }
+    ]
+  }
+}

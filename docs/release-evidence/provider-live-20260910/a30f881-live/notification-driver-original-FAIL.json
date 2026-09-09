@@ -1,0 +1,94 @@
+{
+  "proofId": "6937bc95-f881-459d-9fcd-51af893c35f9",
+  "sourceReceiptSha256": "bb68031164dbeb9e14d81bef2c52fc4d4f25e893605863e7493197e261c026e0",
+  "ownedManifestSha256": "43f6a3c6895806cc2c015427ae3bfcaa9b345268fea7ef4c8fc7866a0be1ee2e",
+  "applicationGitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "driverGitSha": "f01d1ec941faca8bfd269a1519b00b084a8c4689",
+  "applicationDiff": [
+    "src/server/product/processing/retained-live-notification.postgres.test.ts"
+  ],
+  "preview": {
+    "id": "dpl_BhassBYLKav3j3huRTktvTYoeD7g",
+    "url": "salary-ivlzv8ge9-tivdoccom-5042s-projects.vercel.app",
+    "target": "preview",
+    "readyState": "READY",
+    "sha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f"
+  },
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "requestId": "59aa4632-0d35-47b2-b62d-4e744e79417b",
+  "originalFullFlowVerdict": "FAIL",
+  "originalFailureUnchanged": true,
+  "noOcrCalls": true,
+  "noSeededReport": true,
+  "noCustomerSessionCreated": true,
+  "initialHead": {
+    "revision": 17,
+    "input_sha256": "a00eca210d9e31a9c8c5d2212aae9b724a607085a35dd2f0789e26dc953f4031"
+  },
+  "historicalRun": {
+    "id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+    "input_revision": 16,
+    "input_sha256": "0f6e4faf5de6dae05750cf2b07b604be99d61bd8e00cb5eed4364393fa35aaac",
+    "payload_sha256": "1e3df2fb0af7b7d2e08655fac5a1e94bf246a3db05b4432c499ab9b3bf00d2f5"
+  },
+  "sourceVersion": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+  "checkpointSha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff",
+  "providerAcceptance": {
+    "state": "finished",
+    "queued": 1,
+    "attempts": [
+      {
+        "state": "provider_accepted",
+        "provider": "resend",
+        "provider_message_id": "b748a1c1-30e8-4c0a-8df3-d867ff5616fc",
+        "error_code": null
+      }
+    ],
+    "deliveryConfirmed": false
+  },
+  "delivery": {
+    "delivery_id": "87df02ede81f1675ceceff496e6ce0c4eecefa13ae977b68fa72cc88c9477353",
+    "state": "delivered",
+    "provider_message_id": "b748a1c1-30e8-4c0a-8df3-d867ff5616fc",
+    "delivered_at": "2026-09-09T22:28:36.300Z",
+    "payload_cleared": true
+  },
+  "webhooks": [
+    {
+      "event_id": "msg_3J6sahIDhwUV2jtZYbo3qBiv3aZ",
+      "kind": "email.delivered",
+      "occurred_at": "2026-09-09T22:28:36.300Z",
+      "received_at": "2026-09-09T22:28:38.641Z"
+    }
+  ],
+  "answer": {
+    "revision": 1,
+    "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+    "answer_text": "כן, בדקתי במסמך והערך נכון",
+    "origin": "original"
+  },
+  "failure": {
+    "phase": "new-input-dispatch",
+    "kind": "PostgresIntakeError",
+    "code": null
+  },
+  "cleanupFailure": "OWNED_NOTIFICATION_AUTHORIZATION_CLEANUP_FAILED",
+  "checks": [
+    "The genuine historical financial report is refused as a current report event after source replacement.",
+    "One authentic current gross-field request was sent by actual Resend; the authenticated webhook updated the encrypted outbox to delivered. Retry sent no second email."
+  ],
+  "phase": "new-input-dispatch",
+  "verdict": "FAIL",
+  "checkedAt": "2026-09-09T22:29:14.555Z",
+  "providerId": "b748a1c1-30e8-4c0a-8df3-d867ff5616fc",
+  "providerDeliveryVerified": true,
+  "identifiedAnswerObserved": true,
+  "newJob": null,
+  "cleanupVerified": false,
+  "canonicalBlockedReplayProved": false,
+  "currentFinancialReportCreated": false,
+  "observedReportReadyOutboxCount": null,
+  "browserActionIndependentlyVerified": false,
+  "remainingBlock": "Current source still lacks salary_type/base candidates; canonical replay and a new financial report are not proven by this driver.",
+  "productionChanged": false
+}

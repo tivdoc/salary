@@ -1,12 +1,14 @@
 # יוני 2026 — תנאי הפעלה קנונית לאחר הוכחת המקור השמור
 
-עודכן ב־10.9.2026 לפי שעון ישראל. בדיקת הקוד נעשתה ב־`ef03418b94ff462b08eb1eab1da9dbed7addc1e1`; זה אינו מזהה commit של השינויים במסמך זה. ההיקף הוא עובד בגיר בשכר שעתי, יוני 2026, רכיב בסיס נכלל יחיד. אין כאן הפעלת קטלוג, החלטת אדם, שינוי Production או הוכחת דוח כספי קנוני.
+עודכן ב־10.9.2026 לפי שעון ישראל, בהתאם לחיבור pre-execution v4 ולקבלת ה־DEV שמקורה ב־`a30f881dca092bbec91cb48aae7fdfc670d0ee5f`. זהו commit של הריצה המתועדת, לא של עדכון מסמך זה. ההיקף הוא עובד בגיר בשכר שעתי, יוני 2026, רכיב בסיס נכלל יחיד. אין כאן הפעלת קטלוג, החלטת אדם, שינוי Production או הוכחת דוח כספי קנוני.
 
 ## מצב שהוכח והפרדה בין מסלולים
 
-ה־audit השמור של הריצה `c3b7f930-fed6-42ed-83e9-3e877afa56e0` נקרא ב־DEV בקריאה בלבד: שבעה שלבים עם hashes תקינים, `factual_context.state=context_loaded`, ובתוכו `state=factual_context_ready`. חמש עובדות ושני operands קשורים למסמך, גרסה, checkpoint ויומן אישורי שדות שנקראו בפועל. הספק באותה ריצה הוא `openai_live`; אישורי השדות היו פעולות אוטומטיות של זהות סינתטית מול fixture ידוע, לא ביקורת אדם. כל תשעת השערים המשפטיים נשארו `not_admitted`, ו־`legal_activation/publication_allowed=false`.
+ב־[audit העדכני מ־a30f881](release-evidence/provider-live-20260910/a30f881-live/canonical-audit.json), שנקרא ב־DEV ב־9.9.2026 בשעה 22:21:56 UTC, נבדקה הריצה `e896f3cf-ec5e-4383-83ab-e297c403286e` בתיק הסינתטי `87eb4418-7d9f-4b68-aa86-82be059295ac`. שבעת hashes השלבים, hash הפקודה וקיבועי העובדות וה־rule inputs תואמים. אבחון הביקורת הוא `saved-june2026-review-v4-preexecution-factual-context`; ההקשר שנקשר לפני execution נשמר עם `context_loaded` ו־`factual_context_ready`, חמש עובדות ושני operands. המקור הוא `openai_live`; אישורי השדות היו פעולות אוטומטיות של זהות סינתטית מול fixture ידוע, לא ביקורת אדם. כל תשעת השערים המשפטיים נשארו `not_admitted`, סיווג הרכיב `unreviewed`, ו־`legalActivation/publicationAllowed=false`.
 
-קבלת הקריאה נמצאת באזור המסירה הפרטי בשם `live-initial-canonical-audit-receipt.json`; המשלב אחראי לצרף עותק בטוח למסירה. זו הוכחת שלב קנוני שמור. היא אינה הופכת את ניסיון המסלול ההנדסי הראשון, שנכשל בהמשך בחילוץ המסמך החסר, להוכחת מסלול מלא.
+הקבלה מתייחסת למסמך ההתחלתי בגרסה `15597edc-5c38-4edb-ba91-71125bb307ae` וב־input revision 16. לאחר החלפתו נשמרה ההיסטוריה; אין להציג את ההקשר הזה כהוכחה לנתוני המסמך החסר הנוכחי. ניסיון המסלול הכולל ב־a30f881 נשאר `FAIL_missing-confirmations`: למסמך החסר נוצרו ארבע שאלות, ושכר הבסיס וסוג השכר המתועד עדיין חסרים. הצלחת שלב ההקשר הקנוני אינה הצלחת חישוב או פרסום קנוני.
+
+ה־audit הקודם של הריצה `c3b7f930-fed6-42ed-83e9-3e877afa56e0` וקבלתו הפרטית `live-initial-canonical-audit-receipt.json` נשארים ראיות היסטוריות מהשלב של `ef03418`. הם אינם הוכחה לחיבור pre-execution v4 ואינם מוחלפים בדיעבד בקבלה החדשה.
 
 מפת [ההפעלה המוקדמת](automatic-dev-minimum-wage-activation.md) מתארת נקודת זמן קודמת: צו 2018 כבר נרכש מארכיון המוסד לבטיחות ולגיהות; איסוף ההצהרות וה־loader כבר מחוברים; הוכח חילוץ חי בדוגמה סינתטית. אף אחד מהישגים אלה אינו מאשר תחולת דין על עובד אמיתי.
 
@@ -24,7 +26,9 @@ SHA התמלול: `e79d522eeb8f77a229b53d971dfff7a19e7ba6cb8d97f3f442ea076ee0f51
 
 בחיפוש במקורות רשמיים נמצא טקסט מאונדקס של [הנחיית הלשכה המשפטית במשרד העבודה, 25.4.2023](https://www.gov.il/BlobFolder/policy/instructions-regarding-hourly-minimum-wage-in-light-a-shorten-work-week/he/workers-rights_enforcement-and-exercise-of-rights_minimum-wage-enforcement-procedure.pdf). היא מציגה את עמדת המשרד לגבי מחלק 182 גם לעבודה חלקית ושעתית, בכפוף לפסיקה סותרת, ומפרסמת 30.61 ₪ לשעה עבור התעריף החודשי דאז. **זו ראיה לעמדה ולתעריף שפורסם ב־2023, לא הוראת עיגול כללית שאומתה בבתים ולא הוכחת היעדר פסיקה סותרת ביוני 2026.** הורדת ה־PDF כעת החזירה 403; לא נוצר עבורו SHA מקור או אישור תמלול. הטקסט המאונדקס אינו מועבר לקטלוג כקובץ שנרכש.
 
-גם [עדכון משרד העבודה מ־2026 לענף השמירה](https://www.gov.il/BlobFolder/dynamiccollectorresultitem/wage-update1426/he/workers-rights_wage-update1426.pdf) מפנה במפורש להודעה בי״פ 14324 עמ׳ 4496 מ־4.3.2026 ולסכום 6,443.85 ₪ החל 1.4.2026. ההפניה היא הצלבה רשמית לתוכן ולמראה המקום בלבד; היא אינה מאמתת את בתיו של העותק שהורד מאתר התאחדות התעשיינים. ההורדה הישירה ומאגר הרשומות החזירו 403. אין להחיל מכאן תעריף ענפי על מסלול השכר הכללי.
+הניסיון הקודם להוריד את עדכון משרד העבודה לענף השמירה ואת מאגר הרשומות החזיר 403. לאחר מכן, ב־9.9.2026 בשעה 22:05:34 UTC, נמשכו בפועל בתשובת 200 הבתים של [חוזר המשרד מ־16.3.2026 מהנתיב הרשמי החלופי](https://www.gov.il/BlobFolder/service/calculator-work-hour/he/workers-rights_wage-update1426.pdf). [תוספת המקור הבלתי חתומה](release-evidence/provider-live-20260910/official-source/README.md) מצרפת את ה־PDF בן ארבעת העמודים, SHA `c0b2206b891dd35dea319f72b7b0582b26a2b9ca8fb5e0f57f3602a29b27ba33`, ואת פסקת ההפניה מעמוד 2. עמודים 1–2 נבדקו חזותית בידי סוכן AI; זו אינה חתימת אדם. פער בין hash הטקסט שדווח קודם לבין בתיו בפועל מתועד בתוספת.
+
+החוזר מפנה לי״פ 14324 עמ׳ 4496 מ־4.3.2026 ולסכום 6,443.85 ₪ החל 1.4.2026. אלה בתים של התכתבות משרדית רשמית, **לא בתיו של ילקוט הפרסומים ממקורו הרשמי**, שעדיין לא נרכשו. ההצלבה אינה מאמתת את בתיו של העותק מאתר התאחדות התעשיינים. התעריפים הענפיים בחוזר אינם פרמטרים לכלל השכר הכללי; התוספת לא שינתה מקור מוצמד, אישור, הכרעת עיגול או מצב הפעלה.
 
 החלטת המחקר נותרת מסויגת ומפורשת: המחלק 182 נתמך בצו 2018 סעיף 2.8 ובעמדת המשרד, אך ענף התחולה והסדרים מיטיבים צריכים להיקבע לעובד עצמו. הסכום החודשי ותעריף השעה המוצג אינם זהים חשבונית לאחר כפל במספר שעות. המועמד נשאר שיטת חלוקה מדויקת ועיגול סופי לבדיקה; אין לקבוע שהוא שיטת ההפעלה הנכונה ללא הכרעה מתועדת לגבי עיגול ותחולה.
 
@@ -52,17 +56,17 @@ SHA התמלול: `e79d522eeb8f77a229b53d971dfff7a19e7ba6cb8d97f3f442ea076ee0f51
 
 הקוד אוסף הצהרות עם זהות, בקשה, revision וגרסת מקור. חסר resolver שקובע מה ניתן לקבל כעובדה ומה דורש מדיניות פרשנית שאושרה או הערכה מוסמכת. אין במדיניות הנוכחית חובה חדשה לאדם בכל תיק, וגם אין בה סמכות להפוך כל `declared` ל־`confirmed` משפטי.
 
-## החיבורים הטכניים שנותרו
+## מצב החיבורים הטכניים והפערים שנותרו
 
 | רכיב וקבצים | ממשק ותנאי סיום |
 |---|---|
 | evidence admission — `minimum-wage-june2026/evidence.ts`, `admitted-context.ts`, `saved-june2026-collection.ts` | resolver מפיק `June2026WageEvidence` מ־context שמור ומראיות assessment/policy מאומתות. מקור לכל assertion; unknown/conflict/expired/stale אינם נעלמים. אין classifier המבוסס על label בלבד. |
-| pre-execution — `saved-analysis.ts`, `case-analysis/service.ts` | `loadSavedJune2026AdmittedContext({context,job,orderId,analysisRunId})` נקרא כעת ב־reviewDiagnostics אחרי execution. נדרש חיבור אחרי שמירת canonical_facts/rule_inputs ולפני execution, עם case/run/input hash משותפים ובאותה טרנזקציה נעולה. |
+| pre-execution — `saved-analysis.ts`, `case-analysis/service.ts` | **מומש v4.** `prepareExecutionContext` ממתין ל־`loadSavedJune2026AdmittedContext({context,job,orderId,analysisRunId})` אחרי שמירת canonical_facts/rule_inputs/analysis_run ולפני executor או report. הוא בודק case/run, command hash, facts hash ו־rule input בתוך טרנזקציית המקור הנעולה. `reviewDiagnostics` משתמש בהקשר שכבר נטען, ולא טוען אותו בדיעבד. הקבלה מ־a30f881 מוכיחה הקשר שמור תואם; החיבור עדיין אינו ממיר אותו להרשאת executor או לשער משפטי מאושר. |
 | catalog — `legal-operations/june2026-catalog.ts` | `resolve({topic,target_date,as_of,sector,population,mode})` יבחר רק dependency versions שאושרו והופעלו. כרגע מקור הביקורת כופה inactive, ומקור הפקודה שולח sector/population בלתי מאומתים. יש לקבל אותם לפי הראיות, ולשמור hash משותף לכל בחירות הריצה. |
 | executor — `wave3/contracts.ts`, `saved-analysis.ts` | מימוש `RuleSpecExecutorPort.execute({selection,rule_input,execution_id,calculated_at})` במקום `SAVED_RULE_EXECUTOR_NOT_ACTIVATED`. `LegalOperationsRuleSpecExecutor` הקיים הוא synthetic_test בלבד. יש לשמור exact source/rule/parameter pins; אישור הרכיב היחיד מאפשר שימוש בעובדות הקיימות ללא המצאת ledger כללי. |
-| trace — `calculations/source-trace.ts`, `wave3/contracts.ts` | `createSourceCalculationTrace` תומך בשני operands קיימים ובפרמטרים מוצמדים, אך התוצאה `arithmetic_provenance_only` וה־port עדיין דורש CalculationTrace הישן. יש לחבר גרסאות באופן תואם להיסטוריה; אין cast, fake fact IDs לפרמטרים או קידום סמכות מהעקבה. |
+| trace — `calculations/source-trace.ts`, `wave3/contracts.ts`, `postgres/analysis/validation.ts` | תשתית התאימות **מומשה**: `PersistedCalculationTrace` הוא union של עקבה היסטורית ושל `SourceCalculationTrace`; ה־Wave3 port מייבא אותו בשם המקומי `CalculationTrace`, ואימות השמירה משתמש ב־`persistedCalculationTraceSchema`. `createSourceCalculationTrace` ו־`createSourceMonetaryComparison` כבר קיימים. הפער שנותר הוא חיבור executor קנוני מורשה, בחירת operands והשוואת צפוי/מתועד מאותו run אל ממצא ודוח קנוניים; העקבה עצמה עדיין `arithmetic_provenance_only`. אין צורך ב־cast, בהמצאת fact IDs לפרמטרים או בשכתוב ההיסטוריה. |
 | report — `saved-draft-report.ts`, `automatic-dev-flow.ts`, `publish-ai-report.ts` | טיוטת HTML/PDF מציגה סטטוסים בלבד; canonical draft bridge שומר ממצאים ריקים, ו־`automatic_dev_canonical_draft_save` דוחה parent מחושב. נדרש מסלול פיננסי מורשה עם evidence/findings מה־run עצמו, ואז `publishSavedAiReport` והמעטפת v3. אין להסיר את guard של הטיוטה. |
-| history/proof | activation/policy/catalog חדשים מחייבים fingerprint וריצה חדשים; `as_of` חייב להיות עקבי עם מועד זמינות האישורים. DB/Preview צריכים להוכיח תוצאה קנונית מאותו run, HTML/PDF, החלפה, תיקון, retry, restart והרשאות. הוכחת ₪240.00 אינה הוכחה ל־₪240.58. |
+| history/proof | fingerprint קטלוג הביקורת כבר כולל את `saved-june2026-review-v4-preexecution-factual-context`, כך שריצה חדשה אינה מוצגת כ־replay של v3. הפעלת מקור/מדיניות/קטלוג בעתיד מחייבת קיבועים וריצה חדשים; `as_of` חייב להתאים למועד זמינות האישורים. עדיין נדרשת הוכחת DB/Preview לתוצאה כספית קנונית מאותו run, HTML/PDF, החלפה, תיקון, retry, restart והרשאות. הוכחת ₪240.00 ההנדסית אינה הוכחה ל־₪240.58 הקנונית המועמדת. |
 
 ## אישורי אדם הנדרשים באמת במדיניות הנוכחית
 
@@ -81,4 +85,4 @@ v1.1 סעיף 5 ביטל הבטחה מסחרית לביקורת מקצועית �
 
 ## אימות השינוי הנוכחי
 
-בהרצה מתואמת `review-package.test.ts` עבר **9/9**; ESLint לשני קובצי TypeScript שהשתנו עבר עם אפס אזהרות. נבדקו hashes של בתים והקטע המקורי, כותרות ממוזגות/סדר ערכים, התאמת החבילות לגרסאות JSON ואי־קידום חומר חסום לאחר השלמת התמלול. אין במסמך זה תוצאת DB, דפדפן, OCR או פריסה חדשה. המקורות הישנים והקטלוג נשמרו ללא שינוי; התוספת היא חומר ביקורת עם גבולות סמכות גלויים.
+תוצאת `review-package.test.ts` של **9/9** ו־ESLint ללא אזהרות, שתועדה קודם, שייכת לתוספת חבילת הביקורת: hashes של בתים וקטעים, כותרות וסדר ערכים, התאמת גרסאות ואי־קידום חומר חסום. היא אינה הוכחת המסלול החדש. בעדכון מסמך זה נקראו הקוד, קבלת ה־audit בפועל מ־a30f881 ותוספת המקור הרשמי; לא הורצו בדיקות, קריאות DB, ספק או דפדפן נוספות. המקורות והאישורים המוצמדים נשארו ללא שינוי; fingerprint אבחון הקטלוג השתנה ל־v4 כחלק מהקוד שכבר נמסר. אין עדיין הוכחת חישוב כספי קנוני או פריסת הפעלה ללקוח אמיתי.

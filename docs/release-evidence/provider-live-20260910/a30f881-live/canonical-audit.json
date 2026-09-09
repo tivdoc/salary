@@ -1,0 +1,135 @@
+{
+  "schema_version": "live-initial-canonical-readonly-review-v1",
+  "checkedAt": "2026-09-09T22:21:56.128Z",
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "runId": "e896f3cf-ec5e-4383-83ab-e297c403286e",
+  "expectedDatabase": "tivdoc_release_replay_20260907",
+  "readOnly": true,
+  "newAuthorityCreated": false,
+  "contextInstalled": false,
+  "sourceRunGitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "overallFinancialProof": "FAIL_missing-confirmations",
+  "connection": {
+    "database": "tivdoc_release_replay_20260907",
+    "principal": "tivdoc_dev_migrator",
+    "sessionPrincipal": "tivdoc_dev_migrator",
+    "tlsCertificateVerification": true
+  },
+  "visibleRows": 7,
+  "stageHashes": [
+    {
+      "stage": "analysis_run",
+      "sha256": "90b0f38f622a7929ade1954f7b1ba0a445abcf5a4c3670890c12071d6715aca5",
+      "matches": true
+    },
+    {
+      "stage": "canonical_facts",
+      "sha256": "e1a794ef6a000c2619c0f36250b8f172addeadc505dd70fce8f3304fe4154423",
+      "matches": true
+    },
+    {
+      "stage": "input_snapshot",
+      "sha256": "79b90007718e7ada499855e6ca52470064db92a3801bfc2b98662e7cbdc68c85",
+      "matches": true
+    },
+    {
+      "stage": "report_artifacts",
+      "sha256": "49b56a652bb2a8feb8a662f2f28cb718e3f23a388d57c08289d6c1666e78e2ae",
+      "matches": true
+    },
+    {
+      "stage": "review_pending",
+      "sha256": "8425928ef1e3f1a8919b1c239246e8d0ac5122b297f60132ca5ab21da7036a92",
+      "matches": true
+    },
+    {
+      "stage": "rule_inputs",
+      "sha256": "2b93a9e659791c266cb0084e7941024453b0c3f0a532305e577e716c4c38432f",
+      "matches": true
+    },
+    {
+      "stage": "topic_results",
+      "sha256": "dc814f43de484eb6ec12645ef23f86654952bb5bf204979f1088935a020a50da",
+      "matches": true
+    }
+  ],
+  "commandHashMatches": true,
+  "runStatus": "completed",
+  "review": {
+    "present": true,
+    "autoApproved": false,
+    "exportEligibleBeforeReview": false,
+    "diagnosticSchema": "saved-june2026-review-v4-preexecution-factual-context",
+    "diagnosticCaseMatches": true,
+    "diagnosticRunMatches": true,
+    "factualContextState": "context_loaded",
+    "blockedCode": null,
+    "legalActivation": false,
+    "publicationAllowed": false
+  },
+  "factual": {
+    "schema": "tivdoc-june2026-factual-context-v1",
+    "state": "factual_context_ready",
+    "contextSha256": "729e0f5756588302fa890f84dfe933705d719b43d1ad3ed2e8f601e52aaa8935",
+    "contextHashMatches": true,
+    "caseMatches": true,
+    "runMatches": true,
+    "inputRevision": 16,
+    "inputSha256": "0f6e4faf5de6dae05750cf2b07b604be99d61bd8e00cb5eed4364393fa35aaac",
+    "factsHashMatches": true,
+    "persistedStagePinsMatch": true,
+    "commandPinMatches": true,
+    "document": {
+      "sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+      "page_count": 1,
+      "version_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+      "product_document_id": "5a067c04-4dec-4060-8ea8-4361fd3d2840"
+    },
+    "issues": [],
+    "boundFactCount": 5,
+    "operandBindingCount": 2,
+    "legalGates": [
+      {
+        "field": "applicability.age_18_entire_month",
+        "status": "not_admitted"
+      },
+      {
+        "field": "applicability.sector",
+        "status": "not_admitted"
+      },
+      {
+        "field": "applicability.hours_rest_law_applies",
+        "status": "not_admitted"
+      },
+      {
+        "field": "applicability.no_better_minimum_wage_arrangement",
+        "status": "not_admitted"
+      },
+      {
+        "field": "applicability.no_adapted_minimum_wage",
+        "status": "not_admitted"
+      },
+      {
+        "field": "applicability.regular_hours_exclude_absence_overtime_rest",
+        "status": "not_admitted"
+      },
+      {
+        "field": "wage_components_complete",
+        "status": "not_admitted"
+      },
+      {
+        "field": "components.legal_classification",
+        "status": "not_admitted"
+      },
+      {
+        "field": "active_legal_catalog",
+        "status": "not_admitted"
+      }
+    ],
+    "componentLegalClassification": "unreviewed",
+    "providerKind": "openai_live",
+    "legalActivation": false,
+    "publicationAllowed": false
+  },
+  "state": "retained_audit_read_and_outer_hashes_verified"
+}

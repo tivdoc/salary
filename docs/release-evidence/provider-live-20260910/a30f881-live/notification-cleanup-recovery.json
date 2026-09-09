@@ -1,0 +1,59 @@
+{
+  "at": "2026-09-09T22:31:57.510Z",
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "actions": [
+    {
+      "name": "disable_capability",
+      "count": 1,
+      "rows": [
+        {
+          "enabled": false
+        }
+      ]
+    },
+    {
+      "name": "disable_mapping",
+      "count": 1,
+      "rows": [
+        {
+          "enabled": false
+        }
+      ]
+    },
+    {
+      "name": "revoke_owned_machine",
+      "count": 1,
+      "rows": [
+        {
+          "revoked_at": "2026-09-09T22:31:58.211Z"
+        }
+      ]
+    }
+  ],
+  "head": [
+    {
+      "revision": 19,
+      "input_sha256": "4a441855d959a35e2f6d2fc108d2487e074e9988e62f1b3dbd62980dc8a5f294"
+    }
+  ],
+  "jobs": [
+    {
+      "job_id": "saved_6b8efcd6f19eb3b3dd91ff210a1201254f4e5398967dadcff16066b677f14d0a",
+      "state": "cancelled",
+      "revision": "3",
+      "cancellation_requested": true
+    },
+    {
+      "job_id": "saved_902fc511204d5d6a23450ba5f0e6478d9aad1fe21bcca78796f905aa2fb24eb6",
+      "state": "cancelled",
+      "revision": "3",
+      "cancellation_requested": true
+    },
+    {
+      "job_id": "saved_d335093f262c4323a054812c2c1bebac458e3db6734de923a4ed4fe03a5733d7",
+      "state": "cancelled",
+      "revision": "3",
+      "cancellation_requested": true
+    }
+  ]
+}

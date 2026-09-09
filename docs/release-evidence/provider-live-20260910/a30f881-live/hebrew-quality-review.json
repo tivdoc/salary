@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "tivdoc-live-hebrew-quality-review-v1",
+  "reviewedAt": "2026-09-09T22:07:51Z",
+  "reviewKind": "AI read-only diagnosis of saved synthetic live-provider evidence and existing rendered sources",
+  "gitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "liveProofWorktreeDirty": false,
+  "liveProofCheckedAt": "2026-09-09T22:03:57.732Z",
+  "model": "gpt-4o-mini-2024-07-18",
+  "promptVersions": ["payslip-extraction-openai-v2-first-r3", "payslip-extraction-openai-v2-recovery-r3"],
+  "qualityVerdict": "FAIL: insufficient field and payroll-row extraction quality for this Hebrew corpus",
+  "failureCountMeaning": "23 and 24 are failed oracle checks, not counts of independent defects. A single omitted pension section causes several failures; some row failures are source-label fidelity failures despite correct numeric columns.",
+  "newProviderCallsByReviewer": 0,
+  "databaseAccessByReviewer": false,
+  "trackedCodeChangedByReviewer": false,
+  "fixturesSynthetic": true,
+  "goldenApproval": false,
+  "humanReview": false,
+  "humanLegalApproval": false,
+  "financialResultGenerated": false,
+  "verificationBoundary": "Blocking observations are from saved Gate0 validation and V2.1 resolution. This extraction-only corpus runner did not attempt downstream DB analysis or report publication, so no new DB financial-refusal proof is claimed.",
+  "actualEmployeePayslipReadinessProved": false,
+  "scope": "Both sources have additional wage components and are explicitly outside the single-regular-base DEV engineering financial scenario. Their legal gap oracle is null.",
+  "sourceReview": {
+    "method": "AI inspection of pre-existing he-missing-hours-render.png and he-conflicting-hours-render.png against the literal oracle manifest",
+    "numericOracleMatchesVisibleSource": true,
+    "visibleLabelsAndColumnsLegible": true,
+    "pdfTextLayerOrderVerified": false,
+    "limitation": "A local read-only pdfplumber inspection could not run in the default Python because pdfplumber was unavailable. No package was installed. Reversed Hebrew labels may reflect supplier reading and/or PDF text-layer order; their exact causal split is not proved here."
+  },
+  "inputs": [
+    {
+      "id": "he-missing-hours",
+      "sourceSha256": "69317b2aada6685daed1beeb78322b3bcbc3e23f70c618aafb0e1672cfc2841b",
+      "checkpointPath": "output/release-completion/live-provider-june2026/live-checkpoint-he-missing-hours.json",
+      "checkpointResultSha256": "c94b7f6aee2b0332ef672199b207842e1112cb917114e7847201715516438089",
+      "oracleFailureCount": 23,
+      "sdkPasses": [
+        {"kind": "first_pass", "providerResponseId": "resp_02465196e31fdee5016aa1d7b98a2087d29ca00a3e30912cb3", "providerRequestId": "req_a3842cce50004f84a20f528526ecae3e", "receiptSha256": "bc48d9c02b027cd88194ae6cc1dd21a22dcbc2aefd3abe313acd7b756b69db50", "status": "completed"},
+        {"kind": "targeted_recovery", "providerResponseId": "resp_01e25a7a49b9d418016aa1d7c31c8887d29f18aaf828764875", "providerRequestId": "req_d0e46b433a2a460b917badfa81805f88", "receiptSha256": "f55ecf5ecad59d6c5d93950153864350bbbc5967a11aab9d50496d866264d9d2", "status": "completed"}
+      ],
+      "criticalComparisons": [
+        {"field": "salary_period", "expected": "01/06/2026 - 30/06/2026", "observedRaw": "30/06/2026 - 01/06/2026", "finalValue": null, "diagnosis": "Reversed raw range; deterministic normalization correctly refuses an end before start. This is not evidence that the strict complete-month normalization is defective."},
+        {"field": "salary_type", "expected": "hourly (שעתי is explicit in the rendered source)", "observedDocumented": null, "observedInferred": "mixed", "finalValue": null, "diagnosis": "Supplier returned inference instead of the explicit documented reading; mapper correctly did not promote inferred salary type."},
+        {"field": "regular_hours", "expectedValues": [], "firstPassValues": [], "recoveryRawValues": ["10", "2"], "recoveryConfidence": 0.48, "recoverySourceLabels": ["תופסונ תועש 125%", "תופסונ תועש 150%"], "finalValues": [], "diagnosis": "Recovery associates overtime rows with regular hours; the two contradictory candidates are rejected by the resolver. No 100 hours was derived from rate/amount."},
+        {"field": "hourly_rate", "expectedMinor": 3540, "firstPassValue": null, "recoveryRawValues": ["44.25", "53.10"], "finalValue": null, "diagnosis": "Regular hourly rate was shifted into quantity 35.40 on a row classified base_salary. Recovery then returned overtime rates, which remain conflicted."},
+        {"field": "total_deductions", "expectedMinor": 41240, "observedRaw": "300.00", "observedMinor": 30000, "diagnosis": "Wrong raw total retained faithfully; gross/net cross-check flags it."},
+        {"field": "employment_start_date", "expected": "2025-01-15", "observedRaw": "15/01/2025", "finalValue": "2025-01-15", "diagnosis": "Correct reading and normalization."}
+      ],
+      "componentFindings": [
+        "Base amount 3540.00 is correct, but semantic base_salary and quantity 35.40 do not match the source's hourly-base row with missing quantity and rate 35.40.",
+        "Overtime quantities/rates/amounts and travel numeric columns are correct. Their ROW oracle failures include shortened/reversed source labels.",
+        "Bonus 300.00 is retained as unknown, and a redundant 4608.70 summary row remains unknown. Aggregate classification deliberately refuses absent exact matching source evidence.",
+        "Pension contribution/base/rate candidates and four explicit employee deduction rows are absent. No financial permission is inferred from their omission."
+      ],
+      "failClosed": {
+        "requiresConfirmation": true,
+        "finalValidationStatus": "invalid",
+        "regularHoursResolution": "conflicted; selected_candidate_id null",
+        "hourlyRateResolution": "conflicted; selected_candidate_id null",
+        "blockingIssues": ["normalization_failed", "critical_field_missing", "recovery_conflict", "payslip_totals_mismatch", "gross_component_mismatch"],
+        "financialOutputProduced": false
+      }
+    },
+    {
+      "id": "he-conflicting-hours",
+      "sourceSha256": "35fff7dafe146dd3193c3b9accf2214f817c2be6ed9df70666228931b9b77893",
+      "checkpointPath": "output/release-completion/live-provider-june2026/live-checkpoint-he-conflicting-hours.json",
+      "checkpointResultSha256": "330ef8483310c241b577b7ae536386f1053ac3daaf39affda53f502c9f8cfeb9",
+      "oracleFailureCount": 24,
+      "sdkPasses": [
+        {"kind": "first_pass", "providerResponseId": "resp_02fa03801bddb39e016aa1d7c7740087d2b404a1f4c91bc848", "providerRequestId": "req_39060f281ef74c5caff506cf24dff2ca", "receiptSha256": "450adf32a28499aec8f537a1c734fb0cc5bb9a90c183df6dfbfd5545dfcd896b", "status": "completed"}
+      ],
+      "criticalComparisons": [
+        {"field": "salary_period", "expected": "01/06/2026 - 30/06/2026", "observedRaw": "01/06/2026 - 30/06/2026", "finalValue": {"year": 2026, "month": 6, "start_date": "2026-06-01", "end_date": "2026-06-30"}, "diagnosis": "Correct reading and deterministic normalization."},
+        {"field": "salary_type", "expected": "hourly", "observedDocumented": null, "observedInferred": "mixed", "finalValue": null, "diagnosis": "Explicit source salary type missed; inference stays separate."},
+        {"field": "regular_hours", "expectedValues": ["100", "110"], "observedRawValues": ["110"], "finalValues": ["110"], "confidence": 0.94, "assessment": "suspicious", "diagnosis": "Only earnings-row 110 was read; attendance-summary 100 was omitted. The technical check still catches 110 × 35.40 != 3540.00. This proves a mismatch block, not complete preservation of both conflicting observations."},
+        {"field": "total_deductions", "expectedMinor": 41240, "observedRaw": "0.00", "observedMinor": 0, "diagnosis": "Wrong raw total; cross-check correctly flags gross minus deductions versus net."},
+        {"field": "employment_start_date", "expected": "2025-01-15", "observedValue": null, "diagnosis": "Visible source value omitted."}
+      ],
+      "componentFindings": [
+        "Base quantity 110, rate 35.40 and amount 3540.00 are retained, with an incorrect generic source label סכום.",
+        "Overtime quantities/rates/amounts are correct; ROW failures include reversed/combined labels.",
+        "Travel amount 220.00 is preserved in an unknown row but not the travel field; bonus 300.00 is unknown with a wrong label.",
+        "A redundant 4608.70 summary remains an unknown component, and pension/deduction rows are absent."
+      ],
+      "failClosed": {
+        "requiresConfirmation": true,
+        "finalValidationStatus": "requires_confirmation",
+        "regularHoursAssessment": "suspicious, hourly_salary_mismatch",
+        "blockingIssues": ["hourly_salary_mismatch", "payslip_totals_mismatch", "gross_component_mismatch"],
+        "financialOutputProduced": false
+      }
+    }
+  ],
+  "attributionLimits": [
+    "The saved raw_extraction is the adapter's mapped output, not a verbatim copy of the SDK structured JSON. Exact provider-versus-adapter attribution for every omitted field is therefore limited.",
+    "For observed raw amounts/labels and row semantics, v2-mapper directly preserves the source values. No new deterministic money-normalization defect is evidenced by these two checkpoints.",
+    "Missing valid values, reversed/shortened Hebrew labels, column shifts and semantic omissions are real extraction-quality failures. Some ROW_* checks conflate correct arithmetic columns with source-label fidelity, so their counts should not be presented as independent numerical defects.",
+    "The missing and contradictory fixtures intentionally cannot yield a successful financial result; the observed field errors are additional failures, not the intended negative-case outcome."
+  ],
+  "boundedNextTaskProposal": {
+    "task": "Diagnose Hebrew PDF text order and table/section extraction against this immutable four-source corpus; preserve raw structured-response diagnostics safely and evaluate numeric, semantic, source-label and missing/conflict criteria separately.",
+    "completionCriteria": [
+      "Show the exact input bytes/render/text-order relationship and isolate provider omissions from deterministic mapping with offline replay before another paid call.",
+      "Retain independent literal oracles, all pension/deduction rows and uncertainty gates; do not coerce unknown rows or derive absent hours to pass.",
+      "Report each source separately, including scan simulation and contradictory observations; count fidelity checks separately from numerical defects.",
+      "Any future paid evaluation requires its own bounded authorization within the existing ledger; this review authorizes no additional calls or model change."
+    ]
+  }
+}
