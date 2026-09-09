@@ -1,0 +1,177 @@
+{
+  "database": "tivdoc_release_replay_20260907",
+  "schemaVersion": "127 / 20260909155945",
+  "declarationsInNewMigrations": 14,
+  "finalFunctions": [
+    {
+      "signature": "case_notification_managed_claim(text,uuid)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "case_notification_managed_enqueue(text,text,text,jsonb,timestamp with time zone,uuid,uuid,text)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "case_notification_managed_pending(text)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.automatic_dev_canonical_draft_save(jsonb,text,text)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_notification_event_current(uuid,text)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": false,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_worker_admit_claim(uuid,text,bigint)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_worker_candidates(text,integer)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_worker_capability(text)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": false,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_worker_enrollment_guard()",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": false,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_worker_note(uuid,text,bigint,text)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_worker_retry(text,uuid,text,bigint)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    },
+    {
+      "signature": "private.managed_dev_worker_status(text)",
+      "definer": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "public_execute": false,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false,
+      "web_execute": false,
+      "worker_execute": true,
+      "operations_execute": false
+    }
+  ],
+  "exhaustiveRolesChecked": true,
+  "productionChanged": false
+}

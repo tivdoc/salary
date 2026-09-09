@@ -43,13 +43,15 @@ describe("the product/engine route split (D3)", () => {
       else expect(entry.probes, entry.entrypoint_id).toBeUndefined();
     }
     expect(productAssignments()).toHaveLength(39);
-    expect(engineAssignments()).toHaveLength(7);
+    expect(engineAssignments()).toHaveLength(9);
   });
 
   it("an unassigned id has no half", () => {
     expect(routeHalfOf("CEP-999")).toBeNull();
     expect(routeHalfOf("CEP-024")).toBe("product");
     expect(routeHalfOf("CEP-020")).toBe("engine");
+    expect(routeHalfOf("CEP-115")).toBe("engine");
+    expect(routeHalfOf("CEP-116")).toBe("engine");
   });
 });
 

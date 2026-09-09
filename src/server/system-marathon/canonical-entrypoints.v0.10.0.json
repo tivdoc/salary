@@ -1977,6 +1977,46 @@
       "dependencies": [],
       "blockers": [],
       "non_claim": "Public accessibility information and verification limits, not a professional compliance certificate."
+    },
+    {
+      "entrypoint_id": "CEP-115",
+      "kind": "app_route",
+      "stable_entry": "/operations/dev-worker",
+      "source_path": "src/app/operations/dev-worker/page.tsx",
+      "canonical_contract_id": "route.operations.dev-worker-status",
+      "canonical_target": "src/server/product/processing/managed-worker-host.ts:readManagedDevStatus",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/auth/next-session.ts",
+        "src/server/product/reports/support.ts",
+        "src/server/product/processing/managed-worker-contract.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "MANAGED_DEV_OPERATIONS_NOT_ACTIVATED"
+      ],
+      "non_claim": "Scoped DEV worker status requires the existing operations session and support owner; the operations surface remains closed on Preview and Production. A scheduled worker proof does not prove hosted operations activation."
+    },
+    {
+      "entrypoint_id": "CEP-116",
+      "kind": "api_route",
+      "stable_entry": "/api/operations/dev-worker",
+      "source_path": "src/app/api/operations/dev-worker/route.ts",
+      "canonical_contract_id": "route.operations.dev-worker-control",
+      "canonical_target": "src/server/product/processing/managed-worker-http.ts:createManagedWorkerHttpHandler",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/auth/runtime.ts",
+        "src/server/product/processing/managed-worker-host.ts",
+        "src/server/product/processing/managed-worker-contract.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "MANAGED_DEV_OPERATIONS_NOT_ACTIVATED"
+      ],
+      "non_claim": "Exact DEV job status and bounded retry require operations identity, support ownership, CSRF and a separately scoped DB capability. No customer or request can activate this engine route in Preview or Production."
     }
   ]
 }

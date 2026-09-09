@@ -34,8 +34,12 @@ it.skipIf(process.env.TIVDOC_MANAGED_DEV_DB_PROOF!=='1')('automatically processe
  const previewProof=process.env.TIVDOC_MANAGED_DEV_PREVIEW_PROOF==='1',crashProof=process.env.TIVDOC_MANAGED_DEV_CRASH_PROOF==='1',previewChecks:{name:string;passed:true}[][]=[],notificationChecks:unknown[]=[],crashChecks:unknown[]=[];
  const previewTargetPath='../../../../scripts/release-completion/'+'preview-target.mts';
  const notificationOrigin=previewProof?(await import(previewTargetPath)).currentPreviewTarget().origin:'https://tivdoc-synthetic.vercel.app';
+ const workerUrl=new URL(env.get('TIVDOC_WORKER_POSTGRES_URL')!);
+ // Historical fixture env carries a URL TLS override. This new worker refuses
+ // it: the exact owned endpoint must use its explicit verified Supabase CA.
+ expect(['','?sslmode=no-verify','?sslmode=verify-full']).toContain(workerUrl.search);workerUrl.search='?sslmode=verify-full';
  const privatePaths=managedProofPaths(runId),directory='output/release-completion/managed-worker-proof';mkdirSync(privatePaths.receipts!,{recursive:true});mkdirSync(directory,{recursive:true});
- const manifest=managedProofManifestSchema.parse({schema_version:'managed-dev-synthetic-proof-v1',enabled:false,run_id:runId,git_sha:gitSha,worker_url:env.get('TIVDOC_WORKER_POSTGRES_URL'),
+ const manifest=managedProofManifestSchema.parse({schema_version:'managed-dev-synthetic-proof-v1',enabled:false,run_id:runId,git_sha:gitSha,worker_url:workerUrl.toString(),
   capability,storage_url:storageKeys.NEXT_PUBLIC_SUPABASE_URL,storage_key:storageKeys.SUPABASE_SERVICE_ROLE_KEY,case_ids:cases.map(c=>c.id),inputs:inputs.map(i=>({sha256:i.sha256,missing_hours:i.missingHours})),fault:null,
   notification_secret:randomBytes(32).toString('base64'),notification_origin:notificationOrigin,notification_hold:false,crash_after_claim_case:crashProof?primary.id:null});
  const paths:string[]=[],checks:string[]=[],runs:{runId:string;inputRevision:number;state:string}[]=[],confirmationChecks:unknown[]=[];

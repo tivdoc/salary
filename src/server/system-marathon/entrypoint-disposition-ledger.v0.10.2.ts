@@ -47,8 +47,8 @@ export type EntrypointDispositionRow = Readonly<{
 export type EntrypointDispositionLedger = Readonly<{
   schema_version: typeof ENTRYPOINT_DISPOSITION_LEDGER_SCHEMA_VERSION;
   baseline_schema_version: CanonicalEntrypointInventory["schema_version"];
-  denominator: 114;
-  product_stable_denominator: 103;
+  denominator: 116;
+  product_stable_denominator: 105;
   before_counts: Readonly<{ partial: 31; implemented_not_wired: 21; partial_or_unwired: 52 }>;
   source_disposition_counts: Readonly<{
     product_stable_partial_or_unwired: number;
@@ -67,9 +67,10 @@ const rows = inventory.entries.map((entry) => dispositionFor(entry));
 export const ENTRYPOINT_DISPOSITION_LEDGER: EntrypointDispositionLedger = deepFreeze({
   schema_version: ENTRYPOINT_DISPOSITION_LEDGER_SCHEMA_VERSION,
   baseline_schema_version: inventory.schema_version,
-  // UX Run 1 / U0: CEP-096..CEP-101 joined the denominator (three pages PARTIAL, three API routes IMPLEMENTED_NOT_WIRED).
-  denominator: 114,
-  product_stable_denominator: 103,
+  // Preserve prior identities and add the two closed DEV operations entries.
+  // before_counts retains the historical UX Run 1 baseline, not a new claim.
+  denominator: 116,
+  product_stable_denominator: 105,
   before_counts: { partial: 31, implemented_not_wired: 21, partial_or_unwired: 52 },
   source_disposition_counts: {
     product_stable_partial_or_unwired: rows.filter((row) => row.product_stable
@@ -90,8 +91,8 @@ export function validateEntrypointDispositionLedger(
 ): readonly string[] {
   const issues: string[] = [];
   if (ledger.schema_version !== ENTRYPOINT_DISPOSITION_LEDGER_SCHEMA_VERSION) issues.push("DISPOSITION_SCHEMA_VERSION_INVALID");
-  if (ledger.denominator !== 114 || ledger.rows.length !== 114) issues.push("DISPOSITION_DENOMINATOR_CHANGED");
-  if (ledger.product_stable_denominator !== 103 || ledger.rows.filter((row) => row.product_stable).length !== 103) {
+  if (ledger.denominator !== 116 || ledger.rows.length !== 116) issues.push("DISPOSITION_DENOMINATOR_CHANGED");
+  if (ledger.product_stable_denominator !== 105 || ledger.rows.filter((row) => row.product_stable).length !== 105) {
     issues.push("DISPOSITION_PRODUCT_STABLE_DENOMINATOR_CHANGED");
   }
   if (ledger.before_counts.partial !== 31 || ledger.before_counts.implemented_not_wired !== 21

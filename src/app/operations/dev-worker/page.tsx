@@ -11,7 +11,7 @@ import {ManagedWorkerPanel} from './managed-worker-panel';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'עובד DEV | Tivdoc',robots:{index:false,follow:false,noarchive:true}};
 export default async function ManagedWorkerPage(){
- await guardStableAppEntrypoint('CEP-006');
+ await guardStableAppEntrypoint("CEP-115");
  if(!readStableProductRouteFlags().operationsUi||!resolveCanonicalOperationsService()||process.env.TIVDOC_MANAGED_DEV_WORKER_ENABLED!=='true')notFound();
  const session=await productPageSession('operations');if(!session)notFound();
  try{requireSupportOwner(session.actor);}catch{notFound();}
