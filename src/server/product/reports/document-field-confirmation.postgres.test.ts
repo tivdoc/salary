@@ -58,7 +58,7 @@ it.skipIf(process.env.TIVDOC_FIELD_CONFIRMATION_DB_PROOF!=='1')('binds saved cus
   }
   await owner.query('begin');
   for(const id of [caseId,otherId]){const email=`field-${id}@example.invalid`;
-   await owner.query("insert into public.cases(id,first_name,email,phone,is_qa,status,payment_status,check_period_month) values($1,'Synthetic field confirmation',$2,'0500000000',true,'under_review','verified','2025-01-01')",[id,email]);
+   await owner.query("insert into public.cases(id,first_name,email,phone,is_qa,status,payment_status,contact_verified_at,check_period_month) values($1,'Synthetic field confirmation',$2,'0500000000',true,'under_review','verified',now(),'2025-01-01')",[id,email]);
    const identity=(await owner.query("select public.case_access_identity_upsert('email',$1,$2) id",[createHash('sha256').update('email|'+email).digest('hex'),email])).rows[0].id;identities.push(identity);await owner.query('select public.case_access_identity_link($1,$2)',[identity,id]);
    if(browserProof){const session=randomBytes(16).toString('base64url');sessions.push(session);publicIds.push((await owner.query('select public_id from public.cases where id=$1',[id])).rows[0].public_id);await owner.query('select public.case_access_session_create($1,$2,14400)',[identity,createHash('sha256').update('case-access-session|'+session).digest('hex')]);}
   }

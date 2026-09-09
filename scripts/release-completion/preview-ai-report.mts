@@ -6,8 +6,8 @@ import {chromium,type Route} from 'playwright';
 import {PDFDocument} from 'pdf-lib';
 import {AI_REPORT_DISCLOSURE} from '../../src/server/product/reports/report-document.ts';
 
-const origin='https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app';
-const deployedSha='115a2dde81e9a2a537590588e400cb2994965926';
+import {currentPreviewTarget} from './preview-target.mts';
+const {origin,deployedSha}=currentPreviewTarget();
 const directory='output/release-completion/preview-ai-report';
 export async function verifyAiReportPreview(input:{publicId:string;foreignPublicId:string;session:string;foreignSession:string;reportId:string;versionId:string;findingId:string;sourceSha256:string}){
  assert.ok(origin.startsWith('https://salary-')&&origin.endsWith('-tivdoccom-5042s-projects.vercel.app'));

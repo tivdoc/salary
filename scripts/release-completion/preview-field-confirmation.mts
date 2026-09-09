@@ -102,5 +102,6 @@ export async function verifyFieldConfirmationPreview(input:{phase:Phase;publicId
     await page.screenshot({path:`${directory}/historical-field-390.png`,fullPage:true});
    });
   }
- }finally{save();await context.close();await browser.close();}
+ }catch(error){await page.screenshot({path:`${directory}/failure-${input.phase}.png`,fullPage:true}).catch(()=>{});writeFileSync(`${directory}/failure-page.json`,JSON.stringify({phase:input.phase,url:page.url(),text:await page.locator('body').innerText().catch(()=>''),scope:'Owned synthetic browser fixture only'},null,2)+'\n');throw error;}
+ finally{save();await context.close();await browser.close();}
 }

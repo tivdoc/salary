@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {normalizedCandidateFieldSchema,normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
+import {formatRequestMonth} from '@/lib/request-display';
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
@@ -52,7 +53,7 @@ export function documentFieldQuestion(target:DocumentFieldTarget){
  if(value&&typeof value==='object'&&'minor_units' in value){const minor=BigInt(value.minor_units),absolute=minor<BigInt(0)?-minor:minor;shown=`${minor<BigInt(0)?'-':''}${absolute/BigInt(100)}.${String(absolute%BigInt(100)).padStart(2,'0')} ${value.currency}`;}
  else if(value&&typeof value==='object'&&'amount' in value)shown=`${value.amount} ${'unit' in value&&value.unit==='days'?'ימים':'unit' in value&&value.unit==='hours'?'שעות':'שעות בחודש'}`;
  else throw Error('REQUEST_FIELD_VALUE_UNSUPPORTED');
- return {code:`document_field:${saved.target_sha256}`,question:`בעמוד ${candidate.source.page} במסמך לחודש ${saved.month} קראנו ${confirmationFieldLabels[field.parse(candidate.field)]}: ${shown}. האם זה הערך שמופיע במסמך?`,
+ return {code:`document_field:${saved.target_sha256}`,question:`בעמוד ${candidate.source.page} במסמך לחודש ${formatRequestMonth(saved.month)} קראנו ${confirmationFieldLabels[field.parse(candidate.field)]}: ${shown}. האם זה הערך שמופיע במסמך?`,
   answer_kind:'choice' as const,options:[...DOCUMENT_FIELD_CONFIRMATION_ANSWERS],field_crop:candidate.field,blocking:false};
 }
 

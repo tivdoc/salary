@@ -1,0 +1,60 @@
+{
+  "origin": "https://salary-c7rj4fl78-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "4ce9a2b628ade7109d906eb0dc603466242f6690",
+  "deploymentId": "dpl_Ed32maB2Fhg5URMe78RLt6QEjnsC",
+  "checks": [
+    {
+      "name": "exact stored field, normalized value and purchased February question opens with reading-only disclosure",
+      "passed": true
+    },
+    {
+      "name": "protected source link returns the exact actual Storage PDF with no-store",
+      "passed": true
+    },
+    {
+      "name": "another actual customer cannot read or answer this bound question",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 360px",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 390px",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 768px",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 1440px",
+      "passed": true
+    },
+    {
+      "name": "changed document month presents unanswered history without a stale confirmation form",
+      "passed": true
+    },
+    {
+      "name": "saved affirmative reading survives response loss, exact retry and full reload",
+      "passed": true
+    },
+    {
+      "name": "negative reading correction persists as a new answer without inventing a replacement amount",
+      "passed": true
+    },
+    {
+      "name": "source replacement navigation refuses foreign identity and cross-origin requests",
+      "passed": true
+    },
+    {
+      "name": "negative source answer opens only its exact stored document for explicit replacement",
+      "passed": false,
+      "detail": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('זה המסמך של השאלה. להחלפתו, בחרו קובץ דרך ״החלפת מסמך״ בכרטיס זה. שאר המסמכים נשמרים בתיק.', { exact: true }) to be visible\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "scope": "Owned synthetic source PDF, stored extraction, paid order and seeded authenticated sessions; hosted source/reading/history journey. No live OCR, OTP, legal activation, monetary calculation or production.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}
