@@ -77,8 +77,16 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
  let seeded=false,cleaned=false,storageCleaned=false,removedIdentities=0,removedCases=0,activeTransactions=0,failBeforeSave=false,completed=false,retained=false,phase='preflight',failure:unknown=null,cleanupFailure:unknown=null;
  const own=()=>writeFileSync(ownedFile,JSON.stringify({caseIds:cases.map(c=>c.id),identities:cases.map(c=>c.identity).filter(Boolean),cases,paths,retained,gitSha,directory,qaLabel:'Synthetic DEV live financial flow',notificationCapabilitySha256:notificationCapability?fixtureSha(notificationCapability):null,scope:'Only these fresh QA cases and object paths in isolated DEV; machine credentials are private. Preserve existing identities. No customer session or OTP was created.'},null,2));
  own();
+ const assertNoUnrelatedOwnerOtp=async()=>{
+  if(!liveNotifications)return;
+  const pending=(await owner.query("select count(*)::int n from private.case_notification_outbox where recipient_sha256=$1 and case_id is null and template='access_code' and state in ('queued','leased') and expires_at>clock_timestamp()",[fixtureSha('email|'+ownerEmail)])).rows[0];
+  // The existing managed worker can legitimately claim recipient-scoped OTPs.
+  // This proof must not send unrelated pending mail or delete it to pass.
+  if(pending.n!==0)throw Error('UNRELATED_OWNER_OTP_PENDING');
+ };
  const notifyLive=async(eventKey:string)=>{
   if(!liveNotifications)return;
+  await assertNoUnrelatedOwnerOtp();
   const db=postgresCaseAccessDb({query:(sql,values)=>worker.query(sql,values?[...values]:[])});
   const input={db,capability:notificationCapability!,secret:notificationSecret!,origin:'https://'+preview!.url,provider:resendProvider(process.env.RESEND_API_KEY!,process.env.TIVDOC_NOTIFICATION_FROM!),enqueueEventKeys:[eventKey]};
   const result=await runAutomaticNotificationPass(input);expect(result.queued).toBe(1);expect(result.attempts).toHaveLength(1);expect(result.attempts[0]).toMatchObject({state:'provider_accepted',provider:'resend'});
@@ -179,6 +187,7 @@ it.skipIf(process.env.TIVDOC_DEV_FINANCIAL_LIVE_DB_PROOF!=='1')('computes DEV re
   if(ledger.reservations.length!==ledgerBefore.reservedPasses)throw Error('LIVE_BUDGET_CONCURRENT_CHANGE');
   phase='connect';
   await Promise.all([owner.connect(),worker.connect(),peer.connect(),web.connect()]);const bucketInfo=await remote.storage.getBucket('salary-documents');if(bucketInfo.error||bucketInfo.data.public)throw Error('DEV_FINANCIAL_PRIVATE_BUCKET_REQUIRED');
+  await assertNoUnrelatedOwnerOtp();
   const signatures=(await owner.query("select p.oid::regprocedure::text signature,pg_get_functiondef(p.oid) definition from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname in ('dev_financial_admit','dev_financial_save','dev_financial_request_open') order by p.oid::regprocedure::text")).rows;
   expect(signatures.length).toBeGreaterThanOrEqual(3);for(const value of signatures)schemaEvidence.push({signature:value.signature,definitionSha256:fixtureSha(value.definition)});
   phase='bootstrap';await owner.query('begin');for(const c of cases){const email=c===primary&&ownerEmail?ownerEmail:`dev-live-financial-${c.id}@example.invalid`;

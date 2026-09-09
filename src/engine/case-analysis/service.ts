@@ -57,6 +57,14 @@ export type CaseAnalysisMetrics = {
   executor_calls: number;
 };
 
+export type PersistedCanonicalInputContext = Readonly<{
+  analysis_run_id: string;
+  case_id: string;
+  command_sha256: string;
+  facts_snapshot_sha256: string;
+  rule_inputs: readonly RuleInputSnapshot[];
+}>;
+
 export type CaseAnalysisServiceDependencies = Readonly<{
   clock: DeterministicClockPort;
   ids: DeterministicIdPort;
@@ -69,6 +77,10 @@ export type CaseAnalysisServiceDependencies = Readonly<{
   reportRegistration: ReportRegistrationPort;
   logs: CaseAnalysisLogPort;
   templateVersion: string;
+  /** Load authenticated current-source context after canonical input stages
+   * persist, before any executor or report. Failure aborts the caller's
+   * transaction. This hook cannot grant legal readiness or publication. */
+  prepareExecutionContext?: (input: PersistedCanonicalInputContext) => Promise<void>;
   /** Optional review-only observations from the already verified snapshot.
    * Persisted with the original immutable review stage; never activation,
    * customer answers, findings or report publication authority. */
@@ -419,6 +431,14 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       template_version: this.dependencies.templateVersion,
     });
     await this.stage(analysisRunId, "analysis_run", { selections, dependencies });
+
+    await this.dependencies.prepareExecutionContext?.(deepFreeze({
+      analysis_run_id: analysisRunId,
+      case_id: command.case_id,
+      command_sha256: commandSha256,
+      facts_snapshot_sha256: factsSnapshotSha256,
+      rule_inputs: ruleInputs,
+    }));
 
     const factByPath = new Map(facts.facts.map((fact) => [fact.path, fact] as const));
     const ruleInputByTopic = new Map(command.requested_topics.map((topic, index) => [topic, ruleInputs[index]!] as const));

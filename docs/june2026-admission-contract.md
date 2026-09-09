@@ -105,8 +105,38 @@ compatibility handling does not hide integrity failures.
 
 The checked-in schema supports the loader's joins. The SQL was reviewed against
 those definitions, but this subtask did not execute it against a database.
-The root task owns callback wiring, the analysis fingerprint change, and actual
-DB/Preview verification.
+Actual DB/Preview verification belongs to the root task's integration evidence.
+
+## Preexecution binding, review diagnostic v4
+
+`CaseAnalysisService.prepareExecutionContext` now runs after `input_snapshot`,
+`canonical_facts`, `rule_inputs` and `analysis_run` have persisted, before any
+executor, findings, report bytes or report registration. Its immutable envelope
+contains only case/run identifiers, command/facts hashes and the ordinary rule
+input references. The callback cannot change readiness decisions or grant
+publication. A thrown ownership, currentness or integrity error propagates to
+the transaction owner; it is not recast as an inactive-rule result.
+
+`runSavedMonthAnalysis` installs this hook only for a purchased June 2026
+minimum-wage scope. It calls the existing authenticated loader once, binds its
+returned case/run/command/facts/rule-input pins to the in-progress run, and
+reuses that exact object in `review_pending`. The loader already supports a
+`running` run and requires only the first three saved input stages. It does not
+depend on a completed result or report. Typed legacy/multiple-document blocks
+remain visible diagnostics; malformed or foreign state aborts before results.
+
+The diagnostic is `saved-june2026-review-v4-preexecution-factual-context`.
+Its changed June catalog fingerprint gives newly requested saved analyses a
+different idempotency key. A completed run's stages and report are not rewritten
+or retrofitted, and non-June keys and hook-free callers retain their behavior.
+
+This closes the late-loading technical gap: authenticated factual context is
+now available before calculation rather than being discovered after report
+construction. It does **not** connect a monetary executor, admit applicability,
+classify wage components, attest a source or activate a legal catalog. The
+remaining executor must consume this same bound context only after the real
+catalog and a documented case-assessment policy admit it. All current legal
+and publication gates remain false.
 
 ## Verification scope
 
@@ -117,6 +147,18 @@ are pure synthetic tests; they do not prove that a server loaded a persisted
 stage or authenticated a request. That proof belongs to the scoped saved
 adapter's separate DB/integration evidence. No DB/build/Preview run was made by
 this subtask.
+
+The v4 preexecution change passed **53/53** focused tests across
+`service-preexecution`, `saved-analysis-preexecution`, the existing saved
+context loader, June catalog and saved-order replay suites. The first run
+exposed an invalid synthetic test period/sector for the neutral active fixture;
+the test was corrected to its existing 2040 synthetic scope. The ordinary
+executor then ran only after the awaited hook completed. Integrity failure
+tests prove no later stages or report registration, and exact retries preserve
+completed history. The new composition tests execute the real analysis service
+and in-memory stage repository with a mocked loader, independently of the
+loader suite's recording SQL adapter. These tests add no DB or live OCR proof.
+Changed-file ESLint passed with zero warnings.
 
 After resuming from checkpoint `6178869`, the new server loader's focused suite
 passed **25/25**, and ESLint passed for its two files with zero warnings. These

@@ -127,6 +127,9 @@ describe('saved June context loader over actual saved-stage/reading adapters', (
     expect(f.calls.slice(0, 5).map(query => query.name)).toEqual(['saved_june_context_authority', 'source_case_lock', 'source_revision_check', 'saved_order_entitlements', 'saved_june_context_run']);
     const runQuery = f.calls.find(query => query.name === 'saved_june_context_run')!;
     expect(runQuery.values).toEqual([`saved-case:${f.input.job.case_id}`, f.input.job.case_id, f.input.analysisRunId]);
+    expect(runQuery.text).toContain("ar.status in ('running','completed')");
+    expect(f.responses.saved_june_context_stages.map(row => row.stage).sort()).toEqual(['canonical_facts', 'input_snapshot', 'rule_inputs']);
+    expect(f.calls.find(query => query.name === 'saved_june_context_stages')?.text).toContain("s.stage in ('input_snapshot','canonical_facts','rule_inputs')");
     expect(runQuery.text).toContain("ar.command_payload->>'document_snapshot_id'='saved-documents:2026-06:'||v.input_sha256");
     expect(f.calls.map(query => query.text).join('\n')).not.toMatch(/^\s*(?:insert|update|delete)\b/imu);
   });

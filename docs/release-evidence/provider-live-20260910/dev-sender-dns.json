@@ -9,7 +9,6 @@
   "receivingEnabled": false,
   "customSenderEnabled": false,
   "currentSender": "Tivdoc DEV <onboarding@resend.dev>",
-  "currentOnlyTestRecipient": "tivdoc.com@gmail.com",
   "records": [
     {
       "type": "TXT",
@@ -31,5 +30,6 @@
       "ttl": "Auto"
     }
   ],
-  "scope": "DEV subdomain only. Do not alter root MX/SPF/DMARC. DKIM value is public verification material, not a private API key. No billing or Production change."
+  "scope": "DEV subdomain only. Do not alter root MX/SPF/DMARC. DKIM value is public verification material, not a private API key. No billing or Production change.",
+  "currentTestRecipientScope": "One explicitly authorized account-owner destination stored only in private DEV configuration"
 }

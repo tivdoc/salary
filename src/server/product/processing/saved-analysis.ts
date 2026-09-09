@@ -12,7 +12,7 @@ import {SavedAnalysisDraftBuilder,SAVED_DRAFT_TEMPLATE,savedAnalysisId} from './
 import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
 import {buildSavedJune2026ReviewDiagnostic} from './saved-minimum-wage-review';
 import {readSavedJune2026Collection} from './saved-june2026-collection';
-import {loadSavedJune2026AdmittedContext} from './saved-june2026-admitted-context';
+import {loadSavedJune2026AdmittedContext,type SavedJune2026AdmittedContext} from './saved-june2026-admitted-context';
 
 const monthSchema=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 /** Execute one purchased month through the existing CaseAnalysisService and
@@ -40,6 +40,8 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const end=new Date(Date.UTC(Number(input.month.slice(0,4)),Number(input.month.slice(5,7)),0)).toISOString().slice(0,10);
  const now=new Date(String(row.created_at)).toISOString();
  const collection=input.month==='2026-06'&&order.topics.includes('minimum_wage')?await readSavedJune2026Collection(input.context,job):null;
+ let factualContext:SavedJune2026AdmittedContext|null=null;
+ let preparedRunId:string|null=null;
  const command:CaseAnalysisCommand={case_id:job.case_id,case_revision:z.coerce.number().int().positive().parse(row.engine_revision),
   document_snapshot_id:snapshot.document_snapshot_id,document_snapshot_sha256:snapshot.document_snapshot_sha256,
   extraction_snapshot_id:snapshot.extraction_snapshot_id,extraction_snapshot_sha256:snapshot.extraction_snapshot_sha256,
@@ -53,10 +55,25 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   // reachable here; unexpected activation requires a reviewed production binding.
   executor:{async execute(){throw new Error('SAVED_RULE_EXECUTOR_NOT_ACTIVATED');}},
   reportBuilder:new SavedAnalysisDraftBuilder(),reportRegistration:input.analysis.reports,
+  prepareExecutionContext:collection?async pins=>{
+   if(pins.case_id!==job.case_id)throw new Error('SAVED_JUNE_CONTEXT_PREEXECUTION_SCOPE');
+   const loaded=await loadSavedJune2026AdmittedContext({context:input.context,job,orderId:order.id,analysisRunId:pins.analysis_run_id});
+   const actual=loaded.state==='context_loaded'?loaded.context.current:loaded;
+   if(actual.case_id!==pins.case_id||actual.analysis_run_id!==pins.analysis_run_id
+    ||(loaded.state==='context_loaded'&&(loaded.command_sha256!==pins.command_sha256
+     ||loaded.context.facts_snapshot_sha256!==pins.facts_snapshot_sha256
+     ||!pins.rule_inputs.some(ruleInput=>canonicalSha256(ruleInput)===canonicalSha256(loaded.context.rule_input))))) {
+    throw new Error('SAVED_JUNE_CONTEXT_PREEXECUTION_BINDING');
+   }
+   factualContext=loaded;preparedRunId=pins.analysis_run_id;
+  }:undefined,
   reviewDiagnostics:async args=>{
    const diagnostic=buildSavedJune2026ReviewDiagnostic(args);
    if(!diagnostic||!collection)return diagnostic;
-   const factualContext=await loadSavedJune2026AdmittedContext({context:input.context,job,orderId:order.id,analysisRunId:args.bundle.analysis_run_id});
+   if(!factualContext||preparedRunId!==args.bundle.analysis_run_id
+    ||(factualContext.state==='context_loaded'&&factualContext.context.facts_snapshot_sha256!==args.bundle.facts_snapshot_sha256)) {
+    throw new Error('SAVED_JUNE_CONTEXT_NOT_PREPARED');
+   }
    return {...diagnostic,collection,factual_context:factualContext,
     blockers:{...diagnostic.blockers,technical:['canonical_executor_admission_not_connected']},
     customer_requests_created:collection.resolutions.length>0};
