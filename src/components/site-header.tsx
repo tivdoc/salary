@@ -9,8 +9,8 @@ import { TrackedLink } from "@/components/tracked-link";
 const links = [
   ["how-it-works", "איך זה עובד"],
   ["what-you-get", "מה מקבלים"],
-  ["about", "מי אנחנו"],
   ["pricing", "מחירים"],
+  ["about", "מי אנחנו"],
 ];
 export function SiteHeader({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);

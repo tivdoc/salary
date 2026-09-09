@@ -27,7 +27,7 @@ export function Faq({ action }: { action?: ReactNode }) {
     >
       <div className="shell faq-section__grid">
         <div>
-          <h2 id="faq-title">הצעד הבא שלך</h2>
+          <h2 id="faq-title">מתחילים מתלוש אחד.</h2>
           {action}
         </div>
         <div className="faq-list">

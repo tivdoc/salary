@@ -30,10 +30,9 @@ export default async function Home() {
       <StudioMotion />
       <SiteHeader compact />
       <main id="main-content">
-        <Hero />
+        <Hero salesAvailable={salesAvailable} />
         <Process />
         <ReportPreview />
-        <Trust />
         <section
           className="studio-pricing"
           id="pricing"
@@ -41,7 +40,7 @@ export default async function Home() {
         >
           <div className="studio-shell">
             <h2 id="pricing-title" className="studio-section-title">
-              כמה זה עולה
+              יודעים מראש כמה משלמים.
             </h2>
             <div className="pricing-overview">
               <div className="initial-offer">
@@ -88,13 +87,18 @@ export default async function Home() {
             </details>
           </div>
         </section>
+        <Trust />
         <Faq
           action={
             <div className="finish-action">
               <p>
                 {salesAvailable
-                  ? "מכינים תלוש ומתחילים בבדיקה ראשונית."
+                  ? "אפשר להתחיל בבדיקה ראשונית ולהמשיך לפי הממצאים."
                   : "בדיקות חדשות עדיין אינן זמינות לרכישה. לשאלות על השירות, אנחנו כאן."}
+              </p>
+              <p className="finish-prepare">
+                לבדיקה תצטרכו תלוש שכר אחד. חוזה ודוח נוכחות יכולים לעזור, אם הם
+                זמינים.
               </p>
               {salesAvailable ? (
                 <TrackedLink
@@ -103,7 +107,7 @@ export default async function Home() {
                   href="/check"
                   eventName="start_check"
                 >
-                  התחלת בדיקה · {initialPrice}
+                  התחילו בדיקת שכר · {initialPrice}
                   <ArrowUpLeft size={22} aria-hidden="true" />
                 </TrackedLink>
               ) : (

@@ -2054,3 +2054,27 @@
   .detail-dialog .sample-coverage .report-view { padding:12px; }
   .detail-dialog .sample-coverage .report-view__topics { grid-template-columns:1fr; }
 }
+
+/* Salary-first opening: explicit question, visible service status and a clear action. */
+.studio-flow .studio-hero { padding-top:30px; }
+.studio-flow .studio-hero h1 { font-size:clamp(48px, 5.2vw, 76px); line-height:1.05; margin-bottom:24px; }
+.studio-flow .studio-hero__intro { max-width:44ch; margin-bottom:22px; }
+.studio-flow .hero-start .studio-button { min-height:52px; }
+.studio-flow .hero-availability { margin:10px 0 0; font-size:14px; color:var(--muted); }
+.studio-flow .hero-actions { gap:12px 28px; margin-top:16px; }
+.studio-flow .hero-actions .studio-link { margin:0; font-size:15px; gap:10px; min-height:44px; }
+.studio-flow .hero-actions .studio-link__icon { width:32px; height:32px; background:transparent; color:var(--coral-text); }
+.studio-flow .hero-actions .detail-trigger { font-size:14px; min-height:44px; padding-block:8px; }
+.hero-art { min-width:0; }
+.hero-brand-line { text-align:center; font-size:14px; color:var(--muted); margin:0; }
+.studio-flow .studio-section-title { max-width:21ch; }
+.studio-flow .finish-prepare { font-size:15px; color:var(--muted); }
+@media (max-width:767px) {
+  .studio-flow .studio-hero { padding-top:26px; }
+  .studio-flow .studio-hero h1 { font-size:clamp(40px, 10.8vw, 66px); margin-bottom:18px; }
+  .studio-flow .studio-hero__intro { margin-bottom:18px; font-size:16px; line-height:1.65; }
+  .studio-flow .hero-actions { margin-top:10px; gap:8px 22px; }
+  .studio-flow .hero-availability { font-size:13px; }
+  .studio-flow .hero-art .lens-artwork { height:220px; max-width:320px; }
+  .studio-flow .hero-brand-line { font-size:12px; }
+}

@@ -41,7 +41,7 @@ fs.mkdirSync(output, { recursive: true });
       assert.equal(await page.locator("main>.studio-film").count(), 0);
       assert.equal(await page.locator(".faq-list>details").count(), 4);
       assert.equal(
-        await page.locator("main .studio-button").count(),
+        await page.locator(".finish-action .studio-button").count(),
         1,
         "one final primary action",
       );
@@ -62,10 +62,36 @@ fs.mkdirSync(output, { recursive: true });
         "",
         "how-it-works",
         "what-you-get",
-        "about",
         "pricing",
+        "about",
         "faq",
       ]);
+      const headings = await page.locator("main>section h2").allTextContents();
+      assert.deepEqual(
+        headings.map((s) => s.trim()),
+        [
+          "מעלים תלוש. אנחנו בודקים.",
+          "מקבלים ממצאים עם הסבר ומקור.",
+          "יודעים מראש כמה משלמים.",
+          "יודעים מי עומד מאחורי הבדיקה.",
+          "מתחילים מתלוש אחד.",
+        ],
+      );
+      assert(
+        (await page.locator(".hero-availability").innerText()).includes(
+          "אינן זמינות",
+        ),
+      );
+      assert(
+        (
+          await page.locator(".hero-start .studio-button").getAttribute("href")
+        ).startsWith("mailto:"),
+      );
+      assert(
+        (await page.locator("#about").innerText()).includes(
+          "מפעילת השירות: תקראלוקס",
+        ),
+      );
       const height = await page.evaluate(
         () => document.documentElement.scrollHeight,
       );
@@ -157,6 +183,35 @@ fs.mkdirSync(output, { recursive: true });
         faq: 4,
       });
       console.log("PASS flow width " + width);
+    }
+    for (const [width, height] of [
+      [360, 740],
+      [390, 844],
+      [1440, 900],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(origin, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => document.fonts.status === "loaded");
+      for (const selector of [
+        "#hero-title",
+        ".studio-hero__intro",
+        ".hero-start .studio-button",
+        ".hero-availability",
+      ]) {
+        assert(
+          await page.locator(selector).evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            return (
+              r.top >= 0 &&
+              r.bottom <= innerHeight &&
+              r.left >= 0 &&
+              r.right <= innerWidth
+            );
+          }),
+          "first screen clipping " + width + " " + selector,
+        );
+      }
+      await page.screenshot({ path: output + "/opening-" + width + ".png" });
     }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(origin, { waitUntil: "domcontentloaded" });

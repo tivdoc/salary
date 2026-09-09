@@ -14,7 +14,7 @@ export function ReportPreview() {
     >
       <div className="studio-shell">
         <h2 id="report-title" className="studio-section-title">
-          מה מקבלים
+          מקבלים ממצאים עם הסבר ומקור.
         </h2>
         <p className="sample-disclosure">
           דוגמה להמחשה על נתונים סינתטיים; אינה דוח של לקוח.

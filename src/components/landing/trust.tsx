@@ -5,7 +5,7 @@ export function Trust() {
     <section className="studio-trust" id="about" aria-labelledby="about-title">
       <div className="studio-shell">
         <h2 id="about-title" className="studio-section-title">
-          למה לסמוך עלינו
+          יודעים מי עומד מאחורי הבדיקה.
         </h2>
         <p className="trust-limit">
           השירות נעזר ב־AI; אין הבטחה שאיש מקצוע בודק כל דוח.
@@ -13,6 +13,22 @@ export function Trust() {
         <div className="trust-grid">
           <article>
             <span className="trust-index">01</span>
+            <h3>כתובת לפנייה</h3>
+            <p>מפעילת השירות: תקראלוקס</p>
+            <a href={"mailto:" + productOffer.supportEmail}>
+              {productOffer.supportEmail}
+            </a>
+            <details>
+              <summary>המפעיל ובקשות תיקון</summary>
+              <p>תקראלוקס · ח״פ 317067916 · אורן 4, נשר.</p>
+              <p>
+                לשאלה או לתיקון אפשר לפנות מתוך התיק או לדוא״ל השירות עם מספר
+                התיק.
+              </p>
+            </details>
+          </article>
+          <article>
+            <span className="trust-index">02</span>
             <h3>מקורות ברורים</h3>
             <p>אפשר לראות על מה מבוסס כל ממצא.</p>
             <details>
@@ -24,21 +40,6 @@ export function Trust() {
               <Link prefetch={false} href="/terms">
                 תנאי השירות
               </Link>
-            </details>
-          </article>
-          <article>
-            <span className="trust-index">02</span>
-            <h3>כתובת לפנייה</h3>
-            <a href={"mailto:" + productOffer.supportEmail}>
-              {productOffer.supportEmail}
-            </a>
-            <details>
-              <summary>המפעיל ובקשות תיקון</summary>
-              <p>תקראלוקס · ח״פ 317067916 · אורן 4, נשר.</p>
-              <p>
-                לשאלה או לתיקון אפשר לפנות מתוך התיק או לדוא״ל השירות עם מספר
-                התיק.
-              </p>
             </details>
           </article>
           <article>
