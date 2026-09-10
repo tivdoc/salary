@@ -48,7 +48,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //135 redeclares the same internal binding to disambiguate its local variable;
 // JSON paths, predicates, empty search_path and existing ACLs are unchanged.
 //136 adds three isolated DEV canonical assessment/save/customer boundaries.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 292;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 293;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

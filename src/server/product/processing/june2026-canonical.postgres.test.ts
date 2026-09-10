@@ -65,7 +65,7 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_DB_PROOF!=='1')('executes a current 
  writeFileSync(directory+'/input.pdf',input.bytes);writeFileSync(directory+'/independent-oracle.json',JSON.stringify(ORACLE,null,2)+'\n');
  writeFileSync(directory+'/no-gap-input.pdf',noGapInput.bytes);writeFileSync(directory+'/no-gap-independent-oracle.json',JSON.stringify(noGapOracle,null,2)+'\n');
  const paths:string[]=[],sourceHashesByPath:Record<string,string>={},jobIds:string[]=[],providerCalls:{sourceSha256:string;responseId:string}[]=[],checks:string[]=[],runs:Record<string,unknown>[]=[],assessments:Record<string,unknown>[]=[],confirmationReceipts:unknown[]=[];
- const migrationName='20260910144517_june2026_comparison_stage_binding.sql',migrationBytes=readFileSync('supabase/migrations/'+migrationName),definitionChecks:Record<string,unknown>[]=[];
+ const migrationName='20260910145013_june2026_customer_canonical_case_binding.sql',migrationBytes=readFileSync('supabase/migrations/'+migrationName),definitionChecks:Record<string,unknown>[]=[];
  let phase='connect',failure:string|null=null,cleanupFailure:string|null=null,seeded=false,machineRevoked=false,foreignCleaned=false,foreignIdentity='',publicId='',activeTransactions=0,failBeforeSave=false,tamperBeforeSave=false,newConnectionReplayVerified=false;
  const own=()=>writeFileSync(privateFile,JSON.stringify({caseId,foreignCaseId,orderId,ownerIdentity:APPROVED_OWNER,foreignIdentity,publicId,sid,jti,paths,jobIds,gitSha,
   scope:'Owned synthetic isolated DEV case; no customer session. Preserve primary case and report artifacts; revoke only this worker and cancel only listed jobs.'},null,2)+'\n');own();
@@ -182,9 +182,9 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_DB_PROOF!=='1')('executes a current 
   // This isolated database has no migration ledger. Compare actual definitions
   // with the ordered-chain file instead of fabricating a migrations-table proof.
   const migration=migrationBytes.toString('utf8').replaceAll('\r\n','\n');
-  for(const [name,signature]of [['private.june2026_test_assessment','uuid,uuid,integer,text'],['private.june2026_canonical_test_save','uuid,uuid,integer,text,text,jsonb,jsonb'],['public.case_report_june_canonical_test','uuid,uuid,uuid']]){
-   const currentDefinition=name==='private.june2026_canonical_test_save'?migration:readFileSync('supabase/migrations/20260910141530_june2026_isolated_canonical_assessments.sql','utf8').replaceAll('\r\n','\n');
-   const declaration=currentDefinition.indexOf((name==='private.june2026_canonical_test_save'?'create or replace function ':'create function ')+name+'(');expect(declaration).toBeGreaterThanOrEqual(0);
+  for(const [name,signature]of [['private.june2026_test_assessment','uuid,uuid,integer,text'],['private.june2026_canonical_test_save','uuid,uuid,integer,text,text,jsonb,jsonb'],['public.case_report_june_canonical_test','uuid,uuid,uuid'],['private.june2026_canonical_test_customer','uuid,uuid,uuid']]){
+   const currentDefinition=name==='private.june2026_canonical_test_customer'?migration:readFileSync('supabase/migrations/'+(name==='private.june2026_canonical_test_save'?'20260910144517_june2026_comparison_stage_binding.sql':'20260910141530_june2026_isolated_canonical_assessments.sql'),'utf8').replaceAll('\r\n','\n');
+   const declaration=currentDefinition.indexOf((['private.june2026_canonical_test_save','private.june2026_canonical_test_customer'].includes(name)?'create or replace function ':'create function ')+name+'(');expect(declaration).toBeGreaterThanOrEqual(0);
    const start=currentDefinition.indexOf('as $$',declaration)+5,end=currentDefinition.indexOf('$$;',start),expectedBody=currentDefinition.slice(start,end);
    const actual=(await owner.query('select prosrc,prosecdef,proconfig from pg_proc where oid=to_regprocedure($1)',[name+'('+signature+')'])).rows[0];
    expect(actual.prosecdef).toBe(name.startsWith('private.'));expect(actual.proconfig).toContain('search_path=""');expect(actual.prosrc.replaceAll('\r\n','\n')).toBe(expectedBody);
@@ -258,7 +258,7 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_DB_PROOF!=='1')('executes a current 
    expect((await owner.query('delete from public.case_identities where id=$1',[foreignIdentity])).rowCount).toBe(1);await owner.query('commit');foreignCleaned=true;
   }}catch(error){cleanupFailure=error instanceof Error?error.message:'JUNE_CANONICAL_CLEANUP_FAILED';await owner.query('rollback').catch(()=>{});}finally{
    own();writeFileSync(directory+'/proof.json',JSON.stringify({schemaVersion:'june2026-canonical-db-proof-v1',verdict:!failure&&!cleanupFailure&&phase==='complete'&&checks.length===7&&machineRevoked&&foreignCleaned?'PASS':'FAIL',gitSha,phase,failure,cleanupFailure,
-    caseId,publicId,orderId,ownerIdentity:APPROVED_OWNER,database:'tivdoc_release_replay_20260907',schema:{orderedChain:137,tail:migrationName,sha256:fixtureSha(migrationBytes),actualDefinitions:definitionChecks,migrationLedgerAvailable:false},checks,runs,assessments,confirmationReceipts,providerCalls,
+    caseId,publicId,orderId,ownerIdentity:APPROVED_OWNER,database:'tivdoc_release_replay_20260907',schema:{orderedChain:138,tail:migrationName,sha256:fixtureSha(migrationBytes),actualDefinitions:definitionChecks,migrationLedgerAvailable:false},checks,runs,assessments,confirmationReceipts,providerCalls,
     sources:[{path:directory+'/input.pdf',sha256:positiveInput.sha256,bytes:positiveInput.bytes.length},{path:directory+'/no-gap-input.pdf',sha256:noGapInput.sha256,bytes:noGapInput.bytes.length}],independentOracle:ORACLE,noGapOracle,
     retainedPrimaryCase:seeded,retainedStoragePaths:paths,sourceHashesByPath,machineRevoked,foreignFixtureRemoved:foreignCleaned,customerSessionInjected:false,liveOcr:false,
     provider:'injected_synthetic_transport',realPayment:false,notificationsSent:false,humanApproval:false,legalActivation:false,ordinaryCustomerFindingPublished:false,
