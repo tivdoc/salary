@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import OpenAI from "openai";
 import type { EmploymentSnapshot } from "@/engine/facts/snapshot";
+import {versionSchema} from '@/engine/domain/primitives';
 import {
   extractionRequestSchema,
   payslipFieldKeySchema,
@@ -29,7 +30,7 @@ import {
   OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
   OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
 } from "./v2-prompt";
-import { buildOpenAiV2ResponsesRequest, type OpenAiV2ResponsesRequest } from "./v2-request";
+import { buildOpenAiV2ResponsesRequest, OPENAI_SOL_COMPARISON_PROFILE, type OpenAiV2ResponsesRequest } from "./v2-request";
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {createOpenAiProviderReceipt,safeProviderIdentifier,type OpenAiProviderReceipt} from './provider-receipt';
@@ -47,8 +48,8 @@ export interface OpenAiV2ResponsesTransport {
   parse(request: OpenAiV2ResponsesRequest): Promise<OpenAiV2TransportResponse>;
 }
 export const OPENAI_V2_STRUCTURED_DIAGNOSTIC_MAX_BYTES=256*1024;
-function createOpenAiV2SdkTransport(input: { apiKey: string; timeoutMs: number }): OpenAiV2ResponsesTransport {
-  const client = new OpenAI({ apiKey: input.apiKey, timeout: input.timeoutMs, maxRetries: 0 });
+function createOpenAiV2SdkTransport(input: { apiKey: string; timeoutMs: number; baseURL?:string }): OpenAiV2ResponsesTransport {
+  const client = new OpenAI({ apiKey: input.apiKey, timeout: input.timeoutMs, maxRetries: 0, ...(input.baseURL?{baseURL:input.baseURL}:{}) });
   return {
     async parse(request) {
       const response = await client.responses.parse(request);
@@ -106,6 +107,7 @@ type SafeLogSink = (entry: SafeEngineLog) => void;
 export class OpenAiPayslipV2PassExtractor {
   readonly providerId = "openai";
   readonly extractorVersion: string;
+  readonly recoveryExecution: 'automatic' | 'skip_package_budget';
   private readonly transport: OpenAiV2ResponsesTransport | null;
   private readonly origin:OpenAiProviderReceipt['origin'];
 
@@ -118,12 +120,23 @@ export class OpenAiPayslipV2PassExtractor {
       log?: SafeLogSink;
       extractorVersion?: string;
       executionProfile?: Parameters<typeof buildOpenAiV2ResponsesRequest>[0]['executionProfile'];
+      recoveryExecution?: 'automatic' | 'skip_package_budget';
     } = {},
   ) {
-    this.extractorVersion = options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION;
+    // Validate before constructing the transport: otherwise even the failure
+    // receipt can throw after a paid response when the version is malformed.
+    this.extractorVersion = versionSchema.parse(options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION);
+    this.recoveryExecution=options.recoveryExecution??'automatic';
+    if(!['automatic','skip_package_budget'].includes(this.recoveryExecution)
+      ||(this.recoveryExecution==='skip_package_budget'&&(options.executionProfile!==OPENAI_SOL_COMPARISON_PROFILE
+        ||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')))
+      throw new TypeError('OPENAI_RECOVERY_EXECUTION_SCOPE');
+    if(options.executionProfile!==undefined&&(options.executionProfile!==OPENAI_SOL_COMPARISON_PROFILE||config.model!=='gpt-5.6-sol'))
+      throw new TypeError('OPENAI_COMPARISON_PROFILE_MODEL_MISMATCH');
     this.origin=options.transport?'injected_test_provider':config.apiKey?'openai_live':'not_configured';
     this.transport = options.transport ?? (config.apiKey
-      ? createOpenAiV2SdkTransport({ apiKey: config.apiKey, timeoutMs: config.timeoutMs })
+      ? createOpenAiV2SdkTransport({ apiKey: config.apiKey, timeoutMs: config.timeoutMs,
+        ...(options.executionProfile?{baseURL:'https://api.openai.com/v1'}:{}) })
       : null);
   }
 

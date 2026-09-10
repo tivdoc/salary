@@ -8,14 +8,14 @@ import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {extractionRequestSchema} from '@/engine/extraction/contracts';
 import {buildPassEvaluation} from '@/engine/extraction/v2';
-import {PAYSLIP_V21_RESOLUTION_POLICY_VERSION,resolvePayslipExtractionPassesV21,recoveryDecisionForV21} from '@/engine/extraction/v21';
+import {PAYSLIP_EXTRACTION_V21_VERSION,PAYSLIP_V21_RESOLUTION_POLICY_VERSION,resolvePayslipExtractionPassesV21,recoveryDecisionForV21} from '@/engine/extraction/v21';
 import {preprocessPayslipDocument} from '@/server/engine/extraction/preprocessing';
 import {inspectExtractionBytes} from '@/server/engine/extraction/verified-upload-source';
 import {OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION} from '@/server/engine/extraction/providers/openai/v2-prompt';
 import {OpenAiPayslipV2PassExtractor,type OpenAiV2StructuredDiagnostic} from '@/server/engine/extraction/providers/openai/v2-adapter';
 import {buildOpenAiV2ResponsesRequest,OPENAI_SOL_COMPARISON_PROFILE} from '@/server/engine/extraction/providers/openai/v2-request';
 import {loadLiveExtractionCorpus,checkLiveExtractionCorpus} from './live-extraction-corpus';
-import {SOL_COMPARISON_POLICY as policy,newSolComparisonLedger,parseSolComparisonLedger,reserveSolRequest,
+import {SOL_COMPARISON_POLICY as policy,SOL_RETAINED_DRIVER_FAILURE,newSolComparisonLedger,parseSolComparisonLedger,reserveSolRequest,
  recordSolCount,recordSolReceipt,solInputCountRequest,summarizeSolBudget} from './live-extraction-sol-comparison-budget';
 vi.mock('server-only',()=>({}));
 const sha=(bytes:string|Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
@@ -23,18 +23,30 @@ const sha=(bytes:string|Uint8Array)=>createHash('sha256').update(bytes).digest('
 /** Same original bytes, prompt and independent oracle as the failed 4o-mini
  * run. This test neither calls the worker nor publishes a financial result. */
 it.skipIf(process.env.TIVDOC_SOL_COMPARISON!=='1')('compares the two original Hebrew sources using actual Sol medium SDK responses under a separate bounded ledger',async()=>{
- if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_COMPARISON_MAX_GENERATIONS!=='2')throw Error('SOL_COMPARISON_SCOPE');
+ const selection=process.env.TIVDOC_SOL_COMPARISON_SOURCES??'he-clear,he-scan-clear';
+ if(!['he-clear,he-scan-clear','he-scan-clear'].includes(selection))throw Error('SOL_COMPARISON_SOURCE_SCOPE');
+ const maximum=selection==='he-scan-clear'?1:2;
+ if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_COMPARISON_MAX_GENERATIONS!==String(maximum))throw Error('SOL_COMPARISON_SCOPE');
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
  expect(execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()).toBe('');
  const config=z.object({OPENAI_API_KEY:z.string().min(1)}).parse(JSON.parse(readFileSync('../release-work/live-provider-worker-private.json','utf8')));
- const sdk=new OpenAI({apiKey:config.OPENAI_API_KEY,timeout:120000,maxRetries:0});
+ const sdk=new OpenAI({apiKey:config.OPENAI_API_KEY,baseURL:'https://api.openai.com/v1',timeout:120000,maxRetries:0});
  const extractor=new OpenAiPayslipV2PassExtractor({apiKey:config.OPENAI_API_KEY,model:policy.model,timeoutMs:120000},
-  {executionProfile:OPENAI_SOL_COMPARISON_PROFILE,extractorVersion:'payslip-extraction-2.1'});
+  {executionProfile:OPENAI_SOL_COMPARISON_PROFILE,extractorVersion:PAYSLIP_EXTRACTION_V21_VERSION});
  const root='output/release-completion/live-provider-sol-comparison',ledgerPath=path.join(root,'package-budget-ledger.json');
  const proofId=randomUUID(),directory=path.join(root,`complex-${gitSha.slice(0,7)}-${proofId}`);mkdirSync(directory,{recursive:true});
  const oldRoot='output/release-completion/live-provider-june2026';
  const baseline=path.join(oldRoot,'hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e');
- const entries=loadLiveExtractionCorpus('hebrew-june2026','he-clear,he-scan-clear');
+ const entries=loadLiveExtractionCorpus('hebrew-june2026',selection);
+ let priorUnknownAcknowledgment:string|undefined;
+ if(selection==='he-scan-clear'){
+  if(process.env.TIVDOC_SOL_RETAINED_FAILURE_ACK!=='c5051f3-structured-response-retained')throw Error('SOL_RETAINED_ACK_REQUIRED');
+  const retained=readFileSync(path.join(root,'complex-c5051f3-4ec7efe8-8962-4308-aad9-abddf1cb22f6','he-clear-structured.json'));
+  expect(sha(retained)).toBe(SOL_RETAINED_DRIVER_FAILURE.diagnosticFileSha256);
+  const parsed=JSON.parse(retained.toString('utf8'));expect(parsed).toMatchObject({origin:'openai_live',source_sha256:SOL_RETAINED_DRIVER_FAILURE.sourceSha256,
+   request_sha256:SOL_RETAINED_DRIVER_FAILURE.requestSha256,provider_response_id:'resp_07435e602da821d4016aa2d5388ed087d28414fdde237e638b'});
+  priorUnknownAcknowledgment=SOL_RETAINED_DRIVER_FAILURE.diagnosticFileSha256;
+ }
  const immutableFiles=[path.join(oldRoot,'live-provider-budget-ledger.json'),path.join(baseline,'proof.json'),
   'docs/release-evidence/live-provider-june2026/independent-input-oracles.json',
   ...entries.flatMap(entry=>[entry.path,path.join(baseline,`${entry.id}-structured.json`),path.join(baseline,`${entry.id}-mapped.json`),path.join(baseline,`${entry.id}-new-result.json`)])];
@@ -64,7 +76,7 @@ it.skipIf(process.env.TIVDOC_SOL_COMPARISON!=='1')('compares the two original He
   persist();save();
   for(const {entry,prepared,countRequest} of sources){
    const recorded:Record<string,unknown>={id:entry.id,sourceSha256:entry.sha256,state:'RUNNING'};results.push(recorded);
-   const reservation={sourceSha256:entry.sha256,requestSha256:countRequest.requestSha256,codeRevision:gitSha,attempt:1};
+   const reservation={sourceSha256:entry.sha256,requestSha256:countRequest.requestSha256,codeRevision:gitSha,attempt:1,priorUnknownAcknowledgment};
    phase='reserve-count-'+entry.id;ledger=reserveSolRequest({ledger,...reservation,kind:'input_tokens',now:new Date().toISOString()});persist();counts++;save();
    const count=await sdk.responses.inputTokens.count(countRequest.request);
    writeFileSync(path.join(directory,`${entry.id}-input-count.json`),JSON.stringify({requestSha256:countRequest.requestSha256,...count},null,2)+'\n');
@@ -74,7 +86,7 @@ it.skipIf(process.env.TIVDOC_SOL_COMPARISON!=='1')('compares the two original He
     document:{document_id:documentId,case_id:caseId,document_type:'payslip',original_filename:path.basename(entry.path),mime_type:entry.mimeType,
      size_bytes:entry.sizeBytes,content_sha256:entry.sha256,storage_path:`cases/${caseId}/documents/${documentId}/original.${entry.mimeType==='application/pdf'?'pdf':'png'}`,
      document_period:null,supersedes_document_id:null,created_at:now}});
-   expect(entered).toBeLessThan(2);phase='reserve-generation-'+entry.id;
+   expect(entered).toBeLessThan(maximum);phase='reserve-generation-'+entry.id;
    ledger=reserveSolRequest({ledger,...reservation,kind:'generation',now});persist();entered++;phase='sdk-'+entry.id;save();
    let diagnostic:OpenAiV2StructuredDiagnostic|undefined;
    const mapped=await extractor.extractPreparedPass({request,prepared,kind:'first_pass',requestedFields:[],sourcePageCount:1,
@@ -109,7 +121,7 @@ it.skipIf(process.env.TIVDOC_SOL_COMPARISON!=='1')('compares the two original He
    if(!comparison.passed)failures.push(entry.id);save();
   }
   phase='immutable-history-and-budget';for(const item of immutable)expect(sha(readFileSync(item.file))).toBe(item.sha256);
-  expect(entered).toBe(2);expect(counts).toBe(2);expect(summarizeSolBudget(ledger).reservedUpperBoundUsd).toBeLessThanOrEqual(5);
+  expect(entered).toBe(maximum);expect(counts).toBe(maximum);expect(summarizeSolBudget(ledger).reservedUpperBoundUsd).toBeLessThanOrEqual(5);
   expect(summarizeSolBudget(ledger).contentRequests).toBeLessThanOrEqual(12);
   state=failures.length?'QUALITY_FAIL':'PASS';phase='complete';save();expect(failures).toEqual([]);
  }catch(error){if(state==='RUNNING'){state='FAIL';failures.push(error instanceof Error&&/^[A-Z][A-Z0-9_]+$/u.test(error.message)?error.message:'SOL_ASSERTION_OR_ENVIRONMENT_FAILURE');}save();throw error;

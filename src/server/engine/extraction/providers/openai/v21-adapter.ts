@@ -12,6 +12,7 @@ import { buildPassEvaluation, type ExtractionRegion } from "@/engine/extraction/
 import {
   PAYSLIP_EXTRACTION_V21_VERSION,
   recoveryDecisionForV21,
+  recoveryDecisionSchema,
   resolvePayslipExtractionPassesV21,
   selectTargetedRecoveryV21,
   type PayslipExtractionV21Result,
@@ -82,10 +83,14 @@ export async function runOpenAiPayslipExtractionV21(input: {
   });
   const plan = firstMapped.extraction.status === "failed" ? null : selectTargetedRecoveryV21(firstPass);
   const providerReceipts=firstMapped.provider_receipt?[firstMapped.provider_receipt]:[];
-  const recoveryDecision = recoveryDecisionForV21(plan);
+  const skipForBudget=plan!==null&&input.extractor.recoveryExecution==='skip_package_budget';
+  const recoveryDecision = skipForBudget
+    ? recoveryDecisionSchema.parse({requested:false,skipped:true,fields_requested:plan.fields,regions:plan.regions,
+      reason_codes:[...plan.reason_codes,'recovery_skipped_package_budget'],expected_information_gain:plan.expected_information_gain})
+    : recoveryDecisionForV21(plan);
   const recoveryPasses = [];
   const preprocessing = [firstPrepared.metadata];
-  if (plan) {
+  if (plan && !skipForBudget) {
     const recoveryPassId = uuidFrom(`${request.extraction_id}:v2.1:targeted-recovery`);
     const recoveryPrepared = await preprocessPayslipDocument({
       bytes,

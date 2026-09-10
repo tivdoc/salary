@@ -2,7 +2,7 @@ import {describe,expect,it,vi} from 'vitest';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {buildOpenAiV2ResponsesRequest,OPENAI_SOL_COMPARISON_PROFILE} from '@/server/engine/extraction/providers/openai/v2-request';
 import type {PreparedPayslipDocument} from '@/server/engine/extraction/preprocessing';
-import {newSolComparisonLedger,parseSolComparisonLedger,reserveSolRequest,recordSolCount,solInputCountRequest,summarizeSolBudget} from './live-extraction-sol-comparison-budget';
+import {SOL_RETAINED_DRIVER_FAILURE,newSolComparisonLedger,parseSolComparisonLedger,reserveSolRequest,recordSolCount,solInputCountRequest,summarizeSolBudget} from './live-extraction-sol-comparison-budget';
 vi.mock('server-only',()=>({}));
 const now='2026-09-10T16:00:00Z',base={sourceSha256:'a'.repeat(64),requestSha256:'b'.repeat(64),codeRevision:'c'.repeat(40),attempt:1,now};
 const prepared={original:{bytes:new Uint8Array([1]),mime_type:'image/png',sha256:'a'.repeat(64)},crops:[]} as unknown as PreparedPayslipDocument;
@@ -45,5 +45,17 @@ describe('separate Sol comparison spend and request boundary',()=>{
   }
   expect(summarizeSolBudget(ledger)).toMatchObject({contentRequests:12,reservedUpperBoundUsd:3.072});
   expect(()=>reserveSolRequest({ledger,...base,kind:'input_tokens'})).toThrow();
+ });
+ it('allows a separately acknowledged source after the exact retained driver failure without refund, replay, or clearing unknown state',()=>{
+  const incident={...base,...SOL_RETAINED_DRIVER_FAILURE};
+  let ledger=recordSolCount(reserveSolRequest({ledger:newSolComparisonLedger(),...incident,kind:'input_tokens'}),incident.requestSha256,4265);
+  ledger=reserveSolRequest({ledger,...incident,kind:'generation'});
+  const original=structuredClone(ledger),ack=SOL_RETAINED_DRIVER_FAILURE.diagnosticFileSha256;
+  expect(()=>reserveSolRequest({ledger,...base,kind:'input_tokens'})).toThrow('REQUIRES_REVIEW');
+  expect(()=>reserveSolRequest({ledger,...incident,attempt:2,kind:'input_tokens',priorUnknownAcknowledgment:ack})).toThrow('REQUIRES_REVIEW');
+  expect(()=>reserveSolRequest({ledger,...base,kind:'input_tokens',priorUnknownAcknowledgment:'f'.repeat(64)})).toThrow('REQUIRES_REVIEW');
+  ledger=reserveSolRequest({ledger,...base,kind:'input_tokens',priorUnknownAcknowledgment:ack});
+  expect(ledger.reservations.slice(0,2)).toEqual(original.reservations);
+  expect(summarizeSolBudget(ledger)).toMatchObject({contentRequests:3,unknownOutcomes:2,reservedUpperBoundUsd:0.968});
  });
 });

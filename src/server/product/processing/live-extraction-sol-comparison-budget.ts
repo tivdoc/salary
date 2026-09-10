@@ -12,11 +12,18 @@ export const SOL_COMPARISON_POLICY=Object.freeze({version:'tivdoc-sol-comparison
  pricingValidUntil:'2026-09-17T00:00:00Z',inputUsdPerMillion:4,outputUsdPerMillion:20,
  inputTokenCeiling:64000,outputTokenCeiling:10000,maxRequests:12,maxReservedMicroUsd:5000000,
  countReservedMicroUsd:256000,generationReservedMicroUsd:456000,sdkRetries:0} as const);
+// One reviewed driver defect after a real structured response. This does NOT
+// settle the missing receipt, refund budget, or authorize recalling that source.
+export const SOL_RETAINED_DRIVER_FAILURE=Object.freeze({
+ sourceSha256:'f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b',
+ requestSha256:'cbe273b063863ad15736893e3d29b9c84eb563793e6a56a412b8023895675773',
+ codeRevision:'c5051f3e8a53f254ca824dbe85ec36eadc4a49a6',
+ diagnosticFileSha256:'f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937'} as const);
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 const reservationSchema=z.object({key:z.string().min(1),sourceSha256:sha,requestSha256:sha,codeRevision:z.string().regex(/^[a-f0-9]{40}$/u),
  attempt:z.number().int().min(1).max(6),kind:z.enum(['input_tokens','generation']),reservedAt:z.iso.datetime({offset:true}),
  reservedMicroUsd:z.number().int().positive(),outcome:z.enum(['reserved_unknown','count_recorded','receipt_recorded']),
- inputTokens:z.number().int().nonnegative().nullable(),receipt:z.unknown().nullable()}).strict();
+ inputTokens:z.number().int().nonnegative().nullable(),receipt:z.unknown().nullable(),priorUnknownAcknowledgment:sha.optional()}).strict();
 const ledgerSchema=z.object({version:z.literal(SOL_COMPARISON_POLICY.version),model:z.literal(SOL_COMPARISON_POLICY.model),
  reservations:z.array(reservationSchema).max(SOL_COMPARISON_POLICY.maxRequests)}).strict();
 export type SolComparisonLedger=z.infer<typeof ledgerSchema>;
@@ -31,6 +38,8 @@ export function parseSolComparisonLedger(value:unknown):SolComparisonLedger{
    ||(row.outcome==='count_recorded'&&(row.kind!=='input_tokens'||row.inputTokens===null||row.receipt!==null))
    ||(row.outcome==='receipt_recorded'&&(row.kind!=='generation'||row.receipt===null)))throw Error('SOL_LEDGER_INVALID');
   seen.add(row.key);
+  if(row.priorUnknownAcknowledgment!==undefined&&(row.priorUnknownAcknowledgment!==SOL_RETAINED_DRIVER_FAILURE.diagnosticFileSha256
+   ||row.sourceSha256===SOL_RETAINED_DRIVER_FAILURE.sourceSha256||!ledger.reservations.some(isKnownRetainedUnknown)))throw Error('SOL_UNKNOWN_ACKNOWLEDGMENT_INVALID');
   if(row.kind==='generation'&&!ledger.reservations.some(prior=>prior.kind==='input_tokens'&&prior.sourceSha256===row.sourceSha256
    &&prior.attempt===row.attempt&&prior.requestSha256===row.requestSha256&&prior.codeRevision===row.codeRevision
    &&prior.outcome==='count_recorded'&&Date.parse(prior.reservedAt)<=Date.parse(row.reservedAt)))throw Error('SOL_GENERATION_WITHOUT_COUNT');
@@ -41,16 +50,24 @@ export function parseSolComparisonLedger(value:unknown):SolComparisonLedger{
  return ledger;
 }
 export function reserveSolRequest(input:{ledger:SolComparisonLedger;sourceSha256:string;requestSha256:string;codeRevision:string;
- attempt:number;kind:'input_tokens'|'generation';now:string}){
+ attempt:number;kind:'input_tokens'|'generation';now:string;priorUnknownAcknowledgment?:string}){
  const ledger=parseSolComparisonLedger(input.ledger),now=Date.parse(input.now);
  if(!Number.isFinite(now)||now<Date.parse('2026-09-10T00:00:00Z')||now>=Date.parse(SOL_COMPARISON_POLICY.pricingValidUntil))throw Error('SOL_PRICING_EXPIRED');
- if(ledger.reservations.some(row=>row.outcome==='reserved_unknown'))throw Error('SOL_UNKNOWN_OUTCOME_REQUIRES_REVIEW');
+ if(ledger.reservations.some(row=>row.outcome==='reserved_unknown'&&(!isKnownRetainedUnknown(row)
+  ||input.priorUnknownAcknowledgment!==SOL_RETAINED_DRIVER_FAILURE.diagnosticFileSha256
+  ||input.sourceSha256===SOL_RETAINED_DRIVER_FAILURE.sourceSha256)))throw Error('SOL_UNKNOWN_OUTCOME_REQUIRES_REVIEW');
  const key=`${input.sourceSha256}:${input.attempt}:${input.kind}`;
  if(ledger.reservations.some(row=>row.key===key))throw Error('SOL_REPLAY_REQUIRES_REVIEW');
  return parseSolComparisonLedger({...ledger,reservations:[...ledger.reservations,{key,sourceSha256:input.sourceSha256,
   requestSha256:input.requestSha256,codeRevision:input.codeRevision,attempt:input.attempt,kind:input.kind,reservedAt:input.now,
   reservedMicroUsd:input.kind==='input_tokens'?SOL_COMPARISON_POLICY.countReservedMicroUsd:SOL_COMPARISON_POLICY.generationReservedMicroUsd,
-  outcome:'reserved_unknown',inputTokens:null,receipt:null}]});
+  outcome:'reserved_unknown',inputTokens:null,receipt:null,
+  ...(input.priorUnknownAcknowledgment?{priorUnknownAcknowledgment:input.priorUnknownAcknowledgment}:{})}]});
+}
+function isKnownRetainedUnknown(row:SolComparisonLedger['reservations'][number]){
+ return row.outcome==='reserved_unknown'&&row.kind==='generation'&&row.attempt===1
+  &&row.sourceSha256===SOL_RETAINED_DRIVER_FAILURE.sourceSha256&&row.requestSha256===SOL_RETAINED_DRIVER_FAILURE.requestSha256
+  &&row.codeRevision===SOL_RETAINED_DRIVER_FAILURE.codeRevision;
 }
 export function recordSolCount(ledger:SolComparisonLedger,requestSha256:string,inputTokens:number){
  const parsed=parseSolComparisonLedger(ledger),pending=parsed.reservations.filter(row=>row.kind==='input_tokens'&&row.outcome==='reserved_unknown'&&row.requestSha256===requestSha256);
