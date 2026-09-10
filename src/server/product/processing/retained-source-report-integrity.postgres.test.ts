@@ -95,7 +95,7 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
   // This isolated replay database has no migration ledger. Bind the ordered
   // repository chain to the actual critical function body and security metadata;
   // do not manufacture evidence that every earlier DDL statement was rechecked.
-  const migrations=readdirSync('supabase/migrations').filter(name=>/^\d{14}_.+\.sql$/u.test(name)).sort();
+  const migrations=readdirSync('supabase/migrations').filter(name=>/^(?:\d{12}|\d{14})_.+\.sql$/u.test(name)).sort();
   expect(migrations).toHaveLength(135);expect(migrations.at(-1)).toBe(`${SCHEMA}_dev_financial_completion_target_binding.sql`);
   const migrationLedgers=(await owner.query("select schemaname,tablename from pg_catalog.pg_tables where tablename like '%migration%' order by schemaname,tablename")).rows;
   expect(migrationLedgers).toEqual([]);
