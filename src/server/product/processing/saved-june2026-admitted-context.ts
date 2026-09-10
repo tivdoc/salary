@@ -1,4 +1,5 @@
 import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from "./saved-june2026-test-authority";
+import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,type SavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
 import 'server-only';
 import {z} from 'zod';
 import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
@@ -35,7 +36,7 @@ function blocked(code: Unsupported, caseId: string, analysisRunId: string) {
  * Unsupported historical receipts are a review diagnostic, not a queue error;
  * malformed hashes, foreign authority and changed sources still fail closed. */
 export async function loadSavedJune2026AdmittedContext(input: {
-  context: PostgresTransactionContext; job: SourceJob; orderId: string; analysisRunId: string; testAuthority?: June2026TestAuthority;
+  context: PostgresTransactionContext; job: SourceJob; orderId: string; analysisRunId: string; testAuthority?: June2026TestAuthority;regularAuthority?:SavedJune2026RegularAuthority;
 }) {
   const {context} = input, job = sourceJobSchema.parse(input.job), orderId = z.uuid().parse(input.orderId), analysisRunId = z.uuid().parse(input.analysisRunId);
   if (job.mode !== 'draft') throw Error('SAVED_LIVE_COMPOSITION_NOT_ENABLED');
@@ -59,11 +60,12 @@ export async function loadSavedJune2026AdmittedContext(input: {
        and ar.status in ('running','completed')`, [tenantId, job.case_id, analysisRunId]));
   if (runRows.rows.length !== 1) throw Error('SAVED_JUNE_CONTEXT_RUN_REQUIRED');
   if(input.testAuthority)assertJune2026TestAuthority(input.testAuthority,job,orderId);
+  if(input.regularAuthority)assertSavedJune2026RegularAuthority(input.regularAuthority,job,orderId);
   const run = runSchema.parse(runRows.rows[0]), command = decodeCommand(run.command);
   if (run.case_id !== job.case_id || run.analysis_run_id !== analysisRunId || command.case_id !== job.case_id
     || run.source_revision !== job.revision || run.source_input_sha256 !== job.input_sha256 || run.actual_input_sha256 !== job.input_sha256
-    || command.mode !== (input.testAuthority?'synthetic_test':'real') || command.period.start_date !== '2026-06-01' || command.period.end_date !== '2026-06-30'
-    || canonicalSha256(command) !== run.command_sha256 || run.idempotency_key !== (input.testAuthority?june2026TestIdempotencyKey(job,orderId,input.testAuthority):savedMonthIdempotencyKey(job, orderId, '2026-06'))
+    || command.mode !== (input.testAuthority?'synthetic_test':input.regularAuthority?.mode??'real') || command.period.start_date !== '2026-06-01' || command.period.end_date !== '2026-06-30'
+    || canonicalSha256(command) !== run.command_sha256 || run.idempotency_key !== (input.testAuthority?june2026TestIdempotencyKey(job,orderId,input.testAuthority):input.regularAuthority?june2026RegularIdempotencyKey(job,orderId,input.regularAuthority):savedMonthIdempotencyKey(job, orderId, '2026-06'))
     || command.idempotency_key !== run.idempotency_key || canonicalSha256(command.requested_topics) !== canonicalSha256(order.topics)) throw Error('SAVED_JUNE_CONTEXT_RUN_BINDING');
   const stageRows = await context.client.query(statement('saved_june_context_stages',
     `select s.stage,s.payload,s.payload_sha256 from public.engine_analysis_stage_versions s
@@ -89,10 +91,14 @@ export async function loadSavedJune2026AdmittedContext(input: {
   // This reuses the existing journal/source/currentness checks and reconstructs
   // document readings from their authenticated request+answer revision, rather
   // than trusting a confirmation-shaped object in a canonical fact.
-  const snapshot = await new SavedCaseSnapshot(context, job, '2026-06',input.testAuthority?{authority:input.testAuthority,orderId}:undefined).loadPinned(command);
+  const snapshot = await new SavedCaseSnapshot(context, job, '2026-06',input.testAuthority?{authority:input.testAuthority,orderId}:undefined,
+   input.regularAuthority?{authority:input.regularAuthority,orderId}:undefined).loadPinned(command);
   if (snapshot.documents.length !== 1 || snapshot.extractions.length !== 1) return blocked('multiple_documents', job.case_id, analysisRunId);
   const document = snapshot.documents[0], extraction = snapshot.extractions[0], actualReadings = extraction.customer_readings ?? [];
   for (const fact of canonicalStage.facts.facts) for (const source of fact.provenance) {
+    if(fact.path==='work.regular_hours'&&source.source_type==='declared'&&snapshot.declared_fact_snapshot.facts.filter(candidate=>
+     candidate.path==='work.regular_hours'&&candidate.status==='needs_confirmation'&&canonicalSha256(candidate.value)===canonicalSha256(fact.value)
+      &&canonicalSha256(candidate.provenance)===canonicalSha256(fact.provenance)).length!==1)throw Error('SAVED_JUNE_HOURS_DECLARATION_NOT_IN_JOURNAL');
     if (source.source_type !== 'documented') continue;
     if (source.customer_confirmation && !actualReadings.some(reading => canonicalSha256(reading) === canonicalSha256(source.customer_confirmation))) throw Error('SAVED_JUNE_CONTEXT_READING_NOT_IN_JOURNAL');
     if (source.read_by === 'machine' && source.verified === true && !source.customer_confirmation) throw Error('SAVED_JUNE_CONTEXT_UNATTRIBUTED_READING');

@@ -1,4 +1,7 @@
 import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from './saved-june2026-test-authority';
+import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,type SavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
+import {savedHoursDeclarations} from './saved-hours-declarations';
+import {readSavedOrders} from './saved-order-scope';
 import {savedDeclaredFacts} from './saved-request-facts';
 import {savedDocumentFieldReadings} from './saved-field-readings';
 import { z } from 'zod';
@@ -29,7 +32,7 @@ const checkpointSchema = z.object({
  * immutable journal revision and extraction policy can become engine inputs.
  * Revalidates source scope even on retry; it never calls a provider in a lock. */
 export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
- constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string,private readonly testScope?:{authority:June2026TestAuthority;orderId:string}) {}
+ constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string,private readonly testScope?:{authority:June2026TestAuthority;orderId:string},private readonly regularScope?:{authority:SavedJune2026RegularAuthority;orderId:string}) {}
 
  async read():Promise<StoredCaseInputSnapshot> {
   const job=sourceJobSchema.parse(this.candidate);
@@ -79,7 +82,16 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   }
   // Free-text questionnaire/request answers are preserved by the source hash.
   // They cannot be promoted into verified critical facts by this adapter.
-  const facts=savedDeclaredFacts({caseId:job.case_id,revision:job.revision,inputSha256:job.input_sha256,month:selectedMonth,journal:row.input,createdAt:new Date(String(row.created_at)).toISOString()});
+  const facts=[...savedDeclaredFacts({caseId:job.case_id,revision:job.revision,inputSha256:job.input_sha256,month:selectedMonth,journal:row.input,createdAt:new Date(String(row.created_at)).toISOString()})];
+  const hasHoursAnswer=z.object({answers:z.array(z.object({code:z.string().optional()}).passthrough()).optional()}).passthrough().parse(row.input)
+   .answers?.some(a=>a.code?.startsWith('june2026_regular_hours:'));
+  if(hasHoursAnswer&&selectedMonth==='2026-06'&&payslips.length===1&&!extractions[0].fields.some(f=>f.field==='regular_hours')){
+   const orders=await readSavedOrders(this.context,job);
+   const scoped=orders.filter(o=>o.from<='2026-06-01'&&o.to>='2026-06-01'&&o.topics.includes('minimum_wage'));
+   const declarations=(await Promise.all(scoped.map(o=>savedHoursDeclarations(this.context,job,o.id)))).flat();
+   if(declarations.length>1)throw Error('SAVED_HOURS_DECLARATION_AMBIGUOUS');
+   facts.push(...declarations);
+  }
   return deepFreeze({document_snapshot_id:`saved-documents:${selectedMonth}:${job.input_sha256}`,document_snapshot_sha256:canonicalSha256(documents),documents,
    extraction_snapshot_id:`saved-extractions:${selectedMonth}:${job.input_sha256}`,extraction_snapshot_sha256:canonicalSha256(extractions),extractions,
    declared_fact_snapshot:{snapshot_id:`saved-declarations:${selectedMonth}:${job.input_sha256}`,snapshot_sha256:canonicalSha256(facts),facts}});
@@ -92,6 +104,11 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
    if(command.mode!=='synthetic_test'||this.targetMonth!=='2026-06'||command.period.start_date!=='2026-06-01'||command.period.end_date!=='2026-06-30'
     ||command.requested_topics.length!==1||command.requested_topics[0]!=='minimum_wage'
     ||command.idempotency_key!==june2026TestIdempotencyKey(this.candidate,orderId,authority))throw new Error('SAVED_COMMAND_SCOPE');
+  }else if(this.regularScope){
+   const {authority,orderId}=this.regularScope;assertSavedJune2026RegularAuthority(authority,this.candidate,orderId);
+   if(command.mode!==authority.mode||this.targetMonth!=='2026-06'||command.period.start_date!=='2026-06-01'||command.period.end_date!=='2026-06-30'
+    ||command.requested_topics.length!==1||command.requested_topics[0]!=='minimum_wage'
+    ||command.idempotency_key!==june2026RegularIdempotencyKey(this.candidate,orderId,authority))throw Error('SAVED_COMMAND_SCOPE');
   }else if(command.mode!=='real')throw new Error('SAVED_COMMAND_SCOPE');
   const snapshot=await this.read();
   if(command.document_snapshot_id!==snapshot.document_snapshot_id||command.document_snapshot_sha256!==snapshot.document_snapshot_sha256

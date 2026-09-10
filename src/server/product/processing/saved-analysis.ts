@@ -1,4 +1,8 @@
 import {loadJune2026TestAuthority,assertJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
+import {loadSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,assertSavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
+import {SavedJune2026RegularRuntime} from './saved-june2026-regular';
+import {June2026RegularCatalog} from '@/engine/minimum-wage-june2026/regular-service/catalog';
+import {JUNE_REGULAR_REPORT_TEMPLATE} from '../reports/june2026-regular-service';
 import {June2026IsolatedTestCatalog} from "@/engine/minimum-wage-june2026/test-catalog";
 import {JUNE2026_MINIMUM_WAGE_POLICY} from "@/engine/minimum-wage-june2026/sources";
 import {SavedJune2026CanonicalRuntime,JUNE2026_CANONICAL_TEST_TEMPLATE} from "./saved-june2026-canonical";
@@ -33,19 +37,25 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const [order]=await readSavedOrders(input.context,job,input.orderId);
  if(input.month<order.from.slice(0,7)||input.month>order.to.slice(0,7))throw new Error('SAVED_ORDER_SCOPE');
  const selected=await input.context.client.query(statement('saved_analysis_order',
-  `select v.created_at,ecs.revision as engine_revision from private.case_input_versions v
+  `select v.created_at,ecs.revision as engine_revision,(select public_id from public.cases where id=v.case_id) public_id from private.case_input_versions v
    join public.engine_case_state ecs on ecs.canonical_case_id=v.case_id::text and ecs.tenant_id=$3
    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$4`,[job.case_id,job.revision,input.tenantId,job.input_sha256]));
  const row=selected.rows[0];if(!row)throw new Error('SAVED_ENGINE_CASE_NOT_ADMITTED');
  const testAuthority=input.month==="2026-06"&&order.topics.length===1&&order.topics[0]==="minimum_wage"
   ?await loadJune2026TestAuthority(input.context,job,order.id):null;
  const canonical=testAuthority?new SavedJune2026CanonicalRuntime(testAuthority,job,order.id):null;
- const key=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):savedMonthIdempotencyKey(job,order.id,input.month);
+ const regularState=!testAuthority&&input.month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage'
+  ?await loadSavedJune2026RegularAuthority(input.context,job,order.id):null;
+ const regularAuthority=regularState?.state==='ready'?regularState:null;
+ const regular=regularAuthority?new SavedJune2026RegularRuntime(regularAuthority,job,order,z.string().parse(row.public_id)):null;
+ const runtime=canonical??regular;
+ const key=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):regularAuthority?june2026RegularIdempotencyKey(job,order.id,regularAuthority):savedMonthIdempotencyKey(job,order.id,input.month);
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
  if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report)throw new Error('SAVED_REPLAY_SCOPE');return existing;}
- const snapshots=new SavedCaseSnapshot(input.context,job,input.month,testAuthority?{authority:testAuthority,orderId:order.id}:undefined),snapshot=await snapshots.read();
+ const snapshots=new SavedCaseSnapshot(input.context,job,input.month,testAuthority?{authority:testAuthority,orderId:order.id}:undefined,
+  regularAuthority?{authority:regularAuthority,orderId:order.id}:undefined),snapshot=await snapshots.read();
  const end=new Date(Date.UTC(Number(input.month.slice(0,4)),Number(input.month.slice(5,7)),0)).toISOString().slice(0,10);
- const now=new Date(String(row.created_at)).toISOString();
+ const now=regularAuthority?regularAuthority.authority.assessment.issued_at:new Date(String(row.created_at)).toISOString();
  const collection=input.month==='2026-06'&&order.topics.includes('minimum_wage')?await readSavedJune2026Collection(input.context,job):null;
  let factualContext:SavedJune2026AdmittedContext|null=null;
  let preparedRunId:string|null=null;
@@ -54,24 +64,27 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   extraction_snapshot_id:snapshot.extraction_snapshot_id,extraction_snapshot_sha256:snapshot.extraction_snapshot_sha256,
   declared_fact_snapshot_id:snapshot.declared_fact_snapshot.snapshot_id,declared_fact_snapshot_sha256:snapshot.declared_fact_snapshot.snapshot_sha256,
   period:{start_date:`${input.month}-01`,end_date:end},as_of:now.slice(0,10),requested_topics:order.topics,
-  sector:testAuthority?JUNE2026_MINIMUM_WAGE_POLICY.sector:'unverified',population:testAuthority?JUNE2026_MINIMUM_WAGE_POLICY.population:'unverified',mode:testAuthority?'synthetic_test':'real',idempotency_key:key};
+  sector:runtime?JUNE2026_MINIMUM_WAGE_POLICY.sector:'unverified',population:runtime?JUNE2026_MINIMUM_WAGE_POLICY.population:'unverified',mode:testAuthority?'synthetic_test':regularAuthority?.mode??'real',idempotency_key:key};
  const service=new CaseAnalysisService({clock:{now:()=>now},ids:{derive:savedAnalysisId},
   hashes:{hashCanonical:canonicalSha256,hashBytes:b=>createHash('sha256').update(b).digest('hex')},
-  snapshots,repository:input.analysis.caseAnalysis,legalCatalog:testAuthority?new June2026IsolatedTestCatalog(testAuthority.assessment):new June2026ReviewCatalog(),
-  // The current real catalog has zero active rules. No fixture executor is
-  // reachable here; unexpected activation requires a reviewed production binding.
-  executor:canonical??{async execute(){throw new Error('SAVED_RULE_EXECUTOR_NOT_ACTIVATED');}},
-  reportBuilder:canonical??new SavedAnalysisDraftBuilder(),reportRegistration:input.analysis.reports,
+  snapshots,repository:input.analysis.caseAnalysis,legalCatalog:testAuthority?new June2026IsolatedTestCatalog(testAuthority.assessment):regularAuthority?new June2026RegularCatalog(regularAuthority.authority):new June2026ReviewCatalog(),
+  executor:runtime??{async execute(){throw new Error('REGULAR_AUTHORITY_REQUIRED');}},
+  reportBuilder:runtime??new SavedAnalysisDraftBuilder(),reportRegistration:input.analysis.reports,
   authorizeIsolatedTest:testAuthority?async(command,selection)=>{
    assertJune2026TestAuthority(testAuthority,job,order.id);
    const expected=await new June2026IsolatedTestCatalog(testAuthority.assessment).resolve({topic:selection.topic,target_date:command.period.end_date,
     as_of:command.as_of,sector:command.sector,population:command.population,mode:command.mode});
    if(canonicalSha256(expected)!==canonicalSha256(selection))throw Error('JUNE_TEST_CATALOG_AUTHORITY_BINDING');
+  }:regularAuthority?.mode==='synthetic_test'?async(command,selection)=>{
+   assertSavedJune2026RegularAuthority(regularAuthority,job,order.id);
+   const expected=await new June2026RegularCatalog(regularAuthority.authority).resolve({topic:selection.topic,target_date:command.period.end_date,
+    as_of:command.as_of,sector:command.sector,population:command.population,mode:command.mode});
+   if(canonicalSha256(expected)!==canonicalSha256(selection))throw Error('REGULAR_ISOLATED_SELECTION_BINDING');
   }:undefined,
-  executionBlockers:canonical?()=>canonical.blockers():undefined,
+  executionBlockers:runtime?()=>runtime.blockers():undefined,
   prepareExecutionContext:collection?async pins=>{
    if(pins.case_id!==job.case_id)throw new Error('SAVED_JUNE_CONTEXT_PREEXECUTION_SCOPE');
-   const loaded=await loadSavedJune2026AdmittedContext({context:input.context,job,orderId:order.id,analysisRunId:pins.analysis_run_id,...(testAuthority?{testAuthority}:{})});
+   const loaded=await loadSavedJune2026AdmittedContext({context:input.context,job,orderId:order.id,analysisRunId:pins.analysis_run_id,...(testAuthority?{testAuthority}:{}),...(regularAuthority?{regularAuthority}:{})});
    const actual=loaded.state==='context_loaded'?loaded.context.current:loaded;
    if(actual.case_id!==pins.case_id||actual.analysis_run_id!==pins.analysis_run_id
     ||(loaded.state==='context_loaded'&&(loaded.command_sha256!==pins.command_sha256
@@ -79,10 +92,11 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
      ||!pins.rule_inputs.some(ruleInput=>canonicalSha256(ruleInput)===canonicalSha256(loaded.context.rule_input))))) {
     throw new Error('SAVED_JUNE_CONTEXT_PREEXECUTION_BINDING');
    }
-   factualContext=loaded;preparedRunId=pins.analysis_run_id;canonical?.prepare(loaded);
+   factualContext=loaded;preparedRunId=pins.analysis_run_id;runtime?.prepare(loaded);
   }:undefined,
   reviewDiagnostics:async args=>{
    if(canonical)return {authority:"isolated_dev_test_assumptions",admission:canonical.admission,comparison:canonical.comparison};
+   if(regular)return regular.diagnostics();
    const diagnostic=buildSavedJune2026ReviewDiagnostic(args);
    if(!diagnostic||!collection)return diagnostic;
    if(!factualContext||preparedRunId!==args.bundle.analysis_run_id
@@ -90,14 +104,14 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
     throw new Error('SAVED_JUNE_CONTEXT_NOT_PREPARED');
    }
    return {...diagnostic,collection,factual_context:factualContext,
-    blockers:{...diagnostic.blockers,technical:['authenticated_case_evidence_admission_not_available',
-     'active_catalog_executor_binding_not_connected','canonical_financial_publication_not_connected']},
+    blockers:{...diagnostic.blockers,technical:[],authority:regularState?.state==='blocked'?regularState.blockers:['signed_case_assessment_and_current_registry_required']},
     customer_requests_created:collection.resolutions.length>0};
   },
-  logs:{write(){}},templateVersion:canonical?JUNE2026_CANONICAL_TEST_TEMPLATE:SAVED_DRAFT_TEMPLATE});
+  logs:{write(){}},templateVersion:canonical?JUNE2026_CANONICAL_TEST_TEMPLATE:regular?JUNE_REGULAR_REPORT_TEMPLATE:SAVED_DRAFT_TEMPLATE});
  const bundle=await service.runCaseAnalysis(command);
  const completed=await service.getCompletedRun(bundle.analysis_run_id);
  if(!completed?.report)throw new Error('SAVED_ANALYSIS_NOT_COMMITTED');
  if(canonical)await canonical.persist(input.context,bundle.analysis_run_id);
+ if(regular)await regular.persist(input.context,bundle.analysis_run_id);
  return completed;
 }

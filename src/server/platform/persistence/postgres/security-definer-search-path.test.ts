@@ -48,7 +48,9 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //135 redeclares the same internal binding to disambiguate its local variable;
 // JSON paths, predicates, empty search_path and existing ACLs are unchanged.
 //136 adds three isolated DEV canonical assessment/save/customer boundaries.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 293;
+//139–141 add seven authority, identified-hours and ordinary report boundaries.
+// Their DEV ACL receipt denies direct authority/result writes to every runtime.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 300;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -76,6 +78,12 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
 }
 
 describe("security definer search_path contract", () => {
+  it("accounts explicitly for ordinary signed-authority and publication boundaries",async()=>{
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>["20260910160042_june2026_regular_service_authority.sql","20260910160553_june2026_regular_hours_declarations.sql","20260910161527_june2026_regular_results_publication.sql"].includes(d.file)).map(d=>d.name).sort()).toEqual([
+      "private.june2026_hours_admit","private.june2026_hours_answer_guard","private.june2026_hours_request_open","private.june2026_regular_authority","private.june2026_regular_result_save","public.case_request_regular_hours_states","public.june2026_regular_report_artifact",
+    ]);
+  });
   it("accounts for the three isolated canonical test boundaries",async()=>{
     const definitions=await securityDefinerDefinitions();
     expect(definitions.filter(d=>d.file==="20260910141530_june2026_isolated_canonical_assessments.sql").map(d=>d.name).sort()).toEqual(["private.june2026_canonical_test_customer","private.june2026_canonical_test_save","private.june2026_test_assessment"]);

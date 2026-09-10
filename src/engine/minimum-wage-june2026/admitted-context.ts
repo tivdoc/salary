@@ -127,9 +127,15 @@ export function prepareJune2026AdmittedContext(input: June2026AdmittedContextInp
   if (checkpoint.case_id !== current.case_id || checkpoint.product_document_id !== document.product_document_id || checkpoint.version_id !== document.version_id
     || checkpoint.input_sha256 !== document.sha256 || extraction.quality_metrics.page_count !== document.page_count) throw Error('JUNE_CONTEXT_SOURCE_BINDING_MISMATCH');
   const collection = readCollection(input), issues: FactualIssue[] = [];
-  const boundFacts: {path: CanonicalFact['path']; fact_id: string; fact_sha256: string; candidate_id: string; candidate_sha256: string}[] = [];
+  const boundFacts: {path: CanonicalFact['path']; fact_id: string; fact_sha256: string; candidate_id: string|null; candidate_sha256: string|null}[] = [];
   for (const [path, field] of fieldDefinitions) {
     const fact = facts.facts.find(item => item.path === path), candidates = extraction.fields.filter(item => item.field === field);
+    if(path==='work.regular_hours'&&candidates.length===0&&fact?.value!==null&&fact?.status==='needs_confirmation'
+      &&fact.conflicting_fact_ids.length===0&&fact.provenance.length===1&&fact.provenance[0].source_type==='declared'
+      &&fact.provenance[0].source_reference.kind==='case_request_answer'){
+      boundFacts.push({path,fact_id:fact.fact_id,fact_sha256:canonicalSha256(fact),candidate_id:null,candidate_sha256:null});
+      issues.push({field:path,reason:'declared_hours_assessment_required'});continue;
+    }
     if (!fact || fact.status !== 'confirmed' || fact.value === null || fact.conflicting_fact_ids.length > 0) {
       issues.push({field: path, reason: fact?.status === 'conflicted' || (fact?.conflicting_fact_ids.length ?? 0) > 0 ? 'conflicted_canonical_fact' : 'confirmed_canonical_fact_required'}); continue;
     }

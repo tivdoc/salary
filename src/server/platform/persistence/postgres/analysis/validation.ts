@@ -7,6 +7,7 @@ import {
   type PinnedAnalysisDependencies,
 } from "../../../../../engine/case-analysis/contracts";
 import { persistedCalculationTraceSchema } from "../../../../../engine/calculations/source-trace";
+import {assertJune2026RegularSourceAdmission,june2026RegularSourceAdmissionSchema} from '../../../../../engine/minimum-wage-june2026/regular-service/source-admission';
 import { canonicalFactSchema } from "../../../../../engine/facts/contracts";
 import {
   canonicalReadinessJson,
@@ -356,7 +357,8 @@ const TOPIC_STATUSES = new Set([
 ]);
 
 export function validateTopicResult(value: unknown): TopicAnalysisResult {
-  const row = object(value, ["topic", "status", "blockers", "rule_input_sha256", "amount", "trace", "legal_readiness"]);
+  const parsed=parseJson(value),hasAdmission=typeof parsed==='object'&&parsed!==null&&Object.prototype.hasOwnProperty.call(parsed,'source_admission');
+  const row = object(parsed, ["topic", "status", "blockers", "rule_input_sha256", "amount", "trace", "legal_readiness",...(hasAdmission?['source_admission']:[])]);
   const topic = decodeTopic(row.topic);
   const status = string(row.status);
   if (!TOPIC_STATUSES.has(status)) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
@@ -375,6 +377,9 @@ export function validateTopicResult(value: unknown): TopicAnalysisResult {
   if (row.legal_readiness !== null) {
     legalReadiness = decodeLegalReadiness(row.legal_readiness);
   }
+  const admitted=hasAdmission?june2026RegularSourceAdmissionSchema.safeParse(row.source_admission):null;
+  if(admitted&&(!admitted.success||topic!=='minimum_wage'||!['calculated','not_applicable'].includes(status)||trace===null||!('schema_version' in trace)))
+    throw new PostgresAnalysisError('ANALYSIS_ROW_MALFORMED');
   return Object.freeze({
     topic,
     status: status as TopicAnalysisResult["status"],
@@ -382,6 +387,7 @@ export function validateTopicResult(value: unknown): TopicAnalysisResult {
     rule_input_sha256: nullableString(row.rule_input_sha256),
     amount: amount ? Object.freeze({ currency: string(amount.currency), minor_units: integer(amount.minor_units) }) : null,
     trace,
+    ...(admitted?.success?{source_admission:admitted.data}:{}),
     legal_readiness: legalReadiness,
   });
 }
@@ -451,13 +457,18 @@ export function assertSourceTraceScope(result: TopicAnalysisResult, scope: Sourc
   const trace = result.trace;
   if (trace === null || !("schema_version" in trace)) return;
   if (trace.case_id !== scope.case_id || trace.analysis_run_id !== scope.analysis_run_id
-      || trace.rule_package.topic !== result.topic || trace.rule_input_sha256 !== result.rule_input_sha256
-      || trace.facts_snapshot_sha256 !== scope.facts_snapshot_sha256 || trace.catalog_sha256 !== scope.catalog_sha256
-      || canonicalSha256(trace.facts_snapshot.facts) !== canonicalSha256(scope.facts)
-      || scope.rule_inputs.filter(input => input.snapshot_sha256 === trace.rule_input_sha256).length !== 1
+      || trace.rule_package.topic !== result.topic || trace.catalog_sha256 !== scope.catalog_sha256
       || (result.amount !== null && (trace.output.kind !== "money"
         || canonicalSha256(result.amount) !== canonicalSha256(trace.output.value)))) {
     throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
+  }
+  if(result.source_admission){
+    try{assertJune2026RegularSourceAdmission(result.source_admission,trace,scope,result.rule_input_sha256);}
+    catch{throw new PostgresAnalysisError('ANALYSIS_ROW_MALFORMED');}
+  }else if(trace.rule_input_sha256!==result.rule_input_sha256||trace.facts_snapshot_sha256!==scope.facts_snapshot_sha256
+    ||canonicalSha256(trace.facts_snapshot.facts)!==canonicalSha256(scope.facts)
+    ||scope.rule_inputs.filter(input=>input.snapshot_sha256===trace.rule_input_sha256).length!==1){
+    throw new PostgresAnalysisError('ANALYSIS_ROW_MALFORMED');
   }
 }
 

@@ -45,5 +45,12 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
    [job.case_id,job.revision,job.input_sha256,JSON.stringify(target),question.question]));
   opened.push(z.uuid().parse(result.rows[0]?.id));
  }
+ if(month==='2026-06'&&topics.includes('minimum_wage')&&!extraction.fields.some(f=>f.field==='regular_hours')){
+  for(const order of orders.filter(o=>o.from<='2026-06-01'&&o.to>='2026-06-01'&&o.topics.includes('minimum_wage'))){
+   const result=await context.client.query(statement('saved_regular_hours_open',
+    'select private.june2026_hours_request_open($1::uuid,$2::uuid,$3,$4) id',[job.case_id,order.id,job.revision,job.input_sha256]));
+   if(result.rows[0]?.id!==null)opened.push(z.uuid().parse(result.rows[0]?.id));
+  }
+ }
  return opened;
 }

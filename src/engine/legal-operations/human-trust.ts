@@ -7,6 +7,7 @@ export const HUMAN_TRUST_ENVELOPE_SCHEMA = "tivdoc-human-decision-envelope-v0.10
 export const humanTrustIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{2,199}$/);
 
 export const humanTrustPurposeSchema = z.enum([
+  "case_assessment",
   "source_review",
   "parameter_attestation",
   "rulespec_semantics",

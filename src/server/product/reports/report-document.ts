@@ -46,9 +46,16 @@ export const reportDocumentV3Schema=reportDocumentShape.extend({
  service_kind:z.literal('ai_assisted'),
  publication_policy:z.literal(AI_PUBLICATION_POLICY),
  order_offer_sha256:hash,
+ // Optional forward metadata: historic v3 bytes and hashes remain unchanged.
+ // This binding is not a publication grant or a manufactured human approval.
+ execution_authority:z.object({namespace:z.enum(['real','isolated_test']),analysis_run_id:z.uuid(),authority_sha256:hash,
+  real_legal_authority:z.boolean(),human_report_approval:z.literal(false),parent_facts_sha256:hash,effective_facts_sha256:hash,
+ }).strict().optional(),
  publication:z.object({state:z.enum(['draft','published','superseded']),approved_input_sha256:hash.nullable(),approval_actor_kind:z.literal('automation'),published_at:z.iso.datetime().nullable()}).strict(),
 }).strict().superRefine((doc,ctx)=>{
  validateProvenance({...doc,schema_version:'tivdoc-report-document-v2'},ctx);
+ if(doc.execution_authority&&doc.execution_authority.real_legal_authority!==(doc.execution_authority.namespace==='real'))
+  ctx.addIssue({code:'custom',message:'execution_authority_namespace_mismatch'});
  if(doc.publication.state!=='draft'){
   if(doc.publication.approved_input_sha256!==doc.input_sha256||!doc.publication.published_at)ctx.addIssue({code:'custom',message:'ai_publication_receipt_required'});
   // Only the old full-report human requirement changes. The existing automatic

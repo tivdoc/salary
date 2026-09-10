@@ -304,7 +304,8 @@ function topicResult(input: Readonly<{
   });
   if (input.execution.amount === null) return deepFreeze({
     topic: input.topic, status: "not_applicable", blockers: [],
-    rule_input_sha256: input.ruleInput.snapshot_sha256, amount: null, trace: input.execution.trace, legal_readiness: input.readiness,
+    rule_input_sha256: input.ruleInput.snapshot_sha256, amount: null, trace: input.execution.trace,
+    ...(input.execution.source_admission?{source_admission:input.execution.source_admission}:{}),legal_readiness: input.readiness,
   });
   if (input.execution.trace.output.kind !== "money"
       || canonicalStringify(input.execution.trace.output.value) !== canonicalStringify(input.execution.amount)) {
@@ -313,7 +314,7 @@ function topicResult(input: Readonly<{
   return deepFreeze({
     topic: input.topic, status: "calculated", blockers: [],
     rule_input_sha256: input.ruleInput.snapshot_sha256, amount: input.execution.amount,
-    trace: input.execution.trace, legal_readiness: input.readiness,
+    trace: input.execution.trace,...(input.execution.source_admission?{source_admission:input.execution.source_admission}:{}), legal_readiness: input.readiness,
   });
 }
 

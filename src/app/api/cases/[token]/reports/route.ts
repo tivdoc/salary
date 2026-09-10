@@ -1,4 +1,5 @@
 import {readJune2026CanonicalTest} from "@/server/product/reports/june2026-canonical-test";
+import {readJune2026RegularArtifact} from '@/server/product/reports/june2026-regular-artifact';
 import {devFinancialCustomerReports,devFinancialPreviewEnabled} from '@/server/product/reports/dev-financial-customer';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
@@ -43,6 +44,14 @@ export async function GET(request:Request,context:Context){
    return new Response(bytes,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':source.mime,'Content-Disposition':`attachment; filename="source-${source.version_id}.${source.mime==='application/pdf'?'pdf':source.mime==='image/png'?'png':'jpg'}"`}});
   }
   const saved=await customerReports(owner.item.case_id,owner.identity,owner.item.public_id);const report=saved.reports.find(r=>r.id===id.data);if(!report)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+  if(!url.searchParams.has('version')&&report.document?.schema_version==='tivdoc-report-document-v3'&&report.document.execution_authority){
+   const artifact=await readJune2026RegularArtifact(owner.item.case_id,owner.identity,report.id);
+   if(!artifact)throw Error('REGULAR_REPORT_ARTIFACT_REQUIRED');
+   if(!artifact.current)return Response.json({code:'analysis_superseded'},{status:410,headers:PRODUCT_HTTP_HEADERS});
+   const html=url.searchParams.get('format')==='html';
+   return new Response(Buffer.from(html?artifact.report.html:artifact.report.pdf),{headers:{...PRODUCT_HTTP_HEADERS,
+    'Content-Type':html?'text/html; charset=utf-8':'application/pdf',...(!html?{'Content-Disposition':`attachment; filename="Tivdoc-${report.id}.pdf"`}:{})}});
+  }
   if(!url.searchParams.has('version'))return new Response(Buffer.from(savedReportPdf(report)),{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="Tivdoc-${owner.item.public_id}.pdf"`}});
   const version=z.uuid().safeParse(url.searchParams.get('version'));if(!version.success)return new Response(null,{status:404});
   const db=await resolveCaseAccessDb();if(!db)throw new Error('unavailable');

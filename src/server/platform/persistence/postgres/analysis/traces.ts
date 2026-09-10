@@ -1,6 +1,9 @@
 import type { CaseConfirmation } from "../../../../engine/persistence-contracts";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
 import type { SourceCalculationTrace } from "../../../../../engine/calculations/source-trace";
+import {assertJune2026RegularSourceAdmission} from '../../../../../engine/minimum-wage-june2026/regular-service/source-admission';
+import {employmentSnapshotSchema} from '../../../../../engine/facts/snapshot';
+import {ruleInputSnapshotSchema} from '../../../../../engine/wave1/contracts';
 import {WAVE3_TOPICS, type Wave3Topic, type TopicAnalysisResult } from "../../../../../engine/wave3/contracts";
 import { statement, type PostgresTransactionContext } from "../contracts";
 import { mapPostgresAnalysisError, PostgresAnalysisError } from "./errors";
@@ -36,7 +39,7 @@ export class PostgresTraceFindingRepository {
     }
     try {
       for (const result of results) {
-        if (result.trace && "schema_version" in result.trace) await this.assertSavedSource(result.trace);
+        if (result.trace && "schema_version" in result.trace) await this.assertSavedSource(result.trace,result);
       }
       for (const result of results) {
         if (result.trace === null) continue;
@@ -76,23 +79,46 @@ export class PostgresTraceFindingRepository {
     }
   }
 
-  private async assertSavedSource(trace: SourceCalculationTrace): Promise<void> {
+  private async assertSavedSource(trace: SourceCalculationTrace,result:TopicAnalysisResult): Promise<void> {
+    const hasAdmission=!!result.source_admission;
     const saved = await this.context.client.query(statement(
-      "analysis_trace_source_stages",
+      hasAdmission?'analysis_trace_admitted_source_stages':'analysis_trace_source_stages',
       `select s.stage, s.payload, s.payload_sha256 from public.engine_analysis_stage_versions s
          join public.analysis_runs ar on ar.id = s.analysis_run_id and ar.case_id = s.case_id
         where s.tenant_id = $1 and ar.tenant_id = $1
           and ar.canonical_analysis_run_id = $2 and ar.canonical_case_id = $3
-          and s.stage in ('canonical_facts', 'rule_inputs', 'analysis_run')`,
+          and s.stage in ('canonical_facts', 'rule_inputs', 'analysis_run'${hasAdmission?", 'review_pending'":''})`,
       [this.tenantId, trace.analysis_run_id, trace.case_id],
     ));
-    if (saved.row_count !== 3 || new Set(saved.rows.map(row => row.stage)).size !== 3
+    if (saved.row_count !== (hasAdmission?4:3) || new Set(saved.rows.map(row => row.stage)).size !== (hasAdmission?4:3)
         || saved.rows.some(row => canonicalSha256(row.payload ?? null) !== row.payload_sha256)) {
       throw new PostgresAnalysisError("STAGE_HASH_MISMATCH");
     }
     const payload = (name: string) => saved.rows.find(row => row.stage === name)?.payload as Record<string, unknown> | undefined;
     const facts = payload('canonical_facts'), rules = payload('rule_inputs');
     const dependencies = payload('analysis_run')?.dependencies as Record<string, unknown> | undefined;
+    if(result.source_admission){
+      // review_pending is persisted before complete()/persistTraces(). Its
+      // verified runtime receipt is mandatory for this one versioned mapping.
+      try{
+        const parent=employmentSnapshotSchema.parse(facts?.facts);
+        if(!Array.isArray(rules?.rule_inputs)||canonicalSha256(parent)!==facts?.facts_snapshot_sha256
+          ||dependencies?.facts_snapshot_sha256!==facts?.facts_snapshot_sha256||dependencies?.catalog_sha256!==trace.catalog_sha256)throw Error('binding');
+        const inputs=rules.rule_inputs.map(input=>ruleInputSnapshotSchema.parse(input));
+        assertJune2026RegularSourceAdmission(result.source_admission,trace,{case_id:trace.case_id,analysis_run_id:trace.analysis_run_id,
+          facts_snapshot_sha256:canonicalSha256(parent),facts:parent.facts,rule_inputs:inputs},result.rule_input_sha256);
+        const d=payload('review_pending')?.diagnostics as Record<string,unknown>|undefined;
+        const execution=d?.execution as Record<string,unknown>|undefined,admission=d?.admission as Record<string,unknown>|undefined;
+        const proof=result.source_admission;
+        if(d?.schema_version!=='saved-june2026-regular-diagnostics-v1'||d.authority_sha256!==proof.authority_sha256
+          ||d.namespace!==proof.assessment.payload.namespace||d.assessment_sha256!==canonicalSha256(proof.assessment)
+          ||canonicalSha256(execution?.source_admission??null)!==canonicalSha256(proof)
+          ||canonicalSha256(execution?.trace??null)!==canonicalSha256(trace)||canonicalSha256(execution?.admission??null)!==canonicalSha256(admission??null)
+          ||admission?.resolution_sha256!==proof.admission_sha256||admission?.facts_snapshot_sha256!==proof.parent_facts_sha256
+          ||admission?.effective_facts_snapshot_sha256!==proof.effective_facts_sha256)throw Error('binding');
+      }catch{throw new PostgresAnalysisError('STAGE_HASH_MISMATCH');}
+      return;
+    }
     if (canonicalSha256(facts?.facts ?? null) !== trace.facts_snapshot_sha256
         || facts?.facts_snapshot_sha256 !== trace.facts_snapshot_sha256
         || dependencies?.facts_snapshot_sha256 !== trace.facts_snapshot_sha256

@@ -45,6 +45,11 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
         : saved.reports.map((report) => <article key={report.id} aria-label={`דוח שפורסם ${report.publishedAt}`}>
           <ReportOpen publicId={item.public_id} reportId={report.id}/><p>פורסם: {new Date(report.publishedAt).toLocaleDateString('he-IL')} · גרסה {report.document?.revision??'היסטורית'}{report.state==='superseded'?' · הוחלפה בגרסה חדשה':report.state==='recheck_required'?' · בבדיקה חוזרת':''}</p>
           {report.document?.schema_version==='tivdoc-report-document-v3'?<p className="report-service-disclosure">{AI_REPORT_DISCLOSURE}</p>:null}
+          {report.document?.schema_version==='tivdoc-report-document-v3'&&report.document.execution_authority?<p>
+            {report.document.execution_authority.namespace==='isolated_test'?'בדיקת DEV סינתטית בלבד — אישורי בדיקה, ללא אישור אדם אמיתי או הפעלת הכלל לשירות לקוחות. ':''}
+            ריצת ניתוח: <bdi>{report.document.execution_authority.analysis_run_id}</bdi>{' '}
+            <a href={`/api/cases/${item.public_id}/reports?report=${report.id}&format=html`}>הדוח והעקבה שנשמרו עם הניתוח</a>
+          </p>:null}
           <a href={`/api/cases/${item.public_id}/reports?report=${report.id}`}>הורדת הדוח ב־PDF</a>
           <ReportView projection={report.projection} wording={report.wording} />
           {report.document?.findings.map(finding=><section key={finding.id}><h2>מקורות וצעד הבא — {finding.topic}</h2><p>כללי חישוב: {finding.rule_versions.join(', ')} · פרמטרים: {finding.parameter_versions.join(', ')}</p><ul>{finding.evidence_ids.map(id=>{const evidence=report.document!.evidence.find(e=>e.id===id)!;return <li key={id}><a href={`/api/cases/${item.public_id}/reports?report=${report.id}&version=${evidence.version_id}`}>המקור — עמוד {evidence.page}, שדה {evidence.field}</a><p>גרסת מקור: <bdi>{evidence.version_id}</bdi></p></li>;})}</ul><ReportFindingActions publicId={item.public_id} reportId={report.id} findingId={finding.id} text={inquiryText(report.projection.topics.find(t=>t.topic===finding.topic)!,report.projection.report_kind,report.projection.check_period_month)}/></section>)}
