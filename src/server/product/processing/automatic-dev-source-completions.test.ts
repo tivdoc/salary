@@ -35,7 +35,7 @@ function input(options:{salary?:'missing'|'hourly'|'monthly'|'mixed';periodConfi
  });
  // Only the saved parent fields consumed by this orchestration are mocked;
  // canonical execution/fact construction has its separate existing tests.
- const parent={bundle:{case_id:caseId,analysis_run_id:facts.analysis_run_id,result_sha256:'3'.repeat(64),as_of:at},
+ const parent={command:{mode:'real'},bundle:{case_id:caseId,analysis_run_id:facts.analysis_run_id,result_sha256:'3'.repeat(64),as_of:at},
   stages:[{stage:'canonical_facts',payload:{facts}}]} as unknown as Input['parent'];
  const value:Input={context:{client:{query},transaction_id:'unit-no-database'},job:{schema_version:'saved-case-work-v1',case_id:caseId,revision:25,input_sha256:'4'.repeat(64),mode:'draft'},
   orderId:randomUUID(),month:'2026-06',parent};

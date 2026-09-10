@@ -1,3 +1,4 @@
+import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from "./saved-june2026-test-authority";
 import 'server-only';
 import {z} from 'zod';
 import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
@@ -34,7 +35,7 @@ function blocked(code: Unsupported, caseId: string, analysisRunId: string) {
  * Unsupported historical receipts are a review diagnostic, not a queue error;
  * malformed hashes, foreign authority and changed sources still fail closed. */
 export async function loadSavedJune2026AdmittedContext(input: {
-  context: PostgresTransactionContext; job: SourceJob; orderId: string; analysisRunId: string;
+  context: PostgresTransactionContext; job: SourceJob; orderId: string; analysisRunId: string; testAuthority?: June2026TestAuthority;
 }) {
   const {context} = input, job = sourceJobSchema.parse(input.job), orderId = z.uuid().parse(input.orderId), analysisRunId = z.uuid().parse(input.analysisRunId);
   if (job.mode !== 'draft') throw Error('SAVED_LIVE_COMPOSITION_NOT_ENABLED');
@@ -57,11 +58,12 @@ export async function loadSavedJune2026AdmittedContext(input: {
      where ar.tenant_id=$1 and ar.canonical_case_id=$2 and ar.canonical_analysis_run_id=$3
        and ar.status in ('running','completed')`, [tenantId, job.case_id, analysisRunId]));
   if (runRows.rows.length !== 1) throw Error('SAVED_JUNE_CONTEXT_RUN_REQUIRED');
+  if(input.testAuthority)assertJune2026TestAuthority(input.testAuthority,job,orderId);
   const run = runSchema.parse(runRows.rows[0]), command = decodeCommand(run.command);
   if (run.case_id !== job.case_id || run.analysis_run_id !== analysisRunId || command.case_id !== job.case_id
     || run.source_revision !== job.revision || run.source_input_sha256 !== job.input_sha256 || run.actual_input_sha256 !== job.input_sha256
-    || command.mode !== 'real' || command.period.start_date !== '2026-06-01' || command.period.end_date !== '2026-06-30'
-    || canonicalSha256(command) !== run.command_sha256 || run.idempotency_key !== savedMonthIdempotencyKey(job, orderId, '2026-06')
+    || command.mode !== (input.testAuthority?'synthetic_test':'real') || command.period.start_date !== '2026-06-01' || command.period.end_date !== '2026-06-30'
+    || canonicalSha256(command) !== run.command_sha256 || run.idempotency_key !== (input.testAuthority?june2026TestIdempotencyKey(job,orderId,input.testAuthority):savedMonthIdempotencyKey(job, orderId, '2026-06'))
     || command.idempotency_key !== run.idempotency_key || canonicalSha256(command.requested_topics) !== canonicalSha256(order.topics)) throw Error('SAVED_JUNE_CONTEXT_RUN_BINDING');
   const stageRows = await context.client.query(statement('saved_june_context_stages',
     `select s.stage,s.payload,s.payload_sha256 from public.engine_analysis_stage_versions s
@@ -125,7 +127,7 @@ export async function loadSavedJune2026AdmittedContext(input: {
       order_id: order.id, month: '2026-06'}, canonicalStage, ruleInput: ruleInputs[topicIndex], checkpoint: row.result, extractionPolicyVersion: SAVED_EXTRACTION_POLICY, collection});
   const assessment = prepareJune2026AssessmentPacket({context: admitted, facts: canonicalStage.facts});
   return deepFreeze({schema_version: 'saved-june2026-factual-context-v1', state: 'context_loaded' as const, context: admitted, provenance,
-    admission_assessment: assessment,
+    admission_assessment: assessment, facts:canonicalStage.facts,
     persisted_stage_sha256s: Object.fromEntries(stages.map(stage => [stage.stage, stage.payload_sha256])), command_sha256: run.command_sha256,
     legal_activation: false, publication_allowed: false});
 }

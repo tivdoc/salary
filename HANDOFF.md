@@ -1,3 +1,7 @@
+## Active owner-requested canonical June DEV package — 2026-09-10
+
+Resumed from45f8a0a, deadline18:04:55UTC. See [current bounded handoff](docs/canonical-june2026-dev-handoff-2026-09-10-he.md). Comparison v2 saved4028f97 and OCR diagnostic/bounded prompt retry saveda88f355; both pushed. Canonical test-authority/assessment/catalog/executor/report integration is under verification. DEV schema136 applied after rollback preflight and actual ACL checks. No real legal activation, no Production change, no UI branch merge. DB financial-flow/browser/live-OCR proof remains pending at this checkpoint; historical STOP entries below are superseded only for this explicitly requested package.
+
 ## Possible technical continuation saved — STOP (2026-09-10)
 
 Owner resumed from cleanb55152d; both base CI34440536021/34440533942 passed. See [technical handoff](docs/canonical-possible-work-handoff-2026-09-10-he.md). Implemented same-run unadmitted assessment packet via the existing saved context loader and review_pending, with V5 diagnostic/catalog fingerprint; declarations never become confirmed legal evidence. Fixed confidence applicability losing observed/Gate0-required critical fields; V2.1 policy4 and V2 policy2 retain historical readers. Local89 context/integration tests,51 confidence/loader tests including one unchanged archived live scan, and16 V2 tests pass (overlapping groups); typecheck/lint verified. No new SDK, DB, browser, Preview or Production action, and no new financial report.

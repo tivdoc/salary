@@ -1,3 +1,4 @@
+import {loadJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
 import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {decodeCommand} from '@/server/platform/persistence/postgres/analysis/validation';
@@ -35,7 +36,12 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
  if(locked.fencing_token!==input.fencingToken||locked.cancellation_requested)throw new Error('SAVED_JOB_FENCE');
  if(locked.state!=='succeeded'&&(locked.state!=='running'||locked.lease_owner!==input.workerId||!locked.lease_valid))throw new Error('SAVED_JOB_FENCE');
  const orders=await readSavedOrders(context,job);
- const expected=orders.flatMap(order=>purchasedMonths(order).map(month=>({order,month,key:savedMonthIdempotencyKey(job,order.id,month)})));
+ const expected=[];
+ for(const order of orders)for(const month of purchasedMonths(order)){
+  const authority=month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage'
+   ?await loadJune2026TestAuthority(context,job,order.id):null;
+  expected.push({order,month,key:authority?june2026TestIdempotencyKey(job,order.id,authority):savedMonthIdempotencyKey(job,order.id,month)});
+ }
  const selected=await context.client.query(statement('saved_job_month_receipts',
   `select ar.idempotency_key,ar.canonical_analysis_run_id analysis_run_id,ar.command_payload command,ar.command_sha256,
    r.analysis_result_sha256 result_sha256,r.report_id,r.revision report_revision,r.report_sha256

@@ -1,3 +1,4 @@
+import {JUNE2026_TEST_READINESS,decodeJune2026TestReadiness} from "../../../../../engine/minimum-wage-june2026/test-catalog";
 import { createHash } from "node:crypto";
 
 import {
@@ -274,6 +275,7 @@ function decodeLegalReadiness(value: unknown): LegalReadinessDecision {
     throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
   }
   const schemaVersion = string((parsed as Readonly<Record<string, unknown>>).schema_version);
+  if (schemaVersion === JUNE2026_TEST_READINESS) return decodeJune2026TestReadiness(parsed);
   if (schemaVersion === CANONICAL_READINESS_SCHEMA) return decodeCanonicalReadiness(parsed);
   if (schemaVersion === LEGACY_SYNTHETIC_READINESS_SCHEMA) return decodeLegacySyntheticReadiness(parsed);
   throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");

@@ -1,3 +1,4 @@
+import {readJune2026CanonicalTest} from "@/server/product/reports/june2026-canonical-test";
 import {devFinancialCustomerReports,devFinancialPreviewEnabled} from '@/server/product/reports/dev-financial-customer';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
@@ -18,6 +19,15 @@ export async function GET(request:Request,context:Context){
  try{
   const owner=await scope(context);if(!owner)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
   const url=new URL(request.url);const id=z.uuid().safeParse(url.searchParams.get('report'));if(!id.success)return new Response(null,{status:404});
+  if(url.searchParams.get('canonical')==='1'){
+   const saved=await readJune2026CanonicalTest(owner.item.case_id,owner.identity,id.data);
+   if(!saved)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   if(!saved.current)return Response.json({code:'analysis_superseded'},{status:410,headers:PRODUCT_HTTP_HEADERS});
+   const html=url.searchParams.get('format')==='html';
+   return new Response(Buffer.from(html?saved.report.html:saved.report.pdf),{headers:{...PRODUCT_HTTP_HEADERS,
+    'Content-Type':html?'text/html; charset=utf-8':'application/pdf',
+    ...(!html?{'Content-Disposition':`attachment; filename="Tivdoc-canonical-dev-${id.data}.pdf"`}:{})}});
+  }
   if(url.searchParams.get('engineering')==='1'){
    if(!devFinancialPreviewEnabled())return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
    const [report]=await devFinancialCustomerReports(owner.item.case_id,owner.identity,id.data);

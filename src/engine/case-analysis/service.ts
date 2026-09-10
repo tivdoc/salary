@@ -1,3 +1,4 @@
+import {JUNE2026_TEST_READINESS,decodeJune2026TestReadiness} from "../minimum-wage-june2026/test-catalog.ts";
 import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts.ts";
 import { employmentSnapshotSchema, type EmploymentSnapshot } from "../facts/snapshot.ts";
 import { resolvedPayslipFactPaths, resolvePayslipSnapshot } from "../extraction/resolver.ts";
@@ -80,6 +81,8 @@ export type CaseAnalysisServiceDependencies = Readonly<{
   /** Load authenticated current-source context after canonical input stages
    * persist, before any executor or report. Failure aborts the caller's
    * transaction. This hook cannot grant legal readiness or publication. */
+  authorizeIsolatedTest?: (command: CaseAnalysisCommand, selection: LegalCatalogSelection) => Promise<void>;
+  executionBlockers?: (topic: Wave3Topic) => Readonly<{status: "blocked_missing_facts" | "blocked_conflict" | "blocked_legal_readiness"; blockers: readonly string[]}> | null;
   prepareExecutionContext?: (input: PersistedCanonicalInputContext) => Promise<void>;
   /** Optional review-only observations from the already verified snapshot.
    * Persisted with the original immutable review stage; never activation,
@@ -256,6 +259,7 @@ function projectRuleInputs(facts: EmploymentSnapshot, topics: readonly Wave3Topi
 }
 
 function independentlyEvaluateReadiness(selection: LegalCatalogSelection) {
+  if(selection.readiness.schema_version===JUNE2026_TEST_READINESS) return decodeJune2026TestReadiness(selection.readiness);
   const embedded = selection.readiness as EmbeddedReadinessDecision;
   const normalized = embedded.normalized_input;
   if (!normalized) throw new CaseAnalysisError("CATALOG_READINESS_INPUT_MISSING");
@@ -274,7 +278,7 @@ function topicResult(input: Readonly<{
   fact: CanonicalFact;
   ruleInput: RuleInputSnapshot;
   selection: LegalCatalogSelection;
-  readiness: ReturnType<typeof evaluateLegalReadiness>;
+  readiness: LegalCatalogSelection["readiness"];
   execution: Awaited<ReturnType<RuleSpecExecutorPort["execute"]>> | null;
 }>): TopicAnalysisResult {
   if (input.fact.status === "conflicted") return deepFreeze({
@@ -409,9 +413,13 @@ export class CaseAnalysisService implements CaseAnalysisPort {
     const ruleInputs = projectRuleInputs(facts, command.requested_topics);
     await this.stage(analysisRunId, "rule_inputs", { rule_inputs: ruleInputs });
 
-    const readiness = new Map<Wave3Topic, ReturnType<typeof evaluateLegalReadiness>>();
+    const readiness = new Map<Wave3Topic, LegalCatalogSelection["readiness"]>();
     for (const selection of selections) {
       const topic = selection.topic;
+      if(selection.readiness.schema_version===JUNE2026_TEST_READINESS){
+        if(command.mode!=="synthetic_test"||!this.dependencies.authorizeIsolatedTest) throw new CaseAnalysisError("ISOLATED_TEST_AUTHORITY_REQUIRED");
+        await this.dependencies.authorizeIsolatedTest(command,selection);
+      }
       readiness.set(topic, independentlyEvaluateReadiness(selection));
       this.metrics.canonical_readiness_calls += 1;
     }
@@ -449,7 +457,8 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       if (!fact) throw new CaseAnalysisError(`CRITICAL_FACT_PROJECTION_MISSING:${topic}`);
       const selection = selectionByTopic.get(topic)!;
       const decision = readiness.get(topic)!;
-      const readyToExecute = fact.status === "confirmed" && decision.status === "READY"
+      const admissionBlock=this.dependencies.executionBlockers?.(topic)??null;
+      const readyToExecute = !admissionBlock && fact.status === "confirmed" && decision.status === "READY"
         && selection.parameter_version_ids.length > 0 && selection.rule_spec_id !== null && selection.rule_spec_version !== null;
       let execution: Awaited<ReturnType<RuleSpecExecutorPort["execute"]>> | null = null;
       if (readyToExecute) {
@@ -461,7 +470,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
           calculated_at: createdAt,
         });
       }
-      const result = topicResult({
+      const result:TopicAnalysisResult = admissionBlock ? deepFreeze({topic,...admissionBlock,rule_input_sha256:ruleInputByTopic.get(topic)!.snapshot_sha256,amount:null,trace:null,legal_readiness:decision}) : topicResult({
         topic,
         fact,
         ruleInput: ruleInputByTopic.get(topic)!,

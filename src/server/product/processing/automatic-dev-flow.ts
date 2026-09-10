@@ -1,3 +1,4 @@
+import {loadJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
 import 'server-only';
 import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
@@ -45,6 +46,14 @@ export async function saveAutomaticDevCanonicalDraft(input:Input){
  * Answers create a new source revision and therefore a new canonical run;
  * retries reuse both run and artifact rather than appending duplicates. */
 export const runAutomaticDevMonth:SavedMonthCompletion=async input=>{
+ // The canonical isolated test already saved its own same-run artifact. Never
+ // feed its financial trace to the historical experimental draft/comparison.
+ if(input.parent.command.mode==='synthetic_test'){
+  const authority=await loadJune2026TestAuthority(input.context,input.job,input.orderId);
+  if(!authority||input.month!=='2026-06'||input.parent.command.idempotency_key!==june2026TestIdempotencyKey(input.job,input.orderId,authority)
+   ||input.parent.selections.length!==1||input.parent.selections[0].catalog_id!=='tivdoc.june2026.isolated-test')throw Error('JUNE_TEST_MANAGED_SCOPE');
+  return;
+ }
  const {source}=await saveAutomaticDevCanonicalDraft(input);
  const facts=employmentSnapshotSchema.parse(z.object({facts:z.unknown()}).parse(input.parent.stages.find(s=>s.stage==='canonical_facts')?.payload).facts);
  // Source-type transcription cannot bypass an unanswered/contradictory month.

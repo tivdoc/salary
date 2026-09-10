@@ -47,7 +47,8 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // upgrade and ACL probes retain the same restrictive source and actor gates.
 //135 redeclares the same internal binding to disambiguate its local variable;
 // JSON paths, predicates, empty search_path and existing ACLs are unchanged.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 288;
+//136 adds three isolated DEV canonical assessment/save/customer boundaries.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 292;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -75,6 +76,10 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
 }
 
 describe("security definer search_path contract", () => {
+  it("accounts for the three isolated canonical test boundaries",async()=>{
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>d.file==="20260910141530_june2026_isolated_canonical_assessments.sql").map(d=>d.name).sort()).toEqual(["private.june2026_canonical_test_customer","private.june2026_canonical_test_save","private.june2026_test_assessment"]);
+  });
   it("accounts for the reviewed completion-binding redeclaration", async () => {
     const definitions=await securityDefinerDefinitions();
     expect(definitions.filter(d=>d.file==="20260910044646_dev_financial_completion_target_binding.sql").map(d=>d.name)).toEqual(["private.dev_financial_completions_bound"]);
