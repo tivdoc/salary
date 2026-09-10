@@ -1,0 +1,228 @@
+{
+  "schemaVersion": "hourly-row-live-receipt-offline-replay-v1",
+  "gitSha": "f0668f5b8c64c58dbcb5e4021222e5170c91f873",
+  "workingTreeClean": true,
+  "policy": "payslip-v2-explicit-hourly-row-cells-v1",
+  "liveProofSha256": "52d2a20bd484f200adc6a0a5919d8f474854ece59830aa8346e2c13cf34f759a",
+  "providerCalls": 0,
+  "checkpointChanged": false,
+  "overallPayslipAccuracyProved": false,
+  "observations": [
+    {
+      "id": "he-clear",
+      "sourceSha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+      "structuredOutputSha256": "3c7f681abc7baa23dfc4b765bd4d7994ba82ae3240a2ba5e23382f686d99bb86",
+      "originalProviderReceipt": "a0ae066689ca4d41bdaad9aae73817d422ce70b3a5fbe5dfd3084763fa6040bc",
+      "comparison": {
+        "passed": false,
+        "failures": [
+          "FIELD_salary_type",
+          "FIELD_hourly_rate",
+          "FIELD_regular_hours",
+          "FIELD_total_deductions",
+          "FIELD_net_salary",
+          "FIELD_travel_amount",
+          "FIELD_pension_base",
+          "FIELD_pension_employee_contribution",
+          "FIELD_pension_employer_contribution",
+          "FIELD_severance_contribution",
+          "FIELD_pension_employee_rate",
+          "FIELD_pension_employer_rate",
+          "FIELD_severance_rate",
+          "WAGE_COMPONENT_COUNT",
+          "ROW_hourly_base",
+          "ROW_overtime_125",
+          "ROW_overtime_150",
+          "ROW_travel",
+          "ROW_bonus",
+          "DEDUCTION_ROW_COUNT",
+          "DEDUCTION_ROW_0",
+          "DEDUCTION_ROW_1",
+          "DEDUCTION_ROW_2",
+          "DEDUCTION_ROW_3",
+          "SOURCE_TOTALS_RECONCILIATION"
+        ],
+        "observedFieldCount": 10,
+        "observedComponentCount": 6,
+        "financialResultGenerated": false,
+        "legalReadinessProved": false
+      },
+      "validationStatus": "invalid",
+      "readings": [],
+      "confidence": [
+        {
+          "field": "salary_type",
+          "applicable": true,
+          "status": "needs_confirmation",
+          "effective_confidence": 0,
+          "threshold": 0.95,
+          "candidate_ids": [],
+          "reason_codes": [
+            "critical_field_missing",
+            "below_field_threshold"
+          ]
+        },
+        {
+          "field": "hourly_rate",
+          "applicable": true,
+          "status": "needs_confirmation",
+          "effective_confidence": 0,
+          "threshold": 0.95,
+          "candidate_ids": [],
+          "reason_codes": [
+            "critical_field_missing",
+            "below_field_threshold"
+          ]
+        },
+        {
+          "field": "regular_hours",
+          "applicable": true,
+          "status": "needs_confirmation",
+          "effective_confidence": 0,
+          "threshold": 0.95,
+          "candidate_ids": [],
+          "reason_codes": [
+            "critical_field_missing",
+            "below_field_threshold"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "he-scan-clear",
+      "sourceSha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526",
+      "structuredOutputSha256": "3571e704147c654f61b9be111b795f16ff68835628b5f1bbc414db66b66c8ec9",
+      "originalProviderReceipt": "f85685e0ef6e24a6af7b0648fe6abc846fc10cbec47dc43247251c26b02dd302",
+      "comparison": {
+        "passed": false,
+        "failures": [
+          "FIELD_employment_start_date",
+          "FIELD_travel_amount",
+          "FIELD_pension_employee_contribution",
+          "FIELD_severance_contribution",
+          "FIELD_pension_employee_rate",
+          "FIELD_pension_employer_rate",
+          "FIELD_severance_rate",
+          "FIELD_overtime_125_hours",
+          "FIELD_overtime_150_hours",
+          "WAGE_COMPONENT_COUNT",
+          "ROW_hourly_base",
+          "ROW_overtime_125",
+          "ROW_overtime_150",
+          "ROW_travel",
+          "ROW_bonus",
+          "DEDUCTION_ROW_COUNT",
+          "DEDUCTION_ROW_0",
+          "DEDUCTION_ROW_1",
+          "DEDUCTION_ROW_2",
+          "DEDUCTION_ROW_3",
+          "SOURCE_TOTALS_RECONCILIATION"
+        ],
+        "observedFieldCount": 17,
+        "observedComponentCount": 6,
+        "financialResultGenerated": false,
+        "legalReadinessProved": false
+      },
+      "validationStatus": "invalid",
+      "readings": [
+        {
+          "candidate_id": "9fec5feb-2989-45f0-852e-9a79800212cd",
+          "raw_value": "סוג שכר: שעתי",
+          "confidence": 0.94,
+          "source": {
+            "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+            "page": 1,
+            "text_fragment": "סוג שכר: שעתי: סוג שכר: שעתי"
+          },
+          "extraction_method": "ai_vision",
+          "warning_flags": [],
+          "field": "salary_type",
+          "normalized_value": "hourly"
+        },
+        {
+          "candidate_id": "61bf3cb6-7eb9-4a88-912d-751818dd4b64",
+          "raw_value": "100",
+          "confidence": 0.84,
+          "source": {
+            "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+            "page": 1,
+            "text_fragment": "שכר יסוד שעתי: 100"
+          },
+          "extraction_method": "ai_vision",
+          "warning_flags": [
+            "hourly_row_cells_require_confirmation"
+          ],
+          "field": "regular_hours",
+          "normalized_value": {
+            "amount": "100",
+            "unit": "hours_per_month"
+          }
+        },
+        {
+          "candidate_id": "354b71b2-dac5-418f-9284-606d70a54d64",
+          "raw_value": "35.40",
+          "confidence": 0.84,
+          "source": {
+            "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+            "page": 1,
+            "text_fragment": "שכר יסוד שעתי: 35.40"
+          },
+          "extraction_method": "ai_vision",
+          "warning_flags": [
+            "hourly_row_cells_require_confirmation"
+          ],
+          "field": "hourly_rate",
+          "normalized_value": {
+            "currency": "ILS",
+            "minor_units": 3540
+          }
+        }
+      ],
+      "confidence": [
+        {
+          "field": "salary_type",
+          "applicable": true,
+          "status": "needs_confirmation",
+          "effective_confidence": 0.94,
+          "threshold": 0.95,
+          "candidate_ids": [
+            "9fec5feb-2989-45f0-852e-9a79800212cd"
+          ],
+          "reason_codes": [
+            "below_field_threshold"
+          ]
+        },
+        {
+          "field": "hourly_rate",
+          "applicable": true,
+          "status": "needs_confirmation",
+          "effective_confidence": 0.75,
+          "threshold": 0.95,
+          "candidate_ids": [
+            "354b71b2-dac5-418f-9284-606d70a54d64"
+          ],
+          "reason_codes": [
+            "candidate_warning_present",
+            "gate0_requires_review",
+            "below_field_threshold"
+          ]
+        },
+        {
+          "field": "regular_hours",
+          "applicable": true,
+          "status": "needs_confirmation",
+          "effective_confidence": 0.75,
+          "threshold": 0.95,
+          "candidate_ids": [
+            "61bf3cb6-7eb9-4a88-912d-751818dd4b64"
+          ],
+          "reason_codes": [
+            "candidate_warning_present",
+            "gate0_requires_review",
+            "below_field_threshold"
+          ]
+        }
+      ]
+    }
+  ]
+}

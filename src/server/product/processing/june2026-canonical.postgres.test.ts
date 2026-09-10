@@ -8,6 +8,7 @@ import {PDFDocument} from 'pdf-lib';
 import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
+import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
 import {june2026CollectionTargetSchema,JUNE2026_COMPONENT_DECLARATIONS,JUNE2026_DECLARATION_OPTIONS,JUNE2026_UNKNOWN_ANSWER,JUNE2026_CONFLICTED_ANSWER} from '@/engine/minimum-wage-june2026/collection';
 import {june2026TestAssessmentSchema} from '@/engine/minimum-wage-june2026/evidence-admission';
 import type {June2026AssessmentPacket} from '@/engine/minimum-wage-june2026/assessment-packet';
@@ -67,6 +68,7 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_DB_PROOF!=='1')('executes a current 
  const paths:string[]=[],sourceHashesByPath:Record<string,string>={},jobIds:string[]=[],providerCalls:{sourceSha256:string;responseId:string}[]=[],checks:string[]=[],runs:Record<string,unknown>[]=[],assessments:Record<string,unknown>[]=[],confirmationReceipts:unknown[]=[];
  const migrationName='20260910145013_june2026_customer_canonical_case_binding.sql',migrationBytes=readFileSync('supabase/migrations/'+migrationName),definitionChecks:Record<string,unknown>[]=[];
  let phase='connect',failure:string|null=null,cleanupFailure:string|null=null,seeded=false,machineRevoked=false,foreignCleaned=false,foreignIdentity='',publicId='',activeTransactions=0,failBeforeSave=false,tamperBeforeSave=false,newConnectionReplayVerified=false;
+ let missingConfirmedReading:Record<string,unknown>|null=null;
  const own=()=>writeFileSync(privateFile,JSON.stringify({caseId,foreignCaseId,orderId,ownerIdentity:APPROVED_OWNER,foreignIdentity,publicId,sid,jti,paths,jobIds,gitSha,
   scope:'Owned synthetic isolated DEV case; no customer session. Preserve primary case and report artifacts; revoke only this worker and cancel only listed jobs.'},null,2)+'\n');own();
  const transactions=(db:pg.Client):SavedWorkerTransactions=>async operation=>{
@@ -201,8 +203,37 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_DB_PROOF!=='1')('executes a current 
   await owner.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[orderId]);await owner.query("select private.capture_case_input($1,'synthetic_june_canonical_paid_scope')",[caseId]);
   await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.june.canonical.worker',$3,now()-interval '1 minute',now()+interval '2 hours',$4,now())",[tenant,sid,jti,canonicalSha256({sid,jti})]);await owner.query('commit');seeded=true;own();
   phase='actual-upload-and-extraction';const first=await upload(),firstRaw=await claim(),extracted=await extract(firstRaw,first);writeFileSync(directory+'/initial-extraction.json',JSON.stringify(extracted.result,null,2)+'\n');
+  phase='missing-confirmed-numeric-reading';expect(await head()).toEqual(firstRaw.job);
+  const sourceCheckpoint=checkpointSchema.parse(extracted.result),sourceHours=sourceCheckpoint.run.result.final_extraction.fields.filter(f=>f.field==='regular_hours');
+  expect(sourceHours).toHaveLength(1);expect(sourceHours[0].normalized_value).toEqual({amount:'100',unit:'hours_per_month'});
+  const unconfirmedCounts=await counts(),unconfirmedProviderCalls=providerCalls.length,unconfirmed=await calculate(firstRaw.job);
+  expect(unconfirmed.command.mode).toBe('real');expect(unconfirmed.completed).toBe(true);expect(unconfirmed.bundle?.topic_results[0].amount).toBeNull();expect(unconfirmed.bundle?.topic_results[0].trace).toBeNull();
+  const unconfirmedFacts=z.object({facts:employmentSnapshotSchema,facts_snapshot_sha256:z.string()}).parse(unconfirmed.stages.find(s=>s.stage==='canonical_facts')!.payload);
+  expect(canonicalSha256(unconfirmedFacts.facts)).toBe(unconfirmedFacts.facts_snapshot_sha256);
+  const hoursFact=unconfirmedFacts.facts.facts.find(f=>f.path==='work.regular_hours');expect(hoursFact?.status).not.toBe('confirmed');
+  const unconfirmedReview=unconfirmed.stages.find(s=>s.stage==='review_pending')!.payload;
+  const missingContext=z.object({diagnostics:z.object({factual_context:z.object({state:z.literal('context_loaded'),context:z.object({
+   state:z.literal('factual_context_blocked'),factual_issues:z.array(z.object({field:z.string(),reason:z.string()})),source_fact_bindings:z.array(z.unknown()),legal_activation:z.literal(false),publication_allowed:z.literal(false)}),
+   admission_assessment:z.object({execution_allowed:z.literal(false),candidate_calculation_performed:z.literal(false)})})})}).parse(unconfirmedReview).diagnostics.factual_context;
+  expect(missingContext.context.factual_issues).toContainEqual({field:'work.regular_hours',reason:'confirmed_canonical_fact_required'});expect(missingContext.context.source_fact_bindings).toEqual([]);
+  const unanswered=(await owner.query("select t.request_id,t.target,r.answered_at from private.document_field_targets t join public.case_requests r on r.id=t.request_id and r.case_id=t.case_id where t.case_id=$1 and t.target->>'version_id'=$2 and t.target#>>'{candidate,field}'='regular_hours' and r.answered_at is null",[caseId,first.versionId])).rows;
+  expect(unanswered).toHaveLength(1);const hoursTarget=documentFieldTargetSchema.parse(unanswered[0].target);
+  expect(hoursTarget).toMatchObject({case_id:caseId,version_id:first.versionId,source_sha256:input.sha256,extraction_result_sha256:sourceCheckpoint.result_sha256,
+   candidate:{candidate_id:sourceHours[0].candidate_id,field:'regular_hours',normalized_value:{amount:'100',unit:'hours_per_month'}}});
+  const requestSource=(await web.query('select public.case_request_document_source($1,$2,$3) value',[caseId,APPROVED_OWNER,unanswered[0].request_id])).rows[0].value;
+  expect(requestSource).toMatchObject({version:first.versionId,sha256:input.sha256,path:first.path,page:sourceHours[0].source.page});
+  expect((await counts()).results).toBe(0);expect((await counts()).invocations).toBe(unconfirmedCounts.invocations);expect(await customer(unconfirmed.analysis_run_id)).toBeNull();
+  expect(await head()).toEqual(firstRaw.job);expect(providerCalls).toHaveLength(unconfirmedProviderCalls);
+  writeFileSync(directory+'/missing-confirmed-reading-review.json',JSON.stringify(unconfirmedReview,null,2)+'\n');writeFileSync(directory+'/missing-confirmed-reading-bundle.json',JSON.stringify(unconfirmed.bundle,null,2)+'\n');
+  missingConfirmedReading={kind:'missing_confirmed_reading',sourceUnreadable:false,sourceContainsHours:'100',candidateId:sourceHours[0].candidate_id,candidateStatus:hoursFact?.status??'missing_fact',
+   requestId:unanswered[0].request_id,targetSha256:hoursTarget.target_sha256,sourceVersion:first.versionId,sourceSha256:input.sha256,checkpointSha256:sourceCheckpoint.result_sha256,
+   inputRevision:firstRaw.job.revision,analysisRunId:unconfirmed.analysis_run_id,factsSnapshotSha256:unconfirmedFacts.facts_snapshot_sha256,amountPublished:false,comparisonPublished:false,additionalProviderCalls:0};
+  checks.push('Before identified confirmation, the actual saved REAL run rejects the unconfirmed regular-hours reading and persists a factual blocker. An existing unanswered candidate-specific request binds100 to the exact source/version/checkpoint; no test result or customer comparison is published. This proves missing confirmed reading, not an unreadable source.');
   const initial=await confirm(first,extracted.result);checks.push('Actual private Storage bytes and web-role reservation/commit feed durable injected extraction; seven exact P06 readings and eight identified June declarations are answered and checkpoint reuse makes no provider call.');
-  phase='real-blocked-and-explicit-test-authority';await provisionFromBlocked(initial.lease.job,'initial');const before=await counts();expect(before.results).toBe(0);
+  expect(initial.lease.job.revision).toBeGreaterThan(firstRaw.job.revision);expect(initial.lease.job.input_sha256).not.toBe(firstRaw.job.input_sha256);
+  phase='real-blocked-and-explicit-test-authority';const confirmedReal=await provisionFromBlocked(initial.lease.job,'initial');expect(confirmedReal.analysis_run_id).not.toBe(unconfirmed.analysis_run_id);
+  expect((await owner.query('select answered_at from public.case_requests where id=$1 and case_id=$2',[unanswered[0].request_id,caseId])).rows[0].answered_at).not.toBeNull();
+  const before=await counts();expect(before.results).toBe(0);
   failBeforeSave=true;try{await expect(calculate(initial.lease.job)).rejects.toThrow('INJECTED_BEFORE_CANONICAL_TEST_SAVE');}finally{failBeforeSave=false;}expect(await counts()).toEqual(before);await storage.download(first.path);
   checks.push('Without registry authority the actual REAL run remains blocked; the two-hour test record binds its saved packet, all eight declaration hashes, source, current input, policy and candidate. Failure immediately before test-result save rolls back the new canonical run and report.');
   tamperBeforeSave=true;try{await expect(calculate(initial.lease.job)).rejects.toThrow('JUNE_TEST_CANONICAL_RUN_REQUIRED');}finally{tamperBeforeSave=false;}expect(await counts()).toEqual(before);
@@ -257,8 +288,8 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_DB_PROOF!=='1')('executes a current 
    await owner.query('begin');expect((await owner.query("delete from public.cases where id=$1 and is_qa and first_name='Synthetic June canonical foreign'",[foreignCaseId])).rowCount).toBe(1);
    expect((await owner.query('delete from public.case_identities where id=$1',[foreignIdentity])).rowCount).toBe(1);await owner.query('commit');foreignCleaned=true;
   }}catch(error){cleanupFailure=error instanceof Error?error.message:'JUNE_CANONICAL_CLEANUP_FAILED';await owner.query('rollback').catch(()=>{});}finally{
-   own();writeFileSync(directory+'/proof.json',JSON.stringify({schemaVersion:'june2026-canonical-db-proof-v1',verdict:!failure&&!cleanupFailure&&phase==='complete'&&checks.length===7&&machineRevoked&&foreignCleaned?'PASS':'FAIL',gitSha,phase,failure,cleanupFailure,
-    caseId,publicId,orderId,ownerIdentity:APPROVED_OWNER,database:'tivdoc_release_replay_20260907',schema:{orderedChain:138,tail:migrationName,sha256:fixtureSha(migrationBytes),actualDefinitions:definitionChecks,migrationLedgerAvailable:false},checks,runs,assessments,confirmationReceipts,providerCalls,
+   own();writeFileSync(directory+'/proof.json',JSON.stringify({schemaVersion:'june2026-canonical-db-proof-v1',verdict:!failure&&!cleanupFailure&&phase==='complete'&&checks.length===8&&machineRevoked&&foreignCleaned?'PASS':'FAIL',gitSha,phase,failure,cleanupFailure,
+    caseId,publicId,orderId,ownerIdentity:APPROVED_OWNER,database:'tivdoc_release_replay_20260907',schema:{orderedChain:138,tail:migrationName,sha256:fixtureSha(migrationBytes),actualDefinitions:definitionChecks,migrationLedgerAvailable:false},checks,runs,assessments,confirmationReceipts,missingConfirmedReading,providerCalls,
     sources:[{path:directory+'/input.pdf',sha256:positiveInput.sha256,bytes:positiveInput.bytes.length},{path:directory+'/no-gap-input.pdf',sha256:noGapInput.sha256,bytes:noGapInput.bytes.length}],independentOracle:ORACLE,noGapOracle,
     retainedPrimaryCase:seeded,retainedStoragePaths:paths,sourceHashesByPath,machineRevoked,foreignFixtureRemoved:foreignCleaned,customerSessionInjected:false,liveOcr:false,
     provider:'injected_synthetic_transport',realPayment:false,notificationsSent:false,humanApproval:false,legalActivation:false,ordinaryCustomerFindingPublished:false,
