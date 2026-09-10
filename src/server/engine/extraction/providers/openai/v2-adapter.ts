@@ -31,7 +31,7 @@ import {
 } from "./v2-prompt";
 import { buildOpenAiV2ResponsesRequest, type OpenAiV2ResponsesRequest } from "./v2-request";
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
-import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {createOpenAiProviderReceipt,safeProviderIdentifier,type OpenAiProviderReceipt} from './provider-receipt';
 
 export type OpenAiV2TransportResponse = Readonly<{
@@ -46,6 +46,7 @@ export type OpenAiV2TransportResponse = Readonly<{
 export interface OpenAiV2ResponsesTransport {
   parse(request: OpenAiV2ResponsesRequest): Promise<OpenAiV2TransportResponse>;
 }
+export const OPENAI_V2_STRUCTURED_DIAGNOSTIC_MAX_BYTES=256*1024;
 function createOpenAiV2SdkTransport(input: { apiKey: string; timeoutMs: number }): OpenAiV2ResponsesTransport {
   const client = new OpenAI({ apiKey: input.apiKey, timeout: input.timeoutMs, maxRetries: 0 });
   return {
@@ -75,6 +76,16 @@ function uuidFrom(seed: string) {
   hex[16] = ["8", "9", "a", "b"][Number.parseInt(hex[16], 16) % 4];
   return `${hex.slice(0, 8).join("")}-${hex.slice(8, 12).join("")}-${hex.slice(12, 16).join("")}-${hex.slice(16, 20).join("")}-${hex.slice(20).join("")}`;
 }
+/** Explicit server-side diagnostic sink for bounded synthetic proof runners.
+ * Not a logger or client payload; callers must scope/persist it privately. It
+ * receives only schema-parsed output and safe provenance, never SDK credentials.
+ * The immutable copy cannot alter the output passed to the mapper. */
+export type OpenAiV2StructuredDiagnostic=Readonly<{
+  schema_version:'tivdoc-openai-structured-diagnostic-v1';origin:OpenAiProviderReceipt['origin'];
+  case_id:string;analysis_run_id:string;document_id:string;source_sha256:string;request_sha256:string;
+  pass_kind:'first_pass'|'targeted_recovery';prompt_version:string;provider_response_id:string|null;provider_request_id:string|null;
+  structured_output:OpenAiPayslipV2StructuredOutput;structured_output_sha256:string;
+}>;
 
 function providerPagesMatch(output:OpenAiPayslipV2StructuredOutput,actualPages:number){
   if(output.page_count!==actualPages)return false;
@@ -200,6 +211,7 @@ export class OpenAiPayslipV2PassExtractor {
     kind: "first_pass" | "targeted_recovery";
     requestedFields: readonly PayslipFieldKey[];
     sourcePageCount?:number;
+    onStructuredOutput?:(diagnostic:OpenAiV2StructuredDiagnostic)=>void;
   }): Promise<MappedOpenAiV2Pass> {
     const request = extractionRequestSchema.parse(input.request);
     const durationClock = this.options.durationClock ?? (() => performance.now());
@@ -237,6 +249,16 @@ export class OpenAiPayslipV2PassExtractor {
       const now = clock().toISOString();
       const durationMs = Math.max(0, Math.round(durationClock() - startedAt));
       const output=openAiPayslipV2StructuredOutputSchema.parse(response.outputParsed);
+      if(input.onStructuredOutput){
+        if(Buffer.byteLength(JSON.stringify(output),'utf8')>OPENAI_V2_STRUCTURED_DIAGNOSTIC_MAX_BYTES)
+          throw new TypeError('OPENAI_DIAGNOSTIC_SIZE_LIMIT');
+        input.onStructuredOutput(deepFreeze({schema_version:'tivdoc-openai-structured-diagnostic-v1',origin:this.origin,
+          case_id:request.case_id,analysis_run_id:request.analysis_run_id,document_id:request.document.document_id,
+          source_sha256:request.document.content_sha256,request_sha256:requestHash,pass_kind:input.kind,
+          prompt_version:input.kind==='first_pass'?OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION:OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+          provider_response_id:safeProviderIdentifier(response.id),provider_request_id:safeProviderIdentifier(response.requestId),
+          structured_output:structuredClone(output),structured_output_sha256:canonicalSha256(output)}));
+      }
       let mapped:MappedOpenAiV2Pass;
       try{mapped = mapOpenAiV2Output({
         request,

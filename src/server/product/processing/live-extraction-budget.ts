@@ -29,12 +29,22 @@ export const LIVE_EXTRACTION_REVIEWED_RETRY=Object.freeze({
 } as const);
 export const LIVE_EXTRACTION_AGGREGATE_RETRY=Object.freeze({version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:3,reasonCode:'aggregate_total_isolation_after_ef03418'} as const);
 export const LIVE_EXTRACTION_RECOVERY_RETRY=Object.freeze({version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:4,reasonCode:'identified_recovery_confirmation_after_c521776'} as const);
+// A bounded engineering rerun of two archived failures, not human OCR/legal
+// review. Only one new first pass per pinned source; prior records stay charged.
+export const LIVE_EXTRACTION_HEBREW_SCAN_RETRY=Object.freeze({version:LIVE_EXTRACTION_REVIEWED_RETRY.version,attemptRevision:5,
+ reasonCode:'hebrew_scan_column_reading_after_archived_failures',promptVersion:'payslip-extraction-openai-v2-first-r4',
+ sourceSha256s:['f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b',
+  '6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526'] as const} as const);
 const reviewedRetrySchema=z.discriminatedUnion('attemptRevision',[
+ z.object({version:z.literal(LIVE_EXTRACTION_HEBREW_SCAN_RETRY.version),attemptRevision:z.literal(5),reasonCode:z.literal(LIVE_EXTRACTION_HEBREW_SCAN_RETRY.reasonCode),
+  promptVersion:z.literal(LIVE_EXTRACTION_HEBREW_SCAN_RETRY.promptVersion),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict(),
  z.object({version:z.literal(LIVE_EXTRACTION_RECOVERY_RETRY.version),attemptRevision:z.literal(4),reasonCode:z.literal(LIVE_EXTRACTION_RECOVERY_RETRY.reasonCode),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict(),
  z.object({version:z.literal(LIVE_EXTRACTION_REVIEWED_RETRY.version),attemptRevision:z.literal(2),reasonCode:z.literal(LIVE_EXTRACTION_REVIEWED_RETRY.reasonCode),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict(),
  z.object({version:z.literal(LIVE_EXTRACTION_AGGREGATE_RETRY.version),attemptRevision:z.literal(3),reasonCode:z.literal(LIVE_EXTRACTION_AGGREGATE_RETRY.reasonCode),codeRevision:z.string().regex(/^[a-f0-9]{40}$/u)}).strict(),
 ]);
 export type LiveExtractionReviewedRetry=z.infer<typeof reviewedRetrySchema>;
+const retrySourceAllowed=(retry:LiveExtractionReviewedRetry,source:string)=>(retry.attemptRevision===5
+ ?LIVE_EXTRACTION_HEBREW_SCAN_RETRY.sourceSha256s:LIVE_EXTRACTION_REVIEWED_RETRY.sourceSha256s).some(allowed=>allowed===source);
 const reservation=z.object({key:z.string(),sourceSha256:sha,requestSha256:sha,passKind:z.enum(['first_pass','targeted_recovery']),
  reservedMicroUsd:z.literal(25200),reservedAt:z.iso.datetime({offset:true}),
  receipt:z.unknown().nullable(),outcome:z.enum(['reserved_unknown','receipt_recorded']),reviewedRetry:reviewedRetrySchema.optional()}).strict();
@@ -55,7 +65,7 @@ export function parseLiveExtractionBudgetLedger(input:unknown){
  const parsed=ledgerSchema.parse(input);
  if(new Set(parsed.reservations.map(r=>r.key)).size!==parsed.reservations.length
   ||parsed.reservations.some(r=>r.key!==`${r.sourceSha256}:${r.passKind}${r.reviewedRetry?`:attempt-${r.reviewedRetry.attemptRevision}`:''}`
-   ||(r.reviewedRetry&&!LIVE_EXTRACTION_REVIEWED_RETRY.sourceSha256s.some(source=>source===r.sourceSha256))))throw Error('LIVE_BUDGET_LEDGER_INVALID');
+   ||(r.reviewedRetry&&!retrySourceAllowed(r.reviewedRetry,r.sourceSha256))))throw Error('LIVE_BUDGET_LEDGER_INVALID');
  for(const row of parsed.reservations.filter(r=>r.reviewedRetry)){
   if(!parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&!prior.reviewedRetry)
    ||parsed.reservations.some(other=>other.sourceSha256===row.sourceSha256&&other.reviewedRetry
@@ -63,6 +73,9 @@ export function parseLiveExtractionBudgetLedger(input:unknown){
  }
  if(parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&!parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&prior.reviewedRetry?.attemptRevision===2)))throw Error('LIVE_BUDGET_RETRY_HISTORY_INVALID');
  if(parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===4)&&(!parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&row.outcome==='receipt_recorded')||parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===4&&!parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&prior.reviewedRetry?.attemptRevision===2))))throw Error('LIVE_BUDGET_RETRY_HISTORY_INVALID');
+ if(parsed.reservations.some(row=>row.reviewedRetry?.attemptRevision===5&&(row.passKind!=='first_pass'
+  ||!parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&!prior.reviewedRetry&&prior.passKind==='first_pass'&&prior.outcome==='receipt_recorded')
+  ||parsed.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&!prior.reviewedRetry&&prior.outcome==='reserved_unknown'))))throw Error('LIVE_BUDGET_RETRY_HISTORY_INVALID');
  return parsed;
 }
 export function reserveLiveExtractionPass(input:{ledger:LiveExtractionBudgetLedger;sourceSha256:string;requestSha256:string;
@@ -70,11 +83,13 @@ export function reserveLiveExtractionPass(input:{ledger:LiveExtractionBudgetLedg
  const ledger=parseLiveExtractionBudgetLedger(input.ledger);assertLiveExtractionBudgetModel(ledger.model,input.now);
  const reviewedRetry=input.reviewedRetry===undefined?undefined:reviewedRetrySchema.parse(input.reviewedRetry);
  const previous=ledger.reservations.filter(row=>row.sourceSha256===input.sourceSha256);
- if(reviewedRetry&&(!LIVE_EXTRACTION_REVIEWED_RETRY.sourceSha256s.some(source=>source===input.sourceSha256)
+ if(reviewedRetry&&(!retrySourceAllowed(reviewedRetry,input.sourceSha256)
   ||!previous.some(row=>!row.reviewedRetry)||previous.some(row=>row.outcome==='reserved_unknown')
   ||previous.some(row=>row.reviewedRetry&&row.reviewedRetry.attemptRevision===reviewedRetry.attemptRevision&&row.reviewedRetry.codeRevision!==reviewedRetry.codeRevision)))throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
  if(reviewedRetry?.attemptRevision===3&&!previous.some(row=>row.reviewedRetry?.attemptRevision===2))throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
  if(reviewedRetry?.attemptRevision===4&&(!previous.some(row=>row.reviewedRetry?.attemptRevision===2)||!ledger.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&row.outcome==='receipt_recorded')||ledger.reservations.some(row=>row.reviewedRetry?.attemptRevision===3&&row.outcome==='reserved_unknown')))throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
+ if(reviewedRetry?.attemptRevision===5&&(input.passKind!=='first_pass'||!previous.some(row=>!row.reviewedRetry&&row.passKind==='first_pass'&&row.outcome==='receipt_recorded')))
+  throw Error('LIVE_BUDGET_RETRY_NOT_APPROVED');
  const key=`${input.sourceSha256}:${input.passKind}${reviewedRetry?`:attempt-${reviewedRetry.attemptRevision}`:''}`;
  if(ledger.reservations.some(row=>row.key===key)
   ||(!reviewedRetry&&previous.some(row=>row.passKind===input.passKind)))throw Error('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
@@ -95,6 +110,7 @@ export function recordLiveExtractionPassReceipt(ledger:LiveExtractionBudgetLedge
   &&(r.receipt as {provider_response_id?:unknown}|null)?.provider_response_id===receipt.provider_response_id);
  if(pending.length!==1||!row||responseAlreadyRecorded||Date.parse(receipt.created_at)<Date.parse(row.reservedAt)
   ||receipt.origin!=='openai_live'||receipt.request_sha256!==row.requestSha256
+  ||(row.reviewedRetry?.attemptRevision===5&&receipt.prompt_version!==row.reviewedRetry.promptVersion)
   ||receipt.requested_model!==parsed.model||(receipt.actual_model!==null&&receipt.actual_model!==parsed.model)
   ||(receipt.token_usage&&(receipt.token_usage.input_tokens>LIVE_EXTRACTION_BUDGET_POLICY.inputTokenCeiling
    ||receipt.token_usage.output_tokens>LIVE_EXTRACTION_BUDGET_POLICY.outputTokenCeiling)))throw Error('LIVE_BUDGET_RECEIPT_OUTSIDE_BOUND');

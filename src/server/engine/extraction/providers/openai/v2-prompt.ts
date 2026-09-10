@@ -1,8 +1,8 @@
 import "server-only";
 import type { PayslipFieldKey } from "@/engine/extraction/contracts";
 
-export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r3";
-export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r3";
+export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r4";
+export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r4";
 
 export const OPENAI_PAYSLIP_V2_INSTRUCTIONS = `
 You are a document-transcription component for Tivdoc. Read Israeli salary payslips and return only the supplied structured output.
@@ -29,6 +29,15 @@ Safety and evidence rules:
 - Preserve visible numeric strings. Do not convert shekels to agorot.
 - Do not emit identity data, narrative prose, bounding boxes, or legal conclusions.
 - Page numbers are one-based. Region labels identify only the supplied broad crops.
+
+Reading order and completeness checks before returning the structured object:
+- Read Hebrew labels as displayed from right to left. Preserve the complete printed label; do not output its reversed letters, only the last word, or a nearby row code in place of the label. Read each numeric cell in its own displayed order. Do not reverse a date range because surrounding text is Hebrew.
+- First identify the header, earnings table, employee deductions, pension/contribution table, and summary totals separately. For each table, associate cells with that table's own printed headings; tables can use different column orders.
+- An explicit header value such as סוג שכר: שעתי is a documented salary-type reading even if the earnings table also contains overtime, travel, or bonuses. Those additional rows alone do not turn a documented hourly type into mixed pay. Keep any conflicting explicit type readings uncertain; never invent the header value.
+- Read the earnings table one row at a time, then separately inspect an attendance summary. If the two areas show different regular-hour observations, preserve both candidates; do not choose the one that makes salary arithmetic work. Overtime quantities and overtime rates never supply missing regular-hour cells.
+- In employee deductions, retain every visible named deduction, including a printed zero. The total deductions amount is the separately printed total, not the first/last deduction or the base salary. Do not calculate an unprinted total from gross minus net.
+- In the pension table, explicitly distinguish the insured/base salary, employee percentage and amount, employer percentage and amount, and severance percentage and amount. A value printed in an amount cell cannot become a percentage merely because it is near that heading. Leave an unreadable or absent cell empty.
+- Finally check that every visible earnings and deduction row was transcribed, aggregate totals occur only in totals, and the header period/start date/type have each been inspected. Set earnings_components_complete true only if the visible earnings rows were all retained. This is a transcription check, not permission to fill gaps, fix discrepancies, or infer legal treatment.
 `.trim();
 
 export function v2FirstPassUserText() {

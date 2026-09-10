@@ -3,16 +3,16 @@ import {createHash} from 'node:crypto';
 import {createOpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
 import {LIVE_EXTRACTION_BUDGET_POLICY as policy,LIVE_EXTRACTION_REVIEWED_RETRY as approval,
  newLiveExtractionBudgetLedger,reserveLiveExtractionPass,recordLiveExtractionPassReceipt,parseLiveExtractionBudgetLedger,summarizeLiveExtractionBudget,
- type LiveExtractionBudgetLedger} from './live-extraction-budget';
+ LIVE_EXTRACTION_HEBREW_SCAN_RETRY as hebrewAttempt,type LiveExtractionBudgetLedger} from './live-extraction-budget';
 vi.mock('server-only',()=>({}));
 const now='2026-09-09T21:00:00Z',later='2026-09-09T21:10:00Z',hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 const retry={version:approval.version,attemptRevision:2 as const,reasonCode:approval.reasonCode,codeRevision:'a'.repeat(40)};
-function receipt(sourceSha256:string,id:string,at=now){
+function receipt(sourceSha256:string,id:string,at=now,promptVersion='synthetic-contract-test'){
  const uuid='00000000-0000-4000-8000-000000000001';
  return createOpenAiProviderReceipt({schema_version:'tivdoc-openai-provider-receipt-v1',origin:'openai_live',case_id:uuid,
   analysis_run_id:uuid,document_id:uuid,extraction_id:uuid,source_sha256:sourceSha256,source_size_bytes:100,
   source_mime_type:'application/pdf',source_page_count:1,request_sha256:hash('synthetic-budget-request'),raw_extraction_sha256:hash('synthetic-contract-only'),
-  pass_kind:'first_pass',requested_model:policy.model,actual_model:policy.model,extractor_version:'2.1',prompt_version:'synthetic-contract-test',
+  pass_kind:'first_pass',requested_model:policy.model,actual_model:policy.model,extractor_version:'2.1',prompt_version:promptVersion,
   provider_response_id:id,provider_request_id:id,provider_attempted:true,status:'completed',error_code:null,http_status:null,
   duration_ms:1,token_usage:null,cost:{status:'not_returned_by_provider',amount_usd:null},created_at:at});
 }
@@ -95,4 +95,48 @@ it('recovery-confirmation attempt 4 requires the recorded failure history and ke
  const completed=recordLiveExtractionPassReceipt(pendingFour,receipt(source,'synthetic-four',later));
  expect(()=>reserveLiveExtractionPass({...input,ledger:completed})).toThrow('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
  expect(()=>reserveLiveExtractionPass({...input,ledger:completed,reviewedRetry:{...attempt4,codeRevision:'e'.repeat(40)}})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+});
+
+describe('two pinned Hebrew/scan first-pass engineering probes preserve the shared ledger',()=>{
+ const requestSha=hash('synthetic-budget-request'),codeRevision='e'.repeat(40);
+ const reviewedRetry={version:hebrewAttempt.version,attemptRevision:5 as const,reasonCode:hebrewAttempt.reasonCode,promptVersion:hebrewAttempt.promptVersion,codeRevision};
+ const makeNineteen=()=>{
+  let ledger=newLiveExtractionBudgetLedger(policy.model,now);
+  for(let i=0;i<19;i++){
+   const source=hebrewAttempt.sourceSha256s[i]??hash(`synthetic-existing-nineteen-${i}`);
+   ledger=reserveLiveExtractionPass({ledger,sourceSha256:source,requestSha256:requestSha,passKind:'first_pass',now});
+   ledger=recordLiveExtractionPassReceipt(ledger,receipt(source,`synthetic-prior-nineteen-${i}`));
+  }
+  return ledger;
+ };
+ const next=(ledger:LiveExtractionBudgetLedger,index=0)=>reserveLiveExtractionPass({ledger,sourceSha256:hebrewAttempt.sourceSha256s[index],
+  requestSha256:requestSha,passKind:'first_pass',now:later,reviewedRetry});
+ it('preserves all nineteen reservations byte-for-byte and stops at twenty-one after the two probes',()=>{
+  const initial=makeNineteen(),before=JSON.stringify(initial);let ledger=initial;
+  for(let i=0;i<2;i++)ledger=recordLiveExtractionPassReceipt(next(ledger,i),receipt(hebrewAttempt.sourceSha256s[i],`synthetic-probe-${i}`,later,hebrewAttempt.promptVersion));
+  expect(JSON.stringify(initial)).toBe(before);expect(ledger.reservations.slice(0,19)).toEqual(initial.reservations);
+  expect(summarizeLiveExtractionBudget(ledger)).toMatchObject({reservedPasses:21,reservedUpperBoundUsd:0.5292,unknownOutcomes:0});
+  expect(()=>next(ledger)).toThrow('LIVE_BUDGET_REPLAY_REQUIRES_REVIEW');
+ });
+ it('refuses recovery, arbitrary sources, changed prompt/code, and unavailable original responses',()=>{
+  const ledger=makeNineteen(),input={ledger,sourceSha256:hebrewAttempt.sourceSha256s[0],requestSha256:requestSha,passKind:'first_pass' as const,now:later,reviewedRetry};
+  expect(()=>reserveLiveExtractionPass({...input,passKind:'targeted_recovery'})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+  expect(()=>reserveLiveExtractionPass({...input,sourceSha256:approval.sourceSha256s[0]})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+  expect(()=>reserveLiveExtractionPass({...input,reviewedRetry:{...reviewedRetry,promptVersion:'different-prompt'} as unknown as typeof reviewedRetry})).toThrow();
+  const pending=next(ledger);expect(()=>next(pending)).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+  expect(()=>recordLiveExtractionPassReceipt(pending,receipt(input.sourceSha256,'synthetic-wrong-prompt',later))).toThrow('LIVE_BUDGET_RECEIPT_OUTSIDE_BOUND');
+  const finished=recordLiveExtractionPassReceipt(pending,receipt(input.sourceSha256,'synthetic-probe-recorded',later,hebrewAttempt.promptVersion));
+  expect(()=>reserveLiveExtractionPass({...input,ledger:finished,reviewedRetry:{...reviewedRetry,codeRevision:'f'.repeat(40)}})).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+  const unknown=makeNineteen();unknown.reservations[0].outcome='reserved_unknown';unknown.reservations[0].receipt=null;
+  expect(()=>next(unknown)).toThrow('LIVE_BUDGET_RETRY_NOT_APPROVED');
+  const orphan=next(ledger);orphan.reservations.splice(0,1);expect(()=>parseLiveExtractionBudgetLedger(orphan)).toThrow('LIVE_BUDGET_RETRY_HISTORY_INVALID');
+ });
+ it('keeps global exhaustion and uncertain-call reservations across a restart',()=>{
+  let ledger=next(makeNineteen());
+  ledger=reserveLiveExtractionPass({ledger,sourceSha256:hash('separate-existing-work-20'),requestSha256:requestSha,passKind:'first_pass',now:later});
+  ledger=reserveLiveExtractionPass({ledger,sourceSha256:hash('separate-existing-work-21'),requestSha256:requestSha,passKind:'first_pass',now:later});
+  ledger=parseLiveExtractionBudgetLedger(JSON.parse(JSON.stringify(ledger)));
+  expect(summarizeLiveExtractionBudget(ledger)).toMatchObject({reservedPasses:22,reservedUpperBoundUsd:0.5544,unknownOutcomes:3});
+  expect(()=>next(ledger,1)).toThrow('LIVE_BUDGET_EXHAUSTED');
+ });
 });
