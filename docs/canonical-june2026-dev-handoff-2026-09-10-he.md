@@ -12,11 +12,11 @@
 
 ## סכמה ואימות ביניים
 
-מיגרציה `20260910141530_june2026_isolated_canonical_assessments.sql`, סכמה136, הוחלה רק ב־`tivdoc_release_replay_20260907` בפרויקט `cpzrbidxftzqcfeqqusu`. קדמה לה הרצת DDL מלאה עם rollback. SHA של קובץ שהוחל: `a83bd07ece1a32875c5d96334dc5348296fbcd81f819dca5b5d34e3f5273ee07`.
+מיגרציה `20260910141530_june2026_isolated_canonical_assessments.sql`, סכמה136 הראשונית, הוחלה רק ב־`tivdoc_release_replay_20260907` בפרויקט `cpzrbidxftzqcfeqqusu`. קדמה לה הרצת DDL מלאה עם rollback. SHA של קובץ שהוחל: `a83bd07ece1a32875c5d96334dc5348296fbcd81f819dca5b5d34e3f5273ee07`.
 
 ה־ACL בפועל מסרב INSERT ישיר ל־assessment ולתוצאה עבור anon/authenticated/service_role/web/worker. רק worker רשאי לקרוא את פונקציית הסמכות; הפונקציה בודקת principal, machine tenant, DEV, תיק QA, קלט, רכישה, מקור ותוקף. שתי הטבלאות עם RLS. אין migration ledger במסד המבודד; המספור מתייחס לשרשרת הקבצים ולבדיקת DDL בפועל.
 
-בדיקות ממוקדות שעברו עד נקודה זו:63 comparison/provider/budget;133 מתוך134 context/admission/catalog/budget/loader; בדיקת stale הכושלת תוקנה ונבדקה מחדש בקבוצת admission;95 runtime/report/core/finalizer/definer;40 HTTP/automatic completion/finalizer. הקבוצות חופפות ואין לסכמן כבדיקות ייחודיות. typecheck ו־lint עברו על העריכות שנבדקו. הוכחת העלאה→ריצה→דוח מול DB, הוכחת דפדפן ו־Preview תואם עדיין ממתינות להרצה בנקודה זו.
+בדיקות ממוקדות שעברו עד נקודת השמירה הראשונה:63 comparison/provider/budget;133 מתוך134 context/admission/catalog/budget/loader; בדיקת stale הכושלת תוקנה ונבדקה מחדש בקבוצת admission;95 runtime/report/core/finalizer/definer;40 HTTP/automatic completion/finalizer. הקבוצות חופפות ואין לסכמן כבדיקות ייחודיות. typecheck ו־lint עברו על העריכות שנבדקו. הוכחת העלאה→ריצה→דוח מול DB, הוכחת דפדפן ו־Preview תואם עדיין ממתינות להרצה בנקודה זו.
 
 כישלונות בדיקה שתוקנו: fixture שסימן stale בלי לבצע replay מול המקור החדש; mocks של HTTP/worker שלא כללו import server-only או command.mode לאחר הרחבת הממשק. תקלת מוצר שתוקנה במהלך ביקורת: context חסום גרם לחריגה בבניית דוח; כעת נשמר דוח חסום עם בדיקת מזהה הריצה גם כשהעובדות אינן זמינות.
 
@@ -32,3 +32,25 @@
 4. לאשר מדיניות קבלה להערכות התיק: בגיר לכל יוני; ענף פרטי כללי; תחולת חוק שעות עבודה ומנוחה והחריגים; היעדר הסדר מיטיב או שכר מותאם; שעות רגילות בלבד; שלמות מלאי שכר וסיווג בסיס לפי סעיף3. הצהרת לקוח וקריאה מאושרת של תלוש אינן אישור משפטי אוטומטי.
 
 v1.1 אינו מחייב ביקורת אדם בכל דוח AI, אבל אינו מחליף את החלטות ההפעלה במנגנון האמון או מעניק לסוכן סמכות להמציא חתימה. registry הבדיקה הוא מימוש הנדסי מבודד, ולא מימוש סמכות מקצועית לשירות אמיתי. נתיב הניסוי ההיסטורי של240.00 נשמר בנפרד.
+
+## הוכחה בפועל — עדכון במהלך הביצוע
+
+הוכחת DB מלאה עברה על `047fa41fd2521cb5759a31f62ae0a0c328990a91`, סכמה138. [קבלה](release-evidence/june-canonical-20260910/proof.json), [דוח נוכחי PDF](release-evidence/june-canonical-20260910/replacement-current-calculated.pdf), [HTML](release-evidence/june-canonical-20260910/replacement-current-calculated.html), [JSON עם עקבה מלאה](release-evidence/june-canonical-20260910/replacement-current-calculated.json), [תלוש סינתטי](release-evidence/june-canonical-20260910/input.pdf).
+
+התיק `TV-845EA70D`, ריצה נוכחית `1cdab6a2-beb5-476a-8847-3dcb9d16a51b`. המסמכים עלו בפועל לאחסון הפרטי דרך reserve/sign/upload/commit. התשלום הוא תנאי סינתטי; transport החילוץ מוזרק ומסומן. שבע קריאות שדה ושלוש קבוצות של שמונה הצהרות נענו דרך API מזוהה על בסיס fixture ידוע; הן אינן ביקורת אדם. בתרחיש אפס הפער יש שש קריאות שדה בלבד, כי התעריף השעתי אינו מודפס ולא הוסק מחילוק.
+
+הוכחו פער24058 ואפס פער, חסימת REAL ללא assessment, rollback לפני שמירה, דחיית comparison ששונה לפני INSERT הראשון, retry מקביל בלי תוספת ריצה/תוצאה, replay בחיבור DB חדש, דחיית קורא זר ומקור זר, תיקון תשובה ל־unknown ול־conflicted והיסטוריה של שלוש גרסאות תשובה, שתי החלפות אמיתיות עם שלושה קובצי מקור נגישים ודוחות היסטוריים שמורים. רק הדוח האחרון current. HTML/PDF/JSON תואמים; PDF נרנדר ונבדק חזותית. זה אינו עדיין restart של תהליך נפרד או הוכחת דפדפן — אלה נבדקים בנפרד.
+
+שתי תקלות חיבור שנחשפו ב־DB תוקנו, והקבלות הכושלות נשמרו ב־failed-attempts: `SAVED_COMMAND_SCOPE` בטוען snapshot שלא קיבל את הרשאת הבדיקה; ו־reader שהשווה מזהה תיק פנימי למזהה הציבורי. מיגרציה137 מצמידה comparison שלם ל־review_pending לפני INSERT;138 מתקנת את צירוף התיק הקנוני וה־tenant. לכל מיגרציה קדמו rollback preflight ואימות ACL ב־DEV. אין שכתוב של מיגרציה שכבר הוחלה.
+
+תוצר זה הוא תוצאת חישוב והשוואה הנדסית שמורות ב־analysis run הקנוני ובדוח שלו. הוא אינו ישות Finding מאושרת או פרסום חוב ללקוח: `is_finding=false`, `human_approval=false`, `legal_activation=false`. הטבלאות וההגנות של ממצאי לקוח אמיתיים נשמרו. המעבר למעטפת פרסום לקוח רגילה יצריך חיבור authority אמיתי ומדיניות קבלה מאושרת; אין להציג את כל הפער הזה כאישור אדם חסר בלבד.
+
+## קריאות OCR חיות חדשות
+
+[קבלת שתי הקריאות](release-evidence/june-canonical-20260910/live-ocr/proof.json) נשמרה מ־047fa41, model `gpt-4o-mini-2024-07-18`, prompt r4. שתי הקריאות התקבלו מהספק עם request/response IDs, token usage ומשך. שתיהן **QUALITY_FAIL** מול האורקל הבלתי משתנה. לא נוצר מהן דוח כספי ולא שונו checkpoints ישנים.
+
+ה־ledger גדל מ־19 ל־21 קריאות; תקרת ההקצאה המצטברת היא0.5292 דולר, לא חשבונית. הספק לא החזיר עלות כספית. אין תוצאה לא ידועה ואין recovery אוטומטי נוסף.
+
+- PDF עברי: סוג השכר הוחזר כ־mixed, נסיעות/בונוס סווגו לא נכון, net/deductions ופנסיה שגויים או חסרים.
+- סריקה: חודש, סוג שעתי, gross/deductions/net נקראו נכון, אבל תאריך, פירוט ניכויים ורכיבי פנסיה נפגעו.
+- בשני המקורות נבדק בנפרד אובדן quantity/rate בזמן מיפוי שורת base_salary. תיקון כזה אינו הופך את שאר הפלט השגוי למדויק. תוצאות replay לאחר התיקון יתווספו בנפרד מקבלת הקריאה החיה.

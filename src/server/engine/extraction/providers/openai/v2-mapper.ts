@@ -11,6 +11,7 @@ import { salaryTypeAssessmentSchema, type SalaryTypeAssessment } from "@/engine/
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import type {OpenAiProviderReceipt} from './provider-receipt';
 import {classifyOpenAiV2AggregateTotalRows} from './v2-aggregate-totals';
+import {explicitHourlyBaseCells} from './v2-hourly-row-evidence';
 
 type ValueCandidate = OpenAiPayslipV2StructuredOutput["totals"]["gross_candidates"][number];
 type ModelConfidence = ValueCandidate["confidence"];
@@ -81,17 +82,17 @@ export function mapOpenAiV2Output(input: {
   const allowed = input.allowedFields ? new Set(input.allowedFields) : null;
   const fields: RawCandidateField[] = [];
   let sequence = 0;
-  const addCandidate = (field: PayslipFieldKey, value: ValueCandidate, fallbackLabel: string) => {
+  const addCandidate = (field: PayslipFieldKey, value: ValueCandidate, fallbackLabel: string, derivedWarnings: readonly string[] = []) => {
     if (allowed && !allowed.has(field)) return null;
     const candidateId = uuidFrom(`${input.request.extraction_id}:v2:${sequence++}:${field}`);
     fields.push({
       candidate_id: candidateId,
       field,
       raw_value: value.raw_value,
-      confidence: candidateConfidence(value.confidence, output.document_quality, value.warnings.length),
+      confidence: candidateConfidence(value.confidence, output.document_quality, value.warnings.length + derivedWarnings.length),
       source: candidateSource({ documentId, candidate: value, fallbackLabel }),
       extraction_method: "ai_vision",
-      warning_flags: value.warnings,
+      warning_flags: [...value.warnings,...derivedWarnings],
     });
     return candidateId;
   };
@@ -151,6 +152,12 @@ export function mapOpenAiV2Output(input: {
     if (mapping?.quantity && row.quantity_raw) addCandidate(mapping.quantity, rowValue(row.quantity_raw), row.source_label);
     if (mapping?.rate && row.rate_raw) addCandidate(mapping.rate, rowValue(row.rate_raw), row.source_label);
     if (mapping?.amount && row.amount_raw) addCandidate(mapping.amount, rowValue(row.amount_raw), row.source_label);
+    const explicitHourly=explicitHourlyBaseCells(output,row);
+    if(explicitHourly){
+
+      addCandidate('regular_hours',rowValue(explicitHourly.quantity_raw),row.source_label,[explicitHourly.warning]);
+      addCandidate('hourly_rate',rowValue(explicitHourly.rate_raw),row.source_label,[explicitHourly.warning]);
+    }
   }
 
   for (const value of output.totals.gross_candidates) addCandidate("gross_salary", value, "gross total");

@@ -1,0 +1,54 @@
+{
+  "migration": "supabase/migrations/20260910144517_june2026_comparison_stage_binding.sql",
+  "sha256": "772407f18c0f39036a850606504443258868074a489d2d70ef8c8c468f37743b",
+  "at": "2026-09-10T14:45:53.528Z",
+  "productionChanged": false,
+  "target": {
+    "db": "tivdoc_release_replay_20260907",
+    "principal": "tivdoc_dev_migrator"
+  },
+  "rollbackPreflight": "PASS",
+  "applied": true,
+  "privileges": [
+    {
+      "role": "anon",
+      "can_create_assessment": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "authenticated",
+      "can_create_assessment": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "service_role",
+      "can_create_assessment": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "tivdoc_web_runtime",
+      "can_create_assessment": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "tivdoc_worker_runtime",
+      "can_create_assessment": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": true
+    }
+  ],
+  "rls": [
+    {
+      "relname": "june2026_test_assessments",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "june2026_canonical_test_results",
+      "relrowsecurity": true
+    }
+  ]
+}
