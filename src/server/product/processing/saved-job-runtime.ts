@@ -47,14 +47,19 @@ async function audit(context:PostgresTransactionContext,input:Worker,job:z.infer
 export async function claimSavedDraftJob(context:PostgresTransactionContext,input:Worker&{leaseMs:number}){
  z.number().int().min(10000).max(300000).parse(input.leaseMs);const tenant=await authorize(context,input);
  const heads=await context.client.query(statement('saved_runtime_head',
-  'select revision,input_sha256 from private.case_input_heads where case_id=$1::uuid',[input.caseId]));
+  `select h.revision,h.input_sha256,d.authority_dependency_sha256 from private.case_input_heads h
+   left join private.case_analysis_dispatch d on d.case_id=h.case_id and d.revision=h.revision and d.mode='draft'
+   where h.case_id=$1::uuid`,[input.caseId]));
  if(!heads.rows[0])return {state:'idle' as const,reason:'no_saved_source'};
- const source=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:input.caseId,...heads.rows[0],mode:'draft'});
+ const head=heads.rows[0];
+ const source=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:input.caseId,revision:head.revision,input_sha256:head.input_sha256,mode:'draft',
+  ...(head.authority_dependency_sha256==null?{}:{authority_dependency_sha256:head.authority_dependency_sha256})});
  await admitSavedSource(context,source);await readSavedOrders(context,source);
  const now=await context.client.query(statement('saved_runtime_clock',"select floor(extract(epoch from clock_timestamp())*1000)::bigint now_ms",[]));
  await dispatchCaseInput(context,{caseId:input.caseId,tenantId:tenant,mode:'draft',liveEnabled:false,nowMs:z.coerce.number().int().safe().parse(now.rows[0]?.now_ms)});
  const dispatch=await context.client.query(statement('saved_runtime_dispatch',
-  "select job_id from private.case_analysis_dispatch where case_id=$1::uuid and revision=$2 and mode='draft'",[input.caseId,source.revision]));
+  "select job_id from private.case_analysis_dispatch where case_id=$1::uuid and revision=$2 and mode='draft' and authority_dependency_sha256 is not distinct from $3",
+  [input.caseId,source.revision,source.authority_dependency_sha256??null]));
  const id=dispatch.rows[0]?.job_id;if(typeof id!=='string')return {state:'idle' as const,reason:'no_draft_dispatch'};
  const job=await lockJob(context,input,id);
  if(canonicalSha256(job.payload)!==canonicalSha256(source))throw new Error('SAVED_JOB_SCOPE');
@@ -84,6 +89,7 @@ export async function claimSavedDraftJob(context:PostgresTransactionContext,inpu
 export function savedJobFailure(error:unknown){
  const code=error instanceof Error?error.message:'';
  if(code==='ANALYSIS_INPUT_SUPERSEDED')return {state:'cancelled' as const,reason:'saved_source_superseded'};
+ if(code==='ANALYSIS_AUTHORITY_SUPERSEDED')return {state:'cancelled' as const,reason:'saved_authority_superseded'};
  if(code==='SAVED_JOB_INTERRUPTED')return {state:'retry_wait' as const,reason:'saved_worker_interrupted'};
  const holds:Readonly<Record<string,string>>={SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED:'saved_documents_missing',
   SAVED_EXTRACTION_OUTCOME_PENDING:'saved_provider_outcome_unknown',SAVED_EXTRACTION_PERIOD_MISMATCH:'saved_period_confirmation_required',

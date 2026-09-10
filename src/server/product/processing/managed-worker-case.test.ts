@@ -10,11 +10,16 @@ vi.mock('./saved-order-scope',()=>({readSavedOrders:ports.orders}));
 beforeEach(()=>vi.resetAllMocks());
 function setup(){
  const caseId='11111111-1111-4111-8111-111111111111';
- const row={database:'tivdoc_release_replay_20260907',is_qa:true,revision:1,input_sha256:'a'.repeat(64),input:{month:'2026-06',documents:[{type:'payslip',month:'2026-06'}]}};
- const order={id:'22222222-2222-4222-8222-222222222222',kind:'initial',from:'2026-06-01',to:'2026-06-01',topics:['minimum_wage']};
- const state={depth:0,budgetFails:false,noteFails:false,rollbacks:0},calls:{name:string;values:readonly unknown[]}[]=[];
+ const row={database:'tivdoc_release_replay_20260907',is_qa:true,revision:1,input_sha256:'a'.repeat(64),authority_dependency_sha256:null as string|null,input:{month:'2026-06',documents:[{type:'payslip',month:'2026-06'}]}};
+ const order={id:'22222222-2222-4222-8222-222222222222',kind:'initial',from:'2026-06-01',to:'2026-06-01',topics:['minimum_wage'],offer_sha256:'c'.repeat(64)};
+ const state={depth:0,budgetFails:false,noteFails:false,rollbacks:0,fullAiOffer:true,foreignOffer:false},calls:{name:string;values:readonly unknown[]}[]=[];
  const transactions:SavedWorkerTransactions=async operation=>{state.depth++;try{return await operation({transaction_id:'managed-unit',client:{async query(s){
   calls.push(s);if(s.name==='managed_worker_scope')return {rows:[row],row_count:1};
+  if(s.name==='managed_worker_full_ai_offer'){
+   expect(s.values).toEqual([order.id,caseId,order.offer_sha256]);
+   for(const predicate of ["o.case_id=$2::uuid","o.offer_sha256=$3","o.kind='full'","o.state='paid'","o.refund_state<>'refunded'","e.state='active'","o.offer->>'version'='tivdoc-order-offer-v2'","o.offer->>'service_kind'='ai_assisted'","o.offer->'human_review_required'='false'::jsonb"])expect(s.text).toContain(predicate);
+   return {rows:state.fullAiOffer?[{id:state.foreignOffer?'33333333-3333-4333-8333-333333333333':order.id}]:[],row_count:state.fullAiOffer?1:0};
+  }
   if(s.name==='managed_worker_admit_claim'){if(state.budgetFails)throw Error('MANAGED_DEV_BUDGET_EXHAUSTED');return {rows:[],row_count:1};}
   if(s.name==='managed_worker_note'){if(state.noteFails)throw Error('SAVED_JOB_FENCE');return {rows:[],row_count:1};}
   throw Error('UNEXPECTED_SQL');
@@ -31,6 +36,30 @@ describe('managed worker existing-queue composition',()=>{
   expect(s.calls.map(c=>c.name)).toEqual(['managed_worker_scope','managed_worker_admit_claim','managed_worker_note']);
   expect(s.calls[1].values).toEqual([s.input.caseId,'saved_job',2]);
   expect(ports.run).toHaveBeenCalledWith(expect.objectContaining({onMonth:s.input.onMonth,jobId:'saved_job',fencingToken:2,heartbeat:{intervalMs:10000,leaseMs:180000}}));
+  expect(ports.admit.mock.calls[0][1]).not.toHaveProperty('authority_dependency_sha256');
+ });
+ it('uses the same queue for an exact paid full AI June minimum-wage scope and propagates the current dependency',async()=>{
+  const s=setup();s.order.kind='full';s.row.authority_dependency_sha256='d'.repeat(64);
+  expect(await runManagedDevCase(s.input)).toMatchObject({state:'succeeded',jobId:'saved_job'});
+  expect(s.calls.map(c=>c.name)).toEqual(['managed_worker_scope','managed_worker_full_ai_offer','managed_worker_admit_claim','managed_worker_note']);
+  expect(ports.admit.mock.calls[0][1]).toMatchObject({case_id:s.input.caseId,revision:1,input_sha256:s.row.input_sha256,authority_dependency_sha256:s.row.authority_dependency_sha256});
+  expect(ports.claim).toHaveBeenCalledTimes(1);expect(ports.run).toHaveBeenCalledTimes(1);
+ });
+ it.each(['unqualified-offer','foreign-order'])('refuses a full order with %s before claiming or spending budget',async mutation=>{
+  const s=setup();s.order.kind='full';if(mutation==='unqualified-offer')s.state.fullAiOffer=false;else s.state.foreignOffer=true;
+  await expect(runManagedDevCase(s.input)).rejects.toThrow('MANAGED_DEV_SCOPE_UNSUPPORTED');
+  expect(ports.claim).not.toHaveBeenCalled();expect(ports.run).not.toHaveBeenCalled();expect(s.calls.map(c=>c.name)).not.toContain('managed_worker_admit_claim');
+ });
+ it.each(['order-month','topic','extra-order','extra-payslip'])('keeps the full AI scope restricted for %s',async mutation=>{
+  const s=setup();s.order.kind='full';
+  if(mutation==='order-month')s.order.to='2026-07-01';if(mutation==='topic')s.order.topics.push('pension');
+  if(mutation==='extra-order')ports.orders.mockResolvedValue([s.order,{...s.order,id:'33333333-3333-4333-8333-333333333333'}]);
+  if(mutation==='extra-payslip')s.row.input.documents.push({...s.row.input.documents[0]});
+  await expect(runManagedDevCase(s.input)).rejects.toThrow('MANAGED_DEV_SCOPE_UNSUPPORTED');expect(ports.claim).not.toHaveBeenCalled();expect(ports.run).not.toHaveBeenCalled();
+ });
+ it('propagates an admission dependency refusal before claim or budget',async()=>{
+  const s=setup();s.row.authority_dependency_sha256='d'.repeat(64);ports.admit.mockRejectedValue(Error('ANALYSIS_AUTHORITY_SUPERSEDED'));
+  await expect(runManagedDevCase(s.input)).rejects.toThrow('ANALYSIS_AUTHORITY_SUPERSEDED');expect(ports.claim).not.toHaveBeenCalled();expect(ports.run).not.toHaveBeenCalled();
  });
  it('rolls back a budget-refused claim before any provider or calculation',async()=>{
   const s=setup();s.state.budgetFails=true;await expect(runManagedDevCase(s.input)).rejects.toThrow('MANAGED_DEV_BUDGET_EXHAUSTED');

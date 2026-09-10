@@ -4,7 +4,9 @@ import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtur
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresStatement,PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {completeSavedDraftJob} from './saved-job-completion';
+import {admitSavedSource} from './saved-admission';
 import {purchasedMonths,savedMonthIdempotencyKey,readSavedOrders,type SavedOrderScope} from './saved-order-scope';
+import {june2026RegularReviewIdempotencyKey} from './saved-june2026-regular-authority';
 import {SOURCE_JOB_KIND,type SourceJob} from './source-dispatch';
 
 // Authority/case locking is independently exercised with the actual worker DB
@@ -22,12 +24,35 @@ function setup(){
   return {idempotency_key:key,analysis_run_id:`run-${month}`,command,command_sha256:canonicalSha256(command),result_sha256:'c'.repeat(64),report_id:`report-${month}`,report_revision:1,report_sha256:'d'.repeat(64)};
  });
  const responses:Record<string,Record<string,unknown>[]>={saved_job_read:[row],saved_job_lock:[row],saved_order_entitlements:[{orders:[order],current_orders:[order]}],saved_job_month_receipts:receipts,saved_job_complete_atomic:[{outbox_id:'saved-draft:saved-test'}]};
+ responses.saved_job_replay_authority=[{tenant_id:row.tenant_id,principal:'tivdoc_worker_runtime'}];
+ responses.saved_job_replay_case_lock=[{id:caseId}];
+ responses.saved_job_replay_source_head=[{revision:job.revision,input_sha256:job.input_sha256}];
+ responses.saved_job_replay_month_receipts=receipts;
  const calls:PostgresStatement[]=[];
  const context:PostgresTransactionContext={transaction_id:'unit-only',client:{async query(s){calls.push(s);const rows=responses[s.name];if(!rows)throw new Error(`UNEXPECTED_SQL:${s.name}`);return {rows,row_count:rows.length};}}};
  const input={context,jobId:row.job_id,workerId:'worker',fencingToken:2};
  return {input,job,order,row,receipts,responses,calls};
 }
 describe('saved draft job exact purchased completion',()=>{
+ it.each(['missing','expired'] as const)('completes only the regular blocked-review receipt when authority is %s',async(state)=>{
+  const s=setup();s.order.from='2026-06-01';s.order.to='2026-06-01';s.order.topics=['minimum_wage'];
+  const key=june2026RegularReviewIdempotencyKey(s.job,s.order.id);
+  const command={...s.receipts[0].command,idempotency_key:key,requested_topics:['minimum_wage'],period:{start_date:'2026-06-01',end_date:'2026-06-30'}};
+  s.responses.saved_job_month_receipts=[{...s.receipts[0],idempotency_key:key,command,command_sha256:canonicalSha256(command)}];
+  s.responses.june_test_authority=[{authority:null}];
+  s.responses.june_regular_authority=[{authority:state==='missing'?null:{state:'blocked',reason:'assessment_expired'}}];
+  const result=await completeSavedDraftJob(s.input);expect(result.manifest.months).toHaveLength(1);
+  expect(JSON.parse(String(s.calls.find(c=>c.name==='saved_job_month_receipts')!.values[2]))).toEqual([key]);
+  // An old authorized receipt is not a substitute for the current blocked run.
+  s.responses.saved_job_month_receipts[0].idempotency_key='june-regular:'+ 'f'.repeat(64);
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('SAVED_JOB_MONTHS_INCOMPLETE');
+ });
+ it('refuses a synthetic command substituted for a REAL blocked-review receipt',async()=>{
+  const s=setup();s.receipts[0].command.mode='synthetic_test';s.receipts[0].command_sha256=canonicalSha256(s.receipts[0].command);
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('SAVED_JOB_RECEIPT_SCOPE');
+  expect(s.calls.some(c=>c.name==='saved_job_complete_atomic')).toBe(false);
+ });
+
  it('binds both months, distinct order scopes and their durable receipts to one draft manifest',async()=>{
   const s=setup(),result=await completeSavedDraftJob(s.input);
   expect(result.manifest.months.map(m=>m.month)).toEqual(['2025-01','2025-02']);
@@ -87,5 +112,90 @@ describe('saved draft job exact purchased completion',()=>{
   const s=setup();expect(purchasedMonths({...s.order,from:'2024-12-01',to:'2025-02-01'})).toEqual(['2024-12','2025-01','2025-02']);
   expect(purchasedMonths({...s.order,from:'1976-01-01',to:'2025-12-01'})).toHaveLength(600);
   expect(()=>purchasedMonths({...s.order,from:'1975-12-01',to:'2025-12-01'})).toThrow('ORDER_PERIOD_REQUIRES_OPERATIONS');
+ });
+});
+
+describe('saved terminal receipt replay across authority dependency changes',()=>{
+ async function terminal(){
+  const s=setup();
+  s.job.authority_dependency_sha256='1'.repeat(64);s.row.payload_sha256=canonicalSha256(s.job);
+  s.order.from='2026-06-01';s.order.to='2026-06-01';s.order.topics=['minimum_wage'];
+  const key=june2026RegularReviewIdempotencyKey(s.job,s.order.id);
+  const command={...s.receipts[0].command,idempotency_key:key,requested_topics:['minimum_wage'],period:{start_date:'2026-06-01',end_date:'2026-06-30'}};
+  const receipt={...s.receipts[0],idempotency_key:key,command,command_sha256:canonicalSha256(command)};
+  s.responses.saved_job_month_receipts=[receipt];s.responses.saved_job_replay_month_receipts=[receipt];
+  s.responses.june_test_authority=[{authority:null}];s.responses.june_regular_authority=[{authority:null}];
+  const first=await completeSavedDraftJob(s.input);
+  s.row.state='succeeded';s.row.terminal_effect_sha256=first.sha256;s.row.lease_valid=false;
+  s.responses.saved_job_manifest_replay=[{payload:structuredClone(first.manifest),payload_sha256:first.sha256}];
+  // Any current authority lookup is an unexpected SQL call on replay. A new
+  // token may select a different run, but it cannot rewrite this old receipt.
+  delete s.responses.june_test_authority;delete s.responses.june_regular_authority;
+  delete s.responses.saved_job_month_receipts;delete s.responses.saved_job_complete_atomic;
+  s.calls.length=0;vi.mocked(admitSavedSource).mockClear();
+  return {...s,first,receipt};
+ }
+ it('returns the original bytes without fresh authority, admission, analysis or terminal writes',async()=>{
+  const s=await terminal();
+  const result=await completeSavedDraftJob(s.input);
+  expect(result).toEqual({...s.first,replayed:true});
+  expect(JSON.stringify(result.manifest)).toBe(JSON.stringify(s.first.manifest));
+  expect(result.manifest.source.authority_dependency_sha256).toBe('1'.repeat(64));
+  expect(admitSavedSource).not.toHaveBeenCalled();
+  expect(s.calls.map(call=>call.name)).toEqual(['saved_job_read','saved_job_replay_authority','saved_job_replay_case_lock',
+   'saved_job_replay_source_head','saved_job_lock','saved_order_entitlements','saved_job_manifest_replay','saved_job_replay_month_receipts']);
+  const read=s.calls.find(call=>call.name==='saved_job_replay_month_receipts')!;
+  expect(JSON.parse(String(read.values[2]))).toEqual([s.receipt.analysis_run_id]);
+  expect(read.text).toContain("ar.status='completed'");expect(read.text).toContain('r.analysis_result_sha256=');
+  expect(s.calls.find(call=>call.name==='saved_job_replay_source_head')!.text).not.toContain('authority_dependency');
+ });
+ it.each(['foreign tenant','wrong principal','missing authority','missing case','new revision','new source','revoked entitlement','stale fence','cancelled','no longer terminal'] as const)
+ ('rejects %s before returning a historical receipt',async(defect)=>{
+  const s=await terminal();
+  if(defect==='foreign tenant')s.responses.saved_job_replay_authority[0].tenant_id='saved-case:foreign';
+  if(defect==='wrong principal')s.responses.saved_job_replay_authority[0].principal='tivdoc_web_runtime';
+  if(defect==='missing authority')s.responses.saved_job_replay_authority=[];
+  if(defect==='missing case')s.responses.saved_job_replay_case_lock=[];
+  if(defect==='new revision')s.responses.saved_job_replay_source_head[0].revision=2;
+  if(defect==='new source')s.responses.saved_job_replay_source_head[0].input_sha256='f'.repeat(64);
+  if(defect==='revoked entitlement')s.responses.saved_order_entitlements[0].current_orders=[];
+  if(defect==='stale fence')s.row.fencing_token++;
+  if(defect==='cancelled')s.row.cancellation_requested=true;
+  if(defect==='no longer terminal')s.responses.saved_job_lock=[{...s.row,state:'running'}];
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow(/SAVED_(WORKER_SCOPE_FORBIDDEN|JOB_SCOPE|ORDER_ENTITLEMENT_REQUIRED|JOB_FENCE)|ANALYSIS_INPUT_SUPERSEDED/);
+  expect(admitSavedSource).not.toHaveBeenCalled();
+  expect(s.calls.some(call=>call.name==='saved_job_replay_month_receipts')).toBe(false);
+ });
+ it.each(['job','dependency','offer','month','duplicate run','unexpected member'] as const)('rejects a rehashed manifest with altered %s bindings',async(defect)=>{
+  const s=await terminal(),manifest={...structuredClone(s.first.manifest),months:s.first.manifest.months.map(month=>({...month}))};
+  if(defect==='job')manifest.job_id='other-job';
+  if(defect==='dependency')manifest.source.authority_dependency_sha256='2'.repeat(64);
+  if(defect==='offer')manifest.months[0].offer_sha256='f'.repeat(64);
+  if(defect==='month')manifest.months[0].month='2026-05';
+  if(defect==='duplicate run')manifest.months.push(manifest.months[0]);
+  const candidate=defect==='unexpected member'?{...manifest,approval:'current'}:manifest;
+  const hash=canonicalSha256(candidate);s.row.terminal_effect_sha256=hash;
+  s.responses.saved_job_manifest_replay=[{payload:candidate,payload_sha256:hash}];
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('SAVED_JOB_MANIFEST_MISMATCH');
+ });
+ it.each(['missing','duplicate','foreign run','result','report','report revision','report hash','command case','command hash','command topics'] as const)
+ ('rejects changed historical %s receipts',async(defect)=>{
+  const s=await terminal();
+  if(defect==='missing')s.responses.saved_job_replay_month_receipts=[];
+  if(defect==='duplicate')s.responses.saved_job_replay_month_receipts.push(s.receipt);
+  if(defect==='foreign run')s.receipt.analysis_run_id='foreign-run';
+  if(defect==='result')s.receipt.result_sha256='f'.repeat(64);
+  if(defect==='report')s.receipt.report_id='foreign-report';
+  if(defect==='report revision')s.receipt.report_revision++;
+  if(defect==='report hash')s.receipt.report_sha256='f'.repeat(64);
+  if(defect==='command case')s.receipt.command.case_id='22222222-2222-4222-8222-222222222222';
+  if(defect==='command topics')s.receipt.command.requested_topics=['vacation'];
+  if(defect.startsWith('command'))s.receipt.command_sha256=defect==='command hash'?'f'.repeat(64):canonicalSha256(s.receipt.command);
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow(/SAVED_JOB_(MONTHS_INCOMPLETE|RECEIPT_SCOPE)/);
+ });
+ it('does not bypass the authority-dependency fence for nonterminal work',async()=>{
+  const s=setup();vi.mocked(admitSavedSource).mockRejectedValueOnce(new Error('ANALYSIS_AUTHORITY_SUPERSEDED'));
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('ANALYSIS_AUTHORITY_SUPERSEDED');
+  expect(s.calls.map(call=>call.name)).toEqual(['saved_job_read']);
  });
 });

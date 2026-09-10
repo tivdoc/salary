@@ -21,6 +21,9 @@ import {decodeReport} from '@/server/platform/persistence/postgres/analysis/vali
 import {claimSavedDraftJob,recordSavedJobFailure} from './saved-job-runtime';
 import {runSavedWorkerExtraction,type SavedWorkerTransactions} from './saved-extraction-worker';
 import {runSavedWorkerMonth} from './saved-worker';
+import {runSavedDraftJob} from './saved-job-runner';
+import {runAutomaticDevMonth} from './automatic-dev-flow';
+import {runManagedDevCase} from './managed-worker-case';
 import type {SourceJob} from './source-dispatch';
 import {createSolBudgetedExtractor} from './sol-budgeted-extractor';
 import {createSolSingleBaseSource} from './live-extraction-sol-comparison-fixtures';
@@ -74,7 +77,7 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
   const context:PostgresTransactionContext={transaction_id:randomUUID(),client:{async query(s){const r=await db.query(s.text,[...s.values]);return {rows:r.rows.map(row=>Object.fromEntries(Object.entries(row).map(([k,v])=>[k,v instanceof Date?v.toISOString():v]))),row_count:r.rowCount??0};}}};
   const result=await op(context);await db.query('commit');return result;
  }catch(e){await db.query('rollback');throw e;}};
- const head=async():Promise<SourceJob>=>{const h=(await owner.query('select revision,input_sha256 from private.case_input_heads where case_id=$1',[caseId])).rows[0];return {schema_version:'saved-case-work-v1',case_id:caseId,revision:Number(h.revision),input_sha256:h.input_sha256,mode:'draft'};};
+ const head=async():Promise<SourceJob>=>{const h=(await owner.query("select h.revision,h.input_sha256,d.authority_dependency_sha256 from private.case_input_heads h left join private.case_analysis_dispatch d on d.case_id=h.case_id and d.revision=h.revision and d.mode='draft' where h.case_id=$1",[caseId])).rows[0];return {schema_version:'saved-case-work-v1',case_id:caseId,revision:Number(h.revision),input_sha256:h.input_sha256,mode:'draft',...(h.authority_dependency_sha256?{authority_dependency_sha256:h.authority_dependency_sha256}:{})};};
  const claim=()=>transact(worker)(async c=>{const lease=await claimSavedDraftJob(c,{caseId,workerId:'regular-live',leaseMs:300000});if(lease.state!=='claimed')throw Error('REGULAR_LIVE_CLAIM');heldLease={caseId,workerId:'regular-live',jobId:lease.jobId,fencingToken:lease.fencingToken};return {...lease,workerId:'regular-live'};});
  const extract=async()=>{const lease=await claim();return runSavedWorkerExtraction({...lease,versionId:file!.versionId,transactions:transact(worker),extractor:bounded.extractor,providerEnabled:true,
   storage:{async download(p){expect(p).toBe(file!.path);const r=await bucket.download(p);if(r.error||!r.data)throw Error('REGULAR_SOURCE_STORAGE');expect(sha(Buffer.from(await r.data.arrayBuffer()))).toBe(source.sha256);return {data:r.data,error:null};}}});};
@@ -128,7 +131,61 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
    const retried=await Promise.all([calculate(currentJob,worker),calculate(currentJob,peer)]);
    for(const r of retried)expect(r.report?.report_sha256).toBe(run.report?.report_sha256);
    expect((await owner.query('select count(*)::int n from private.june2026_regular_results where case_id=$1',[caseId])).rows[0].n).toBe(1);
-   checks.push('resumed_existing_live_checkpoint_without_provider_call','live_provider_to_canonical_finding_and_published_report','parallel_retry_same_report_no_duplicates');return;
+   checks.push('resumed_existing_live_checkpoint_without_provider_call','live_provider_to_canonical_finding_and_published_report','parallel_retry_same_report_no_duplicates');
+   if(process.env.TIVDOC_JUNE_REGULAR_MANAGED_PROOF==='1'){
+    phase='managed-callback-and-terminal-completion';expect(heldLease).not.toBeNull();
+    const managedInput={...heldLease!,transactions:transact(worker),providerEnabled:true,extractor:bounded.extractor,onMonth:runAutomaticDevMonth,
+     storage:{async download(p:string){expect(p).toBe(file!.path);const r=await bucket.download(p);if(r.error||!r.data)throw Error('REGULAR_SOURCE_STORAGE');return {data:r.data,error:null};}}};
+    const completed=await runSavedDraftJob(managedInput);
+    expect(completed.completion.manifest.months).toHaveLength(1);
+    expect(completed.completion.manifest.months[0].analysis_run_id).toBe(run.analysis_run_id);
+    expect(completed.analyzedMonths).toBe(1);
+    const restarted=await runSavedDraftJob(managedInput);
+    expect(restarted.completion.replayed).toBe(true);expect(restarted.analyzedMonths).toBe(0);
+    expect(restarted.completion.sha256).toBe(completed.completion.sha256);
+    expect((await owner.query('select count(*)::int n from private.june2026_regular_results where case_id=$1',[caseId])).rows[0].n).toBe(1);
+    writeFileSync(directory+'/managed-completion-'+gitSha.slice(0,7)+'.json',JSON.stringify({completed,restarted},null,2)+'\n',{flag:'wx'});
+    checks.push('managed_callback_same_regular_run_and_current_publication','durable_job_terminal_success','restart_exact_terminal_manifest_no_duplicate_publication');
+    if(process.env.TIVDOC_JUNE_REGULAR_DEPENDENCY_PROOF==='1'){
+     phase='authority-change-wakes-existing-queue';const originalHead=await head();
+     const assessmentId=(await owner.query('select id from private.june2026_regular_assessments where case_id=$1 and order_id=$2 and input_revision=$3',[caseId,orderId,originalHead.revision])).rows[0].id;
+     let restored=false;const capabilityToken=randomUUID()+randomUUID(),capability=sha(capabilityToken);
+     await owner.query("insert into private.managed_dev_worker_capabilities(capability_sha256,expires_at,daily_limit,total_limit) values($1,now()+interval '1 hour',6,6)",[capability]);
+     await owner.query('insert into private.managed_dev_worker_cases(case_id,identity_id,session_sid,capability_sha256) values($1,$2,$3,$4)',[caseId,OWNER,sid,capability]);
+     try{
+      // Toggle only this retained synthetic authority. Existing signatures and
+      // findings are not edited; no new human approval is asserted.
+      await owner.query('update private.june2026_regular_assessments set revoked_at=clock_timestamp() where id=$1',[assessmentId]);
+      const revokedHead=await head();expect(revokedHead.revision).toBe(originalHead.revision);expect(revokedHead.input_sha256).toBe(originalHead.input_sha256);
+      expect(revokedHead.authority_dependency_sha256).toMatch(/^[a-f0-9]{64}$/u);
+      expect((await peer.query('select case_id from private.managed_dev_worker_candidates($1,2)',[capabilityToken])).rows.map(r=>r.case_id)).toEqual([caseId]);
+      const managedBlocked=await runManagedDevCase({...managedInput,caseId,workerId:'regular-live'});expect(managedBlocked.state).toBe('succeeded');
+      const blockedJob=(await owner.query("select job_id,fencing_token from public.engine_durable_jobs where job_id=$1",['jobId' in managedBlocked?managedBlocked.jobId:null])).rows[0];
+      const blockedLease={jobId:blockedJob.job_id,fencingToken:Number(blockedJob.fencing_token)};expect(blockedLease.jobId).not.toBe(managedInput.jobId);
+      const blockedInput={...managedInput,...blockedLease},blockedCompletion=await runSavedDraftJob(blockedInput);
+      const blockedParent=await calculate(await head());expect(blockedParent.command.mode).toBe('real');expect(blockedParent.bundle?.topic_results[0].amount).toBeNull();
+      const oldReplay=await runSavedDraftJob(managedInput);expect(oldReplay.completion.sha256).toBe(completed.completion.sha256);
+      await owner.query('update private.june2026_regular_assessments set revoked_at=null where id=$1',[assessmentId]);restored=true;
+      const restoredHead=await head();expect(restoredHead.revision).toBe(originalHead.revision);expect(restoredHead.input_sha256).toBe(originalHead.input_sha256);
+      expect(restoredHead.authority_dependency_sha256).not.toBe(revokedHead.authority_dependency_sha256);
+      expect((await peer.query('select case_id from private.managed_dev_worker_candidates($1,2)',[capabilityToken])).rows.map(r=>r.case_id)).toEqual([caseId]);
+      const managedActive=await runManagedDevCase({...managedInput,caseId,workerId:'regular-live'});expect(managedActive.state).toBe('succeeded');
+      const activeJob=(await owner.query("select job_id,fencing_token from public.engine_durable_jobs where job_id=$1",['jobId' in managedActive?managedActive.jobId:null])).rows[0];
+      const activeLease={jobId:activeJob.job_id,fencingToken:Number(activeJob.fencing_token)};expect(activeLease.jobId).not.toBe(blockedLease.jobId);
+      const activeInput={...managedInput,...activeLease},activeCompletion=await runSavedDraftJob(activeInput);
+      const activeParent=await calculate(restoredHead);await exportRun('dependency-current',activeParent);
+      expect(activeParent.analysis_run_id).not.toBe(run.analysis_run_id);
+      const activeRestart=await runSavedDraftJob(activeInput);expect(activeRestart.completion.sha256).toBe(activeCompletion.completion.sha256);
+      expect((await runSavedDraftJob(blockedInput)).completion.sha256).toBe(blockedCompletion.completion.sha256);
+      expect((await runSavedDraftJob(managedInput)).completion.sha256).toBe(completed.completion.sha256);
+      writeFileSync(directory+'/authority-dependency-'+gitSha.slice(0,7)+'.json',JSON.stringify({originalHead,revokedHead,restoredHead,managedBlocked,managedActive,blockedCompletion,activeCompletion,activeRestart,priorManifestSha:completed.completion.sha256,providerCalls:0},null,2)+'\n',{flag:'wx'});
+      checks.push('revocation_wakes_one_distinct_existing_queue_job_and_REAL_remains_blocked','restored_signed_test_authority_wakes_new_canonical_run_without_source_edit','old_terminal_manifests_replay_unchanged_after_dependency_change');
+     }finally{if(!restored)await owner.query('update private.june2026_regular_assessments set revoked_at=null where id=$1',[assessmentId]);
+      await owner.query('update private.managed_dev_worker_cases set enabled=false,stopped_at=now() where case_id=$1 and capability_sha256=$2',[caseId,capability]);
+      await owner.query('update private.managed_dev_worker_capabilities set enabled=false where capability_sha256=$1',[capability]);}
+    }
+   }
+   return;
   }
   const initialRun=await calculate(await head());expect(initialRun.command.mode).toBe('real');expect(initialRun.bundle?.topic_results[0].amount).toBeNull();checks.push('REAL_without_authority_blocked');
   if(kind==='conflicting-hours'){

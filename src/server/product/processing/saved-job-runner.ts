@@ -33,6 +33,10 @@ async function admit(context:PostgresTransactionContext,input:Lease){
  const job=sourceJobSchema.parse(initial.payload),tenant=savedCaseTenant(job.case_id);
  if(initial.job_kind!==SOURCE_JOB_KIND||initial.tenant_id!==tenant||initial.canonical_case_id!==job.case_id
   ||canonicalSha256(job)!==initial.payload_sha256)throw new Error('SAVED_JOB_SCOPE');
+ // Completed work is an immutable receipt read. The terminal finalizer below
+ // authenticates machine, current source/entitlement and fence without
+ // requiring a historical authority dependency to remain current.
+ if(initial.state==='succeeded')return {job,completed:true};
  await admitSavedSource(context,job);
  const locked=await read(true);
  if(!locked||locked.payload_sha256!==initial.payload_sha256||canonicalSha256(locked.payload)!==initial.payload_sha256

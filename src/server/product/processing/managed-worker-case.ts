@@ -14,17 +14,28 @@ type Runner=Parameters<typeof runSavedDraftJob>[0];
  * is a separate authorization gate; this adapter cannot authorize new cases. */
 async function scope(context:PostgresTransactionContext,caseId:string){
  const result=await context.client.query(statement('managed_worker_scope',
-  `select current_database() database,c.is_qa,h.revision,h.input_sha256,v.input
+  `select current_database() database,c.is_qa,h.revision,h.input_sha256,v.input,d.authority_dependency_sha256
    from public.cases c join private.case_input_heads h on h.case_id=c.id
    join private.case_input_versions v on v.case_id=h.case_id and v.revision=h.revision
+   left join private.case_analysis_dispatch d on d.case_id=h.case_id and d.revision=h.revision and d.mode='draft'
    where c.id=$1::uuid`,[caseId]));
  const row=result.rows[0];
  if(!row||row.database!=='tivdoc_release_replay_20260907'||row.is_qa!==true)throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
- const job=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:caseId,revision:row.revision,input_sha256:row.input_sha256,mode:'draft'});
+ const job=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:caseId,revision:row.revision,input_sha256:row.input_sha256,mode:'draft',
+  ...(row.authority_dependency_sha256==null?{}:{authority_dependency_sha256:row.authority_dependency_sha256})});
  await admitSavedSource(context,job);
  const orders=await readSavedOrders(context,job);
- if(orders.length!==1||orders[0].kind!=='initial'||orders[0].from!=='2026-06-01'||orders[0].to!=='2026-06-01'
+ if(orders.length!==1||!['initial','full'].includes(orders[0].kind)||orders[0].from!=='2026-06-01'||orders[0].to!=='2026-06-01'
   ||orders[0].topics.length!==1||orders[0].topics[0]!=='minimum_wage')throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
+ if(orders[0].kind==='full'){
+  const offer=await context.client.query(statement('managed_worker_full_ai_offer',
+   `select o.id from private.product_orders o join private.order_entitlements e on e.order_id=o.id
+    where o.id=$1::uuid and o.case_id=$2::uuid and o.offer_sha256=$3 and o.kind='full'
+     and o.state='paid' and o.refund_state<>'refunded' and e.state='active'
+     and o.offer->>'version'='tivdoc-order-offer-v2' and o.offer->>'service_kind'='ai_assisted'
+     and o.offer->'human_review_required'='false'::jsonb`,[orders[0].id,caseId,orders[0].offer_sha256]));
+  if(offer.rows.length!==1||offer.rows[0].id!==orders[0].id)throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
+ }
  const input=z.object({month:z.literal('2026-06'),documents:z.array(z.object({type:z.string(),month:z.string().nullable()}))}).parse(row.input);
  const payslips=input.documents.filter(d=>d.type==='payslip');
  if(payslips.length!==1||payslips.some(d=>d.month!==null&&!['2026-06','2026-06-01'].includes(d.month)))throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');

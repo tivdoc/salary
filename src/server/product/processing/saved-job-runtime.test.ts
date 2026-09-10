@@ -4,6 +4,7 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {claimSavedDraftJob,recordSavedJobFailure,runSavedDraftOnce,savedJobFailure} from './saved-job-runtime';
+import type {SourceJob} from './source-dispatch';
 const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn(),dispatch:vi.fn(),audit:vi.fn(),run:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./saved-admission',()=>({savedCaseTenant:(id:string)=>`saved-case:${id}`,admitSavedSource:ports.admit}));
@@ -14,18 +15,18 @@ vi.mock('@/server/platform/persistence/postgres/runtime/jobs-outbox-audit',()=>(
 beforeEach(()=>vi.resetAllMocks());
 
 function setup(){
- const caseId=randomUUID(),source={schema_version:'saved-case-work-v1',case_id:caseId,revision:1,input_sha256:'a'.repeat(64),mode:'draft'};
+ const caseId=randomUUID(),source:SourceJob={schema_version:'saved-case-work-v1',case_id:caseId,revision:1,input_sha256:'a'.repeat(64),mode:'draft'};
  let row={job_id:'job',tenant_id:`saved-case:${caseId}`,canonical_case_id:caseId,job_kind:'saved_case_analysis_v1',payload:source,payload_sha256:canonicalSha256(source),
   state:'queued',revision:1,fencing_token:0,attempt_count:0,max_attempts:3,lease_owner:null as string|null,lease_valid:false,due:true,cancellation_requested:false};
  const authority={principal:'tivdoc_worker_runtime',tenant_id:row.tenant_id},calls:string[]=[];
- const state={missingHead:false,missingDispatch:false,atomicRefusal:false,commits:0};
+ const state={missingHead:false,missingDispatch:false,atomicRefusal:false,commits:0,dependency:null as string|null};
  const context:PostgresTransactionContext={transaction_id:'recording',client:{async query(s){
   calls.push(s.name);
   switch(s.name){
    case 'saved_runtime_authority':return {rows:[authority],row_count:1};
-   case 'saved_runtime_head':return {rows:state.missingHead?[]:[{revision:1,input_sha256:source.input_sha256}],row_count:state.missingHead?0:1};
+   case 'saved_runtime_head':expect(s.text).toContain("d.mode='draft'");return {rows:state.missingHead?[]:[{revision:1,input_sha256:source.input_sha256,authority_dependency_sha256:state.dependency}],row_count:state.missingHead?0:1};
    case 'saved_runtime_clock':return {rows:[{now_ms:1788854400000}],row_count:1};
-   case 'saved_runtime_dispatch':return {rows:state.missingDispatch?[]:[{job_id:'job'}],row_count:state.missingDispatch?0:1};
+   case 'saved_runtime_dispatch':expect(s.text).toContain('authority_dependency_sha256 is not distinct from $3');expect(s.values[2]).toBe(state.dependency);return {rows:state.missingDispatch?[]:[{job_id:row.job_id}],row_count:state.missingDispatch?0:1};
    case 'saved_runtime_job_lock':return {rows:[row],row_count:1};
    case 'saved_runtime_failure_case_lock':return {rows:[{id:caseId}],row_count:1};
    case 'saved_runtime_audit_time':return {rows:[{now:'2026-09-08T08:00:00Z'}],row_count:1};
@@ -54,6 +55,21 @@ describe('scoped saved job runtime',()=>{
   expect(ports.dispatch.mock.calls[0][1]).toMatchObject({mode:'draft',liveEnabled:false,nowMs:1788854400000});
   expect(s.row()).toMatchObject({state:'running',attempt_count:1,lease_owner:'worker'});
   expect(ports.audit).toHaveBeenCalledWith(expect.objectContaining({reason:'saved_job_claimed',resource_revision:2}));
+  expect(ports.admit.mock.calls[0][1]).not.toHaveProperty('authority_dependency_sha256');
+ });
+ it('claims a newly dispatched dependency job while preserving the previous successful payload',async()=>{
+  const s=setup();s.row().state='succeeded';const previous=structuredClone(s.row());
+  expect((await s.claim()).state).toBe('succeeded');expect(s.row()).toEqual(previous);
+  s.state.dependency='b'.repeat(64);
+  const payload={...s.row().payload,authority_dependency_sha256:s.state.dependency};
+  Object.assign(s.row(),{job_id:'new_dependency_job',payload,payload_sha256:canonicalSha256(payload),state:'queued',revision:1,fencing_token:0,attempt_count:0});
+  expect(await s.claim()).toEqual({state:'claimed',jobId:'new_dependency_job',fencingToken:1});
+  expect(ports.admit.mock.calls.at(-1)?.[1]).toEqual(payload);
+  expect(previous).toMatchObject({job_id:'job',state:'succeeded',attempt_count:0});expect(previous.payload).not.toHaveProperty('authority_dependency_sha256');
+ });
+ it('refuses a dispatch pointing at an old dependency job before another attempt or audit',async()=>{
+  const s=setup();s.state.dependency='b'.repeat(64);const before=structuredClone(s.row());
+  await expect(s.claim()).rejects.toThrow('SAVED_JOB_SCOPE');expect(s.row()).toEqual(before);expect(ports.audit).not.toHaveBeenCalled();
  });
  it.each(['principal','tenant'])('rejects wrong %s before reading private input',async mutation=>{
   const s=setup();if(mutation==='principal')s.authority.principal='tivdoc_web_runtime';else s.authority.tenant_id='foreign';
@@ -92,6 +108,7 @@ describe('scoped saved job runtime',()=>{
   ['SAVED_EXTRACTION_OUTCOME_PENDING','dead_letter','saved_provider_outcome_unknown'],
   ['SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED','dead_letter','saved_documents_missing'],
   ['ANALYSIS_INPUT_SUPERSEDED','cancelled','saved_source_superseded'],
+  ['ANALYSIS_AUTHORITY_SUPERSEDED','cancelled','saved_authority_superseded'],
   ['SAVED_JOB_INTERRUPTED','retry_wait','saved_worker_interrupted'],
  ])('classifies %s without losing restart/reconciliation obligations',async(code,state,reason)=>{
   expect(savedJobFailure(new Error(code))).toEqual({state,reason});const s=setup();await s.claim();
