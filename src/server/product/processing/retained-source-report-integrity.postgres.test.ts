@@ -19,8 +19,12 @@ const HISTORICAL='0fd6c29d-cfb2-4349-80a7-c5383a25a056';
 const APP_SHA='d85c2f7';
 const SCHEMA='20260910044646';
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
+// node-postgres returns int8 as decimal text. Accept only exact nonnegative
+// integers within JavaScript's safe range, without coercing null/blank/decimals.
+const pgSafeInteger=z.union([z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),z.string().regex(/^(0|[1-9][0-9]*)$/u)])
+ .transform(value=>typeof value==='string'?Number(value):value).pipe(z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER));
 const read=(file:string):unknown=>JSON.parse(readFileSync(file,'utf8'));
-const artifactRow=z.object({id:z.uuid(),input_revision:z.number().int(),input_sha256:sha,payload:z.unknown(),payload_sha256:sha,
+const artifactRow=z.object({id:z.uuid(),input_revision:pgSafeInteger,input_sha256:sha,payload:z.unknown(),payload_sha256:sha,
  html:z.string(),pdf:z.instanceof(Buffer),html_sha256:sha,pdf_sha256:sha});
 const customerRows=z.array(z.object({payload:z.unknown(),payload_sha256:sha,html:z.string(),html_sha256:sha,pdf_sha256:sha,
  pdf_base64:z.string().nullable(),current:z.boolean()}));
@@ -65,9 +69,10 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
    await db.query("select set_config('tivdoc.engine_git_sha',$1,true)",[appSha]);const result=await operation();await db.query(rollback?'rollback':'commit');return result;
   }catch(error){await db.query('rollback');throw error;}
  };
- const head=async()=>(await owner.query('select revision,input_sha256 from private.case_input_heads where case_id=$1',[CASE])).rows[0];
-  const invocationSnapshot=async()=>(await owner.query(`select invocation_id,version_id,policy_version,source_revision,input_sha256,result_sha256,
-  result is not null result_recorded from private.case_extraction_invocations where case_id=$1 order by invocation_id`,[CASE])).rows;
+ const head=async()=>z.object({revision:pgSafeInteger,input_sha256:sha}).parse((await owner.query('select revision,input_sha256 from private.case_input_heads where case_id=$1',[CASE])).rows[0]);
+ const invocationSnapshot=async()=>(await owner.query(`select invocation_id,version_id,policy_version,source_revision,input_sha256,result_sha256,
+  result is not null result_recorded from private.case_extraction_invocations where case_id=$1 order by invocation_id`,[CASE])).rows
+  .map(row=>({...row,source_revision:pgSafeInteger.parse(row.source_revision)}));
  const pendingRequests=async()=>(await owner.query(`select r.id request_id,split_part(r.code,':',1) namespace,
   coalesce(f.target#>>'{candidate,field}',j.target#>>'{subject,field}',j.target#>>'{subject,kind}',t.target#>>'{subject,kind}') subject
   from public.case_requests r
@@ -83,7 +88,7 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
   order by r.id`,[CASE])).rows;
  const unchangedSnapshot=async()=>({head:await head(),runs:(await owner.query(`select id,input_revision,input_sha256,payload_sha256,html_sha256,pdf_sha256,
   encode(sha256(convert_to(html,'UTF8')),'hex') actual_html_sha256,encode(sha256(pdf),'hex') actual_pdf_sha256
-  from private.dev_financial_runs where case_id=$1 order by id`,[CASE])).rows,
+  from private.dev_financial_runs where case_id=$1 order by id`,[CASE])).rows.map(row=>({...row,input_revision:pgSafeInteger.parse(row.input_revision)})),
   findings:(await owner.query('select id,run_id,finding from private.dev_financial_findings where case_id=$1 order by id',[CASE])).rows,
   invocations:await invocationSnapshot(),pendingRequests:await pendingRequests()});
  const customer=async(identity:string,runId:string|null=null)=>customerRows.parse((await web.query('select public.case_report_dev_financial($1,$2,$3) value',[CASE,identity,runId])).rows[0].value);
@@ -132,7 +137,7 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
   const checkpoint=(await owner.query(`select c.result,c.result_sha256,d.id document_id,d.content_sha256,d.storage_path,d.size,d.mime_type
    from private.case_extraction_checkpoints c join public.documents d on d.case_id=c.case_id and d.version_id=c.version_id
    where c.case_id=$1 and c.revision=$2 and c.version_id=$3 and c.policy_version='saved-payslip-v21-p95-v1'`,[CASE,currentHead.revision,VERSION])).rows;
-  expect(checkpoint).toHaveLength(1);expect(checkpoint[0]).toMatchObject({document_id:run.source.document_id,content_sha256:run.source.source_sha256,
+  expect(checkpoint).toHaveLength(1);expect({...checkpoint[0],size:pgSafeInteger.parse(checkpoint[0].size)}).toMatchObject({document_id:run.source.document_id,content_sha256:run.source.source_sha256,
    result_sha256:run.source.checkpoint_sha256,storage_path:run.source.path,size:run.source.size,mime_type:run.source.mime});
   expect(checkpoint[0].result).toEqual(read(path.join(directory,'missing-extraction.json')));
   expect(run.source_completions.checkpoint).toEqual(checkpoint[0].result);
@@ -162,7 +167,7 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
   writeFileSync(path.join(output,'source.pdf'),sourceBytes);evidence.independentOracle=oracle;
   const answers=[...run.source_completions.readings,run.source_completions.component_nature,run.reading!];
   for(const answer of answers){const actual=(await owner.query('select revision,identity_id,answer_text,created_at from private.case_request_answer_versions where request_id=$1 and revision=$2',[answer.request_id,answer.answer_revision])).rows;
-   expect(actual).toHaveLength(1);expect(actual[0]).toMatchObject({revision:answer.answer_revision,identity_id:answer.identity_id,answer_text:answer.answer});
+   expect(actual).toHaveLength(1);expect({...actual[0],revision:pgSafeInteger.parse(actual[0].revision)}).toMatchObject({revision:answer.answer_revision,identity_id:answer.identity_id,answer_text:answer.answer});
    expect(new Date(actual[0].created_at).toISOString()).toBe(new Date(answer.answered_at).toISOString());}
   evidence.answerPins=answers.map(a=>({requestId:a.request_id,revision:a.answer_revision,answeredAt:a.answered_at}));
   checks.push('Independent 100-hour oracle yields expected 354000, recorded 330000 and gap 24000 minor units; downloaded immutable Storage bytes and four actual identified answer revisions match the saved run.');
@@ -201,7 +206,7 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
   expect(list.find(row=>parseDevFinancialRun(row.payload).run_id===HISTORICAL)?.current).toBe(false);
   const detail=await customer(control.identity,run.run_id);expect(detail).toHaveLength(1);expect(detail[0].current).toBe(true);
   expect(detail[0].payload).toEqual(run);expect(detail[0].html).toBe(stored.html);expect(Buffer.from(detail[0].pdf_base64!,'base64').equals(stored.pdf)).toBe(true);
-  const foreign=randomUUID();expect((await owner.query('select count(*)::int n from public.case_identity_cases where case_id=$1 and identity_id=$2',[CASE,foreign])).rows[0].n).toBe(0);
+  const foreign=randomUUID();expect(pgSafeInteger.parse((await owner.query('select count(*)::int n from public.case_identity_cases where case_id=$1 and identity_id=$2',[CASE,foreign])).rows[0].n)).toBe(0);
   await expect(customer(foreign,run.run_id)).rejects.toThrow('DEV_FINANCIAL_FORBIDDEN');await expect(customer(foreign,HISTORICAL)).rejects.toThrow('DEV_FINANCIAL_FORBIDDEN');
   for(const reading of run.source_completions.readings){const source=(await web.query('select public.case_request_document_source($1,$2,$3) value',[CASE,control.identity,reading.request_id])).rows[0].value;
    expect(source).toMatchObject({version:VERSION,sha256:run.source.source_sha256,path:run.source.path,page:1});
