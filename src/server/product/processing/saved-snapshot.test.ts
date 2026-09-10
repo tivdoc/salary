@@ -40,6 +40,7 @@ describe('exact saved source to canonical snapshot',()=>{
    extraction_snapshot_id:snapshot.extraction_snapshot_id,extraction_snapshot_sha256:snapshot.extraction_snapshot_sha256,
    declared_fact_snapshot_id:snapshot.declared_fact_snapshot.snapshot_id,declared_fact_snapshot_sha256:snapshot.declared_fact_snapshot.snapshot_sha256};
   expect(await s.reader.loadPinned(command)).toEqual(snapshot);
+  await expect(s.reader.loadPinned({...command,mode:'synthetic_test'})).rejects.toThrow('SAVED_COMMAND_SCOPE');
   await expect(s.reader.loadPinned({...command,case_id:'22222222-2222-4222-8222-222222222222'})).rejects.toThrow('SAVED_COMMAND_SCOPE');
   await expect(s.reader.loadPinned({...command,extraction_snapshot_sha256:'b'.repeat(64)})).rejects.toThrow('SAVED_COMMAND_PIN_MISMATCH');
  });

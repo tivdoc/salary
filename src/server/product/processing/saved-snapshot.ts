@@ -1,3 +1,4 @@
+import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from './saved-june2026-test-authority';
 import {savedDeclaredFacts} from './saved-request-facts';
 import {savedDocumentFieldReadings} from './saved-field-readings';
 import { z } from 'zod';
@@ -28,7 +29,7 @@ const checkpointSchema = z.object({
  * immutable journal revision and extraction policy can become engine inputs.
  * Revalidates source scope even on retry; it never calls a provider in a lock. */
 export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
- constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string) {}
+ constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string,private readonly testScope?:{authority:June2026TestAuthority;orderId:string}) {}
 
  async read():Promise<StoredCaseInputSnapshot> {
   const job=sourceJobSchema.parse(this.candidate);
@@ -85,7 +86,13 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
  }
 
  async loadPinned(command:CaseAnalysisCommand):Promise<StoredCaseInputSnapshot>{
-  if(command.case_id!==this.candidate.case_id||command.mode!=='real')throw new Error('SAVED_COMMAND_SCOPE');
+  if(command.case_id!==this.candidate.case_id)throw new Error('SAVED_COMMAND_SCOPE');
+  if(this.testScope){
+   const {authority,orderId}=this.testScope;assertJune2026TestAuthority(authority,this.candidate,orderId);
+   if(command.mode!=='synthetic_test'||this.targetMonth!=='2026-06'||command.period.start_date!=='2026-06-01'||command.period.end_date!=='2026-06-30'
+    ||command.requested_topics.length!==1||command.requested_topics[0]!=='minimum_wage'
+    ||command.idempotency_key!==june2026TestIdempotencyKey(this.candidate,orderId,authority))throw new Error('SAVED_COMMAND_SCOPE');
+  }else if(command.mode!=='real')throw new Error('SAVED_COMMAND_SCOPE');
   const snapshot=await this.read();
   if(command.document_snapshot_id!==snapshot.document_snapshot_id||command.document_snapshot_sha256!==snapshot.document_snapshot_sha256
    ||command.extraction_snapshot_id!==snapshot.extraction_snapshot_id||command.extraction_snapshot_sha256!==snapshot.extraction_snapshot_sha256

@@ -43,7 +43,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const key=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):savedMonthIdempotencyKey(job,order.id,input.month);
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
  if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report)throw new Error('SAVED_REPLAY_SCOPE');return existing;}
- const snapshots=new SavedCaseSnapshot(input.context,job,input.month),snapshot=await snapshots.read();
+ const snapshots=new SavedCaseSnapshot(input.context,job,input.month,testAuthority?{authority:testAuthority,orderId:order.id}:undefined),snapshot=await snapshots.read();
  const end=new Date(Date.UTC(Number(input.month.slice(0,4)),Number(input.month.slice(5,7)),0)).toISOString().slice(0,10);
  const now=new Date(String(row.created_at)).toISOString();
  const collection=input.month==='2026-06'&&order.topics.includes('minimum_wage')?await readSavedJune2026Collection(input.context,job):null;

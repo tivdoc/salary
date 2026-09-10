@@ -89,7 +89,7 @@ export async function loadSavedJune2026AdmittedContext(input: {
   // This reuses the existing journal/source/currentness checks and reconstructs
   // document readings from their authenticated request+answer revision, rather
   // than trusting a confirmation-shaped object in a canonical fact.
-  const snapshot = await new SavedCaseSnapshot(context, job, '2026-06').loadPinned(command);
+  const snapshot = await new SavedCaseSnapshot(context, job, '2026-06',input.testAuthority?{authority:input.testAuthority,orderId}:undefined).loadPinned(command);
   if (snapshot.documents.length !== 1 || snapshot.extractions.length !== 1) return blocked('multiple_documents', job.case_id, analysisRunId);
   const document = snapshot.documents[0], extraction = snapshot.extractions[0], actualReadings = extraction.customer_readings ?? [];
   for (const fact of canonicalStage.facts.facts) for (const source of fact.provenance) {
