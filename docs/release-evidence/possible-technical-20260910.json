@@ -1,0 +1,31 @@
+{
+  "schema_version": "tivdoc-technical-delivery-summary-v1",
+  "evidence_kind": "summary_of_executed_local_tool_results_not_a_DB_or_browser_receipt",
+  "base_commit": "b55152d7fa20d52796b92d6ca1e2be3fa710dae1",
+  "application_commit": "4d78aad05a59b9608997d4d564c039084fc0dc33",
+  "validated_before_commit": true,
+  "branch": "codex/tivdoc-release-completion",
+  "tests": [
+    {"group": "admitted-context; saved-june2026-admitted-context; saved-analysis-preexecution; june2026-catalog", "passed": 89, "failed": 0},
+    {"group": "confidence-critical-context; confidence-policy; v21; saved-june2026-admitted-context", "passed": 51, "failed": 0, "retained_scan_opt_in_executed": true},
+    {"group": "confidence-critical-context; v2", "passed": 16, "skipped": 1, "failed": 0}
+  ],
+  "test_groups_overlap": true,
+  "typecheck": "PASS including final V2 change",
+  "changed_file_lint": "PASS",
+  "known_private_values_scanned": 19,
+  "secret_leaks_found": 0,
+  "base_CI": {"status": "PASS", "runs": [34440536021, 34440533942]},
+  "new_CI": "pending_after_push_not_claimed_PASS",
+  "new_live_provider_calls": 0,
+  "new_DB_validation": false,
+  "new_browser_validation": false,
+  "deployment_performed": false,
+  "schema_changes": false,
+  "production_changed": false,
+  "new_financial_report": false,
+  "canonical_activation": false,
+  "assessment_packet": "implemented_negative_admission_path_only",
+  "single_component_aggregate_comparison": "diagnosed_not_implemented",
+  "prior_live_report": "source-completions-20260910/calculated.pdf"
+}

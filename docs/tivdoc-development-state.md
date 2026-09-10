@@ -1,4 +1,8 @@
-## Current delivery — retained source-completion report, STOP (2026-09-10)
+## Current code delivery — possible technical continuation, STOP (2026-09-10)
+
+[Latest technical handoff](canonical-possible-work-handoff-2026-09-10-he.md): same-run unadmitted assessment packet with precise missing/stale/expired/conflict/declaration states, and corrected extraction-confidence applicability for observed or Gate0-required fields. Locally tested, not DB/browser verified or deployed. Canonical authority remains unavailable; single-component aggregate comparison is diagnosed and not implemented. No new report/provider calls. The previous actual schema135/d85c2f7 financial proof below remains unchanged.
+
+## Previous deployed proof — retained source-completion report, STOP (2026-09-10)
 
 The later [final handoff](source-completions-final-handoff-2026-09-10-he.md) supersedes the historical provider-blocked statements below. Actual owner OTP, browser source/hour answers, scheduled processing and recovery, current engineering report/PDF and delivered report notification with signed Webhooks are proved on d85c2f7/schema135; clean0749809 DB integrity passes without application diff. [Actual PDF](release-evidence/source-completions-20260910/calculated.pdf):3540.00 expected/3300.00 recorded/240.00ILS engineering-only difference. Existing live OpenAI extraction was reused; no new SDK call or injected replacement. Canonical admission/executor/publication and wider Hebrew/scan quality remain incomplete. Case remains awaiting_input with nine open requests. Temporary worker/transport safely stopped, reports preserved, Production and separate UI checkout unchanged. No automatic continuation.
 
