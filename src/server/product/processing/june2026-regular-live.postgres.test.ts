@@ -55,16 +55,20 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
  const resumed=existsSync(privatePath)&&process.env.TIVDOC_JUNE_REGULAR_RESUME==='1';
  if(existsSync(privatePath)&&!resumed)throw Error('REGULAR_RETAINED_CASE_REQUIRES_EXPLICIT_RESUME');
  const prior=resumed?JSON.parse(readFileSync(privatePath,'utf8')):null;
+ const replacePreflight=process.env.TIVDOC_JUNE_REGULAR_REPLACE_PREFLIGHT==='1';
+ if(replacePreflight&&(!resumed||attempt!=='r5'||kind!=='clear'||prior?.priorVersions?.length))throw Error('REGULAR_REPLACE_PREFLIGHT_SCOPE');
+ const priorVersions:ReservedFile[]=[...(prior?.priorVersions??[])];
  const caseId=prior?.caseId??randomUUID(),orderId=prior?.orderId??randomUUID(),sid='regular-live:'+randomUUID(),jti=randomUUID(),tenant='saved-case:'+caseId;
  let publicId=prior?.publicId??'',file:ReservedFile|null=prior?.file??null,phase='connect',failure:unknown=null,machine=false;
  let heldLease:{caseId:string;workerId:string;jobId:string;fencingToken:number}|null=null;
  const directory=`output/release-completion/june-regular/${kind}${attempt?'-'+attempt:''}-${caseId.slice(0,8)}`;mkdirSync(directory,{recursive:true});
  const checks:string[]=[],runs:Record<string,unknown>[]=[],answers:unknown[]=[];
- const own=()=>writeFileSync(privatePath,JSON.stringify({caseId,orderId,publicId,file,sid,jti,gitSha,sourceSha256:source.sha256,kind,directory},null,2)+'\n');
+ const own=()=>writeFileSync(privatePath,JSON.stringify({caseId,orderId,publicId,file,priorVersions,sid,jti,gitSha,sourceSha256:source.sha256,kind,directory},null,2)+'\n');
  const providerKey=z.object({OPENAI_API_KEY:z.string()}).parse(JSON.parse(readFileSync('../release-work/live-provider-worker-private.json','utf8')));
  const bounded=createSolBudgetedExtractor({apiKey:providerKey.OPENAI_API_KEY,ledgerPath:'output/release-completion/live-provider-sol-comparison/package-budget-ledger.json',
   artifactDirectory:directory+'/provider',codeRevision:gitSha,allowedSources:[{sha256:source.sha256,sizeBytes:source.sizeBytes,mimeType:source.mimeType}],maxGenerations:1,
-  retainedDiagnosticPath:'output/release-completion/live-provider-sol-comparison/complex-c5051f3-4ec7efe8-8962-4308-aad9-abddf1cb22f6/he-clear-structured.json'});
+  retainedDiagnosticPath:'output/release-completion/live-provider-sol-comparison/complex-c5051f3-4ec7efe8-8962-4308-aad9-abddf1cb22f6/he-clear-structured.json',
+  ...(attempt?{reviewedRetry:{sourceSha256:source.sha256,priorReceiptSha256:JSON.parse(readFileSync('output/release-completion/june-regular/clear-6d31d6ee/checkpoint.json','utf8')).run.provider_receipts[0].receipt_sha256,reason:'header-observation-classification-r5' as const}}:{})});
  const transact=(db:pg.Client):SavedWorkerTransactions=>async op=>{await db.query('begin');try{
   await db.query('select * from private.runtime_context_install($1,$2,$3)',[sid,jti,'regular-live']);await db.query("select set_config('tivdoc.engine_git_sha',$1,true)",[gitSha]);
   const context:PostgresTransactionContext={transaction_id:randomUUID(),client:{async query(s){const r=await db.query(s.text,[...s.values]);return {rows:r.rows.map(row=>Object.fromEntries(Object.entries(row).map(([k,v])=>[k,v instanceof Date?v.toISOString():v]))),row_count:r.rowCount??0};}}};
@@ -101,12 +105,14 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
    await owner.query("insert into private.order_entitlements(order_id,state) values($1,'active')",[orderId]);await owner.query("select private.capture_case_input($1,'synthetic_paid_full_scope')",[caseId]);await owner.query('commit');own();
   }
   await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.regular.live.worker',$3,now()-interval '1 minute',now()+interval '2 hours',$4,now())",[tenant,sid,jti,canonicalSha256({sid,jti})]);machine=true;own();
-  phase='upload';if(!file){
-   const manifest=documentUploadSchema.parse({caseId,batchId:randomUUID(),checkPeriodMonth:'2026-06',files:[{clientId:randomUUID(),documentType:'payslip',name:source.name,type:source.mimeType,size:source.sizeBytes,sha256:source.sha256,periodMonth:'2026-06'}]});
+  phase='upload';if(!file||replacePreflight){
+   const replaced=replacePreflight?file:null;
+   const manifest=documentUploadSchema.parse({caseId,batchId:randomUUID(),checkPeriodMonth:'2026-06',files:[{clientId:randomUUID(),documentType:'payslip',name:source.name,type:source.mimeType,size:source.sizeBytes,sha256:source.sha256,periodMonth:'2026-06',...(replaced?{replace:{documentId:replaced.documentId,versionId:replaced.versionId}}:{})}]});
    const batch=(await web.query('select public.case_documents_reserve($1,$2,$3) value',[caseId,manifest.batchId,manifest])).rows[0].value as UploadBatch;file=batch.files[0];own();
    const signed=await bucket.createSignedUploadUrl(file.path,{upsert:false});if(signed.error||!signed.data)throw Error('REGULAR_UPLOAD_SIGN');
    const sent=await bucket.uploadToSignedUrl(file.path,signed.data.token,source.bytes,{contentType:source.mimeType});if(sent.error)throw Error('REGULAR_UPLOAD_TRANSFER');
    await web.query('select public.case_documents_commit($1,$2,$3)',[caseId,manifest.batchId,{[file.versionId]:source.sha256}]);
+   if(replaced){priorVersions.push(replaced);own();checks.push('explicit_document_replacement_preserved_prior_invocation');}
   }
   phase='actual-live-extraction';const extracted=await extract();writeFileSync(directory+'/checkpoint.json',JSON.stringify(extracted.result,null,2)+'\n');
   const cp=z.object({result_sha256:z.string(),run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema})})}).parse(extracted.result),fields=cp.run.result.final_extraction.fields;

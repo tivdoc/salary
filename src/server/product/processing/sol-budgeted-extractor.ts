@@ -23,7 +23,8 @@ export type SolBudgetedSource=z.infer<typeof sourceSchema>;
  * source substitution, checkpoint seeding, or automatic recovery is available.
  * Keep the returned lock for the caller's bounded sequence and close in finally. */
 export function createSolBudgetedExtractor(input:{apiKey:string;ledgerPath:string;artifactDirectory:string;codeRevision:string;
- allowedSources:readonly SolBudgetedSource[];maxGenerations:number;retainedDiagnosticPath?:string}){
+ allowedSources:readonly SolBudgetedSource[];maxGenerations:number;retainedDiagnosticPath?:string;
+ reviewedRetry?:{sourceSha256:string;priorReceiptSha256:string;reason:'header-observation-classification-r5'}}){
  if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')throw Error('SOL_SAVED_WORKER_SCOPE');
  const sources=z.array(sourceSchema).min(1).max(4).parse(input.allowedSources);
  if(new Set(sources.map(source=>source.sha256)).size!==sources.length||!Number.isSafeInteger(input.maxGenerations)
@@ -41,6 +42,13 @@ export function createSolBudgetedExtractor(input:{apiKey:string;ledgerPath:strin
  const close=()=>{if(closed)return;if(busy)throw Error('SOL_EXTRACTOR_STILL_RUNNING');closed=true;closeSync(lock);unlinkSync(lockPath);};
  try{
   let ledger=parseSolComparisonLedger(JSON.parse(readFileSync(input.ledgerPath,'utf8')));
+  const reviewed=input.reviewedRetry;
+  const prior=reviewed?ledger.reservations.find(r=>r.sourceSha256===reviewed.sourceSha256&&r.kind==='generation'&&r.attempt===1&&r.outcome==='receipt_recorded'):undefined;
+  if(reviewed){
+   const receipt=prior?.receipt as {receipt_sha256?:string;status?:string}|undefined;
+   if(reviewed.reason!=='header-observation-classification-r5'||sources.length!==1||sources[0].sha256!==reviewed.sourceSha256
+    ||!prior||receipt?.receipt_sha256!==reviewed.priorReceiptSha256||receipt.status!=='completed')throw Error('SOL_REVIEWED_RETRY_RECEIPT_REQUIRED');
+  }
   mkdirSync(input.artifactDirectory,{recursive:true});
   const persist=()=>{const temp=input.ledgerPath+'.'+instanceId+'.tmp',file=openSync(temp,'wx');
    try{writeFileSync(file,JSON.stringify(ledger,null,2)+'\n');fsyncSync(file);}finally{closeSync(file);}renameSync(temp,input.ledgerPath);};
@@ -69,8 +77,10 @@ export function createSolBudgetedExtractor(input:{apiKey:string;ledgerPath:strin
    // source bytes/crops/schema/model/effort. The oracle is never referenced.
    const providerRequest=buildOpenAiV2ResponsesRequest({model:SOL_COMPARISON_POLICY.model,prepared:request.prepared,
     kind:request.kind,requested_fields:request.requestedFields,executionProfile:OPENAI_SOL_COMPARISON_PROFILE});
-   const counted=solInputCountRequest(providerRequest),reservation={sourceSha256:source.sha256,requestSha256:counted.requestSha256,
-    codeRevision:input.codeRevision,attempt:1,priorUnknownAcknowledgment};
+   const counted=solInputCountRequest(providerRequest);
+   if(reviewed&&(providerRequest.text.format.name!=='payslip-extraction-openai-v2-first-r5'||prior?.requestSha256===counted.requestSha256))throw Error('SOL_REVIEWED_RETRY_NEW_PROMPT_REQUIRED');
+   const reservation={sourceSha256:source.sha256,requestSha256:counted.requestSha256,
+    codeRevision:input.codeRevision,attempt:reviewed?2:1,priorUnknownAcknowledgment};
    const directory=path.join(input.artifactDirectory,boundRequest.extraction_id);mkdirSync(directory,{recursive:true});
    const save=(name:string,value:unknown)=>writeFileSync(path.join(directory,name),JSON.stringify(value,null,2)+'\n');
     save('source-context.json',{codeRevision:input.codeRevision,request:boundRequest,requestSha256:counted.requestSha256,

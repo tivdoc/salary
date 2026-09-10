@@ -65,3 +65,11 @@ it('keeps a failed oversized count charged and never invokes generation',async()
   expect(sdk.parse).not.toHaveBeenCalled();expect(runtime.summary()).toMatchObject({contentRequests:1,unknownOutcomes:1,reservedUpperBoundUsd:0.256});
  }finally{runtime.close();}
 });
+it('refuses a claimed prompt-fix retry without the exact retained completed receipt before any content request',async()=>{
+ const {input}=await setup();
+ expect(()=>createSolBudgetedExtractor({...input,reviewedRetry:{sourceSha256:input.allowedSources[0].sha256,
+  priorReceiptSha256:'f'.repeat(64),reason:'header-observation-classification-r5'}})).toThrow('REVIEWED_RETRY_RECEIPT_REQUIRED');
+ expect(sdk.count).not.toHaveBeenCalled();expect(sdk.parse).not.toHaveBeenCalled();
+ expect(JSON.parse(readFileSync(input.ledgerPath,'utf8')).reservations).toEqual([]);
+ const fresh=createSolBudgetedExtractor(input);fresh.close();
+});
