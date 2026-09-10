@@ -254,12 +254,14 @@ export function buildPassEvaluation(input: {
   totals_section_visible: boolean;
   critical_context: Gate0CriticalContext;
   reference_year?: number;
+  component_duplicate_policy?: Gate0Validation['component_duplicate_policy'];
 }): PayslipExtractionPass {
   const raw = extractionResultSchema.parse(input.raw_extraction);
   const normalized = normalizePayslipExtraction(raw);
   const validation = validatePayslipGate0(normalized, {
     reference_year: input.reference_year,
     critical_context: input.critical_context,
+    component_duplicate_policy: input.component_duplicate_policy,
   });
   return payslipExtractionPassSchema.parse({
     pass_id: input.pass_id,
@@ -287,6 +289,8 @@ export function resolvePayslipExtractionPasses(input: {
 }): PayslipExtractionV2Result {
   const firstPass = payslipExtractionPassSchema.parse(input.first_pass);
   const recoveryPasses = input.recovery_passes.map((pass) => payslipExtractionPassSchema.parse(pass));
+  if(recoveryPasses.some(pass=>pass.validation.component_duplicate_policy!==firstPass.validation.component_duplicate_policy))
+    throw new TypeError('EXTRACTION_VALIDATION_POLICY_MISMATCH');
   const passes = [firstPass, ...recoveryPasses];
   const rawCandidates = rawByCandidateId(passes);
   const finalFields: RawCandidateField[] = [];
@@ -407,6 +411,7 @@ export function resolvePayslipExtractionPasses(input: {
   const finalValidation = validatePayslipGate0(finalExtraction, {
     reference_year: input.reference_year,
     critical_context: input.critical_context,
+    component_duplicate_policy: firstPass.validation.component_duplicate_policy,
   });
   return payslipExtractionV2ResultSchema.parse({
     extractor_version: PAYSLIP_EXTRACTION_V2_VERSION,

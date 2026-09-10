@@ -3,6 +3,8 @@ import {resolveOpenAiExtractionConfig} from '@/server/engine/extraction/provider
 import {createOpenAiPayslipV21ExtractorFromEnv} from '@/server/engine/extraction/providers/openai/v21-adapter';
 import type {OpenAiPayslipV2PassExtractor} from '@/server/engine/extraction/providers/openai/v2-adapter';
 import {PAYSLIP_EXTRACTION_V21_VERSION} from '@/engine/extraction/v21';
+import {OPENAI_SOL_COMPARISON_PROFILE} from '@/server/engine/extraction/providers/openai/v2-request';
+import {SOURCE_ROW_DUPLICATE_POLICY} from '@/engine/extraction/validation';
 
 export const LIVE_EXTRACTION_RUNTIME_POLICY='tivdoc-openai-live-runtime-v1' as const;
 export type LiveExtractionRuntime=
@@ -17,7 +19,8 @@ export function createLiveExtractionRuntime(environment:Readonly<Record<string,s
  try{
   const config=resolveOpenAiExtractionConfig(environment);
   if(!config.apiKey)return {state:'blocked',code:'LIVE_EXTRACTION_PROVIDER_UNCONFIGURED',provider:'openai'};
-  return {state:'configured',extractor:createOpenAiPayslipV21ExtractorFromEnv(environment),provider:{
+  const options=config.model==='gpt-5.6-sol'?{executionProfile:OPENAI_SOL_COMPARISON_PROFILE,componentDuplicatePolicy:SOURCE_ROW_DUPLICATE_POLICY}:{};
+  return {state:'configured',extractor:createOpenAiPayslipV21ExtractorFromEnv(environment,options),provider:{
    kind:'openai_live',model:config.model,extractorVersion:PAYSLIP_EXTRACTION_V21_VERSION,policyVersion:LIVE_EXTRACTION_RUNTIME_POLICY}};
  }catch{
   // Do not surface a Zod/SDK message: malformed environment values may contain

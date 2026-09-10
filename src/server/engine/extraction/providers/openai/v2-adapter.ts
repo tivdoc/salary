@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import OpenAI from "openai";
 import type { EmploymentSnapshot } from "@/engine/facts/snapshot";
 import {versionSchema} from '@/engine/domain/primitives';
+import {componentDuplicatePolicySchema,type Gate0Validation} from '@/engine/extraction/validation';
 import {
   extractionRequestSchema,
   payslipFieldKeySchema,
@@ -108,6 +109,7 @@ export class OpenAiPayslipV2PassExtractor {
   readonly providerId = "openai";
   readonly extractorVersion: string;
   readonly recoveryExecution: 'automatic' | 'skip_package_budget';
+  readonly componentDuplicatePolicy: Gate0Validation['component_duplicate_policy'];
   private readonly transport: OpenAiV2ResponsesTransport | null;
   private readonly origin:OpenAiProviderReceipt['origin'];
 
@@ -121,11 +123,13 @@ export class OpenAiPayslipV2PassExtractor {
       extractorVersion?: string;
       executionProfile?: Parameters<typeof buildOpenAiV2ResponsesRequest>[0]['executionProfile'];
       recoveryExecution?: 'automatic' | 'skip_package_budget';
+      componentDuplicatePolicy?: Gate0Validation['component_duplicate_policy'];
     } = {},
   ) {
     // Validate before constructing the transport: otherwise even the failure
     // receipt can throw after a paid response when the version is malformed.
     this.extractorVersion = versionSchema.parse(options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION);
+    this.componentDuplicatePolicy=options.componentDuplicatePolicy===undefined?undefined:componentDuplicatePolicySchema.parse(options.componentDuplicatePolicy);
     this.recoveryExecution=options.recoveryExecution??'automatic';
     if(!['automatic','skip_package_budget'].includes(this.recoveryExecution)
       ||(this.recoveryExecution==='skip_package_budget'&&(options.executionProfile!==OPENAI_SOL_COMPARISON_PROFILE
@@ -360,6 +364,7 @@ export async function runOpenAiPayslipExtractionV2(input: {
     totals_section_visible: firstMapped.totals_section_visible,
     critical_context: firstMapped.critical_context,
     reference_year: input.reference_year,
+    component_duplicate_policy: input.extractor.componentDuplicatePolicy,
   });
   const plan = firstMapped.extraction.status === "failed" ? null : selectTargetedRecovery(firstPass);
   const recoveryPasses = [];
@@ -394,6 +399,7 @@ export async function runOpenAiPayslipExtractionV2(input: {
         required_fields: plan.fields,
       },
       reference_year: input.reference_year,
+      component_duplicate_policy: input.extractor.componentDuplicatePolicy,
     }));
   }
   const finalResult = resolvePayslipExtractionPasses({

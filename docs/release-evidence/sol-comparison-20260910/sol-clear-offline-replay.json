@@ -1,0 +1,381 @@
+{
+  "schemaVersion": "tivdoc-sol-retained-offline-replay-v1",
+  "gitSha": "c5051f3e8a53f254ca824dbe85ec36eadc4a49a6",
+  "actualProviderResponseId": "resp_07435e602da821d4016aa2d5388ed087d28414fdde237e638b",
+  "actualProviderRequestId": "req_bcd6f6950e66451bb5bf87c3a76ebaac",
+  "actualSourceSha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+  "diagnosticFileSha256": "f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937",
+  "structuredOutputSha256": "bb7538b9ab3195b9050c172c2c238fac2c506ca5692b65f2140a7c9406917420",
+  "originalFailure": "test_harness_invalid_extractor_version_after_authentic_sdk_response",
+  "rawProviderOutputRetained": true,
+  "offlineMappingOnly": true,
+  "newProviderCalls": 0,
+  "actualModelUnavailable": true,
+  "requestedModel": "gpt-5.6-sol",
+  "tokenUsageUnavailable": true,
+  "providerReceiptUnavailable": true,
+  "unknownBudgetReservationPreserved": true,
+  "comparison": {
+    "passed": false,
+    "failures": [
+      "ROW_overtime_125",
+      "ROW_overtime_150"
+    ],
+    "observedFieldCount": 21,
+    "observedComponentCount": 10,
+    "financialResultGenerated": false,
+    "legalReadinessProved": false
+  },
+  "minimumWageCriticalFieldFailures": [],
+  "pensionFailures": [],
+  "validation": {
+    "status": "suspicious",
+    "field_assessments": [
+      {
+        "candidate_id": "766fcec4-1c4f-41a1-995c-9f76585e29da",
+        "field": "document_type",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "a47a9060-c208-4a85-833c-fdc636b3128d",
+        "field": "salary_period",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "b4227ab5-d046-4c01-9d97-b4ea40af0b40",
+        "field": "employment_start_date",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "d9bca908-8cb2-4eca-baca-3cd928a376b9",
+        "field": "salary_type",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "615d9491-5992-4373-a940-82b796fa09b5",
+        "field": "regular_hours",
+        "status": "suspicious",
+        "issue_codes": [
+          "duplicate_candidate"
+        ]
+      },
+      {
+        "candidate_id": "f1f74538-c07a-4bb4-9872-7eb8f3a76a26",
+        "field": "regular_hours",
+        "status": "suspicious",
+        "issue_codes": [
+          "duplicate_candidate"
+        ]
+      },
+      {
+        "candidate_id": "24efc037-3867-4132-9b02-598be1b4f84e",
+        "field": "hourly_rate",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "b3863fea-6552-45b4-9e3d-a482147fe855",
+        "field": "base_monthly_salary",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "d4cbd73a-c28d-4671-9be7-b5129a6b0c35",
+        "field": "overtime_125_hours",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "1bb1f1a2-a5fb-4c33-976e-5190120b932f",
+        "field": "overtime_150_hours",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "63d5fb1c-c78a-455e-8cc9-33c3d5d2a7a2",
+        "field": "travel_amount",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "4a13ad01-7a0c-4fa4-bec1-d7342ab85306",
+        "field": "gross_salary",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "72afbfa7-cd58-4692-868d-e34151d32888",
+        "field": "total_deductions",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "cfdc6318-0420-418c-a05e-4907c32a61e6",
+        "field": "net_salary",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "05419ab5-741e-426e-8406-f28605b0d8e4",
+        "field": "pension_base",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "c2acce0b-438d-4f49-8cea-b7c0181f0307",
+        "field": "pension_employee_rate",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "6f867982-19ea-4b57-9165-a3d1a5fa78b2",
+        "field": "pension_employee_contribution",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "541f79b5-2a6b-47fb-895e-139334f47253",
+        "field": "pension_employer_rate",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "bf2a2b1f-58ad-4202-9839-7b3714cd13ab",
+        "field": "pension_employer_contribution",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "91ee85eb-d41b-47d9-8d9f-6083d3de47ce",
+        "field": "severance_rate",
+        "status": "valid",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "fc9b7c3a-d38b-4931-ba0f-92380ff676ba",
+        "field": "severance_contribution",
+        "status": "valid",
+        "issue_codes": []
+      }
+    ],
+    "issues": [
+      {
+        "code": "duplicate_candidate",
+        "severity": "warning",
+        "field_candidate_ids": [
+          "615d9491-5992-4373-a940-82b796fa09b5",
+          "f1f74538-c07a-4bb4-9872-7eb8f3a76a26"
+        ],
+        "field_keys": [
+          "regular_hours"
+        ],
+        "message": "The same field was extracted more than once."
+      },
+      {
+        "code": "duplicate_mapped_component",
+        "severity": "warning",
+        "field_candidate_ids": [
+          "3291ef44-8770-4af5-8b87-15647f03c3b9",
+          "51688a5e-e639-48dd-ab4b-cc521df37fb8"
+        ],
+        "field_keys": [],
+        "message": "The same normalized additional component was mapped more than once."
+      },
+      {
+        "code": "duplicate_mapped_component",
+        "severity": "warning",
+        "field_candidate_ids": [
+          "6e07f904-6b13-4ad7-8276-430872c95c11",
+          "db52b610-790f-409c-bb50-17fd556f25b0",
+          "2637b428-658c-4e5a-bec1-9e553f163dae",
+          "0f07ffdc-8061-4e0d-872e-623c8f22c038"
+        ],
+        "field_keys": [],
+        "message": "The same normalized additional component was mapped more than once."
+      }
+    ]
+  },
+  "confidence": {
+    "decisions": [
+      {
+        "field": "salary_period",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "a47a9060-c208-4a85-833c-fdc636b3128d"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "salary_type",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "d9bca908-8cb2-4eca-baca-3cd928a376b9"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "gross_salary",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "4a13ad01-7a0c-4fa4-bec1-d7342ab85306"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "total_deductions",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "72afbfa7-cd58-4692-868d-e34151d32888"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "net_salary",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "cfdc6318-0420-418c-a05e-4907c32a61e6"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "hourly_rate",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "24efc037-3867-4132-9b02-598be1b4f84e"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "regular_hours",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.75,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "615d9491-5992-4373-a940-82b796fa09b5",
+          "f1f74538-c07a-4bb4-9872-7eb8f3a76a26"
+        ],
+        "reason_codes": [
+          "gate0_requires_review",
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "pension_base",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "05419ab5-741e-426e-8406-f28605b0d8e4"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "pension_employee_contribution",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "6f867982-19ea-4b57-9165-a3d1a5fa78b2"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "pension_employer_contribution",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "bf2a2b1f-58ad-4202-9839-7b3714cd13ab"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "severance_contribution",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "fc9b7c3a-d38b-4931-ba0f-92380ff676ba"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "overtime_125_hours",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "d4cbd73a-c28d-4671-9be7-b5129a6b0c35"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      {
+        "field": "overtime_150_hours",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "1bb1f1a2-a5fb-4c33-976e-5190120b932f"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      }
+    ]
+  },
+  "canonicalSingleBaseEligible": false,
+  "reason": "Five original paid components are preserved; no legal component classification or activation is granted.",
+  "resultSha256": "98a6a17c108c4ac018e319931159e4e8095379215be731e3f0b84c68b2ad3b5c",
+  "financialReportGenerated": false
+}

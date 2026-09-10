@@ -6,6 +6,7 @@ import path from 'node:path';
 import {z} from 'zod';
 import {PAYSLIP_EXTRACTION_V21_VERSION} from '@/engine/extraction/v21';
 import {extractionRequestSchema} from '@/engine/extraction/contracts';
+import {SOURCE_ROW_DUPLICATE_POLICY} from '@/engine/extraction/validation';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {OpenAiPayslipV2PassExtractor} from '@/server/engine/extraction/providers/openai/v2-adapter';
 import {buildOpenAiV2ResponsesRequest,OPENAI_SOL_COMPARISON_PROFILE} from '@/server/engine/extraction/providers/openai/v2-request';
@@ -45,7 +46,7 @@ export function createSolBudgetedExtractor(input:{apiKey:string;ledgerPath:strin
    try{writeFileSync(file,JSON.stringify(ledger,null,2)+'\n');fsyncSync(file);}finally{closeSync(file);}renameSync(temp,input.ledgerPath);};
   const sdk=new OpenAI({apiKey:input.apiKey,baseURL:'https://api.openai.com/v1',timeout:120000,maxRetries:0});
   const extractor=new OpenAiPayslipV2PassExtractor({apiKey:input.apiKey,model:SOL_COMPARISON_POLICY.model,timeoutMs:120000},
-   {extractorVersion:PAYSLIP_EXTRACTION_V21_VERSION,executionProfile:OPENAI_SOL_COMPARISON_PROFILE,recoveryExecution:'skip_package_budget'});
+   {extractorVersion:PAYSLIP_EXTRACTION_V21_VERSION,executionProfile:OPENAI_SOL_COMPARISON_PROFILE,recoveryExecution:'skip_package_budget',componentDuplicatePolicy:SOURCE_ROW_DUPLICATE_POLICY});
   const actual=extractor.extractPreparedPass.bind(extractor);
   extractor.extractPreparedPass=async request=>{
    if(closed||busy)throw Error('SOL_EXTRACTOR_CLOSED_OR_BUSY');

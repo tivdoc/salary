@@ -80,6 +80,7 @@ export async function runOpenAiPayslipExtractionV21(input: {
     totals_section_visible: firstMapped.totals_section_visible,
     critical_context: firstMapped.critical_context,
     reference_year: input.reference_year,
+    component_duplicate_policy: input.extractor.componentDuplicatePolicy,
   });
   const plan = firstMapped.extraction.status === "failed" ? null : selectTargetedRecoveryV21(firstPass);
   const providerReceipts=firstMapped.provider_receipt?[firstMapped.provider_receipt]:[];
@@ -122,6 +123,7 @@ export async function runOpenAiPayslipExtractionV21(input: {
         required_fields: plan.fields,
       },
       reference_year: input.reference_year,
+      component_duplicate_policy: input.extractor.componentDuplicatePolicy,
     }));
   }
   const finalResult = resolvePayslipExtractionPassesV21({

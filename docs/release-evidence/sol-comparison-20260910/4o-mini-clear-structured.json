@@ -1,0 +1,218 @@
+{
+  "schema_version": "tivdoc-openai-structured-diagnostic-v1",
+  "origin": "openai_live",
+  "case_id": "af00e282-7dcd-41e1-9383-195240938aa2",
+  "analysis_run_id": "42fddd03-96e5-475a-ae4b-2f310a4d3d63",
+  "document_id": "244276f4-6e02-43be-9d3d-bf92ae406070",
+  "source_sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+  "request_sha256": "599adbd998c3be1a876bbe36816e85afe51d9f10718610c0b4217bd546ec1c37",
+  "pass_kind": "first_pass",
+  "prompt_version": "payslip-extraction-openai-v2-first-r4",
+  "provider_response_id": "resp_013162d94459ad1d016aa2c48ab1c887d294577546db5bc119",
+  "provider_request_id": "req_351af5f1af3b4f9f94b52757402a4604",
+  "structured_output": {
+    "detected_document_type": "payslip",
+    "document_quality": "high",
+    "page_count": 1,
+    "rotation_degrees": null,
+    "source_resolution_dpi": null,
+    "salary_type": {
+      "documented_value": "mixed",
+      "documented_raw_value": "סוג שכר: מעורב",
+      "documented_confidence": "high",
+      "documented_evidence": {
+        "page": 1,
+        "region": "header",
+        "source_label": null
+      },
+      "inferred_value": "mixed",
+      "inferred_confidence": "high",
+      "inference_basis": [
+        "payroll_structure"
+      ],
+      "warnings": []
+    },
+    "generic_fields": [
+      {
+        "field": "salary_period",
+        "candidates": [
+          {
+            "raw_value": "01/06/2026 - 30/06/2026",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "header",
+              "source_label": null
+            },
+            "warnings": []
+          }
+        ]
+      },
+      {
+        "field": "employment_start_date",
+        "candidates": [
+          {
+            "raw_value": "15/01/2025",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "header",
+              "source_label": null
+            },
+            "warnings": []
+          }
+        ]
+      }
+    ],
+    "payroll_rows": [
+      {
+        "source_label": "שכר יסוד",
+        "semantic_kind": "base_salary",
+        "quantity_raw": "100",
+        "rate_raw": "35.40",
+        "percentage_raw": null,
+        "amount_raw": "3,540.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": null
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "שעות נוספות 125%",
+        "semantic_kind": "overtime_125",
+        "quantity_raw": "10",
+        "rate_raw": "44.25",
+        "percentage_raw": null,
+        "amount_raw": "442.50",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": null
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "שעות נוספות 150%",
+        "semantic_kind": "overtime_150",
+        "quantity_raw": "2",
+        "rate_raw": "53.10",
+        "percentage_raw": null,
+        "amount_raw": "106.20",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": null
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "חופשה",
+        "semantic_kind": "other",
+        "quantity_raw": "20",
+        "rate_raw": "11.00",
+        "percentage_raw": null,
+        "amount_raw": "220.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": null
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "החזר נסיעות",
+        "semantic_kind": "travel",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "300.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": null
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "סך תשלומים",
+        "semantic_kind": "unknown",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "4,608.70",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "totals",
+          "source_label": null
+        },
+        "warnings": []
+      }
+    ],
+    "totals": {
+      "visible": true,
+      "gross_candidates": [
+        {
+          "raw_value": "4,608.70",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": null
+          },
+          "warnings": []
+        }
+      ],
+      "deductions_candidates": [
+        {
+          "raw_value": "0.00",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "earnings",
+            "source_label": null
+          },
+          "warnings": []
+        }
+      ],
+      "net_candidates": [
+        {
+          "raw_value": "4,608.70",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": null
+          },
+          "warnings": []
+        }
+      ]
+    },
+    "pension": {
+      "visible": false,
+      "base_candidates": [],
+      "employee": {
+        "rate_candidates": [],
+        "amount_candidates": []
+      },
+      "employer": {
+        "rate_candidates": [],
+        "amount_candidates": []
+      },
+      "severance": {
+        "rate_candidates": [],
+        "amount_candidates": []
+      }
+    },
+    "earnings_components_complete": true,
+    "warnings": []
+  },
+  "structured_output_sha256": "3c7f681abc7baa23dfc4b765bd4d7994ba82ae3240a2ba5e23382f686d99bb86"
+}

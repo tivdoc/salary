@@ -397,7 +397,7 @@ function withResolutionConflicts(
   const status = statusRank[validation.status] > statusRank.requires_confirmation
     ? validation.status
     : "requires_confirmation";
-  return gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues });
+  return gate0ValidationSchema.parse({ ...validation, status, field_assessments: fieldAssessments, issues });
 }
 
 function mergeStickyValidation(input: {
@@ -405,6 +405,8 @@ function mergeStickyValidation(input: {
   current: Gate0Validation;
   recoveredFields: ReadonlySet<PayslipFieldKey>;
 }) {
+  if(input.historical.component_duplicate_policy!==input.current.component_duplicate_policy)
+    throw new TypeError('EXTRACTION_VALIDATION_POLICY_MISMATCH');
   const currentCodes = new Set(input.current.issues.map((issue) => issue.code));
   const resolvedHistorical = new Set<string>();
   for (const issue of input.historical.issues) {
@@ -443,7 +445,7 @@ function mergeStickyValidation(input: {
     issueDerivedStatus,
   );
   return {
-    validation: gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues: mergedIssues }),
+    validation: gate0ValidationSchema.parse({ ...input.current, status, field_assessments: fieldAssessments, issues: mergedIssues }),
     resolvedHistoricalIssueCodes: [...resolvedHistorical].sort(),
   };
 }
@@ -458,6 +460,8 @@ export function resolvePayslipExtractionPassesV21(input: {
 }): PayslipExtractionV21Result {
   const firstPass = payslipExtractionPassSchema.parse(input.first_pass);
   const recoveryPasses = input.recovery_passes.map((pass) => payslipExtractionPassSchema.parse(pass));
+  if(recoveryPasses.some(pass=>pass.validation.component_duplicate_policy!==firstPass.validation.component_duplicate_policy))
+    throw new TypeError('EXTRACTION_VALIDATION_POLICY_MISMATCH');
   if (recoveryPasses.length > 1) throw new TypeError("V2.1 allows at most one recovery pass");
   const decision = recoveryDecisionSchema.parse(input.recovery_decision);
   if (decision.requested !== (recoveryPasses.length === 1)) {
@@ -606,6 +610,7 @@ export function resolvePayslipExtractionPassesV21(input: {
   const provisionalValidation = validatePayslipGate0(provisionalExtraction, {
     reference_year: input.reference_year,
     critical_context: input.critical_context,
+    component_duplicate_policy: firstPass.validation.component_duplicate_policy,
   });
   const recoveredFields = new Set<PayslipFieldKey>();
   for (const [field, candidate] of promotionCandidates) {
@@ -655,6 +660,7 @@ export function resolvePayslipExtractionPassesV21(input: {
   const deterministicValidation = validatePayslipGate0(finalExtraction, {
     reference_year: input.reference_year,
     critical_context: input.critical_context,
+    component_duplicate_policy: firstPass.validation.component_duplicate_policy,
   });
   const currentValidation = withResolutionConflicts(deterministicValidation, resolutions);
   const sticky = mergeStickyValidation({

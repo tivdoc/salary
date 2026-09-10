@@ -2,6 +2,10 @@ import { z } from "zod";
 import { domainCodeSchema, uuidSchema } from "../domain/primitives.ts";
 import { payslipFieldKeySchema } from "./contracts.ts";
 import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip.ts";
+import {canonicalSha256} from '../rule-runtime/canonical.ts';
+
+export const SOURCE_ROW_DUPLICATE_POLICY='source-row-cells-v1' as const;
+export const componentDuplicatePolicySchema=z.literal(SOURCE_ROW_DUPLICATE_POLICY);
 
 export const gate0StatusSchema = z.enum(["valid", "suspicious", "invalid", "requires_confirmation"]);
 export const validationSeveritySchema = z.enum(["warning", "error", "confirmation"]);
@@ -30,6 +34,8 @@ export const gate0ValidationSchema = z
     status: gate0StatusSchema,
     field_assessments: z.array(fieldAssessmentSchema),
     issues: z.array(gate0IssueSchema),
+    // Absence retains the historical grouping and exact old serialized shape.
+    component_duplicate_policy: componentDuplicatePolicySchema.optional(),
   })
   .strict();
 
@@ -163,9 +169,11 @@ export function validatePayslipGate0(
   options: {
     reference_year?: number;
     critical_context?: Gate0CriticalContext;
+    component_duplicate_policy?: typeof SOURCE_ROW_DUPLICATE_POLICY;
   } = {},
 ): Gate0Validation {
   const extraction = normalizedPayslipExtractionSchema.parse(input);
+  const duplicatePolicy=options.component_duplicate_policy===undefined?undefined:componentDuplicatePolicySchema.parse(options.component_duplicate_policy);
   const referenceYear = options.reference_year ?? new Date().getUTCFullYear();
   const assessments = new Map<string, MutableAssessment>(
     extraction.fields.map((field) => [
@@ -294,8 +302,19 @@ export function validatePayslipGate0(
   const mappedComponents = new Map<string, typeof extraction.additional_components>();
   for (const component of extraction.additional_components) {
     if (component.normalized_label === null) continue;
-    const group = mappedComponents.get(component.normalized_label) ?? [];
-    mappedComponents.set(component.normalized_label, [...group, component]);
+    // A deduction category is not a row identity. Keep different tax/pension
+    // deductions separate; a repeated reading of the same located row and
+    // literal cells remains a possible duplicate. All other historic groups,
+    // totals checks and confidence thresholds are unchanged.
+    const key=duplicatePolicy===SOURCE_ROW_DUPLICATE_POLICY&&component.semantic_kind==='deduction'
+      ? canonicalSha256({kind:'deduction_source_row',document_id:component.source.document_id,page:component.source.page,
+        text_fragment:component.source.text_fragment??null,bounding_box:component.source.bounding_box??null,
+        source_label:component.source_label,normalized_label:component.normalized_label,
+        quantity_raw:component.quantity_raw,rate_raw:component.rate_raw,percentage_raw:component.percentage_raw,amount_raw:component.amount_raw,
+        quantity:component.quantity,rate:component.rate,percentage:component.percentage,amount:component.amount})
+      : canonicalSha256({kind:'legacy_semantic_label',normalized_label:component.normalized_label});
+    const group = mappedComponents.get(key) ?? [];
+    mappedComponents.set(key, [...group, component]);
   }
   for (const components of mappedComponents.values()) {
     if (components.length < 2) continue;
@@ -459,5 +478,6 @@ export function validatePayslipGate0(
     (current, assessment) => (statusRank[assessment.status] > statusRank[current] ? assessment.status : current),
     globalStatus,
   );
-  return gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues });
+  return gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues,
+    ...(duplicatePolicy?{component_duplicate_policy:duplicatePolicy}:{}) });
 }

@@ -30,6 +30,14 @@ async function setup(error?:unknown){
 }
 
 describe('live runtime configuration',()=>{
+ it('selects bounded medium Sol and a versioned source-row policy while preserving automatic recovery',()=>{
+  const runtime=createLiveExtractionRuntime({OPENAI_API_KEY:'unit-test-not-used',OPENAI_EXTRACTION_MODEL:'gpt-5.6-sol'});
+  expect(runtime.state).toBe('configured');
+  if(runtime.state==='configured'){
+   expect(runtime.extractor.componentDuplicatePolicy).toBe('source-row-cells-v1');
+   expect(runtime.extractor.recoveryExecution).toBe('automatic');
+  }
+ });
  it.each([{}, {OPENAI_API_KEY:''},{OPENAI_API_KEY:'  '}])('blocks missing credentials before creating a provider: %j',environment=>{
   expect(createLiveExtractionRuntime(environment)).toEqual({state:'blocked',code:'LIVE_EXTRACTION_PROVIDER_UNCONFIGURED',provider:'openai'});
  });

@@ -1,0 +1,96 @@
+{
+  "version": "tivdoc-sol-comparison-budget-v1",
+  "model": "gpt-5.6-sol",
+  "reservations": [
+    {
+      "key": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b:1:input_tokens",
+      "sourceSha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+      "requestSha256": "cbe273b063863ad15736893e3d29b9c84eb563793e6a56a412b8023895675773",
+      "codeRevision": "c5051f3e8a53f254ca824dbe85ec36eadc4a49a6",
+      "attempt": 1,
+      "kind": "input_tokens",
+      "reservedAt": "2026-09-10T16:05:10.500Z",
+      "reservedMicroUsd": 256000,
+      "outcome": "count_recorded",
+      "inputTokens": 4265,
+      "receipt": null
+    },
+    {
+      "key": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b:1:generation",
+      "sourceSha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+      "requestSha256": "cbe273b063863ad15736893e3d29b9c84eb563793e6a56a412b8023895675773",
+      "codeRevision": "c5051f3e8a53f254ca824dbe85ec36eadc4a49a6",
+      "attempt": 1,
+      "kind": "generation",
+      "reservedAt": "2026-09-10T16:05:12.269Z",
+      "reservedMicroUsd": 456000,
+      "outcome": "reserved_unknown",
+      "inputTokens": null,
+      "receipt": null
+    },
+    {
+      "key": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526:1:input_tokens",
+      "sourceSha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526",
+      "requestSha256": "265e639cb75e0011ed56d6c6b9e7948bc0c519aaed4b482e59052ed073266156",
+      "codeRevision": "6983156c130d614ac8e97b697d6b62b5d43a8972",
+      "attempt": 1,
+      "kind": "input_tokens",
+      "reservedAt": "2026-09-10T16:23:28.942Z",
+      "reservedMicroUsd": 256000,
+      "outcome": "count_recorded",
+      "inputTokens": 6286,
+      "receipt": null,
+      "priorUnknownAcknowledgment": "f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937"
+    },
+    {
+      "key": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526:1:generation",
+      "sourceSha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526",
+      "requestSha256": "265e639cb75e0011ed56d6c6b9e7948bc0c519aaed4b482e59052ed073266156",
+      "codeRevision": "6983156c130d614ac8e97b697d6b62b5d43a8972",
+      "attempt": 1,
+      "kind": "generation",
+      "reservedAt": "2026-09-10T16:23:31.592Z",
+      "reservedMicroUsd": 456000,
+      "outcome": "receipt_recorded",
+      "inputTokens": 6286,
+      "receipt": {
+        "schema_version": "tivdoc-openai-provider-receipt-v1",
+        "origin": "openai_live",
+        "case_id": "98df3d77-f8a2-40b4-8879-eaa98c2424e9",
+        "analysis_run_id": "1a74fd5c-b653-447a-a723-f71c5b3ebd23",
+        "document_id": "17ff36e8-6eb4-4df2-9ac1-b02a86583042",
+        "extraction_id": "16bf2574-555f-4728-94f1-ec667ce9c8ff",
+        "source_sha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526",
+        "source_size_bytes": 70428,
+        "source_mime_type": "image/png",
+        "source_page_count": 1,
+        "request_sha256": "265e639cb75e0011ed56d6c6b9e7948bc0c519aaed4b482e59052ed073266156",
+        "raw_extraction_sha256": "92583631263a8287718156fe7a582d250ea86b178f4a209245a20e0bb1a94141",
+        "pass_kind": "first_pass",
+        "requested_model": "gpt-5.6-sol",
+        "actual_model": "gpt-5.6-sol",
+        "extractor_version": "2.1",
+        "prompt_version": "payslip-extraction-openai-v2-first-r4",
+        "provider_response_id": "resp_03316bd44e7a6299016aa2d983ebd887d2bb180470821df0a3",
+        "provider_request_id": "req_a07cbdd46ab54c9fbc4b64f3f33b2e8d",
+        "provider_attempted": true,
+        "status": "completed",
+        "error_code": null,
+        "http_status": null,
+        "duration_ms": 28089,
+        "token_usage": {
+          "input_tokens": 6286,
+          "output_tokens": 1806,
+          "total_tokens": 8092
+        },
+        "cost": {
+          "status": "not_returned_by_provider",
+          "amount_usd": null
+        },
+        "created_at": "2026-09-10T16:23:59.689Z",
+        "receipt_sha256": "f96c45bdfc595f4d6d2de8d67c499dbe711e7a82cbe64c03f613a66167b21a23"
+      },
+      "priorUnknownAcknowledgment": "f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937"
+    }
+  ]
+}

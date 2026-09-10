@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "tivdoc-sol-comparison-v1",
+  "proofId": "4ec7efe8-8962-4308-aad9-abddf1cb22f6",
+  "gitSha": "c5051f3e8a53f254ca824dbe85ec36eadc4a49a6",
+  "state": "FAIL",
+  "phase": "sdk-he-clear",
+  "checkedAt": "2026-09-10T16:05:46.488Z",
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "executionProfile": "sol-medium-comparison-v1",
+  "promptVersion": "payslip-extraction-openai-v2-first-r4",
+  "resolutionPolicy": "payslip-v2.1-non-degrading-resolution-4",
+  "contentApiRequests": 2,
+  "generationsEntered": 1,
+  "countRequestsEntered": 1,
+  "budget": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 2,
+    "generations": 1,
+    "countRequests": 1,
+    "reservedUpperBoundUsd": 0.712,
+    "unknownOutcomes": 1,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price"
+  },
+  "sdkRetries": 0,
+  "automaticRecovery": false,
+  "oracleSentToProvider": false,
+  "immutable": [
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\live-provider-budget-ledger.json",
+      "sha256": "b32c3b115a9d6427118a20ee0a39b7ac964e8f90c56484f27779aa409e277c23"
+    },
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e\\proof.json",
+      "sha256": "637dd5a9be953a17a14dc9631cf1b964daf8f3ceb36a6012465dd465bfacd4b1"
+    },
+    {
+      "file": "docs/release-evidence/live-provider-june2026/independent-input-oracles.json",
+      "sha256": "936bf1cbe08b7f6a03567ee397e1bfb229cd5af3c850e8c216fbdac19ef078f3"
+    },
+    {
+      "file": "docs/release-evidence/live-provider-june2026/he-clear-june-2026.pdf",
+      "sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b"
+    },
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e\\he-clear-structured.json",
+      "sha256": "818c35353a5ecc74a3176192931e376b9c4b8f797f2ddfd0bc6918271a38424b"
+    },
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e\\he-clear-mapped.json",
+      "sha256": "3dc2f2afad4fa30f308a4e9372e193c3dae1c22d1721397b7396fe31f6531d4e"
+    },
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e\\he-clear-new-result.json",
+      "sha256": "1f9262d8b5f88933e75e5741bb4e11bebb8364b1895cccd57c8bc05a228607a9"
+    },
+    {
+      "file": "docs/release-evidence/live-provider-june2026/he-scan-clear-june-2026.png",
+      "sha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526"
+    },
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e\\he-scan-clear-structured.json",
+      "sha256": "d2f03e393ccc7a0e2545beabff06e7e5ed9b2748e884d93ff7821fd33ccc013e"
+    },
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e\\he-scan-clear-mapped.json",
+      "sha256": "750c71e6dd4ad7e4ebfbc3f52e60cf6e89568b4d3cf8822695ef3c068467b533"
+    },
+    {
+      "file": "output\\release-completion\\live-provider-june2026\\hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e\\he-scan-clear-new-result.json",
+      "sha256": "f0d5ba3677fb81df8be8e425e8fcd2fb028dc7ec1e141746efba13f885d131c0"
+    }
+  ],
+  "results": [
+    {
+      "id": "he-clear",
+      "sourceSha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+      "state": "RUNNING"
+    }
+  ],
+  "failures": [
+    "SOL_ASSERTION_OR_ENVIRONMENT_FAILURE"
+  ],
+  "financialResultGenerated": false,
+  "databaseChanged": false,
+  "humanReview": false,
+  "legalActivation": false,
+  "scope": "Two synthetic complex payslips; actual provider output compared with unchanged oracle. Field correctness, global quality and eligibility for the narrow one-base calculation are separate."
+}

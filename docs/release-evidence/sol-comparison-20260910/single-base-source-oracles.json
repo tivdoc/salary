@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "sol-hebrew-single-base-inputs-v1",
+  "synthetic": true,
+  "providerCalled": false,
+  "humanReview": false,
+  "legalGoldenApproval": false,
+  "files": [
+    {
+      "id": "he-single-clear",
+      "kind": "clear",
+      "policy": "sol-hebrew-single-base-source-v1",
+      "name": "he-single-clear-june2026.pdf",
+      "sha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+      "sizeBytes": 770601,
+      "mimeType": "application/pdf",
+      "pageCount": 1,
+      "oracle": {
+        "synthetic": true,
+        "humanReview": false,
+        "legalGoldenApproval": false,
+        "period": {
+          "year": 2026,
+          "month": 6,
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        },
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "regularHours": [
+          "100"
+        ],
+        "hourlyRateMinor": 3300,
+        "baseMinor": 330000,
+        "grossMinor": 330000,
+        "deductionsMinor": 0,
+        "netMinor": 330000,
+        "paidComponentCount": 1,
+        "outcome": "readable",
+        "canonicalExpectedMinor": 354058,
+        "canonicalGapMinor": 24058,
+        "publishedHourlyExpectedMinor": 354000,
+        "publishedHourlyGapMinor": 24000,
+        "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+      },
+      "path": "output/release-completion/live-provider-sol-comparison/single-base-inputs/he-single-clear-june2026.pdf",
+      "renderedPngs": [
+        "he-single-clear-1.png"
+      ]
+    },
+    {
+      "id": "he-single-absent-hours",
+      "kind": "absent-hours",
+      "policy": "sol-hebrew-single-base-source-v1",
+      "name": "he-single-absent-hours-june2026.pdf",
+      "sha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "sizeBytes": 770176,
+      "mimeType": "application/pdf",
+      "pageCount": 1,
+      "oracle": {
+        "synthetic": true,
+        "humanReview": false,
+        "legalGoldenApproval": false,
+        "period": {
+          "year": 2026,
+          "month": 6,
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        },
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "regularHours": [],
+        "hourlyRateMinor": null,
+        "baseMinor": 330000,
+        "grossMinor": 330000,
+        "deductionsMinor": 0,
+        "netMinor": 330000,
+        "paidComponentCount": 1,
+        "outcome": "essential_input_missing",
+        "canonicalExpectedMinor": null,
+        "canonicalGapMinor": null,
+        "publishedHourlyExpectedMinor": null,
+        "publishedHourlyGapMinor": null,
+        "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+      },
+      "path": "output/release-completion/live-provider-sol-comparison/single-base-inputs/he-single-absent-hours-june2026.pdf",
+      "renderedPngs": [
+        "he-single-absent-hours-1.png"
+      ]
+    },
+    {
+      "id": "he-single-conflicting-hours",
+      "kind": "conflicting-hours",
+      "policy": "sol-hebrew-single-base-source-v1",
+      "name": "he-single-conflicting-hours-june2026.pdf",
+      "sha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+      "sizeBytes": 771501,
+      "mimeType": "application/pdf",
+      "pageCount": 1,
+      "oracle": {
+        "synthetic": true,
+        "humanReview": false,
+        "legalGoldenApproval": false,
+        "period": {
+          "year": 2026,
+          "month": 6,
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        },
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "regularHours": [
+          "100",
+          "120"
+        ],
+        "hourlyRateMinor": null,
+        "baseMinor": 330000,
+        "grossMinor": 330000,
+        "deductionsMinor": 0,
+        "netMinor": 330000,
+        "paidComponentCount": 1,
+        "outcome": "conflicting_observations",
+        "canonicalExpectedMinor": null,
+        "canonicalGapMinor": null,
+        "publishedHourlyExpectedMinor": null,
+        "publishedHourlyGapMinor": null,
+        "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+      },
+      "path": "output/release-completion/live-provider-sol-comparison/single-base-inputs/he-single-conflicting-hours-june2026.pdf",
+      "renderedPngs": [
+        "he-single-conflicting-hours-1.png"
+      ]
+    }
+  ]
+}

@@ -4,3 +4,5 @@
 # These files must never be normalized, diffed as text, or merged.
 *.preserved.bin -text -diff -merge
 *.recovered.bin -text -diff -merge
+docs/release-evidence/sol-comparison-20260910/** -text
+docs/release-evidence/sol-canonical-20260910/** -text
