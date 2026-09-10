@@ -10,10 +10,13 @@ import {sourceJobSchema,type SourceJob} from './source-dispatch';
 import {runSavedWorkerMonth} from './saved-worker';
 import {readSavedExtractionProvenance} from './live-extraction-provenance';
 import {savedMonthIdempotencyKey} from './saved-order-scope';
+import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
+import {materializeDevFinancialSourceCompletions,devFinancialCompletionFacts} from './dev-financial-completions';
+import {openSavedTranscriptionRequests} from './saved-transcription-requests';
 import {JUNE2026_REVIEW_CATALOG_SHA256} from '@/engine/legal-operations/june2026-catalog';
 import {savedAnalysisId} from './saved-draft-report';
 import {assertDevFinancialExtractionSource} from './dev-financial-source';
-import {DEV_FINANCIAL_SCHEMA,devFinancialFacts,devFinancialFinding,devHoursReadingSchema,devHoursRequestCode,parseDevFinancialRun,assertDevFinancialScenario,devFinancialSourcePage} from './dev-financial-contract';
+import {DEV_FINANCIAL_SCHEMA,DEV_FINANCIAL_SCHEMA_V2,devFinancialFactsV2,devFinancialFacts,devFinancialFinding,devHoursReadingSchema,devHoursRequestCode,parseDevFinancialRun,assertDevFinancialScenario,devFinancialSourcePage} from './dev-financial-contract';
 
 /** Call inside the provisioned worker transaction. The actual DB boundary
  * requires an allowlisted DEV database and synthetic QA case. No live catalog,
@@ -30,12 +33,21 @@ export async function runSavedDevFinancialMonth(input:{context:PostgresTransacti
  // The real V2 adapter retains base/hourly rows in additional_components.
  // Permit exactly one paid base row and at most one quantity/rate-only row;
  // a second paid component would invalidate this deliberately narrow scenario.
- assertDevFinancialExtractionSource(extraction,source.version_id);
+ const rawSource=z.object({checkpoint:z.unknown(),input:z.unknown()}).parse(selected.rows[0].source);
+ const needsCompletions=!extraction.fields.some(f=>f.field==='salary_type')&&!extraction.fields.some(f=>f.field==='base_monthly_salary');
+ const completionResult=needsCompletions?materializeDevFinancialSourceCompletions({caseId:job.case_id,orderId:input.orderId,checkpoint:rawSource.checkpoint,journal:rawSource.input,policyVersion:SAVED_EXTRACTION_POLICY}):null;
+ if(completionResult?.state==='incomplete'){
+  await openSavedTranscriptionRequests(context,job,rawSource.checkpoint);
+  throw Error('DEV_FINANCIAL_COMPLETIONS_REQUIRED');
+ }
+ const completions=completionResult?.state==='completed'?completionResult.snapshot:null;
+ if(!completions)assertDevFinancialExtractionSource(extraction,source.version_id);
  const parent=input.parent??await runSavedWorkerMonth({context,job,orderId:input.orderId,month:'2026-06'});
  if(!parent.bundle)throw Error('DEV_FINANCIAL_PARENT_REQUIRED');
  const parentFacts=employmentSnapshotSchema.parse(z.object({facts:z.unknown()}).parse(parent.stages.find(s=>s.stage==='canonical_facts')?.payload).facts);
- assertDevFinancialScenario(parentFacts,source.version_id);
- const runId=savedAnalysisId('dev-financial-run',canonicalSha256({job,orderId:input.orderId,parent:parent.bundle.result_sha256,policy:DEV_MINIMUM_WAGE_POLICY}));
+ const runId=savedAnalysisId('dev-financial-run',canonicalSha256({job,orderId:input.orderId,parent:parent.bundle.result_sha256,policy:DEV_MINIMUM_WAGE_POLICY,...(completions?{source_completions_sha256:completions.snapshot_sha256}:{})}));
+ const scenarioFacts=completions?devFinancialCompletionFacts(parentFacts,runId,completions):parentFacts;
+ assertDevFinancialScenario(scenarioFacts,source.version_id);
  const answers=(source.input.answers??[]).filter(a=>a.id===source.request_id);
  if(answers.length>1)throw Error('DEV_FINANCIAL_ANSWER_AMBIGUOUS');
  let reading=null;
@@ -44,16 +56,17 @@ export async function runSavedDevFinancialMonth(input:{context:PostgresTransacti
   if(a.case_id!==job.case_id||a.code!==devHoursRequestCode(job.case_id,input.orderId,source.version_id,source.checkpoint_sha256))throw Error('DEV_FINANCIAL_ANSWER_SOURCE');
   reading=devHoursReadingSchema.parse({request_id:a.id,answer_revision:a.answer_revision,identity_id:a.answer_identity_id,answered_at:a.answer_created_at,answer:a.answer,version_id:source.version_id,checkpoint_sha256:source.checkpoint_sha256});
  }
- const facts=devFinancialFacts(parentFacts,runId,reading),calculation=calculateDevMinimumWage({facts,month:'2026-06',calculatedAt:parentFacts.created_at});
+ const facts=completions?devFinancialFactsV2(parentFacts,runId,reading,completions):devFinancialFacts(parentFacts,runId,reading);
+ const calculation=calculateDevMinimumWage({facts,month:'2026-06',calculatedAt:parentFacts.created_at});
  let requestId=source.request_id;
  if(calculation.state==='missing_input'&&calculation.fields.includes('work.regular_hours')&&!extraction.fields.some(f=>f.field==='regular_hours'&&f.normalized_value!==null)){
   const opened=await context.client.query(statement('dev_financial_request_open','select private.dev_financial_request_open($1::uuid,$2::uuid,$3,$4) id',[job.case_id,input.orderId,job.revision,job.input_sha256]));
   requestId=z.uuid().parse(opened.rows[0]?.id);
  }
- const run=parseDevFinancialRun({schema_version:DEV_FINANCIAL_SCHEMA,authority:'engineering_only',run_id:runId,case_id:job.case_id,public_id:source.public_id,
+ const run=parseDevFinancialRun({schema_version:completions?DEV_FINANCIAL_SCHEMA_V2:DEV_FINANCIAL_SCHEMA,...(completions?{source_completions:completions}:{}),authority:'engineering_only',run_id:runId,case_id:job.case_id,public_id:source.public_id,
   order_id:input.orderId,input_revision:job.revision,input_sha256:job.input_sha256,month:'2026-06',parent_run_id:parent.bundle.analysis_run_id,parent_result_sha256:parent.bundle.result_sha256,parent_key:savedMonthIdempotencyKey(job,input.orderId,'2026-06'),
   parent_key_catalog_sha256:JUNE2026_REVIEW_CATALOG_SHA256,parent_facts:parentFacts,parent_facts_sha256:canonicalSha256(parentFacts),facts,facts_sha256:canonicalSha256(facts),reading,
-  source:{document_id:source.document_id,version_id:source.version_id,source_sha256:source.source_sha256,checkpoint_sha256:source.checkpoint_sha256,path:source.path,mime:source.mime,size:source.size,page:devFinancialSourcePage(parentFacts,source.version_id)},
+  source:{document_id:source.document_id,version_id:source.version_id,source_sha256:source.source_sha256,checkpoint_sha256:source.checkpoint_sha256,path:source.path,mime:source.mime,size:source.size,page:devFinancialSourcePage(scenarioFacts,source.version_id)},
   policy_sha256:canonicalSha256(DEV_MINIMUM_WAGE_POLICY),created_at:parentFacts.created_at,calculation,finding:devFinancialFinding(runId,calculation),request_id:requestId,
   scenario:'synthetic_adult_hourly_general_182_regular_base_only',extraction_provider:provenance.kind,extraction_provenance:provenance});
  const artifacts=renderDevFinancialArtifacts(run);

@@ -4,13 +4,14 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {runSavedWorkerExtraction,recordSavedExtractionResult,type SavedWorkerTransactions} from './saved-extraction-worker';
 import {SOURCE_JOB_KIND} from './source-dispatch';
-const ports=vi.hoisted(()=>({extract:vi.fn(),checkpoint:vi.fn(),admit:vi.fn(),fields:vi.fn(),june:vi.fn()}));
+const ports=vi.hoisted(()=>({extract:vi.fn(),checkpoint:vi.fn(),admit:vi.fn(),fields:vi.fn(),june:vi.fn(),transcriptions:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('@/server/engine/extraction/saved-payslip',()=>({extractSavedPayslip:ports.extract}));
 vi.mock('./saved-admission',()=>({savedCaseTenant:(id:string)=>`saved-case:${id}`,admitSavedSource:ports.admit}));
 vi.mock('./extraction-checkpoint',()=>({saveExtractionCheckpoint:ports.checkpoint}));
 vi.mock('./saved-field-requests',()=>({openSavedDocumentFieldRequests:ports.fields}));
 vi.mock('./saved-june2026-collection',()=>({openSavedJune2026Collection:ports.june}));
+vi.mock('./saved-transcription-requests',()=>({openSavedTranscriptionRequests:ports.transcriptions}));
 vi.mock('./saved-order-scope',()=>({readSavedOrders:async()=>[{}],purchasedMonths:()=>['2025-01']}));
 beforeEach(()=>{vi.resetAllMocks();ports.admit.mockResolvedValue({});});
 
@@ -44,6 +45,9 @@ function setup(){
  const transactions:SavedWorkerTransactions=async operation=>{expect(depth).toBe(0);depth++;try{return await operation(context);}finally{depth--;}};
  ports.extract.mockImplementation(async()=>{expect(depth).toBe(0);expect(state.invocation?.result).toBeNull();return result;});
  ports.checkpoint.mockImplementation(async()=>{expect(depth).toBe(1);if(state.failCheckpoint)throw new Error('CHECKPOINT_WRITE_FAILED');return {result,reused:false};});
+ ports.transcriptions.mockImplementation(async(currentContext,currentJob,currentCheckpoint)=>{
+  expect(depth).toBe(1);expect(currentContext).toBe(context);expect(currentJob).toEqual(job);expect(currentCheckpoint).toBe(result);return [];
+ });
  const input={transactions,storage:{download:vi.fn()},extractor:{} as NonNullable<Parameters<typeof runSavedWorkerExtraction>[0]['extractor']>,providerEnabled:true,jobId:'saved-job',workerId:'worker',fencingToken:1,versionId};
  return {input,state,calls,result,jobRow,document,context,transactions};
 }
@@ -54,6 +58,10 @@ describe('durable saved extraction orchestration',()=>{
   expect(ports.extract).toHaveBeenCalledTimes(1);expect(ports.checkpoint).toHaveBeenCalledTimes(2);
   expect(ports.fields).toHaveBeenCalledTimes(2);expect(ports.fields.mock.calls[0][2]).toBe(s.result);
   expect(ports.june).toHaveBeenCalledTimes(2);expect(ports.june.mock.calls[0][2]).toBe(s.result);
+  expect(ports.transcriptions).toHaveBeenCalledTimes(2);
+  expect(ports.checkpoint.mock.invocationCallOrder[0]).toBeLessThan(ports.fields.mock.invocationCallOrder[0]);
+  expect(ports.fields.mock.invocationCallOrder[0]).toBeLessThan(ports.june.mock.invocationCallOrder[0]);
+  expect(ports.june.mock.invocationCallOrder[0]).toBeLessThan(ports.transcriptions.mock.invocationCallOrder[0]);
   expect(ports.extract.mock.calls[0][0].context.created_at).toBe('2026-09-08T00:00:00.000Z');
  });
  it('reuses a legacy checkpoint without inventing a new invocation or provider expense',async()=>{
@@ -63,8 +71,16 @@ describe('durable saved extraction orchestration',()=>{
  });
  it('keeps a committed receipt when checkpointing fails and retries it without external work',async()=>{
   const s=setup();s.state.failCheckpoint=true;await expect(runSavedWorkerExtraction(s.input)).rejects.toThrow('CHECKPOINT_WRITE_FAILED');
+  expect(ports.transcriptions).not.toHaveBeenCalled();
   expect(s.state.invocation?.result).toEqual(s.result);s.state.failCheckpoint=false;
   expect((await runSavedWorkerExtraction(s.input)).reused).toBe(true);expect(ports.extract).toHaveBeenCalledTimes(1);
+ });
+ it('propagates a refused transcription write while preserving the committed provider receipt for retry',async()=>{
+  const s=setup();ports.transcriptions.mockRejectedValueOnce(Error('TRANSCRIPTION_SOURCE_OR_SCOPE_CHANGED'));
+  await expect(runSavedWorkerExtraction(s.input)).rejects.toThrow('TRANSCRIPTION_SOURCE_OR_SCOPE_CHANGED');
+  expect(s.state.invocation?.result).toEqual(s.result);expect(ports.extract).toHaveBeenCalledTimes(1);
+  const retried=await runSavedWorkerExtraction(s.input);expect(retried.reused).toBe(true);
+  expect(ports.extract).toHaveBeenCalledTimes(1);expect(ports.transcriptions).toHaveBeenCalledTimes(2);
  });
  it('an uncertain external result blocks a second call and remains recoverable by its exact receipt',async()=>{
   const s=setup();ports.extract.mockRejectedValueOnce(new Error('NETWORK_OUTCOME_UNKNOWN'));
@@ -93,6 +109,7 @@ describe('durable saved extraction orchestration',()=>{
  it('records a response arriving after lease loss but never checkpoints under the stale fence',async()=>{
   const s=setup();ports.extract.mockImplementationOnce(async()=>{s.jobRow.lease_valid=false;return s.result;});
   await expect(runSavedWorkerExtraction(s.input)).rejects.toThrow('SAVED_JOB_FENCE');expect(s.state.invocation?.result).toEqual(s.result);
+  expect(ports.transcriptions).not.toHaveBeenCalled();
   expect(ports.checkpoint).not.toHaveBeenCalled();s.jobRow.lease_valid=true;
   await runSavedWorkerExtraction(s.input);expect(ports.extract).toHaveBeenCalledTimes(1);
  });

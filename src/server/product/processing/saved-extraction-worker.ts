@@ -15,6 +15,7 @@ import {saveExtractionCheckpoint} from './extraction-checkpoint';
 import {savedAnalysisId} from './saved-draft-report';
 import {openSavedDocumentFieldRequests} from './saved-field-requests';
 import {openSavedJune2026Collection} from './saved-june2026-collection';
+import {openSavedTranscriptionRequests} from './saved-transcription-requests';
 
 type Extraction=Awaited<ReturnType<typeof extractSavedPayslip>>;
 export type SavedExtractionLease={jobId:string;workerId:string;fencingToken:number;versionId:string};
@@ -152,6 +153,7 @@ export async function runSavedWorkerExtraction(input:SavedExtractionLease&{
   const saved=await saveExtractionCheckpoint(context,current.job,receipt);
   await openSavedDocumentFieldRequests(context,current.job,saved.result);
   await openSavedJune2026Collection(context,current.job,saved.result);
+  await openSavedTranscriptionRequests(context,current.job,saved.result);
   return saved;
  });
  return {invocationId:prepared.invocation?.invocation_id??null,reused:prepared.reused,result:checkpoint.result};

@@ -58,7 +58,9 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const june=rows.filter(row=>row.code.startsWith('minimum_wage_june2026:'));
   const fields = identityId && bound.length ? await store.rpc<{request_id:string;source_current:boolean}>('case_request_field_states',{target_case:caseId,target_identity:identityId}) : [];
   const juneStates=identityId&&june.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_june_states',{target_case:caseId,target_identity:identityId}):[];
-  const states=[...fields,...juneStates],allBound=[...bound,...june];
+  const transcriptions=rows.filter(row=>row.code.startsWith('document_transcription:'));
+  const transcriptionStates=identityId&&transcriptions.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_transcription_states',{target_case:caseId,target_identity:identityId}):[];
+  const states=[...fields,...juneStates,...transcriptionStates],allBound=[...bound,...june,...transcriptions];
   if (identityId && allBound.length && (states.length !== allBound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!allBound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   return rows.map(row => {
     const revision = revisions.find(value => value.request_id === row.id);
@@ -112,7 +114,7 @@ export async function answerCaseRequest(
   // The locked SQL operation owns expiry and exact-original retry semantics.
   // A stale browser clock or lost successful response is not a second answer.
   const answer = validateRequestAnswer(request, input.answer);
-  const bound=request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:')||request.code.startsWith('minimum_wage_june2026:');
+  const bound=request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:')||request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith('document_transcription:');
   if(bound&&!input.identityId)throw new Error('REQUEST_FIELD_FORBIDDEN');
   const rows = await store.rpc<RequestRow>(bound?"case_request_answer_identified":"case_request_answer", {
     target_request: input.requestId,

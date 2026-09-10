@@ -14,8 +14,11 @@ describe("V0.10.9 byte-pinned chain replay", () => {
     const files = await discoverMigrationFiles(MIGRATIONS);
     expect(files.length).toBeGreaterThanOrEqual(23);
     expect(files.map((file) => file.name)).toEqual([...files.map((file) => file.name)].sort());
-    expect(files.at(-2)?.name).toBe("20260909185038_june2026_collection_source_link.sql");
-    expect(files.at(-1)?.name).toBe("20260909212737_direct_resend_provider_receipts.sql");
+    expect(files.slice(-3).map(file=>file.name)).toEqual([
+      "20260910040429_document_source_transcriptions.sql",
+      "20260910040753_dev_financial_source_completion_runs.sql",
+      "20260910042333_dev_missing_hours_declaration_wording.sql",
+    ]);
     for (const file of files) {
       expect(file.sha256_raw).toMatch(/^[a-f0-9]{64}$/u);
       expect(file.sha256_lf).toMatch(/^[a-f0-9]{64}$/u);

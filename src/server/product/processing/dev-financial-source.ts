@@ -18,3 +18,16 @@ export function assertDevFinancialExtractionSource(extraction:NormalizedPayslipE
   ||extraction.additional_components.some(c=>c.confidence<0.94||c.warning_flags.length||c.normalization_warnings.length)
   ||extraction.fields.find(f=>f.field==='salary_type')?.normalized_value!=='hourly')throw Error('DEV_FINANCIAL_SCENARIO_UNSUPPORTED');
 }
+
+/** Separate v2 admission for an identified reading/classification of the sole
+ * unknown paid row. This does not mutate the row or approve a legal component. */
+export function assertDevFinancialCompletionSource(extraction:NormalizedPayslipExtraction,versionId:string,componentId:string,amount:unknown,salaryType:unknown){
+ const paid=extraction.additional_components[0];
+ if(extraction.document_id!==versionId||salaryType!=='hourly'||!extraction.earnings_components_complete
+  ||extraction.additional_components.length!==1||!paid||paid.component_id!==componentId||paid.semantic_kind!=='unknown'
+  ||paid.source.document_id!==versionId||paid.source.page>extraction.quality_metrics.page_count
+  ||paid.amount_raw===null||paid.amount===null||paid.amount.currency!=='ILS'||paid.amount.minor_units<0
+  ||paid.percentage_raw!==null||paid.percentage!==null||paid.confidence<0.94||paid.warning_flags.length||paid.normalization_warnings.length
+  ||canonicalSha256(amount)!==canonicalSha256(paid.amount)
+  ||extraction.fields.some(f=>(f.field==='salary_type'||f.field==='base_monthly_salary')&&f.normalized_value!==null))throw Error('DEV_FINANCIAL_COMPLETION_SOURCE_UNSUPPORTED');
+}

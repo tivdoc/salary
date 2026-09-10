@@ -47,12 +47,24 @@ export async function saveAutomaticDevCanonicalDraft(input:Input){
 export const runAutomaticDevMonth:SavedMonthCompletion=async input=>{
  const {source}=await saveAutomaticDevCanonicalDraft(input);
  const facts=employmentSnapshotSchema.parse(z.object({facts:z.unknown()}).parse(input.parent.stages.find(s=>s.stage==='canonical_facts')?.payload).facts);
- try{assertDevFinancialScenario(facts,source.version_id);}catch(error){
-  if(error instanceof Error&&['DEV_FINANCIAL_CANONICAL_SCENARIO'].includes(error.message))return;
+ // Source-type transcription cannot bypass an unanswered/contradictory month.
+ // Either answer order is valid; an incomplete source remains awaiting input.
+ const periods=facts.facts.filter(f=>f.path==='documents.period');
+ if(periods.length!==1||periods[0].status!=='confirmed'||periods[0].conflicting_fact_ids.length
+  ||periods[0].value?.document_id!==source.version_id||periods[0].value.period.start_date!=='2026-06-01'
+  ||periods[0].value.period.end_date!=='2026-06-30'
+  ||!periods[0].provenance.some(p=>p.source_type==='documented'&&p.source_reference.document_id===source.version_id&&p.source_reference.locator?.page))return;
+ const missingSalary=!facts.facts.some(f=>f.path==='compensation.salary_type'&&f.value!==null);
+ if(!missingSalary)try{assertDevFinancialScenario(facts,source.version_id);}catch(error){
+  if(error instanceof Error&&error.message==='DEV_FINANCIAL_CANONICAL_SCENARIO')return;
   throw error;
  }
  // A pending source confirmation is a waiting state, not a provider failure.
  const essential=facts.facts.filter(f=>['compensation.base_monthly_salary','work.regular_hours'].includes(f.path));
  if(essential.some(f=>f.value!==null&&f.status!=='confirmed'))return;
- await runSavedDevFinancialMonth({context:input.context,job:input.job,orderId:input.orderId,parent:input.parent});
+ try{await runSavedDevFinancialMonth({context:input.context,job:input.job,orderId:input.orderId,parent:input.parent});}
+ catch(error){
+  if(error instanceof Error&&error.message==='DEV_FINANCIAL_COMPLETIONS_REQUIRED')return;
+  throw error;
+ }
 };

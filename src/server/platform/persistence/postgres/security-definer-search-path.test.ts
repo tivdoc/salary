@@ -42,7 +42,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // The forward migrations replace existing function bodies and retain ACLs.
 // Direct Resend receipts131: two new functions and two redeclarations.
 // Actual DEV ACL, collision and lock-order probes cover the live permissions.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 282;
+// Source completions132–134 add four request/current/answer/state boundaries
+// and one internal-only financial checkpoint/journal binding. Actual DEV
+// upgrade and ACL probes retain the same restrictive source and actor gates.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 287;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -70,6 +73,13 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
 }
 
 describe("security definer search_path contract", () => {
+  it("accounts explicitly for the five source-completion definitions", async () => {
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>["20260910040429_document_source_transcriptions.sql","20260910040753_dev_financial_source_completion_runs.sql"].includes(d.file)).map(d=>d.name).sort()).toEqual([
+      "private.dev_financial_completions_bound","private.document_transcription_current","private.document_transcription_request_open",
+      "private.guard_document_transcription_answer","public.case_request_transcription_states",
+    ]);
+  });
   it("pins an empty search_path on every security definer function in the chain", async () => {
     const definitions = await securityDefinerDefinitions();
     const unpinned = definitions

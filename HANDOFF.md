@@ -1,3 +1,7 @@
+## Owner-requested resume — source completions to updated DEV report (2026-09-10 03:54 UTC)
+
+The owner explicitly requested continuing the unfinished flow. Base f1ab29e8fc89fa873307c20a1a8dcb52f330f5c3 is clean and both CI runs passed. This bounded continuation adds version-bound source transcriptions and a separate engineering v2 snapshot; it does not activate legal rules or alter Production. New work is not yet DB/browser verified. Existing live OCR checkpoint and historical report are retained. Safe delivery deadline: 07:54 UTC. Root owns migrations/integration, p06_base owns pure transcription contracts, calculation_audit owns engineering source/fact contracts; heavy checks are serial.
+
 ## Real provider package — saved partial delivery, STOP (2026-09-10)
 
 See [final Hebrew handoff](docs/provider-live-final-handoff-2026-09-10-he.md) and [evidence](docs/release-evidence/provider-live-20260910/a30f881-live/README.md). Exact application a30f881dca092bbec91cb48aae7fdfc670d0ee5f / DEV schema131 / READY salary-ivlzv8ge9 Preview. Real OpenAI produced a source-bound 240 ILS engineering report; actual OTP login and completion-mail delivery/webhooks plus UI answer are proved. Source replacement makes that report historical. The full live missing-input-to-updated-report flow remains FAIL; no report-ready email or canonical legal activation is claimed. Dispatch continuation passes on 512b2a21eae9fa37f32431c8ec1ca81f41f90fff with test-only application diff. Original FAIL receipts remain.

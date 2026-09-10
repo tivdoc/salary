@@ -6,9 +6,12 @@ import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {calculateDevMinimumWage,DEV_MINIMUM_WAGE_POLICY,type DevMinimumWageResult} from '@/engine/calculations/dev-minimum-wage';
 import {savedAnalysisId} from './saved-draft-report';
 import {parseOpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
+import {devFinancialSourceCompletionsSchema,parseDevFinancialSourceCompletions,devFinancialCompletionFacts,type DevFinancialSourceCompletions} from './dev-financial-completions';
+import {readSavedExtractionProvenance} from './live-extraction-provenance';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 export const DEV_FINANCIAL_SCHEMA='tivdoc-dev-financial-run-v1' as const;
+export const DEV_FINANCIAL_SCHEMA_V2='tivdoc-dev-financial-run-v2' as const;
 export const DEV_FINANCIAL_DISCLOSURE='ניסוי הנדסי בסביבת הפיתוח — מסמך סינתטי, ספק חילוץ מוזרק וכלל שלא הופעל לשירות. זו אינה בדיקת תלוש אמיתי או קביעה של חוב של המעסיק.';
 export const devHoursReadingSchema=z.object({request_id:z.uuid(),answer_revision:z.number().int().positive(),identity_id:z.uuid(),
  answered_at:z.iso.datetime({offset:true}),answer:z.string().regex(/^(0|[1-9][0-9]{0,2})(?:\.[0-9]{1,4})?$/u).refine(s=>Number(s)>0&&Number(s)<=182),
@@ -22,6 +25,7 @@ const shape=z.object({schema_version:z.literal(DEV_FINANCIAL_SCHEMA),authority:z
  policy_sha256:hash,created_at:z.iso.datetime({offset:true}),calculation:z.unknown(),finding:z.unknown(),request_id:z.uuid().nullable(),
  scenario:z.literal('synthetic_adult_hourly_general_182_regular_base_only'),extraction_provider:z.enum(['injected_test_provider','openai_live','not_configured','unproven_legacy']),
  extraction_provenance:z.object({kind:z.enum(['injected_test_provider','openai_live','not_configured','unproven_legacy']),providerAttempted:z.boolean(),allPassesSucceeded:z.boolean(),checkpointResultSha256:hash,receipts:z.array(z.unknown().transform(parseOpenAiProviderReceipt)).max(2)}).strict().optional()}).strict();
+const shapeV2=shape.extend({schema_version:z.literal(DEV_FINANCIAL_SCHEMA_V2),source_completions:devFinancialSourceCompletionsSchema});
 
 export function devFinancialFacts(parent:EmploymentSnapshot,runId:string,reading:DevHoursReading|null):EmploymentSnapshot{
  let facts=[...parent.facts];
@@ -39,13 +43,21 @@ export function devFinancialFacts(parent:EmploymentSnapshot,runId:string,reading
  // can supply the absent input, with its actor recorded alongside the snapshot.
  return employmentSnapshotSchema.parse({...parent,snapshot_id:savedAnalysisId('dev-financial-facts',canonicalSha256({runId,parent:canonicalSha256(parent),reading})),analysis_run_id:runId,facts});
 }
+export function devFinancialFactsV2(parent:EmploymentSnapshot,runId:string,reading:DevHoursReading|null,completions:DevFinancialSourceCompletions):EmploymentSnapshot{
+ return devFinancialFacts(devFinancialCompletionFacts(parent,runId,completions),runId,reading);
+}
 export function devFinancialFinding(runId:string,result:DevMinimumWageResult){
  return result.state==='missing_input'?null:{id:savedAnalysisId('dev-financial-finding',runId),analysis_run_id:runId,
   authority:'engineering_only' as const,topic:'minimum_wage' as const,expected_minor:result.expectedMinor,recorded_minor:result.recordedMinor,gap_minor:result.gapMinor,
   trace_sha256:result.trace.trace_sha256,comparison_sha256:canonicalSha256(result.comparison)};
 }
 export function parseDevFinancialRun(candidate:unknown){
- const p=shape.parse(candidate);
+ const p=z.union([shape,shapeV2]).parse(candidate);
+ const completions=p.schema_version===DEV_FINANCIAL_SCHEMA_V2?parseDevFinancialSourceCompletions(p.source_completions):null;
+ if(completions&&(completions.case_id!==p.case_id||completions.order_id!==p.order_id
+  ||completions.checkpoint.product_document_id!==p.source.document_id||completions.checkpoint.version_id!==p.source.version_id
+  ||completions.checkpoint.input_sha256!==p.source.source_sha256||completions.checkpoint.result_sha256!==p.source.checkpoint_sha256))throw Error('DEV_FINANCIAL_COMPLETION_BINDING');
+ if(completions&&canonicalSha256(readSavedExtractionProvenance(completions.checkpoint))!==canonicalSha256(p.extraction_provenance??null))throw Error('DEV_FINANCIAL_COMPLETION_PROVIDER_BINDING');
  if(!p.extraction_provenance&&p.extraction_provider!=='injected_test_provider')throw Error('DEV_FINANCIAL_PROVIDER_PROVENANCE_REQUIRED');
  if(p.extraction_provenance){const evidence=p.extraction_provenance;
   for(const receipt of evidence.receipts)if(receipt.source_page_count!==undefined)for(const fact of p.parent_facts.facts)for(const item of fact.provenance)if(item.source_type==='documented'&&item.source_reference.document_id===p.source.version_id&&(item.source_reference.locator?.page??1)>receipt.source_page_count)throw Error('DEV_FINANCIAL_PROVIDER_PAGE');
@@ -54,8 +66,9 @@ export function parseDevFinancialRun(candidate:unknown){
    ||evidence.providerAttempted!==evidence.receipts.some(r=>r.provider_attempted)
    ||evidence.allPassesSucceeded!==(evidence.receipts.length>0&&evidence.receipts.every(r=>r.status==='completed')))throw Error('DEV_FINANCIAL_PROVIDER_BINDING');
  }
- assertDevFinancialScenario(p.parent_facts,p.source.version_id);
- if(devFinancialSourcePage(p.parent_facts,p.source.version_id)!==p.source.page)throw Error('DEV_FINANCIAL_SOURCE_PAGE');
+ const scenarioFacts=completions?devFinancialCompletionFacts(p.parent_facts,p.run_id,completions):p.parent_facts;
+ assertDevFinancialScenario(scenarioFacts,p.source.version_id);
+ if(devFinancialSourcePage(scenarioFacts,p.source.version_id)!==p.source.page)throw Error('DEV_FINANCIAL_SOURCE_PAGE');
  // This v1 historical wire contract must never validate a saved report with
  // today's mutable catalog. Older artifacts have the original recipe; newer
  // artifacts pin the catalog dependency used by their parent key explicitly.
@@ -66,7 +79,7 @@ export function parseDevFinancialRun(candidate:unknown){
  if(p.parent_facts.case_id!==p.case_id||p.parent_facts.analysis_run_id!==p.parent_run_id||canonicalSha256(p.parent_facts)!==p.parent_facts_sha256
   ||p.policy_sha256!==canonicalSha256(DEV_MINIMUM_WAGE_POLICY))throw Error('DEV_FINANCIAL_PARENT_BINDING');
  if(p.reading&&(p.reading.version_id!==p.source.version_id||p.reading.checkpoint_sha256!==p.source.checkpoint_sha256||p.reading.request_id!==p.request_id))throw Error('DEV_FINANCIAL_READING_BINDING');
- const facts=devFinancialFacts(p.parent_facts,p.run_id,p.reading);
+ const facts=completions?devFinancialFactsV2(p.parent_facts,p.run_id,p.reading,completions):devFinancialFacts(p.parent_facts,p.run_id,p.reading);
  if(canonicalSha256(facts)!==p.facts_sha256||canonicalSha256(p.facts)!==p.facts_sha256)throw Error('DEV_FINANCIAL_FACT_TRANSFORMATION');
  const extension=p.source.mime==='application/pdf'?'pdf':p.source.mime==='image/png'?'png':'jpg';
  if(p.source.path!==`cases/${p.case_id}/versions/${p.source.version_id}.${extension}`)throw Error('DEV_FINANCIAL_SOURCE_PATH');

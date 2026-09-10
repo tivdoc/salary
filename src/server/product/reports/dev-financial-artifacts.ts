@@ -9,6 +9,12 @@ export function devMoney(minor:number){const value=BigInt(minor),absolute=value<
 export function devFinancialRows(run:DevFinancialRun):string[][]{
  const rows=[['חודש','יוני 2026'],['מזהה הניתוח הכספי',run.run_id],['מזהה ניתוח המקור',run.parent_run_id],['גרסת קלט',String(run.input_revision)],['מסמך',run.source.document_id],['גרסת מסמך',run.source.version_id],['עמוד',String(run.source.page)],['כלל',`${DEV_MINIMUM_WAGE_RULE.rule_spec_id}@${DEV_MINIMUM_WAGE_RULE.rule_spec_version}`],['גרסת פרמטר',DEV_MINIMUM_WAGE_POLICY.parameterVersion]];
  if(run.extraction_provenance)rows.push(['מקור החילוץ',run.extraction_provider],['עקבות ספק',run.extraction_provenance.receipts.map(r=>`${r.actual_model??r.requested_model}; ${r.provider_request_id??r.provider_response_id??'ללא מזהה ספק'}`).join('; ')]);
+ if(run.schema_version==='tivdoc-dev-financial-run-v2'){
+  rows.push(['גרסת מסמך הדוח',run.schema_version],['השלמות מקור','סוג השכר נקרא בתשובה מזוהה; סכום השורה חולץ בידי הספק ואושר בתשובה נפרדת. מהות הרכיב היא הצהרת בדיקה בלבד ואינה הכרעה משפטית.']);
+  for(const reading of run.source_completions.readings)rows.push([reading.target.subject.kind==='salary_type'?'תשובת סוג שכר':'אישור קריאת סכום',`${reading.answer}; בקשה ${reading.request_id}; גרסה ${reading.answer_revision}`]);
+  const nature=run.source_completions.component_nature;
+  rows.push(['הצהרת מהות הרכיב',`${nature.answer}; בקשה ${nature.request_id}; גרסה ${nature.answer_revision}`]);
+ }
  if(run.calculation.state==='calculated'){
   const hours=run.calculation.trace.inputs.find(i=>i.input_id==='fact.regular.hours')?.value;
   const rate=run.calculation.trace.inputs.find(i=>i.input_id==='parameter.hourly.floor')?.value;

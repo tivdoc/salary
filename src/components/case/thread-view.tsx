@@ -137,8 +137,8 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           </p>
           {request.statement_month ? <p className="thread-card__meta">תקופת השאלה: {formatRequestMonth(request.statement_month)}</p> : null}
           <h2>{request.question}</h2>
-          {request.field_crop && !request.code.startsWith('document_field:') && !request.code.startsWith('minimum_wage_june2026:') ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
-          {request.code.startsWith('document_field:') ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
+          {request.field_crop && !request.code.startsWith('document_field:') && !request.code.startsWith('minimum_wage_june2026:') && !request.code.startsWith('document_transcription:') ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
+          {(request.code.startsWith('document_field:')||request.code.startsWith('document_transcription:')) ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
           {request.code.startsWith('minimum_wage_june2026:') ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת התלוש שאליו מתייחסת השאלה</a><br />התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.</p> : null}
           <AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={() => router.refresh()} />
         </div>
