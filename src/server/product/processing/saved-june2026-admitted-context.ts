@@ -5,6 +5,7 @@ import {ruleInputSnapshotSchema} from '@/engine/wave1/contracts';
 import {createTopicRuleInputSnapshot} from '@/engine/rule-input/snapshot';
 import {canonicalSha256, deepFreeze} from '@/engine/rule-runtime/canonical';
 import {prepareJune2026AdmittedContext} from '@/engine/minimum-wage-june2026/admitted-context';
+import {prepareJune2026AssessmentPacket} from '@/engine/minimum-wage-june2026/assessment-packet';
 import {decodeCommand, decodeStage} from '@/server/platform/persistence/postgres/analysis/validation';
 import {statement, type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {lockCurrentSource, sourceJobSchema, type SourceJob} from './source-dispatch';
@@ -122,7 +123,9 @@ export async function loadSavedJune2026AdmittedContext(input: {
     order_id: orderId, month: '2026-06', topics: order.topics, document: {product_document_id: row.product_document_id, version_id: document.document_id, sha256: document.content_sha256, page_count: pageCount}},
     saved: {case_id: run.case_id, analysis_run_id: run.analysis_run_id, input_revision: run.source_revision, input_sha256: run.source_input_sha256,
       order_id: order.id, month: '2026-06'}, canonicalStage, ruleInput: ruleInputs[topicIndex], checkpoint: row.result, extractionPolicyVersion: SAVED_EXTRACTION_POLICY, collection});
+  const assessment = prepareJune2026AssessmentPacket({context: admitted, facts: canonicalStage.facts});
   return deepFreeze({schema_version: 'saved-june2026-factual-context-v1', state: 'context_loaded' as const, context: admitted, provenance,
+    admission_assessment: assessment,
     persisted_stage_sha256s: Object.fromEntries(stages.map(stage => [stage.stage, stage.payload_sha256])), command_sha256: run.command_sha256,
     legal_activation: false, publication_allowed: false});
 }

@@ -4,7 +4,7 @@ import {JUNE2026_APPLICABILITY_REQUESTS} from '@/engine/minimum-wage-june2026/ev
 import {JUNE2026_MINIMUM_WAGE_POLICY_SHA256,JUNE2026_SOURCE_SET_SHA256} from '@/engine/minimum-wage-june2026/sources';
 import {JUNE2026_SOURCE_VERSION_IDS} from '@/engine/minimum-wage-june2026/admission';
 
-export const SAVED_JUNE_REVIEW_VERSION='saved-june2026-review-v4-preexecution-factual-context';
+export const SAVED_JUNE_REVIEW_VERSION='saved-june2026-review-v5-unadmitted-assessment-packet';
 /** Saved under review_pending by CaseAnalysisService in the current source's
  * existing transaction. This keeps the concrete missing input and row sources
  * with that run, without inventing confirmations from generic questionnaire

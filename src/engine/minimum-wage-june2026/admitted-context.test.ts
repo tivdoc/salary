@@ -8,6 +8,7 @@ import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {createJune2026MinimumWageCandidate} from './candidate.ts';
 import {createSourceCalculationTrace} from '../calculations/source-trace.ts';
 import {prepareJune2026AdmittedContext, type June2026AdmittedContextInput} from './admitted-context.ts';
+import {prepareJune2026AssessmentPacket} from './assessment-packet.ts';
 import {createJune2026CollectionTarget, resolveJune2026CollectionAnswer, JUNE2026_COMPONENT_DECLARATIONS, JUNE2026_DECLARATION_OPTIONS,
   JUNE2026_UNKNOWN_ANSWER, JUNE2026_CONFLICTED_ANSWER, type June2026CollectionSelector} from './collection.ts';
 
@@ -185,5 +186,69 @@ describe('June2026 current-source factual admission context', () => {
     expect(expired.collection.resolutions[0].state).toBe('expired'); expect(prepareJune2026AdmittedContext(f.input).context_sha256).toBe(expired.context_sha256);
     f.extraction.warnings.push('new_extraction_revision'); f.repin();
     expect(prepareJune2026AdmittedContext(f.input).collection.resolutions[0].state).toBe('stale');
+  });
+});
+
+describe('same-run unadmitted assessment packet', () => {
+  const packet = (f: ReturnType<typeof fixture>) => prepareJune2026AssessmentPacket({context: prepareJune2026AdmittedContext(f.input), facts: f.facts});
+  it('maps known customer answers to observed evidence without granting legal authority or running arithmetic', () => {
+    const f = fixture();
+    for (const field of ['age_18_entire_month', 'regular_hours_exclude_absence_overtime_rest'] as const)
+      f.addAnswer({kind: 'applicability', field}, JUNE2026_DECLARATION_OPTIONS[0]);
+    f.addAnswer({kind: 'earnings_completeness'}, JUNE2026_DECLARATION_OPTIONS[0]);
+    f.addAnswer({kind: 'component', componentId: f.component.component_id}, JUNE2026_COMPONENT_DECLARATIONS.base_salary);
+    const result = packet(f);
+    expect(result.gates).toHaveLength(8);
+    expect(result.gates.find(g => g.field === 'applicability.age_18_entire_month')).toMatchObject({state: 'declared_unreviewed',
+      assertion: {status: 'missing', value: null}, observed_declaration: {interpretation: {value: true}, answer_revision: 1}, admitted: false});
+    expect(result.evidence.components).toMatchObject([{classification: 'unclassified', classification_status: 'missing', amount_minor: 330000}]);
+    expect(result.evidence.applicability.age_18_entire_month.provenance).toHaveLength(1);
+    expect(result.preflight.state).toBe('missing_input');
+    expect(result).toMatchObject({candidate_calculation_performed: false, execution_allowed: false, publication_allowed: false});
+    expect(packet(f).packet_sha256).toBe(result.packet_sha256);
+  });
+  it.each([[JUNE2026_UNKNOWN_ANSWER, 'unknown', 'missing'], [JUNE2026_CONFLICTED_ANSWER, 'conflicted', 'conflicted']] as const)(
+    'preserves %s as a distinct unadmitted state', (answer, state, status) => {
+      const f = fixture(); f.addAnswer({kind: 'applicability', field: 'age_18_entire_month'}, answer);
+      const result = packet(f), entry = result.gates.find(g => g.field === 'applicability.age_18_entire_month')!;
+      expect(entry).toMatchObject({state, assertion: {status, value: null}, admitted: false});
+      expect(result.evidence.applicability.age_18_entire_month.status).toBe(status);
+    });
+  it('preserves missing, expired and stale evidence without treating an old declaration as current', () => {
+    const f = fixture();
+    expect(packet(f).gates.find(g => g.field === 'wage_components_complete')?.state).toBe('missing');
+    const target = createJune2026CollectionTarget({checkpoint: f.checkpoint, policyVersion: policy, subject: {kind: 'earnings_completeness'}});
+    f.collection.resolutions.push({state: 'missing', request_id: randomUUID(), target, expires_at: '2026-09-08T20:30:00.000Z',
+      legal_classification_status: 'unreviewed', candidate_evidence_admitted: false});
+    expect(packet(f).gates.find(g => g.field === 'wage_components_complete')?.state).toBe('expired');
+    f.extraction.warnings.push('source_changed'); f.repin();
+    const result = packet(f), entry = result.gates.find(g => g.field === 'wage_components_complete')!;
+    expect(entry).toMatchObject({state: 'stale', current_target_sha256: null, observed_declaration: null});
+    expect(entry.observations).toHaveLength(1);
+  });
+  it('does not invent component amounts or suppress factual failures when reconciliation fails', () => {
+    const f = fixture(); f.component.amount!.minor_units = 329999; f.repin();
+    const result = packet(f);
+    expect(result.evidence.components).toEqual([]);
+    expect(result.factual_issues).toContainEqual({field: 'components', reason: 'documented_base_gross_component_reconciliation_required'});
+    expect(result.component_mapping.state).toBe('single_component_unavailable');
+    expect(result.preflight.state).toBe('missing_input');
+  });
+  it('keeps a component with no text locator out of evidence instead of fabricating a printed location', () => {
+    const f = fixture(); delete f.component.source.text_fragment; f.repin();
+    const result = packet(f);
+    expect(result.evidence.components).toEqual([]);
+    expect(result.factual_issues).toContainEqual({field: 'components', reason: 'component_text_locator_required'});
+  });
+  it('refuses changed context/facts and approval-shaped authority even with a recomputed hash', () => {
+    const f = fixture(), context = prepareJune2026AdmittedContext(f.input);
+    expect(() => prepareJune2026AssessmentPacket({context: {...context, context_sha256: 'a'.repeat(64)}, facts: f.facts})).toThrow('JUNE_ASSESSMENT_CONTEXT_HASH');
+    const foreignCase = randomUUID();
+    expect(() => prepareJune2026AssessmentPacket({context, facts: {...f.facts, case_id: foreignCase,
+      facts: f.facts.facts.map(fact => ({...fact, case_id: foreignCase}))}})).toThrow('JUNE_ASSESSMENT_FACTS_BINDING');
+    const {context_sha256: ignored, ...body} = context; void ignored;
+    const changed = {...body, legal_activation: true};
+    expect(() => prepareJune2026AssessmentPacket({context: {...changed, context_sha256: canonicalSha256(changed)} as unknown as typeof context,
+      facts: f.facts})).toThrow('JUNE_ASSESSMENT_UNSUPPORTED_AUTHORITY');
   });
 });

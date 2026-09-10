@@ -75,7 +75,8 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
     throw new Error('SAVED_JUNE_CONTEXT_NOT_PREPARED');
    }
    return {...diagnostic,collection,factual_context:factualContext,
-    blockers:{...diagnostic.blockers,technical:['canonical_executor_admission_not_connected']},
+    blockers:{...diagnostic.blockers,technical:['authenticated_case_evidence_admission_not_available',
+     'active_catalog_executor_binding_not_connected','canonical_financial_publication_not_connected']},
     customer_requests_created:collection.resolutions.length>0};
   },
   logs:{write(){}},templateVersion:SAVED_DRAFT_TEMPLATE});

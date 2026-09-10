@@ -123,6 +123,10 @@ describe('saved June context loader over actual saved-stage/reading adapters', (
     expect(result.context.state).toBe('factual_context_ready'); expect(result.context.source_fact_bindings).toHaveLength(2);
     expect(result.provenance.kind).toBe('injected_test_provider');
     expect(result.context.legal_gates.every(gate => gate.status === 'not_admitted')).toBe(true);
+    expect(result.admission_assessment).toMatchObject({factual_context_sha256: result.context.context_sha256,
+      facts_snapshot_sha256: result.context.facts_snapshot_sha256, current: result.context.current,
+      preflight: {state: 'missing_input'}, candidate_calculation_performed: false, execution_allowed: false, publication_allowed: false});
+    expect(result.admission_assessment.gates.every(gate => gate.admitted === false)).toBe(true);
     expect(result).toMatchObject({legal_activation: false, publication_allowed: false});
     expect(f.calls.slice(0, 5).map(query => query.name)).toEqual(['saved_june_context_authority', 'source_case_lock', 'source_revision_check', 'saved_order_entitlements', 'saved_june_context_run']);
     const runQuery = f.calls.find(query => query.name === 'saved_june_context_run')!;
