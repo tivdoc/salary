@@ -15,12 +15,17 @@ function dataUrl(mimeType: string, bytes: Uint8Array) {
   return `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`;
 }
 
+export const OPENAI_SOL_COMPARISON_PROFILE = 'sol-medium-comparison-v1' as const;
+
 export function buildOpenAiV2ResponsesRequest(input: {
   model: string;
   prepared: PreparedPayslipDocument;
   kind: "first_pass" | "targeted_recovery";
   requested_fields?: readonly PayslipFieldKey[];
+  executionProfile?: typeof OPENAI_SOL_COMPARISON_PROFILE;
 }) {
+  if (input.executionProfile !== undefined && (input.executionProfile !== OPENAI_SOL_COMPARISON_PROFILE || input.model !== 'gpt-5.6-sol'))
+    throw new TypeError('OPENAI_COMPARISON_PROFILE_MODEL_MISMATCH');
   const text = input.kind === "first_pass"
     ? v2FirstPassUserText()
     : v2RecoveryUserText(input.requested_fields ?? []);
@@ -62,6 +67,8 @@ export function buildOpenAiV2ResponsesRequest(input: {
     text: { format: zodTextFormat(openAiPayslipV2StructuredOutputSchema, promptVersion) },
     max_output_tokens: 10_000,
     store: false,
+    ...(input.executionProfile === OPENAI_SOL_COMPARISON_PROFILE
+      ? {reasoning: {effort: 'medium' as const}, service_tier: 'default' as const} : {}),
   };
 }
 

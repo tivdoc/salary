@@ -117,6 +117,7 @@ export class OpenAiPayslipV2PassExtractor {
       durationClock?: () => number;
       log?: SafeLogSink;
       extractorVersion?: string;
+      executionProfile?: Parameters<typeof buildOpenAiV2ResponsesRequest>[0]['executionProfile'];
     } = {},
   ) {
     this.extractorVersion = options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION;
@@ -237,6 +238,7 @@ export class OpenAiPayslipV2PassExtractor {
         prepared: input.prepared,
         kind: input.kind,
         requested_fields: input.requestedFields,
+        ...(this.options.executionProfile ? {executionProfile: this.options.executionProfile} : {}),
       });
       requestHash=canonicalSha256(providerRequest);
       const response = await this.transport.parse(providerRequest);
