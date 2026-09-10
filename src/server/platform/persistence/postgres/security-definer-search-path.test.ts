@@ -45,7 +45,9 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // Source completions132–134 add four request/current/answer/state boundaries
 // and one internal-only financial checkpoint/journal binding. Actual DEV
 // upgrade and ACL probes retain the same restrictive source and actor gates.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 287;
+//135 redeclares the same internal binding to disambiguate its local variable;
+// JSON paths, predicates, empty search_path and existing ACLs are unchanged.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 288;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -73,6 +75,10 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
 }
 
 describe("security definer search_path contract", () => {
+  it("accounts for the reviewed completion-binding redeclaration", async () => {
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>d.file==="20260910044646_dev_financial_completion_target_binding.sql").map(d=>d.name)).toEqual(["private.dev_financial_completions_bound"]);
+  });
   it("accounts explicitly for the five source-completion definitions", async () => {
     const definitions=await securityDefinerDefinitions();
     expect(definitions.filter(d=>["20260910040429_document_source_transcriptions.sql","20260910040753_dev_financial_source_completion_runs.sql"].includes(d.file)).map(d=>d.name).sort()).toEqual([
