@@ -1,0 +1,28 @@
+{
+  "codeRevision": "b189b4d33f1427791d02abafae15410392caba64",
+  "request": {
+    "case_id": "58933f19-d702-498f-b390-40dfdcd69e07",
+    "analysis_run_id": "48534081-b242-4db1-8c69-a0f3d388ed91",
+    "extraction_id": "210b4896-dae0-49c8-97dc-106755b87886",
+    "document": {
+      "document_id": "0c35699f-3d4d-43f0-ac57-8fc96f157914",
+      "case_id": "58933f19-d702-498f-b390-40dfdcd69e07",
+      "document_type": "payslip",
+      "original_filename": "he-single-conflicting-hours-june2026.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 771501,
+      "content_sha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+      "storage_path": "cases/58933f19-d702-498f-b390-40dfdcd69e07/documents/0c35699f-3d4d-43f0-ac57-8fc96f157914/original.pdf",
+      "document_period": null,
+      "supersedes_document_id": null,
+      "created_at": "2026-09-10T17:19:52.256Z"
+    },
+    "declared_document_type": "payslip",
+    "requested_at": "2026-09-10T17:19:54.854Z"
+  },
+  "requestSha256": "de0a775752a8c2ed178bc026d87c4da28ce6dac00d44ed80210c72269c36239c",
+  "sourceSha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "sourcePageCount": 1
+}

@@ -1,0 +1,199 @@
+{
+  "gitSha": "e70dca3ad208f22600b8718fc963b2a9065f5d13",
+  "caseId": "9544dc6f-1aed-4924-921f-bc9a1cac5232",
+  "publicId": "TV-6E4694F8",
+  "orderId": "1257cbbf-3aa5-4c80-8f25-ba18d2d0549f",
+  "kind": "clear",
+  "phase": "canonical-execution-and-publication",
+  "state": "FAIL",
+  "error": "JUNE_REGULAR_REPORT_LOCATOR",
+  "checks": [
+    "explicit_document_replacement_preserved_prior_invocation",
+    "REAL_without_authority_blocked",
+    "owned_job_lease_released_with_fence"
+  ],
+  "runs": [],
+  "answers": [
+    {
+      "kind": "document_reading",
+      "requestId": "b226fdbf-da93-4a35-8de7-4588afc2fa9b",
+      "field": "base_monthly_salary",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "kind": "document_reading",
+      "requestId": "61d93599-4454-4c0d-9770-207b303c2b0d",
+      "field": "hourly_rate",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 3300
+      }
+    },
+    {
+      "kind": "document_reading",
+      "requestId": "82b46e62-59aa-48f2-85f6-896e4391e5de",
+      "field": "salary_type",
+      "value": "hourly"
+    },
+    {
+      "kind": "document_reading",
+      "requestId": "c6c20c89-010e-4d03-8afc-3f056e562d7d",
+      "field": "regular_hours",
+      "value": {
+        "amount": "100",
+        "unit": "hours_per_month"
+      }
+    },
+    {
+      "kind": "document_reading",
+      "requestId": "638fb40d-de5c-4923-a5f7-e48fe8b81605",
+      "field": "salary_period",
+      "value": {
+        "year": 2026,
+        "month": 6,
+        "start_date": "2026-06-01",
+        "end_date": "2026-06-30"
+      }
+    },
+    {
+      "kind": "document_reading",
+      "requestId": "b2ef1438-9558-427c-b3cc-bb485cf71582",
+      "field": "gross_salary",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "kind": "document_reading",
+      "requestId": "b7dca9fe-e997-4765-ad5b-398ee51833dd",
+      "field": "net_salary",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "2a3a3e7a-9d19-4ddf-b344-838121998a97",
+      "subject": {
+        "kind": "component",
+        "component": {
+          "component_id": "2ea6dedf-2aa2-4a46-8282-5a6bdd7b8f28",
+          "source_label": "שכר יסוד שעתי",
+          "source": {
+            "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+            "page": 1
+          },
+          "amount": {
+            "currency": "ILS",
+            "minor_units": 330000
+          }
+        }
+      },
+      "answer": "שכר יסוד או שכר משולב"
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "18d40075-4771-488e-a5c1-12a63f598031",
+      "subject": {
+        "kind": "applicability",
+        "field": "regular_hours_exclude_absence_overtime_rest"
+      },
+      "answer": "כן, לפי המידע שברשותי"
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "721dd9b0-a3c0-4491-8a9c-c55819ae84ed",
+      "subject": {
+        "kind": "applicability",
+        "field": "hours_rest_law_applies"
+      },
+      "answer": "Synthetic supervised adult hourly clerk, not management"
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "4c97d7f6-b6f5-431c-9939-b5e6b8bfad04",
+      "subject": {
+        "kind": "applicability",
+        "field": "sector"
+      },
+      "answer": "Synthetic office clerk in a general private business"
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "1be7c1cb-f69f-4d96-be92-fc3a8c2ff230",
+      "subject": {
+        "kind": "applicability",
+        "field": "no_better_minimum_wage_arrangement"
+      },
+      "answer": "לא, לפי המידע שברשותי"
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "c6fb9624-6b50-4207-a25e-2b11f7ed9b1e",
+      "subject": {
+        "kind": "applicability",
+        "field": "no_adapted_minimum_wage"
+      },
+      "answer": "לא, לפי המידע שברשותי"
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "a69da0b0-129b-40dc-be95-9040ff90fa8c",
+      "subject": {
+        "kind": "earnings_completeness"
+      },
+      "answer": "כן, לפי המידע שברשותי"
+    },
+    {
+      "kind": "case_declaration",
+      "requestId": "16a8f2fc-c915-415a-8692-3544a1713599",
+      "subject": {
+        "kind": "applicability",
+        "field": "age_18_entire_month"
+      },
+      "answer": "כן, לפי המידע שברשותי"
+    }
+  ],
+  "sourceSha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+  "budget": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 8,
+    "generations": 4,
+    "countRequests": 4,
+    "reservedUpperBoundUsd": 2.848,
+    "unknownOutcomes": 1,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 1
+  },
+  "payment": "synthetic_paid_full_offer_no_payment_provider",
+  "authority": "isolated_test_only",
+  "humanApproval": false,
+  "productionChanged": false
+}

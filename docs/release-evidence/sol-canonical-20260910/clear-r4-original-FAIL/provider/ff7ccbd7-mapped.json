@@ -1,0 +1,328 @@
+{
+  "extraction": {
+    "extraction_id": "ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca",
+    "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+    "status": "completed",
+    "detected_document_type": "payslip",
+    "document_quality_confidence": 0.96,
+    "quality_metrics": {
+      "page_count": 1,
+      "text_coverage": null,
+      "rotation_degrees": 0,
+      "source_resolution_dpi": null
+    },
+    "fields": [
+      {
+        "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8",
+        "field": "document_type",
+        "raw_value": "payslip",
+        "confidence": 0.96,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "document type"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0",
+        "field": "salary_period",
+        "raw_value": "06/2026",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "חודש שכר: 06/2026"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e",
+        "field": "salary_period",
+        "raw_value": "01/06/2026–30/06/2026",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "תחילת תקופת השכר / סיום תקופת השכר: 01/06/2026–30/06/2026"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f",
+        "field": "employment_start_date",
+        "raw_value": "15/01/2025",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "תחילת עבודה: 15/01/2025"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269",
+        "field": "salary_type",
+        "raw_value": "שעתי",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "סוג שכר: שעתי"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+        "field": "regular_hours",
+        "raw_value": "100",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "שעות רגילות: 100"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+        "field": "hourly_rate",
+        "raw_value": "33.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "תעריף רגיל לשעה בשקלים: 33.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32",
+        "field": "regular_hours",
+        "raw_value": "100",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "שכר יסוד שעתי: 100"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23",
+        "field": "hourly_rate",
+        "raw_value": "33.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "שכר יסוד שעתי: 33.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7",
+        "field": "base_monthly_salary",
+        "raw_value": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "שכר יסוד שעתי: 3300.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455",
+        "field": "gross_salary",
+        "raw_value": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "ברוטו: 3300.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892",
+        "field": "total_deductions",
+        "raw_value": "0.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "סך ניכויים: 0.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10",
+        "field": "net_salary",
+        "raw_value": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "נטו לתשלום: 3300.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      }
+    ],
+    "additional_components": [
+      {
+        "component_id": "8516f362-e411-496b-930b-9ec4a375a5c5",
+        "source_label": "שעות רגילות",
+        "normalized_label": "hourly_base",
+        "semantic_kind": "hourly_base",
+        "quantity_raw": "100",
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": null,
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "שעות רגילות"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "component_id": "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+        "source_label": "תעריף רגיל לשעה בשקלים",
+        "normalized_label": "hourly_base",
+        "semantic_kind": "hourly_base",
+        "quantity_raw": null,
+        "rate_raw": "33.00",
+        "percentage_raw": null,
+        "amount_raw": null,
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "תעריף רגיל לשעה בשקלים"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "component_id": "39e0b300-6ff4-4470-89f1-4a271af87c0f",
+        "source_label": "שכר יסוד שעתי",
+        "normalized_label": "hourly_base",
+        "semantic_kind": "hourly_base",
+        "quantity_raw": "100",
+        "rate_raw": "33.00",
+        "percentage_raw": null,
+        "amount_raw": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "page": 1,
+          "text_fragment": "שכר יסוד שעתי"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      }
+    ],
+    "sensitive_metadata": [],
+    "earnings_components_complete": true,
+    "warnings": [],
+    "provider": {
+      "provider_id": "openai",
+      "extractor_version": "2.1",
+      "model_version": "gpt-5.6-sol"
+    },
+    "operation": {
+      "duration_ms": 29079,
+      "provider_response_id": "resp_017555988e7a5b5e016aa2e05de57887d2b45ad19630a160b4",
+      "token_usage": {
+        "input_tokens": 4124,
+        "output_tokens": 1706,
+        "total_tokens": 5830
+      }
+    },
+    "extracted_at": "2026-09-10T16:53:14.428Z",
+    "error_code": null
+  },
+  "salary_type_assessment": {
+    "documented": {
+      "value": "hourly",
+      "raw_value": "שעתי",
+      "confidence": 0.94,
+      "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269"
+    },
+    "inferred": {
+      "value": "hourly",
+      "confidence": 0.94,
+      "basis": [
+        "hourly_rate",
+        "regular_hours",
+        "payroll_structure"
+      ],
+      "warning_flags": [
+        "inferred_not_documented"
+      ]
+    }
+  },
+  "critical_context": {
+    "required_fields": [
+      "salary_period"
+    ],
+    "hourly_analysis_implied": true,
+    "pension_section_visible": false,
+    "totals_section_visible": true
+  },
+  "pension_section_visible": false,
+  "totals_section_visible": true,
+  "provider_receipt": {
+    "schema_version": "tivdoc-openai-provider-receipt-v1",
+    "origin": "openai_live",
+    "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+    "analysis_run_id": "26c7754e-49c6-480b-8683-86333c847200",
+    "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+    "extraction_id": "ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca",
+    "source_sha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+    "source_size_bytes": 770601,
+    "source_mime_type": "application/pdf",
+    "source_page_count": 1,
+    "request_sha256": "b1f448a0211f533e6ca1ebe9d3d141fff3b22e56313ed0d3d7487334f3439e14",
+    "raw_extraction_sha256": "cac8c2e476a7a0b2ebd46082da9a714b86d846fa1a523e259f8466f97ea2609d",
+    "pass_kind": "first_pass",
+    "requested_model": "gpt-5.6-sol",
+    "actual_model": "gpt-5.6-sol",
+    "extractor_version": "2.1",
+    "prompt_version": "payslip-extraction-openai-v2-first-r4",
+    "provider_response_id": "resp_017555988e7a5b5e016aa2e05de57887d2b45ad19630a160b4",
+    "provider_request_id": "req_d06139b3c51e42a8b2a2733182b238c9",
+    "provider_attempted": true,
+    "status": "completed",
+    "error_code": null,
+    "http_status": null,
+    "duration_ms": 29079,
+    "token_usage": {
+      "input_tokens": 4124,
+      "output_tokens": 1706,
+      "total_tokens": 5830
+    },
+    "cost": {
+      "status": "not_returned_by_provider",
+      "amount_usd": null
+    },
+    "created_at": "2026-09-10T16:53:14.428Z",
+    "receipt_sha256": "d331cc55f732be3d0cd7e71ad5f520c1afdef4197740f18983e8d74c49808b70"
+  }
+}

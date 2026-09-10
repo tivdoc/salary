@@ -42,7 +42,11 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
       {engineering.map(report=><DevFinancialReport key={report.run.run_id} report={report}/>)}
       {engineering.length>0 ? null : saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
         : saved.reports.length === 0 ? <div><h1>הדוח עדיין לא מוכן</h1>{saved.checkPeriodMonth ? <p>חודש הבדיקה: <bdi>{saved.checkPeriodMonth}</bdi></p> : null}<p>כשיפורסם דוח לתיק, הוא יופיע כאן. אפשר לראות את המצב והבקשות בעמוד התיק.</p></div>
-        : saved.reports.map((report) => <article key={report.id} aria-label={`דוח שפורסם ${report.publishedAt}`}>
+        : saved.reports.map((report) => report.state==='authority_unavailable'?<article key={report.id} aria-label="דוח שאינו זמין">
+          <p>דוח היסטורי מתאריך {new Date(report.publishedAt).toLocaleDateString('he-IL')}</p>
+          <h2>הדוח אינו זמין כרגע</h2>
+          <p>האישור שעליו התבסס הניתוח אינו בתוקף. נדרשת בדיקה מחדש לפני הצגת התוצאה.</p>
+        </article>:<article key={report.id} aria-label={`דוח שפורסם ${report.publishedAt}`}>
           <ReportOpen publicId={item.public_id} reportId={report.id}/><p>פורסם: {new Date(report.publishedAt).toLocaleDateString('he-IL')} · גרסה {report.document?.revision??'היסטורית'}{report.state==='superseded'?' · הוחלפה בגרסה חדשה':report.state==='recheck_required'?' · בבדיקה חוזרת':''}</p>
           {report.document?.schema_version==='tivdoc-report-document-v3'?<p className="report-service-disclosure">{AI_REPORT_DISCLOSURE}</p>:null}
           {report.document?.schema_version==='tivdoc-report-document-v3'&&report.document.execution_authority?<p>

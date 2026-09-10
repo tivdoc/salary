@@ -14,7 +14,7 @@ export async function readJune2026RegularArtifact(caseId:string,identityId:strin
  const db=await resolveCaseAccessDb();if(!db)throw Error('REGULAR_REPORT_STORE');
  const rows=await db.rpc<{value:unknown}>('june2026_regular_report_artifact',{target_case:caseId,target_identity:identityId,target_projection:projectionId});
  if(rows.length!==1||rows[0].value===null)return null;
- const row=z.object({completion:z.object({bundle:z.unknown(),report:z.unknown()}).passthrough(),execution:z.unknown(),namespace:z.enum(['real','isolated_test']),current:z.boolean(),projection_id:z.uuid()}).strict().parse(rows[0].value);
+ const row=z.object({completion:z.object({bundle:z.unknown(),report:z.unknown()}).passthrough(),execution:z.unknown(),namespace:z.enum(['real','isolated_test']),current:z.boolean(),authority_current:z.boolean(),projection_id:z.uuid()}).strict().parse(rows[0].value);
  const bundle=decodeBundle(row.completion.bundle,['minimum_wage']),report=decodeReport(row.completion.report);
  const json=z.object({schema_version:z.literal('june2026-regular-service-report-v1'),namespace:z.enum(['real','isolated_test']),
   bundle:z.unknown(),execution:z.object({case_id:z.uuid(),analysis_run_id:z.uuid(),comparison:sourceMonetaryComparisonV2Schema,finding:findingV2Schema.nullable()}).passthrough(),document:reportDocumentV3Schema}).passthrough()
@@ -25,5 +25,8 @@ export async function readJune2026RegularArtifact(caseId:string,identityId:strin
   ||report.analysis_result_sha256!==bundle.result_sha256||canonicalSha256(bundle)!==canonicalSha256(json.bundle)
   ||canonicalSha256(row.execution)!==canonicalSha256(json.execution)
   ||canonicalSha256(json.execution.comparison.trace)!==canonicalSha256(bundle.topic_results[0].trace))throw Error('REGULAR_REPORT_ARTIFACT_BINDING');
- return {bundle,report,current:row.current,document:json.document};
+ // The definer returns only a currentness decision, never the private trust
+ // registry. This is a current authority fence, not a new signature check.
+ // Historical bytes remain unchanged; the HTTP layer refuses a false result.
+ return {bundle,report,current:row.current&&row.authority_current,document:json.document};
 }

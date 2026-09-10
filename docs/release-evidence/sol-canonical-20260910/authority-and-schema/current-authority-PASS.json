@@ -1,0 +1,24 @@
+{
+  "at": "2026-09-10T17:32:34.575Z",
+  "state": "PASS",
+  "error": null,
+  "gitSha": "b189b4d33f1427791d02abafae15410392caba64",
+  "workingTreeClean": false,
+  "schemaMigration": "20260910172700_june2026_regular_current_authority.sql",
+  "migrationSha256": "98ebc3fb9a88849b6677138a30130d3fcbd419aacc9cd420224ecbe9dfd9579c",
+  "caseId": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+  "projectionId": "cf3b3c90-35b8-4768-abc3-2e14cf746bdb",
+  "checks": [
+    "actual_web_current_artifact_and_snapshot",
+    "private_authority_boolean_not_exposed",
+    "foreign_owned_wrapper_denied",
+    "revoked_assessment_blocks_predicate_and_notification_pending",
+    "expired_or_tampered_assessment_record_blocks",
+    "appended_registry_revision_invalidates_old_publication",
+    "identified_answer_change_fences_web_artifact_and_UI_without_rewriting_history",
+    "all_rollback_probes_restored_original_current_state_and_bytes"
+  ],
+  "providerCalls": 0,
+  "mutations": "rolled_back",
+  "productionChanged": false
+}

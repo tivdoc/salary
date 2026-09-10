@@ -1,0 +1,28 @@
+{
+  "codeRevision": "b1783ba78487c6633318b8f6713b16efe80818d0",
+  "request": {
+    "case_id": "9544dc6f-1aed-4924-921f-bc9a1cac5232",
+    "analysis_run_id": "50120d13-2cdd-4316-8057-a5201b59c84a",
+    "extraction_id": "f9d9e52a-7b2f-410e-aa7d-266b5ac87c59",
+    "document": {
+      "document_id": "2d914b1d-7ce6-4101-a6d5-58b1e5dbb2a6",
+      "case_id": "9544dc6f-1aed-4924-921f-bc9a1cac5232",
+      "document_type": "payslip",
+      "original_filename": "he-single-clear-june2026.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 770601,
+      "content_sha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+      "storage_path": "cases/9544dc6f-1aed-4924-921f-bc9a1cac5232/documents/2d914b1d-7ce6-4101-a6d5-58b1e5dbb2a6/original.pdf",
+      "document_period": null,
+      "supersedes_document_id": null,
+      "created_at": "2026-09-10T17:05:06.764Z"
+    },
+    "declared_document_type": "payslip",
+    "requested_at": "2026-09-10T17:05:09.622Z"
+  },
+  "requestSha256": "60361c42888f9ae1d6e55bcabab2f8c3c583c0c1e829c0ef7df0e05ea8f79744",
+  "sourceSha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "sourcePageCount": 1
+}

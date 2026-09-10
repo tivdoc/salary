@@ -1,0 +1,143 @@
+{
+  "schema_version": "tivdoc-openai-structured-diagnostic-v1",
+  "origin": "openai_live",
+  "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+  "analysis_run_id": "aa1908d9-8404-46cc-8a00-0160fecc3287",
+  "document_id": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e",
+  "source_sha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+  "request_sha256": "0d85ff7e1bea6ed78e8e9fcb3d6fc5eeeadd6d1e9c87328746f751965626b161",
+  "pass_kind": "first_pass",
+  "prompt_version": "payslip-extraction-openai-v2-first-r5",
+  "provider_response_id": "resp_0804355a6c4d1105016aa2e65dc78087d28ec46adca9f24283",
+  "provider_request_id": "req_d5caf68612cf467ca80eda5619da66ed",
+  "structured_output": {
+    "detected_document_type": "payslip",
+    "document_quality": "high",
+    "page_count": 1,
+    "rotation_degrees": 0,
+    "source_resolution_dpi": null,
+    "salary_type": {
+      "documented_value": "hourly",
+      "documented_raw_value": "שעתי",
+      "documented_confidence": "high",
+      "documented_evidence": {
+        "page": 1,
+        "region": "header",
+        "source_label": "סוג שכר"
+      },
+      "inferred_value": "hourly",
+      "inferred_confidence": "high",
+      "inference_basis": [
+        "payroll_structure"
+      ],
+      "warnings": []
+    },
+    "generic_fields": [
+      {
+        "field": "salary_period",
+        "candidates": [
+          {
+            "raw_value": "06/2026",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "header",
+              "source_label": "חודש שכר"
+            },
+            "warnings": []
+          }
+        ]
+      },
+      {
+        "field": "employment_start_date",
+        "candidates": [
+          {
+            "raw_value": "15/01/2025",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "header",
+              "source_label": "תחילת עבודה"
+            },
+            "warnings": []
+          }
+        ]
+      }
+    ],
+    "payroll_rows": [
+      {
+        "source_label": "שכר יסוד שעתי",
+        "semantic_kind": "hourly_base",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "3300.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": "שכר יסוד שעתי"
+        },
+        "warnings": []
+      }
+    ],
+    "totals": {
+      "visible": true,
+      "gross_candidates": [
+        {
+          "raw_value": "3300.00",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": "ברוטו"
+          },
+          "warnings": []
+        }
+      ],
+      "deductions_candidates": [
+        {
+          "raw_value": "0.00",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": "סך ניכויים"
+          },
+          "warnings": []
+        }
+      ],
+      "net_candidates": [
+        {
+          "raw_value": "3300.00",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": "נטו לתשלום"
+          },
+          "warnings": []
+        }
+      ]
+    },
+    "pension": {
+      "visible": false,
+      "base_candidates": [],
+      "employee": {
+        "rate_candidates": [],
+        "amount_candidates": []
+      },
+      "employer": {
+        "rate_candidates": [],
+        "amount_candidates": []
+      },
+      "severance": {
+        "rate_candidates": [],
+        "amount_candidates": []
+      }
+    },
+    "earnings_components_complete": true,
+    "warnings": []
+  },
+  "structured_output_sha256": "fd239c61bad3cbe2080a3d8ce00c09b7a131a016aa55fdda519f644b903c48fe"
+}

@@ -1,0 +1,28 @@
+{
+  "codeRevision": "b189b4d33f1427791d02abafae15410392caba64",
+  "request": {
+    "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+    "analysis_run_id": "aa1908d9-8404-46cc-8a00-0160fecc3287",
+    "extraction_id": "5af6a738-7c3b-49cc-a082-6ea52dc4806d",
+    "document": {
+      "document_id": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e",
+      "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+      "document_type": "payslip",
+      "original_filename": "he-single-absent-hours-june2026.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 770176,
+      "content_sha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "storage_path": "cases/e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23/documents/1eb83389-8aea-4f1c-95e8-f9f23d04ce0e/original.pdf",
+      "document_period": null,
+      "supersedes_document_id": null,
+      "created_at": "2026-09-10T17:18:16.131Z"
+    },
+    "declared_document_type": "payslip",
+    "requested_at": "2026-09-10T17:18:18.641Z"
+  },
+  "requestSha256": "0d85ff7e1bea6ed78e8e9fcb3d6fc5eeeadd6d1e9c87328746f751965626b161",
+  "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "sourcePageCount": 1
+}
