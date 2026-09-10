@@ -22,7 +22,7 @@ import {
 } from "./validation.ts";
 
 export const PAYSLIP_EXTRACTION_V2_VERSION = "2.0";
-export const PAYSLIP_V2_RESOLUTION_POLICY_VERSION = "payslip-v2-resolution-1";
+export const PAYSLIP_V2_RESOLUTION_POLICY_VERSION = "payslip-v2-resolution-2";
 
 export const extractionRegionSchema = z.enum(["header", "earnings", "totals", "pension"]);
 export type ExtractionRegion = z.infer<typeof extractionRegionSchema>;
@@ -109,7 +109,7 @@ export type FieldResolution = Readonly<z.infer<typeof fieldResolutionSchema>>;
 export const payslipExtractionV2ResultSchema = z
   .object({
     extractor_version: z.literal(PAYSLIP_EXTRACTION_V2_VERSION),
-    resolution_policy_version: z.literal(PAYSLIP_V2_RESOLUTION_POLICY_VERSION),
+    resolution_policy_version: z.enum(["payslip-v2-resolution-1", PAYSLIP_V2_RESOLUTION_POLICY_VERSION]),
     first_pass: payslipExtractionPassSchema,
     recovery_passes: z.array(payslipExtractionPassSchema),
     resolutions: z.array(fieldResolutionSchema),

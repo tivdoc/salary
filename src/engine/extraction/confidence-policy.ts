@@ -43,9 +43,17 @@ function normalizedKey(value: unknown) {
   return JSON.stringify(value);
 }
 
-function applicableCriticalFields(extraction: NormalizedPayslipExtraction) {
+function applicableCriticalFields(extraction: NormalizedPayslipExtraction, validation: Gate0Validation) {
   const result = new Set<PayslipFieldKey>(["salary_period", "gross_salary", "net_salary"]);
   const presentFields = new Set(extraction.fields.map((candidate) => candidate.field));
+  // Applicability here means a transcribed/required cell needs an accuracy
+  // decision, not that a legal rule applies. A missing salary-type reading must
+  // not hide observed hours, or a Gate0 requirement, behind "not_applicable".
+  // Include failed normalization too: an unreadable observation is not absence.
+  for (const field of presentFields) if (field in criticalFieldThresholds) result.add(field);
+  for (const issue of validation.issues) {
+    for (const field of issue.field_keys) if (field in criticalFieldThresholds) result.add(field);
+  }
   if (presentFields.has("salary_type")) result.add("salary_type");
   const salaryTypes = extraction.fields
     .filter((candidate) => candidate.field === "salary_type")
@@ -89,7 +97,7 @@ export function assessExtractionConfidence(
 ) {
   const extraction = normalizedPayslipExtractionSchema.parse(extractionInput);
   const validation = gate0ValidationSchema.parse(validationInput);
-  const applicable = applicableCriticalFields(extraction);
+  const applicable = applicableCriticalFields(extraction, validation);
   const assessmentByCandidate = new Map(
     validation.field_assessments.map((assessment) => [assessment.candidate_id, assessment]),
   );

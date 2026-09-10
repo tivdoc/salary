@@ -27,7 +27,7 @@ import {
 } from "./v2.ts";
 
 export const PAYSLIP_EXTRACTION_V21_VERSION = "2.1";
-export const PAYSLIP_V21_RESOLUTION_POLICY_VERSION = "payslip-v2.1-non-degrading-resolution-3";
+export const PAYSLIP_V21_RESOLUTION_POLICY_VERSION = "payslip-v2.1-non-degrading-resolution-4";
 export const RECOVERY_PROMOTION_MIN_CONFIDENCE = 0.95;
 
 export const expectedInformationGainSchema = z.enum([
@@ -93,7 +93,7 @@ export const payslipExtractionV21ResultSchema = z
   .object({
     extractor_version: z.literal(PAYSLIP_EXTRACTION_V21_VERSION),
     // Existing immutable checkpoints remain readable under their own policy.
-    resolution_policy_version: z.enum(["payslip-v2.1-non-degrading-resolution-2", PAYSLIP_V21_RESOLUTION_POLICY_VERSION]),
+    resolution_policy_version: z.enum(["payslip-v2.1-non-degrading-resolution-2", "payslip-v2.1-non-degrading-resolution-3", PAYSLIP_V21_RESOLUTION_POLICY_VERSION]),
     first_pass: payslipExtractionPassSchema,
     recovery_passes: z.array(payslipExtractionPassSchema).max(1),
     recovery_decision: recoveryDecisionSchema,
