@@ -39,9 +39,10 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_RESTART_PROOF!=='1')('replays the re
  const evidenceRoot=path.resolve('output/release-completion/june-canonical'),relative=path.relative(evidenceRoot,proofPath);
  if(path.isAbsolute(relative)||relative.startsWith('..')||path.basename(proofPath)!=='proof.json')throw Error('JUNE_RESTART_PRIOR_PATH_SCOPE');
  const originalBytes=readFileSync(proofPath),prior=priorSchema.parse(JSON.parse(originalBytes.toString('utf8'))),priorSha256=bytesSha(originalBytes);
- const directory=path.dirname(proofPath),receiptPath=path.join(directory,'restart-proof.json');
- if(path.basename(directory)!==prior.caseId.slice(0,8)||existsSync(receiptPath))throw Error('JUNE_RESTART_RECEIPT_SCOPE_OR_EXISTS');
+ const directory=path.dirname(proofPath);
+ if(path.basename(directory)!==prior.caseId.slice(0,8))throw Error('JUNE_RESTART_RECEIPT_SCOPE');
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();git.parse(gitSha);
+ const receiptPath=path.join(directory,'restart-proof-'+gitSha.slice(0,12)+'.json');if(existsSync(receiptPath))throw Error('JUNE_RESTART_RECEIPT_EXISTS');
  expect(execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()).toBe('');
  execFileSync('git',['merge-base','--is-ancestor',prior.gitSha,gitSha],{stdio:'pipe'});
  const processStartedAtMs=Date.now()-process.uptime()*1000,priorWrittenAtMs=statSync(proofPath).mtimeMs;
@@ -143,9 +144,10 @@ it.skipIf(process.env.TIVDOC_JUNE_CANONICAL_RESTART_PROOF!=='1')('replays the re
   await worker.query('rollback').catch(()=>{});
   if(machineCreated){
    try{
+    await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[tenant]);
     expect((await owner.query(`update public.product_identity_sessions set revoked_at=coalesce(revoked_at,now())
-     where tenant_id=$1 and sid=$2 and current_jti=$3 returning sid`,[tenant,sid,jti])).rowCount).toBe(1);machineRevoked=true;
-   }catch(error){cleanupFailure=safeError(error);}
+     where tenant_id=$1 and sid=$2 and current_jti=$3 returning sid`,[tenant,sid,jti])).rowCount).toBe(1);await owner.query('commit');machineRevoked=true;
+   }catch(error){cleanupFailure=safeError(error);await owner.query('rollback').catch(()=>{});}
   }
   const passed=verified&&phase==='complete'&&!failure&&!cleanupFailure&&machineRevoked;
   writeFileSync(receiptPath,JSON.stringify({schemaVersion:'june2026-canonical-process-restart-proof-v1',verdict:passed?'PASS':'FAIL',phase,failure,cleanupFailure,
