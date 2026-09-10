@@ -18,16 +18,16 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
  if(process.env.VERCEL||process.env.NODE_ENV!=='test')throw Error('DEV_ONLY');
  const {readDevEnvFile}=await import('../../../../scripts/supabase-dev-guard/dev-credential.mts'),env=readDevEnvFile();
  const client=(key:string)=>{const u=new URL(env.get(key)!);expect(u.pathname).toBe('/tivdoc_release_replay_20260907');expect(u.hostname).toBe('aws-0-eu-central-1.pooler.supabase.com');expect(u.username.endsWith('.cpzrbidxftzqcfeqqusu')).toBe(true);u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},statement_timeout:15000});};
- const owner=client('TIVDOC_DEV_DATABASE_URL'),web=client('TIVDOC_WEB_POSTGRES_URL'),identity='dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a';
+ const owner=client('TIVDOC_DEV_DATABASE_URL'),web=client('TIVDOC_WEB_POSTGRES_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),identity='dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a';
  const source=JSON.parse(readFileSync('../release-work/june-regular-live-absent-hours.private.json','utf8'));
  const stem=process.env.TIVDOC_JUNE_CURRENT_REPORT_STEM??'report';if(!/^(?:report|dependency-current-[a-f0-9]{7})$/u.test(stem))throw Error('RETAINED_REPORT_STEM');
  const report=JSON.parse(readFileSync(source.directory+'/'+stem+'.json','utf8')),projection=report.document.id;
- const checks:string[]=[];let failed:unknown=null;
+ const checks:string[]=[];let failed:unknown=null,machine=false;const sid='regular-current:'+randomUUID(),jti=randomUUID();
  const current=async()=> (await owner.query('select private.june2026_regular_publication_current($1) value',[projection])).rows[0].value;
  const artifact=async()=> (await web.query('select public.june2026_regular_report_artifact($1,$2,$3) value',[source.caseId,identity,projection])).rows[0].value;
  const snapshot=async()=> (await web.query('select public.case_report_customer_snapshot($1,$2) value',[source.caseId,identity])).rows[0].value;
  try{
-  await Promise.all([owner.connect(),web.connect()]);
+  await Promise.all([owner.connect(),web.connect(),worker.connect()]);
   expect(await current()).toBe(true);const baseline=await artifact();expect(baseline).toMatchObject({current:true,authority_current:true});
   installCaseAccessDbForTests(postgresCaseAccessDb(web));
   const reconstructed=await readJune2026RegularArtifact(source.caseId,identity,projection);
@@ -39,6 +39,16 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
   await expect(web.query('select private.june2026_regular_publication_current($1)',[projection])).rejects.toThrow('permission denied');
   await expect(web.query('select private.june2026_regular_publication_owned_current($1,$2,$3)',[projection,source.caseId,randomUUID()])).rejects.toThrow('REGULAR_REPORT_FORBIDDEN');
   checks.push('actual_web_current_artifact_and_snapshot','private_authority_boolean_not_exposed','foreign_owned_wrapper_denied');
+  if(stem!=='report'){
+   const prior=JSON.parse(readFileSync(source.directory+'/report.json','utf8')).document.id;
+   await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.regular.current.worker',$3,now()-interval '1 minute',now()+interval '10 minutes',$4,now())",['saved-case:'+source.caseId,sid,jti,canonicalSha256({sid,jti})]);machine=true;
+   await worker.query('begin');try{
+    await worker.query('select private.runtime_context_install($1,$2,$3)',[sid,jti,'direct-publication-negative']);
+    await expect(worker.query("insert into public.case_report_qa select (jsonb_populate_record(null::public.case_report_qa,to_jsonb(q)||jsonb_build_object('id',gen_random_uuid()))).* from public.case_report_qa q where q.projection_id=$1 limit 1",[prior])).rejects.toThrow('REGULAR_PUBLICATION_DEPENDENCY_SCOPE');
+    checks.push('direct_worker_QA_publication_of_old_dependency_refused');
+   }finally{await worker.query('rollback');}
+  }
+
   const assessment=(await owner.query('select a.* from private.june2026_regular_assessments a join private.june2026_regular_results r on r.assessment_id=a.id where r.projection_id=$1',[projection])).rows[0];
   await owner.query('begin');try{
    await owner.query('update private.june2026_regular_assessments set revoked_at=now() where id=$1',[assessment.id]);expect(await current()).toBe(false);
@@ -95,7 +105,9 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
   }
   expect(await current()).toBe(true);expect(canonicalSha256((await artifact()).completion)).toBe(canonicalSha256(baseline.completion));checks.push('all_rollback_probes_restored_original_current_state_and_bytes');
  }catch(error){failed=error;throw error;}finally{
-  installCaseAccessDbForTests(null);await Promise.allSettled([owner.query('rollback'),web.query('rollback')]);await Promise.allSettled([owner.end(),web.end()]);
+  installCaseAccessDbForTests(null);await Promise.allSettled([owner.query('rollback'),web.query('rollback'),worker.query('rollback')]);
+  if(machine){await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",['saved-case:'+source.caseId]);await owner.query('update public.product_identity_sessions set revoked_at=now() where tenant_id=$1 and sid=$2',['saved-case:'+source.caseId,sid]);await owner.query('commit');}
+  await Promise.allSettled([owner.end(),web.end(),worker.end()]);
   writeFileSync(`output/release-completion/june-regular/current-authority-${Date.now()}.json`,JSON.stringify({at:new Date().toISOString(),state:failed?'FAIL':'PASS',error:failed instanceof Error?failed.message:null,
    gitSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTreeClean:execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()==='',schemaMigration:'20260910172700_june2026_regular_current_authority.sql',
    migrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/20260910172700_june2026_regular_current_authority.sql')).digest('hex'),caseId:source.caseId,projectionId:projection,checks,providerCalls:0,mutations:'rolled_back',productionChanged:false},null,2)+'\n',{flag:'wx'});
