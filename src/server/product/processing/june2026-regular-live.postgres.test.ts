@@ -78,6 +78,13 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
   const result=await op(context);await db.query('commit');return result;
  }catch(e){await db.query('rollback');throw e;}};
  const head=async():Promise<SourceJob>=>{const h=(await owner.query("select h.revision,h.input_sha256,d.authority_dependency_sha256 from private.case_input_heads h left join private.case_analysis_dispatch d on d.case_id=h.case_id and d.revision=h.revision and d.mode='draft' where h.case_id=$1",[caseId])).rows[0];return {schema_version:'saved-case-work-v1',case_id:caseId,revision:Number(h.revision),input_sha256:h.input_sha256,mode:'draft',...(h.authority_dependency_sha256?{authority_dependency_sha256:h.authority_dependency_sha256}:{})};};
+ const appendTestRegistryRevision=async()=>{
+  const job=await head();const registry=(await owner.query('select r.* from private.june2026_regular_assessments a join private.june2026_authority_registries r on r.registry_key=a.registry_key where a.case_id=$1 and a.order_id=$2 and a.input_revision=$3 order by r.revision desc limit 1',[caseId,orderId,job.revision])).rows[0];
+  expect(registry.namespace).toBe('isolated_test');expect(registry.registry_key).toBe('isolated.regular.'+caseId);
+  // Explicit version event for the same signed test material; no new approval,
+  // changed parameter, source revision, finding or provider receipt is seeded.
+  await owner.query('insert into private.june2026_authority_registries(registry_key,revision,namespace,payload,payload_sha256) values($1,$2,$3,$4,$5)',[registry.registry_key,registry.revision+1,registry.namespace,registry.payload,registry.payload_sha256]);
+ };
  const claim=()=>transact(worker)(async c=>{const lease=await claimSavedDraftJob(c,{caseId,workerId:'regular-live',leaseMs:300000});if(lease.state!=='claimed')throw Error('REGULAR_LIVE_CLAIM');heldLease={caseId,workerId:'regular-live',jobId:lease.jobId,fencingToken:lease.fencingToken};return {...lease,workerId:'regular-live'};});
  const extract=async()=>{const lease=await claim();return runSavedWorkerExtraction({...lease,versionId:file!.versionId,transactions:transact(worker),extractor:bounded.extractor,providerEnabled:true,
   storage:{async download(p){expect(p).toBe(file!.path);const r=await bucket.download(p);if(r.error||!r.data)throw Error('REGULAR_SOURCE_STORAGE');expect(sha(Buffer.from(await r.data.arrayBuffer()))).toBe(source.sha256);return {data:r.data,error:null};}}});};
@@ -91,7 +98,7 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
    expect(Buffer.from(report.html).toString('utf8')).toContain(value);expect(actualPdfText(report.pdf)).toContain(value);
   }
   const result=(await web.query('select public.june2026_regular_report_artifact($1,$2,$3) value',[caseId,OWNER,report.report_id])).rows[0].value;
-  expect(result.current).toBe(true);const stored=decodeReport(result.completion.report);expect(sha(stored.pdf)).toBe(report.pdf_sha256);expect(sha(stored.html)).toBe(report.html_sha256);
+  expect(result.current).toBe(true);expect(result.authority_current).toBe(true);const stored=decodeReport(result.completion.report);expect(sha(stored.pdf)).toBe(report.pdf_sha256);expect(sha(stored.html)).toBe(report.html_sha256);
   await expect(web.query('select public.june2026_regular_report_artifact($1,$2,$3) value',[caseId,randomUUID(),report.report_id])).rejects.toThrow('REGULAR_REPORT_FORBIDDEN');
   const sourceRef=(await web.query('select public.case_report_source($1,$2,$3,$4) value',[caseId,OWNER,report.report_id,file!.versionId])).rows[0].value;
   expect(sourceRef).toMatchObject({path:file!.path,sha256:source.sha256,size:source.sizeBytes});
@@ -121,6 +128,7 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
    await web.query('select public.case_documents_commit($1,$2,$3)',[caseId,manifest.batchId,{[file.versionId]:source.sha256}]);
    if(replaced){priorVersions.push(replaced);own();checks.push('explicit_document_replacement_preserved_prior_invocation');}
   }
+  if(process.env.TIVDOC_JUNE_REGULAR_DEPENDENCY_PROOF==='1'){expect(resumed).toBe(true);await appendTestRegistryRevision();checks.push('explicit_isolated_registry_version_event_without_new_approval');}
   phase='actual-live-extraction';const extracted=await extract();writeFileSync(directory+'/checkpoint.json',JSON.stringify(extracted.result,null,2)+'\n');
   const cp=z.object({result_sha256:z.string(),run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema})})}).parse(extracted.result),fields=cp.run.result.final_extraction.fields;
   const rawHours=fields.filter(f=>f.field==='regular_hours').map(f=>f.normalized_value);writeFileSync(directory+'/input.pdf',source.bytes);writeFileSync(directory+'/independent-oracle.json',JSON.stringify(source.oracle,null,2)+'\n');
@@ -169,6 +177,7 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
       const blockedParent=await calculate(await head());expect(blockedParent.command.mode).toBe('real');expect(blockedParent.bundle?.topic_results[0].amount).toBeNull();
       const oldReplay=await runSavedDraftJob(managedInput);expect(oldReplay.completion.sha256).toBe(completed.completion.sha256);
       await owner.query('update private.june2026_regular_assessments set revoked_at=null where id=$1',[assessmentId]);restored=true;
+      await appendTestRegistryRevision();
       const restoredHead=await head();expect(restoredHead.revision).toBe(originalHead.revision);expect(restoredHead.input_sha256).toBe(originalHead.input_sha256);
       expect(restoredHead.authority_dependency_sha256).not.toBe(revokedHead.authority_dependency_sha256);
       expect((await peer.query('select case_id from private.managed_dev_worker_candidates($1,2)',[capabilityToken])).rows.map(r=>r.case_id)).toEqual([caseId]);
@@ -176,8 +185,9 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
       const activeJob=(await owner.query("select job_id,fencing_token from public.engine_durable_jobs where job_id=$1",['jobId' in managedActive?managedActive.jobId:null])).rows[0];
       const activeLease={jobId:activeJob.job_id,fencingToken:Number(activeJob.fencing_token)};expect(activeLease.jobId).not.toBe(blockedLease.jobId);
       const activeInput={...managedInput,...activeLease,workerId:'synthetic.regular.live.worker'},activeCompletion=await runSavedDraftJob(activeInput);
-      const activeParent=await calculate(restoredHead);await exportRun('dependency-current',activeParent);
+      const activeParent=await calculate(restoredHead);await exportRun('dependency-current-'+gitSha.slice(0,7),activeParent);
       expect(activeParent.analysis_run_id).not.toBe(run.analysis_run_id);
+      const priorArtifact=(await web.query('select public.june2026_regular_report_artifact($1,$2,$3) value',[caseId,OWNER,run.report!.report_id])).rows[0].value;expect(priorArtifact.authority_current).toBe(false);expect(sha(decodeReport(priorArtifact.completion.report).pdf)).toBe(run.report!.pdf_sha256);
       const activeRestart=await runSavedDraftJob(activeInput);expect(activeRestart.completion.sha256).toBe(activeCompletion.completion.sha256);
       expect((await runSavedDraftJob(blockedInput)).completion.sha256).toBe(blockedCompletion.completion.sha256);
       expect((await runSavedDraftJob(managedInput)).completion.sha256).toBe(completed.completion.sha256);

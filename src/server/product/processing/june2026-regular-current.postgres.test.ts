@@ -20,7 +20,8 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
  const client=(key:string)=>{const u=new URL(env.get(key)!);expect(u.pathname).toBe('/tivdoc_release_replay_20260907');expect(u.hostname).toBe('aws-0-eu-central-1.pooler.supabase.com');expect(u.username.endsWith('.cpzrbidxftzqcfeqqusu')).toBe(true);u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},statement_timeout:15000});};
  const owner=client('TIVDOC_DEV_DATABASE_URL'),web=client('TIVDOC_WEB_POSTGRES_URL'),identity='dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a';
  const source=JSON.parse(readFileSync('../release-work/june-regular-live-absent-hours.private.json','utf8'));
- const report=JSON.parse(readFileSync(source.directory+'/report.json','utf8')),projection=report.document.id;
+ const stem=process.env.TIVDOC_JUNE_CURRENT_REPORT_STEM??'report';if(!/^(?:report|dependency-current-[a-f0-9]{7})$/u.test(stem))throw Error('RETAINED_REPORT_STEM');
+ const report=JSON.parse(readFileSync(source.directory+'/'+stem+'.json','utf8')),projection=report.document.id;
  const checks:string[]=[];let failed:unknown=null;
  const current=async()=> (await owner.query('select private.june2026_regular_publication_current($1) value',[projection])).rows[0].value;
  const artifact=async()=> (await web.query('select public.june2026_regular_report_artifact($1,$2,$3) value',[source.caseId,identity,projection])).rows[0].value;
@@ -31,8 +32,8 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
   installCaseAccessDbForTests(postgresCaseAccessDb(web));
   const reconstructed=await readJune2026RegularArtifact(source.caseId,identity,projection);
   expect(reconstructed?.current).toBe(true);expect(reconstructed?.report.report_id).toBe(projection);
-  expect(Buffer.from(reconstructed!.report.html).equals(readFileSync(source.directory+'/report.html'))).toBe(true);
-  expect(Buffer.from(reconstructed!.report.pdf).equals(readFileSync(source.directory+'/report.pdf'))).toBe(true);
+  expect(Buffer.from(reconstructed!.report.html).equals(readFileSync(source.directory+'/'+stem+'.html'))).toBe(true);
+  expect(Buffer.from(reconstructed!.report.pdf).equals(readFileSync(source.directory+'/'+stem+'.pdf'))).toBe(true);
   checks.push('ordinary_access_adapter_and_artifact_reader_return_exact_live_html_pdf');
   expect((await snapshot()).reports.find((r:{id:string})=>r.id===projection).state).toBe('published');
   await expect(web.query('select private.june2026_regular_publication_current($1)',[projection])).rejects.toThrow('permission denied');
