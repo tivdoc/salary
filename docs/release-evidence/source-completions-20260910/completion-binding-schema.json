@@ -1,0 +1,17 @@
+{
+  "file": "20260910044646_dev_financial_completion_target_binding.sql",
+  "sha256": "7339d4236e711cb15cd2036a8045d889ed546f9ed58633eb218cf7cc0f353962",
+  "schema": 135,
+  "at": "2026-09-10T04:47:58.068Z",
+  "results": [
+    {
+      "mode": "rollback",
+      "passed": true
+    },
+    {
+      "mode": "apply",
+      "passed": true
+    }
+  ],
+  "productionChanged": false
+}

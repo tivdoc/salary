@@ -1,0 +1,11 @@
+{
+  "testDriverReceipts": [
+    "test-driver-integrity-11965beb-cd7b-4e07-8244-e866b9f6f50a-FAIL.json",
+    "test-driver-integrity-62834c24-db23-414b-833a-03b9e58ffe44-FAIL.json",
+    "test-driver-integrity-83b880b0-a2f2-4a6c-8fd2-03e72d99e193-FAIL.json",
+    "test-driver-integrity-887c40c3-7a1f-4346-8064-e4742636f2da-FAIL.json"
+  ],
+  "originalLiveFullFlowFailurePreservedAt": "../provider-live-20260910/a30f881-live/",
+  "newProductFailure": "retained-source-report-preflight-ambiguous-target-FAIL.json",
+  "explanation": "New successful retained completion run does not overwrite the original failed live-corpus/full-flow evidence."
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "timestamp": 1789016186841,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/reports",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016186667,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016186667,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/documents",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016186461,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/documents",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016186461,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/thread",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016186459,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016186175,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/thread",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016183907,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/reports",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016121361,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016121310,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/documents",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016121307,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/thread",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016121032,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016121030,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/reports",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016121029,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/thread",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016121029,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/documents",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016118511,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/reports",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016089837,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/api/cases/TV-73299C08/reports",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016081154,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/reports",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016081090,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08/documents",
+    "responseStatusCode": 200
+  },
+  {
+    "timestamp": 1789016081016,
+    "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+    "requestMethod": "GET",
+    "requestPath": "/case/TV-73299C08",
+    "responseStatusCode": 200
+  }
+]

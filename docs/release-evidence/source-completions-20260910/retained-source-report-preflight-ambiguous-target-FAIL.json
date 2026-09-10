@@ -1,0 +1,12 @@
+{
+  "at": "2026-09-10T04:46:26.638Z",
+  "gitSha": "6da3413829cece5f458997d9f6c7fd6d094ebdaf",
+  "dirty": true,
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "schema": 134,
+  "rollbackOnly": true,
+  "providerCalls": 0,
+  "seededAnswers": false,
+  "error": "column reference \"target\" is ambiguous",
+  "verdict": "FAIL"
+}

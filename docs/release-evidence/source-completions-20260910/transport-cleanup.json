@@ -1,0 +1,10 @@
+{
+  "at": "2026-09-10T05:13:29.689Z",
+  "resendWebhookId": "c4f30dab-8af6-4918-9ec8-15d2007d4a4d",
+  "statusObservedInPlugin": "Disabled",
+  "temporaryTunnelPid3540": "stopped after executable and port verification",
+  "temporaryRelayPid16616": "stopped after exact bundle path verification",
+  "scheduler": "Tivdoc-AutomaticDev-Proof-20260909 Disabled",
+  "scope": "Only temporary DEV proof transport; no Production change",
+  "previewShare": "Single-deployment time-limited share remains bounded by original expiry; no project-wide protection change"
+}

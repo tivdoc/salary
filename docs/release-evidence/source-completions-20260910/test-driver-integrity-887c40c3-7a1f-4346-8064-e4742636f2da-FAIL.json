@@ -1,0 +1,40 @@
+{
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "driverGitSha": "cd4052096904e4077011634d92792992c9c45261",
+  "applicationGitSha": "d85c2f7d83a1b8da3d849648271771846de68d3e",
+  "expectedOrderedChainTail": "20260910044646",
+  "controlManifestSha256": "3b863117928efdd937788b8facab9fd37c97c0dfcde0e4943841b8f33dd15145",
+  "applicationDiff": [],
+  "sourceVersion": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+  "existingLiveExtraction": true,
+  "sourceIsSynthetic": true,
+  "proofProviderCalls": 0,
+  "seededAnswers": 0,
+  "seededSessions": 0,
+  "seededFindings": 0,
+  "seededReports": 0,
+  "canonicalLegalActivation": false,
+  "productionChanged": false,
+  "browserProofPerformedByThisDriver": false,
+  "visualReviewPerformedByThisDriver": false,
+  "schemaEvidence": {
+    "label": "schema135_ordered_chain_reference_and_actual_critical_function_definition",
+    "migrationLedgerPresent": false,
+    "orderedChainCount": 135,
+    "orderedChainTail": "20260910044646",
+    "orderedChainSha256": "387e6a43850f34107c8ac4a1ce265213229b6e9049fb2418d10ee3ede154bcec",
+    "migrationFileSha256": "7339d4236e711cb15cd2036a8045d889ed546f9ed58633eb218cf7cc0f353962",
+    "actualFunctionBodySha256": "941b2a10e6a3d216f69ff51336c670773d2ff8be592b961e0cc7f8c9a1db500e",
+    "expectedFunctionBodySha256": "941b2a10e6a3d216f69ff51336c670773d2ff8be592b961e0cc7f8c9a1db500e",
+    "securityDefiner": true,
+    "searchPath": [
+      "search_path=\"\""
+    ],
+    "allEarlierDefinitionsRechecked": false
+  },
+  "phase": "retained-source-and-current-run",
+  "checks": [],
+  "verdict": "FAIL",
+  "failureCode": "RETAINED_INTEGRITY_ASSERTION_OR_ENVIRONMENT_FAILURE",
+  "checkedAt": "2026-09-10T05:08:46.391Z"
+}

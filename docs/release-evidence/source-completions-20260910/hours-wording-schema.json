@@ -1,0 +1,17 @@
+{
+  "file": "20260910042333_dev_missing_hours_declaration_wording.sql",
+  "sha256": "4a814ae27b5ab72a2847618077597c701b01aa60a60bb4a0787efc809fe86f7c",
+  "schema": 134,
+  "at": "2026-09-10T04:24:12.586Z",
+  "results": [
+    {
+      "mode": "rollback",
+      "passed": true
+    },
+    {
+      "mode": "apply",
+      "passed": true
+    }
+  ],
+  "productionChanged": false
+}

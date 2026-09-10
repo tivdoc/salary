@@ -1,0 +1,76 @@
+{
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "version": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+  "gitSha": "6da3413829cece5f458997d9f6c7fd6d094ebdaf",
+  "dirty": false,
+  "schema": 134,
+  "noProviderCalls": true,
+  "noSeededReport": true,
+  "noPersistedTestAnswers": true,
+  "productionChanged": false,
+  "head": {
+    "schema_version": "saved-case-work-v1",
+    "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+    "revision": 19,
+    "input_sha256": "4a441855d959a35e2f6d2fc108d2487e074e9988e62f1b3dbd62980dc8a5f294",
+    "mode": "draft"
+  },
+  "requests": [
+    {
+      "id": "4b1f3a82-4439-4290-8749-5f970bc90405",
+      "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+      "code": "document_transcription:c7fbed1650ed9412825105e748631fc768688f026022ea5e8fa98f026e7b2878",
+      "question": "בתלוש לחודש יוני 2026, בעמוד 1, איזה סוג שכר כתוב במפורש? יש להעתיק את סוג השכר מהמסמך; אין להסיק אותו מהשעות או מהתעריף.",
+      "answer_kind": "choice",
+      "options": [
+        "בתלוש כתוב שכר שעתי",
+        "בתלוש כתוב שכר חודשי",
+        "בתלוש כתוב שכר משולב",
+        "לא מופיע בתלוש",
+        "לא ניתן לקרוא"
+      ],
+      "field_crop": "salary_type",
+      "blocking": false,
+      "opened_at": "2026-09-10T04:16:15.452Z",
+      "expires_at": "2026-09-20T04:16:16.058Z",
+      "answered_at": null,
+      "answer_text": null,
+      "statement_month": "2026-06",
+      "source_current": true,
+      "answer_revision": 0,
+      "draft_revision": 0,
+      "draft_text": null
+    },
+    {
+      "id": "93b73b4b-c4de-48aa-ac51-2f79fa9001d3",
+      "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+      "code": "document_transcription:28dd58cad65581ec3181816a05cd31fda7768cce32fc6f43052674138bcbaeb1",
+      "question": "בתלוש לחודש יוני 2026, בעמוד 1, בשורה «Regular hourly base» קראנו סכום 3300.00 ₪. האם הסכום מופיע כך במסמך? האישור מתייחס לקריאת הסכום בלבד, ולא לסוג הרכיב או לזכאות.",
+      "answer_kind": "choice",
+      "options": [
+        "כן, בדקתי במסמך והערך נכון",
+        "הערך שונה במסמך",
+        "לא ניתן לקרוא את השדה"
+      ],
+      "field_crop": "component_amount",
+      "blocking": false,
+      "opened_at": "2026-09-10T04:16:15.452Z",
+      "expires_at": "2026-09-20T04:16:16.162Z",
+      "answered_at": null,
+      "answer_text": null,
+      "statement_month": "2026-06",
+      "source_current": true,
+      "answer_revision": 0,
+      "draft_revision": 0,
+      "draft_text": null
+    }
+  ],
+  "checks": [
+    "Scoped worker opens exactly two necessary requests once; unchanged input head; wrong actor/case/revision/question refused.",
+    "Actual web RPC original/retry/correction works with identified actor and version ledger in rollback-only probe; foreign/unidentified reads and writes rejected; no test answer persisted.",
+    "Revoked purchased topic and changed source month each invalidate the target; rollback preserves paid fixture and source."
+  ],
+  "verdict": "PASS",
+  "machineRevoked": true,
+  "at": "2026-09-10T04:28:51.862Z"
+}

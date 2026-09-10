@@ -1,0 +1,69 @@
+{
+  "mode": "preflight",
+  "at": "2026-09-10T04:13:18.388Z",
+  "files": [
+    {
+      "file": "20260910040429_document_source_transcriptions.sql",
+      "sha256": "c05f85e3d5efe790d9489d5a062b4060e6ba17bc58d0add662ecaea11ef97f26"
+    },
+    {
+      "file": "20260910040753_dev_financial_source_completion_runs.sql",
+      "sha256": "7a9d7de688acd9a1b65fc085a379f7e9cd77721b6aa376caa2e83097e9434b87"
+    }
+  ],
+  "schemaBefore": 131,
+  "schemaAfter": 133,
+  "checks": [
+    {
+      "kind": "salary_type",
+      "current": true,
+      "question": "בתלוש לחודש יוני 2026, בעמוד 1, איזה סוג שכר כתוב במפורש? יש להעתיק את סוג השכר מהמסמך; אין להסיק אותו מהשעות או מהתעריף.",
+      "sha": "c7fbed1650ed9412825105e748631fc768688f026022ea5e8fa98f026e7b2878"
+    },
+    {
+      "kind": "component_amount",
+      "current": true,
+      "question": "בתלוש לחודש יוני 2026, בעמוד 1, בשורה «Regular hourly base» קראנו סכום 3300.00 ₪. האם הסכום מופיע כך במסמך? האישור מתייחס לקריאת הסכום בלבד, ולא לסוג הרכיב או לזכאות.",
+      "sha": "28dd58cad65581ec3181816a05cd31fda7768cce32fc6f43052674138bcbaeb1"
+    }
+  ],
+  "acl": {
+    "worker_open": true,
+    "web_open": false,
+    "anonymous_read": false,
+    "web_read": true
+  },
+  "functions": [
+    {
+      "signature": "case_request_transcription_states(uuid,uuid)",
+      "sha256": "0ef6c43333d43a278b8f28d503f40db2cef4093526fb8bdbc8cf3f6b9c023a7e"
+    },
+    {
+      "signature": "private.dev_financial_completions_bound(jsonb,jsonb)",
+      "sha256": "da179c3fd51b60cfa46019d5ae2454147154559787e1b96a2852aef2557556a7"
+    },
+    {
+      "signature": "private.document_transcription_content_current(jsonb,jsonb)",
+      "sha256": "8fb0fdf550aebf80577d40c19122aa5b1ed39c9d0a53d2db590b6d38e5bdab8e"
+    },
+    {
+      "signature": "private.document_transcription_current(uuid,jsonb)",
+      "sha256": "689fc8f365d898791bb51dbf9cb131ec8bbed2f5ed8aff70f5dff7c12f5f874d"
+    },
+    {
+      "signature": "private.document_transcription_question(jsonb)",
+      "sha256": "1e2b8de092918378d7c6eed1cafda149375845027637db47042563406938d732"
+    },
+    {
+      "signature": "private.document_transcription_request_open(uuid,integer,text,jsonb,text)",
+      "sha256": "ae55fde1dde470d547740f4f5deb2d1441a818b0ff5b5faea43d78c32802283e"
+    },
+    {
+      "signature": "private.guard_document_transcription_answer()",
+      "sha256": "7b21e636d3ce10203be551908d1a81b1f8dc5d2a099e2cf8f0c02c04199d313d"
+    }
+  ],
+  "verdict": "PASS",
+  "upgradeCommitted": false,
+  "productionChanged": false
+}

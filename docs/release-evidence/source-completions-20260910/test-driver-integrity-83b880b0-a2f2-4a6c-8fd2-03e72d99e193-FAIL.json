@@ -1,0 +1,219 @@
+{
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "driverGitSha": "4e6135cccc02c49e6f229caebcf316f3ea1ccc37",
+  "applicationGitSha": "d85c2f7d83a1b8da3d849648271771846de68d3e",
+  "expectedOrderedChainTail": "20260910044646",
+  "controlManifestSha256": "3b863117928efdd937788b8facab9fd37c97c0dfcde0e4943841b8f33dd15145",
+  "applicationDiff": [],
+  "sourceVersion": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+  "existingLiveExtraction": true,
+  "sourceIsSynthetic": true,
+  "proofProviderCalls": 0,
+  "seededAnswers": 0,
+  "seededSessions": 0,
+  "seededFindings": 0,
+  "seededReports": 0,
+  "canonicalLegalActivation": false,
+  "productionChanged": false,
+  "browserProofPerformedByThisDriver": false,
+  "visualReviewPerformedByThisDriver": false,
+  "schemaEvidence": {
+    "label": "schema135_ordered_chain_reference_and_actual_critical_function_definition",
+    "migrationLedgerPresent": false,
+    "orderedChainCount": 135,
+    "orderedChainTail": "20260910044646",
+    "orderedChainSha256": "387e6a43850f34107c8ac4a1ce265213229b6e9049fb2418d10ee3ede154bcec",
+    "migrationFileSha256": "7339d4236e711cb15cd2036a8045d889ed546f9ed58633eb218cf7cc0f353962",
+    "actualFunctionBodySha256": "941b2a10e6a3d216f69ff51336c670773d2ff8be592b961e0cc7f8c9a1db500e",
+    "expectedFunctionBodySha256": "941b2a10e6a3d216f69ff51336c670773d2ff8be592b961e0cc7f8c9a1db500e",
+    "securityDefiner": true,
+    "searchPath": [
+      "search_path=\"\""
+    ],
+    "allEarlierDefinitionsRechecked": false
+  },
+  "before": {
+    "head": {
+      "revision": 29,
+      "input_sha256": "19850939c6634936c991a58027e2ad26d11550cd336a2601ba8553a1309bf32f"
+    },
+    "runs": [
+      {
+        "id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+        "input_revision": 16,
+        "input_sha256": "0f6e4faf5de6dae05750cf2b07b604be99d61bd8e00cb5eed4364393fa35aaac",
+        "payload_sha256": "1e3df2fb0af7b7d2e08655fac5a1e94bf246a3db05b4432c499ab9b3bf00d2f5",
+        "html_sha256": "418e5773073745311897477552643cca2d1b060c3ad65fa1c5b6680f353a2d9f",
+        "pdf_sha256": "4689563afa2cc20ed8e4f50de6b312f0ba5391c5705e4c64ac4094721152a2f1",
+        "actual_html_sha256": "418e5773073745311897477552643cca2d1b060c3ad65fa1c5b6680f353a2d9f",
+        "actual_pdf_sha256": "4689563afa2cc20ed8e4f50de6b312f0ba5391c5705e4c64ac4094721152a2f1"
+      },
+      {
+        "id": "714111c2-26c2-4913-86ac-8b4d7789a863",
+        "input_revision": 27,
+        "input_sha256": "b970db1453c8185217df62d140f5d61a9fad4d6394a10703cef1cbf1cdc9efd0",
+        "payload_sha256": "dba5bbe7d880fca757e446b6664147cdf019ab05697004694886cb3511854f4c",
+        "html_sha256": "9d36dc64922b3302fe9622fd9fa1df6a2712a330e10aff94e64319b6bcb76547",
+        "pdf_sha256": "652146926e0bf300d751b410593fd9f215f3a429ed93e0b837c65311ebd4655f",
+        "actual_html_sha256": "9d36dc64922b3302fe9622fd9fa1df6a2712a330e10aff94e64319b6bcb76547",
+        "actual_pdf_sha256": "652146926e0bf300d751b410593fd9f215f3a429ed93e0b837c65311ebd4655f"
+      },
+      {
+        "id": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+        "input_revision": 29,
+        "input_sha256": "19850939c6634936c991a58027e2ad26d11550cd336a2601ba8553a1309bf32f",
+        "payload_sha256": "e2f2d318cdc6c3428e3e87ea77d01951bb03db535a2c044b570e55831eef7d7b",
+        "html_sha256": "7ec4ac83db0d523663189f13a9827ea6817f5d4689fe6bbf07adf6b179287c93",
+        "pdf_sha256": "53ec291f5bec204e65dbf9d918f42d76f749820da1f6c85da74733b42d72d6e3",
+        "actual_html_sha256": "7ec4ac83db0d523663189f13a9827ea6817f5d4689fe6bbf07adf6b179287c93",
+        "actual_pdf_sha256": "53ec291f5bec204e65dbf9d918f42d76f749820da1f6c85da74733b42d72d6e3"
+      }
+    ],
+    "findings": [
+      {
+        "id": "02ba5d05-2ed1-41e5-83e3-ce23888c68ab",
+        "run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+        "finding": {
+          "id": "02ba5d05-2ed1-41e5-83e3-ce23888c68ab",
+          "topic": "minimum_wage",
+          "authority": "engineering_only",
+          "gap_minor": 24000,
+          "trace_sha256": "067d3d53ef870ddf719c9d058928e39760b0cc60d29dac29fd1e1e5b2e6d2673",
+          "expected_minor": 354000,
+          "recorded_minor": 330000,
+          "analysis_run_id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+          "comparison_sha256": "f6da4d8e67a42217a9aadd94dff882171e1f3fe56eb5c92252ca3b8da7d5149a"
+        }
+      },
+      {
+        "id": "2072b378-0265-4653-8e1b-c206ddb8c99c",
+        "run_id": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+        "finding": {
+          "id": "2072b378-0265-4653-8e1b-c206ddb8c99c",
+          "topic": "minimum_wage",
+          "authority": "engineering_only",
+          "gap_minor": 24000,
+          "trace_sha256": "e79797e63355c168321da36c74c204904683b29f0b9796cea092ce6f8f9dfca5",
+          "expected_minor": 354000,
+          "recorded_minor": 330000,
+          "analysis_run_id": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+          "comparison_sha256": "98dfb78b77422e423c2b4b9a2ef1a15d105940821599aa6d044560e6708651a2"
+        }
+      }
+    ],
+    "invocations": [
+      {
+        "invocation_id": "03ae8961-de16-4fe5-ba0e-395e9d7d10bf",
+        "version_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+        "policy_version": "saved-payslip-v21-p95-v1",
+        "source_revision": 17,
+        "input_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+        "result_sha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff",
+        "result_recorded": true
+      },
+      {
+        "invocation_id": "6dd4979f-160c-462c-afad-ff889299b734",
+        "version_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+        "policy_version": "saved-payslip-v21-p95-v1",
+        "source_revision": 2,
+        "input_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+        "result_sha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+        "result_recorded": true
+      }
+    ],
+    "pendingRequests": [
+      {
+        "request_id": "043a0573-822a-48e3-868a-1b191baf52aa",
+        "namespace": "minimum_wage_june2026",
+        "subject": "sector"
+      },
+      {
+        "request_id": "04bec0ba-550e-4629-b272-cdac52a72a5c",
+        "namespace": "minimum_wage_june2026",
+        "subject": "earnings_completeness"
+      },
+      {
+        "request_id": "05fa0319-ef05-407a-a607-7b37a2e6d6a0",
+        "namespace": "minimum_wage_june2026",
+        "subject": "hours_rest_law_applies"
+      },
+      {
+        "request_id": "598b4906-0f50-4ea4-833d-41b3b36508c7",
+        "namespace": "minimum_wage_june2026",
+        "subject": "age_18_entire_month"
+      },
+      {
+        "request_id": "8b51c075-7df5-4d58-a96d-66f970c09d7c",
+        "namespace": "minimum_wage_june2026",
+        "subject": "no_adapted_minimum_wage"
+      },
+      {
+        "request_id": "90cb66fa-1e77-4627-8a9a-7646fdbecfd9",
+        "namespace": "minimum_wage_june2026",
+        "subject": "regular_hours_exclude_absence_overtime_rest"
+      },
+      {
+        "request_id": "dc175516-c419-43f3-a67b-d81dbde71354",
+        "namespace": "document_field",
+        "subject": "hourly_rate"
+      },
+      {
+        "request_id": "e380f220-cfac-4f24-8ca8-ab5546c7c861",
+        "namespace": "document_field",
+        "subject": "net_salary"
+      },
+      {
+        "request_id": "ea5fd534-4280-4d78-b120-7421bc14cbd6",
+        "namespace": "minimum_wage_june2026",
+        "subject": "no_better_minimum_wage_arrangement"
+      }
+    ]
+  },
+  "run": {
+    "runId": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+    "parentRunId": "e744b9d4-b7d7-47f0-8f57-1b8ef90032a7",
+    "inputRevision": 29,
+    "inputSha256": "19850939c6634936c991a58027e2ad26d11550cd336a2601ba8553a1309bf32f",
+    "payloadSha256": "e2f2d318cdc6c3428e3e87ea77d01951bb03db535a2c044b570e55831eef7d7b",
+    "sourceSha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+    "checkpointSha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff",
+    "completionSha256": "2bf7bd5b789ef053b1302b3e5ac59bf9f0f99534182b0cd377659a3935153c98"
+  },
+  "independentOracle": {
+    "hours": 100,
+    "hourlyFloorMinor": 3540,
+    "recordedMinor": 330000,
+    "expectedMinor": 354000,
+    "gapMinor": 24000
+  },
+  "answerPins": [
+    {
+      "requestId": "4b1f3a82-4439-4290-8749-5f970bc90405",
+      "revision": 1,
+      "answeredAt": "2026-09-10T04:41:00.585543+00:00"
+    },
+    {
+      "requestId": "93b73b4b-c4de-48aa-ac51-2f79fa9001d3",
+      "revision": 1,
+      "answeredAt": "2026-09-10T04:41:23.365377+00:00"
+    },
+    {
+      "requestId": "6b682ce2-ac47-4cb0-a9b1-617bee6c6dea",
+      "revision": 1,
+      "answeredAt": "2026-09-10T04:41:49.576455+00:00"
+    },
+    {
+      "requestId": "f942e6b8-4461-4700-aae7-559ca9b6d92c",
+      "revision": 1,
+      "answeredAt": "2026-09-10T04:53:21.32805+00:00"
+    }
+  ],
+  "phase": "exact-artifact-render-and-history",
+  "checks": [
+    "Existing current calculated v2 run binds the retained QA case, paid-source admission, exact current checkpoint and authentic saved live-provider invocation.",
+    "Independent 100-hour oracle yields expected 354000, recorded 330000 and gap 24000 minor units; downloaded immutable Storage bytes and four actual identified answer revisions match the saved run."
+  ],
+  "verdict": "FAIL",
+  "failureCode": "RETAINED_INTEGRITY_ASSERTION_OR_ENVIRONMENT_FAILURE",
+  "checkedAt": "2026-09-10T05:11:29.040Z"
+}
