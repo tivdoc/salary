@@ -18,7 +18,7 @@ import { postgresCaseAccessDb, supabaseCaseAccessDb } from "./db.ts";
 const PRODUCT_ROOT = join(process.cwd(), "src", "server", "product");
 // `[\s\S]` rather than the dotall flag: a generic argument often spans lines,
 // and this project's target predates `s`.
-const RPC_CALL = /\brpc(?:<[\s\S]{0,600}?>)?\(\s*"([a-z_]+)"/gu;
+const RPC_CALL = /\brpc(?:<[\s\S]{0,600}?>)?\(\s*(['"])([a-z][a-z0-9_]+)\1/gu;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -32,7 +32,7 @@ function calledFunctionNames(): string[] {
   const names = new Set<string>();
   for (const file of sourceFiles(PRODUCT_ROOT)) {
     const source = readFileSync(file, "utf8");
-    for (const match of source.matchAll(RPC_CALL)) names.add(match[1]!);
+    for (const match of source.matchAll(RPC_CALL)) names.add(match[2]!);
   }
   return [...names].sort();
 }
@@ -53,6 +53,7 @@ describe("case access store adapters", () => {
     expect(names.length).toBeGreaterThan(10);
     expect(names).toContain("case_request_open");
     expect(names).toContain("case_documents_list");
+    expect(names).toContain("june2026_regular_report_artifact");
 
     const queries: string[] = [];
     const postgres = postgresCaseAccessDb({
@@ -83,6 +84,9 @@ describe("case access store adapters", () => {
       // family and `case_payment_*` is not, so the guard is about the list and
       // not about the prefix looking familiar.
       await expect(store.rpc("case_payment_refund", {})).rejects.toThrow("CASE_ACCESS_DB_FUNCTION_UNKNOWN");
+      for (const name of ["june2026_regular_authority", "june2026_regular_report_artifact_extra", "june2026_regular_report_artifact;drop"]) {
+        await expect(store.rpc(name, {})).rejects.toThrow("CASE_ACCESS_DB_FUNCTION_UNKNOWN");
+      }
     }
   });
 

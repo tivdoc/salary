@@ -23,6 +23,9 @@ export type CaseAccessDb = Readonly<{
 // (`case_abandonment_*`, `case_reminder_*`); a call
 // to a family that is not listed is a programming error, not a runtime one.
 const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|order|privacy|funnel|abandonment|reminder)_[a-z_]+$/u;
+// This existing versioned report boundary has a historical non-case prefix.
+// Admit its exact name; no wildcard for other June or private functions.
+const VERSIONED_REPORT_FUNCTIONS = new Set(['june2026_regular_report_artifact']);
 
 export function supabaseCaseAccessDb(client: {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;
@@ -30,7 +33,7 @@ export function supabaseCaseAccessDb(client: {
   return Object.freeze({
     provider: "supabase" as const,
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
-      if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
+      if (!FUNCTION_NAME.test(fn) && !VERSIONED_REPORT_FUNCTIONS.has(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const result = await client.rpc(fn, { ...args });
       if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^(?:UPLOAD|ORDER|PRIVACY|REQUEST|JUNE_COLLECTION)_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
       const data = result.data;
@@ -48,7 +51,7 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
   return Object.freeze({
     provider: "postgres" as const,
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
-      if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
+      if (!FUNCTION_NAME.test(fn) && !VERSIONED_REPORT_FUNCTIONS.has(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const names = Object.keys(args);
       for (const name of names) if (!/^[a-z_][a-z0-9_]*$/u.test(name)) throw new Error(`CASE_ACCESS_DB_ARGUMENT_UNKNOWN:${name}`);
       const placeholders = names.map((name, index) => `${name} => $${index + 1}`).join(", ");

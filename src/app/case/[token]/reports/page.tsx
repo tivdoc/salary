@@ -46,6 +46,21 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
           <p>דוח היסטורי מתאריך {new Date(report.publishedAt).toLocaleDateString('he-IL')}</p>
           <h2>הדוח אינו זמין כרגע</h2>
           <p>האישור שעליו התבסס הניתוח אינו בתוקף. נדרשת בדיקה מחדש לפני הצגת התוצאה.</p>
+        </article>:report.document?.schema_version==='tivdoc-report-document-v3'&&report.document.execution_authority?.namespace==='isolated_test'?<article key={report.id} aria-label="סיכום בדיקת DEV">
+          <ReportOpen publicId={item.public_id} reportId={report.id}/>
+          <h2>סיכום בדיקת DEV סינתטית</h2>
+          <p>החישוב בוצע בתיק בדיקה עם אישורים וחתימות של מרשם בדיקה סינתטי. אין כאן אישור אדם אמיתי, הפעלת הכלל לשירות לקוחות או קביעת זכאות או חוב.</p>
+          <p>ריצת ניתוח: <bdi>{report.document.execution_authority.analysis_run_id}</bdi> · חודש הבדיקה: <bdi>{report.projection.check_period_month}</bdi> · גרסת קלט {report.document.revision}</p>
+          {report.projection.topics.map(topic=>topic.gate==='checked'?<p key={topic.topic}>
+            {topic.topic==='minimum_wage'?'שכר מינימום':topic.topic} — {topic.amount?<>
+              פער שנשמר בתוצאת הבדיקה: <bdi>{(topic.amount.minor_units/100).toFixed(2)} ILS</bdi>
+            </>:topic.range?<>
+              פער שנשמר בתוצאת הבדיקה: <bdi>{(topic.range.low.minor_units/100).toFixed(2)}{topic.range.low.minor_units===topic.range.high.minor_units?'':`–${(topic.range.high.minor_units/100).toFixed(2)}`} ILS</bdi>
+            </>:<>לא נשמר פער כספי חיובי להצגה. ההשוואה המלאה נמצאת בתוצר הבדיקה.</>}
+          </p>:null)}
+          <p><a href={`/api/cases/${item.public_id}/reports?report=${report.id}&format=html`}>תוצר הבדיקה והעקבה השמורים — HTML</a>{' · '}
+            <a href={`/api/cases/${item.public_id}/reports?report=${report.id}`}>תוצר הבדיקה השמור — PDF</a></p>
+          <ul>{report.document.evidence.map(evidence=><li key={evidence.id}><a href={`/api/cases/${item.public_id}/reports?report=${report.id}&version=${evidence.version_id}`}>מסמך הבדיקה — עמוד {evidence.page}, שדה {evidence.field}</a></li>)}</ul>
         </article>:<article key={report.id} aria-label={`דוח שפורסם ${report.publishedAt}`}>
           <ReportOpen publicId={item.public_id} reportId={report.id}/><p>פורסם: {new Date(report.publishedAt).toLocaleDateString('he-IL')} · גרסה {report.document?.revision??'היסטורית'}{report.state==='superseded'?' · הוחלפה בגרסה חדשה':report.state==='recheck_required'?' · בבדיקה חוזרת':''}</p>
           {report.document?.schema_version==='tivdoc-report-document-v3'?<p className="report-service-disclosure">{AI_REPORT_DISCLOSURE}</p>:null}

@@ -1,4 +1,4 @@
-import {expect,it} from 'vitest';
+import {expect,it,vi} from 'vitest';
 import {randomUUID,createHash} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
@@ -8,6 +8,9 @@ import {documentUploadSchema} from '@/lib/document-upload';
 import type {UploadBatch} from '../documents/upload';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
+import {installCaseAccessDbForTests,postgresCaseAccessDb} from '../case-access/db';
+import {readJune2026RegularArtifact} from '../reports/june2026-regular-artifact';
+vi.mock('server-only',()=>({}));
 
 /** Real retained live-provider reports, no provider calls or seeded findings.
  * Mutations below are rollback probes; published historical bytes stay intact. */
@@ -25,6 +28,12 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
  try{
   await Promise.all([owner.connect(),web.connect()]);
   expect(await current()).toBe(true);const baseline=await artifact();expect(baseline).toMatchObject({current:true,authority_current:true});
+  installCaseAccessDbForTests(postgresCaseAccessDb(web));
+  const reconstructed=await readJune2026RegularArtifact(source.caseId,identity,projection);
+  expect(reconstructed?.current).toBe(true);expect(reconstructed?.report.report_id).toBe(projection);
+  expect(Buffer.from(reconstructed!.report.html).equals(readFileSync(source.directory+'/report.html'))).toBe(true);
+  expect(Buffer.from(reconstructed!.report.pdf).equals(readFileSync(source.directory+'/report.pdf'))).toBe(true);
+  checks.push('ordinary_access_adapter_and_artifact_reader_return_exact_live_html_pdf');
   expect((await snapshot()).reports.find((r:{id:string})=>r.id===projection).state).toBe('published');
   await expect(web.query('select private.june2026_regular_publication_current($1)',[projection])).rejects.toThrow('permission denied');
   await expect(web.query('select private.june2026_regular_publication_owned_current($1,$2,$3)',[projection,source.caseId,randomUUID()])).rejects.toThrow('REGULAR_REPORT_FORBIDDEN');
@@ -59,6 +68,7 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
   await web.query('begin');try{
    await web.query("select public.case_request_edit($1,$2,$3,$4,1,'correction')",[source.caseId,target.request_id,identity,'101']);
    const changed=await artifact();expect(changed).toMatchObject({current:false,authority_current:false});
+   expect((await readJune2026RegularArtifact(source.caseId,identity,projection))?.current).toBe(false);
    expect((await snapshot()).reports.find((r:{id:string})=>r.id===projection).state).toBe('authority_unavailable');
    expect(canonicalSha256(changed.completion)).toBe(canonicalSha256(baseline.completion));checks.push('identified_answer_change_fences_web_artifact_and_UI_without_rewriting_history');
   }finally{await web.query('rollback');}
@@ -84,7 +94,7 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_CURRENT_PROOF!=='1')('fences ordinary 
   }
   expect(await current()).toBe(true);expect(canonicalSha256((await artifact()).completion)).toBe(canonicalSha256(baseline.completion));checks.push('all_rollback_probes_restored_original_current_state_and_bytes');
  }catch(error){failed=error;throw error;}finally{
-  await Promise.allSettled([owner.query('rollback'),web.query('rollback')]);await Promise.allSettled([owner.end(),web.end()]);
+  installCaseAccessDbForTests(null);await Promise.allSettled([owner.query('rollback'),web.query('rollback')]);await Promise.allSettled([owner.end(),web.end()]);
   writeFileSync(`output/release-completion/june-regular/current-authority-${Date.now()}.json`,JSON.stringify({at:new Date().toISOString(),state:failed?'FAIL':'PASS',error:failed instanceof Error?failed.message:null,
    gitSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTreeClean:execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()==='',schemaMigration:'20260910172700_june2026_regular_current_authority.sql',
    migrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/20260910172700_june2026_regular_current_authority.sql')).digest('hex'),caseId:source.caseId,projectionId:projection,checks,providerCalls:0,mutations:'rolled_back',productionChanged:false},null,2)+'\n',{flag:'wx'});
