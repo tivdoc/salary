@@ -90,6 +90,22 @@ describe('source-bound engineering completions preserve canonical and OCR histor
   expect(s.materialize({answers:[s.journal.answers[0],s.journal.answers[2]]})).toEqual({state:'incomplete',missing:['component_amount']});
   expect(s.complete().component_nature).toMatchObject({legal_classification_status:'unreviewed',candidate_evidence_admitted:false,evidence_status:'needs_confirmation'});
  });
+ it('accepts SQL-style null sibling targets without changing the selected readings or snapshot',()=>{
+  const s=setup(),answers=s.journal.answers.map(answer=>({field_target:null,transcription_target:null,june2026_target:null,...answer}));
+  const result=s.materialize({answers});
+  expect(result.state).toBe('completed');
+  if(result.state!=='completed')throw Error('EXPECTED_COMPLETION');
+  expect(result.snapshot).toEqual(s.complete());
+ });
+ it.each(['missing','null'] as const)('still rejects a %s relevant target in either namespace when irrelevant targets are null',kind=>{
+  const s=setup();
+  for(const index of [0,1,2]){
+   const answers=s.journal.answers.map(answer=>({field_target:null,transcription_target:null,june2026_target:null,...answer}));
+   const relevant=index===2?'june2026_target':'transcription_target';
+   const changed={...answers[index],[relevant]:kind==='null'?null:undefined};
+   expect(()=>s.materialize({answers:answers.map((answer,i)=>i===index?changed:answer)})).toThrow();
+  }
+ });
  it('computes the independently specified 100 × 35.40 − 3300 = 240 only from effective facts',()=>{
   const s=setup(),original=canonicalSha256(s.checkpoint),p=runCandidate(s),run=parseDevFinancialRun(p);
   expect(run.finding?.gap_minor).toBe(24000);expect(run.calculation).toMatchObject({state:'calculated',expectedMinor:354000,recordedMinor:330000});

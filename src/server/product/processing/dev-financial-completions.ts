@@ -48,7 +48,9 @@ export function parseDevFinancialSourceCompletions(candidate:unknown){
 
 const journalAnswerSchema=z.object({id:z.uuid(),case_id:z.uuid(),scope_month:z.literal('2026-06'),code:z.string(),answer:z.string(),
  answer_revision:z.number().int().positive(),answer_identity_id:z.uuid(),answer_created_at:z.iso.datetime({offset:true}),
- transcription_target:documentTranscriptionTargetSchema.optional(),june2026_target:june2026CollectionTargetSchema.optional()});
+ // SQL projects every target namespace; unrelated scalar subqueries yield
+ // explicit null. The selected namespace is still parsed as required below.
+ transcription_target:documentTranscriptionTargetSchema.nullish(),june2026_target:june2026CollectionTargetSchema.nullish()});
 export type DevFinancialCompletionMissing='salary_type'|'component_amount'|'component_nature';
 /** A new target/answer namespace cannot silently enter ordinary canonical
  * customer_readings. Only this explicitly engineering-only materializer uses it. */
