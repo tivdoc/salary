@@ -51,7 +51,8 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
  const appChanges=git('diff','--name-only',appSha,gitSha,'--','src','scripts/product-workers','supabase/migrations','package.json','package-lock.json','next.config.ts','vercel.json')
   .split(/\r?\n/u).filter(Boolean).filter(file=>!file.endsWith('.test.ts')&&!file.endsWith('.test.mts')&&!file.endsWith('.test.tsx'));
  expect(appChanges).toEqual([]);expect(git('rev-parse',control.gitSha)).toBe(appSha);expect(git('rev-parse',config.TIVDOC_MANAGED_DEV_BUILD_SHA)).toBe(appSha);
- const output=path.join(directory,'source-completions','integrity-'+randomUUID());mkdirSync(output,{recursive:true});
+ // Keep the full path below Windows native renderer limits, including filename.
+ const output=path.resolve('output/release-completion','retained-integrity-'+randomUUID());mkdirSync(output,{recursive:true});
  const checks:string[]=[],evidence:Record<string,unknown>={caseId:CASE,driverGitSha:gitSha,applicationGitSha:appSha,expectedOrderedChainTail:SCHEMA,
   controlManifestSha256:devArtifactSha(readFileSync(controlPath)),applicationDiff:appChanges,sourceVersion:VERSION,
   existingLiveExtraction:true,sourceIsSynthetic:true,proofProviderCalls:0,seededAnswers:0,seededSessions:0,seededFindings:0,seededReports:0,
