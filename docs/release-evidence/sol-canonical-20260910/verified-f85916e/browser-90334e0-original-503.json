@@ -1,0 +1,25 @@
+{
+  "application": "90334e0773d54578fe493cce9ebc958f3defba88",
+  "state": "FAIL",
+  "classification": "product_adapter_allowlist",
+  "requests": [
+    {
+      "id": "cl9b8-1789062228959-d7603c1517c2",
+      "timestamp": 1789062228959,
+      "deploymentId": "dpl_7jE1pvKBbVY1zBwukE9DXfNV19qj",
+      "requestMethod": "GET",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "responseStatusCode": 503
+    },
+    {
+      "id": "qwpmd-1789062151759-7682a50785ab",
+      "timestamp": 1789062151759,
+      "deploymentId": "dpl_7jE1pvKBbVY1zBwukE9DXfNV19qj",
+      "requestMethod": "POST",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "responseStatusCode": 204
+    }
+  ],
+  "browser": "Chrome ERR_BLOCKED_BY_CLIENT",
+  "diagnosis": "HTTP503 from CaseAccessDb refusing exact june2026_regular_report_artifact RPC; fixed in2a52be6; original failure retained"
+}

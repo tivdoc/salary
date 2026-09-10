@@ -1,0 +1,73 @@
+{
+  "gitSha": "3e600fb52d1e29e932572d2178b747f07605ce5a",
+  "caseId": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+  "publicId": "TV-DEA924CB",
+  "orderId": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+  "kind": "absent-hours",
+  "phase": "authority-change-wakes-existing-queue",
+  "state": "FAIL",
+  "error": "MANAGED_DEV_CLAIM_FENCE",
+  "checks": [
+    "ordinary_published_source_bound_and_foreign_source_denied",
+    "resumed_existing_live_checkpoint_without_provider_call",
+    "live_provider_to_canonical_finding_and_published_report",
+    "parallel_retry_same_report_no_duplicates",
+    "managed_callback_same_regular_run_and_current_publication",
+    "durable_job_terminal_success",
+    "restart_exact_terminal_manifest_no_duplicate_publication",
+    "owned_job_lease_released_with_fence"
+  ],
+  "runs": [
+    {
+      "label": "report",
+      "runId": "5f9fccf3-0ff1-43b9-8961-a25d96aa61d6",
+      "projectionId": "cf3b3c90-35b8-4768-abc3-2e14cf746bdb",
+      "pdfSha256": "4e1756d59185f020425b5228f351efb1ce6ec34c21809f6c53a6a350a33b44d0",
+      "htmlSha256": "57fa3a721202edddb2a3632d40a3ecbad142dd02c194e6cd3d3fff80b759c9e9",
+      "revision": 30,
+      "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "hoursOrigin": "identified_declared",
+      "expectedMinor": 354058,
+      "recordedMinor": 330000,
+      "gapMinor": 24058
+    }
+  ],
+  "answers": [],
+  "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+  "budget": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 12,
+    "generations": 6,
+    "countRequests": 6,
+    "reservedUpperBoundUsd": 4.272,
+    "unknownOutcomes": 1,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 0
+  },
+  "payment": "synthetic_paid_full_offer_no_payment_provider",
+  "authority": "isolated_test_only",
+  "humanApproval": false,
+  "productionChanged": false
+}

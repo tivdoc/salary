@@ -1,0 +1,21 @@
+{
+  "sha": "f85916eec1047cca447da133b4703f3e5cf731ae",
+  "runs": [
+    {
+      "id": 34514995232,
+      "conclusion": "success"
+    },
+    {
+      "id": 34514992044,
+      "conclusion": "success"
+    }
+  ],
+  "verifiedSteps": [
+    "Type check",
+    "Lint",
+    "Unit and guard suites (no credentials)",
+    "Build",
+    "Production closure proof (D2)"
+  ],
+  "note": "Closure is a local CI build/guard proof; it does not deploy Production."
+}

@@ -1,3 +1,11 @@
+## Sol live → ordinary canonical DEV delivered — STOP (2026-09-10)
+
+See [final bounded handoff](sol-canonical-regular-handoff-2026-09-10-he.md). Runtime/clean integrated proof/READY Preview **f85916eec1047cca447da133b4703f3e5cf731ae**, isolated DEV schema148. Both CI34514995232/34514992044 passed. Actual Sol checkpoint → identified missing-hours answer → signed isolated registry/assessment → ordinary resolver/catalog/executor/Finding/publication → same-run HTML/PDF, 240.58 ILS candidate; run dd2e9300-c761-458e-8ac8-a8b4b642919a. Managed callback/finalizer, authority dependency wakeup, parallel retry, terminal restart, replacement/current/foreign-source DB guards proved. No seeded Finding/report. REAL remains blocked without authentic approvals; this is not client debt or legal activation.
+
+Owner Gmail OTP and current HTML/refresh passed on matching Preview. PDF/source HTTP200 but Chrome attachment opening blocked; stored PDF visually verified. Superseded410; foreign version safely denied with generic503 (status classification remains a code issue). Live scan and clear/missing-hour PDFs improved; conflicting100/120 observation recall still fails.12/12 package content requests used, $4.272 reserved bound, old ledgers untouched. Final evidence is under docs/release-evidence/sol-canonical-20260910/verified-f85916e. Documentation commits after runtime SHA do not alter its tested application.
+
+Production and separate website-v1-3 UI checkout untouched. Temporary machines revoked and capabilities/mappings disabled; scheduler/provider automatic calls/webhook remain off. Do not automatically resume another package or P00–P13. Earlier STOP entries below are historical and superseded for this completed bounded package only.
+
 ## Current code delivery — possible technical continuation, STOP (2026-09-10)
 
 [Latest technical handoff](canonical-possible-work-handoff-2026-09-10-he.md): same-run unadmitted assessment packet with precise missing/stale/expired/conflict/declaration states, and corrected extraction-confidence applicability for observed or Gate0-required fields. Locally tested, not DB/browser verified or deployed. Canonical authority remains unavailable; single-component aggregate comparison is diagnosed and not implemented. No new report/provider calls. The previous actual schema135/d85c2f7 financial proof below remains unchanged.

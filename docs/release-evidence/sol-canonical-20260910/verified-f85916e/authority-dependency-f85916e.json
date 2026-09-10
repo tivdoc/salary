@@ -1,0 +1,139 @@
+{
+  "originalHead": {
+    "schema_version": "saved-case-work-v1",
+    "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+    "revision": 30,
+    "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+    "mode": "draft",
+    "authority_dependency_sha256": "c5a6e2647d1dbbeffd8c63eedbc47db4309020e20276445c21ff5cee58e72910"
+  },
+  "revokedHead": {
+    "schema_version": "saved-case-work-v1",
+    "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+    "revision": 30,
+    "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+    "mode": "draft",
+    "authority_dependency_sha256": "b9cf48a7dfdd13aa7c2d15834acb20e442f4e178ce0a787595af19965778a0aa"
+  },
+  "restoredHead": {
+    "schema_version": "saved-case-work-v1",
+    "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+    "revision": 30,
+    "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+    "mode": "draft",
+    "authority_dependency_sha256": "0e1d7f651f9b2ab51aa9ed77f04da0be01dc3f4fd4b8e8f24767066a7104c3bc"
+  },
+  "managedBlocked": {
+    "caseId": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+    "state": "succeeded",
+    "jobId": "saved_ae25fdc93a2828a58d3b90d8714817874bf0c8f4f4f819c6bd184b1f74a3a032",
+    "manifestSha256": "57c98abf442413437ae18d168637405f3cb862b75403279cbb6c5cb9f2219d5b"
+  },
+  "managedActive": {
+    "caseId": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+    "state": "succeeded",
+    "jobId": "saved_9f824a6fc9464f31c08e7c29023f3c485744c70926210776acc75c272e5929ac",
+    "manifestSha256": "9a1a32968955c624d860e26275d654930eb7f304bdf0d78fb2637a4c056b4dd5"
+  },
+  "blockedCompletion": {
+    "completion": {
+      "manifest": {
+        "schema_version": "saved_analysis_draft_ready_v1",
+        "job_id": "saved_ae25fdc93a2828a58d3b90d8714817874bf0c8f4f4f819c6bd184b1f74a3a032",
+        "source": {
+          "schema_version": "saved-case-work-v1",
+          "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+          "revision": 30,
+          "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+          "mode": "draft",
+          "authority_dependency_sha256": "b9cf48a7dfdd13aa7c2d15834acb20e442f4e178ce0a787595af19965778a0aa"
+        },
+        "publication": "draft",
+        "months": [
+          {
+            "order_id": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+            "offer_sha256": "d61d4ad6f28085eca18ad20f56dcf61067092124309cb9b74c04bfbbf656b615",
+            "month": "2026-06",
+            "analysis_run_id": "de20cc11-60a8-4a74-809a-c65355760472",
+            "result_sha256": "27790d9dd7751a42d5e092849b19893e9a3e1a278dc9eecfb783d9317720dabd",
+            "report_id": "b78bcee5-c2f2-41cf-89d3-045b76f1afee",
+            "report_revision": 1,
+            "report_sha256": "9fb5f11709f8a82f675b46e8a9ecaa098a32c04ac666cfce1edf85f41a0c90e1"
+          }
+        ]
+      },
+      "sha256": "57c98abf442413437ae18d168637405f3cb862b75403279cbb6c5cb9f2219d5b",
+      "replayed": true
+    },
+    "extractedVersions": 0,
+    "analyzedMonths": 0
+  },
+  "activeCompletion": {
+    "completion": {
+      "manifest": {
+        "schema_version": "saved_analysis_draft_ready_v1",
+        "job_id": "saved_9f824a6fc9464f31c08e7c29023f3c485744c70926210776acc75c272e5929ac",
+        "source": {
+          "schema_version": "saved-case-work-v1",
+          "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+          "revision": 30,
+          "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+          "mode": "draft",
+          "authority_dependency_sha256": "0e1d7f651f9b2ab51aa9ed77f04da0be01dc3f4fd4b8e8f24767066a7104c3bc"
+        },
+        "publication": "draft",
+        "months": [
+          {
+            "order_id": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+            "offer_sha256": "d61d4ad6f28085eca18ad20f56dcf61067092124309cb9b74c04bfbbf656b615",
+            "month": "2026-06",
+            "analysis_run_id": "dd2e9300-c761-458e-8ac8-a8b4b642919a",
+            "result_sha256": "8565ad212f593e6c040363a54c87e2d5a2eac9e0a390a808ef67db0e4799bcfe",
+            "report_id": "cde99ff4-a52b-4d92-ac3f-911b2e033ee9",
+            "report_revision": 1,
+            "report_sha256": "cd2faab6b09dfc1b480046ad7a0206eece46a60ca5cc302306f1cd1b51252d10"
+          }
+        ]
+      },
+      "sha256": "9a1a32968955c624d860e26275d654930eb7f304bdf0d78fb2637a4c056b4dd5",
+      "replayed": true
+    },
+    "extractedVersions": 0,
+    "analyzedMonths": 0
+  },
+  "activeRestart": {
+    "completion": {
+      "manifest": {
+        "schema_version": "saved_analysis_draft_ready_v1",
+        "job_id": "saved_9f824a6fc9464f31c08e7c29023f3c485744c70926210776acc75c272e5929ac",
+        "source": {
+          "schema_version": "saved-case-work-v1",
+          "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+          "revision": 30,
+          "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+          "mode": "draft",
+          "authority_dependency_sha256": "0e1d7f651f9b2ab51aa9ed77f04da0be01dc3f4fd4b8e8f24767066a7104c3bc"
+        },
+        "publication": "draft",
+        "months": [
+          {
+            "order_id": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+            "offer_sha256": "d61d4ad6f28085eca18ad20f56dcf61067092124309cb9b74c04bfbbf656b615",
+            "month": "2026-06",
+            "analysis_run_id": "dd2e9300-c761-458e-8ac8-a8b4b642919a",
+            "result_sha256": "8565ad212f593e6c040363a54c87e2d5a2eac9e0a390a808ef67db0e4799bcfe",
+            "report_id": "cde99ff4-a52b-4d92-ac3f-911b2e033ee9",
+            "report_revision": 1,
+            "report_sha256": "cd2faab6b09dfc1b480046ad7a0206eece46a60ca5cc302306f1cd1b51252d10"
+          }
+        ]
+      },
+      "sha256": "9a1a32968955c624d860e26275d654930eb7f304bdf0d78fb2637a4c056b4dd5",
+      "replayed": true
+    },
+    "extractedVersions": 0,
+    "analyzedMonths": 0
+  },
+  "priorManifestSha": "01513201932da8e2834f7a3ad0af2b74c4a61e614e4f363b63c32c00c6065a06",
+  "providerCalls": 0
+}

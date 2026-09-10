@@ -1,0 +1,91 @@
+{
+  "gitSha": "f85916eec1047cca447da133b4703f3e5cf731ae",
+  "caseId": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+  "publicId": "TV-DEA924CB",
+  "orderId": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+  "kind": "absent-hours",
+  "phase": "authority-change-wakes-existing-queue",
+  "state": "PASS",
+  "error": null,
+  "checks": [
+    "explicit_isolated_registry_version_event_without_new_approval",
+    "ordinary_published_source_bound_and_foreign_source_denied",
+    "resumed_existing_live_checkpoint_without_provider_call",
+    "live_provider_to_canonical_finding_and_published_report",
+    "parallel_retry_same_report_no_duplicates",
+    "managed_callback_same_regular_run_and_current_publication",
+    "durable_job_terminal_success",
+    "restart_exact_terminal_manifest_no_duplicate_publication",
+    "ordinary_published_source_bound_and_foreign_source_denied",
+    "revocation_wakes_one_distinct_existing_queue_job_and_REAL_remains_blocked",
+    "restored_signed_test_authority_wakes_new_canonical_run_without_source_edit",
+    "old_terminal_manifests_replay_unchanged_after_dependency_change",
+    "owned_job_lease_released_with_fence"
+  ],
+  "runs": [
+    {
+      "label": "report-resume-f85916e",
+      "runId": "67c39f84-02e1-420c-8c31-041d9081ac87",
+      "projectionId": "dd508456-593d-49b2-a97a-8430ec83f331",
+      "pdfSha256": "36cd30dff535be276cf7daf8e391a8a400f92e1a8ef941b6d41990645a218077",
+      "htmlSha256": "cb4ad850c8978d723dbe834032ba5124c623019e59a818e7b6ad25509aadb2c4",
+      "revision": 30,
+      "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "hoursOrigin": "identified_declared",
+      "expectedMinor": 354058,
+      "recordedMinor": 330000,
+      "gapMinor": 24058
+    },
+    {
+      "label": "dependency-current-f85916e",
+      "runId": "dd2e9300-c761-458e-8ac8-a8b4b642919a",
+      "projectionId": "cde99ff4-a52b-4d92-ac3f-911b2e033ee9",
+      "pdfSha256": "809e50ff2d9d178e0e5ca4c636c3775f003da210a38bd6e4e3924fdf53003fd1",
+      "htmlSha256": "3b67e76114ca9c9ed1d9f3ed7e9c5120f545932e524d6725bf1503a80ddf2c23",
+      "revision": 30,
+      "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "hoursOrigin": "identified_declared",
+      "expectedMinor": 354058,
+      "recordedMinor": 330000,
+      "gapMinor": 24058
+    }
+  ],
+  "answers": [],
+  "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+  "budget": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 12,
+    "generations": 6,
+    "countRequests": 6,
+    "reservedUpperBoundUsd": 4.272,
+    "unknownOutcomes": 1,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 0
+  },
+  "payment": "synthetic_paid_full_offer_no_payment_provider",
+  "authority": "isolated_test_only",
+  "humanApproval": false,
+  "productionChanged": false
+}
