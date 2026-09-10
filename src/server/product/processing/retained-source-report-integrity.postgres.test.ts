@@ -181,7 +181,8 @@ it.skipIf(process.env.TIVDOC_RETAINED_REPORT_INTEGRITY!=='1')('preserves the act
   const pdf=await PDFDocument.load(stored.pdf);expect(pdf.getSubject()).toBe(run.run_id);
   // Render the actual persisted bytes for the separate visual review; rendering
   // is evidence generation, not a claim that this driver visually inspected it.
-  execFileSync(process.env.TIVDOC_PDFTOPPM??'pdftoppm',['-png','-r','108',pdfPath,path.join(output,'calculated-page')],{timeout:30000});
+  // Relative native-tool paths avoid Windows MAX_PATH in the evidence directory.
+  execFileSync(process.env.TIVDOC_PDFTOPPM??'pdftoppm',['-png','-r','108','calculated.pdf','calculated-page'],{cwd:output,timeout:30000});
   const pages=readdirSync(output).filter(name=>/^calculated-page-\d+\.png$/u.test(name)).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   const python=process.env.TIVDOC_PDF_PYTHON??'python';
   const extractedText=execFileSync(python,['-c',
