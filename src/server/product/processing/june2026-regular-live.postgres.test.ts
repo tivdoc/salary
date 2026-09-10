@@ -127,10 +127,11 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
   const currentJob=await head(),existingSigned=(await owner.query('select id from private.june2026_regular_assessments where case_id=$1 and order_id=$2 and input_revision=$3 and input_sha256=$4',[caseId,orderId,currentJob.revision,currentJob.input_sha256])).rows;
   if(resumed&&existingSigned.length){
    phase='resume-signed-canonical-execution';expect(extracted.reused).toBe(true);
-   const run=await calculate(currentJob);await exportRun('report',run);
+   const run=await calculate(currentJob);await exportRun('report-resume-'+gitSha.slice(0,7),run);
+   const resultCount=(await owner.query('select count(*)::int n from private.june2026_regular_results where case_id=$1',[caseId])).rows[0].n;
    const retried=await Promise.all([calculate(currentJob,worker),calculate(currentJob,peer)]);
    for(const r of retried)expect(r.report?.report_sha256).toBe(run.report?.report_sha256);
-   expect((await owner.query('select count(*)::int n from private.june2026_regular_results where case_id=$1',[caseId])).rows[0].n).toBe(1);
+   expect((await owner.query('select count(*)::int n from private.june2026_regular_results where case_id=$1',[caseId])).rows[0].n).toBe(resultCount);
    checks.push('resumed_existing_live_checkpoint_without_provider_call','live_provider_to_canonical_finding_and_published_report','parallel_retry_same_report_no_duplicates');
    if(process.env.TIVDOC_JUNE_REGULAR_MANAGED_PROOF==='1'){
     phase='managed-callback-and-terminal-completion';expect(heldLease).not.toBeNull();
@@ -143,7 +144,7 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
     const restarted=await runSavedDraftJob(managedInput);
     expect(restarted.completion.replayed).toBe(true);expect(restarted.analyzedMonths).toBe(0);
     expect(restarted.completion.sha256).toBe(completed.completion.sha256);
-    expect((await owner.query('select count(*)::int n from private.june2026_regular_results where case_id=$1',[caseId])).rows[0].n).toBe(1);
+    expect((await owner.query('select count(*)::int n from private.june2026_regular_results where case_id=$1',[caseId])).rows[0].n).toBe(resultCount);
     writeFileSync(directory+'/managed-completion-'+gitSha.slice(0,7)+'.json',JSON.stringify({completed,restarted},null,2)+'\n',{flag:'wx'});
     checks.push('managed_callback_same_regular_run_and_current_publication','durable_job_terminal_success','restart_exact_terminal_manifest_no_duplicate_publication');
     if(process.env.TIVDOC_JUNE_REGULAR_DEPENDENCY_PROOF==='1'){
@@ -151,7 +152,9 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
      const assessmentId=(await owner.query('select id from private.june2026_regular_assessments where case_id=$1 and order_id=$2 and input_revision=$3',[caseId,orderId,originalHead.revision])).rows[0].id;
      let restored=false;const capabilityToken=randomUUID()+randomUUID(),capability=sha(capabilityToken);
      await owner.query("insert into private.managed_dev_worker_capabilities(capability_sha256,expires_at,daily_limit,total_limit) values($1,now()+interval '1 hour',6,6)",[capability]);
-     await owner.query('insert into private.managed_dev_worker_cases(case_id,identity_id,session_sid,capability_sha256) values($1,$2,$3,$4)',[caseId,OWNER,sid,capability]);
+     const priorEnrollment=(await owner.query('select identity_id,enabled from private.managed_dev_worker_cases where case_id=$1',[caseId])).rows[0];
+     if(priorEnrollment)expect(priorEnrollment).toEqual({identity_id:OWNER,enabled:false});
+     await owner.query('insert into private.managed_dev_worker_cases(case_id,identity_id,session_sid,capability_sha256) values($1,$2,$3,$4) on conflict(case_id) do update set session_sid=excluded.session_sid,capability_sha256=excluded.capability_sha256,enabled=true,stopped_at=null',[caseId,OWNER,sid,capability]);
      try{
       // Toggle only this retained synthetic authority. Existing signatures and
       // findings are not edited; no new human approval is asserted.
@@ -159,20 +162,20 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
       const revokedHead=await head();expect(revokedHead.revision).toBe(originalHead.revision);expect(revokedHead.input_sha256).toBe(originalHead.input_sha256);
       expect(revokedHead.authority_dependency_sha256).toMatch(/^[a-f0-9]{64}$/u);
       expect((await peer.query('select case_id from private.managed_dev_worker_candidates($1,2)',[capabilityToken])).rows.map(r=>r.case_id)).toEqual([caseId]);
-      const managedBlocked=await runManagedDevCase({...managedInput,caseId,workerId:'regular-live'});expect(managedBlocked.state).toBe('succeeded');
+      const managedBlocked=await runManagedDevCase({...managedInput,caseId,workerId:'synthetic.regular.live.worker'});expect(managedBlocked.state).toBe('succeeded');
       const blockedJob=(await owner.query("select job_id,fencing_token from public.engine_durable_jobs where job_id=$1",['jobId' in managedBlocked?managedBlocked.jobId:null])).rows[0];
       const blockedLease={jobId:blockedJob.job_id,fencingToken:Number(blockedJob.fencing_token)};expect(blockedLease.jobId).not.toBe(managedInput.jobId);
-      const blockedInput={...managedInput,...blockedLease},blockedCompletion=await runSavedDraftJob(blockedInput);
+      const blockedInput={...managedInput,...blockedLease,workerId:'synthetic.regular.live.worker'},blockedCompletion=await runSavedDraftJob(blockedInput);
       const blockedParent=await calculate(await head());expect(blockedParent.command.mode).toBe('real');expect(blockedParent.bundle?.topic_results[0].amount).toBeNull();
       const oldReplay=await runSavedDraftJob(managedInput);expect(oldReplay.completion.sha256).toBe(completed.completion.sha256);
       await owner.query('update private.june2026_regular_assessments set revoked_at=null where id=$1',[assessmentId]);restored=true;
       const restoredHead=await head();expect(restoredHead.revision).toBe(originalHead.revision);expect(restoredHead.input_sha256).toBe(originalHead.input_sha256);
       expect(restoredHead.authority_dependency_sha256).not.toBe(revokedHead.authority_dependency_sha256);
       expect((await peer.query('select case_id from private.managed_dev_worker_candidates($1,2)',[capabilityToken])).rows.map(r=>r.case_id)).toEqual([caseId]);
-      const managedActive=await runManagedDevCase({...managedInput,caseId,workerId:'regular-live'});expect(managedActive.state).toBe('succeeded');
+      const managedActive=await runManagedDevCase({...managedInput,caseId,workerId:'synthetic.regular.live.worker'});expect(managedActive.state).toBe('succeeded');
       const activeJob=(await owner.query("select job_id,fencing_token from public.engine_durable_jobs where job_id=$1",['jobId' in managedActive?managedActive.jobId:null])).rows[0];
       const activeLease={jobId:activeJob.job_id,fencingToken:Number(activeJob.fencing_token)};expect(activeLease.jobId).not.toBe(blockedLease.jobId);
-      const activeInput={...managedInput,...activeLease},activeCompletion=await runSavedDraftJob(activeInput);
+      const activeInput={...managedInput,...activeLease,workerId:'synthetic.regular.live.worker'},activeCompletion=await runSavedDraftJob(activeInput);
       const activeParent=await calculate(restoredHead);await exportRun('dependency-current',activeParent);
       expect(activeParent.analysis_run_id).not.toBe(run.analysis_run_id);
       const activeRestart=await runSavedDraftJob(activeInput);expect(activeRestart.completion.sha256).toBe(activeCompletion.completion.sha256);
