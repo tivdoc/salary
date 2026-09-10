@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {expect,it,vi} from 'vitest';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {canonicalFactSchema} from '@/engine/facts/contracts';
 import type {AnalysisResultBundle} from '@/engine/wave3/contracts';
 import {createAdmissionTestFixture} from '@/engine/minimum-wage-june2026/evidence-admission.test-fixtures';
 import {JUNE2026_COMPONENT_DECLARATIONS,JUNE2026_DECLARATION_OPTIONS} from '@/engine/minimum-wage-june2026/collection';
@@ -8,12 +9,16 @@ import {createRegularServiceTrustFixture} from '@/engine/minimum-wage-june2026/r
 import {createJune2026RegularAuthority} from '@/engine/minimum-wage-june2026/regular-service/authority';
 import {June2026RegularCatalog} from '@/engine/minimum-wage-june2026/regular-service/catalog';
 import {June2026RegularExecutor} from '@/engine/minimum-wage-june2026/regular-service/executor';
-import {June2026RegularReportBuilder} from './june2026-regular-service';
+import {June2026RegularReportBuilder,june2026RegularReportSources} from './june2026-regular-service';
+import {JUNE2026_REGULAR_REQUIRED_FACT_PATHS} from '@/engine/minimum-wage-june2026/regular-service/contracts';
 import {reportDocumentV3Schema} from './report-document';
 vi.mock('server-only',()=>({}));
 
-async function fixture(hours:string,recorded:number,reportKind?:'initial'|'full'){
+async function fixture(hours:string,recorded:number,reportKind?:'initial'|'full',unrelatedMissing=false){
  const f=createAdmissionTestFixture(false);
+ if(unrelatedMissing)f.facts.facts.push(canonicalFactSchema.parse({fact_id:randomUUID(),case_id:f.facts.case_id,path:'pension.base_salary',value:null,status:'missing',
+  confidence:0.5,provenance:[{source_type:'documented',source_reference:{kind:'document',document_id:f.checkpoint.version_id},read_by:'machine',verified:false}],
+  conflicting_fact_ids:[],resolution:null,created_at:f.facts.created_at}));
  for(const fact of f.facts.facts){
   if(fact.path==='work.regular_hours'&&fact.value)fact.value.amount=hours;
   if((fact.path==='compensation.base_monthly_salary'||fact.path==='compensation.gross_salary')&&fact.value)fact.value.minor_units=recorded;
@@ -84,4 +89,19 @@ it('binds the full AI offer report kind without changing its execution or claimi
  expect(document.execution_authority?.human_report_approval).toBe(false);
  expect(reportDocumentV3Schema.safeParse({...document,publication:{state:'published',approval_actor_kind:'automation',approved_input_sha256:document.input_sha256,
   published_at:'2026-09-10T16:00:00.000Z'}}).success).toBe(true);
+});
+
+it('keeps unrelated missing pension facts in the same-run bundle without requiring a pension locator for the minimum-wage report',async()=>{
+ const f=await fixture('100',330000,'full',true),before=canonicalSha256(f.bundle),report=await f.builder.build(f.bundle);
+ expect(f.executor.result?.comparison.signed_difference.minor_units).toBe(24058);
+ const json=JSON.parse(Buffer.from(report.json).toString('utf8'));
+ expect(json.bundle.facts).toEqual(expect.arrayContaining([expect.objectContaining({path:'pension.base_salary',status:'missing',value:null})]));
+ expect(f.builder.document!.evidence.some(e=>e.field==='pension.base_salary')).toBe(false);
+ expect(canonicalSha256(f.bundle)).toBe(before);
+});
+
+it.each(JUNE2026_REGULAR_REQUIRED_FACT_PATHS)('retains the source locator gate for required %s',async path=>{
+ const f=await fixture('100',330000),admission=structuredClone(f.executor.admission),fact=admission.effective_facts.facts.find(f=>f.path===path)!;
+ fact.provenance=fact.provenance.map(p=>p.source_type==='documented'?{...p,source_reference:{kind:'document',document_id:p.source_reference.document_id}}:p);
+ expect(()=>june2026RegularReportSources({admission,analysisRunId:f.bundle.analysis_run_id,document:admission.evidence.documents[0]})).toThrow('JUNE_REGULAR_REPORT_LOCATOR');
 });

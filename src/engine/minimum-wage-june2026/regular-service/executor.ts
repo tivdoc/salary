@@ -10,6 +10,7 @@ import {assertJune2026RegularAuthority,type June2026RegularAuthority} from './au
 import {June2026RegularCatalog} from './catalog.ts';
 import {resolveJune2026RegularEvidence} from './evidence.ts';
 import {createJune2026RegularSourceAdmission} from './source-admission.ts';
+import {JUNE2026_REGULAR_REQUIRED_FACT_PATHS} from './contracts.ts';
 
 export function june2026RegularId(seed:unknown){const s=canonicalSha256(seed);return `${s.slice(0,8)}-${s.slice(8,12)}-4${s.slice(13,16)}-a${s.slice(17,20)}-${s.slice(20,32)}`;}
 /** Root loads the same persisted facts/packet immediately before execution;
@@ -36,7 +37,8 @@ export class June2026RegularExecutor implements RuleSpecExecutorPort{
   if(canonicalSha256(trace.execution_output)!==canonicalSha256(admission.preflight.execution.output))throw Error('JUNE_REGULAR_EXECUTION_PREFLIGHT_MISMATCH');
   const comparison=sourceMonetaryComparisonV2Schema.parse(createSourceMonetaryComparison({trace,expectedRef:'expected.regular.pay',recordedRef:'recorded.eligible.pay'}));
   const sourceAdmission=createJune2026RegularSourceAdmission({authority,admission,trace,parentRuleInput:packet.rule_input});
-  const required=facts.facts.filter(f=>['work.regular_hours','compensation.base_monthly_salary','compensation.gross_salary','compensation.salary_type','documents.period'].includes(f.path));
+  const required=facts.facts.filter(f=>JUNE2026_REGULAR_REQUIRED_FACT_PATHS.some(path=>path===f.path));
+  if(required.length!==JUNE2026_REGULAR_REQUIRED_FACT_PATHS.length)throw Error('JUNE_REGULAR_REQUIRED_FACTS');
   const evidence=required.flatMap(f=>f.provenance).filter((e,i,all)=>all.findIndex(v=>canonicalSha256(v)===canonicalSha256(e))===i);
   // Identified declarations retain medium certainty; signatures approve the
   // applicability policy and never inflate the source reading's confidence.

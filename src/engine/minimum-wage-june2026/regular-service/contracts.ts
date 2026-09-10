@@ -6,6 +6,9 @@ import type {GoldenCaseSet} from '../../legal-operations/rulespec.ts';
 export const JUNE_REGULAR_AUTHORITY_VERSION='june2026-regular-authority-v1' as const;
 export const JUNE_REGULAR_CASE_ASSESSMENT='june2026-case-assessment-v1' as const;
 export const JUNE_CASE_ASSESSOR_ROLE='human_case_assessment_reviewer' as const;
+export const JUNE2026_REGULAR_REQUIRED_FACT_PATHS=Object.freeze([
+ 'work.regular_hours','compensation.base_monthly_salary','compensation.gross_salary','compensation.salary_type','documents.period',
+] as const);
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 export const june2026CaseAssessmentSchema=z.object({
  schema_version:z.literal(JUNE_REGULAR_CASE_ASSESSMENT),assessment_id:z.uuid(),

@@ -90,6 +90,10 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
   const result=(await web.query('select public.june2026_regular_report_artifact($1,$2,$3) value',[caseId,OWNER,report.report_id])).rows[0].value;
   expect(result.current).toBe(true);const stored=decodeReport(result.completion.report);expect(sha(stored.pdf)).toBe(report.pdf_sha256);expect(sha(stored.html)).toBe(report.html_sha256);
   await expect(web.query('select public.june2026_regular_report_artifact($1,$2,$3) value',[caseId,randomUUID(),report.report_id])).rejects.toThrow('REGULAR_REPORT_FORBIDDEN');
+  const sourceRef=(await web.query('select public.case_report_source($1,$2,$3,$4) value',[caseId,OWNER,report.report_id,file!.versionId])).rows[0].value;
+  expect(sourceRef).toMatchObject({path:file!.path,sha256:source.sha256,size:source.sizeBytes});
+  await expect(web.query('select public.case_report_source($1,$2,$3,$4) value',[caseId,randomUUID(),report.report_id,file!.versionId])).rejects.toThrow();
+  checks.push('ordinary_published_source_bound_and_foreign_source_denied');
   runs.push({label,runId:run.analysis_run_id,projectionId:report.report_id,pdfSha256:report.pdf_sha256,htmlSha256:report.html_sha256,revision:body.execution.input_revision,sourceSha256:source.sha256,
    hoursOrigin:body.execution.admission.hours_origin,expectedMinor:354058,recordedMinor:330000,gapMinor:24058});return body;
  };

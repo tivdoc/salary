@@ -4,6 +4,8 @@ import {findingV2Schema} from '@/engine/findings/contracts';
 import type {AnalysisResultBundle,DeterministicReportArtifacts,ReportBuilderPort} from '@/engine/wave3/contracts';
 import {assertJune2026RegularAuthority,type June2026RegularAuthority} from '@/engine/minimum-wage-june2026/regular-service/authority';
 import {June2026RegularExecutor,june2026RegularId} from '@/engine/minimum-wage-june2026/regular-service/executor';
+import {JUNE2026_REGULAR_REQUIRED_FACT_PATHS} from '@/engine/minimum-wage-june2026/regular-service/contracts';
+import type {June2026RegularAdmission} from '@/engine/minimum-wage-june2026/regular-service/evidence';
 import {renderDeterministicRtlDocument,type RtlBlock} from '@/server/reports/deterministic-hebrew-pdf';
 import {AI_PUBLICATION_POLICY,AI_REPORT_DISCLOSURE,reportDocumentV3Schema} from './report-document';
 import {CERTAINTY_SENTENCE,PROJECTION_LEGAL_BASIS,PROJECTION_SCHEMA_VERSION,PROJECTION_TOPICS,parseProjection} from './case-report-projection';
@@ -11,6 +13,28 @@ import {CERTAINTY_SENTENCE,PROJECTION_LEGAL_BASIS,PROJECTION_SCHEMA_VERSION,PROJ
 export const JUNE_REGULAR_REPORT_TEMPLATE='june2026-regular-service-report-v1';
 const hashBytes=(b:Uint8Array)=>createHash('sha256').update(b).digest('hex');
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+/** Only dependencies of this calculation become report evidence. Unrelated
+ * missing/conflicted facts stay in the full immutable bundle and its JSON. */
+export function june2026RegularReportSources(input:{admission:June2026RegularAdmission;analysisRunId:string;document:June2026RegularAdmission['evidence']['documents'][number]}){
+ const {admission,analysisRunId,document}=input;
+ const required=admission.effective_facts.facts.filter(f=>JUNE2026_REGULAR_REQUIRED_FACT_PATHS.some(path=>path===f.path));
+ if(required.length!==JUNE2026_REGULAR_REQUIRED_FACT_PATHS.length||admission.effective_facts.analysis_run_id!==analysisRunId)
+  throw Error('JUNE_REGULAR_REPORT_REQUIRED_FACTS');
+ return required.flatMap(f=>{
+  if(f.status!=='confirmed'||f.value===null||!f.provenance.length)throw Error('JUNE_REGULAR_REPORT_LOCATOR');
+  // Declared hours retain their separately signed answer lineage; they are
+  // never presented as a document cell. Every documentary operand needs page.
+  if(f.path==='work.regular_hours'&&admission.hours_origin==='identified_declared'&&f.provenance.length===1
+    &&f.provenance[0].source_type==='declared'&&f.provenance[0].source_reference.kind==='case_request_answer'
+    &&admission.fact_admissions.some(a=>a.fact_id===f.fact_id))return [];
+  return f.provenance.map(p=>{
+   if(p.source_type!=='documented'||p.source_reference.document_id!==document.version_id||!p.source_reference.locator?.page
+     ||p.source_reference.locator.page>document.page_count)throw Error('JUNE_REGULAR_REPORT_LOCATOR');
+   return {id:june2026RegularId({run:analysisRunId,fact:f.fact_id,source:p}),document_id:document.product_document_id,version_id:document.version_id,
+    sha256:document.sha256,page:p.source_reference.locator.page,field:f.path,fact_version:f.fact_id};
+  });
+ });
+}
 /** Produces the existing v3 envelope from an actual same-run Finding. It does
  * not publish: root persists this envelope and its authority binding in the
  * same transaction, then calls the existing current-source AI publisher.
@@ -38,11 +62,7 @@ export class June2026RegularReportBuilder implements ReportBuilderPort{
     customer_text:'ממתין לאימות בסיום הפיתוח',blocked_by_grades:['draft']})});
   const source=authority.assessment,document=result.admission.evidence.documents.find(d=>d.version_id===source.document_version_id);
   if(!document||document.sha256!==source.document_sha256)throw Error('JUNE_REGULAR_REPORT_SOURCE');
-  const evidence=result.admission.effective_facts.facts.flatMap(f=>f.provenance.filter(p=>p.source_type==='documented').map(p=>{
-   if(p.source_type!=='documented'||p.source_reference.document_id!==document.version_id||!p.source_reference.locator?.page)throw Error('JUNE_REGULAR_REPORT_LOCATOR');
-   return {id:june2026RegularId({run:result.analysis_run_id,fact:f.fact_id,source:p}),document_id:document.product_document_id,version_id:document.version_id,
-    sha256:document.sha256,page:p.source_reference.locator.page,field:f.path,fact_version:f.fact_id};
-  }));
+  const evidence=june2026RegularReportSources({admission:result.admission,analysisRunId:result.analysis_run_id,document});
   const doc=reportDocumentV3Schema.parse({schema_version:'tivdoc-report-document-v3',id:june2026RegularId({run:bundle.analysis_run_id,result:result.result_sha256,template:JUNE_REGULAR_REPORT_TEMPLATE}),
    case_id:bundle.case_id,order_id:source.order_id,revision:source.input_revision,input_sha256:source.input_sha256,projection_sha256:canonicalSha256(projection),
    purchased_period:{from:'2026-06',to:'2026-06'},projection,evidence,
@@ -59,7 +79,8 @@ export class June2026RegularReportBuilder implements ReportBuilderPort{
   const disclosure=isolated?'בדיקת DEV בלבד. המפתחות והחתימות שייכים למרשם בדיקה סינתטי. אין אישור אדם אמיתי, הפעלת דין אמיתי או קביעת חוב לקוח. אישורי קריאת השדות נשלחו בפעולות בדיקה מזוהות; הם אינם חתימת בודק אנושי.':AI_REPORT_DISCLOSURE;
   const readingLabels:Record<string,string>={'work.regular_hours':'שעות רגילות','compensation.base_monthly_salary':'שכר יסוד',
    'compensation.gross_salary':'שכר ברוטו','compensation.salary_type':'סוג שכר','documents.period':'תקופת התלוש'};
-  const identifiedReadingPaths=[...new Set(result.admission.effective_facts.facts.filter(f=>f.provenance.some(p=>p.source_type==='documented'&&p.customer_confirmation))
+  const identifiedReadingPaths=[...new Set(result.admission.effective_facts.facts.filter(f=>JUNE2026_REGULAR_REQUIRED_FACT_PATHS.some(path=>path===f.path)
+    &&f.provenance.some(p=>p.source_type==='documented'&&p.customer_confirmation))
    .map(f=>f.path))].sort();
   const rows=[['ריצת ניתוח',result.analysis_run_id],['מקור',document.version_id],['מקור SHA-256',document.sha256],
    ['סכום צפוי',money(comparison.expected.minor_units)],['סכום מתועד בתלוש',money(comparison.recorded.minor_units)],['הפרש חתום',money(gap.minor_units)],
