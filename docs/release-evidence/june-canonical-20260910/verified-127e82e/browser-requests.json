@@ -1,0 +1,74 @@
+[
+  {
+    "id": "54c9m-1789054452746-cec3b136b3be",
+    "at": "2026-09-10T15:34:12.746Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "GET",
+    "path": "/api/cases/TV-F92174B2/reports",
+    "status": 200
+  },
+  {
+    "id": "h97q2-1789054442426-445ae98e94d9",
+    "at": "2026-09-10T15:34:02.426Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "GET",
+    "path": "/api/cases/TV-F92174B2/reports",
+    "status": 410
+  },
+  {
+    "id": "2pp96-1789054430746-08382b6e9389",
+    "at": "2026-09-10T15:33:50.746Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "GET",
+    "path": "/api/cases/TV-F92174B2/reports",
+    "status": 200
+  },
+  {
+    "id": "kmsxc-1789054413397-e9f65ecf39a6",
+    "at": "2026-09-10T15:33:33.397Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "GET",
+    "path": "/api/cases/TV-F92174B2/reports",
+    "status": 200
+  },
+  {
+    "id": "7s9s7-1789054378302-bccac9251df2",
+    "at": "2026-09-10T15:32:58.302Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "POST",
+    "path": "/api/cases/access/request",
+    "status": 200
+  },
+  {
+    "id": "h6srk-1789054375709-c5c396fc2532",
+    "at": "2026-09-10T15:32:55.709Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "POST",
+    "path": "/api/cases/access/verify",
+    "status": 200
+  },
+  {
+    "id": "k297h-1789054303030-784c68355c3a",
+    "at": "2026-09-10T15:31:43.030Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "POST",
+    "path": "/api/cases/access/verify",
+    "status": 401
+  },
+  {
+    "id": "zzvmj-1789054221120-9a9fd1c9e164",
+    "at": "2026-09-10T15:30:21.120Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "POST",
+    "path": "/api/cases/access/request",
+    "status": 202
+  },
+  {
+    "id": "6wcbw-1789054215270-5fd87a07b54e",
+    "at": "2026-09-10T15:30:15.270Z",
+    "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+    "method": "POST",
+    "path": "/api/cases/access/request",
+    "status": 401
+  }
+]

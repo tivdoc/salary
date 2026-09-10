@@ -1,0 +1,673 @@
+{
+  "schema_version": "tivdoc-analysis-result-bundle-v0.6.0",
+  "analysis_run_id": "dd011aa7-f50f-426f-8cdd-bcd0bfb02ef0",
+  "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+  "case_revision": 1,
+  "period": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-06-30"
+  },
+  "as_of": "2026-09-10",
+  "document_snapshot_sha256": "d73c41f3ab5227727153367a6ee45e64895e706ba3ebbc2e463408df5cc84da3",
+  "extraction_snapshot_sha256": "ff56bd2717a31fe343457b78680dccf4336d302bad04d0516967251a1800b7b2",
+  "declared_fact_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "facts_snapshot_sha256": "65788157a74505264c9658e5fafc222f16ee2fcf2432b9753f88fce92e6c79e3",
+  "facts": [
+    {
+      "fact_id": "7f0be59c-de08-463a-8f90-30dcf7e501af",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "needs_confirmation",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+            "locator": {
+              "page": 1,
+              "text_span": "Synthetic regular base salary: 3300.00"
+            }
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 0.94,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "compensation.base_monthly_salary",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "fact_id": "0cb5b10d-bbee-471b-86fd-6ca71025d812",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "needs_confirmation",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+            "locator": {
+              "page": 1,
+              "text_span": "Synthetic regular base salary: 3300.00"
+            }
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 0.94,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "compensation.gross_salary",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "fact_id": "697e239d-5b4c-4c77-8654-b6f926089bda",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "needs_confirmation",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+            "locator": {
+              "page": 1,
+              "text_span": "Synthetic regular base salary: 33.00"
+            }
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 0.94,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "compensation.hourly_rate",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 3300
+      }
+    },
+    {
+      "fact_id": "ab6ea9f0-35ad-40c7-82f8-f96f22bf389b",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "needs_confirmation",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+            "locator": {
+              "page": 1,
+              "text_span": "Synthetic regular base salary: 3300.00"
+            }
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 0.94,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "compensation.net_salary",
+      "value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "fact_id": "cb99562f-6602-4e2e-8e8a-fe129f0d8077",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "needs_confirmation",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+            "locator": {
+              "page": 1,
+              "text_span": "Salary type: hourly"
+            }
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 0.94,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "compensation.salary_type",
+      "value": "hourly"
+    },
+    {
+      "fact_id": "fe3e8266-9c66-428f-87c1-3aa2f82ba6ca",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "convalescence.payment",
+      "value": null
+    },
+    {
+      "fact_id": "a95b3949-bd45-4d5d-8d46-6e1528a27383",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "needs_confirmation",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+            "locator": {
+              "page": 1,
+              "text_span": "Period: 06/2026"
+            }
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 0.94,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "documents.period",
+      "value": {
+        "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+        "period": {
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        }
+      }
+    },
+    {
+      "fact_id": "72603e65-cb3f-42dc-871b-cfdf5a6bda51",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "employment.start_date",
+      "value": null
+    },
+    {
+      "fact_id": "359159f9-2186-4f3f-82a6-bc18bb7efa4d",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "leave.sick_balance",
+      "value": null
+    },
+    {
+      "fact_id": "f143f1e3-43c4-4fde-83b4-75d74df1356f",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "leave.vacation_balance",
+      "value": null
+    },
+    {
+      "fact_id": "d2568113-15b4-43af-8383-5ad69bcd74e1",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "pension.base_salary",
+      "value": null
+    },
+    {
+      "fact_id": "3903933c-58a2-4f8d-8371-ee581eb2e9e3",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "pension.contributions",
+      "value": null
+    },
+    {
+      "fact_id": "fc7e5231-111f-4d23-8e8f-4e108430bae1",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "pension.severance_contribution",
+      "value": null
+    },
+    {
+      "fact_id": "77fbcfbf-e745-40a4-84f3-cc570d320fef",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "travel.reimbursement",
+      "value": null
+    },
+    {
+      "fact_id": "c2ca48dc-b0a1-43d1-8fb4-1ff185f5d6e7",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "work.overtime_125_hours",
+      "value": null
+    },
+    {
+      "fact_id": "1fb3fe5a-ce99-4062-87a2-054700d31f35",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "work.overtime_150_hours",
+      "value": null
+    },
+    {
+      "fact_id": "c57f5c78-416c-451f-8cfd-b740163dcbbc",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "missing",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee"
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 1,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "work.overtime_hours",
+      "value": null
+    },
+    {
+      "fact_id": "359b3fe3-25d1-4f57-83db-327f962b6f53",
+      "case_id": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+      "status": "needs_confirmation",
+      "provenance": [
+        {
+          "source_type": "documented",
+          "source_reference": {
+            "kind": "document",
+            "document_id": "7d668b61-259a-4378-a303-695603b66dee",
+            "locator": {
+              "page": 1,
+              "text_span": "Synthetic regular base salary: 100"
+            }
+          },
+          "read_by": "machine",
+          "verified": false
+        }
+      ],
+      "confidence": 0.94,
+      "conflicting_fact_ids": [],
+      "resolution": null,
+      "created_at": "2026-09-10T15:25:40.488Z",
+      "path": "work.regular_hours",
+      "value": {
+        "amount": "100",
+        "unit": "hours_per_month"
+      }
+    }
+  ],
+  "rule_inputs": [
+    {
+      "snapshot_id": "rule-input:dd011aa7-f50f-426f-8cdd-bcd0bfb02ef0:minimum_wage",
+      "snapshot_version": "canonical-facts:1.0.0:minimum_wage",
+      "snapshot_sha256": "1edc222f204e1493fd2b217e3a14dbe1080196c5cfb4781f68c452c02d86140e"
+    }
+  ],
+  "catalog_sha256": "bbd726b15774557c06e8677583ff3c7c5be94faf2359bb74e78f4d77f5cbc4ba",
+  "topic_results": [
+    {
+      "topic": "minimum_wage",
+      "status": "blocked_missing_facts",
+      "blockers": [
+        "CRITICAL_FACT_NEEDS_CONFIRMATION"
+      ],
+      "rule_input_sha256": "1edc222f204e1493fd2b217e3a14dbe1080196c5cfb4781f68c452c02d86140e",
+      "amount": null,
+      "trace": null,
+      "legal_readiness": {
+        "schema_version": "tivdoc-legal-readiness-decision-v0.5.0",
+        "evaluator_version": "evaluateLegalReadiness@v0.5.0",
+        "decision_source": "evaluateLegalReadiness",
+        "normalized_input": {
+          "readiness_case": {
+            "case_id": "REAL_CATALOG_MINIMUM_WAGE_JUNE2026",
+            "topic": "minimum_wage",
+            "kind": "historical",
+            "target_date": "2026-06-30",
+            "as_of": "2026-09-10",
+            "sector": "unverified",
+            "population": "unverified",
+            "contract_version": "v0.5.0",
+            "use_case": "monetary_rule"
+          },
+          "candidates": [
+            {
+              "source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+              "source_id": "IL_MIN_WAGE_LAW",
+              "topics": [
+                "minimum_wage"
+              ],
+              "acquisition_status": "available",
+              "technical_parse_status": "parsed",
+              "instrument_boundary_status": "resolved",
+              "publication_status": "review_candidate",
+              "retrieval_visibility": "visible",
+              "retrieval_surface": "canonical_review",
+              "source_role": "binding_role_candidate",
+              "monetary_support_eligibility": "eligible",
+              "citation": {
+                "citation_id": "IL_MIN_WAGE_LAW.june2026.pinned.locators",
+                "verified": true,
+                "source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2"
+              },
+              "review_attestation": null,
+              "valid_time": {
+                "from": "2026-06-01",
+                "to": "2026-06-30",
+                "verified": false
+              },
+              "knowledge_time": {
+                "available_from": "2026-09-09",
+                "unavailable_from": null
+              },
+              "sector_status": "unverified",
+              "verified_sectors": [],
+              "population_status": "unverified",
+              "verified_populations": [],
+              "activation_status": "inactive",
+              "bound_source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2"
+            },
+            {
+              "source_version_id": "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a",
+              "source_id": "IL_MIN_WAGE_NOTICE_2026",
+              "topics": [
+                "minimum_wage"
+              ],
+              "acquisition_status": "available",
+              "technical_parse_status": "parsed",
+              "instrument_boundary_status": "resolved",
+              "publication_status": "review_candidate",
+              "retrieval_visibility": "visible",
+              "retrieval_surface": "canonical_review",
+              "source_role": "binding_role_candidate",
+              "monetary_support_eligibility": "eligible",
+              "citation": {
+                "citation_id": "IL_MIN_WAGE_NOTICE_2026.june2026.pinned.locators",
+                "verified": true,
+                "source_version_id": "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a"
+              },
+              "review_attestation": null,
+              "valid_time": {
+                "from": "2026-04-01",
+                "to": null,
+                "verified": false
+              },
+              "knowledge_time": {
+                "available_from": "2026-09-09",
+                "unavailable_from": null
+              },
+              "sector_status": "unverified",
+              "verified_sectors": [],
+              "population_status": "unverified",
+              "verified_populations": [],
+              "activation_status": "inactive",
+              "bound_source_version_id": "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a"
+            },
+            {
+              "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02",
+              "source_id": "IL_MIN_WAGE_OFFICIAL_RATES",
+              "topics": [
+                "minimum_wage"
+              ],
+              "acquisition_status": "available",
+              "technical_parse_status": "missing",
+              "instrument_boundary_status": "resolved",
+              "publication_status": "review_candidate",
+              "retrieval_visibility": "visible",
+              "retrieval_surface": "corroborative_review",
+              "source_role": "corroborative",
+              "monetary_support_eligibility": "ineligible",
+              "citation": {
+                "citation_id": "IL_MIN_WAGE_OFFICIAL_RATES.june2026.pinned.locators",
+                "verified": false,
+                "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02"
+              },
+              "review_attestation": null,
+              "valid_time": {
+                "from": "2026-04-01",
+                "to": null,
+                "verified": false
+              },
+              "knowledge_time": {
+                "available_from": "2026-09-09",
+                "unavailable_from": null
+              },
+              "sector_status": "unverified",
+              "verified_sectors": [],
+              "population_status": "unverified",
+              "verified_populations": [],
+              "activation_status": "inactive",
+              "bound_source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02"
+            },
+            {
+              "source_version_id": "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84",
+              "source_id": "IL_WORKWEEK_ORDER_2018",
+              "topics": [
+                "minimum_wage"
+              ],
+              "acquisition_status": "available",
+              "technical_parse_status": "parsed",
+              "instrument_boundary_status": "resolved",
+              "publication_status": "review_candidate",
+              "retrieval_visibility": "visible",
+              "retrieval_surface": "canonical_review",
+              "source_role": "binding_role_candidate",
+              "monetary_support_eligibility": "eligible",
+              "citation": {
+                "citation_id": "IL_WORKWEEK_ORDER_2018.june2026.pinned.locators",
+                "verified": true,
+                "source_version_id": "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84"
+              },
+              "review_attestation": null,
+              "valid_time": {
+                "from": "2018-04-01",
+                "to": null,
+                "verified": false
+              },
+              "knowledge_time": {
+                "available_from": "2026-09-09",
+                "unavailable_from": null
+              },
+              "sector_status": "unverified",
+              "verified_sectors": [],
+              "population_status": "unverified",
+              "verified_populations": [],
+              "activation_status": "inactive",
+              "bound_source_version_id": "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84"
+            }
+          ]
+        },
+        "normalized_input_sha256": "f63afa5ca841ee9b0abbcbff1f633ccaaea6eccb121e89ea061244370ca85abd",
+        "status": "BLOCKED_NOT_READY",
+        "reason_codes": [
+          "HUMAN_LEGAL_REVIEW_MISSING",
+          "EFFECTIVE_INTERVAL_MISSING_INVALID_OR_UNVERIFIED",
+          "SECTOR_MISSING_UNKNOWN_MISMATCH_OR_UNVERIFIED",
+          "POPULATION_MISSING_MISMATCH_OR_UNVERIFIED",
+          "ACTIVATION_MISSING"
+        ],
+        "selected_source_version_id": "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+        "considered_source_version_ids": [
+          "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+          "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a",
+          "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02",
+          "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84"
+        ],
+        "operative_candidate_source_version_ids": [
+          "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+          "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a",
+          "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84"
+        ],
+        "usable_for_rules": false,
+        "test_only_synthetic": false,
+        "decision_sha256": "451220f8b5a437902b0e17ba163d293d418661bc0433c99580027282853b01f5"
+      }
+    }
+  ],
+  "known_subtotal": null,
+  "coverage_complete": false,
+  "result_sha256": "799cff72a361b6c9d6ff001ea8eb9a7838f7c18d2de75eaef9efc57be3f3c7f9"
+}

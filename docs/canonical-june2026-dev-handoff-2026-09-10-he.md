@@ -54,3 +54,52 @@ v1.1 אינו מחייב ביקורת אדם בכל דוח AI, אבל אינו �
 - PDF עברי: סוג השכר הוחזר כ־mixed, נסיעות/בונוס סווגו לא נכון, net/deductions ופנסיה שגויים או חסרים.
 - סריקה: חודש, סוג שעתי, gross/deductions/net נקראו נכון, אבל תאריך, פירוט ניכויים ורכיבי פנסיה נפגעו.
 - בשני המקורות נבדק בנפרד אובדן quantity/rate בזמן מיפוי שורת base_salary. תיקון כזה אינו הופך את שאר הפלט השגוי למדויק. תוצאות replay לאחר התיקון יתווספו בנפרד מקבלת הקריאה החיה.
+
+## מסירה סופית של החבילה — עצירה
+
+גרסת היישום וההוכחות הסופיות: `127e82e0acdd1407e18c7306e73f9e2431bc3faa`, סכמה138. שתי ריצות CI [34495502862](https://github.com/tivdoc/salary/actions/runs/34495502862) ו־[34495497550](https://github.com/tivdoc/salary/actions/runs/34495497550) עברו: typecheck, lint, unit/guards, build והוכחת סגירת Production. הפריסה היא **Preview בלבד**: [salary-nxwznkek3](https://salary-nxwznkek3-tivdoccom-5042s-projects.vercel.app/login), deployment `dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy`, READY. commit המסירה שאחרי גרסה זו מכיל תיעוד וראיות בלבד. אין לפרש CI או את שם בדיקת Production כפריסה ל־Production.
+
+תיק `TV-F92174B2`, ריצה `ecf9e6e4-05a3-4004-8540-bdc479f1ca23`. [PDF שנוצר](release-evidence/june-canonical-20260910/verified-127e82e/7bf268a0/replacement-current-calculated.pdf), [HTML](release-evidence/june-canonical-20260910/verified-127e82e/7bf268a0/replacement-current-calculated.html), [קלט סינתטי](release-evidence/june-canonical-20260910/verified-127e82e/7bf268a0/input.pdf), [תוצאה ועקבה מלאה](release-evidence/june-canonical-20260910/verified-127e82e/7bf268a0/replacement-current-calculated.json), [קבלת DB](release-evidence/june-canonical-20260910/verified-127e82e/7bf268a0/proof.json), [restart בתהליך חדש](release-evidence/june-canonical-20260910/verified-127e82e/7bf268a0/restart-proof-127e82e0acdd.json).
+
+הסכומים בהוכחה הם3540.58 צפוי,3300.00 מתועד ו־240.58 ILS פער. hash ה־PDF: `dd65db04f587c192cea0882c0d915f6a87323d261b5f9af07eca6e57d2960ead`; hash ה־HTML: `cfabc809e2296f53fb016c7fcfe5fe8e7f0b6a518aa9cd8c3c6e33a0ad91d342`. מקור אחד נכלל, גרסה `a1af1461-b7b4-4170-8538-f3a189283cfd`. הדוח וה־JSON נבנו מה־bundle של אותה ריצה; לא נזרעו ממצא או דוח.
+
+### מטריצת קבלה
+
+| יכולת | הושלם טכנית | הוכח מול DEV | חסום להפעלה אמיתית |
+|---|---|---|---|
+| comparison v2 לרכיב יחיד, מקור ועקבה; v1 היסטורי | כן | חישוב ושמירה, גם comparison ששונה לפני INSERT נדחה | בחירת שיטת שכר/עיגול להפעלה נותרה פתוחה |
+| resolver, test catalog ו־executor של ה־RuleSpec הקיים | כן, עבור סמכות בדיקה מבודדת בלבד | packet/stages/source/purchase/current head מאומתים; REAL מסרב ללא אישורים | resolver/catalog/executor מורשים ב־REAL עדיין דורשים חיבור; אין לייחס את כל החסר לחתימות |
+| פער ואפס פער | כן |24058 ואפס אגורות, דרך Storage→checkpoint→P06→canonical run | נתוני ההוכחה והאישורים סינתטיים; transport החילוץ מוזרק |
+| נתון לא מאושר והשלמה | כן | שעות100 קיימות במקור אך אינן מאושרות: חסימת REAL, בקשת P06 מדויקת, מענה ואז revision/run חדשים | זה אינו מבחן קנוני חדש של תא שנעדר לחלוטין/תלוש בלתי קריא; הוכחת תמלול חסר ההיסטורית שייכת למסלול ההנדסי הקודם |
+| unknown/conflicted ושינוי תשובה | כן | מצבים נפרדים, שלוש גרסאות תשובה, retry idempotent, אין פרסום ישן | סמכות להכרעת תחולה וסיווג אמיתיים עדיין חסרה |
+| החלפה, rollback, retry מקביל ו־restart | כן | שלוש גרסאות מקור נגישות, דוחות שמורים, רק האחרון current; תהליך OS חדש מחזיר אותם bytes/counts | ה־restart בודק saved-month replay, לא acknowledgement של lease שנקטע באמצעו |
+| HTML/PDF מאותה ריצה | כן, תוצר קנוני הנדסי | DB hashes/תוכן/PDF render עברו; HTML נצפה ורוענן בדפדפן; PDF API החזיר200 | זה אינו Finding מאושר או פרסום רגיל v3. חיבור authority→findings→מעטפת הלקוח הרגילה עדיין פיתוח שלא הושלם |
+| הרשאות וגישה | כן למסלול הבדיקה | זהות זרה נדחתה ב־DB למוצר ולמקור; owner OTP אמיתי→HTML200; דוח שהוחלף410 | anonymous בדפדפן נפרד נחסם כבר ב־Vercel SSO; אין טענה להוכחת זהות זרה מחוברת בדפדפן |
+| תיקון חילוץ עברי/סריקה | חלקי | שתי קריאות OpenAI אמיתיות נשארו QUALITY_FAIL; replay ללא SDK מתקן רק תאי שעות/תעריף בסריקה ומחייב אישור | סיווגים/פנסיה/חוסרים עדיין שגויים; לא הוכח כיול ולא נוצר דוח קנוני חדש מחילוץ חי |
+
+### אימות דפדפן וסביבת ההוכחה
+
+על127e82e/schema138 בוצעה כניסה דרך `/login` עם קוד חדש שהתקבל בפועל אצל `tivdoc.com@gmail.com`, ב־Spam. לא הוזרק session ולא נקרא הקוד מה־DB או מספק ה־API. בנהג הדפדפן נבחר תחילה קוד ישן מתוך שרשור Gmail והשרת דחה אותו ב־401; לאחר פתיחת גוף ההודעה החדשה התקבל200. זו שגיאת בחירת הודעה בבדיקה, לא כשל זיהוי במוצר. הקודים אינם בראיות או בריפו.
+
+בדפדפן נצפו הריצה, גרסת המקור, שיטת החישוב וכל שלושת הסכומים. רענון לא שינה את עץ הנגישות. [תמצית בקשות Vercel](release-evidence/june-canonical-20260910/verified-127e82e/browser-requests.json) מצמידה ל־deployment המדויק: HTML200, רענון200, דוח ישן410 ו־PDF200. כלי Chrome חסם ניווט ל־PDF ב־ERR_BLOCKED_BY_CLIENT למרות200; אין טענה להורדה מוצלחת בדפדפן. ה־PDF השמור רונדר ונבדק בנפרד. תיבת IAB חדשה נעצרה בהגנת הכניסה של Vercel; ההגנה לא בוטלה ולא נוצר share secret חדש.
+
+ה־Webhook הזמני נשאר כבוי, ולכן קבלת OTP חדשה במסד היא provider accepted; הגעתה ל־Spam נצפתה בנפרד. אין טענה ל־Webhook חדש או למסירת הודעת דוח קנוני בחבילה הזאת. scheduler, managed mappings/capabilities וההרשאות הזמניות מהחבילה הקודמת לא הופעלו מחדש. ריצות החישוב כאן הופעלו על ידי נהג DEV דרך `runSavedWorkerMonth`; אין הוכחה חדשה לעבודה אוטומטית ללא מפעיל. כל מכונות הבדיקה החדשות בוטלו בסיום.
+
+תוקף assessment נבדק לפני ביצוע ו־replay. פקיעתו אינה מוחקת תוצר היסטורי שנוצר כדין בבדיקה; `current` בקורא מתאר התאמת קלט, ולא אישור מקצועי בתוקף.
+
+### בדיקות, כשלים והפרדה בין ספק לבין נרמול
+
+- typecheck ו־lint ממוקדים עברו מקומית; שתי ריצות CI127e82e עברו גם lint מלא, unit/guards ו־build. לא הוסר guard בגלל env מקומי ולא נדרש build מקומי נוסף לאחר ה־build המוצלח של CI/Preview.
+- קבוצת ספקOpenAI:77 עברו ו־1 opt-in דולג; קבוצת המיפוי עם replay של שתי הקבלות האמיתיות:22 עברו. בדיקות preexecution/chain וה־mapper:35 עברו ו־1 opt-in דולג. אלו קבוצות חופפות, לא סכום בדיקות ייחודיות.
+- הוכחת DB הסופית עברה ב־136.72 שניות; ה־restart הנפרד עבר ב־13.84 שניות. תוספת השעות הלא־מאושרות נבדקה בגלל סיכון קונקרטי במעבר מתשובה לעובדה.
+- CI047fa41 נכשל ב־mock שלא הכיר `june_test_authority` וב־inventory של זנב המיגרציות; שניהם תוקנו בלי להחליש את הכללים. typecheck של patch OCR ביניים חשף ערבוב בין אזהרת ספק לבין אזהרת מיפוי פנימית; האחרונה הופרדה למטא־נתוני המיפוי.
+- restart הראשון עלf0668f5 שחזר נכונה אך נכשל בניקוי בהרשאת42501: נהג הבדיקה לא קבעtenant לפני UPDATE. ההרשאה בוטלה מייד בעזרת tenant מדויק, ונשמרו [כישלון](release-evidence/june-canonical-20260910/runtime-f0668f5/e5c9379e/restart-proof.json), [ניקוי](release-evidence/june-canonical-20260910/runtime-f0668f5/e5c9379e/restart-cleanup.json) ו־[הצלחה מתוקנת](release-evidence/june-canonical-20260910/runtime-f0668f5/e5c9379e/restart-proof-ebe96df8d0c7.json). לא שונו הרשאות DB כדי להעביר בדיקה.
+- [replay המיפוי](release-evidence/june-canonical-20260910/hourly-row-replay.json) עלf0668f5 קרא את structured receipts מ־047fa41 ללא SDK או שינוי checkpoint/ledger. בסריקה,100 שעות ו־35.40 נקשרים לתאים ולכותרת שכר שעתי כ־needs_confirmation. ב־PDF שסווגmixed לא כופים hourly. ה־oracle המלא נשארFAIL בשניהם. לא ניתנו בחבילה תשובות שמחליפות את כשלי הקריאה האלה.
+
+### פיתוח שנותר לעומת החלטות הפעלה
+
+**פיתוח שאינו מוכח כהושלם:** binding מאומת להערכות תיק אמיתיות ומדיניות קבלתן; catalog/executor ב־REAL לאחר activation מאומת; מעבר לתוצאת Finding ולעטיפת הפרסום הרגילה במקום תוצר בדיקה. אין endpoint לקוח שמייצר assessments או אישורי בדיקה. שגיאות הקריאה החיות עדיין מחייבות תיקון/השלמה ואין לולאת ספק נוספת אוטומטית.
+
+**החלטות מקור/תחולה/אישור:** ההחלטות המדויקות בסעיף לעיל ובחבילת ההפעלה נשארות ללא אישור: operand שעתי35.40 לעומת חישוב יחסי6443.85/182 ושלב העיגול; קבלת י״פ14324 עמ׳4496 והצלבותיו כמקור לתקופה; אישורי parameter/rule/golden/activation לפי trust policy; קבלת ההערכות לגבי בגירות לכל החודש, ענף, חריגי שעות ומנוחה, הסדר מיטיב/מותאם, שעות רגילות, שלמות מלאי וסיווג הבסיס לפי סעיף3. הרשומות הסינתטיות אינן חתימות אדם. אין דרישה שהומצאה כאן לביקורת אדם בכל דוחAI.
+
+החבילה נשמרת ועוצרת. לא ממשיכים אוטומטית ל־P00–P13. המשימה הבאה המומלצת היא הגדרת מדיניות admission אמיתית והשלמת חיבורה לקטלוג הפעיל ול־Finding רגיל עבור אותו חודש ורכיב בלבד. תנאי סיום: authority מאומת עם מקור לכל החלטה; הפעלה מסרבת כאשר אישור חסר; אותה תוצאת run מגיעה למעטפת הלקוח בלי זריעה; ורק החלטת שיטת חישוב ומקורות מאושרת יכולה לשחרר שירות אמיתי. אין להתחיל אותה כחלק ממסירה זו.

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "june-canonical-cua-observations-v1",
+  "evidenceKind": "operator_observed_CUA_and_Vercel_request_logs",
+  "observedAt": "2026-09-10T15:39:08.426Z",
+  "applicationSha": "127e82e0acdd1407e18c7306e73f9e2431bc3faa",
+  "schema": 138,
+  "deploymentId": "dpl_FghG5acKuG9ZNnQZqqpsVcpR1pXy",
+  "origin": "https://salary-nxwznkek3-tivdoccom-5042s-projects.vercel.app",
+  "caseId": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+  "publicId": "TV-F92174B2",
+  "runId": "ecf9e6e4-05a3-4004-8540-bdc479f1ca23",
+  "sourceVersion": "a1af1461-b7b4-4170-8538-f3a189283cfd",
+  "owner": "tivdoc.com@gmail.com",
+  "otp": {
+    "readFrom": "Actual Gmail owner mailbox Spam folder, newest18:30 message body",
+    "sessionInjected": false,
+    "codeValuesRecorded": false,
+    "priorThreadCodeRejected401": true,
+    "newCodeLogin200": true,
+    "providerAccepted": true,
+    "inboxArrivalProved": false,
+    "spamArrivalObserved": true,
+    "newSignedWebhookObserved": false
+  },
+  "html": {
+    "viewed": true,
+    "runIdMatched": true,
+    "sourceVersionMatched": true,
+    "expected": "3540.58 ILS",
+    "recorded": "3300.00 ILS",
+    "gap": "240.58 ILS",
+    "method": "monthly_times_hours_over_182_final_half_up@1.0.0",
+    "reloadAccessibilityTreeUnchanged": true
+  },
+  "pdf": {
+    "serverResponse200": true,
+    "browserDownloadSucceeded": false,
+    "clientError": "net::ERR_BLOCKED_BY_CLIENT",
+    "storedPdfSha256": "dd65db04f587c192cea0882c0d915f6a87323d261b5f9af07eca6e57d2960ead",
+    "storedSameRunBytesAndTextVerifiedInDbProof": true,
+    "storedPdfRenderedAndViewed": true
+  },
+  "oldReport": {
+    "runId": "81804693-69a6-4a48-8115-516e3411c7f3",
+    "serverResponse410": true
+  },
+  "anonymousBrowser": {
+    "surface": "fresh_IAB",
+    "blockedAt": "Vercel SSO login",
+    "applicationAnonymousGuardProvedHere": false
+  },
+  "authenticatedForeignCustomerBrowserProof": false,
+  "foreignIdentityDatabaseProof": true,
+  "requestLogReceipt": "browser-requests.json",
+  "productionChanged": false
+}
