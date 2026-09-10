@@ -58,11 +58,11 @@
     },
     {
       "name": "retained-driver-ci-pr.json",
-      "sha256": "deaa74a83daaee740d24652c921cd24d289016f3c50940f4c533b3bce30d5af8"
+      "sha256": "7063d77e255e7ceb5f4653389be09d76b653300350e5669c8967c402992cbe1b"
     },
     {
       "name": "retained-driver-ci-push.json",
-      "sha256": "f3cbec3b8a7716617ceef3946fdca3ead383397ba89af9c4d49ab99bd4108a46"
+      "sha256": "839f81da47226438a7b548c430b0966127dc6f57ca4c1863041e1aefd0242b04"
     },
     {
       "name": "retained-failures.json",
@@ -78,7 +78,7 @@
     },
     {
       "name": "retained-preview-case-requests.json",
-      "sha256": "9f24e48e71aef10d3728a07dca7a7ffbebc944b8d1fa6ab765c9244ce225b838"
+      "sha256": "9d169cf2cd359c6dd08077a85201402d6ab2c225baf4ee858a7a707ff8a55e22"
     },
     {
       "name": "retained-source-report-preflight-ambiguous-target-FAIL.json",
