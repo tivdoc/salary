@@ -46,10 +46,9 @@ function valueOf(candidate: NormalizedCandidateField, versionId: string): unknow
 /** This validates an existing reading; it never creates a reading confirmation.
  * The server loader must authenticate the actual journal behind any customer
  * confirmation. A self-consistent hash supplied by a client is not authority. */
-function sourceMatches(fact: CanonicalFact, candidate: NormalizedCandidateField, input: June2026AdmittedContextInput,
-  checkpoint: z.infer<typeof checkpointSchema>): boolean {
+function sourceMatches(source: CanonicalFact['provenance'][number], candidate: NormalizedCandidateField, input: June2026AdmittedContextInput,
+  checkpoint: z.infer<typeof checkpointSchema>, requireReading = false): boolean {
   const extraction = checkpoint.run.result.final_extraction;
-  return fact.provenance.length > 0 && fact.provenance.every(source => {
     if (source.source_type !== 'documented') return false;
     const reference = source.source_reference;
     if (reference.document_id !== input.current.document.version_id || reference.locator?.page !== candidate.source.page) return false;
@@ -57,12 +56,11 @@ function sourceMatches(fact: CanonicalFact, candidate: NormalizedCandidateField,
     if (reference.locator.bounding_box !== undefined
       && canonicalSha256(reference.locator.bounding_box) !== canonicalSha256(candidate.source.bounding_box ?? null)) return false;
     const reading = source.customer_confirmation;
-    if (!reading) return true; // Preserve the existing canonical status/grade; do not invent a stricter legal approval.
+    if (!reading) return !requireReading; // Preserve single-observation historical status; a multi-observation admission requires every reading.
     return source.verified === true && reading.case_id === input.current.case_id && reading.document_id === input.current.document.version_id
       && reading.month === input.current.month && reading.source_sha256 === input.current.document.sha256
       && reading.candidate_id === candidate.candidate_id && reading.candidate_sha256 === canonicalSha256(candidate)
       && reading.extraction_result_sha256 === checkpoint.result_sha256 && reading.normalized_extraction_sha256 === canonicalSha256(extraction);
-  });
 }
 
 /** Replays declarations from immutable receipt fields. No caller-supplied
@@ -139,13 +137,24 @@ export function prepareJune2026AdmittedContext(input: June2026AdmittedContextInp
     if (!fact || fact.status !== 'confirmed' || fact.value === null || fact.conflicting_fact_ids.length > 0) {
       issues.push({field: path, reason: fact?.status === 'conflicted' || (fact?.conflicting_fact_ids.length ?? 0) > 0 ? 'conflicted_canonical_fact' : 'confirmed_canonical_fact_required'}); continue;
     }
-    if (candidates.length !== 1 || candidates[0].normalized_value === null) {issues.push({field: path, reason: 'one_documented_candidate_required'}); continue;}
-    const candidate = candidates[0];
-    if (candidate.source.document_id !== document.version_id || candidate.source.page > document.page_count
-      || canonicalSha256(fact.value) !== canonicalSha256(valueOf(candidate, document.version_id)) || !sourceMatches(fact, candidate, input, checkpoint)) {
+    if (candidates.length === 0 || candidates.some(candidate => candidate.normalized_value === null)) {issues.push({field: path, reason: 'one_documented_candidate_required'}); continue;}
+    const multiple = candidates.length > 1;
+    // Do not select one convenient observation. Every value must agree and
+    // every retained source must bind its own identified reading. Repeated IDs
+    // or duplicated provenance cannot stand in for an unconfirmed observation.
+    const provenanceBound = multiple
+      ? fact.provenance.length === candidates.length
+        && new Set(fact.provenance.map(source => source.source_type === 'documented' ? source.customer_confirmation?.request_id : undefined)).size === candidates.length
+        && new Set(fact.provenance.map(source => source.source_type === 'documented' ? source.customer_confirmation?.target_sha256 : undefined)).size === candidates.length
+        && candidates.every(candidate => fact.provenance.filter(source => sourceMatches(source, candidate, input, checkpoint, true)).length === 1)
+        && fact.provenance.every(source => candidates.filter(candidate => sourceMatches(source, candidate, input, checkpoint, true)).length === 1)
+      : fact.provenance.length > 0 && fact.provenance.every(source => sourceMatches(source, candidates[0], input, checkpoint));
+    if (new Set(candidates.map(candidate => candidate.candidate_id)).size !== candidates.length
+      || candidates.some(candidate => candidate.source.document_id !== document.version_id || candidate.source.page > document.page_count
+        || canonicalSha256(fact.value) !== canonicalSha256(valueOf(candidate, document.version_id))) || !provenanceBound) {
       issues.push({field: path, reason: 'current_document_fact_binding_required'}); continue;
     }
-    boundFacts.push({path, fact_id: fact.fact_id, fact_sha256: canonicalSha256(fact), candidate_id: candidate.candidate_id, candidate_sha256: canonicalSha256(candidate)});
+    for (const candidate of candidates) boundFacts.push({path, fact_id: fact.fact_id, fact_sha256: canonicalSha256(fact), candidate_id: candidate.candidate_id, candidate_sha256: canonicalSha256(candidate)});
   }
   const byPath = new Map(facts.facts.map(fact => [fact.path, fact]));
   const salary = byPath.get('compensation.salary_type'), hours = byPath.get('work.regular_hours'), base = byPath.get('compensation.base_monthly_salary'), gross = byPath.get('compensation.gross_salary');

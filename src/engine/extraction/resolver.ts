@@ -9,6 +9,11 @@ import { gate0ValidationSchema, type Gate0Validation } from "./validation.ts";
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import type {CustomerDocumentReading} from './customer-reading.ts';
 
+// Opt-in analysis policy. Its absence preserves the old serialized snapshots;
+// it is never supplied by OCR and does not change an extraction checkpoint.
+export const IDENTIFIED_AGREEING_CANDIDATES_POLICY='identified-agreeing-candidates-v1' as const;
+const identifiedReadingIssueCodes=['low_field_confidence','moderate_field_confidence','ocr_value_ambiguous','recovery_reading_confirmation_required'] as const;
+
 export const snapshotResolutionContextSchema = z
   .object({
     snapshot_id: uuidSchema,
@@ -145,6 +150,8 @@ function makeFact(
   documentQuality: number,
   context: SnapshotResolutionContext,
   readings:ReadonlyMap<string,CustomerDocumentReading>,
+  observedFields:readonly NormalizedCandidateField[],
+  readingPolicy?:typeof IDENTIFIED_AGREEING_CANDIDATES_POLICY,
 ): CanonicalFact {
   const factId = context.fact_ids[path];
   if (!factId) throw new TypeError(`A deterministic fact ID is required for ${path}`);
@@ -164,16 +171,28 @@ function makeFact(
   }
   const disposition = factStatus(fields, validation, documentQuality);
   // Cell confirmation resolves only uncertainty in reading. Reconciliation,
-  // impossible values, duplicate candidates and cross-source conflicts retain
-  // their original gates. No professional/legal approval is inferred.
-  const confirmed=fields.every(field=>readings.has(field.candidate_id)&&
-    fieldAssessment(validation,field.candidate_id)?.issue_codes.every(code=>['low_field_confidence','moderate_field_confidence','ocr_value_ambiguous','recovery_reading_confirmation_required'].includes(code)));
+  // impossible values and cross-source conflicts retain their original gates.
+  // Only the explicit new policy can discharge equal duplicates, after every
+  // observed candidate has its own identified source reading.
+  const singleField=Object.entries(fieldToPath).find(([,mapped])=>mapped===path)?.[0];
+  const observed=singleField?observedFields.filter(field=>field.field===singleField):[];
+  const newGroup=readingPolicy===IDENTIFIED_AGREEING_CANDIDATES_POLICY&&singleField!==undefined&&observed.length>1;
+  const groupComplete=!newGroup||(observed.length===fields.length&&new Set(observed.map(f=>f.candidate_id)).size===observed.length
+    &&observed.every(f=>f.normalized_value!==null&&fieldAssessment(validation,f.candidate_id)?.status!=='invalid'));
+  const identified=fields.map(field=>readings.get(field.candidate_id));
+  const agreeingIdentifiedGroup=newGroup&&groupComplete&&validation.status!=='invalid'
+    &&new Set(fields.map(f=>canonicalSha256(f.normalized_value))).size===1
+    &&identified.every((r):r is CustomerDocumentReading=>r!==undefined)
+    &&new Set(identified.map(r=>r.request_id)).size===fields.length&&new Set(identified.map(r=>r.target_sha256)).size===fields.length;
+  const confirmed=groupComplete&&fields.every(field=>readings.has(field.candidate_id)&&
+    fieldAssessment(validation,field.candidate_id)?.issue_codes.every(code=>identifiedReadingIssueCodes.some(allowed=>allowed===code)
+      ||agreeingIdentifiedGroup&&code==='duplicate_candidate'));
   return canonicalFactSchema.parse({
     fact_id: factId,
     case_id: context.case_id,
     path,
     value: disposition.status === "conflicted" ? null : value,
-    status: confirmed?'confirmed':disposition.status,
+    status: confirmed?'confirmed':!groupComplete&&disposition.status==='confirmed'?'needs_confirmation':disposition.status,
     provenance: fields.map(field=>documentaryEvidence(field,readings.get(field.candidate_id))),
     // This is the source grade of an explicit customer reading, not an increase
     // to the saved model's confidence (which remains in the original checkpoint).
@@ -189,25 +208,30 @@ export function resolvePayslipSnapshot(input: {
   extraction: NormalizedPayslipExtraction;
   validation: Gate0Validation;
   context: SnapshotResolutionContext;
+  reading_policy?:typeof IDENTIFIED_AGREEING_CANDIDATES_POLICY;
 }) {
   const document = immutableDocumentSchema.parse(input.document);
   const extraction = normalizedPayslipExtractionSchema.parse(input.extraction);
   const validation = gate0ValidationSchema.parse(input.validation);
   const context = snapshotResolutionContextSchema.parse(input.context);
+  if(input.reading_policy!==undefined&&input.reading_policy!==IDENTIFIED_AGREEING_CANDIDATES_POLICY)throw new TypeError('DOCUMENT_READING_POLICY_UNSUPPORTED');
   if (document.case_id !== context.case_id || document.document_id !== extraction.document_id) {
     throw new TypeError("Snapshot resolution inputs must reference one case and document");
   }
   const {customer_readings=[],...machineExtraction}=extraction;
   const readings=new Map<string,CustomerDocumentReading>();
+  const readingRequestIds=new Set<string>(),readingTargetHashes=new Set<string>();
   for(const reading of customer_readings){
     const candidates=extraction.fields.filter(field=>field.candidate_id===reading.candidate_id);
     const periods=extraction.fields.filter(field=>field.field==='salary_period');
     if(reading.case_id!==document.case_id||reading.document_id!==document.document_id||reading.source_sha256!==document.content_sha256
       ||reading.normalized_extraction_sha256!==canonicalSha256(machineExtraction)||candidates.length!==1
       ||reading.candidate_sha256!==canonicalSha256(candidates[0])||readings.has(reading.candidate_id)
+      ||input.reading_policy===IDENTIFIED_AGREEING_CANDIDATES_POLICY&&(readingRequestIds.has(reading.request_id)||readingTargetHashes.has(reading.target_sha256))
       ||!periods.length||periods.some(period=>!period.normalized_value||`${period.normalized_value.year}-${String(period.normalized_value.month).padStart(2,'0')}`!==reading.month))
       throw new TypeError('DOCUMENT_READING_BINDING_MISMATCH');
     readings.set(reading.candidate_id,reading);
+    readingRequestIds.add(reading.request_id);readingTargetHashes.add(reading.target_sha256);
   }
 
   const facts = new Map<FactPath, CanonicalFact>();
@@ -226,7 +250,7 @@ export function resolvePayslipSnapshot(input: {
     }
     facts.set(
       path,
-      makeFact(path, value, candidates, document.document_id, validation, extraction.document_quality_confidence, context,readings),
+      makeFact(path, value, candidates, document.document_id, validation, extraction.document_quality_confidence, context,readings,extraction.fields,input.reading_policy),
     );
   }
 
@@ -243,6 +267,7 @@ export function resolvePayslipSnapshot(input: {
       extraction.document_quality_confidence,
       context,
       readings,
+      extraction.fields,input.reading_policy,
     ),
   );
 
@@ -283,6 +308,7 @@ export function resolvePayslipSnapshot(input: {
       extraction.document_quality_confidence,
       context,
       readings,
+      extraction.fields,input.reading_policy,
     ),
   );
 
@@ -302,6 +328,7 @@ export function resolvePayslipSnapshot(input: {
       extraction.document_quality_confidence,
       context,
       readings,
+      extraction.fields,input.reading_policy,
     ),
   );
 
@@ -309,7 +336,7 @@ export function resolvePayslipSnapshot(input: {
     if (!facts.has(path)) {
       facts.set(
         path,
-        makeFact(path, null, [], document.document_id, validation, extraction.document_quality_confidence, context,readings),
+        makeFact(path, null, [], document.document_id, validation, extraction.document_quality_confidence, context,readings,extraction.fields,input.reading_policy),
       );
     }
   }

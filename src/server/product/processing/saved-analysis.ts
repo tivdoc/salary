@@ -1,5 +1,5 @@
 import {loadJune2026TestAuthority,assertJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
-import {loadSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,assertSavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
+import {loadSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,june2026RegularReviewIdempotencyKey,JUNE_REGULAR_READING_POLICY,assertSavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
 import {SavedJune2026RegularRuntime} from './saved-june2026-regular';
 import {June2026RegularCatalog} from '@/engine/minimum-wage-june2026/regular-service/catalog';
 import {JUNE_REGULAR_REPORT_TEMPLATE} from '../reports/june2026-regular-service';
@@ -47,9 +47,10 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const regularState=!testAuthority&&input.month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage'
   ?await loadSavedJune2026RegularAuthority(input.context,job,order.id):null;
  const regularAuthority=regularState?.state==='ready'?regularState:null;
+ const regularReadingPolicy=!testAuthority&&input.month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage'?JUNE_REGULAR_READING_POLICY:undefined;
  const regular=regularAuthority?new SavedJune2026RegularRuntime(regularAuthority,job,order,z.string().parse(row.public_id)):null;
  const runtime=canonical??regular;
- const key=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):regularAuthority?june2026RegularIdempotencyKey(job,order.id,regularAuthority):savedMonthIdempotencyKey(job,order.id,input.month);
+ const key=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):regularAuthority?june2026RegularIdempotencyKey(job,order.id,regularAuthority):regularReadingPolicy?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,input.month);
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
  if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report)throw new Error('SAVED_REPLAY_SCOPE');return existing;}
  const snapshots=new SavedCaseSnapshot(input.context,job,input.month,testAuthority?{authority:testAuthority,orderId:order.id}:undefined,
@@ -66,6 +67,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   period:{start_date:`${input.month}-01`,end_date:end},as_of:now.slice(0,10),requested_topics:order.topics,
   sector:runtime?JUNE2026_MINIMUM_WAGE_POLICY.sector:'unverified',population:runtime?JUNE2026_MINIMUM_WAGE_POLICY.population:'unverified',mode:testAuthority?'synthetic_test':regularAuthority?.mode??'real',idempotency_key:key};
  const service=new CaseAnalysisService({clock:{now:()=>now},ids:{derive:savedAnalysisId},
+  readingPolicy:regularReadingPolicy,
   hashes:{hashCanonical:canonicalSha256,hashBytes:b=>createHash('sha256').update(b).digest('hex')},
   snapshots,repository:input.analysis.caseAnalysis,legalCatalog:testAuthority?new June2026IsolatedTestCatalog(testAuthority.assessment):regularAuthority?new June2026RegularCatalog(regularAuthority.authority):new June2026ReviewCatalog(),
   executor:runtime??{async execute(){throw new Error('REGULAR_AUTHORITY_REQUIRED');}},
@@ -84,7 +86,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   executionBlockers:runtime?()=>runtime.blockers():undefined,
   prepareExecutionContext:collection?async pins=>{
    if(pins.case_id!==job.case_id)throw new Error('SAVED_JUNE_CONTEXT_PREEXECUTION_SCOPE');
-   const loaded=await loadSavedJune2026AdmittedContext({context:input.context,job,orderId:order.id,analysisRunId:pins.analysis_run_id,...(testAuthority?{testAuthority}:{}),...(regularAuthority?{regularAuthority}:{})});
+   const loaded=await loadSavedJune2026AdmittedContext({context:input.context,job,orderId:order.id,analysisRunId:pins.analysis_run_id,...(testAuthority?{testAuthority}:{}),...(regularAuthority?{regularAuthority}:{}),...(regularReadingPolicy?{regularReadingPolicy}:{})});
    const actual=loaded.state==='context_loaded'?loaded.context.current:loaded;
    if(actual.case_id!==pins.case_id||actual.analysis_run_id!==pins.analysis_run_id
     ||(loaded.state==='context_loaded'&&(loaded.command_sha256!==pins.command_sha256

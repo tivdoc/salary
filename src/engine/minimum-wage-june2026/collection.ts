@@ -74,9 +74,14 @@ export function createJune2026CollectionTarget(input: {checkpoint: unknown; poli
   if (extraction.customer_readings !== undefined) throw Error('JUNE_COLLECTION_PROVIDER_CONFIRMATION_FORBIDDEN');
   if (extraction.document_id !== checkpoint.version_id || canonicalSha256(checkpoint.run.result) !== checkpoint.result_sha256) throw Error('JUNE_COLLECTION_CHECKPOINT_MISMATCH');
   const periods = extraction.fields.filter(candidate => candidate.field === 'salary_period');
-  if (checkpoint.period_mismatch || periods.length !== 1 || periods[0].source.document_id !== checkpoint.version_id
-    || !periods[0].normalized_value || periods[0].normalized_value.year !== 2026 || periods[0].normalized_value.month !== 6
-    || periods[0].normalized_value.start_date !== '2026-06-01' || periods[0].normalized_value.end_date !== '2026-06-30') throw Error('JUNE_COLLECTION_PERIOD_UNSUPPORTED');
+  // Header and date-range observations may independently describe the same
+  // month. Preserve every observation in the checkpoint; none can disagree,
+  // reuse another candidate's identity, or come from an unbound source/page.
+  if (checkpoint.period_mismatch || periods.length === 0
+    || new Set(periods.map(period => period.candidate_id)).size !== periods.length
+    || periods.some(period => period.source.document_id !== checkpoint.version_id || period.source.page > extraction.quality_metrics.page_count
+      || !period.normalized_value || period.normalized_value.year !== 2026 || period.normalized_value.month !== 6
+      || period.normalized_value.start_date !== '2026-06-01' || period.normalized_value.end_date !== '2026-06-30')) throw Error('JUNE_COLLECTION_PERIOD_UNSUPPORTED');
   if (extraction.additional_components.length > 32
     || new Set(extraction.additional_components.map(component => component.component_id)).size !== extraction.additional_components.length
     || extraction.additional_components.some(component => component.source.document_id !== checkpoint.version_id || component.source.page > extraction.quality_metrics.page_count)) throw Error('JUNE_COLLECTION_COMPONENT_INVENTORY_INVALID');

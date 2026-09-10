@@ -42,6 +42,8 @@ function actualPdfText(bytes:Uint8Array){
 it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source through saved canonical analysis and ordinary AI publication',async()=>{
  if(process.env.VERCEL||process.env.NODE_ENV!=='test')throw Error('REGULAR_LIVE_DEV_ONLY');
  const kind=z.enum(['clear','absent-hours','conflicting-hours']).parse(process.env.TIVDOC_JUNE_REGULAR_SOURCE);
+ const attempt=process.env.TIVDOC_JUNE_REGULAR_PROMPT_FIX;
+ if(attempt!==undefined&&(attempt!=='r5'||kind!=='clear'))throw Error('REGULAR_PROMPT_FIX_SCOPE');
  const source=createSolSingleBaseSource(kind),gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
  expect(execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()).toBe('');
  const {readDevEnvFile}=await import('../../../../scripts/supabase-dev-guard/dev-credential.mts'),env=readDevEnvFile();
@@ -49,14 +51,14 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
  const owner=client('TIVDOC_DEV_DATABASE_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),peer=client('TIVDOC_WORKER_POSTGRES_URL'),web=client('TIVDOC_WEB_POSTGRES_URL');
  const keys=z.object({NEXT_PUBLIC_SUPABASE_URL:z.literal('https://cpzrbidxftzqcfeqqusu.supabase.co'),SUPABASE_SERVICE_ROLE_KEY:z.string()}).parse(JSON.parse(readFileSync(process.env.TIVDOC_SAVED_STORAGE_CREDENTIALS_FILE!,'utf8')));
  const bucket=createClient(keys.NEXT_PUBLIC_SUPABASE_URL,keys.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}}).storage.from('salary-documents');
- const privatePath=`../release-work/june-regular-live-${kind}.private.json`;
+ const privatePath=`../release-work/june-regular-live-${kind}${attempt?'-'+attempt:''}.private.json`;
  const resumed=existsSync(privatePath)&&process.env.TIVDOC_JUNE_REGULAR_RESUME==='1';
  if(existsSync(privatePath)&&!resumed)throw Error('REGULAR_RETAINED_CASE_REQUIRES_EXPLICIT_RESUME');
  const prior=resumed?JSON.parse(readFileSync(privatePath,'utf8')):null;
  const caseId=prior?.caseId??randomUUID(),orderId=prior?.orderId??randomUUID(),sid='regular-live:'+randomUUID(),jti=randomUUID(),tenant='saved-case:'+caseId;
  let publicId=prior?.publicId??'',file:ReservedFile|null=prior?.file??null,phase='connect',failure:unknown=null,machine=false;
  let heldLease:{caseId:string;workerId:string;jobId:string;fencingToken:number}|null=null;
- const directory=`output/release-completion/june-regular/${kind}-${caseId.slice(0,8)}`;mkdirSync(directory,{recursive:true});
+ const directory=`output/release-completion/june-regular/${kind}${attempt?'-'+attempt:''}-${caseId.slice(0,8)}`;mkdirSync(directory,{recursive:true});
  const checks:string[]=[],runs:Record<string,unknown>[]=[],answers:unknown[]=[];
  const own=()=>writeFileSync(privatePath,JSON.stringify({caseId,orderId,publicId,file,sid,jti,gitSha,sourceSha256:source.sha256,kind,directory},null,2)+'\n');
  const providerKey=z.object({OPENAI_API_KEY:z.string()}).parse(JSON.parse(readFileSync('../release-work/live-provider-worker-private.json','utf8')));
@@ -130,6 +132,8 @@ it.skipIf(process.env.TIVDOC_JUNE_REGULAR_LIVE!=='1')('runs a real Hebrew source
    scope:'Critical fields for one-base-component June minimum-wage calculation; this is not whole-payslip accuracy or pension validation.',
    allNormalizedFields:fields,components:cp.run.result.final_extraction.additional_components},null,2)+'\n');
   for(const [name,value]of Object.entries(expected)){const candidates=fields.filter(f=>f.field===name);expect(candidates.length).toBeGreaterThan(0);expect(candidates.every(f=>canonicalSha256(f.normalized_value)===canonicalSha256(value))).toBe(true);}
+  expect(cp.run.result.final_extraction.additional_components).toHaveLength(1);
+  expect(cp.run.result.final_extraction.additional_components[0]).toMatchObject({semantic_kind:'hourly_base',amount:{currency:'ILS',minor_units:330000}});
   if(kind==='absent-hours')expect(rawHours).toEqual([]);
   phase='identified-completions';const readingRows=(await owner.query("select t.request_id,t.target from private.document_field_targets t join public.case_requests r on r.id=t.request_id where t.case_id=$1 and t.target->>'version_id'=$2 and r.answered_at is null",[caseId,file.versionId])).rows;
   for(const r of readingRows){const t=documentFieldTargetSchema.parse(r.target);if(!Object.hasOwn(expected,t.candidate.field))continue;expect(t.candidate.normalized_value).toEqual(expected[t.candidate.field]);

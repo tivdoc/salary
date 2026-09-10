@@ -15,6 +15,10 @@ const registrySchema=z.object({registry:z.object({namespace:z.enum(['real','isol
 const loadedSchema=z.object({state:z.literal('loaded'),registry:registrySchema,registry_sha256:sha,registry_revision:z.number().int().positive(),
  assessment:z.object({payload:z.unknown(),envelope:signedHumanDecisionEnvelopeSchema}).strict(),assessment_sha256:sha,evaluated_at:z.string()}).strict();
 const issued=new WeakSet<object>();
+export const JUNE_REGULAR_READING_POLICY='identified-agreeing-candidates-v1' as const;
+export function june2026RegularReviewIdempotencyKey(job:SourceJob,orderId:string){
+ return `june-regular-review:${canonicalSha256({base:savedMonthIdempotencyKey(job,orderId,'2026-06'),composition:'june2026-regular-service-v2',reading_policy:JUNE_REGULAR_READING_POLICY})}`;
+}
 export async function loadSavedJune2026RegularAuthority(context:PostgresTransactionContext,job:SourceJob,orderId:string){
  const rows=await context.client.query(statement('june_regular_authority',
   'select private.june2026_regular_authority($1::uuid,$2::uuid,$3,$4) authority',[job.case_id,orderId,job.revision,job.input_sha256]));
@@ -46,5 +50,5 @@ export function assertSavedJune2026RegularAuthority(value:SavedJune2026RegularAu
 export function june2026RegularIdempotencyKey(job:SourceJob,orderId:string,value:SavedJune2026RegularAuthority){
  assertSavedJune2026RegularAuthority(value,job,orderId);
  return `june-regular:${canonicalSha256({base:savedMonthIdempotencyKey(job,orderId,'2026-06'),registry:value.registry_sha256,
-  assessment:value.assessment_sha256,composition:'june2026-regular-service-v1'})}`;
+  assessment:value.assessment_sha256,composition:'june2026-regular-service-v2',reading_policy:JUNE_REGULAR_READING_POLICY})}`;
 }

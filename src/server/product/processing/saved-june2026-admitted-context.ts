@@ -1,5 +1,5 @@
 import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from "./saved-june2026-test-authority";
-import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,type SavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
+import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,june2026RegularReviewIdempotencyKey,JUNE_REGULAR_READING_POLICY,type SavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
 import 'server-only';
 import {z} from 'zod';
 import {employmentSnapshotSchema} from '@/engine/facts/snapshot';
@@ -23,7 +23,7 @@ const runSchema = z.object({analysis_run_id: z.uuid(), case_id: z.uuid(), comman
 const checkpointRowSchema = z.object({product_document_id: z.uuid(), version_id: z.uuid(), content_sha256: sha, mime_type: z.string(),
   size: z.coerce.number().int().safe().positive(), checkpoint_input_sha256: sha, checkpoint_result_sha256: sha, result: z.unknown()});
 const factsStageSchema = z.object({facts: employmentSnapshotSchema, facts_snapshot_sha256: sha}).strict();
-type Unsupported = 'multiple_documents' | 'legacy_source_provenance' | 'legacy_source_page_count' | 'extraction_incomplete';
+type Unsupported = 'multiple_documents' | 'legacy_source_provenance' | 'legacy_source_page_count' | 'extraction_incomplete' | 'document_period_unresolved';
 
 function blocked(code: Unsupported, caseId: string, analysisRunId: string) {
   return deepFreeze({schema_version: 'saved-june2026-factual-context-v1', state: 'context_blocked' as const, code,
@@ -36,7 +36,7 @@ function blocked(code: Unsupported, caseId: string, analysisRunId: string) {
  * Unsupported historical receipts are a review diagnostic, not a queue error;
  * malformed hashes, foreign authority and changed sources still fail closed. */
 export async function loadSavedJune2026AdmittedContext(input: {
-  context: PostgresTransactionContext; job: SourceJob; orderId: string; analysisRunId: string; testAuthority?: June2026TestAuthority;regularAuthority?:SavedJune2026RegularAuthority;
+  context: PostgresTransactionContext; job: SourceJob; orderId: string; analysisRunId: string; testAuthority?: June2026TestAuthority;regularAuthority?:SavedJune2026RegularAuthority;regularReadingPolicy?:typeof JUNE_REGULAR_READING_POLICY;
 }) {
   const {context} = input, job = sourceJobSchema.parse(input.job), orderId = z.uuid().parse(input.orderId), analysisRunId = z.uuid().parse(input.analysisRunId);
   if (job.mode !== 'draft') throw Error('SAVED_LIVE_COMPOSITION_NOT_ENABLED');
@@ -65,7 +65,7 @@ export async function loadSavedJune2026AdmittedContext(input: {
   if (run.case_id !== job.case_id || run.analysis_run_id !== analysisRunId || command.case_id !== job.case_id
     || run.source_revision !== job.revision || run.source_input_sha256 !== job.input_sha256 || run.actual_input_sha256 !== job.input_sha256
     || command.mode !== (input.testAuthority?'synthetic_test':input.regularAuthority?.mode??'real') || command.period.start_date !== '2026-06-01' || command.period.end_date !== '2026-06-30'
-    || canonicalSha256(command) !== run.command_sha256 || run.idempotency_key !== (input.testAuthority?june2026TestIdempotencyKey(job,orderId,input.testAuthority):input.regularAuthority?june2026RegularIdempotencyKey(job,orderId,input.regularAuthority):savedMonthIdempotencyKey(job, orderId, '2026-06'))
+    || canonicalSha256(command) !== run.command_sha256 || run.idempotency_key !== (input.testAuthority?june2026TestIdempotencyKey(job,orderId,input.testAuthority):input.regularAuthority?june2026RegularIdempotencyKey(job,orderId,input.regularAuthority):input.regularReadingPolicy===JUNE_REGULAR_READING_POLICY?june2026RegularReviewIdempotencyKey(job,orderId):savedMonthIdempotencyKey(job, orderId, '2026-06'))
     || command.idempotency_key !== run.idempotency_key || canonicalSha256(command.requested_topics) !== canonicalSha256(order.topics)) throw Error('SAVED_JUNE_CONTEXT_RUN_BINDING');
   const stageRows = await context.client.query(statement('saved_june_context_stages',
     `select s.stage,s.payload,s.payload_sha256 from public.engine_analysis_stage_versions s
@@ -127,10 +127,12 @@ export async function loadSavedJune2026AdmittedContext(input: {
   const pageCount = provenance.receipts[0].source_page_count!;
   if (provenance.receipts.some(receipt => receipt.source_page_count !== pageCount || receipt.source_size_bytes !== row.size || receipt.source_mime_type !== row.mime_type)) throw Error('SAVED_JUNE_CONTEXT_SOURCE_BYTES_BINDING');
   const collection = await readSavedJune2026Collection(context, job);
-  const admitted = prepareJune2026AdmittedContext({current: {case_id: job.case_id, analysis_run_id: analysisRunId, input_revision: job.revision, input_sha256: job.input_sha256,
+  let admitted:ReturnType<typeof prepareJune2026AdmittedContext>;
+  try{admitted = prepareJune2026AdmittedContext({current: {case_id: job.case_id, analysis_run_id: analysisRunId, input_revision: job.revision, input_sha256: job.input_sha256,
     order_id: orderId, month: '2026-06', topics: order.topics, document: {product_document_id: row.product_document_id, version_id: document.document_id, sha256: document.content_sha256, page_count: pageCount}},
     saved: {case_id: run.case_id, analysis_run_id: run.analysis_run_id, input_revision: run.source_revision, input_sha256: run.source_input_sha256,
-      order_id: order.id, month: '2026-06'}, canonicalStage, ruleInput: ruleInputs[topicIndex], checkpoint: row.result, extractionPolicyVersion: SAVED_EXTRACTION_POLICY, collection});
+      order_id: order.id, month: '2026-06'}, canonicalStage, ruleInput: ruleInputs[topicIndex], checkpoint: row.result, extractionPolicyVersion: SAVED_EXTRACTION_POLICY, collection});}
+  catch(error){if(error instanceof Error&&error.message==='JUNE_COLLECTION_PERIOD_UNSUPPORTED')return blocked('document_period_unresolved',job.case_id,analysisRunId);throw error;}
   const assessment = prepareJune2026AssessmentPacket({context: admitted, facts: canonicalStage.facts});
   return deepFreeze({schema_version: 'saved-june2026-factual-context-v1', state: 'context_loaded' as const, context: admitted, provenance,
     admission_assessment: assessment, facts:canonicalStage.facts,

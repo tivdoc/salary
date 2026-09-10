@@ -59,7 +59,61 @@ function fixture() {
   return {input, facts, extraction, component, checkpoint, collection, repin, addAnswer};
 }
 
+function multipleReadingFixture(field: 'regular_hours' | 'salary_period' = 'regular_hours') {
+  const f = fixture(), first = f.extraction.fields.find(candidate => candidate.field === field)!;
+  first.source.text_fragment = 'First independently observed cell';
+  const second = {...structuredClone(first), candidate_id: String(randomUUID()), source: {...first.source, text_fragment: 'Second independently observed cell'}};
+  f.extraction.fields.push(second); f.repin();
+  const fact = f.facts.facts.find(item => item.path === (field === 'regular_hours' ? 'work.regular_hours' : 'documents.period'))!;
+  fact.provenance = [first, second].map(candidate => ({source_type: 'documented',
+    source_reference: {kind: 'document', document_id: candidate.source.document_id, locator: {page: candidate.source.page, text_span: candidate.source.text_fragment}},
+    read_by: 'machine', verified: true, customer_confirmation: {actor_kind: 'customer', case_id: f.checkpoint.case_id, document_id: f.checkpoint.version_id,
+      candidate_id: candidate.candidate_id, candidate_sha256: canonicalSha256(candidate), source_sha256: f.checkpoint.input_sha256,
+      normalized_extraction_sha256: canonicalSha256(f.extraction), extraction_result_sha256: f.checkpoint.result_sha256,
+      target_sha256: canonicalSha256({candidate: candidate.candidate_id}), month: '2026-06', request_id: randomUUID(), answer_revision: 1,
+      identity_id: randomUUID(), confirmed_at: now}}));
+  f.repin(); return {...f, first, second, fact};
+}
+
 describe('June2026 current-source factual admission context', () => {
+  it.each(['regular_hours', 'salary_period'] as const)('binds every equal %s observation and its own identified source reading', field => {
+    const f = multipleReadingFixture(field), before = structuredClone(f.input), result = prepareJune2026AdmittedContext(f.input);
+    expect(result.state).toBe('factual_context_ready');
+    const bindings = result.bound_facts.filter(binding => binding.path === f.fact.path);
+    expect(bindings).toEqual([f.first, f.second].map(candidate => ({path: f.fact.path, fact_id: f.fact.fact_id,
+      fact_sha256: canonicalSha256(f.fact), candidate_id: candidate.candidate_id, candidate_sha256: canonicalSha256(candidate)})));
+    expect(result.bound_facts).toHaveLength(6); expect(result.source_fact_bindings).toHaveLength(2);
+    expect(result.legal_activation).toBe(false); expect(result.publication_allowed).toBe(false);
+    expect(f.input).toEqual(before);
+  });
+  it.each(['unconfirmed', 'omitted_source', 'repeated_source', 'foreign', 'stale_candidate', 'stale_checkpoint', 'same_request', 'same_target', 'swapped_candidate'] as const)(
+    'blocks %s in an otherwise equal, confirmed multi-observation fact', change => {
+      const f = multipleReadingFixture(), source = f.fact.provenance[1], firstSource = f.fact.provenance[0];
+      if (source.source_type !== 'documented' || !source.customer_confirmation || firstSource.source_type !== 'documented' || !firstSource.customer_confirmation) throw Error('EXPECTED_READING');
+      if (change === 'unconfirmed') {delete source.customer_confirmation; source.verified = false;}
+      if (change === 'omitted_source') f.fact.provenance.pop();
+      if (change === 'repeated_source') f.fact.provenance[1] = structuredClone(firstSource);
+      if (change === 'foreign') source.source_reference.document_id = randomUUID();
+      if (change === 'stale_candidate') source.customer_confirmation!.candidate_sha256 = 'f'.repeat(64);
+      if (change === 'stale_checkpoint') source.customer_confirmation!.extraction_result_sha256 = 'f'.repeat(64);
+      if (change === 'same_request') source.customer_confirmation!.request_id = firstSource.customer_confirmation.request_id;
+      if (change === 'same_target') source.customer_confirmation!.target_sha256 = firstSource.customer_confirmation.target_sha256;
+      if (change === 'swapped_candidate') source.customer_confirmation!.candidate_id = f.first.candidate_id;
+      f.repin(); const result = prepareJune2026AdmittedContext(f.input);
+      expect(result).toMatchObject({state: 'factual_context_blocked', source_fact_bindings: []});
+      expect(result.factual_issues).toContainEqual({field: f.fact.path, reason: 'current_document_fact_binding_required'});
+    });
+  it.each(['null', 'conflict', 'foreign', 'page', 'duplicate_id'] as const)('does not discard the %s hours observation to use an agreeable one', change => {
+    const f = multipleReadingFixture();
+    if (f.second.field !== 'regular_hours') throw Error('EXPECTED_HOURS');
+    if (change === 'null') f.second.normalized_value = null;
+    if (change === 'conflict') f.second.normalized_value = {amount: '120', unit: 'hours_per_month'};
+    if (change === 'foreign') f.second.source.document_id = randomUUID();
+    if (change === 'page') f.second.source.page = f.extraction.quality_metrics.page_count + 1;
+    if (change === 'duplicate_id') f.second.candidate_id = f.first.candidate_id;
+    f.repin();
+    expect(prepareJune2026AdmittedContext(f.input)).toMatchObject({state: 'factual_context_blocked', source_fact_bindings: []});
+  });
   it('materializes exact same-run operand refs without promoting OCR, declarations, component labels or catalog readiness', () => {
     const f = fixture(), before = structuredClone(f.input);
     f.addAnswer({kind: 'component', componentId: f.component.component_id}, JUNE2026_COMPONENT_DECLARATIONS.base_salary);

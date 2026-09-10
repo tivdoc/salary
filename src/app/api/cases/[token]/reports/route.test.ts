@@ -1,21 +1,38 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import {createHash} from 'node:crypto';
-const state=vi.hoisted(()=>({bytes:'original',session:true,rpc:vi.fn(),engineering:false,financialRead:vi.fn(),canonicalRead:vi.fn()}));
+const state=vi.hoisted(()=>({bytes:'original',session:true,rpc:vi.fn(),engineering:false,regular:false,financialRead:vi.fn(),canonicalRead:vi.fn(),regularRead:vi.fn()}));
 vi.mock('@/server/platform/capabilities/stable-http-entrypoint',()=>({guardStableHttpEntrypoint:vi.fn()}));
 vi.mock('@/server/product/case-access/session-cookie',()=>({readCaseSessionCookie:async()=> 'session'}));
 vi.mock('@/server/product/case-access/service',()=>({resolveIdentitySession:async()=>state.session?{identity_id:'owner'}:null,listIdentityCases:async()=>[{case_id:'case-a',public_id:'TV-OWN00001'}]}));
 vi.mock('@/server/product/case-access/db',()=>({resolveCaseAccessDb:async()=>({rpc:state.rpc})}));
-vi.mock('@/server/product/reports/customer-reports',()=>({customerReports:async()=>({reports:[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}]})}));
+vi.mock('@/server/product/reports/customer-reports',()=>({customerReports:async()=>({reports:[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',...(state.regular?{document:{schema_version:'tivdoc-report-document-v3',execution_authority:{namespace:'isolated_test'}}}:{})}]})}));
 // This HTTP unit owns port/auth/byte behavior. The actual server-only reader
 // and its canonical reconstruction are exercised by the DEV integration proof.
 vi.mock('@/server/product/reports/june2026-canonical-test',()=>({readJune2026CanonicalTest:state.canonicalRead}));
+vi.mock('@/server/product/reports/june2026-regular-artifact',()=>({readJune2026RegularArtifact:state.regularRead}));
 vi.mock('@/server/product/reports/dev-financial-customer',()=>({devFinancialPreviewEnabled:()=>state.engineering,devFinancialCustomerReports:state.financialRead}));
 vi.mock('@/server/product/reports/report-artifacts',()=>({savedReportPdf:()=>Buffer.from('%PDF-synthetic')}));
 vi.mock('@/lib/supabase-admin',()=>({getSupabaseAdmin:()=>({storage:{from:()=>({download:async()=>({data:new Blob([state.bytes]),error:null})})}})}));
 import {GET,POST} from './route';
 const report='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',version='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const context=(token='TV-OWN00001')=>({params:Promise.resolve({token})});
-beforeEach(()=>{state.session=true;state.bytes='original';state.engineering=false;state.financialRead.mockReset();state.canonicalRead.mockReset();state.rpc.mockReset();state.rpc.mockResolvedValue([{value:{path:`cases/case-a/versions/${version}.pdf`,mime:'application/pdf',size:8,sha256:createHash('sha256').update('original').digest('hex')}}]);});
+beforeEach(()=>{state.session=true;state.bytes='original';state.engineering=false;state.regular=false;state.regularRead.mockReset();state.financialRead.mockReset();state.canonicalRead.mockReset();state.rpc.mockReset();state.rpc.mockResolvedValue([{value:{path:`cases/case-a/versions/${version}.pdf`,mime:'application/pdf',size:8,sha256:createHash('sha256').update('original').digest('hex')}}]);});
+
+describe('ordinary signed canonical report transport',()=>{
+ it('serves the saved same-run bytes on the ordinary route and refuses stale or missing artifacts',async()=>{
+  state.regular=true;state.regularRead.mockResolvedValue({current:true,report:{html:Buffer.from('<p>same-run 240.58</p>'),pdf:Buffer.from('%PDF-same-run 240.58')}});
+  const url=`https://test/api?report=${report}`;
+  expect(await (await GET(new Request(url+'&format=html'),context())).text()).toBe('<p>same-run 240.58</p>');
+  expect(await (await GET(new Request(url),context())).text()).toBe('%PDF-same-run 240.58');
+  expect(state.regularRead).toHaveBeenCalledWith('case-a','owner',report);
+  state.regularRead.mockResolvedValue({current:false});expect((await GET(new Request(url),context())).status).toBe(410);
+  state.regularRead.mockResolvedValue(null);expect((await GET(new Request(url),context())).status).toBe(503);
+ });
+ it('refuses foreign access before invoking the ordinary canonical store',async()=>{
+  state.regular=true;expect((await GET(new Request(`https://test/api?report=${report}`),context('TV-FOREIGN1'))).status).toBe(404);
+  expect(state.regularRead).not.toHaveBeenCalled();
+ });
+});
 describe('saved report artifact HTTP ownership and bytes',()=>{
  it('does not return a report or touch source RPC for a foreign case or no session',async()=>{
   expect((await GET(new Request(`https://test/api?report=${report}`),context('TV-FOREIGN1'))).status).toBe(404);

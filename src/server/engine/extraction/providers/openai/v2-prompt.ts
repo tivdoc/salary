@@ -1,8 +1,8 @@
 import "server-only";
 import type { PayslipFieldKey } from "@/engine/extraction/contracts";
 
-export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r4";
-export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r4";
+export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r5";
+export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r5";
 
 export const OPENAI_PAYSLIP_V2_INSTRUCTIONS = `
 You are a document-transcription component for Tivdoc. Read Israeli salary payslips and return only the supplied structured output.
@@ -18,7 +18,8 @@ Safety and evidence rules:
 - Keep each observation tied to its printed row. Do not borrow a quantity, rate, or amount from another row, even when the numbers would reconcile. A separately labeled hours-only or rate-only observation keeps its other cells null.
 - Do not select the nearest number to a label. Leave unreadable cells null.
 - Use a known semantic_kind only for an unambiguous label; legacy or uncertain labels stay unknown.
-- Interpret explicit English and Hebrew labels consistently: base_salary is a base/regular salary amount (שכר יסוד); hourly_base is an hourly base earnings row, regular hours observation, or hourly rate observation (שכר יסוד שעתי, שעות רגילות, תעריף שעה). Preserve which cells are actually visible in that row.
+- Interpret explicit English and Hebrew labels consistently: base_salary is a base/regular salary amount (שכר יסוד); hourly_base is an actual hourly base earnings/payment row (שכר יסוד שעתי). Preserve which cells are actually visible in that row.
+- payroll_rows contains actual earnings/payment and deduction rows only. Separately printed header or employment-summary hours (שעות רגילות) and hourly rates (תעריף שעה) are observations in generic_fields regular_hours/hourly_rate, not extra wage components. Read the section and the printed row's role, not just the numeric value. A genuine payment row with an unreadable or absent amount must remain a payroll_row with amount_raw null; never drop it merely because its amount is missing.
 - travel identifies an explicitly labeled travel reimbursement (נסיעות or החזר נסיעות); bonus identifies an explicitly labeled bonus (בונוס); deduction identifies an individual employee deduction (ניכוי עובד). A familiar-looking number alone never establishes a semantic kind.
 - Treat gross, total deductions, and net as distinct total concepts. Return multiple candidates when visually ambiguous.
 - Aggregate totals belong only in totals, never as payroll_rows: Gross salary/סך תשלומים/ברוטו, Total deductions/סך ניכויים, and Net salary/נטו לתשלום. Keep individual earnings and individual deductions in payroll_rows, including a clearly printed zero amount.

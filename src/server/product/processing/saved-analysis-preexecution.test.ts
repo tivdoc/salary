@@ -31,7 +31,7 @@ function setup() {
   const h = createIntegratedFullSystemHarness([fixture.stored]);
   const job: SourceJob = {schema_version: 'saved-case-work-v1', case_id: fixture.command.case_id, revision: 1, input_sha256: 'a'.repeat(64), mode: 'draft'};
   const context: PostgresTransactionContext = {transaction_id: 'unit-composition-only', client: {async query(query) {
-    if (query.name === 'june_test_authority') return {rows:[{authority:null}],row_count:1};
+    if (query.name === 'june_test_authority'||query.name==='june_regular_authority') return {rows:[{authority:null}],row_count:1};
     if (query.name !== 'saved_analysis_order') throw Error(`UNEXPECTED_SQL:${query.name}`);
     return {rows: [{created_at: '2026-09-09T20:00:00.000Z', engine_revision: 1}], row_count: 1};
   }}};

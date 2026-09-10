@@ -333,7 +333,7 @@ export function decodeDependencies(value: unknown): PinnedAnalysisDependencies {
     "parameter_version_ids", "rule_spec_versions", "code_version", "template_version",
   ]);
   for (const hash of [row.extraction_snapshot_sha256, row.facts_snapshot_sha256, row.catalog_sha256]) assertSha256(hash);
-  if (row.code_version !== "case-analysis@0.6.0" && row.code_version !== "case-analysis@0.6.1" && row.code_version !== "case-analysis@0.6.2" && row.code_version !== "case-analysis@0.6.3" && row.code_version !== "case-analysis@0.6.4" && row.code_version !== "case-analysis@0.6.5") throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
+  if (row.code_version !== "case-analysis@0.6.0" && row.code_version !== "case-analysis@0.6.1" && row.code_version !== "case-analysis@0.6.2" && row.code_version !== "case-analysis@0.6.3" && row.code_version !== "case-analysis@0.6.4" && row.code_version !== "case-analysis@0.6.5" && row.code_version !== "case-analysis@0.6.6") throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
   return Object.freeze({
     extraction_snapshot_sha256: sha256(row.extraction_snapshot_sha256),
     facts_snapshot_sha256: sha256(row.facts_snapshot_sha256),

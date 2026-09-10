@@ -1,7 +1,7 @@
 import {JUNE2026_TEST_READINESS,decodeJune2026TestReadiness} from "../minimum-wage-june2026/test-catalog.ts";
 import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts.ts";
 import { employmentSnapshotSchema, type EmploymentSnapshot } from "../facts/snapshot.ts";
-import { resolvedPayslipFactPaths, resolvePayslipSnapshot } from "../extraction/resolver.ts";
+import { resolvedPayslipFactPaths, resolvePayslipSnapshot,IDENTIFIED_AGREEING_CANDIDATES_POLICY } from "../extraction/resolver.ts";
 import { validatePayslipGate0 } from "../extraction/validation.ts";
 import { canonicalSha256, canonicalStringify, deepFreeze } from "../rule-runtime/canonical.ts";
 import type { RuleInputSnapshot } from "../wave1/contracts.ts";
@@ -25,6 +25,7 @@ import { WAVE3_TOPICS } from "../wave3/contracts.ts";
 import {
   CaseAnalysisError,
   CASE_ANALYSIS_CODE_VERSION,
+  CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION,
   type CaseAnalysisLogPort,
   type CaseAnalysisRepositoryPort,
   type CaseAnalysisStage,
@@ -78,6 +79,7 @@ export type CaseAnalysisServiceDependencies = Readonly<{
   reportRegistration: ReportRegistrationPort;
   logs: CaseAnalysisLogPort;
   templateVersion: string;
+  readingPolicy?:typeof IDENTIFIED_AGREEING_CANDIDATES_POLICY;
   /** Load authenticated current-source context after canonical input stages
    * persist, before any executor or report. Failure aborts the caller's
    * transaction. This hook cannot grant legal readiness or publication. */
@@ -196,6 +198,7 @@ function projectFacts(input: Readonly<{
   analysisRunId: string;
   createdAt: string;
   ids: DeterministicIdPort;
+  readingPolicy?:typeof IDENTIFIED_AGREEING_CANDIDATES_POLICY;
 }>): EmploymentSnapshot {
   const documentFacts: CanonicalFact[][] = [];
   for (const [index, document] of input.stored.documents.entries()) {
@@ -212,6 +215,7 @@ function projectFacts(input: Readonly<{
       document,
       extraction,
       validation,
+      ...(input.readingPolicy?{reading_policy:input.readingPolicy}:{}),
       context: {
         snapshot_id: input.ids.derive("document-fact-snapshot", canonicalSha256({ analysis_run_id: input.analysisRunId, index })),
         case_id: input.command.case_id,
@@ -407,7 +411,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       provider_independent: true,
     });
 
-    const facts = projectFacts({ command, stored, analysisRunId, createdAt, ids: this.dependencies.ids });
+    const facts = projectFacts({ command, stored, analysisRunId, createdAt, ids: this.dependencies.ids,readingPolicy:this.dependencies.readingPolicy });
     const factsSnapshotSha256 = this.dependencies.hashes.hashCanonical(facts);
     await this.stage(analysisRunId, "canonical_facts", { facts, facts_snapshot_sha256: factsSnapshotSha256 });
 
@@ -436,7 +440,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       rule_spec_versions: sortStrings([...new Set(selections.flatMap((selection) => selection.rule_spec_id && selection.rule_spec_version
         ? [`${selection.rule_spec_id}@${selection.rule_spec_version}`]
         : []))]),
-      code_version: CASE_ANALYSIS_CODE_VERSION,
+      code_version: this.dependencies.readingPolicy===IDENTIFIED_AGREEING_CANDIDATES_POLICY?CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION:CASE_ANALYSIS_CODE_VERSION,
       template_version: this.dependencies.templateVersion,
     });
     await this.stage(analysisRunId, "analysis_run", { selections, dependencies });

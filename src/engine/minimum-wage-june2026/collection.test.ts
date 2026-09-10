@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import {buildSyntheticCaseFixture} from '../case-analysis/synthetic-fixtures.ts';
 import {normalizedAdditionalComponentSchema, normalizedPayslipExtractionSchema} from '../extraction/payslip.ts';
@@ -31,6 +32,41 @@ function fixture(subject: June2026CollectionSelector = {kind: 'applicability', f
 const componentSelector = {kind: 'component', componentId: '11111111-1111-4111-8111-111111111111'} as const;
 
 describe('June2026 exact-source customer declarations', () => {
+  it('retains independent identical header/range observations without selecting or modifying either one', () => {
+    const f = fixture(), period = f.extraction.fields.find(candidate => candidate.field === 'salary_period')!;
+    f.extraction.fields.push({...structuredClone(period), candidate_id: randomUUID(), source: {...period.source, text_fragment: 'June 1 through June 30, 2026'}});
+    f.rehash(); const before = structuredClone(f.checkpoint), target = f.target();
+    expect(target.extraction_result_sha256).toBe(canonicalSha256(f.checkpoint.run.result));
+    expect(resolveJune2026CollectionAnswer(f.input()).state).toBe('declared');
+    expect(f.checkpoint).toEqual(before);
+    expect(f.extraction.fields.filter(candidate => candidate.field === 'salary_period')).toHaveLength(2);
+  });
+  it.each(['missing', 'null', 'conflict', 'foreign', 'page', 'duplicate_id'] as const)('refuses %s in a set of period observations', change => {
+    const f = fixture(), period = f.extraction.fields.find(candidate => candidate.field === 'salary_period')!;
+    if (period.field !== 'salary_period' || !period.normalized_value) throw Error('EXPECTED_PERIOD');
+    const second = {...structuredClone(period), candidate_id: String(randomUUID()), source: {...period.source, text_fragment: 'Another printed period'}};
+    if (change === 'missing') f.extraction.fields = f.extraction.fields.filter(candidate => candidate.field !== 'salary_period');
+    else {
+      if (change === 'null') second.normalized_value = null;
+      if (change === 'conflict') second.normalized_value = {...period.normalized_value, start_date: '2026-06-02'};
+      if (change === 'foreign') second.source.document_id = randomUUID();
+      if (change === 'page') second.source.page = f.extraction.quality_metrics.page_count + 1;
+      if (change === 'duplicate_id') second.candidate_id = period.candidate_id;
+      f.extraction.fields.push(second);
+    }
+    f.rehash(); expect(f.target).toThrow('JUNE_COLLECTION_PERIOD_UNSUPPORTED');
+  });
+  it.skipIf(process.env.TIVDOC_JUNE_LIVE_EQUIVALENT_REPLAY !== '1')('opens a collection target from the actual retained Sol checkpoint with both identical periods intact', () => {
+    const path = 'output/release-completion/june-regular/clear-6d31d6ee/checkpoint.json', bytes = readFileSync(path);
+    const checkpoint = JSON.parse(bytes.toString('utf8'));
+    const periods = checkpoint.run.result.final_extraction.fields.filter((candidate: {field: string}) => candidate.field === 'salary_period');
+    expect(periods).toHaveLength(2);
+    expect(periods[0].candidate_id).not.toBe(periods[1].candidate_id);
+    expect(periods[0].normalized_value).toEqual(periods[1].normalized_value);
+    expect(createJune2026CollectionTarget({checkpoint, policyVersion: 'saved-payslip-v21-p95-v1', subject: {kind: 'earnings_completeness'}}))
+      .toMatchObject({extraction_result_sha256: checkpoint.result_sha256, version_id: checkpoint.version_id});
+    expect(readFileSync(path)).toEqual(bytes);
+  });
   it('binds the real immutable version/checkpoint/period/policy without manufacturing a legal confirmation', () => {
     const f = fixture(), before = structuredClone(f.checkpoint), input = f.input(), target = f.target();
     expect(target).toMatchObject({case_id: f.checkpoint.case_id, product_document_id: f.checkpoint.product_document_id,
