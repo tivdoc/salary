@@ -1,17 +1,25 @@
 import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
-import type {CustomerDocumentReading} from '@/engine/extraction/customer-reading';
-import {documentFieldTargetSchema} from '../reports/document-field-confirmation';
-import {resolveDocumentFieldVerification,materializeDocumentFieldVerification} from '../reports/reading-verification';
+import type {CustomerDocumentReading,CustomerDocumentRowCellReading,CustomerDocumentScopeReading,CustomerSourceTranscription} from '@/engine/extraction/customer-reading';
+import {hasPayslipReadingAnnotations} from '@/engine/extraction/reading-resolution';
+import {documentReadingTargetSchema} from '../reports/document-field-confirmation';
+import {resolveDocumentReadingVerification,materializeDocumentVerification} from '../reports/reading-verification';
 const answerSchema=z.object({id:z.uuid(),case_id:z.uuid(),scope_month:z.string(),code:z.string(),answer_kind:z.literal('choice'),answer:z.string(),
- answer_revision:z.number().int().positive(),answer_identity_id:z.uuid(),answer_created_at:z.string().datetime({offset:true}),field_target:documentFieldTargetSchema});
+ answer_revision:z.number().int().positive(),answer_identity_id:z.uuid(),answer_created_at:z.string().datetime({offset:true}),field_target:documentReadingTargetSchema});
 
 export function savedDocumentFieldReadings(input:{caseId:string;month:string;policyVersion:string;journal:unknown;checkpoint:unknown}):readonly CustomerDocumentReading[]{
+ return savedDocumentReadings(input).scalar;
+}
+
+/** All variants use the same immutable authenticated answer journal. Unknown
+ * and unreadable revoke only their own active reading; provider bytes stay intact. */
+export function savedDocumentReadings(input:{caseId:string;month:string;policyVersion:string;journal:unknown;checkpoint:unknown}){
  const {answers=[]}=z.object({answers:z.array(z.record(z.string(),z.unknown())).optional()}).parse(input.journal);
  const checkpoint=z.object({version_id:z.uuid(),run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema})})}).parse(input.checkpoint);
- if(checkpoint.run.result.final_extraction.customer_readings!==undefined)throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
- const readings:CustomerDocumentReading[]=[],seen=new Set<string>();
+ const extraction=checkpoint.run.result.final_extraction;
+ if(hasPayslipReadingAnnotations(extraction))throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
+ const readings:{scalar:CustomerDocumentReading[];row_cell:CustomerDocumentRowCellReading[];source_scope:CustomerDocumentScopeReading[];source_transcription:CustomerSourceTranscription[]}={scalar:[],row_cell:[],source_scope:[],source_transcription:[]},seen=new Set<string>();
  for(const value of answers){
   if(typeof value.code!=='string'||!value.code.startsWith('document_field:'))continue;
   const answer=answerSchema.parse(value);
@@ -19,11 +27,17 @@ export function savedDocumentFieldReadings(input:{caseId:string;month:string;pol
   if(seen.has(answer.id))throw Error('SAVED_REQUEST_ID_AMBIGUOUS');seen.add(answer.id);
   if(answer.code!==`document_field:${answer.field_target.target_sha256}`)throw Error('REQUEST_FIELD_TARGET_INVALID');
   if(answer.field_target.version_id!==checkpoint.version_id||answer.scope_month!==input.month)continue;
-  const result=resolveDocumentFieldVerification({target:answer.field_target,currentCheckpoint:input.checkpoint,policyVersion:input.policyVersion,
+  const result=resolveDocumentReadingVerification({target:answer.field_target,currentCheckpoint:input.checkpoint,policyVersion:input.policyVersion,
    caseId:input.caseId,month:input.month,requestId:answer.id,answerRevision:answer.answer_revision,identityId:answer.answer_identity_id,answeredAt:answer.answer_created_at,answer:answer.answer});
-  const reading=materializeDocumentFieldVerification(result,canonicalSha256(checkpoint.run.result.final_extraction));
-  if(reading)readings.push(reading);
+  const reading=materializeDocumentVerification(result,canonicalSha256(extraction));
+  if(reading?.kind==='scalar')readings.scalar.push(reading.reading);
+  else if(reading?.kind==='row_cell')readings.row_cell.push(reading.reading);
+  else if(reading?.kind==='source_scope')readings.source_scope.push(reading.reading);
+  else if(reading?.kind==='source_transcription')readings.source_transcription.push(reading.reading);
  }
- if(new Set(readings.map(r=>r.candidate_id)).size!==readings.length)throw Error('REQUEST_FIELD_READING_AMBIGUOUS');
+ if(new Set(readings.scalar.map(r=>r.candidate_id)).size!==readings.scalar.length
+  ||new Set(readings.row_cell.map(r=>`${r.component_id}:${r.cell}`)).size!==readings.row_cell.length
+  ||new Set(readings.source_scope.map(r=>r.candidate_id)).size!==readings.source_scope.length
+  ||new Set(readings.source_transcription.map(r=>r.subject.kind==='balance_unit'?`balance_unit:${r.subject.original_candidate.candidate_id}`:r.subject.kind)).size!==readings.source_transcription.length)throw Error('REQUEST_FIELD_READING_AMBIGUOUS');
  return readings;
 }

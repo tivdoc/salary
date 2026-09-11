@@ -52,7 +52,8 @@ const checkpointSchema=z.object({schema_version:z.literal('tivdoc-saved-extracti
  * This pure builder checks content and receipt consistency, not DB authority. */
 export function createDocumentTranscriptionTarget(input:{checkpoint:unknown;policyVersion:string;subject:DocumentTranscriptionSelector}):DocumentTranscriptionTarget{
  const checkpoint=checkpointSchema.parse(input.checkpoint),extraction=checkpoint.run.result.final_extraction;
- if(extraction.customer_readings!==undefined)throw Error('TRANSCRIPTION_PROVIDER_READINGS_FORBIDDEN');
+ if(extraction.customer_readings!==undefined||extraction.customer_row_readings!==undefined||extraction.customer_scope_readings!==undefined
+  ||extraction.customer_source_transcriptions!==undefined||extraction.source_reading_context!==undefined)throw Error('TRANSCRIPTION_PROVIDER_READINGS_FORBIDDEN');
  if(canonicalSha256(checkpoint.run.result)!==checkpoint.result_sha256||extraction.document_id!==checkpoint.version_id)throw Error('TRANSCRIPTION_SOURCE_MISMATCH');
  if(checkpoint.expected_month!=='2026-06'||checkpoint.period_mismatch)throw Error('TRANSCRIPTION_PERIOD_UNSUPPORTED');
  const periods=extraction.fields.filter(field=>field.field==='salary_period');

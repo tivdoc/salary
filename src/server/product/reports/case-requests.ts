@@ -16,10 +16,12 @@ import {HOURS_CONFLICT_NAMESPACE} from './document-hours-conflict-answer';
 import {z} from 'zod';
 import {reviewCompletionTargetSchema,type ReviewCompletionTarget} from '@/engine/document-review/completions';
 import type {DocumentReadingDisplay} from '@/lib/document-reading-display';
-import {documentFieldTargetSchema} from './document-field-confirmation';
+import {documentReadingTargetSchema} from './document-field-confirmation';
+import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentFieldVerificationDisplay} from './reading-verification';
 import {privateDocumentReviewReports,privateDocumentReviewArtifact} from './private-document-review';
-import {reviewRequestsCoveredByFieldReadings} from './review-field-coverage';
+import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,REVIEW_DEFERRABLE_SCALAR_FIELDS} from './review-field-coverage';
+import {validateSavedReadingAnswer} from './validate-reading-answer';
 
 const reviewNamespace='document_review:';
 const reviewStateSchema=z.object({request_id:z.uuid(),source_current:z.boolean(),target:reviewCompletionTargetSchema.nullable()}).strict();
@@ -44,7 +46,7 @@ type DocumentUploadState=Omit<z.infer<typeof reviewUploadStateSchema>,'request_i
 
 const conflictSourceSchema=z.object({conflict_reason:z.enum(['conflicting_observations','provider_reported_conflict']),
  source_observations:z.array(z.object({candidate_id:z.uuid(),raw_value:z.string().max(1000).nullable(),page:z.number().int().positive().max(100),source_label:z.string().max(1000).nullable()}).strict()).max(12)}).strict();
-export type StoredRequest = ThreadRequest & Readonly<{ id: string; covered_by_field_request_id?:string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; document_upload_state?:DocumentUploadState; reading_display?:DocumentReadingDisplay; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
+export type StoredRequest = ThreadRequest & Readonly<{ id: string; covered_by_field_request_id?:string; not_required_for_current_review?:true; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; document_upload_state?:DocumentUploadState; reading_display?:DocumentReadingDisplay; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
 
 export function documentRequestSatisfied(request:StoredRequest):boolean{
  return request.source_current!==false&&request.document_upload_state?.state==='satisfied'&&request.document_upload_state.information_satisfied===true;
@@ -95,11 +97,15 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const fieldTargets=identityId&&bound.length?await store.rpc<{request_id:string;target:unknown}>('case_request_field_reading_targets',{target_case:caseId,target_identity:identityId}):[];
   const displays=new Map<string,DocumentReadingDisplay>();
   for(const entry of fieldTargets){
-   const target=documentFieldTargetSchema.parse(entry.target),request=bound.find(r=>r.id===entry.request_id);
+   const target=documentReadingTargetSchema.parse(entry.target),request=bound.find(r=>r.id===entry.request_id);
    if(!request||target.case_id!==caseId||request.code!==`document_field:${target.target_sha256}`||displays.has(entry.request_id))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
    const display=documentFieldVerificationDisplay(target);
    displays.set(entry.request_id,{question:display.question,field:display.field,raw_value:display.raw_value,
-    page:display.source.page,text_fragment:display.source.text_fragment,bounding_box:display.source.bounding_box});
+    page:display.source.page,text_fragment:display.source.text_fragment,bounding_box:display.source.bounding_box,
+    ...(target.schema_version==='document-row-cell-confirmation-v1'?{row_context:{group_id:canonicalSha256({case_id:target.case_id,product_document_id:target.product_document_id,
+     version_id:target.version_id,source_sha256:target.source_sha256,month:target.month,policy_version:target.policy_version,
+      extraction_result_sha256:target.extraction_result_sha256,original_component:target.original_component}),label:target.original_component.source_label,cell:target.cell}}:{}),
+    ...(target.schema_version==='document-source-transcription-v1'?{transcription_context:{kind:target.subject.kind}}:{})});
   }
   const juneStates=identityId&&june.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_june_states',{target_case:caseId,target_identity:identityId}):[];
   const transcriptions=rows.filter(row=>row.code.startsWith('document_transcription:'));
@@ -117,10 +123,11 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
    ||uploadStates.some(s=>!documentReviews.some(r=>r.id===s.request_id)||reviewStates.find(r=>r.request_id===s.request_id)?.source_current!==s.source_current)))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates,...reviewStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts,...reviews];
   if (identityId && allBound.length && (states.length !== allBound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!allBound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
-  const covered=new Map<string,string>();
+  const covered=new Map<string,string>(),notRequired=new Set<string>();
   // Two bounded protected lookups per case, only when both question families
   // can overlap. No artifact, stale artifact or no exact match means no hiding.
-  if(identityId&&reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
+  if(identityId&&(reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
+   ||[...displays.values()].some(display=>display.row_context||display.transcription_context||display.field.startsWith('source_scope.')||REVIEW_DEFERRABLE_SCALAR_FIELDS.some(field=>field===display.field)))
    &&fieldTargets.some(t=>bound.some(r=>r.id===t.request_id&&r.answered_at===null)&&fields.some(f=>f.request_id===t.request_id&&f.source_current))){
    const summaries=await privateDocumentReviewReports(caseId,identityId,store);
    const summary=summaries.filter(r=>r.current).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
@@ -129,9 +136,15 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     if(artifact?.current&&artifact.bundle.analysis_run_id===summary.analysis_run_id&&artifact.bundle.document_review){
      const fieldRequests=fieldTargets.map(entry=>{
       const request=bound.find(r=>r.id===entry.request_id)!;
-      return {request_id:request.id,code:request.code,target:documentFieldTargetSchema.parse(entry.target),
+      return {request_id:request.id,code:request.code,target:documentReadingTargetSchema.parse(entry.target),
        source_current:fields.find(f=>f.request_id===request.id)?.source_current===true,answered_at:request.answered_at,expires_at:request.expires_at};
      });
+     for(const match of reviewFieldReadingCheckLabels({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()})){
+      const display=displays.get(match.field_request_id);
+      // Preserve the historical scalar display contract byte for byte.
+      if(display&&(display.row_context||display.transcription_context||display.field.startsWith('source_scope.'))&&match.check_titles.length)displays.set(match.field_request_id,{...display,dependent_checks:match.check_titles});
+     }
+     for(const entry of reviewFieldRequestsNotRequired({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}))notRequired.add(entry.field_request_id);
      for(const match of reviewRequestsCoveredByFieldReadings({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()})){
       const state=reviewStates.find(r=>r.source_current&&r.target?.target_sha256===match.target_sha256);
       if(state&&reviews.some(r=>r.id===state.request_id))covered.set(state.request_id,match.field_request_id);
@@ -147,7 +160,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     const document_upload_state:DocumentUploadState|undefined=upload?{state:upload.state,information_satisfied:upload.information_satisfied,analysis_run_id:upload.analysis_run_id,reason:upload.reason}:undefined;
     const source=conflict&&!(conflict.source_current===false&&conflict.conflict_reason===null)
       ?conflictSourceSchema.parse({conflict_reason:conflict.conflict_reason,source_observations:conflict.source_observations}):undefined;
-    return {...toRequest(row),...(displays.has(row.id)?{question:displays.get(row.id)!.question}:{}),...(covered.has(row.id)?{covered_by_field_request_id:covered.get(row.id)}:{}),...(state?{source_current:state.source_current}:{}),...(document_upload_state?{document_upload_state}:{}),...(displays.has(row.id)?{reading_display:displays.get(row.id)}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
+    return {...toRequest(row),...(notRequired.has(row.id)?{not_required_for_current_review:true as const}:{}),...(displays.has(row.id)?{question:displays.get(row.id)!.question}:{}),...(covered.has(row.id)?{covered_by_field_request_id:covered.get(row.id)}:{}),...(state?{source_current:state.source_current}:{}),...(document_upload_state?{document_upload_state}:{}),...(displays.has(row.id)?{reading_display:displays.get(row.id)}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
   });
 }
 
@@ -219,6 +232,7 @@ export async function answerCaseRequest(
   const answer = review?await validateReviewAnswer(store,request,input.caseId,input.identityId,input.answer):validateRequestAnswer(request, input.answer);
   const bound=review||request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:')||request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith('document_transcription:')||request.code.startsWith('june2026_regular_hours:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE);
   if(bound&&!input.identityId)throw new Error('REQUEST_FIELD_FORBIDDEN');
+  if(request.code.startsWith('document_field:'))await validateSavedReadingAnswer({store,caseId:input.caseId,identityId:input.identityId,requestId:input.requestId,code:request.code,answer});
   const rows = await store.rpc<RequestRow>(bound?"case_request_answer_identified":"case_request_answer", {
     target_request: input.requestId,
     target_case: input.caseId,
@@ -230,7 +244,7 @@ export async function answerCaseRequest(
 
 /** D-7.2: the clock runs unless a blocking request is open. */
 export function caseSlaPaused(requests: readonly StoredRequest[]): boolean {
-  return slaPaused(requests.filter(request=>request.source_current!==false&&!documentRequestSatisfied(request)));
+  return slaPaused(requests.filter(request=>request.source_current!==false&&!request.not_required_for_current_review&&!documentRequestSatisfied(request)));
 }
 
 /** D-9: a request past its expiry is closed and stops holding the case. */
@@ -246,6 +260,7 @@ export async function editCaseRequest(input:{caseId:string;requestId:string;iden
  if(!request)throw new Error('REQUEST_FORBIDDEN');
  if(request.code.startsWith(reviewNamespace))answer=await validateReviewAnswer(store,request,input.caseId,input.identityId,input.answer,input.kind==='draft');
  else if(input.kind==='correction')answer=validateRequestAnswer(request,input.answer);
+ if(request.code.startsWith('document_field:'))await validateSavedReadingAnswer({store,caseId:input.caseId,identityId:input.identityId,requestId:input.requestId,code:request.code,answer});
  const rows=await store.rpc<{value:number}>('case_request_edit',{target_case:input.caseId,target_request:input.requestId,target_identity:input.identityId,target_answer:answer,expected_revision:input.expectedRevision,edit_kind:input.kind});
  if(rows.length!==1||rows[0].value!==input.expectedRevision+1)throw new Error('REQUEST_EDIT_RECEIPT_MISSING');
  return rows[0].value;

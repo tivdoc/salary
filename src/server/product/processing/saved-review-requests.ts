@@ -7,8 +7,10 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatch';
 import {readSavedOrders,savedOrderOrigin,savedOrderReceiptSha256,purchasedMonths} from './saved-order-scope';
 import {supportedReviewUpload} from '../documents/review-fulfillment';
-import {documentFieldTarget,documentFieldTargetSchema} from '../reports/document-field-confirmation';
+import {documentReadingTargetSchema,documentReadingTargetForCheckpoint} from '../reports/document-field-confirmation';
 import {reviewRequestsCoveredByFieldReadings,type ExistingFieldReadingRequest} from '../reports/review-field-coverage';
+import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
+import {openSavedReadingDependencies} from './saved-reading-dependencies';
 
 export const REVIEW_REQUEST_NAMESPACE='document_review:';
 export const REVIEW_UNKNOWN_ANSWER='לא יודע';
@@ -46,7 +48,7 @@ export function normalizeSavedReviewAnswer(candidate:ReviewCompletionTarget,text
 /** Must run after topic_results was persisted, in the same existing source
  * transaction. Every target is loaded from that stage; the caller supplies no
  * question payload. SQL independently repeats the currentness checks. */
-export async function openSavedReviewRequests(context:PostgresTransactionContext,candidate:SourceJob,analysisRunId:string){
+export async function openSavedReviewRequests(context:PostgresTransactionContext,candidate:SourceJob,analysisRunId:string,snapshot?:StoredCaseInputSnapshot){
  const job=sourceJobSchema.parse(candidate);z.string().min(1).max(200).parse(analysisRunId);
  await lockCurrentSource(context,job);
  const rows=await context.client.query(statement('review_requests_stage',
@@ -64,6 +66,7 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
  if(!order||savedOrderReceiptSha256(order)!==review.purchased_scope.receipt_sha256||savedOrderOrigin(order)!==review.purchased_scope.origin||canonicalSha256(order.topics)!==canonicalSha256(review.purchased_scope.topics)
   ||review.period.from!==month+'-01'||review.period.to!==lastDay||order.from>review.period.from||order.to<review.period.from||!purchasedMonths(order).includes(month))throw Error('REVIEW_REQUEST_ORDER_SCOPE');
  const planned=review.completions.customer_requests.map(r=>reviewCompletionSchema.parse(r));
+ if(snapshot)await openSavedReadingDependencies(context,job,review,snapshot);
  // Only upload kinds supported by the actual reserve/commit protocol can open
  // a bound request. Receiving bytes keeps it pending until source assessment.
  const unsupported=planned.filter(r=>(r.target.kind==='document'||r.target.answer_kind==='document')&&!supportedReviewUpload(r.target));
@@ -82,7 +85,7 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
     where t.case_id=$1::uuid and c.revision=$2 and v.input_sha256=$3 and r.answered_at is null
      and r.expired_at is null and r.expires_at>clock_timestamp()`,[job.case_id,job.revision,job.input_sha256]));
   const fieldRequests:ExistingFieldReadingRequest[]=targets.rows.map(row=>{
-   const target=documentFieldTargetSchema.parse(row.target),current=documentFieldTarget({checkpoint:row.checkpoint,policyVersion:target.policy_version,candidateId:target.candidate.candidate_id});
+   const target=documentReadingTargetSchema.parse(row.target),current=documentReadingTargetForCheckpoint({target,currentCheckpoint:row.checkpoint});
    if(target.case_id!==job.case_id||canonicalSha256(current)!==canonicalSha256(target))throw Error('REVIEW_FIELD_COVERAGE_CHECKPOINT');
    return {request_id:z.uuid().parse(row.request_id),code:z.string().parse(row.code),target,source_current:true,
     answered_at:row.answered_at===null?null:z.string().parse(row.answered_at),expires_at:new Date(String(row.expires_at)).toISOString(),

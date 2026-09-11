@@ -71,7 +71,8 @@ export type June2026CollectionTarget = z.infer<typeof june2026CollectionTargetSc
 export function createJune2026CollectionTarget(input: {checkpoint: unknown; policyVersion: string; subject: June2026CollectionSelector}): June2026CollectionTarget {
   const checkpoint = checkpointSchema.parse(input.checkpoint), selector = selectorSchema.parse(input.subject);
   const extraction = checkpoint.run.result.final_extraction;
-  if (extraction.customer_readings !== undefined) throw Error('JUNE_COLLECTION_PROVIDER_CONFIRMATION_FORBIDDEN');
+  if (extraction.customer_readings !== undefined || extraction.customer_row_readings !== undefined || extraction.customer_scope_readings !== undefined
+   ||extraction.customer_source_transcriptions!==undefined||extraction.source_reading_context!==undefined) throw Error('JUNE_COLLECTION_PROVIDER_CONFIRMATION_FORBIDDEN');
   if (extraction.document_id !== checkpoint.version_id || canonicalSha256(checkpoint.run.result) !== checkpoint.result_sha256) throw Error('JUNE_COLLECTION_CHECKPOINT_MISMATCH');
   const periods = extraction.fields.filter(candidate => candidate.field === 'salary_period');
   // Header and date-range observations may independently describe the same

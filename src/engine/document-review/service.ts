@@ -2,6 +2,7 @@ import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import {calculateDocumentReview,documentReviewCalculationInputSchema} from './calculations.ts';
 import {generateReviewCompletions,parseReviewCompletionInput,resolveReviewCompletion,type ReviewCompletion} from './completions.ts';
 import {DOCUMENT_REVIEW_POLICY,documentReviewInputSchema,type DocumentReviewResult} from './contracts.ts';
+import {documentReviewCoverageInventory} from './coverage.ts';
 
 /** A supplemental stage of ordinary case analysis. Results are source arithmetic
  * or conditional candidates, never a substitute for catalog admission. */
@@ -16,6 +17,14 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
  const checks=input.checks.map(check=>{
   if(!input.purchased_scope.topics.includes(check.topic))throw Error('REVIEW_UNPURCHASED_CHECK');
   const calculation=documentReviewCalculationInputSchema.parse(check.calculation);
+  if(check.printed_inventory){
+   const inventory=check.printed_inventory,operation=calculation.operation;
+   if(operation.kind!=='reconciliation'||operation.inventory_basis!==`printed-earnings-inventory-v1:${canonicalSha256(inventory)}`
+    ||operation.inventory_complete!==inventory.inventory_complete||operation.disjoint_components!==inventory.disjoint_components
+    ||!input.documents.some(d=>d.document_id===inventory.document_id&&d.version_id===inventory.version_id&&d.reading_sha256===inventory.reading_sha256))throw Error('REVIEW_PRINTED_INVENTORY_BINDING');
+   const ids=[...inventory.populated_component_ids,...inventory.unresolved_blank_component_ids,...inventory.excluded_deduction_component_ids];
+   if(new Set(ids).size!==ids.length)throw Error('REVIEW_PRINTED_INVENTORY_DUPLICATE');
+  }
   if(calculation.case_id!==input.case_id||calculation.check_id!==check.check_id
    ||calculation.period.from<input.period.from||calculation.period.to>input.period.to)throw Error('REVIEW_CHECK_SCOPE');
   const citedSources=[...calculation.operands.map(o=>o.source),...(calculation.operation.kind==='candidate_rule'?calculation.operation.decisions.flatMap(d=>d.sources):[])];
@@ -57,6 +66,7 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
   }
   const result=calculateDocumentReview({...calculation,run_id:analysisRunId});
   return {check_id:check.check_id,topic:check.topic,title:check.title,explanation:check.explanation,
+   ...(check.printed_inventory?{printed_inventory:check.printed_inventory}:{}),
    dependency_sha256:result.dependency_fingerprint,calculation:result};
  });
  for(const d of completionInput.documents){
@@ -66,8 +76,10 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
  if(input.coverage_gaps.some(g=>!input.purchased_scope.topics.includes(g.topic)))throw Error('REVIEW_UNPURCHASED_GAP');
  for(const need of completionInput.needs)if(need.dependent_check_ids.some(id=>!checkIds.has(id)))throw Error('REVIEW_UNKNOWN_COMPLETION_DEPENDENCY');
  const completions=generateReviewCompletions(completionInput);
+ const coverage=documentReviewCoverageInventory(input,checks);
  const seed={input,schema_version:DOCUMENT_REVIEW_POLICY,case_id:input.case_id,analysis_run_id:analysisRunId,input_sha256:canonicalSha256(input),
   period:input.period,purchased_scope:input.purchased_scope,documents:input.documents,coverage_gaps:input.coverage_gaps,checks,completions,
+  ...(coverage?{coverage_inventory:coverage}:{}),
   legal_debt_total:null,actual_transfer_proven:false as const,publication_authority:false as const};
  return deepFreeze({...seed,result_sha256:canonicalSha256(seed)});
 }

@@ -2,7 +2,7 @@ import {describe,it,expect,vi} from 'vitest';
 vi.mock('server-only',()=>({}));
 // This legacy extraction fixture has no live physical-source receipt. Positive
 // source coverage is tested independently; do not manufacture one for it.
-vi.mock('./saved-review-source-proof',()=>({savedReviewFinancialSourceProofs:async()=>[]}));
+vi.mock('./saved-review-source-proof',()=>({savedReviewSourceEvidence:async()=>({proofs:[],retained:[]})}));
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresStatement,PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
@@ -96,6 +96,8 @@ describe('exact saved source to canonical snapshot',()=>{
   // This fixture has no previously opened identified field request. The new
   // scoped lookup must run, and cannot suppress any completion on an empty set.
   s.responses.review_existing_field_targets=[];
+  s.responses.review_dependency_checkpoint=[{result:s.result,result_sha256:s.result.result_sha256}];
+  s.responses.review_dependency_existing_targets=[];
   // Deliberately hermetic: this checks real service/catalog/renderer behavior,
   // not PostgreSQL commit/rollback or provider extraction.
   const analysis={caseAnalysis:new InMemoryCaseAnalysisRepository(),reports:new FixtureCaseReviewPort()} as unknown as PostgresAnalysisRepositories;
@@ -109,7 +111,7 @@ describe('exact saved source to canonical snapshot',()=>{
     const run=await analysis.caseAnalysis.getByRunId(String(statement.values[3]));
     return {rows:[{value:{review:run?.bundle?.document_review,current_source_pins:[],items:[]}}],row_count:1};
    }
-   if(statement.name==='review_request_open')return {rows:[{id:'66666666-6666-4666-8666-666666666666'}],row_count:1};
+   if(statement.name==='review_request_open'||statement.name==='review_dependency_request_open')return {rows:[{id:'66666666-6666-4666-8666-666666666666'}],row_count:1};
    return s.context.client.query(statement);
   }}};
   const args={context,analysis,tenantId:'synthetic-test',job:s.job,orderId,month:'2025-01'};

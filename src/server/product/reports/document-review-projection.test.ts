@@ -4,6 +4,7 @@ import {runDocumentReview} from '@/engine/document-review/service';
 import {calculateDocumentReview} from '@/engine/document-review/calculations';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {GROUPED_REVIEW_GAP_PRESENTATION,renderReviewBundle} from './document-review-projection';
+import {attachDocumentReviewCoverage} from '@/engine/document-review/coverage';
 
 function bundle():AnalysisResultBundle{
  const caseId='11111111-1111-4111-8111-111111111111',sha='a'.repeat(64),period={from:'2026-06-01',to:'2026-06-30'};
@@ -74,4 +75,15 @@ it('preserves legacy default artifacts byte for byte under explicit individual-v
  const input=bundle(),original=renderReviewBundle(input,'synthetic-legacy-report');
  const explicit=renderReviewBundle(input,'synthetic-legacy-report',{gapPresentation:'individual-v1'});
  for(const key of ['json','html','pdf','private_evidence_appendix'] as const)expect(Buffer.from(explicit[key])).toEqual(Buffer.from(original[key]));
+});
+it('shows paid scope, missing purchase period and observed document periods separately only in the coverage policy',()=>{
+ const original=bundle(),review=original.document_review!;
+ const input=attachDocumentReviewCoverage({...review.input,purchased_scope:{...review.purchased_scope,
+  topics:['minimum_wage','working_time','pension','travel','convalescence','vacation','sick_leave','rest_day','bonuses']}},
+  {schema_version:'document-review-purchase-period-v1',receipt_sha256:review.purchased_scope.receipt_sha256,state:'missing',periods:[]});
+ const next=runDocumentReview(input,original.analysis_run_id),report=renderReviewBundle({...original,document_review:next},'coverage.report');
+ const text=Buffer.from(report.html).toString('utf8'),body=JSON.parse(Buffer.from(report.json).toString('utf8'));
+ expect(text).toContain('כולל 9 נושאים');expect(text).toContain('במקור הרכישה לא נרשמה תקופת בדיקה');expect(text).toContain('מסגרת הדוח הנוכחי');
+ expect(text).toContain('תקופת המקור');expect(text).toContain('מנוחה שבועית');expect(body.what_checked.some((s:string)=>s.includes('כל נושאי השירות הושלמו'))).toBe(true);
+ expect(text).not.toContain('private ownership matching marker');expect(Buffer.from(renderReviewBundle(original,'legacy.report').html).toString('utf8')).not.toContain('תקופת הרכישה');
 });

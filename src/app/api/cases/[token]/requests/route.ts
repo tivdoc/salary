@@ -91,7 +91,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     }
     const remaining = await listCaseRequests(found.case_id,undefined,session.identity_id);
     return NextResponse.json(
-      { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && !(row.document_upload_state?.state==='satisfied'&&row.document_upload_state.information_satisfied) && Date.parse(row.expires_at)>Date.now()).length },
+      { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && !row.not_required_for_current_review && !row.covered_by_field_request_id && !(row.document_upload_state?.state==='satisfied'&&row.document_upload_state.information_satisfied) && Date.parse(row.expires_at)>Date.now()).length },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

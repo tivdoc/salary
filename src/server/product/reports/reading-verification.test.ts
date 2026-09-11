@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentFieldTarget,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from './document-field-confirmation';
-import {parseDocumentFieldAnswer,resolveDocumentFieldVerification,documentFieldVerificationDisplay} from './reading-verification';
+import {validateDocumentReadingAnswerForTarget,parseDocumentFieldAnswer,resolveDocumentFieldVerification,documentFieldVerificationDisplay} from './reading-verification';
 
 function fixture(){
  const f=buildSyntheticCaseFixture({fixture_id:'cell-reading-v2',mode:'real'}),d=f.stored.documents[0],extraction=structuredClone(f.stored.extractions[0]);
@@ -49,4 +49,13 @@ it('keeps legacy answers compatible and rejects extra proposed source/value fiel
  expect(parseDocumentFieldAnswer(DOCUMENT_FIELD_CONFIRMATION_ANSWERS[0]).action).toBe('confirm');
  expect(parseDocumentFieldAnswer(DOCUMENT_FIELD_CONFIRMATION_ANSWERS[1]).action).toBe('unknown');
  expect(()=>parseDocumentFieldAnswer({schema_version:'document-field-answer-v2',action:'confirm',corrected_raw_value:'500'})).toThrow('REQUEST_ANSWER_INVALID');
+});
+
+it('validates scalar answer semantics before saving while preserving legacy answer parsing',()=>{
+ const f=fixture();
+ expect(validateDocumentReadingAnswerForTarget(f.target,DOCUMENT_FIELD_CONFIRMATION_ANSWERS[0])).toMatchObject({action:'confirm'});
+ expect(()=>validateDocumentReadingAnswerForTarget(f.target,{schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:'garbage'})).toThrow('ANSWER_INVALID');
+ const corrected={schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:'123.45'};
+ expect(validateDocumentReadingAnswerForTarget(f.target,corrected)).toEqual(corrected);
+ expect(resolveDocumentFieldVerification({...f.input,answer:corrected})).toMatchObject({effective_value:{minor_units:12345}});
 });

@@ -4,7 +4,7 @@ import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,type S
 import {savedHoursDeclarations} from './saved-hours-declarations';
 import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import {savedDeclaredFacts} from './saved-request-facts';
-import {savedDocumentFieldReadings} from './saved-field-readings';
+import {savedDocumentReadings} from './saved-field-readings';
 import { z } from 'zod';
 import { immutableDocumentSchema } from '@/engine/domain/documents';
 import { normalizedPayslipExtractionSchema } from '@/engine/extraction/payslip';
@@ -82,8 +82,12 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
     original_filename:d.original_filename,mime_type:d.mime_type,size_bytes:Number(d.size),content_sha256:pinned.sha256,
     storage_path:`cases/${job.case_id}/documents/${pinned.version_id}/original.${extension}`,
     document_period:null,supersedes_document_id:null,created_at:new Date(String(d.created_at)).toISOString()}));
-   const readings=savedDocumentFieldReadings({caseId:job.case_id,month:selectedMonth,policyVersion:SAVED_EXTRACTION_POLICY,journal:row.input,checkpoint:d.result});
-   extractions.push(readings.length?{...extraction,customer_readings:[...readings]}:extraction);
+   const readings=savedDocumentReadings({caseId:job.case_id,month:selectedMonth,policyVersion:SAVED_EXTRACTION_POLICY,journal:row.input,checkpoint:d.result});
+   extractions.push({...extraction,...(readings.scalar.length?{customer_readings:readings.scalar}:{}),
+    ...(readings.row_cell.length?{customer_row_readings:readings.row_cell}:{}),...(readings.source_scope.length?{customer_scope_readings:readings.source_scope}:{}),
+    ...(readings.source_transcription.length?{customer_source_transcriptions:readings.source_transcription,
+     source_reading_context:{checkpoint_result_sha256:checkpoint.result_sha256,
+      first_pass:z.object({first_pass:z.object({normalized_extraction:normalizedPayslipExtractionSchema})}).parse(checkpoint.run.result).first_pass.normalized_extraction}}:{})});
   }
   // Free-text questionnaire/request answers are preserved by the source hash.
   // They cannot be promoted into verified critical facts by this adapter.

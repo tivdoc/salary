@@ -1,6 +1,7 @@
 import {expect,it} from 'vitest';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
-import {documentReviewInputSchema} from './contracts.ts';
+import {DOCUMENT_REVIEW_COVERAGE_POLICY,documentReviewInputSchema} from './contracts.ts';
+import {attachDocumentReviewCoverage} from './coverage.ts';
 import {parseReviewCompletionInput} from './completions.ts';
 import {projectDocumentReviewMonth} from './monthly-projection.ts';
 import {runDocumentReview} from './service.ts';
@@ -46,4 +47,29 @@ it('does not rewrite identified history or project a foreign calendar month',()=
 it('keeps already monthly input bytes when every check is in scope and no completion is excluded',()=>{
  const projected=projectDocumentReviewMonth(fixture(),'2026-06').input;
  const repeat=projectDocumentReviewMonth(projected,'2026-06');expect(repeat.input).toEqual(projected);expect(repeat.receipt.excluded_checks).toEqual([]);
+});
+it('keeps nine purchased topics, missing original purchase period and 24 unprorated exclusions in ordinary coverage',()=>{
+ const original=fixture(),source=documentReviewInputSchema.parse({...original,purchased_scope:{...original.purchased_scope,origin:'legacy_paid_receipt',
+  topics:['minimum_wage','working_time','pension','travel','convalescence','vacation','sick_leave','rest_day','bonuses']},
+  checks:[original.checks[0],...Array.from({length:24},(_,i)=>{
+   const check=structuredClone(original.checks[i===23?1:2]),calculation=check.calculation as Record<string,unknown>;
+   const id=`excluded.${i}`;return {...check,check_id:id,calculation:{...calculation,check_id:id}};
+  })],completion_input:{...parseReviewCompletionInput(original.completion_input),needs:[],evidence:[]}});
+ const before=canonicalSha256(source),admitted=attachDocumentReviewCoverage(source,{schema_version:'document-review-purchase-period-v1',receipt_sha256:source.purchased_scope.receipt_sha256,state:'missing',periods:[]});
+ const {input}=projectDocumentReviewMonth(admitted,'2026-06');const result=runDocumentReview(input,'synthetic.coverage.run'),coverage=result.coverage_inventory!;
+ expect(coverage.purchased_topics).toHaveLength(9);expect(coverage.topics).toHaveLength(9);expect(coverage.topics.filter(t=>t.coverage==='not_evaluated')).toHaveLength(8);
+ expect(coverage.purchase_period_evidence).toMatchObject({state:'missing',periods:[]});expect(coverage.source_periods[0].period).toEqual(period);
+ expect(coverage.period_projection?.excluded_checks).toHaveLength(24);expect(coverage.period_projection?.proration_performed).toBe(false);
+ expect(result.checks).toHaveLength(1);expect(result.checks[0].calculation.expected).toMatchObject({minor_units:12000});expect(coverage.legal_coverage_complete).toBe(false);
+ expect(canonicalSha256(source)).toBe(before);expect(projectDocumentReviewMonth(input,'2026-06').input).toEqual(input);
+});
+it('preserves old result bytes without opt-in and rejects changed projection, purchase receipt or an in-scope excluded period',()=>{
+ const source=fixture(),old=runDocumentReview(source,'legacy.run');expect(old.coverage_inventory).toBeUndefined();
+ expect(runDocumentReview(documentReviewInputSchema.parse(source),'legacy.run')).toEqual(old);
+ const {input}=projectDocumentReviewMonth(source,'2026-06',{coveragePolicy:DOCUMENT_REVIEW_COVERAGE_POLICY});
+ expect(()=>runDocumentReview({...input,period_projection:{...input.period_projection!,projection_sha256:'f'.repeat(64)}},'changed')).toThrow('REVIEW_PROJECTION_BINDING');
+ const {projection_sha256:_,...body}=input.period_projection!;void _;
+ const changed={...body,excluded_checks:body.excluded_checks.map((c,i)=>i?c:{...c,period:input.period})};
+ expect(()=>runDocumentReview({...input,period_projection:{...changed,projection_sha256:canonicalSha256(changed)}},'changed')).toThrow('REVIEW_PROJECTION_EXCLUDED_SCOPE');
+ expect(()=>attachDocumentReviewCoverage(source,{schema_version:'document-review-purchase-period-v1',receipt_sha256:'f'.repeat(64),state:'missing',periods:[]})).toThrow();
 });

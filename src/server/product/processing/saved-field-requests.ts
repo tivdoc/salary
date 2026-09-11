@@ -31,9 +31,15 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
  const allowed=new Set(z.array(z.enum(Object.keys(confirmationFieldLabels) as [keyof typeof confirmationFieldLabels,...(keyof typeof confirmationFieldLabels)[]]))
   .max(Object.keys(confirmationFieldLabels).length).refine(fields=>new Set(fields).size===fields.length).parse(scope.rows[0].fields));
  const extraction=saved.run.result.final_extraction;
+ // A historical source review needs the period/financial-source gate first.
+ // Other readings are selected from actual blocked calculation operands after
+ // analysis, instead of asking the owner to verify every uncertain scalar.
+ const sourceReviewOnly=orders.filter(o=>purchasedMonths(o).includes(month)).every(o=>o.kind==='legacy_initial');
+ const sourcePrerequisites=new Set(['salary_period','gross_salary','total_deductions','net_salary']);
  const hoursConflict=month==='2026-06'&&topics.includes('minimum_wage')&&hasHoursConflictObservations(extraction);
  const validation=validatePayslipGate0(extraction,{reference_year:Number(saved.expected_month.slice(0,4))});
  const candidates=extraction.fields.filter(candidate=>{
+  if(sourceReviewOnly&&!sourcePrerequisites.has(candidate.field))return false;
   if(hoursConflict&&candidate.field==='regular_hours')return false;
   if(!allowed.has(candidate.field as keyof typeof confirmationFieldLabels)||candidate.normalized_value===null)return false;
   const assessment=validation.field_assessments.find(a=>a.candidate_id===candidate.candidate_id);

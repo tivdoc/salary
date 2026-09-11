@@ -1,5 +1,5 @@
 import { z } from "zod";
-import {customerDocumentReadingSchema} from './customer-reading.ts';
+import {customerDocumentReadingSchema,customerDocumentRowCellReadingSchema,customerDocumentScopeReadingSchema,customerSourceTranscriptionSchema,sourceReadingContextSchema} from './customer-reading.ts';
 import {
   confidenceSchema,
   decimalStringSchema,
@@ -123,6 +123,10 @@ export const normalizedAdditionalComponentSchema = z
 export const normalizedPayslipExtractionSchema = z
   .object({
     customer_readings:z.array(customerDocumentReadingSchema).max(100).optional(),
+    customer_row_readings:z.array(customerDocumentRowCellReadingSchema).max(400).optional(),
+    customer_scope_readings:z.array(customerDocumentScopeReadingSchema).max(300).optional(),
+    customer_source_transcriptions:z.array(customerSourceTranscriptionSchema).max(100).optional(),
+    source_reading_context:sourceReadingContextSchema.optional(),
     extraction_id: z.uuid(),
     document_id: z.uuid(),
     status: extractionStatusSchema,

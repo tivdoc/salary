@@ -5,6 +5,8 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {openSavedDocumentFieldRequests} from './saved-field-requests';
 import type {SavedOrderScope} from './saved-order-scope';
+import {savedLegacyExecutionScope} from './saved-order-scope';
+import {buildLegacyPaidScope} from '../orders/legacy-paid-receipt';
 import type {SourceJob} from './source-dispatch';
 
 const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn()}));
@@ -34,6 +36,18 @@ function setup(){
 
 it('opens the uncertain shared salary reading but not an unpurchased pension question',async()=>{
  const s=setup();await s.run();expect(s.state.opened).toEqual(['base_monthly_salary']);expect(s.state.topics).toEqual([['minimum_wage']]);
+});
+it('opens only source prerequisites before a legacy review; remaining cells wait for actual calculation dependencies',async()=>{
+ const s=setup(),caseId=s.job.case_id,paymentId=randomUUID();
+ const admission=buildLegacyPaidScope({case:{id:caseId,public_id:'SYNTHETIC-FIELD',payment_status:'verified',is_qa:false},
+  payment:{id:paymentId,case_id:caseId,provider:'invoice4u',amount:'9.99',currency:'ILS',status:'verified',verified_at:'2025-02-01T00:00:00Z',idempotency_key:caseId+':initial-check',provider_order_id:'tivdoc-salary:SYNTHETIC-FIELD',provider_payment_id:'1001',provider_reference:'2001',provider_clearing_log_id:'2001',provider_confirmation_number:'3001'},
+  source:{project_ref:'a'.repeat(20),captured_at:'2025-02-01T00:00:00Z',snapshot_sha256:'b'.repeat(64)},
+  periods:[{period:{from:'2025-01-01',to:'2025-01-31'},evidence_sha256:'c'.repeat(64),source_pins:[{case_id:caseId,document_id:s.checkpoint.product_document_id,version_id:s.checkpoint.version_id,source_sha256:s.checkpoint.input_sha256}]}]});
+ if(admission.state!=='admitted')throw Error('SYNTHETIC_RECEIPT_REQUIRED');
+ ports.orders.mockResolvedValue([savedLegacyExecutionScope(admission.scope)]);
+ await s.run();expect(s.state.opened).toEqual([]);
+ const gross=s.extraction.fields.find(c=>c.field==='gross_salary')!;gross.confidence=.94;s.rehash();
+ await s.run();expect(s.state.opened).toEqual(['gross_salary']);
 });
 it('unions only purchased topics covering this document month',async()=>{
  const s=setup();ports.orders.mockResolvedValue([s.order,{...s.order,id:randomUUID(),topics:['pension'],from:'2025-02-01',to:'2025-02-01'},{...s.order,id:randomUUID(),topics:['travel','minimum_wage']}]);

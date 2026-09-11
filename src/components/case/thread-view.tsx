@@ -9,10 +9,10 @@ import type { StoredRequest } from "@/server/product/reports/case-requests";
 import {HoursConflictAnswer} from './hours-conflict-answer';
 import {HOURS_CONFLICT_NAMESPACE,formatHoursConflictAnswer} from '@/server/product/reports/document-hours-conflict-answer';
 import {DocumentFieldAnswer} from './document-field-answer';
-import {displayDocumentReadingAnswer} from '@/lib/document-reading-display';
+import {displayDocumentReadingAnswer,documentRowCellLabels,groupDocumentReadingRequests,type DocumentReadingRequestGroup} from '@/lib/document-reading-display';
 
 function displayAnswer(request:StoredRequest){
- if(request.code.startsWith('document_field:'))return displayDocumentReadingAnswer(request.answer_text);
+ if(request.code.startsWith('document_field:'))return displayDocumentReadingAnswer(request.answer_text,request.reading_display);
  if(!request.code.startsWith(HOURS_CONFLICT_NAMESPACE))return request.answer_text;
  try{return formatHoursConflictAnswer(request.answer_text??'');}catch{return 'התשובה השמורה אינה זמינה להצגה.';}
 }
@@ -122,15 +122,33 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
   );
 }
 
+function RowReadingGroup({group,publicId,onAnswered}:{group:Extract<DocumentReadingRequestGroup<StoredRequest>,{kind:'row'}>;publicId:string;onAnswered:()=>void}){
+ const first=group.requests[0],display=first.reading_display!;
+ return <div className="received-card thread-card">
+  <h2>בדיקת תאים בשורה: {group.label}</h2>
+  <p>עמוד {group.page}. פותחים את המקור פעם אחת ובודקים כל תא בנפרד. אישור של תא אינו מאשר את השורה כולה, את החישוב או את הזכאות.</p>
+  <p><a href={`/api/cases/${publicId}/requests?source=${first.id}&view=marked#page=${group.page}`} target="_blank" rel="noopener noreferrer">פתיחת שורת המקור לבדיקה</a></p>
+  {display.text_fragment?<blockquote>{display.text_fragment}</blockquote>:null}
+  {!display.bounding_box?<p>לא התקבל מיקום מדויק של השורה. יש לאתר אותה בעמוד המקור לפי הכיתוב והערכים.</p>:null}
+  {group.requests.map(request=><section key={request.id} id={`request-${request.id}`} aria-label={`בדיקת ${documentRowCellLabels[request.reading_display!.row_context!.cell]} בשורה`}>
+   <h3>{documentRowCellLabels[request.reading_display!.row_context!.cell]}</h3>
+   <p>{request.question}</p>
+   <p className="thread-card__meta">פתוח עד {formatRequestDate(request.expires_at)}{request.statement_month?` · תקופת השאלה: ${formatRequestMonth(request.statement_month)}`:''}</p>
+   <DocumentFieldAnswer key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={onAnswered} sourceShared/>
+  </section>)}
+ </div>;
+}
+
 export function ThreadView({ publicId, requests, renderedAt }: { publicId: string; requests: readonly StoredRequest[]; renderedAt: number }) {
   const router = useRouter();
-  const open = requests.filter((request) => request.answered_at === null && !request.covered_by_field_request_id && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
+  const open = requests.filter((request) => request.answered_at === null && !request.not_required_for_current_review && !request.covered_by_field_request_id && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
+  const deferred=requests.filter(request=>request.answered_at===null&&request.not_required_for_current_review&&request.source_current===true&&Date.parse(request.expires_at)>renderedAt);
   const expired = requests.filter((request) => request.answered_at === null && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) <= renderedAt);
   const superseded = requests.filter((request) => request.answered_at === null && request.source_current === false);
   // The initial render uses the same server instant through hydration. The DB
   // remains the expiry authority; refresh at the next deadline while open.
   useEffect(() => {
-    const deadlines = requests.filter(request => request.answered_at === null && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt).map(request => Date.parse(request.expires_at));
+    const deadlines = requests.filter(request => request.answered_at === null && !request.not_required_for_current_review && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt).map(request => Date.parse(request.expires_at));
     if (deadlines.length === 0) return;
     const timer = window.setTimeout(() => router.refresh(), Math.min(2_147_483_647, Math.max(0, Math.min(...deadlines) - Date.now()) + 100));
     return () => window.clearTimeout(timer);
@@ -144,6 +162,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
     <div className="thread-view">
       <div className="received-card">
         <h1>שאלות בתיק</h1>
+        {deferred.length?<p>{open.length} פעולות נדרשות כעת · {deferred.length} שאלות נשמרו ואינן נדרשות לבדיקה הנוכחית.</p>:null}
         {open.length === 0 ? (
           <p>אין כרגע שאלות פתוחות. אם נצטרך משהו כדי להמשיך, זה יופיע כאן.</p>
         ) : (
@@ -159,7 +178,9 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
         )}
       </div>
 
-      {open.map((request) => (
+      {groupDocumentReadingRequests(open).map(group => {
+       if(group.kind==='row')return <RowReadingGroup key={group.group_id} group={group} publicId={publicId} onAnswered={()=>router.refresh()}/>;
+       const request=group.requests[0];return (
         <div className={`received-card thread-card${request.blocking ? " thread-card--blocking" : ""}`} key={request.id} id={`request-${request.id}`}>
           <p className="thread-card__meta">
             {request.blocking ? "ממתינים לתשובה כדי להמשיך" : request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE)?"נדרש מידע להמשך הבירור":"לא מעכב את הבדיקה"} · נשאל ב־{formatRequestDate(request.opened_at)} · פתוח עד {formatRequestDate(request.expires_at)}
@@ -169,11 +190,11 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           <DocumentUploadStatus request={request}/>
           {request.field_crop && !request.code.startsWith('document_field:') && !request.code.startsWith('minimum_wage_june2026:') && !request.code.startsWith('document_transcription:') && !request.code.startsWith(HOURS_CONFLICT_NAMESPACE) ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
           {request.code.startsWith(HOURS_CONFLICT_NAMESPACE)?<p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת התלוש לבירור הסתירה</a></p>:null}
-          {(request.code.startsWith('document_field:')||request.code.startsWith('document_transcription:')) ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
+          {(request.code.startsWith('document_field:')&&!request.reading_display?.row_context&&!request.reading_display?.transcription_context&&!request.reading_display?.field.startsWith('source_scope.')||request.code.startsWith('document_transcription:')) ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
           {request.code.startsWith('minimum_wage_june2026:') ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת התלוש שאליו מתייחסת השאלה</a><br />התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.</p> : null}
           <AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={() => router.refresh()} />
         </div>
-      ))}
+      );})}
 
       {covered.length>0?<div className="received-card"><h2>שאלות שמטופלות באימות השדה</h2><p>אין צורך להשיב על אותו תא פעמיים. אימות הקריאה אינו אישור לחישוב או לזכאות.</p>{covered.map(request=><p key={request.id} id={`request-${request.id}`}>{request.question} — <a href={`#request-${request.covered_by_field_request_id}`}>מעבר לשאלת אימות הקריאה</a></p>)}</div>:null}
       {expired.length > 0 ? <div className="received-card"><h2>שאלות שנסגרו ללא תשובה</h2>{expired.map(request => <p key={request.id}>{request.question} — הסתיים המועד להשלמה.</p>)}</div> : null}
@@ -181,6 +202,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
 
       {fulfilled.length>0?<div className="received-card"><h2>השלמות שהמידע בהן נמצא</h2><ul className="thread-answered">{fulfilled.map(request=><li key={request.id} id={`request-${request.id}`}><p className="thread-answered__question">{request.question}</p><DocumentUploadStatus request={request}/>{request.statement_month?<p>תקופת ההשלמה: {formatRequestMonth(request.statement_month)}</p>:null}</li>)}</ul></div>:null}
 
+      {deferred.length?<div className="received-card"><h2>לא נדרש לבדיקה הנוכחית</h2><p>שאלות אלה נשמרו ללא תשובה. החישובים וההשלמות בדוח הנוכחי אינם משתמשים בהן, ולכן אין צורך להשיב כעת. זו אינה קביעה שהנתונים אינם נדרשים לבדיקות אחרות או לזכאות; שינוי במסמך או בבדיקה עשוי להחזיר שאלה לרשימה הפעילה.</p><ul>{deferred.map(request=><li key={request.id} id={`request-${request.id}`}>{request.question}</li>)}</ul></div>:null}
       {answered.length > 0 ? (
         <div className="received-card">
           <h2>מה כבר עניתם</h2>

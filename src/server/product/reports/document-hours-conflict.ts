@@ -15,7 +15,8 @@ const checkpointSchema=z.object({schema_version:z.literal('tivdoc-saved-extracti
 export function createDocumentHoursConflictTarget(input:{checkpoint:unknown;orderId:string;policyVersion:string}):HoursConflictTarget{
  const checkpoint=checkpointSchema.parse(input.checkpoint),extraction=checkpoint.run.result.final_extraction;
  if(canonicalSha256(checkpoint.run.result)!==checkpoint.result_sha256||extraction.document_id!==checkpoint.version_id
-  ||extraction.customer_readings!==undefined)throw Error('HOURS_CONFLICT_SOURCE_BINDING');
+  ||extraction.customer_readings!==undefined||extraction.customer_row_readings!==undefined||extraction.customer_scope_readings!==undefined
+  ||extraction.customer_source_transcriptions!==undefined||extraction.source_reading_context!==undefined)throw Error('HOURS_CONFLICT_SOURCE_BINDING');
  if(checkpoint.expected_month!=='2026-06'||checkpoint.period_mismatch)throw Error('HOURS_CONFLICT_PERIOD_UNSUPPORTED');
  const periods=extraction.fields.filter(row=>row.field==='salary_period');
  if(!periods.length||periods.some(row=>canonicalSha256(row.normalized_value)!==canonicalSha256({year:2026,month:6,start_date:'2026-06-01',end_date:'2026-06-30'})))

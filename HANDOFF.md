@@ -1,3 +1,7 @@
+## Component cell readings — integration in progress 2026-09-11
+
+Continue the current authorized package from e3f060b using [the component-cell checkpoint](docs/component-cell-readings-handoff-2026-09-11-he.md). Versioned exact-cell readings, dependency-scoped questions and period coverage are implemented. DEV schema169 was applied after rollback preflight; final saved-case/browser evidence and CI remain in progress. Private evidence stays outside this repository. The historical stop below applies to the previous package, not the current user request.
+
 ## Historical orders, source completion and live private review — STOP 2026-09-11
 
 See [current bounded handoff](docs/product-flow-orders-uploads-handoff-2026-09-11-he.md). Base b4c4c05; tested application **71e39578b2ca037a68bc67b8602ef7bb3743b376**, test-only correction **a437469f7d354d711a7471297705b1495901532e**. Both CI34637720257/34637713829 PASS: **4,766 tests passed, 103 configured skips**, typecheck/lint/build and48 Production-closure checks. Isolated DEV schema **168**, tail20260911183500_extraction_prompt_qa_lock.sql. No Production or parallel UI changes.

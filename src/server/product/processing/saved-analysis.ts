@@ -135,7 +135,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  if(canonical)await canonical.persist(input.context,bundle.analysis_run_id);
  if(regular)await regular.persist(input.context,bundle.analysis_run_id);
  if(review){
-  if(bundle.document_review?.completions.customer_requests.length)await openSavedReviewRequests(input.context,job,bundle.analysis_run_id);
+  if(bundle.document_review?.completions.customer_requests.length)await openSavedReviewRequests(input.context,job,bundle.analysis_run_id,baseSnapshot);
   await assessSavedReviewUploads(input.context,job,bundle.analysis_run_id);
  }
  return completed;

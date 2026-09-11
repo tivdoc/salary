@@ -1,7 +1,8 @@
 import 'server-only';
 import {createHash} from 'node:crypto';
 import {PDFDocument,rgb} from 'pdf-lib';
-import {documentFieldTargetSchema} from './document-field-confirmation';
+import {documentReadingTargetSchema} from './document-field-confirmation';
+import {documentFieldVerificationDisplay} from './reading-verification';
 import type {CaseAccessDb} from '../case-access/db';
 
 /** Derive a view from the already authorized, hash-verified original. Never
@@ -10,7 +11,7 @@ export async function markReadingSource(input:{caseId:string;identityId:string;r
  const rows=await db.rpc<{request_id:string;target:unknown}>('case_request_field_reading_targets',{target_case:input.caseId,target_identity:input.identityId});
  const selected=rows.filter(row=>row.request_id===input.requestId);
  if(selected.length!==1)return null;
- const target=documentFieldTargetSchema.parse(selected[0].target),source=target.candidate.source,box=source.bounding_box;
+ const target=documentReadingTargetSchema.parse(selected[0].target),source=documentFieldVerificationDisplay(target).source,box=source.bounding_box;
  if(target.case_id!==input.caseId||target.version_id!==input.version||target.source_sha256!==createHash('sha256').update(input.bytes).digest('hex'))throw Error('REQUEST_FIELD_SOURCE_CHANGED');
  if(!box)return null;
  const pdf=input.mime==='application/pdf'?await PDFDocument.load(input.bytes):await PDFDocument.create();

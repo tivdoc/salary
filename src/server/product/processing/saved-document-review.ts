@@ -1,9 +1,10 @@
-import {savedReviewFinancialSourceProofs} from './saved-review-source-proof';
+import {savedReviewSourceEvidence} from './saved-review-source-proof';
 import {z} from 'zod';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewInputSchema,DOCUMENT_REVIEW_POLICY,type DocumentReviewInput} from '@/engine/document-review/contracts';
-import {reviewInputFromPayslips} from '@/engine/document-review/payslip-adapter';
+import {reviewInputFromPayslips,PAYSLIP_REVIEW_POLICY} from '@/engine/document-review/payslip-adapter';
+import {attachDocumentReviewCoverage} from '@/engine/document-review/coverage';
 import {runDocumentReview,applyDocumentReviewAnswer} from '@/engine/document-review/service';
 import {readSavedReviewAnswers} from './saved-review-requests';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
@@ -135,8 +136,18 @@ async function sourceReviewInput(context:PostgresTransactionContext,job:SourceJo
    completion_input:{case_id:job.case_id,period,documents:documents.map(d=>({pin:{case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256},kind:d.kind,review:'not_reviewed',period:null})),evidence:[],
     needs:[{fact_key:'payslip.financial_source',kind:'document',reason:'missing',required_evidence_kind:'document',question:`נא להעלות תלוש לחודש ${month}. נדרשים חודש התלוש, ברוטו, סך הניכויים ונטו. המסמכים שכבר הועלו נשמרו.`,answer_kind:'document',document_kind:'payslip',source_pins:[],dependent_check_ids:order.topics.map(topic=>`missing.payslip.${topic}`),general_question:false}]}});
  }
- return reviewInputFromPayslips({case_id:job.case_id,period:{from:month+'-01',to:new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10)},
-  purchased_scope:{order_id:order.id,receipt_sha256:savedOrderReceiptSha256(order),topics:[...order.topics],origin:savedOrderOrigin(order)},snapshot,financial_source_proofs:await savedReviewFinancialSourceProofs(context,job,snapshot)});
+ const evidence=await savedReviewSourceEvidence(context,job,snapshot);
+ return withSavedPurchaseCoverage(reviewInputFromPayslips({case_id:job.case_id,period:{from:month+'-01',to:new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10)},
+  purchased_scope:{order_id:order.id,receipt_sha256:savedOrderReceiptSha256(order),topics:[...order.topics],origin:savedOrderOrigin(order)},snapshot,
+  financial_source_proofs:evidence.proofs,retained_unresolved_fields:evidence.retained,review_policy:PAYSLIP_REVIEW_POLICY}),order);
+}
+
+export function withSavedPurchaseCoverage(input:DocumentReviewInput,order:SavedExecutionOrder){
+ // Legacy receipts record source-observed months, not a purchase-period field.
+ // They retain all nine topics; a monthly execution must not invent that field.
+ const recordedEnd=new Date(Date.UTC(Number(order.to.slice(0,4)),Number(order.to.slice(5,7)),0)).toISOString().slice(0,10);
+ return attachDocumentReviewCoverage(input,{schema_version:'document-review-purchase-period-v1',receipt_sha256:savedOrderReceiptSha256(order),
+  state:order.kind==='legacy_initial'?'missing':'recorded',periods:order.kind==='legacy_initial'?[]:[{from:order.from,to:recordedEnd}]});
 }
 
 export async function savedDocumentReviewInput(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot){

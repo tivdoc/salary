@@ -68,6 +68,33 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,o
  for(const request of review.completions.customer_requests)missing.push({title:'השלמה ממוקדת',detail:request.target.question,next_step:'התשובה נדרשת רק לבדיקות התלויות בנתון זה.'});
  const topicCounts=new Map<string,number>();
  for(const check of review.checks)topicCounts.set(check.topic,(topicCounts.get(check.topic)??0)+1);
+ const coverage=review.coverage_inventory;
+ const coverageLines:string[]=[];
+ if(coverage){
+  coverageLines.push(`היקף השירות שנרכש כולל ${coverage.purchased_topics.length} נושאים: ${coverage.purchased_topics.map(t=>TOPICS[t]).join(', ')}. מספר הבדיקות שחושבו אינו מעיד שכל נושאי השירות הושלמו.`);
+  coverageLines.push(coverage.purchase_period_evidence.state==='recorded'
+   ?`תקופות המופיעות במקור הרכישה: ${coverage.purchase_period_evidence.periods.map(p=>`${p.from} עד ${p.to}`).join('; ')}.`
+   :coverage.purchase_period_evidence.state==='missing'?'במקור הרכישה לא נרשמה תקופת בדיקה. תקופת המסמך או הדוח אינה משלימה את החסר הזה.':'תקופת הרכישה אינה מתועדת בקלט הבדיקה; אין להסיק אותה מחודש התלוש.');
+  coverageLines.push(`מסגרת הדוח הנוכחי: ${coverage.review_period.from} עד ${coverage.review_period.to}.`);
+  for(const source of coverage.source_periods){
+   const label=review.documents.find(d=>d.document_id===source.document_id&&d.version_id===source.version_id)?.label;
+   if(label)coverageLines.push(source.period?`תקופת המקור — ${label}: ${source.period.from} עד ${source.period.to}.`:`תקופת המקור — ${label}: לא זוהתה.`);
+  }
+  if(coverage.period_projection?.excluded_checks.length){
+   const excluded=coverage.period_projection.excluded_checks,whole=excluded.filter(c=>c.reason==='outside_month').length;
+   coverageLines.push(`${excluded.length} בדיקות מהקלט המקורי לא חושבו במסגרת החודש: ${whole} מחוץ לחודש ו־${excluded.length-whole} חוצות את גבולותיו. התקופות המקוריות נשמרו, ולא בוצעה חלוקה יחסית של סכומים או שעות.`);
+  }
+  const unevaluated=coverage.topics.filter(t=>t.coverage==='not_evaluated');
+  if(unevaluated.length)coverageLines.push(`נושאים שנרכשו אך עדיין לא נכללה בהם בדיקה בדוח זה: ${unevaluated.map(t=>TOPICS[t.topic]).join(', ')}.`);
+  for(const observation of coverage.unresolved_source_observations){
+   const label=observation.field==='vacation_balance'?'יתרת חופשה':'יתרת מחלה';
+   coverageLines.push(`נתון מקור שנשמר ללא פענוח מלא — ${label}: ${observation.raw_value}. היחידה לא זוהתה; לא נקבע אם מדובר בימים או בשעות.`);
+  }
+  for(const observation of coverage.source_balance_observations.filter(o=>o.unit!==null)){
+   const label=observation.field==='vacation_balance'?'יתרת חופשה':'יתרת מחלה';
+   coverageLines.push(`נתון מקור עם יחידה שנקראה במענה מזוהה — ${label}: ${observation.raw_value} ${observation.unit==='hours'?'שעות':'ימים'}. רק היחידה אושרה; המספר שנקרא ב־AI עדיין לא אושר. אין כאן התאמת תנועות היתרה או קביעת זכאות.`);
+  }
+ }
  const candidates=review.checks.filter(c=>findings.some(f=>f.id===c.check_id&&f.amounts.length));
  const highlights:string[]=[];const highlightedTopics=new Set<string>();
  const addHighlight=(check:typeof candidates[number])=>{if(highlights.length<5&&!highlights.includes(check.check_id)){highlights.push(check.check_id);highlightedTopics.add(check.topic);}};
@@ -77,7 +104,7 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,o
  const input:DocumentReviewPresentationInput={schema_version:'document-review-presentation-v1',report_id:reportId,report_revision:bundle.case_revision,
   analysis_run_id:bundle.analysis_run_id,analysis_result_sha256:bundle.result_sha256,generated_at:`${bundle.as_of.slice(0,10)}T00:00:00.000Z`,
   case_public_id:'סקירת המסמכים',period:review.period,coverage:'partial',
-  what_checked:review.checks.length?[...topicCounts].map(([topic,count])=>`${TOPICS[topic as keyof typeof TOPICS]}: ${count} ${count===1?'בדיקה':'בדיקות'}`):['זיהוי המסמכים, התקופות והמידע הזמין לצורך הבדיקה'],
+  what_checked:[...coverageLines,...(review.checks.length?[...topicCounts].map(([topic,count])=>`${TOPICS[topic as keyof typeof TOPICS]}: ${count} ${count===1?'בדיקה':'בדיקות'}`):['זיהוי המסמכים, התקופות והמידע הזמין לצורך הבדיקה'])],
   overview_finding_ids:highlights,
   documents_checked:review.documents.map(d=>({label:d.label,source_ids:Array.from({length:d.page_count??1},(_,i)=>sourceId(d.document_id,d.version_id,i+1))})),
   sources,findings,missing_inputs:missing};

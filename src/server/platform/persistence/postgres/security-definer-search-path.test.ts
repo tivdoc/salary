@@ -66,7 +66,9 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //167 adds two worker-only prompt-derivation evidence boundaries. The original
 // checkpoint remains immutable; no catalog, payment or publication grant.
 //168 patches only that put body's locked QA check; no additional declaration.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 353;
+//169 redeclares the current-source predicate, worker opener and protected source
+// lookup. Their OIDs/ACLs are retained; the new scope helper is security invoker.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 356;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

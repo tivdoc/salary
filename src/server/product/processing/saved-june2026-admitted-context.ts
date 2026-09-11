@@ -114,7 +114,8 @@ export async function loadSavedJune2026AdmittedContext(input: {
   const row = checkpointRowSchema.parse(checkpointRows.rows[0]);
   const header = z.object({case_id: z.uuid(), product_document_id: z.uuid(), version_id: z.uuid(), input_sha256: sha, result_sha256: sha,
     run: z.object({result: z.unknown(), provider_receipts: z.array(z.unknown()).optional()})}).parse(row.result);
-  const {customer_readings, ...machineExtraction} = extraction; void customer_readings;
+  const {customer_readings,customer_row_readings,customer_scope_readings,customer_source_transcriptions,source_reading_context,...machineExtraction} = extraction;
+  void customer_readings;void customer_row_readings;void customer_scope_readings;void customer_source_transcriptions;void source_reading_context;
   const originalExtraction = z.object({final_extraction: z.unknown()}).parse(header.run.result).final_extraction;
   if (row.content_sha256 !== document.content_sha256 || row.checkpoint_input_sha256 !== document.content_sha256 || header.input_sha256 !== document.content_sha256
     || header.product_document_id !== row.product_document_id || header.version_id !== document.document_id || row.version_id !== document.document_id || header.case_id !== job.case_id
