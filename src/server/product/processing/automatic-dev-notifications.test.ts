@@ -16,19 +16,19 @@ function fixture(events:unknown[]=[]){
   if(fn==='case_notification_managed_pending')result=events;
   if(fn==='case_notification_managed_enqueue')result=[{value:args.target_delivery}];
   if(fn==='case_notification_managed_claim')result=claims.splice(0,1);
+  if(fn==='case_notification_managed_dispatch')result=[{state:'ready'}];
   return result as T[];
  }};
  return {queries,claims,sent,provider,db,pass:()=>runAutomaticNotificationPass({db,capability:'synthetic-capability',secret,origin,provider})};
 }
-it.each(['request_required','engineering_report_ready','report_ready'])('renders %s from its saved event and keeps the payload identity across retries',async event_kind=>{
- const requestId=randomUUID(),reportId=randomUUID(),event={event_key:`${event_kind}:${randomUUID()}`,event_kind,case_id:randomUUID(),public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:event_kind==='request_required'?requestId:null,report_id:event_kind==='request_required'?null:reportId};
+it.each(['engineering_report_ready','report_ready'])('renders %s from its saved event and keeps the payload identity across retries',async event_kind=>{
+ const reportId=randomUUID(),event={event_key:`${event_kind}:${randomUUID()}`,event_kind,case_id:randomUUID(),public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:null,report_id:reportId};
  const s=fixture([event]);expect(await s.pass()).toMatchObject({queued:1,deliveryConfirmed:false});await s.pass();
  const enqueued=s.queries.filter(q=>q.fn==='case_notification_managed_enqueue');expect(enqueued).toHaveLength(2);
  expect(enqueued[0].args.target_delivery).toBe(enqueued[1].args.target_delivery);
  const message=decryptNotification(enqueued[0].args.target_payload,String(enqueued[0].args.target_delivery),secret);
  expect(message.to).toBe(contact);expect(message.body).toContain('כניסה לתיק דרך האימייל המאומת');
- if(event_kind==='request_required'){expect(message.template).toBe('document_request');expect(message.body).toContain(`/thread?requestId=${requestId}`);}
- else{expect(message.template).toBe('report_ready');expect(message.body).toContain(`report=${reportId}`);expect(message.subject).toContain('DEV');expect(message.body).toContain('סינתטי');expect(message.body).toContain('אינו חוב מאומת');}
+ expect(message.template).toBe('report_ready');expect(message.body).toContain(`report=${reportId}`);expect(message.subject).toContain('DEV');expect(message.body).toContain('סינתטי');expect(message.body).toContain('אינו חוב מאומת');
  if(event_kind==='engineering_report_ready'){expect(message.body).toContain('engineering=1');expect(message.body).toContain('אינו חוב מאומת');expect(message.subject).toContain('DEV');}
  if(event_kind==='report_ready'){expect(message.body).toContain('אינו אישור אנושי');expect(message.body).toContain('אינו מעיד שהכלל פעיל בשירות ללקוחות');expect(message.body).not.toContain('engineering=1');}
  expect(JSON.stringify(enqueued[0].args.target_payload)).not.toContain(contact);expect(s.sent).toHaveLength(0);
@@ -48,14 +48,33 @@ it('refuses an invalid origin and encryption key before accessing the outbox',as
  await expect(runAutomaticNotificationPass({db:s.db,provider:s.provider,capability:'synthetic',secret:'invalid',origin})).rejects.toThrow('NOTIFICATION_KEY_INVALID');expect(s.queries).toHaveLength(0);
 });
 
-it('an optional event selection narrows authenticated pending events and cannot enqueue an invented event',async()=>{
- const a=randomUUID(),b=randomUUID();const event=(id:string)=>({event_key:'request:'+id,event_kind:'request_required',case_id:randomUUID(),public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:id,report_id:null});
+it('an optional event selection narrows authenticated pending report events and cannot enqueue an invented event',async()=>{
+ const a=randomUUID(),b=randomUUID();const event=(id:string)=>({event_key:'report:'+id,event_kind:'report_ready',case_id:randomUUID(),public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:null,report_id:id});
  const s=fixture([event(a),event(b)]);
  const pass=(enqueueEventKeys:readonly string[])=>runAutomaticNotificationPass({db:s.db,provider:s.provider,capability:'synthetic',secret,origin,enqueueEventKeys});
- expect(await pass(['request:'+a,'request:'+randomUUID()])).toMatchObject({queued:1});
- expect(s.queries.filter(q=>q.fn==='case_notification_managed_enqueue').map(q=>q.args.target_event)).toEqual(['request:'+a]);
+ expect(await pass(['report:'+a,'report:'+randomUUID()])).toMatchObject({queued:1});
+ expect(s.queries.filter(q=>q.fn==='case_notification_managed_enqueue').map(q=>q.args.target_event)).toEqual(['report:'+a]);
  expect(await pass([])).toMatchObject({queued:0});
  expect(s.queries.filter(q=>q.fn==='case_notification_managed_enqueue')).toHaveLength(1);
+});
+it('does not send individual request emails while a completion round is not READY',async()=>{
+ const events=Array.from({length:10},()=>({event_key:'request:'+randomUUID(),event_kind:'request_required',case_id:randomUUID(),public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:randomUUID(),report_id:null}));
+ // The historical query returns at most ten questions. This partial batch
+ // must produce zero emails until the new complete-round RPC declares READY.
+ const s=fixture(events);expect(await s.pass()).toMatchObject({queued:0});expect(s.queries.some(q=>q.fn==='case_notification_managed_enqueue')).toBe(false);expect(s.sent).toHaveLength(0);
+});
+it.each(['cancelled','held'])('does not invoke the provider when the final dispatch fence returns %s',async state=>{
+ const s=fixture(),message:NotificationMessage={template:'document_request',channel:'email',to:contact,subject:'Synthetic ready round',body:'Synthetic questions'},id=payloadDigest(message);
+ s.claims.push({delivery_id:id,encrypted_payload:encryptNotification(message,id,secret),fencing_token:3});
+ const db:CaseAccessDb={provider:'fake',async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>){if(fn==='case_notification_managed_dispatch')return [{state}] as T[];return s.db.rpc<T>(fn,args);}};
+ expect(await runAutomaticNotificationPass({db,provider:s.provider,capability:'synthetic',secret,origin})).toMatchObject({attempts:[]});
+ expect(s.sent).toHaveLength(0);expect(s.queries.some(q=>q.fn==='case_notification_outbox_finish')).toBe(false);
+});
+it('does not continue after a missing final dispatch decision',async()=>{
+ const s=fixture(),message:NotificationMessage={template:'access_code',channel:'email',to:contact,subject:'Synthetic OTP',body:'Synthetic 123456'},id=payloadDigest(message);
+ s.claims.push({delivery_id:id,encrypted_payload:encryptNotification(message,id,secret),fencing_token:3});
+ const db:CaseAccessDb={provider:'fake',async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>){if(fn==='case_notification_managed_dispatch')return [] as T[];return s.db.rpc<T>(fn,args);}};
+ await expect(runAutomaticNotificationPass({db,provider:s.provider,capability:'synthetic',secret,origin})).rejects.toThrow();expect(s.sent).toHaveLength(0);
 });
 it('stops without querying or sending when the supervisor has already requested shutdown',async()=>{
  const s=fixture(),controller=new AbortController();controller.abort();

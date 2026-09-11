@@ -12,9 +12,9 @@ const DEV_ENV = { SUPABASE_PROJECT_REF: TIVDOC_DEV_PROJECT_REF, SUPABASE_PROJECT
 describe("V0.10.9 byte-pinned chain replay", () => {
   it("discovers every migration in filename order with LF-normalized hashes", async () => {
     const files = await discoverMigrationFiles(MIGRATIONS);
-    expect(files.length).toBeGreaterThanOrEqual(26);
+    expect(files.length).toBeGreaterThanOrEqual(27);
     expect(files.map((file) => file.name)).toEqual([...files.map((file) => file.name)].sort());
-    expect(files.slice(-26).map(file=>file.name)).toEqual([
+    expect(files.slice(-27).map(file=>file.name)).toEqual([
       "20260910040429_document_source_transcriptions.sql",
       "20260910040753_dev_financial_source_completion_runs.sql",
       "20260910042333_dev_missing_hours_declaration_wording.sql",
@@ -41,6 +41,7 @@ describe("V0.10.9 byte-pinned chain replay", () => {
       "20260911014710_hours_conflict_open_variable_scope.sql",
       "20260911015947_managed_notification_product_mirror.sql",
       "20260911061959_managed_dev_repeatable_lifecycle.sql",
+      "20260911063456_managed_dev_completion_rounds.sql",
     ]);
     for (const file of files) {
       expect(file.sha256_raw).toMatch(/^[a-f0-9]{64}$/u);
