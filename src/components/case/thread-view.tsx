@@ -202,7 +202,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
 
       {fulfilled.length>0?<div className="received-card"><h2>השלמות שהמידע בהן נמצא</h2><ul className="thread-answered">{fulfilled.map(request=><li key={request.id} id={`request-${request.id}`}><p className="thread-answered__question">{request.question}</p><DocumentUploadStatus request={request}/>{request.statement_month?<p>תקופת ההשלמה: {formatRequestMonth(request.statement_month)}</p>:null}</li>)}</ul></div>:null}
 
-      {deferred.length?<div className="received-card"><h2>לא נדרש לבדיקה הנוכחית</h2><p>שאלות אלה נשמרו ללא תשובה. החישובים וההשלמות בדוח הנוכחי אינם משתמשים בהן, ולכן אין צורך להשיב כעת. זו אינה קביעה שהנתונים אינם נדרשים לבדיקות אחרות או לזכאות; שינוי במסמך או בבדיקה עשוי להחזיר שאלה לרשימה הפעילה.</p><ul>{deferred.map(request=><li key={request.id} id={`request-${request.id}`}>{request.question}</li>)}</ul></div>:null}
+      {deferred.length?<div className="received-card"><h2>לא נדרש לבדיקה הנוכחית</h2><p>שאלות אלה נשמרו ללא תשובה. מענה עליהן אינו דרוש לקידום הבדיקות האפשריות בדוח הנוכחי. פערי שיוך המקור עדיין מופיעים בדוח. זו אינה קביעה שהנתונים אינם נדרשים לבדיקות אחרות או לזכאות; שינוי במסמך או בבדיקה עשוי להחזיר שאלה לרשימה הפעילה.</p><ul>{deferred.map(request=><li key={request.id} id={`request-${request.id}`}>{request.question}</li>)}</ul></div>:null}
       {answered.length > 0 ? (
         <div className="received-card">
           <h2>מה כבר עניתם</h2>

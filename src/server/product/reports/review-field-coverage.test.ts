@@ -3,11 +3,40 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {runDocumentReview,applyDocumentReviewAnswer} from '@/engine/document-review/service';
 import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired} from './review-field-coverage';
 import {documentFieldTarget} from './document-field-confirmation';
-import {reviewFieldCoverageFixture,reviewRowCellCoverageFixture,reviewSourceScopeCoverageFixture,reviewSourceTranscriptionFixture,reviewUnusedFieldFixture} from './review-field-coverage.fixture';
+import {reviewFieldCoverageFixture,reviewRowCellCoverageFixture,reviewSourceScopeCoverageFixture,reviewSourceTranscriptionFixture,reviewUnusedFieldFixture,reviewStructurallyBlockedPensionFixture} from './review-field-coverage.fixture';
 import {documentRowCellTarget} from './document-row-cell-confirmation';
 import {documentReviewCalculationInputSchema} from '@/engine/document-review/calculations';
+import {parseReviewCompletionInput} from '@/engine/document-review/completions';
 vi.mock('server-only',()=>({}));
 const nowMs=Date.parse('2026-09-11T00:00:00Z');
+it.each(['pension_base','pension_employee_contribution']as const)('defers %s only when a source-bound structural refusal makes every ratio use non-actionable',field=>{
+ const f=reviewStructurallyBlockedPensionFixture(field),before=canonicalSha256(f.review),targetBefore=canonicalSha256(f.fieldRequest);
+ expect(reviewFieldRequestsNotRequired({review:f.review,fieldRequests:[f.fieldRequest],nowMs})).toEqual([{field_request_id:f.fieldRequest.request_id,reason:'no_current_check_dependency'}]);
+ expect(reviewFieldReadingCheckLabels({review:f.review,fieldRequests:[f.fieldRequest],nowMs})[0].check_titles).toEqual([]);
+ expect(f.review.coverage_gaps.map(g=>g.check_id)).toEqual(['document.0.ratio.pension_employee_contribution.relationship','document.0.deductions.grouping']);
+ expect(f.review.checks[0].calculation).toMatchObject({state:'blocked',observed_ratio:null,expected:null});
+ expect(canonicalSha256(f.review)).toBe(before);expect(canonicalSha256(f.fieldRequest)).toBe(targetBefore);
+});
+it.each(['another_viable_use','missing_relationship_gap','unrelated_gap','active_numeric_need','changed_candidate_hash','unknown_grouping_basis','no_ratio_use']as const)('keeps pension numbers active when structural non-consumption is unproved: %s',change=>{
+ const f=reviewStructurallyBlockedPensionFixture(),input=structuredClone(f.input),ratio=documentReviewCalculationInputSchema.parse(input.checks[0].calculation);
+ if(change==='another_viable_use')input.checks.push({...input.checks[0],check_id:'document.0.other.ratio',calculation:{...ratio,check_id:'document.0.other.ratio',operation:{...ratio.operation,same_period_and_base:true}}});
+ if(change==='missing_relationship_gap')input.coverage_gaps=input.coverage_gaps.filter(g=>!g.check_id.endsWith('.relationship'));
+ if(change==='unrelated_gap')input.coverage_gaps[0].check_id='document.0.unresolved.pension.source';
+ if(change==='active_numeric_need'){
+  const completion=parseReviewCompletionInput(input.completion_input),pin=completion.documents[0].pin;
+  input.completion_input={...completion,needs:[{fact_key:'pension.read.base',kind:'factual',reason:'unknown',required_evidence_kind:'observed_reading',question:'מהו הבסיס במקור?',answer_kind:'number',source_pins:[pin],dependent_check_ids:[input.checks[0].check_id],general_question:false}]};
+  input.answer_bindings=[{fact_key:'pension.read.base',check_id:input.checks[0].check_id,operand_id:'base'}];
+ }
+ if(change==='changed_candidate_hash'){
+  input.checks[0].calculation={...ratio,operands:ratio.operands.map(o=>{const locator=JSON.parse(o.source.locator);return {...o,source:{...o.source,locator:JSON.stringify({...locator,candidate_sha256:['f'.repeat(64)]})}};})};
+ }
+ if(change==='unknown_grouping_basis'){
+  const totals=documentReviewCalculationInputSchema.parse(input.checks[1].calculation);
+  input.checks[1].calculation={...totals,operands:totals.operands.map(o=>({...o,source:{...o.source,locator:'unmapped grouped totals'}}))};
+ }
+ if(change==='no_ratio_use'){input.checks=input.checks.slice(1);input.coverage_gaps=input.coverage_gaps.filter(g=>!g.check_id.endsWith('.relationship'));}
+ expect(reviewFieldRequestsNotRequired({review:runDocumentReview(input,'pension-refusal-check'),fieldRequests:[f.fieldRequest],nowMs})).toEqual([]);
+});
 it('projects an unused salary-type action only for the explicitly versioned current arithmetic review',()=>{
  const f=reviewUnusedFieldFixture(),before=canonicalSha256(f.review),requestBefore=canonicalSha256(f.fieldRequest);
  expect(reviewFieldRequestsNotRequired({review:f.review,fieldRequests:[f.fieldRequest],nowMs})).toEqual([{field_request_id:f.fieldRequest.request_id,reason:'no_current_check_dependency'}]);

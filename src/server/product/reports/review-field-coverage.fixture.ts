@@ -88,3 +88,31 @@ export function reviewUnusedFieldFixture(){
   checks:[{...f.input.checks[0],calculation:{...old,operands:old.operands.map(o=>({...o,source:{...o.source,locator}}))}}]});
  return {...f,input,review:runDocumentReview(input,randomUUID()),fieldRequest:{...f.fieldRequest,target,code:`document_field:${target.target_sha256}`}};
 }
+
+export function reviewStructurallyBlockedPensionFixture(field:'pension_base'|'pension_employee_contribution'='pension_base'){
+ const f=reviewFieldCoverageFixture();
+ const values=[['pension_base','9000.00'],['pension_employee_contribution','540.00'],['gross_salary','9000.00'],['total_deductions','540.00'],['net_salary','8460.00']]as const;
+ const candidates=values.map(([name,raw])=>normalizedCandidateFieldSchema.parse({...f.candidate,candidate_id:randomUUID(),field:name,raw_value:raw,
+  normalized_value:{currency:'ILS',minor_units:Math.round(Number(raw)*100)},source:{...f.candidate.source,text_fragment:`${name}: ${raw}`}}));
+ const extraction={...f.checkpoint.run.result.final_extraction,fields:[...f.checkpoint.run.result.final_extraction.fields.filter(c=>!candidates.some(n=>n.field===c.field)),...candidates]};
+ const result={final_extraction:extraction},checkpoint={...f.checkpoint,result_sha256:canonicalSha256(result),run:{result}},reading=canonicalSha256(extraction);
+ const target=documentFieldTarget({checkpoint,policyVersion:'synthetic-pension-dependency-v1',candidateId:candidates.find(c=>c.field===field)!.candidate_id});
+ const old=documentReviewCalculationInputSchema.parse(f.input.checks[0].calculation),document={...f.input.documents[0],reading_sha256:reading};
+ const operand=(name:string,id:string,observed=false)=>{
+  const candidate=candidates.find(c=>c.field===name)!;
+  return {...old.operands[0],id,observation_id:candidate.candidate_id,state:observed?'observed':'unknown',printed_value:candidate.raw_value,representation:'money_ils',quantity_unit:null,
+   source:{...old.operands[0].source,reading_receipt_sha256:reading,locator:JSON.stringify({schema_version:'document-review-source-locator-v2',field:name,
+    candidate_ids:[candidate.candidate_id],candidate_sha256:[canonicalSha256(candidate)],raw_values:[candidate.raw_value]})}};
+ };
+ const ratioId='document.0.ratio.pension_employee_contribution',pin={case_id:f.input.case_id,document_id:document.document_id,version_id:document.version_id,source_sha256:document.file_sha256};
+ const input=documentReviewInputSchema.parse({...f.input,coverage_policy:'document-review-coverage-v1',purchased_scope:{...f.input.purchased_scope,topics:['pension','minimum_wage']},documents:[document],
+  checks:[{check_id:ratioId,topic:'pension',title:'יחס נצפה סינתטי',explanation:'שיוך הבסיס טרם הוכח',calculation:{...old,check_id:ratioId,
+   operands:[operand('pension_employee_contribution','contribution'),operand('pension_base','base')],operation:{kind:'observed_ratio',numerator_ref:'contribution',denominator_ref:'base',component_identity:'pension',same_period_and_base:false,basis:'Source relationship unproven'}}},
+  {check_id:'document.0.gross.net',topic:'minimum_wage',title:'התאמת סיכומים סינתטית',explanation:'סיכומים בלבד',calculation:{...old,check_id:'document.0.gross.net',
+   operands:[operand('gross_salary','gross',true),operand('total_deductions','deductions',true),operand('net_salary','net',true)],
+   operation:{kind:'reconciliation',add_refs:['gross'],subtract_refs:['deductions'],recorded_ref:'net',inventory_complete:true,inventory_basis:'Independent printed totals',disjoint_components:true,overlap_basis:'Totals once'}}}],
+  answer_bindings:[],completion_input:{case_id:f.input.case_id,period:f.input.period,documents:[{pin,kind:'payslip',period:f.input.period,review:'partial'}],needs:[],evidence:[]},
+  coverage_gaps:[{check_id:ratioId+'.relationship',topic:'pension',kind:'missing_fact',detail:'שיוך הסכום לבסיס חסר',next_step:'יש לזהות את השיוך במקור',source_pins:[pin]},
+   {check_id:'document.0.deductions.grouping',topic:'minimum_wage',kind:'missing_fact',detail:'שיוך שורות הניכוי לקבוצה חסר',next_step:'יש לזהות את השיוך במקור',source_pins:[pin]}]});
+ return {...f,input,checkpoint,review:runDocumentReview(input,randomUUID()),fieldRequest:{...f.fieldRequest,target,code:`document_field:${target.target_sha256}`}};
+}

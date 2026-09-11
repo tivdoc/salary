@@ -38,11 +38,13 @@ describe('request retry service receipts',()=>{
   }
  });
  it('requires and forwards the authenticated actor for a bound document confirmation',async()=>{
-  const s=setup();s.row.code='document_field:'+ 'a'.repeat(64);
-  await expect(answerCaseRequest({caseId,requestId,answer:'8'},s.db)).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
-  s.responses.case_request_answer_identified=[s.row];
-  await answerCaseRequest({caseId,requestId,answer:'8',identityId},s.db);
-  expect(s.calls.at(-1)).toEqual({fn:'case_request_answer_identified',args:{target_request:requestId,target_case:caseId,target_answer:'8',target_identity:identityId}});
+  const s=setup();bindSourceReading(s);
+  const answer='כן, בדקתי במסמך והערך נכון';
+  const row={...s.row,answer_kind:'choice',options:[answer],answer_text:answer};
+  s.responses.case_request_list=[row];s.responses.case_request_answer_identified=[row];
+  await expect(answerCaseRequest({caseId,requestId,answer},s.db)).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
+  await answerCaseRequest({caseId,requestId,answer,identityId},s.db);
+  expect(s.calls.at(-1)).toEqual({fn:'case_request_answer_identified',args:{target_request:requestId,target_case:caseId,target_answer:answer,target_identity:identityId}});
  });
  it('answers saved DEV financial hours through the identified RPC',async()=>{
   const s=setup();s.row.code='dev_financial_hours:'+ 'b'.repeat(64);s.row.answer_text='100';

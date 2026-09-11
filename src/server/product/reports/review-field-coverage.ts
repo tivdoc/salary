@@ -120,13 +120,15 @@ export function reviewRequestsCoveredByFieldReadings(input:{review:unknown;field
 /** Optional presentation projection. This is deliberately narrower than a
  * general dependency analyser: unfamiliar needs, locators or legal operations
  * preserve the action. It never closes the request or changes its authority. */
-export const REVIEW_DEFERRABLE_SCALAR_FIELDS=['salary_type','pension_employee_rate','pension_employer_rate','severance_rate','vacation_balance','sick_balance'] as const;
+const pensionRatioFields=new Set(['pension_base','pension_employee_contribution','pension_employer_contribution','severance_contribution']);
+export const REVIEW_DEFERRABLE_SCALAR_FIELDS=['salary_type','pension_employee_rate','pension_employer_rate','severance_rate','vacation_balance','sick_balance',
+ 'pension_base','pension_employee_contribution','pension_employer_contribution','severance_contribution'] as const;
 export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldRequests:readonly ExistingFieldReadingRequest[];nowMs:number}){
  const review=replayDocumentReview(input.review),planner=parseReviewCompletionInput(review.input.completion_input);
  if(!Number.isFinite(input.nowMs))throw Error('REVIEW_FIELD_COVERAGE_TIME');
  if(review.input.coverage_policy!=='document-review-coverage-v1'||!review.checks.length)return [];
- // These scalar fields have no implicit mapped-row/financial-source gate.
- // Salary period, money cells, hours and mapped payment fields stay active.
+ // Period, financial-source totals, hours and mapped payment fields stay
+ // active. Pension amounts additionally require a proven inactive ratio use.
  const eligible=new Set<string>(REVIEW_DEFERRABLE_SCALAR_FIELDS);
  return deepFreeze(input.fieldRequests.flatMap(request=>{
   if(!request.source_current||request.answered_at!==null||request.expired_at||Date.parse(request.expires_at)<=input.nowMs)return [];
@@ -138,7 +140,33 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
    &&(d.document_id===target.version_id||d.document_id===target.product_document_id));
   if(!document||document.kind!=='payslip'||document.period?.from!==review.period.from||document.period.to!==review.period.to)return [];
   const matchesPin=(pin:{version_id:string;source_sha256:string})=>pin.version_id===target.version_id&&pin.source_sha256===target.source_sha256;
+  const sameDocumentSource=(source:DocumentReviewOperand['source'])=>source.document_id===document.document_id&&source.version_id===document.version_id
+   &&source.file_sha256===document.file_sha256&&source.reading_receipt_sha256===document.reading_sha256;
   const needs=planner.needs.filter(n=>!n.source_pins.length||n.source_pins.some(matchesPin));
+  const sourceIndex=review.documents.indexOf(document);
+  const inactiveRatios=new Set(review.checks.filter(check=>{
+   const operation=check.calculation.input.operation;
+   return check.topic==='pension'&&operation.kind==='observed_ratio'&&!operation.same_period_and_base
+    &&check.calculation.state==='blocked'&&check.calculation.blockers.some(b=>b.reason==='ratio_period_or_base_unresolved')
+    &&check.calculation.input.operands.every(o=>sameDocumentSource(o.source))
+    &&!needs.some(n=>n.dependent_check_ids.includes(check.check_id))
+    &&review.coverage_gaps.some(g=>g.check_id===`${check.check_id}.relationship`&&g.kind==='missing_fact'&&g.topic==='pension'
+     &&g.source_pins?.length===1&&g.source_pins.every(matchesPin));
+  }).map(check=>check.check_id));
+  const summaryCheck=review.checks.find(check=>check.check_id===`document.${sourceIndex}.gross.net`&&check.topic==='minimum_wage');
+  const summaryOperation=summaryCheck?.calculation.input.operation;
+  const standaloneTotals=summaryOperation?.kind==='reconciliation'&&summaryOperation.inventory_complete&&summaryOperation.disjoint_components
+   &&summaryOperation.add_refs.length===1&&summaryOperation.add_refs[0]==='gross'&&summaryOperation.subtract_refs.length===1&&summaryOperation.subtract_refs[0]==='deductions'
+   &&summaryOperation.recorded_ref==='net'&&summaryCheck!.calculation.input.operands.length===3
+   &&summaryCheck!.calculation.input.operands.every(operand=>{
+    const locator=parseDocumentReviewSourceLocator(operand.source.locator);
+    return sameDocumentSource(operand.source)&&!!locator&&'field'in locator
+     &&({gross:'gross_salary',deductions:'total_deductions',net:'net_salary'} as Record<string,string>)[operand.id]===locator.field;
+   });
+  const knownStructuralGap=(gap:typeof review.coverage_gaps[number])=>gap.source_pins?.length===1&&gap.source_pins.every(matchesPin)&&gap.kind==='missing_fact'
+   &&(gap.topic==='pension'&&inactiveRatios.has(gap.check_id.replace(/\.relationship$/u,''))&&gap.check_id.endsWith('.relationship')
+    ||gap.topic==='minimum_wage'&&standaloneTotals&&gap.check_id===`document.${sourceIndex}.deductions.grouping`
+     &&!review.checks.some(check=>check.check_id===gap.check_id)&&!needs.some(n=>n.dependent_check_ids.includes(gap.check_id)));
   for(const need of needs){
    if(need.kind==='legal'||need.kind==='ownership')continue;
    if(need.kind!=='factual')return [];
@@ -150,8 +178,8 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
    if(!balance||balance.field===target.candidate.field)return [];
   }
   if(review.coverage_gaps.some(g=>g.kind!=='missing_rule'&&(!g.source_pins?.length||g.source_pins.some(matchesPin))
-   &&!needs.some(n=>n.dependent_check_ids.includes(g.check_id))))return [];
-  let documentOperands=0;
+   &&!needs.some(n=>n.dependent_check_ids.includes(g.check_id))&&!knownStructuralGap(g)))return [];
+  let documentOperands=0,inactivePensionUse=false;
   for(const check of review.checks){
    if(check.calculation.input.operation.kind==='candidate_rule')return [];
    for(const operand of check.calculation.input.operands){
@@ -159,12 +187,17 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
     if(operand.source.file_sha256!==document.file_sha256)return [];
     documentOperands++;
     const locator=parseDocumentReviewSourceLocator(operand.source.locator);if(!locator)return [];
-    if('field'in locator&&(locator.field===target.candidate.field||locator.candidate_ids.includes(target.candidate.candidate_id)))return [];
+    if('field'in locator&&(locator.field===target.candidate.field||locator.candidate_ids.includes(target.candidate.candidate_id))){
+     if(!inactiveRatios.has(check.check_id)||!pensionRatioFields.has(target.candidate.field)||locator.candidate_ids.length!==1
+      ||locator.field!==target.candidate.field||locator.candidate_ids[0]!==target.candidate.candidate_id||locator.candidate_sha256[0]!==canonicalSha256(target.candidate)
+      ||locator.raw_values[0]!==target.candidate.raw_value)return [];
+     inactivePensionUse=true;
+    }
     if('scope'in locator&&locator.candidate_ids.includes(target.candidate.candidate_id))return [];
     if('component_ids'in locator&&locator.mapped_candidate?.candidate_id===target.candidate.candidate_id)return [];
    }
   }
-  return documentOperands?[{field_request_id:request.request_id,reason:'no_current_check_dependency' as const}]:[];
+  return documentOperands&&(!pensionRatioFields.has(target.candidate.field)||inactivePensionUse)?[{field_request_id:request.request_id,reason:'no_current_check_dependency' as const}]:[];
  }));
 }
 
@@ -179,6 +212,7 @@ export function reviewFieldReadingCheckLabels(input:{review:unknown;fieldRequest
   const titles=review.input.checks.filter(check=>{
    if(review.checks.find(result=>result.check_id===check.check_id)?.calculation.state!=='blocked')return false;
    const calculation=documentReviewCalculationInputSchema.parse(check.calculation);
+   if(calculation.operation.kind==='observed_ratio'&&!calculation.operation.same_period_and_base)return false;
    return calculation.period.from.slice(0,7)===target.month&&calculation.period.to.slice(0,7)===target.month
     &&calculation.operands.some(operand=>coversOperand(operand,target));
   }).map(check=>check.title);
