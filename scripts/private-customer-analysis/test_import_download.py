@@ -1,3 +1,10 @@
+# L8-1 / D2: refuse before importing the private tool or creating test fixtures.
+import os as _tivdoc_os, sys as _tivdoc_sys
+if (_tivdoc_os.environ.get("NODE_ENV", "").strip().lower() == "production"
+        or _tivdoc_os.environ.get("VERCEL_ENV", "").strip().lower() in ("production", "preview")):
+    _tivdoc_sys.stderr.write("PRODUCTION_ENVIRONMENT_REFUSED\n")
+    _tivdoc_sys.exit(2)
+
 """Synthetic, offline safety regressions for the private source importer."""
 import contextlib
 import hashlib

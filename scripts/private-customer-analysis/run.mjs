@@ -1,3 +1,4 @@
+import "../production-refusal.mjs";
 import {build} from 'esbuild';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';

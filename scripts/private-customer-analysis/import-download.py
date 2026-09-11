@@ -1,3 +1,10 @@
+# L8-1 / D2: refuse before imports, argument parsing, or private file access.
+import os as _tivdoc_os, sys as _tivdoc_sys
+if (_tivdoc_os.environ.get("NODE_ENV", "").strip().lower() == "production"
+        or _tivdoc_os.environ.get("VERCEL_ENV", "").strip().lower() in ("production", "preview")):
+    _tivdoc_sys.stderr.write("PRODUCTION_ENVIRONMENT_REFUSED\n")
+    _tivdoc_sys.exit(2)
+
 """Import only a selected paid case's dashboard download into a private snapshot.
 
 No network, database mutation, fabricated historical version or customer delivery.
