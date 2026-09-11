@@ -19,7 +19,7 @@ export class SavedJune2026RegularRuntime implements RuleSpecExecutorPort,ReportB
  prepare(loaded:SavedJune2026AdmittedContext){
   if(loaded.state!=='context_loaded'){this.contextBlocker=loaded.code;return;}
   this.contextBlocker=null;
-  this.executor=new June2026RegularExecutor({authority:this.authority.authority,packet:loaded.admission_assessment,facts:loaded.facts});
+  this.executor=new June2026RegularExecutor({authority:this.authority.authority,packet:loaded.admission_assessment,facts:loaded.facts,...(loaded.hours_conflict_declaration?{hoursConflictDeclaration:loaded.hours_conflict_declaration}:{})});
   this.report=new June2026RegularReportBuilder({authority:this.authority.authority,executor:this.executor,publicId:this.publicId,offerSha256:this.order.offer_sha256,reportKind:this.order.kind});
  }
  blockers(){

@@ -1,3 +1,4 @@
+import {loadSavedHoursConflict} from './saved-hours-conflict';
 import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from "./saved-june2026-test-authority";
 import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,june2026RegularReviewIdempotencyKey,JUNE_REGULAR_READING_POLICY,type SavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
 import 'server-only';
@@ -133,9 +134,12 @@ export async function loadSavedJune2026AdmittedContext(input: {
     saved: {case_id: run.case_id, analysis_run_id: run.analysis_run_id, input_revision: run.source_revision, input_sha256: run.source_input_sha256,
       order_id: order.id, month: '2026-06'}, canonicalStage, ruleInput: ruleInputs[topicIndex], checkpoint: row.result, extractionPolicyVersion: SAVED_EXTRACTION_POLICY, collection});}
   catch(error){if(error instanceof Error&&error.message==='JUNE_COLLECTION_PERIOD_UNSUPPORTED')return blocked('document_period_unresolved',job.case_id,analysisRunId);throw error;}
+  const hoursConflict=(input.regularAuthority||input.regularReadingPolicy===JUNE_REGULAR_READING_POLICY)?await loadSavedHoursConflict({context,job,orderId,checkpoint:row.result}):{state:'not_applicable' as const};
   const assessment = prepareJune2026AssessmentPacket({context: admitted, facts: canonicalStage.facts});
   return deepFreeze({schema_version: 'saved-june2026-factual-context-v1', state: 'context_loaded' as const, context: admitted, provenance,
     admission_assessment: assessment, facts:canonicalStage.facts,
+    ...(hoursConflict.state==='not_applicable'?{}:{hours_conflict_state:hoursConflict.state}),
+    ...(hoursConflict.state==='declared'?{hours_conflict_declaration:hoursConflict.declaration}:{}),
     persisted_stage_sha256s: Object.fromEntries(stages.map(stage => [stage.stage, stage.payload_sha256])), command_sha256: run.command_sha256,
     legal_activation: false, publication_allowed: false});
 }

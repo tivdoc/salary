@@ -4,10 +4,12 @@ import type {June2026AssessmentPacket} from '../assessment-packet.ts';
 import {june2026WageEvidenceSchema} from '../evidence.ts';
 import {prepareJune2026MinimumWage} from '../executor.ts';
 import {assertJune2026RegularAuthority,type June2026RegularAuthority} from './authority.ts';
+import type {HoursConflictDeclaration} from '../../extraction/hours-conflict.ts';
+import {assertJune2026HoursConflictAcceptance,deriveJune2026HoursConflictFacts} from './hours-conflict-admission.ts';
 
 /** A signed case assessment admits exact identified declarations under the
  * pinned policy. It never rewrites their origin as a document or mutates facts. */
-export function resolveJune2026RegularEvidence(input:{authority:June2026RegularAuthority;packet:June2026AssessmentPacket;facts:EmploymentSnapshot}){
+export function resolveJune2026RegularEvidence(input:{authority:June2026RegularAuthority;packet:June2026AssessmentPacket;facts:EmploymentSnapshot;hoursConflictDeclaration?:HoursConflictDeclaration}){
  assertJune2026RegularAuthority(input.authority);
  const {authority,packet:p}=input,a=authority.assessment,facts=employmentSnapshotSchema.parse(input.facts);
  const {packet_sha256,...packetBody}=p;
@@ -34,9 +36,18 @@ export function resolveJune2026RegularEvidence(input:{authority:June2026RegularA
  });
  if(decisions.length!==8||a.decisions.some(d=>!decisions.some(g=>g.field===d.field)))blockers.push('assessment_subject_set');
  const hours=facts.facts.find(f=>f.path==='work.regular_hours');
- const hoursDeclared=hours?.provenance.some(e=>e.source_type==='declared');
+ const correction=input.hoursConflictDeclaration;
+ let correctionFacts:EmploymentSnapshot|undefined;
+ if(correction){
+  assertJune2026HoursConflictAcceptance(correction,a);
+  if(correction.target.extraction_result_sha256!==p.extraction_result_sha256||correction.target.product_document_id!==p.document.product_document_id
+   ||correction.target.source_page_count!==p.document.page_count)throw Error('JUNE_REGULAR_HOURS_CONFLICT_CHECKPOINT');
+  correctionFacts=deriveJune2026HoursConflictFacts(facts,correction);
+ }
+ const hoursDeclared=!!correction||hours?.provenance.some(e=>e.source_type==='declared');
  let hoursAccepted=false;
- if(hoursDeclared){
+ if(correction)hoursAccepted=true;
+ else if(hoursDeclared){
   // Canonical IDs/timestamps belong to the new analysis run. The signature
   // binds the immutable identified answer instead; the saved-context loader
   // separately proves this exact value/provenance came from its input journal.
@@ -49,11 +60,11 @@ export function resolveJune2026RegularEvidence(input:{authority:June2026RegularA
   else hoursAccepted=true;
  }else if(a.hours_acceptance!==null)blockers.push('work.regular_hours:unexpected_declared_assessment');
  blockers.push(...p.factual_issues.filter(issue=>!(hoursAccepted&&issue.field==='work.regular_hours'
-  &&issue.reason==='declared_hours_assessment_required')).map(issue=>`${issue.field}:${issue.reason}`));
+  &&(issue.reason==='declared_hours_assessment_required'||correction&&['confirmed_canonical_fact_required','conflicted_canonical_fact'].includes(issue.reason)))).map(issue=>`${issue.field}:${issue.reason}`));
  // This separately hashed admission snapshot is never written over the saved
  // canonical stage. Only the exact signed declared-hours fact changes status;
  // its value, confidence, evidence and original snapshot remain accessible.
- const effectiveFacts=employmentSnapshotSchema.parse({...facts,facts:facts.facts.map(f=>hoursAccepted&&f.fact_id===hours?.fact_id?{...f,status:'confirmed'}:f)});
+ const effectiveFacts=correctionFacts??employmentSnapshotSchema.parse({...facts,facts:facts.facts.map(f=>hoursAccepted&&f.fact_id===hours?.fact_id?{...f,status:'confirmed'}:f)});
  const evidence={...structuredClone(p.evidence),facts_snapshot_sha256:canonicalSha256(effectiveFacts)};
  for(const d of decisions){
   if(d.state!=='assessed'||!d.assessment||!d.declaration)continue;
@@ -67,13 +78,14 @@ export function resolveJune2026RegularEvidence(input:{authority:June2026RegularA
  const preflight=blockers.length?null:prepareJune2026MinimumWage({facts:effectiveFacts,evidence:parsed,calculatedAt:authority.evaluated_at});
  if(preflight?.state==='missing_input')blockers.push(...preflight.requests.map(r=>`${r.field}:${r.reason}`));
  if(preflight?.state==='out_of_scope')blockers.push(...preflight.blockers,...preflight.requests.map(r=>`${r.field}:${r.reason}`));
- const seed={schema_version:'june2026-regular-evidence-admission-v1',authority_sha256:authority.authority_sha256,
+ const seed={schema_version:correction?'june2026-regular-evidence-admission-v2':'june2026-regular-evidence-admission-v1',authority_sha256:authority.authority_sha256,
   assessment_sha256:canonicalSha256(a),packet_sha256,mode:authority.mode,case_id:facts.case_id,analysis_run_id:facts.analysis_run_id,
   facts_snapshot_sha256:canonicalSha256(facts),effective_facts_snapshot_sha256:canonicalSha256(effectiveFacts),effective_facts:effectiveFacts,
   fact_admissions:hoursAccepted&&hours?[{fact_id:hours.fact_id,prior_fact_sha256:canonicalSha256(hours),effective_fact_sha256:canonicalSha256(effectiveFacts.facts.find(f=>f.fact_id===hours.fact_id)),
    assessment_envelope_sha256:authority.assessment_envelope_sha256,decision:'accept_identified_declared_regular_hours' as const,
    declared_answer:{request_id:a.hours_acceptance!.request_id,answer_revision:a.hours_acceptance!.answer_revision,provenance_sha256:a.hours_acceptance!.provenance_sha256},
-   provenance:hours.provenance}]:[],
+   provenance:correction?.provenance??hours.provenance}]:[],
+  ...(correction?{hours_conflict_declaration:correction}:{}),
   decisions,hours_origin:hoursDeclared?'identified_declared' as const:'documented' as const,
   evidence:parsed,preflight,blockers,execution_allowed:blockers.length===0&&preflight?.state==='candidate_calculated',
   real_legal_authority:authority.real_legal_authority,human_report_approval:false as const};

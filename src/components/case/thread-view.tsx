@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { customerErrorFromResponse, customerErrorMessage } from "@/lib/customer-copy";
 import { formatRequestDate, formatRequestMonth } from "@/lib/request-display";
 import type { StoredRequest } from "@/server/product/reports/case-requests";
+import {HoursConflictAnswer} from './hours-conflict-answer';
+import {HOURS_CONFLICT_NAMESPACE,formatHoursConflictAnswer} from '@/server/product/reports/document-hours-conflict-answer';
+
+function displayAnswer(request:StoredRequest){
+ if(!request.code.startsWith(HOURS_CONFLICT_NAMESPACE))return request.answer_text;
+ try{return formatHoursConflictAnswer(request.answer_text??'');}catch{return 'התשובה השמורה אינה זמינה להצגה.';}
+}
 
 // Site S3.4 / D-2. The thread renders questions the engine asked and the
 // answers already given. It never invents a question: every card here came from
@@ -41,6 +48,8 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
       setBusy(false);
     }
   }
+
+  if(request.code.startsWith(HOURS_CONFLICT_NAMESPACE))return <HoursConflictAnswer request={request} publicId={publicId} onAnswered={onAnswered} correction={correction}/>;
 
   if (request.answer_kind === "document") {
     return <AddDocumentButton publicId={publicId} label="צירוף המסמך לתיק" requestId={request.id} />;
@@ -123,7 +132,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           <p>
             {blocking.length > 0
               ? "יש שאלה שאנחנו ממתינים לתשובה עליה כדי להמשיך. שעון הזמנים עצור עד שתענה."
-              : open.some(request=>request.code.startsWith('minimum_wage_june2026:'))
+              : open.some(request=>request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE))
                 ? "השאלות נועדו להשלמת מידע על תקופת העבודה ורכיבי השכר. התשובות נשמרות בתיק."
                 : "יש שאלה שתשפר את הדיוק. אפשר לענות בכל רגע — היא לא מעכבת את הבדיקה."}
           </p>
@@ -133,11 +142,12 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
       {open.map((request) => (
         <div className={`received-card thread-card${request.blocking ? " thread-card--blocking" : ""}`} key={request.id} id={`request-${request.id}`}>
           <p className="thread-card__meta">
-            {request.blocking ? "ממתינים לתשובה כדי להמשיך" : request.code.startsWith('minimum_wage_june2026:')?"נדרש מידע להמשך הבירור":"לא מעכב את הבדיקה"} · נשאל ב־{formatRequestDate(request.opened_at)} · פתוח עד {formatRequestDate(request.expires_at)}
+            {request.blocking ? "ממתינים לתשובה כדי להמשיך" : request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE)?"נדרש מידע להמשך הבירור":"לא מעכב את הבדיקה"} · נשאל ב־{formatRequestDate(request.opened_at)} · פתוח עד {formatRequestDate(request.expires_at)}
           </p>
           {request.statement_month ? <p className="thread-card__meta">תקופת השאלה: {formatRequestMonth(request.statement_month)}</p> : null}
           <h2>{request.question}</h2>
-          {request.field_crop && !request.code.startsWith('document_field:') && !request.code.startsWith('minimum_wage_june2026:') && !request.code.startsWith('document_transcription:') ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
+          {request.field_crop && !request.code.startsWith('document_field:') && !request.code.startsWith('minimum_wage_june2026:') && !request.code.startsWith('document_transcription:') && !request.code.startsWith(HOURS_CONFLICT_NAMESPACE) ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
+          {request.code.startsWith(HOURS_CONFLICT_NAMESPACE)?<p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת התלוש לבירור הסתירה</a></p>:null}
           {(request.code.startsWith('document_field:')||request.code.startsWith('document_transcription:')) ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
           {request.code.startsWith('minimum_wage_june2026:') ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת התלוש שאליו מתייחסת השאלה</a><br />התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.</p> : null}
           <AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={() => router.refresh()} />
@@ -155,7 +165,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
               <li key={request.id}>
                 <p className="thread-answered__question">{request.question}</p>
                 {request.statement_month ? <p>תקופת התשובה: {formatRequestMonth(request.statement_month)}</p> : null}
-                <p className="thread-answered__answer">{request.answer_text}</p>
+                <p className="thread-answered__answer">{displayAnswer(request)}</p>
                 {request.source_current === true && request.code.startsWith('document_field:') && ['הערך שונה במסמך','לא ניתן לקרוא את השדה'].includes(request.answer_text ?? '') ? <div><p>אפשר לצרף גרסה ברורה או מתוקנת של אותו מסמך. המסמך הקודם נשמר עד להשלמת ההחלפה. התשובה נשארת בהיסטוריה; המסמך החדש ייבדק בנפרד.</p><AddDocumentButton publicId={publicId} sourceRequestId={request.id} label="החלפת המסמך של השאלה" /></div> : null}
                 {(request.answer_revision ?? 1) > 1 ? <p>תשובה מתוקנת · גרסה {request.answer_revision}. התשובה המקורית נשמרה.</p> : null}
                 {request.source_current === false ? <p>התשובה נשמרה ביחס למסמך הקודם. היא אינה מאשרת נתונים מהמסמך העדכני.</p> : request.answer_kind !== "document" ? <details><summary>תיקון התשובה</summary><AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} correction onAnswered={() => router.refresh()} /></details> : null}

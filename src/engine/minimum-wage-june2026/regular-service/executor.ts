@@ -11,6 +11,7 @@ import {June2026RegularCatalog} from './catalog.ts';
 import {resolveJune2026RegularEvidence} from './evidence.ts';
 import {createJune2026RegularSourceAdmission} from './source-admission.ts';
 import {JUNE2026_REGULAR_REQUIRED_FACT_PATHS} from './contracts.ts';
+import type {HoursConflictDeclaration} from '../../extraction/hours-conflict.ts';
 
 export function june2026RegularId(seed:unknown){const s=canonicalSha256(seed);return `${s.slice(0,8)}-${s.slice(8,12)}-4${s.slice(13,16)}-a${s.slice(17,20)}-${s.slice(20,32)}`;}
 /** Root loads the same persisted facts/packet immediately before execution;
@@ -18,7 +19,7 @@ export function june2026RegularId(seed:unknown){const s=canonicalSha256(seed);re
 export class June2026RegularExecutor implements RuleSpecExecutorPort{
  readonly admission:ReturnType<typeof resolveJune2026RegularEvidence>;
  result:ReturnType<June2026RegularExecutor['materialize']>|null=null;
- constructor(private readonly input:{authority:June2026RegularAuthority;packet:June2026AssessmentPacket;facts:EmploymentSnapshot}){
+ constructor(private readonly input:{authority:June2026RegularAuthority;packet:June2026AssessmentPacket;facts:EmploymentSnapshot;hoursConflictDeclaration?:HoursConflictDeclaration}){
   this.admission=resolveJune2026RegularEvidence(input);
  }
  private materialize(executionId:string,calculatedAt:string,catalogSha256:string){

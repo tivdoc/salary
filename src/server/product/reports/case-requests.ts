@@ -12,8 +12,12 @@
 import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db.ts";
 import { validateRequestAnswer } from "./request-answer.ts";
 import { requestFor, slaPaused, type ThreadRequest } from "./refusal-requests.ts";
+import {HOURS_CONFLICT_NAMESPACE} from './document-hours-conflict-answer';
+import {z} from 'zod';
 
-export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean }>;
+const conflictSourceSchema=z.object({conflict_reason:z.enum(['conflicting_observations','provider_reported_conflict']),
+ source_observations:z.array(z.object({candidate_id:z.uuid(),raw_value:z.string().max(1000).nullable(),page:z.number().int().positive().max(100),source_label:z.string().max(1000).nullable()}).strict()).max(12)}).strict();
+export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
 
 type RequestRow = Readonly<{
   id: string;
@@ -62,12 +66,17 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const transcriptionStates=identityId&&transcriptions.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_transcription_states',{target_case:caseId,target_identity:identityId}):[];
   const hours=rows.filter(row=>row.code.startsWith('june2026_regular_hours:'));
   const hoursStates=identityId&&hours.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_regular_hours_states',{target_case:caseId,target_identity:identityId}):[];
-  const states=[...fields,...juneStates,...transcriptionStates,...hoursStates],allBound=[...bound,...june,...transcriptions,...hours];
+  const conflicts=rows.filter(row=>row.code.startsWith(HOURS_CONFLICT_NAMESPACE));
+  const conflictStates=identityId&&conflicts.length?await store.rpc<{request_id:string;source_current:boolean;conflict_reason:unknown;source_observations:unknown}>('case_request_hours_conflict_states',{target_case:caseId,target_identity:identityId}):[];
+  const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts];
   if (identityId && allBound.length && (states.length !== allBound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!allBound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   return rows.map(row => {
     const revision = revisions.find(value => value.request_id === row.id);
     const state = states.find(value => value.request_id === row.id);
-    return {...toRequest(row),...(state?{source_current:state.source_current}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
+    const conflict=conflictStates.find(value=>value.request_id===row.id);
+    const source=conflict&&!(conflict.source_current===false&&conflict.conflict_reason===null)
+      ?conflictSourceSchema.parse({conflict_reason:conflict.conflict_reason,source_observations:conflict.source_observations}):undefined;
+    return {...toRequest(row),...(state?{source_current:state.source_current}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
   });
 }
 
@@ -116,7 +125,7 @@ export async function answerCaseRequest(
   // The locked SQL operation owns expiry and exact-original retry semantics.
   // A stale browser clock or lost successful response is not a second answer.
   const answer = validateRequestAnswer(request, input.answer);
-  const bound=request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:')||request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith('document_transcription:')||request.code.startsWith('june2026_regular_hours:');
+  const bound=request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:')||request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith('document_transcription:')||request.code.startsWith('june2026_regular_hours:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE);
   if(bound&&!input.identityId)throw new Error('REQUEST_FIELD_FORBIDDEN');
   const rows = await store.rpc<RequestRow>(bound?"case_request_answer_identified":"case_request_answer", {
     target_request: input.requestId,
@@ -140,11 +149,12 @@ export function expiredRequests(requests: readonly StoredRequest[], now: Date = 
 export async function editCaseRequest(input:{caseId:string;requestId:string;identityId:string;answer:string;expectedRevision:number;kind:'draft'|'correction'},db?:CaseAccessDb|null){
  const store=db??await resolveCaseAccessDb();if(!store)throw new Error('REQUEST_STORE_UNAVAILABLE');
  if(!Number.isInteger(input.expectedRevision)||input.expectedRevision<0||input.answer.length>2000)throw new Error('REQUEST_EDIT_INVALID');
+ let answer=input.answer;
  if(input.kind==='correction'){
   const request=(await listCaseRequests(input.caseId,store)).find(r=>r.id===input.requestId);
-  if(!request)throw new Error('REQUEST_FORBIDDEN');validateRequestAnswer(request,input.answer);
+  if(!request)throw new Error('REQUEST_FORBIDDEN');answer=validateRequestAnswer(request,input.answer);
  }
- const rows=await store.rpc<{value:number}>('case_request_edit',{target_case:input.caseId,target_request:input.requestId,target_identity:input.identityId,target_answer:input.answer,expected_revision:input.expectedRevision,edit_kind:input.kind});
+ const rows=await store.rpc<{value:number}>('case_request_edit',{target_case:input.caseId,target_request:input.requestId,target_identity:input.identityId,target_answer:answer,expected_revision:input.expectedRevision,edit_kind:input.kind});
  if(rows.length!==1||rows[0].value!==input.expectedRevision+1)throw new Error('REQUEST_EDIT_RECEIPT_MISSING');
  return rows[0].value;
 }

@@ -7,6 +7,7 @@ import {createJune2026MinimumWageCandidate} from '../candidate.ts';
 import {JUNE2026_MINIMUM_WAGE_POLICY_SHA256,JUNE2026_MINIMUM_WAGE_SOURCES} from '../sources.ts';
 import type {June2026AssessmentPacket} from '../assessment-packet.ts';
 import type {EmploymentSnapshot} from '../../facts/snapshot.ts';
+import {hoursConflictDeclarationSchema,type HoursConflictDeclaration} from '../../extraction/hours-conflict.ts';
 import {createReviewerTrustPolicy,createTrustOrganization,createTrustedReviewer,InMemoryReviewerTrustStore} from '../../../server/platform/trust/reviewer-trust-store.ts';
 import {generateEd25519TestKey,signHumanDecision,signKeyPossessionChallenge} from '../../../server/platform/trust/test-support.ts';
 import type {SavedRegularTrustJournal} from '../../../server/product/processing/saved-regular-trust.ts';
@@ -111,7 +112,8 @@ export function createRegularServiceTrustFixture(now='2026-09-10T16:00:00.000Z')
  });
  const legal={artifacts,goldenCases:candidate.goldenCases};
  const registry={namespace:'isolated_test' as const,organization_id:organization,organization_version:'1.0.0',policy_version:'1.0.0',registry_sha256:canonicalSha256(journal)};
- const assessment=(packet:June2026AssessmentPacket,facts:EmploymentSnapshot)=>{
+ const assessment=(packet:June2026AssessmentPacket,facts:EmploymentSnapshot,hoursConflictDeclaration?:HoursConflictDeclaration)=>{
+  const correction=hoursConflictDeclaration?hoursConflictDeclarationSchema.parse(hoursConflictDeclaration):undefined;
   const r=reviewers.get('case')!,hours=facts.facts.find(f=>f.path==='work.regular_hours');
   const hoursDeclared=hours?.path==='work.regular_hours'&&hours.value&&hours.provenance.some(p=>p.source_type==='declared');
   const hoursSource=hours?.provenance[0];
@@ -126,12 +128,15 @@ export function createRegularServiceTrustFixture(now='2026-09-10T16:00:00.000Z')
     target_sha256:g.current_target_sha256,declaration_sha256:g.observed_declaration.declaration_sha256,
     value:g.field==='applicability.sector'?'general_private':g.field==='components.legal_classification'?'base_salary':true,
     rationale:'Explicit synthetic case assessment; this is not a real human review.',source:'Synthetic test registry and independently specified case fixture'};}),
-   hours_acceptance:hoursDeclared&&hours?.path==='work.regular_hours'&&hours.value&&hoursSource?.source_type==='declared'&&hoursSource.source_reference.kind==='case_request_answer'?{
+   hours_acceptance:correction?{request_id:correction.request_id,answer_revision:correction.answer_revision,
+    provenance_sha256:canonicalSha256(correction.provenance),value:correction.answer.hours,decision:'accept_identified_declared_regular_hours',
+    rationale:`Synthetic assessment of a source conflict declaration only; basis: ${correction.answer.basis}`}:
+    hoursDeclared&&hours?.path==='work.regular_hours'&&hours.value&&hoursSource?.source_type==='declared'&&hoursSource.source_reference.kind==='case_request_answer'?{
     request_id:hoursSource.source_reference.request_id,answer_revision:hoursSource.source_reference.answer_revision,
     provenance_sha256:canonicalSha256(hours.provenance),value:hours.value.amount,decision:'accept_identified_declared_regular_hours',
     rationale:'Only the exact identified synthetic customer answer is admitted as declared regular hours.'}:null});
   return {payload:june2026CaseAssessmentSchema.parse(signed.payload),envelope:signed.envelope};
  };
- const input=(packet:June2026AssessmentPacket,facts:EmploymentSnapshot):June2026RegularAuthorityInput=>({mode:'synthetic_test',evaluatedAt:now,registry,trust,legal,assessment:assessment(packet,facts)});
+ const input=(packet:June2026AssessmentPacket,facts:EmploymentSnapshot,hoursConflictDeclaration?:HoursConflictDeclaration):June2026RegularAuthorityInput=>({mode:'synthetic_test',evaluatedAt:now,registry,trust,legal,assessment:assessment(packet,facts,hoursConflictDeclaration)});
  return {journal,registry,legal,trust,assessment,input,now,expires};
 }

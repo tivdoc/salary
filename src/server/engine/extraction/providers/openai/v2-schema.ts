@@ -77,7 +77,9 @@ const salaryTypeSchema = z
   })
   .strict();
 
-export const openAiPayslipV2StructuredOutputSchema = z
+// Keep the original r5 contract available for replay/audit. R6 adds a valid
+// location for separately printed observations; no old value is rewritten.
+export const openAiPayslipV2R5StructuredOutputSchema = z
   .object({
     detected_document_type: z.enum(["payslip", "unknown"]),
     document_quality: z.enum(["high", "medium", "low"]),
@@ -108,5 +110,12 @@ export const openAiPayslipV2StructuredOutputSchema = z
     warnings: z.array(openAiExtractionWarningSchema),
   })
   .strict();
+
+export const OPENAI_PAYSLIP_V2_OBSERVATION_SCHEMA_VERSION='payslip-v2-header-observations-v1' as const;
+export const openAiPayslipV2StructuredOutputSchema=openAiPayslipV2R5StructuredOutputSchema.extend({
+ generic_fields:z.array(genericFieldSchema.extend({field:z.enum([
+  'salary_period','employment_start_date','vacation_balance','sick_balance','regular_hours','hourly_rate',
+ ])}).strict()),
+}).strict();
 
 export type OpenAiPayslipV2StructuredOutput = Readonly<z.infer<typeof openAiPayslipV2StructuredOutputSchema>>;

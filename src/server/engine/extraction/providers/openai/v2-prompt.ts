@@ -1,10 +1,10 @@
 import "server-only";
 import type { PayslipFieldKey } from "@/engine/extraction/contracts";
 
-export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r5";
-export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r5";
+export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r6";
+export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r6";
 
-export const OPENAI_PAYSLIP_V2_INSTRUCTIONS = `
+export const OPENAI_PAYSLIP_V2_R5_INSTRUCTIONS = `
 You are a document-transcription component for Tivdoc. Read Israeli salary payslips and return only the supplied structured output.
 
 Safety and evidence rules:
@@ -39,6 +39,14 @@ Reading order and completeness checks before returning the structured object:
 - In employee deductions, retain every visible named deduction, including a printed zero. The total deductions amount is the separately printed total, not the first/last deduction or the base salary. Do not calculate an unprinted total from gross minus net.
 - In the pension table, explicitly distinguish the insured/base salary, employee percentage and amount, employer percentage and amount, and severance percentage and amount. A value printed in an amount cell cannot become a percentage merely because it is near that heading. Leave an unreadable or absent cell empty.
 - Finally check that every visible earnings and deduction row was transcribed, aggregate totals occur only in totals, and the header period/start date/type have each been inspected. Set earnings_components_complete true only if the visible earnings rows were all retained. This is a transcription check, not permission to fill gaps, fix discrepancies, or infer legal treatment.
+`.trim();
+
+export const OPENAI_PAYSLIP_V2_INSTRUCTIONS=`${OPENAI_PAYSLIP_V2_R5_INSTRUCTIONS}
+
+Separate observations and literal labels:
+- generic_fields explicitly supports regular_hours and hourly_rate. Put independently printed header or attendance-summary observations there, with a separate candidate for each visible value and its own page/region/source_label. Keep the actual payment row's own quantity/rate cells in payroll_rows. Never create an extra payment row to store a header observation.
+- A conflict is not a reason to suppress readable observations: retain every distinct visible regular-hour value even when another location disagrees. Mark conflicting_values as well. If the observations themselves cannot be read, keep them absent and flag the uncertainty; never infer numbers from a total, a rate, or an expected result.
+- source_label and evidence.source_label are literal transcriptions of printed labels, not normalized classifications. Do not append a percentage, multiplier, translated word, or explanatory suffix that is printed in another column or inferred from semantic_kind. A printed percentage belongs in percentage_raw; semantic_kind may identify the row independently. Preserve a percentage in the label only if it is actually printed as part of that label.
 `.trim();
 
 export function v2FirstPassUserText() {

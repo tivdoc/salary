@@ -26,6 +26,7 @@ function setup(){
  const context:PostgresTransactionContext={transaction_id:'field-unit',client:{async query(s){
   if(s.name==='saved_field_question_scope'){expect(s.text).toContain('document_field_question_fields_v2(');expect(typeof s.values[0]).toBe('string');state.topics.push(JSON.parse(String(s.values[0])));const rows=state.rows??[{fields:state.allowed}];return {rows,row_count:rows.length};}
   if(s.name==='saved_field_request_open'){state.opened.push(JSON.parse(String(s.values[3])).candidate.field);return {rows:[{id:randomUUID()}],row_count:1};}
+  if(s.name==='saved_regular_hours_open'){state.opened.push(s.text.includes('hours_conflict_request_open')?'hours_conflict':'missing_hours');return {rows:[{id:randomUUID()}],row_count:1};}
   throw Error('UNEXPECTED_QUERY:'+s.name);
  }}};
  return {job,checkpoint,extraction,rehash,order,state,run:()=>openSavedDocumentFieldRequests(context,job,checkpoint)};
@@ -67,4 +68,13 @@ it('opens low-confidence salary type and period readings through purchased v2 sc
 it('accepts all fourteen valid server-policy fields while retaining topic-specific candidate checks',async()=>{
  const s=setup();s.order.topics=['minimum_wage','working_time','pension'];s.state.allowed=['salary_type','salary_period','base_monthly_salary','hourly_rate','gross_salary','net_salary','regular_hours','overtime_125_hours','overtime_150_hours','pension_base','travel_amount','convalescence_amount','vacation_balance','sick_balance'];
  await s.run();expect(s.state.opened).toEqual(['base_monthly_salary','pension_base']);
+});
+
+it('opens one source conflict instead of confirming either conflicting observation or guessing missing hours',async()=>{
+ const s=setup();s.checkpoint.expected_month='2026-06';s.order.from=s.order.to='2026-06-01';s.state.allowed=['regular_hours'];
+ for(const row of s.extraction.fields)if(row.field==='salary_period')row.normalized_value={year:2026,month:6,start_date:'2026-06-01',end_date:'2026-06-30'};
+ const first=s.extraction.fields.find(r=>r.field==='regular_hours');if(!first||first.field!=='regular_hours')throw Error('HOURS_FIXTURE_REQUIRED');
+ first.confidence=.6;first.normalized_value={amount:'100',unit:'hours_per_month'};
+ s.extraction.fields.push({...first,candidate_id:randomUUID(),raw_value:'120',normalized_value:{amount:'120',unit:'hours_per_month'}});s.rehash();
+ await s.run();expect(s.state.opened).toEqual(['hours_conflict']);
 });

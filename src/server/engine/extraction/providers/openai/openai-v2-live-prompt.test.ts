@@ -12,7 +12,7 @@ describe('versioned prompt correction after actual live transcription errors',()
   const prepared=await preprocessPayslipDocument({bytes:readFileSync('docs/release-evidence/automatic-dev-live-extraction/live-ocr-clear-june-2026.pdf'),mime_type:'application/pdf'});
   for(const [kind,version] of [['first_pass',OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION],['targeted_recovery',OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION]] as const){
    const request=buildOpenAiV2ResponsesRequest({model:'gpt-4o-mini-2024-07-18',prepared,kind,requested_fields:['salary_period']});
-   expect(request.text.format.name).toBe(version);expect(version).toMatch(/-r5$/u);
+   expect(request.text.format.name).toBe(version);expect(version).toMatch(/-r6$/u);
    expect(request.max_output_tokens).toBe(10000);expect(request.store).toBe(false);expect(request).not.toHaveProperty('tools');
   }
  expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).not.toMatch(/3300|3540|3,300|3,540|06\/2026|June|יוני|2026/u);
@@ -27,6 +27,9 @@ describe('versioned prompt correction after actual live transcription errors',()
   expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).toContain('Do not calculate an unprinted total from gross minus net');
   expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).toContain('employee percentage and amount, employer percentage and amount, and severance percentage and amount');
   expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).toContain('not permission to fill gaps, fix discrepancies, or infer legal treatment');
+  expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).toContain('generic_fields explicitly supports regular_hours and hourly_rate');
+  expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).toContain('A conflict is not a reason to suppress readable observations');
+  expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).toContain('Do not append a percentage');
  });
  it('keeps recovery restricted to requested fields rather than supplying earlier source values',async()=>{
   const prepared=await preprocessPayslipDocument({bytes:readFileSync('docs/release-evidence/automatic-dev-live-extraction/live-ocr-clear-june-2026.pdf'),mime_type:'application/pdf'});

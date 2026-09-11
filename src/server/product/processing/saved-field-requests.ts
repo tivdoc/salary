@@ -8,6 +8,7 @@ import {admitSavedSource} from './saved-admission';
 import type {SourceJob} from './source-dispatch';
 import {readSavedOrders} from './saved-order-scope';
 import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
+import {hasHoursConflictObservations} from '@/engine/extraction/hours-conflict';
 
 /** Runs after the checkpoint is committed/selected and under the same admitted
  * case lock. Opening a question never confirms a value or changes the journal;
@@ -30,8 +31,10 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
  const allowed=new Set(z.array(z.enum(Object.keys(confirmationFieldLabels) as [keyof typeof confirmationFieldLabels,...(keyof typeof confirmationFieldLabels)[]]))
   .max(14).refine(fields=>new Set(fields).size===fields.length).parse(scope.rows[0].fields));
  const extraction=saved.run.result.final_extraction;
+ const hoursConflict=month==='2026-06'&&topics.includes('minimum_wage')&&hasHoursConflictObservations(extraction);
  const validation=validatePayslipGate0(extraction,{reference_year:Number(saved.expected_month.slice(0,4))});
  const candidates=extraction.fields.filter(candidate=>{
+  if(hoursConflict&&candidate.field==='regular_hours')return false;
   if(!allowed.has(candidate.field as keyof typeof confirmationFieldLabels)||candidate.normalized_value===null)return false;
   const assessment=validation.field_assessments.find(a=>a.candidate_id===candidate.candidate_id);
   return assessment&&assessment.status!=='invalid'&&(candidate.confidence<0.95||extraction.document_quality_confidence<0.95||assessment.status!=='valid');
@@ -45,10 +48,10 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
    [job.case_id,job.revision,job.input_sha256,JSON.stringify(target),question.question]));
   opened.push(z.uuid().parse(result.rows[0]?.id));
  }
- if(month==='2026-06'&&topics.includes('minimum_wage')&&!extraction.fields.some(f=>f.field==='regular_hours')){
+ if(month==='2026-06'&&topics.includes('minimum_wage')&&(hoursConflict||!extraction.fields.some(f=>f.field==='regular_hours'))){
   for(const order of orders.filter(o=>o.from<='2026-06-01'&&o.to>='2026-06-01'&&o.topics.includes('minimum_wage'))){
    const result=await context.client.query(statement('saved_regular_hours_open',
-    'select private.june2026_hours_request_open($1::uuid,$2::uuid,$3,$4) id',[job.case_id,order.id,job.revision,job.input_sha256]));
+    hoursConflict?'select private.june2026_hours_conflict_request_open($1::uuid,$2::uuid,$3,$4) id':'select private.june2026_hours_request_open($1::uuid,$2::uuid,$3,$4) id',[job.case_id,order.id,job.revision,job.input_sha256]));
    if(result.rows[0]?.id!==null)opened.push(z.uuid().parse(result.rows[0]?.id));
   }
  }
