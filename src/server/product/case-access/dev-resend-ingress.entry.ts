@@ -1,6 +1,6 @@
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {handleDevResendIngress} from './dev-resend-ingress.ts';
-/** Build only into the separate public DEV ingress project. */
+/** Build only into an ingress-only immutable Preview artifact. */
 export default async function handler(req:IncomingMessage,res:ServerResponse){
  try{
   const chunks:Buffer[]=[];let size=0;

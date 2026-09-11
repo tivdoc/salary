@@ -1,6 +1,6 @@
 import {describe,it,expect,vi} from 'vitest';
 import {Webhook} from 'svix';
-import {handleDevResendIngress} from './dev-resend-ingress.ts';
+import {devIngressCredentialScopeValid,handleDevResendIngress} from './dev-resend-ingress.ts';
 const secret=`whsec_${Buffer.alloc(32,7).toString('base64')}`;
 const origin='https://salary-synthetic-tivdoccom-5042s-projects.vercel.app';
 const env={VERCEL_ENV:'preview',TIVDOC_DEV_INGRESS_ENABLED:'true',RESEND_WEBHOOK_SECRET:secret,
@@ -16,6 +16,20 @@ function request(){
 }
 function exchange(){return new Response(null,{status:307,headers:{location:`${origin}/api/health`,'set-cookie':'_vercel_jwt=synthetic-cookie; Path=/; Secure; HttpOnly'}});}
 describe('DEV webhook ingress transport unit contract, not provider delivery proof',()=>{
+ it.each(['SUPABASE_SERVICE_ROLE_KEY','OPENAI_API_KEY','RESEND_API_KEY','CASE_TOKEN_SECRET',
+  'TIVDOC_NOTIFICATION_WEBHOOK_POSTGRES_URL','TIVDOC_MANAGED_DEV_WORKER_CAPABILITY','TIVDOC_FUTURE_APPLICATION_FLAG',
+  'PAYMENT_RECONCILIATION_SECRET','DELIVERY_RECIPIENT_ALLOWLIST','GA4_API_SECRET','INVOICE4U_API_KEY',
+  'META_CAPI_ACCESS_TOKEN','NEXT_PUBLIC_SUPABASE_URL','DATABASE_URL','PGPASSWORD','OTHER_API_KEY'])('refuses inherited application configuration before even a GET: %s',async key=>{
+  const fetcher=vi.fn(),response=await handleDevResendIngress(new Request('https://ingress.invalid/api/resend'),{...env,[key]:'synthetic-only'},fetcher);
+  expect(response.status).toBe(503);expect(await response.json()).toEqual({code:'credential_scope_violation'});expect(fetcher).not.toHaveBeenCalled();
+ });
+ it('accepts explicitly blanked app variables while preserving platform-owned runtime configuration',async()=>{
+  const isolated={...env,OPENAI_API_KEY:'',RESEND_API_KEY:'',SUPABASE_SERVICE_ROLE_KEY:'',TIVDOC_NOTIFICATION_WEBHOOK_POSTGRES_URL:'',
+   VERCEL_OIDC_TOKEN:'synthetic-platform-token',AWS_SESSION_TOKEN:'synthetic-platform-token',NODE_ENV:'production'};
+  expect(devIngressCredentialScopeValid(isolated)).toBe(true);
+  const fetcher=vi.fn();expect((await handleDevResendIngress(new Request('https://ingress.invalid/api/resend'),isolated,fetcher)).status).toBe(405);
+  expect(fetcher).not.toHaveBeenCalled();
+ });
  it.each(['production','development',''])('never forwards outside Preview: %s',async target=>{
   const fetcher=vi.fn();expect((await handleDevResendIngress(request(),{...env,VERCEL_ENV:target},fetcher)).status).toBe(503);expect(fetcher).not.toHaveBeenCalled();
  });
@@ -45,6 +59,21 @@ describe('DEV webhook ingress transport unit contract, not provider delivery pro
   const [target,second]=fetcher.mock.calls[1];expect(String(target)).toBe(`${origin}/api/notifications/resend`);expect(second?.body).toBe(raw);
   const headers=new Headers(second?.headers);expect(headers.get('cookie')).toBe('_vercel_jwt=synthetic-cookie');expect(headers.get('svix-signature')).toBe(req.headers.get('svix-signature'));
   expect(headers.get('authorization')).toBeNull();expect(headers.get('x-vercel-protection-bypass')).toBeNull();
+ });
+ it('rejects malformed wire bytes that lossy UTF-8 decoding would turn into a different signed payload',async()=>{
+  const canonical=JSON.stringify({type:'email.delivered',created_at:new Date().toISOString(),data:{email_id:'11111111-1111-4111-8111-111111111111',subject:'\uFFFD'}});
+  const encoded=Buffer.from(canonical),index=encoded.indexOf(Buffer.from('\uFFFD'));
+  const wire=Buffer.concat([encoded.subarray(0,index),Buffer.from([0xff]),encoded.subarray(index+3)]);
+  // This equality is the old signature-confusion regression, not a valid raw request.
+  expect(wire.toString('utf8')).toBe(canonical);expect(wire.equals(encoded)).toBe(false);
+  const at=new Date(),id='msg_synthetic_utf8';
+  const req=new Request('https://ingress.invalid/api/resend',{method:'POST',body:wire,headers:{
+   'svix-id':id,'svix-timestamp':String(Math.floor(at.getTime()/1000)),
+   'svix-signature':new Webhook(secret).sign(id,at,canonical),
+  }});
+  const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(exchange()).mockResolvedValueOnce(Response.json({accepted:true}));
+  expect((await handleDevResendIngress(req,env,fetcher)).status).toBe(401);
+  expect(fetcher).not.toHaveBeenCalled();
  });
  it.each(['foreign_redirect','missing_cookie','unexpected_status'])('refuses an unsafe protection exchange: %s',async mutation=>{
   const response=new Response(null,{status:mutation==='unexpected_status'?200:307,headers:{location:mutation==='foreign_redirect'?'https://other.example/api/health':`${origin}/api/health`,...(mutation==='missing_cookie'?{}:{'set-cookie':'_vercel_jwt=synthetic-cookie'})}});

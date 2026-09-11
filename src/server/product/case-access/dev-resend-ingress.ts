@@ -1,14 +1,28 @@
-import {verifyResendWebhook} from './resend-webhook.ts';
+import {decodeResendWebhookBody,verifyResendWebhook} from './resend-webhook.ts';
 
 type Env=Readonly<Record<string,string|undefined>>;
 const response=(status:number,code:string)=>Response.json({code},{status,headers:{'cache-control':'no-store'}});
-/** Public DEV-only webhook ingress. It has no DB, storage, customer session,
- * OpenAI or email-sending credential. An expiring share for one immutable
+const INGRESS_APPLICATION_ENV=new Set(['RESEND_WEBHOOK_SECRET','TIVDOC_DEV_INGRESS_ENABLED',
+ 'TIVDOC_DEV_PREVIEW_SHARE_SECRET','TIVDOC_DEV_PREVIEW_ORIGIN','TIVDOC_DEV_PREVIEW_SHARE_EXPIRES']);
+/** A reused project must blank its application variables for this deployment.
+ * This checks the actual runtime values, not a build-time claim. Platform-owned
+ * Vercel/AWS credentials are outside the application's credential namespace. */
+export function devIngressCredentialScopeValid(env:Env):boolean{
+ return Object.entries(env).every(([key,value])=>{
+  if(!value||INGRESS_APPLICATION_ENV.has(key))return true;
+  if(/^(?:VERCEL_|AWS_)/u.test(key))return true;
+  return !/^(?:TIVDOC_|NEXT_PUBLIC_|SUPABASE_|OPENAI_|RESEND_|CASE_|DELIVERY_|GA4_|INVOICE4U_|META_|PAYMENT_|STRIPE_|DATABASE_|POSTGRES_|PGPASSWORD$|PGPASSFILE$)/u.test(key)
+   && !/(?:^|_)(?:API_KEY|ACCESS_TOKEN|SECRET|PASSWORD|PRIVATE_KEY|CREDENTIALS|POSTGRES_URL|DATABASE_URL)$/u.test(key);
+ });
+}
+/** Public DEV-only webhook ingress. Its runtime refuses application DB,
+ * storage, customer session, OCR and email-sending credentials. An expiring share for one immutable
  * Preview is exchanged for its scoped Vercel cookie; project-wide bypass keys
  * are never accepted. The application independently verifies the original
  * provider signature and records the receipt under its existing DB guards. */
 export async function handleDevResendIngress(request:Request,env:Env,transport:typeof fetch=fetch):Promise<Response>{
  if(env.VERCEL_ENV!=='preview'||env.TIVDOC_DEV_INGRESS_ENABLED!=='true')return response(503,'ingress_disabled');
+ if(!devIngressCredentialScopeValid(env))return response(503,'credential_scope_violation');
  return forwardSignedDevEvent(request,env,transport);
 }
 /** Explicit local test relay, not a deployment or a replacement for Preview
@@ -38,7 +52,7 @@ async function forwardSignedDevEvent(request:Request,env:Env,transport:typeof fe
   const chunks:Uint8Array[]=[];let size=0;
   for(;;){const read=await reader.read();if(read.done)break;size+=read.value.byteLength;
    if(size>65536){void reader.cancel();return response(413,'body_too_large');}chunks.push(read.value);}
-  raw=Buffer.concat(chunks).toString('utf8');
+  raw=decodeResendWebhookBody(Buffer.concat(chunks));
   verifyResendWebhook(raw,request.headers,secret);
  }catch{return response(401,'signature_invalid');}
  try{

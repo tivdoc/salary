@@ -29,7 +29,7 @@ export async function POST(request:Request){
   const reader=request.body?.getReader();if(!reader)return NextResponse.json({code:'webhook_invalid'},{status:400});
   const chunks:Uint8Array[]=[];let size=0;
   while(true){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>65536){void reader.cancel();return NextResponse.json({code:'body_too_large'},{status:413});}chunks.push(next.value);}
-  event=verifyResendWebhook(Buffer.concat(chunks).toString('utf8'),request.headers,secret);
+  event=verifyResendWebhook(Buffer.concat(chunks),request.headers,secret);
  }catch{return NextResponse.json({code:'signature_invalid'},{status:401});}
  if(!['email.sent','email.delivered','email.bounced','email.complained','email.suppressed','email.failed','email.delivery_delayed'].includes(event.kind))return NextResponse.json({accepted:true});
  try{
