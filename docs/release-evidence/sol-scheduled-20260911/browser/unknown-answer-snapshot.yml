@@ -1,0 +1,273 @@
+- generic [active] [ref=f6e1]:
+  - link "דלג לתוכן הראשי" [ref=f6e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f6e3]:
+    - banner [ref=f6e4]:
+      - generic [ref=f6e5]:
+        - link "תבדוק, חזרה לעמוד הבית" [ref=f6e6] [cursor=pointer]:
+          - /url: /
+          - img "תבדוק" [ref=f6e8]
+        - link "פנייה לתמיכה" [ref=f6e9] [cursor=pointer]:
+          - /url: /case/TV-9187C6A6/thread#support
+        - link "התיקים שלי" [ref=f6e10] [cursor=pointer]:
+          - /url: /cases
+        - link "חשבון" [ref=f6e11] [cursor=pointer]:
+          - /url: /account
+        - button "יציאה" [ref=f6e250] [cursor=pointer]
+        - generic [ref=f6e12]: תיק TV-9187C6A6
+    - generic [ref=f6e13]:
+      - navigation "ניווט בתיק" [ref=f6e14]:
+        - link "ראשי" [ref=f6e15] [cursor=pointer]:
+          - /url: /case/TV-9187C6A6
+        - link "מסמכים" [ref=f6e16] [cursor=pointer]:
+          - /url: /case/TV-9187C6A6/documents
+        - link "הודעות" [ref=f6e17] [cursor=pointer]:
+          - /url: /case/TV-9187C6A6/thread
+        - link "דוחות" [ref=f6e18] [cursor=pointer]:
+          - /url: /case/TV-9187C6A6/reports
+      - main [ref=f6e19]:
+        - generic [ref=f6e20]:
+          - generic [ref=f6e21]:
+            - generic [ref=f6e22]:
+              - heading "שאלות בתיק" [level=1] [ref=f6e23]
+              - paragraph [ref=f6e24]: השאלות נועדו להשלמת מידע על תקופת העבודה ורכיבי השכר. התשובות נשמרות בתיק.
+            - generic [ref=f6e25]:
+              - paragraph [ref=f6e26]: לא מעכב את הבדיקה · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e27]: "תקופת השאלה: יוני 2026"
+              - 'heading "בעמוד 1 במסמך לחודש יוני 2026 קראנו תקופת השכר: מ־2026-06-01 עד 2026-06-30. האם זה הערך שמופיע במסמך?" [level=2] [ref=f6e28]'
+              - paragraph [ref=f6e29]:
+                - link "פתיחת המסמך לאימות השדה" [ref=f6e30] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=309c42f1-b240-4b5f-8997-e9e6736fc295
+                - text: האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.
+              - generic [ref=f6e31]:
+                - generic [ref=f6e32]:
+                  - button "כן, בדקתי במסמך והערך נכון" [ref=f6e33] [cursor=pointer]
+                  - button "הערך שונה במסמך" [ref=f6e34] [cursor=pointer]
+                  - button "לא ניתן לקרוא את השדה" [ref=f6e35] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e36]
+                - button "שמירת טיוטה" [disabled] [ref=f6e37]
+            - generic [ref=f6e38]:
+              - paragraph [ref=f6e39]: לא מעכב את הבדיקה · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e40]: "תקופת השאלה: יוני 2026"
+              - 'heading "בעמוד 1 במסמך לחודש יוני 2026 קראנו סוג השכר: שעתי. האם זה הערך שמופיע במסמך?" [level=2] [ref=f6e41]'
+              - paragraph [ref=f6e42]:
+                - link "פתיחת המסמך לאימות השדה" [ref=f6e43] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=993a490f-313f-43fd-898b-f6c108af0736
+                - text: האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.
+              - generic [ref=f6e44]:
+                - generic [ref=f6e45]:
+                  - button "כן, בדקתי במסמך והערך נכון" [ref=f6e46] [cursor=pointer]
+                  - button "הערך שונה במסמך" [ref=f6e47] [cursor=pointer]
+                  - button "לא ניתן לקרוא את השדה" [ref=f6e48] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e49]
+                - button "שמירת טיוטה" [disabled] [ref=f6e50]
+            - generic [ref=f6e51]:
+              - paragraph [ref=f6e52]: לא מעכב את הבדיקה · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e53]: "תקופת השאלה: יוני 2026"
+              - 'heading "בעמוד 1 במסמך לחודש יוני 2026 קראנו שכר הבסיס החודשי: 3300.00 ILS. האם זה הערך שמופיע במסמך?" [level=2] [ref=f6e54]'
+              - paragraph [ref=f6e55]:
+                - link "פתיחת המסמך לאימות השדה" [ref=f6e56] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=581e36cd-d44b-4914-8d5d-6de8f1010186
+                - text: האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.
+              - generic [ref=f6e57]:
+                - generic [ref=f6e58]:
+                  - button "כן, בדקתי במסמך והערך נכון" [ref=f6e59] [cursor=pointer]
+                  - button "הערך שונה במסמך" [ref=f6e60] [cursor=pointer]
+                  - button "לא ניתן לקרוא את השדה" [ref=f6e61] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e62]
+                - button "שמירת טיוטה" [disabled] [ref=f6e63]
+            - generic [ref=f6e64]:
+              - paragraph [ref=f6e65]: לא מעכב את הבדיקה · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e66]: "תקופת השאלה: יוני 2026"
+              - 'heading "בעמוד 1 במסמך לחודש יוני 2026 קראנו שכר ברוטו: 3300.00 ILS. האם זה הערך שמופיע במסמך?" [level=2] [ref=f6e67]'
+              - paragraph [ref=f6e68]:
+                - link "פתיחת המסמך לאימות השדה" [ref=f6e69] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=2a8e7e52-beb1-47ac-8cfc-579acaec08ce
+                - text: האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.
+              - generic [ref=f6e70]:
+                - generic [ref=f6e71]:
+                  - button "כן, בדקתי במסמך והערך נכון" [ref=f6e72] [cursor=pointer]
+                  - button "הערך שונה במסמך" [ref=f6e73] [cursor=pointer]
+                  - button "לא ניתן לקרוא את השדה" [ref=f6e74] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e75]
+                - button "שמירת טיוטה" [disabled] [ref=f6e76]
+            - generic [ref=f6e77]:
+              - paragraph [ref=f6e78]: לא מעכב את הבדיקה · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e79]: "תקופת השאלה: יוני 2026"
+              - 'heading "בעמוד 1 במסמך לחודש יוני 2026 קראנו שכר נטו: 3300.00 ILS. האם זה הערך שמופיע במסמך?" [level=2] [ref=f6e80]'
+              - paragraph [ref=f6e81]:
+                - link "פתיחת המסמך לאימות השדה" [ref=f6e82] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=a53ed5da-ab41-4fc2-ba6d-e2cb9ff50e14
+                - text: האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.
+              - generic [ref=f6e83]:
+                - generic [ref=f6e84]:
+                  - button "כן, בדקתי במסמך והערך נכון" [ref=f6e85] [cursor=pointer]
+                  - button "הערך שונה במסמך" [ref=f6e86] [cursor=pointer]
+                  - button "לא ניתן לקרוא את השדה" [ref=f6e87] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e88]
+                - button "שמירת טיוטה" [disabled] [ref=f6e89]
+            - generic [ref=f6e113]:
+              - paragraph [ref=f6e114]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e115]: "תקופת השאלה: יוני 2026"
+              - heading "האם ביום 1 ביוני 2026 כבר מלאו לך 18?" [level=2] [ref=f6e116]
+              - paragraph [ref=f6e117]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e118] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=091206ea-5540-41ad-969b-73f10664bfe1
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e119]:
+                - generic [ref=f6e120]:
+                  - button "כן, לפי המידע שברשותי" [ref=f6e121] [cursor=pointer]
+                  - button "לא, לפי המידע שברשותי" [ref=f6e122] [cursor=pointer]
+                  - button "איני יודע/ת" [ref=f6e123] [cursor=pointer]
+                  - button "יש מידע סותר" [ref=f6e124] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e125]
+                - button "שמירת טיוטה" [disabled] [ref=f6e126]
+            - generic [ref=f6e127]:
+              - paragraph [ref=f6e128]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e129]: "תקופת השאלה: יוני 2026"
+              - heading "מה תחום הפעילות של המעסיק ביוני 2026, והאם ידוע לך על הסכם ענפי או קיבוצי שחל בעבודה? נא לתאר את המידע שברשותך. אפשר גם לכתוב ״איני יודע/ת״ או ״יש מידע סותר״." [level=2] [ref=f6e130]
+              - paragraph [ref=f6e131]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e132] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=35d8276a-ee53-4870-beda-f712cf5ad847
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e133]:
+                - generic [ref=f6e134]:
+                  - generic [ref=f6e135]: תשובה
+                  - textbox "תשובה" [ref=f6e136]
+                - button "שליחת תשובה" [ref=f6e137] [cursor=pointer]
+                - button "שמירת טיוטה" [disabled] [ref=f6e138]
+            - generic [ref=f6e139]:
+              - paragraph [ref=f6e140]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e141]: "תקופת השאלה: יוני 2026"
+              - heading "נא לתאר את התפקיד בפועל ביוני 2026, אופן הפיקוח על שעות העבודה והסמכויות בעבודה. המידע דרוש לבירור התחולה; אין צורך לקבוע בעצמך מסקנה משפטית. אפשר גם לכתוב ״איני יודע/ת״ או ״יש מידע סותר״." [level=2] [ref=f6e142]
+              - paragraph [ref=f6e143]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e144] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=0e91f825-f4c3-4659-b74f-b483712a6e80
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e145]:
+                - generic [ref=f6e146]:
+                  - generic [ref=f6e147]: תשובה
+                  - textbox "תשובה" [ref=f6e148]
+                - button "שליחת תשובה" [ref=f6e149] [cursor=pointer]
+                - button "שמירת טיוטה" [disabled] [ref=f6e150]
+            - generic [ref=f6e151]:
+              - paragraph [ref=f6e152]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e153]: "תקופת השאלה: יוני 2026"
+              - heading "האם ידוע לך על חוזה, הסכם או הסדר אחר שקובע עבורך שכר מינימום גבוה מהשכר הכללי ביוני 2026?" [level=2] [ref=f6e154]
+              - paragraph [ref=f6e155]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e156] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=ef89e5d6-e717-4d46-aa02-59720b289f9d
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e157]:
+                - generic [ref=f6e158]:
+                  - button "כן, לפי המידע שברשותי" [ref=f6e159] [cursor=pointer]
+                  - button "לא, לפי המידע שברשותי" [ref=f6e160] [cursor=pointer]
+                  - button "איני יודע/ת" [ref=f6e161] [cursor=pointer]
+                  - button "יש מידע סותר" [ref=f6e162] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e163]
+                - button "שמירת טיוטה" [disabled] [ref=f6e164]
+            - generic [ref=f6e165]:
+              - paragraph [ref=f6e166]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e167]: "תקופת השאלה: יוני 2026"
+              - heading "האם נקבע עבורך שכר מינימום מותאם בהחלטה מוסמכת שחלה ביוני 2026?" [level=2] [ref=f6e168]
+              - paragraph [ref=f6e169]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e170] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=75a1688d-599f-4b0c-8146-d19bf3e5ff13
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e171]:
+                - generic [ref=f6e172]:
+                  - button "כן, לפי המידע שברשותי" [ref=f6e173] [cursor=pointer]
+                  - button "לא, לפי המידע שברשותי" [ref=f6e174] [cursor=pointer]
+                  - button "איני יודע/ת" [ref=f6e175] [cursor=pointer]
+                  - button "יש מידע סותר" [ref=f6e176] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e177]
+                - button "שמירת טיוטה" [disabled] [ref=f6e178]
+            - generic [ref=f6e179]:
+              - paragraph [ref=f6e180]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e181]: "תקופת השאלה: יוני 2026"
+              - heading "האם השעות הרגילות בתלוש יוני 2026 כוללות רק עבודה רגילה, ללא היעדרות, שעות נוספות או עבודה במנוחה השבועית?" [level=2] [ref=f6e182]
+              - paragraph [ref=f6e183]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e184] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=8792bfb3-ccb8-41db-bdf4-9351a9c51311
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e185]:
+                - generic [ref=f6e186]:
+                  - button "כן, לפי המידע שברשותי" [ref=f6e187] [cursor=pointer]
+                  - button "לא, לפי המידע שברשותי" [ref=f6e188] [cursor=pointer]
+                  - button "איני יודע/ת" [ref=f6e189] [cursor=pointer]
+                  - button "יש מידע סותר" [ref=f6e190] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e191]
+                - button "שמירת טיוטה" [disabled] [ref=f6e192]
+            - generic [ref=f6e193]:
+              - paragraph [ref=f6e194]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e195]: "תקופת השאלה: יוני 2026"
+              - heading "לאחר בדיקת כל שורות התשלום בתלוש יוני 2026 ובקשות בירור רכיבי השכר, האם כל רכיב תשלום בתלוש מופיע בבקשות הבירור? אין לכלול ניכויים כשורות תשלום." [level=2] [ref=f6e196]
+              - paragraph [ref=f6e197]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e198] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=71985997-e456-47f6-a242-66df6217e407
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e199]:
+                - generic [ref=f6e200]:
+                  - button "כן, לפי המידע שברשותי" [ref=f6e201] [cursor=pointer]
+                  - button "לא, לפי המידע שברשותי" [ref=f6e202] [cursor=pointer]
+                  - button "איני יודע/ת" [ref=f6e203] [cursor=pointer]
+                  - button "יש מידע סותר" [ref=f6e204] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e205]
+                - button "שמירת טיוטה" [disabled] [ref=f6e206]
+            - generic [ref=f6e207]:
+              - paragraph [ref=f6e208]: נדרש מידע להמשך הבירור · נשאל ב־11 בספטמבר · פתוח עד 21 בספטמבר
+              - paragraph [ref=f6e209]: "תקופת השאלה: יוני 2026"
+              - heading "מה מהות הרכיב ״שכר יסוד שעתי״ בעמוד 1 בתלוש יוני 2026, לפי המידע שברשותך? התיאור יישמר כהצהרתך לצורך בירור הרכיב." [level=2] [ref=f6e210]
+              - paragraph [ref=f6e211]:
+                - link "פתיחת התלוש שאליו מתייחסת השאלה" [ref=f6e212] [cursor=pointer]:
+                  - /url: /api/cases/TV-9187C6A6/requests?source=df47e18b-4523-4f55-86b3-86d27a9c8aaf
+                - text: התשובה נשמרת כהצהרתך לצורך הבירור ואינה אישור משפטי של החישוב או הזכאות.
+              - generic [ref=f6e213]:
+                - generic [ref=f6e214]:
+                  - button "שכר יסוד או שכר משולב" [ref=f6e215] [cursor=pointer]
+                  - button "תוספת יוקר שאינה כלולה כבר בשכר המשולב" [ref=f6e216] [cursor=pointer]
+                  - button "תוספת קבועה עקב העבודה" [ref=f6e217] [cursor=pointer]
+                  - button "תוספת ותק" [ref=f6e218] [cursor=pointer]
+                  - button "תוספת משפחה" [ref=f6e219] [cursor=pointer]
+                  - button "תוספת משמרות" [ref=f6e220] [cursor=pointer]
+                  - button "פרמיית תפוקה" [ref=f6e221] [cursor=pointer]
+                  - button "משכורת שלוש עשרה" [ref=f6e222] [cursor=pointer]
+                  - button "מענק שנתי" [ref=f6e223] [cursor=pointer]
+                  - button "החזר הוצאות" [ref=f6e224] [cursor=pointer]
+                  - button "תשלום בעד שעות נוספות" [ref=f6e225] [cursor=pointer]
+                  - button "תשלום בעד עבודה במנוחה השבועית" [ref=f6e226] [cursor=pointer]
+                  - button "תשלום בעד היעדרות" [ref=f6e227] [cursor=pointer]
+                  - button "ניכוי מהשכר" [ref=f6e228] [cursor=pointer]
+                  - button "רכיב מסוג אחר" [ref=f6e229] [cursor=pointer]
+                  - button "איני יודע/ת" [ref=f6e230] [cursor=pointer]
+                  - button "יש מידע סותר" [ref=f6e231] [cursor=pointer]
+                - button "שליחת תשובה" [disabled] [ref=f6e232]
+                - button "שמירת טיוטה" [disabled] [ref=f6e233]
+            - generic [ref=f6e251]:
+              - heading "מה כבר עניתם" [level=2] [ref=f6e252]
+              - list [ref=f6e253]:
+                - listitem [ref=f6e254]:
+                  - paragraph [ref=f6e255]: "בתלוש יוני 2026: נמצאו קריאות שעות שונות במקור. יש לבדוק את המסמך ואת רישומי העבודה, לציין את מספר השעות הרגילות ואת הבסיס לתשובה, או לבחור שלא ניתן לקבוע. התשובה היא הצהרה לבירור ואינה מתקנת את המקור או מאשרת זכאות."
+                  - paragraph [ref=f6e256]: "תקופת התשובה: יוני 2026"
+                  - paragraph [ref=f6e257]: לא ניתן לקבוע את מספר השעות
+                  - group [ref=f6e258]:
+                    - generic "תיקון התשובה" [ref=f6e259] [cursor=pointer]
+          - region [ref=f6e234]:
+            - heading "פנייה לתמיכה" [level=2] [ref=f6e235]
+            - paragraph [ref=f6e236]: אפשר לשאול או לבקש תיקון. תשובת תמיכה אינה אישור מקצועי לממצא. ההודעות והתשובות נשמרות כאן בתיק.
+            - generic [ref=f6e237]:
+              - generic [ref=f6e238]:
+                - generic [ref=f6e239]: פרטי הפנייה לתמיכה
+                - textbox "פרטי הפנייה לתמיכה" [ref=f6e240]
+              - button "שליחת הודעה" [disabled] [ref=f6e241]
+              - status
+            - paragraph [ref=f6e242]: עדיין אין פניות תמיכה בתיק.
+          - paragraph [ref=f6e243]:
+            - link "חזרה לתיק" [ref=f6e244] [cursor=pointer]:
+              - /url: /case/TV-9187C6A6
+    - contentinfo [ref=f6e245]:
+      - generic [ref=f6e246]:
+        - generic [ref=f6e247]: המידע משמש לביצוע הבדיקה בלבד.
+        - link "פרטיות" [ref=f6e248] [cursor=pointer]:
+          - /url: /privacy
+  - alert [ref=f6e249]
