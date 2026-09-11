@@ -166,7 +166,8 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
     <div className="thread-view">
       <div className="received-card">
         <h1>שאלות בתיק</h1>
-        {deferred.length?<p>{open.length} פעולות נדרשות כעת · {deferred.length} שאלות נשמרו ואינן נדרשות לבדיקה הנוכחית.</p>:null}
+        <p>{open.length} פעולות נדרשות כעת{deferred.length?` · ${deferred.length} שאלות נשמרו ואינן נדרשות לבדיקה הנוכחית.`:''}</p>
+        {answered.length>0&&open.length>0&&deferred.length===0?<p>הספירה מתייחסת לפעולות שמוצגות כעת. לאחר עיבוד תשובות חדשות, הרשימה עשויה להתעדכן; שמירת תשובה אינה קובעת שהבדיקה הושלמה.</p>:null}
         {open.length === 0 ? (
           <p>אין כרגע שאלות פתוחות. אם נצטרך משהו כדי להמשיך, זה יופיע כאן.</p>
         ) : (
