@@ -62,7 +62,7 @@ function validateResult(invocation:Pick<Invocation,'case_id'|'version_id'|'expec
   ||canonicalSha256(result.run.result)!==result.result_sha256)throw new Error('SAVED_EXTRACTION_RECEIPT_SCOPE');
 }
 
-async function prepare(context:PostgresTransactionContext,input:SavedExtractionLease){
+async function prepare(context:PostgresTransactionContext,input:SavedExtractionLease&{receiptOnly?:boolean}){
  const admitted=await admit(context,input),{job,month,document}=admitted,invocationId=randomUUID();
  const contentHash=z.string().regex(/^[a-f0-9]{64}$/).parse(document.content_sha256);
  const cached=await context.client.query(statement('extraction_existing_checkpoint',
@@ -73,6 +73,15 @@ async function prepare(context:PostgresTransactionContext,input:SavedExtractionL
   const checkpoint=cached.rows[0].result as Extraction;
   validateResult({case_id:job.case_id,version_id:input.versionId,expected_month:month,input_sha256:contentHash},checkpoint);
   return {...admitted,invocation:null,checkpoint,reused:true};
+ }
+ if(input.receiptOnly){
+  const existing=await context.client.query(statement('extraction_saved_receipt_only',
+   'select * from private.case_extraction_invocations where case_id=$1::uuid and version_id=$2::uuid and policy_version=$3 and expected_month=$4',
+   [job.case_id,input.versionId,SAVED_EXTRACTION_POLICY,month]));
+  const invocation=existing.rows[0] as Invocation|undefined;
+  if(!invocation?.result)throw Error('SAVED_EXTRACTION_RECEIPT_REQUIRED');
+  validateResult({case_id:job.case_id,version_id:input.versionId,expected_month:month,input_sha256:contentHash},invocation.result);
+  return {...admitted,invocation,checkpoint:null,reused:true};
  }
  const inserted=await context.client.query(statement('extraction_dispatch_once',
   `insert into private.case_extraction_invocations(invocation_id,case_id,version_id,policy_version,expected_month,input_sha256,source_revision,job_id,fencing_token)
@@ -125,13 +134,14 @@ export async function recordSavedExtractionResult(context:PostgresTransactionCon
  * Recovered receipts are reusable across source revisions with the same file,
  * month and extraction policy. No customer publication or job completion here. */
 export async function runSavedWorkerExtraction(input:SavedExtractionLease&{
- transactions:SavedWorkerTransactions;storage:UploadExtractionStorage;providerEnabled:boolean;extractor?:OpenAiPayslipV2PassExtractor;
+ transactions:SavedWorkerTransactions;storage:UploadExtractionStorage;providerEnabled:boolean;receiptOnly?:boolean;extractor?:OpenAiPayslipV2PassExtractor;
 }){
- if(!input.providerEnabled)throw new Error('SAVED_EXTRACTION_PROVIDER_DISABLED');
- if(!input.extractor&&!process.env.OPENAI_API_KEY?.trim())throw new Error('SAVED_EXTRACTION_PROVIDER_UNCONFIGURED');
+ if(!input.receiptOnly&&!input.providerEnabled)throw new Error('SAVED_EXTRACTION_PROVIDER_DISABLED');
+ if(!input.receiptOnly&&!input.extractor&&!process.env.OPENAI_API_KEY?.trim())throw new Error('SAVED_EXTRACTION_PROVIDER_UNCONFIGURED');
  const prepared=await input.transactions(context=>prepare(context,input));
  let result=prepared.checkpoint??prepared.invocation?.result??null;
  if(result===null){
+  if(input.receiptOnly)throw Error('SAVED_EXTRACTION_RECEIPT_REQUIRED');
   const invocation=prepared.invocation;
   if(!invocation)throw new Error('SAVED_EXTRACTION_RECEIPT_UNAVAILABLE');
   const seed=canonicalSha256({invocation_id:invocation.invocation_id,policy:SAVED_EXTRACTION_POLICY});

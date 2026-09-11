@@ -24,6 +24,16 @@ function setup(){
  return {env,candidates,onMonth:vi.fn(),tick:(signal?:AbortSignal)=>runManagedDevTick(env,'a'.repeat(40),vi.fn(),signal)};
 }
 describe('managed scheduler boundary',()=>{
+ it('saved-receipt processing needs no spend authority and constructs neither provider nor budget wrapper',async()=>{
+  const s=setup();s.env.TIVDOC_MANAGED_EXTRACTION_MODE='saved_receipts_only';s.env.TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED='false';delete s.env.OPENAI_API_KEY;delete s.env.OPENAI_EXTRACTION_MODEL;
+  expect(await s.tick()).toMatchObject({state:'finished'});expect(ports.provider).not.toHaveBeenCalled();expect(ports.budget).not.toHaveBeenCalled();
+  expect(ports.run.mock.calls.every(c=>c[0].receiptOnly===true&&c[0].providerEnabled===false&&c[0].extractor===undefined)).toBe(true);
+ });
+ it('receipt-only mode cannot be activated in a deployed environment',async()=>{
+  const s=setup();s.env.TIVDOC_MANAGED_EXTRACTION_MODE='saved_receipts_only';s.env.VERCEL='1';
+  await expect(s.tick()).rejects.toThrow('MANAGED_DEV_CONFIGURATION_INVALID');expect(ports.provider).not.toHaveBeenCalled();expect(ports.budget).not.toHaveBeenCalled();
+ });
+
  it('requires the Sol package before discovery and never constructs the unbudgeted Sol runtime',async()=>{
   const s=setup();s.env.OPENAI_EXTRACTION_MODEL='gpt-5.6-sol';
   expect(await s.tick()).toMatchObject({state:'blocked',code:'MANAGED_DEV_SOL_BUDGET_UNCONFIGURED',items:[]});

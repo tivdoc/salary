@@ -42,7 +42,7 @@ async function scope(context:PostgresTransactionContext,caseId:string){
 }
 
 export async function runManagedDevCase(input:{caseId:string;workerId:string;transactions:SavedWorkerTransactions;
- storage:Runner['storage'];extractor:Runner['extractor'];providerEnabled:boolean;onMonth:SavedMonthCompletion;signal?:AbortSignal}){
+ storage:Runner['storage'];extractor:Runner['extractor'];providerEnabled:boolean;receiptOnly?:boolean;onMonth:SavedMonthCompletion;signal?:AbortSignal}){
  if(input.signal?.aborted)return {caseId:input.caseId,state:'interrupted' as const};
  const claim=await input.transactions(async context=>{
   await scope(context,input.caseId);

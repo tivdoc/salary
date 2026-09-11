@@ -32,13 +32,16 @@ export function managedWorkerControlConfig(env:Environment){
 /** Status and authorized retry remain accessible during a provider outage. */
 export function managedWorkerConfig(env:Environment){
  const control=managedWorkerControlConfig(env);if(!control.enabled)return control;
- if(env.TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED!=='true'||!env.OPENAI_API_KEY?.trim())throw Error('MANAGED_DEV_PROVIDER_UNCONFIGURED');
+ const receiptOnly=env.TIVDOC_MANAGED_EXTRACTION_MODE==='saved_receipts_only';
+ if(env.TIVDOC_MANAGED_EXTRACTION_MODE&&!receiptOnly)throw Error('MANAGED_DEV_CONFIGURATION_INVALID');
+ if(receiptOnly&&(env.NODE_ENV!=='development'||env.VERCEL||env.VERCEL_ENV))throw Error('MANAGED_DEV_CONFIGURATION_INVALID');
+ if(!receiptOnly&&(env.TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED!=='true'||!env.OPENAI_API_KEY?.trim()))throw Error('MANAGED_DEV_PROVIDER_UNCONFIGURED');
  // Sol must use the separate source/cost-limited package wrapper. Merely
  // configuring a supported SDK model must never enable an unbudgeted worker.
  const model=env.OPENAI_EXTRACTION_MODEL?.trim()||DEFAULT_OPENAI_EXTRACTION_MODEL;
  if(![DEFAULT_OPENAI_EXTRACTION_MODEL,'gpt-4o-mini-2024-07-18','gpt-5.6-sol'].includes(model))throw Error('MANAGED_DEV_CONFIGURATION_INVALID');
- if(model==='gpt-5.6-sol'&&!env.TIVDOC_MANAGED_SOL_PACKAGE_FILE?.trim())throw Error('MANAGED_DEV_SOL_BUDGET_UNCONFIGURED');
+ if(!receiptOnly&&model==='gpt-5.6-sol'&&!env.TIVDOC_MANAGED_SOL_PACKAGE_FILE?.trim())throw Error('MANAGED_DEV_SOL_BUDGET_UNCONFIGURED');
  if(!z.coerce.number().int().min(1000).max(120000).safeParse(env.OPENAI_EXTRACTION_TIMEOUT_MS?.trim()||120000).success)throw Error('MANAGED_DEV_CONFIGURATION_INVALID');
  const storageKey=env.SUPABASE_SERVICE_ROLE_KEY?.trim();if(!storageKey)throw Error('MANAGED_DEV_STORAGE_UNCONFIGURED');
- return {...control,storageKey,model};
+ return {...control,storageKey,model,receiptOnly};
 }

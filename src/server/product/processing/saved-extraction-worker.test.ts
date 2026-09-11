@@ -34,7 +34,7 @@ function setup(){
    case 'extraction_pinned_document':rows=state.documentMissing?[]:[document];break;
    case 'extraction_existing_checkpoint':rows=state.cached?[{result:state.cached}]:[];break;
    case 'extraction_dispatch_once':if(!state.invocation){state.invocation={invocation_id:String(s.values[0]),case_id:caseId,version_id:versionId,expected_month:'2025-01',input_sha256:document.content_sha256,dispatched_at:'2026-09-08T00:00:00Z',result:null};rows=[{invocation_id:state.invocation.invocation_id}];}break;
-   case 'extraction_invocation_read':case 'extraction_receipt_lock':rows=state.invocation?[state.invocation]:[];break;
+   case 'extraction_saved_receipt_only':case 'extraction_invocation_read':case 'extraction_receipt_lock':rows=state.invocation?[state.invocation]:[];break;
    case 'extraction_receipt_authority':rows=[{principal:state.principal,tenant_id:`saved-case:${caseId}`}];break;
    case 'extraction_receipt_source':rows=[{matched:1}];break;
    case 'extraction_receipt_record':state.invocation!.result=JSON.parse(String(s.values[1]));rows=[{invocation_id:state.invocation!.invocation_id}];break;
@@ -52,6 +52,22 @@ function setup(){
  return {input,state,calls,result,jobRow,document,context,transactions};
 }
 describe('durable saved extraction orchestration',()=>{
+ it('receipt-only mode reuses a bound checkpoint without credentials, dispatch or SDK',async()=>{
+  const s=setup();s.state.cached=s.result;
+  expect((await runSavedWorkerExtraction({...s.input,extractor:undefined,providerEnabled:false,receiptOnly:true})).reused).toBe(true);
+  expect(ports.extract).not.toHaveBeenCalled();expect(s.calls).not.toContain('extraction_dispatch_once');
+ });
+ it('receipt-only mode refuses a missing receipt before recording dispatch or spending',async()=>{
+  const s=setup();await expect(runSavedWorkerExtraction({...s.input,extractor:undefined,providerEnabled:false,receiptOnly:true})).rejects.toThrow('SAVED_EXTRACTION_RECEIPT_REQUIRED');
+  expect(ports.extract).not.toHaveBeenCalled();expect(s.calls).not.toContain('extraction_dispatch_once');expect(s.state.invocation).toBeNull();
+ });
+ it('receipt-only recovery preserves the actual saved invocation after checkpoint failure',async()=>{
+  const s=setup();s.state.failCheckpoint=true;await expect(runSavedWorkerExtraction(s.input)).rejects.toThrow();
+  s.state.failCheckpoint=false;ports.extract.mockClear();
+  expect((await runSavedWorkerExtraction({...s.input,extractor:undefined,providerEnabled:false,receiptOnly:true})).reused).toBe(true);
+  expect(ports.extract).not.toHaveBeenCalled();
+ });
+
  it('commits dispatch before the external call and receipt before checkpoint; exact retry never invokes twice',async()=>{
   const s=setup(),first=await runSavedWorkerExtraction(s.input),retry=await runSavedWorkerExtraction(s.input);
   expect(first.reused).toBe(false);expect(retry.reused).toBe(true);expect(first.invocationId).toBe(retry.invocationId);

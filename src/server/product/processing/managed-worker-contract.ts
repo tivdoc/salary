@@ -20,7 +20,7 @@ export type ManagedWorkerStatus=z.infer<typeof managedWorkerStatusSchema>;
 export function managedWorkerError(error:unknown):string{
  const message=error instanceof Error?error.message:'';
  const known:Readonly<Record<string,string>>={
-  SAVED_EXTRACTION_OUTCOME_PENDING:'provider_outcome_unknown',SAVED_EXTRACTION_PROVIDER_DISABLED:'provider_disabled',
+  SAVED_EXTRACTION_RECEIPT_REQUIRED:'provider_receipt_required',SAVED_EXTRACTION_OUTCOME_PENDING:'provider_outcome_unknown',SAVED_EXTRACTION_PROVIDER_DISABLED:'provider_disabled',
   SAVED_EXTRACTION_PROVIDER_UNCONFIGURED:'provider_unconfigured',SAVED_EXTRACTION_PERIOD_MISMATCH:'period_confirmation_required',
   SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED:'purchased_document_missing',SAVED_ORDER_ENTITLEMENT_REQUIRED:'entitlement_unavailable',
   SAVED_PAID_SOURCE_REQUIRED:'payment_unavailable',ANALYSIS_INPUT_SUPERSEDED:'source_superseded',

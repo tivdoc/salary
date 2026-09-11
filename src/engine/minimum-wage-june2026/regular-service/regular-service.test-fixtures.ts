@@ -18,8 +18,9 @@ import {JUNE_CASE_ASSESSOR_ROLE,JUNE_REGULAR_CASE_ASSESSMENT,june2026CaseAssessm
  * isolated synthetic trust organization. These are not real human approvals.
  * The journal has only public keys, public challenges and signatures; signing
  * keys stay in this test-only closure and are never returned or serialized. */
-export function createRegularServiceTrustFixture(now='2026-09-10T16:00:00.000Z'){
- const expires=new Date(Date.parse(now)+2*60*60*1000).toISOString(),organization='isolated.june.regular.test',admin='isolated.june.admin',root='isolated.june.root';
+export function createRegularServiceTrustFixture(now='2026-09-10T16:00:00.000Z',ttlSeconds=7200){
+ if(!Number.isSafeInteger(ttlSeconds)||ttlSeconds<30||ttlSeconds>7200)throw Error('SYNTHETIC_AUTHORITY_TTL');
+ const expires=new Date(Date.parse(now)+ttlSeconds*1000).toISOString(),organization='isolated.june.regular.test',admin='isolated.june.admin',root='isolated.june.root';
  const trust=new InMemoryReviewerTrustStore({root_admin_ids:[root],clock:()=>now});
  const journal:SavedRegularTrustJournal={schema_version:'june2026-trust-registry-journal-v1',root_admin_ids:[root],events:[]};
  const organizationRecord=createTrustOrganization({schema_version:'tivdoc-reviewer-trust-v0.10.0',organization_id:organization,organization_version:'1.0.0',

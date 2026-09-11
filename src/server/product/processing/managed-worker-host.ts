@@ -66,8 +66,9 @@ export async function runManagedDevTick(env:Environment,buildSha:string,onMonth:
  const scopedEnv={...env,OPENAI_EXTRACTION_MODEL:model,TIVDOC_MANAGED_DEV_BUILD_SHA:buildSha};
  // The ordinary Sol runtime has no package cost ledger. The managed Sol
  // path therefore never constructs it, including when its budget is absent.
+ const receiptOnly=env.TIVDOC_MANAGED_EXTRACTION_MODE==='saved_receipts_only';
  const sol=model==='gpt-5.6-sol';
- const provider=sol?null:createLiveExtractionRuntime(env);
+ const provider=sol||receiptOnly?null:createLiveExtractionRuntime(env);
  if(provider?.state==='blocked')return {worker:'managed_dev',state:'blocked' as const,code:provider.code,items:[]};
  let config:ReturnType<typeof managedWorkerConfig>;
  try{config=managedWorkerConfig(scopedEnv);}catch(error){
@@ -78,7 +79,7 @@ export async function runManagedDevTick(env:Environment,buildSha:string,onMonth:
  if(config.buildSha!==buildSha)throw Error('MANAGED_DEV_BUILD_MISMATCH');
  if(signal?.aborted)return {worker:'managed_dev',state:'interrupted' as const,items:[]};
  let bounded:ReturnType<typeof createManagedSolBudgetedExtractor>|null=null;
- try{if(sol)bounded=createManagedSolBudgetedExtractor(scopedEnv,buildSha);}catch(error){
+ try{if(sol&&!receiptOnly)bounded=createManagedSolBudgetedExtractor(scopedEnv,buildSha);}catch(error){
   // A stale lock/unknown reservation is an operational hold, never permission
   // to reset the ledger or start the ordinary unbudgeted SDK implementation.
   const locked=error!==null&&typeof error==='object'&&'code' in error&&error.code==='EEXIST';
@@ -96,12 +97,12 @@ export async function runManagedDevTick(env:Environment,buildSha:string,onMonth:
   // Sol's wrapper is the only provider port for this branch; it enforces the
   // package's call/retry policy before I/O. Unknown outcomes remain holds.
   const extractor=bounded?.extractor??(provider?.state==='configured'?provider.extractor:undefined);
-  if(!extractor)throw Error('MANAGED_DEV_PROVIDER_UNCONFIGURED');
+  if(!extractor&&!receiptOnly)throw Error('MANAGED_DEV_PROVIDER_UNCONFIGURED');
   for(const candidate of candidates){
    if(signal?.aborted)break;
    try{
     const transactions=await createSavedWorkerHost({caseId:candidate.case_id,identity:candidate.identity,buildSha,target:driver.target},driver);
-    items.push(await runManagedDevCase({caseId:candidate.case_id,workerId:candidate.identity.actor_id,transactions,storage,extractor,providerEnabled:true,onMonth,signal}));
+    items.push(await runManagedDevCase({caseId:candidate.case_id,workerId:candidate.identity.actor_id,transactions,storage,extractor,providerEnabled:!receiptOnly,receiptOnly,onMonth,signal}));
    }catch(error){items.push({caseId:candidate.case_id,state:'unconfirmed',jobId:'unclaimed',lastError:managedWorkerError(error)});}
   }
   return {worker:'managed_dev',state:signal?.aborted?'interrupted' as const:'finished' as const,buildSha,items,...(bounded?{budget:bounded.summary()}: {})};

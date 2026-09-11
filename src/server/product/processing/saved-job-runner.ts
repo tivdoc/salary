@@ -92,7 +92,7 @@ async function renew(context:PostgresTransactionContext,input:Lease,leaseMs:numb
  */
 export async function runSavedDraftJob(input:Lease&{
  transactions:SavedWorkerTransactions;storage:ExtractionInput['storage'];
- providerEnabled:boolean;extractor?:ExtractionInput['extractor'];signal?:AbortSignal;
+ providerEnabled:boolean;receiptOnly?:boolean;extractor?:ExtractionInput['extractor'];signal?:AbortSignal;
  heartbeat?:{intervalMs:number;leaseMs:number};
  onMonth?:SavedMonthCompletion;
 }){
