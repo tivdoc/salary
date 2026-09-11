@@ -71,6 +71,6 @@ describe('request retry service receipts',()=>{
  it('applies receipt validation to drafts without promoting unfinished text to an answer',async()=>{
   const s=setup();s.responses.case_request_edit=[];
   await expect(editCaseRequest({caseId,requestId,identityId,answer:'unfinished',expectedRevision:1,kind:'draft'},s.db)).rejects.toThrow('REQUEST_EDIT_RECEIPT_MISSING');
-  expect(s.calls.map(c=>c.fn)).toEqual(['case_request_edit']);
+  expect(s.calls.map(c=>c.fn)).toEqual(['case_request_list','case_request_revision_list','case_request_edit']);
  });
 });

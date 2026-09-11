@@ -27,7 +27,7 @@ function setup(){
  const calls:PostgresStatement[]=[];
  const responses:Record<string,Record<string,unknown>[]>={source_case_lock:[],source_revision_check:[{revision:2,input_sha256:job.input_sha256}],
   saved_snapshot_journal:[{input,created_at:'2025-02-01T00:00:00Z',input_sha256:job.input_sha256,actual_sha256:job.input_sha256}],saved_snapshot_document:[record],
-  checkpoint_source_match:[{exists:1}],checkpoint_insert:[],checkpoint_read:[{result,input_sha256:result.input_sha256,result_sha256:result.result_sha256}]};
+  review_checkpoint_read:[],checkpoint_source_match:[{exists:1}],checkpoint_insert:[],checkpoint_read:[{result,input_sha256:result.input_sha256,result_sha256:result.result_sha256}]};
  const context:PostgresTransactionContext={transaction_id:'synthetic-test',client:{async query(s){calls.push(s);const rows=responses[s.name];if(!rows)throw new Error(`UNEXPECTED_SQL:${s.name}`);return {rows,row_count:rows.length};}}};
  return {fixture,job,result,input,record,responses,calls,context,reader:new SavedCaseSnapshot(context,job)};
 }
@@ -93,7 +93,16 @@ describe('exact saved source to canonical snapshot',()=>{
   // Deliberately hermetic: this checks real service/catalog/renderer behavior,
   // not PostgreSQL commit/rollback or provider extraction.
   const analysis={caseAnalysis:new InMemoryCaseAnalysisRepository(),reports:new FixtureCaseReviewPort()} as unknown as PostgresAnalysisRepositories;
-  const args={context:s.context,analysis,tenantId:'synthetic-test',job:s.job,orderId,month:'2025-01'};
+  const context:PostgresTransactionContext={...s.context,client:{async query(statement){
+   if(statement.name==='review_requests_stage'){
+    const run=await analysis.caseAnalysis.getByRunId(String(statement.values[0]));
+    const stage=run!.stages.find(stage=>stage.stage==='topic_results')!;
+    return {rows:[{payload:stage.payload,payload_sha256:stage.payload_sha256}],row_count:1};
+   }
+   if(statement.name==='review_request_open')return {rows:[{id:'66666666-6666-4666-8666-666666666666'}],row_count:1};
+   return s.context.client.query(statement);
+  }}};
+  const args={context,analysis,tenantId:'synthetic-test',job:s.job,orderId,month:'2025-01'};
   const completed=await runSavedMonthAnalysis(args);
   expect(completed.completed).toBe(true);expect(completed.stages).toHaveLength(7);
   expect(completed.bundle?.topic_results).toHaveLength(7);

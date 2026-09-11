@@ -7,6 +7,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {admitSavedSource,savedCaseTenant} from './saved-admission';
 import {purchasedMonths,readSavedOrders,savedMonthIdempotencyKey,type SavedOrderScope} from './saved-order-scope';
 import {SOURCE_JOB_KIND,sourceJobSchema,type SourceJob} from './source-dispatch';
+import {resolveSavedDocumentReviewKey} from './document-review-key';
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/);
 const jobRow=z.object({job_id:z.string(),tenant_id:z.string(),canonical_case_id:z.uuid(),job_kind:z.literal(SOURCE_JOB_KIND),
@@ -120,8 +121,10 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
   // selects its blocked review key, never a formerly authorized result.
   const regular=!authority&&june?await loadSavedJune2026RegularAuthority(context,job,order.id):null;
   const ready=regular?.state==='ready'?regular:null;
-  expected.push({order,month,key:authority?june2026TestIdempotencyKey(job,order.id,authority):ready?june2026RegularIdempotencyKey(job,order.id,ready)
-   :june?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,month),
+  const baseKey=authority?june2026TestIdempotencyKey(job,order.id,authority):ready?june2026RegularIdempotencyKey(job,order.id,ready)
+   :june?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,month);
+  const review=authority||ready?null:await resolveSavedDocumentReviewKey(context,job,order,month,baseKey);
+  expected.push({order,month,key:review?.key??baseKey,reviewSha256:review?.reviewSha256,
    mode:authority?'synthetic_test':ready?.mode??'real'});
  }
  const selected=await context.client.query(statement('saved_job_month_receipts',
@@ -140,13 +143,14 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
  const receipts=selected.rows.map(row=>receiptSchema.parse(row));
  if(receipts.length!==expected.length||new Set(receipts.map(r=>r.idempotency_key)).size!==expected.length)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
  const byKey=new Map(receipts.map(r=>[r.idempotency_key,r]));
- const months=expected.map(({order,month,key,mode})=>{
+ const months=expected.map(({order,month,key,mode,reviewSha256})=>{
   const receipt=byKey.get(key);if(!receipt)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
   const command=decodeCommand(receipt.command);
   const end=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
   if(canonicalSha256(command)!==receipt.command_sha256||command.case_id!==job.case_id||command.idempotency_key!==key
    ||command.period.start_date!==`${month}-01`||command.period.end_date!==end
-   ||canonicalSha256(command.requested_topics)!==canonicalSha256(order.topics)||command.mode!==mode)throw new Error('SAVED_JOB_RECEIPT_SCOPE');
+   ||canonicalSha256(command.requested_topics)!==canonicalSha256(order.topics)||command.mode!==mode
+   ||command.document_review_sha256!==reviewSha256)throw new Error('SAVED_JOB_RECEIPT_SCOPE');
   return {order_id:order.id,offer_sha256:order.offer_sha256,month,analysis_run_id:receipt.analysis_run_id,
    result_sha256:receipt.result_sha256,report_id:receipt.report_id,report_revision:receipt.report_revision,report_sha256:receipt.report_sha256};
  });

@@ -86,3 +86,16 @@ it('keeps a timed-out generation conservatively reserved and reports its unknown
  expect(r.budget.unknownOutcomes).toBe(1);expect(r.budget.reservedUpperBoundUsd).toBe(0.712);
  await runPrivatePayslipExtraction(f.input);expect(io.parse).toHaveBeenCalledTimes(1);
 });
+it('explicit failed-source retry preserves the first receipt and cumulative unknown cost; retry of that attempt is free',async()=>{
+ const f=await fixture();io.parse.mockRejectedValue(new Error('synthetic provider outage'));
+ const first=await runPrivatePayslipExtraction(f.input),old=readFileSync(first.resultPath);
+ const second=await runPrivatePayslipExtraction({...f.input,attempt:2});
+ expect(second.resultPath).toContain('attempt-2');expect(readFileSync(first.resultPath)).toEqual(old);
+ expect(second.budget.contentRequests).toBe(4);expect(second.budget.unknownGenerationReceipts).toBe(2);expect(second.budget.reservedUpperBoundUsd).toBe(1.424);
+ await runPrivatePayslipExtraction({...f.input,attempt:2});expect(io.parse).toHaveBeenCalledTimes(2);
+});
+it('rejects a skipped attempt and a repeat of successful extraction before another paid call',async()=>{
+ const f=await fixture();await expect(runPrivatePayslipExtraction({...f.input,attempt:2})).rejects.toThrow('PRIVATE_RETRY_HISTORY_REQUIRED');
+ await runPrivatePayslipExtraction(f.input);
+ await expect(runPrivatePayslipExtraction({...f.input,attempt:2})).rejects.toThrow('PRIVATE_RETRY_REQUIRES_FAILED_RECEIPT');expect(io.parse).toHaveBeenCalledTimes(1);
+});

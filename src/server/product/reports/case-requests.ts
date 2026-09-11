@@ -10,10 +10,19 @@
 // production (PostgREST) and the local runtime (pg) run one SQL and tests run a
 // fake. This file imports nothing from the engine.
 import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db.ts";
-import { validateRequestAnswer } from "./request-answer.ts";
+import { RequestAnswerError, validateRequestAnswer } from "./request-answer.ts";
 import { requestFor, slaPaused, type ThreadRequest } from "./refusal-requests.ts";
 import {HOURS_CONFLICT_NAMESPACE} from './document-hours-conflict-answer';
 import {z} from 'zod';
+import {reviewCompletionTargetSchema,type ReviewCompletionTarget} from '@/engine/document-review/completions';
+
+const reviewNamespace='document_review:';
+const reviewStateSchema=z.object({request_id:z.uuid(),source_current:z.boolean(),target:reviewCompletionTargetSchema.nullable()}).strict();
+function parseReviewStates(value:unknown,caseId:string){
+ const rows=z.array(reviewStateSchema).parse(value);
+ if(new Set(rows.map(r=>r.request_id)).size!==rows.length||rows.some(r=>r.source_current&&r.target===null||r.target&&r.target.case_id!==caseId))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+ return rows;
+}
 
 const conflictSourceSchema=z.object({conflict_reason:z.enum(['conflicting_observations','provider_reported_conflict']),
  source_observations:z.array(z.object({candidate_id:z.uuid(),raw_value:z.string().max(1000).nullable(),page:z.number().int().positive().max(100),source_label:z.string().max(1000).nullable()}).strict()).max(12)}).strict();
@@ -68,7 +77,10 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const hoursStates=identityId&&hours.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_regular_hours_states',{target_case:caseId,target_identity:identityId}):[];
   const conflicts=rows.filter(row=>row.code.startsWith(HOURS_CONFLICT_NAMESPACE));
   const conflictStates=identityId&&conflicts.length?await store.rpc<{request_id:string;source_current:boolean;conflict_reason:unknown;source_observations:unknown}>('case_request_hours_conflict_states',{target_case:caseId,target_identity:identityId}):[];
-  const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts];
+  const reviews=rows.filter(row=>row.code.startsWith(reviewNamespace));
+  const reviewStates=identityId&&reviews.length?parseReviewStates(await store.rpc('case_request_review_states',{target_case:caseId,target_identity:identityId}),caseId):[];
+  if(reviewStates.some(s=>s.target&&reviews.find(r=>r.id===s.request_id)?.code!==reviewNamespace+s.target.target_sha256))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+  const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates,...reviewStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts,...reviews];
   if (identityId && allBound.length && (states.length !== allBound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!allBound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   return rows.map(row => {
     const revision = revisions.find(value => value.request_id === row.id);
@@ -78,6 +90,26 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
       ?conflictSourceSchema.parse({conflict_reason:conflict.conflict_reason,source_observations:conflict.source_observations}):undefined;
     return {...toRequest(row),...(state?{source_current:state.source_current}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
   });
+}
+
+/** The complete target is server-only. Customer responses retain the existing
+ * source_current flag and answer history, without source hashes or raw targets. */
+async function validateReviewAnswer(store:CaseAccessDb,request:StoredRequest,caseId:string,identityId:string|undefined,text:string,draft=false){
+ if(!identityId)throw Error('REQUEST_FIELD_FORBIDDEN');
+ const states=parseReviewStates(await store.rpc('case_request_review_states',{target_case:caseId,target_identity:identityId}),caseId);
+ const matching=states.filter(s=>s.request_id===request.id);
+ if(matching.length!==1)throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+ const state=matching[0];
+ if(!state.source_current)throw Error('REQUEST_FIELD_SOURCE_CHANGED');
+ const target:ReviewCompletionTarget=reviewCompletionTargetSchema.parse(state.target);
+ if(request.code!==reviewNamespace+target.target_sha256)throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+ const {normalizeSavedReviewAnswer,savedReviewRequestQuestion}=await import('../processing/saved-review-requests');
+ if(request.answer_kind!=='text'||request.question!==savedReviewRequestQuestion(target)||request.options?.length)throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+ if(draft&&text==='')return text;
+ try{normalizeSavedReviewAnswer(target,text);}catch{throw new RequestAnswerError();}
+ // SQL stores the original plain declaration; typed materialization happens
+ // later from its identified journal row, never from customer receipt JSON.
+ return draft?text:text.trim();
 }
 
 /**
@@ -124,8 +156,9 @@ export async function answerCaseRequest(
   if (!request) return null;
   // The locked SQL operation owns expiry and exact-original retry semantics.
   // A stale browser clock or lost successful response is not a second answer.
-  const answer = validateRequestAnswer(request, input.answer);
-  const bound=request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:')||request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith('document_transcription:')||request.code.startsWith('june2026_regular_hours:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE);
+  const review=request.code.startsWith(reviewNamespace);
+  const answer = review?await validateReviewAnswer(store,request,input.caseId,input.identityId,input.answer):validateRequestAnswer(request, input.answer);
+  const bound=review||request.code.startsWith('document_field:')||request.code.startsWith('dev_financial_hours:')||request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith('document_transcription:')||request.code.startsWith('june2026_regular_hours:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE);
   if(bound&&!input.identityId)throw new Error('REQUEST_FIELD_FORBIDDEN');
   const rows = await store.rpc<RequestRow>(bound?"case_request_answer_identified":"case_request_answer", {
     target_request: input.requestId,
@@ -150,10 +183,10 @@ export async function editCaseRequest(input:{caseId:string;requestId:string;iden
  const store=db??await resolveCaseAccessDb();if(!store)throw new Error('REQUEST_STORE_UNAVAILABLE');
  if(!Number.isInteger(input.expectedRevision)||input.expectedRevision<0||input.answer.length>2000)throw new Error('REQUEST_EDIT_INVALID');
  let answer=input.answer;
- if(input.kind==='correction'){
-  const request=(await listCaseRequests(input.caseId,store)).find(r=>r.id===input.requestId);
-  if(!request)throw new Error('REQUEST_FORBIDDEN');answer=validateRequestAnswer(request,input.answer);
- }
+ const request=(await listCaseRequests(input.caseId,store)).find(r=>r.id===input.requestId);
+ if(!request)throw new Error('REQUEST_FORBIDDEN');
+ if(request.code.startsWith(reviewNamespace))answer=await validateReviewAnswer(store,request,input.caseId,input.identityId,input.answer,input.kind==='draft');
+ else if(input.kind==='correction')answer=validateRequestAnswer(request,input.answer);
  const rows=await store.rpc<{value:number}>('case_request_edit',{target_case:input.caseId,target_request:input.requestId,target_identity:input.identityId,target_answer:answer,expected_revision:input.expectedRevision,edit_kind:input.kind});
  if(rows.length!==1||rows[0].value!==input.expectedRevision+1)throw new Error('REQUEST_EDIT_RECEIPT_MISSING');
  return rows[0].value;

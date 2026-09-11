@@ -34,6 +34,21 @@ function sourceNotVisible(fn:string,error:unknown):boolean {
     && 'message' in error && error.message==='REPORT_SOURCE_FORBIDDEN';
 }
 const VERSIONED_REPORT_FUNCTIONS = new Set(['june2026_regular_report_artifact']);
+const REVIEW_REQUEST_CLIENT_FUNCTIONS=new Set(['case_request_answer_identified','case_request_edit','case_request_review_states']);
+/** A source can change after the application preflight but before the locked
+ * SQL write. Translate only this function family's exact public refusal codes;
+ * unrelated SQL, transport errors and internal integrity failures stay errors. */
+function reviewRequestRefusal(fn:string,error:unknown):string|null{
+ if(!REVIEW_REQUEST_CLIENT_FUNCTIONS.has(fn)||typeof error!=='object'||error===null
+  ||!('code' in error)||error.code!=='P0001'||!('message' in error))return null;
+ switch(error.message){
+  case 'REVIEW_REQUEST_SOURCE_CHANGED':return 'REQUEST_FIELD_SOURCE_CHANGED';
+  case 'REVIEW_REQUEST_ANSWER_INVALID':return 'REQUEST_ANSWER_INVALID';
+  case 'REVIEW_REQUEST_CLOSED':return 'REQUEST_EDIT_CLOSED';
+  case 'REVIEW_REQUEST_FORBIDDEN':return 'REQUEST_FIELD_FORBIDDEN';
+  default:return null;
+ }
+}
 
 export function supabaseCaseAccessDb(client: {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;
@@ -44,7 +59,10 @@ export function supabaseCaseAccessDb(client: {
       if (!FUNCTION_NAME.test(fn) && !VERSIONED_REPORT_FUNCTIONS.has(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const result = await client.rpc(fn, { ...args });
       if (sourceNotVisible(fn,result.error)) return [];
-      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^(?:UPLOAD|ORDER|PRIVACY|REQUEST|JUNE_COLLECTION)_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
+      if (result.error){
+       const safe=reviewRequestRefusal(fn,result.error)??(/^(?:UPLOAD|ORDER|PRIVACY|REQUEST|JUNE_COLLECTION)_[A-Z_]+$/u.test(result.error.message ?? "")?result.error.message:'rpc_failed');
+       throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${safe}`), { code: result.error.code ?? "rpc_failed" });
+      }
       const data = result.data;
       if (Array.isArray(data)) return data as T[];
       if (data === null || data === undefined) return [];
@@ -66,7 +84,12 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
       const placeholders = names.map((name, index) => `${name} => $${index + 1}`).join(", ");
       let result:Awaited<ReturnType<PgPoolLike['query']>>;
       try { result = await pool.query(`select * from public.${fn}(${placeholders})`, names.map((name) => args[name])); }
-      catch(error) { if(sourceNotVisible(fn,error))return []; throw error; }
+      catch(error) {
+       if(sourceNotVisible(fn,error))return [];
+       const safe=reviewRequestRefusal(fn,error);
+       if(safe)throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${safe}`),{code:'P0001'});
+       throw error;
+      }
       return result.rows.map((row) => {
         // A scalar-returning function yields one column named after the function; expose it as { value }.
         const record = row as Record<string, unknown>;

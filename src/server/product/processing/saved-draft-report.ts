@@ -1,3 +1,4 @@
+import {renderReviewBundle} from '../reports/document-review-projection';
 import {createHash} from 'node:crypto';
 import {canonicalSha256,canonicalStringify} from '@/engine/rule-runtime/canonical';
 import type {AnalysisResultBundle,ReportBuilderPort,DeterministicReportArtifacts} from '@/engine/wave3/contracts';
@@ -17,6 +18,7 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export class SavedAnalysisDraftBuilder implements ReportBuilderPort {
  async build(bundle:AnalysisResultBundle):Promise<DeterministicReportArtifacts>{
   const reportId=savedAnalysisId('saved-report',bundle.result_sha256);
+  if(bundle.document_review)return renderReviewBundle(bundle,reportId);
   const report=buildCanonicalReport(bundle,reportId);
   const json=Buffer.from(canonicalStringify({schema_version:SAVED_DRAFT_TEMPLATE,publication:'draft',canonical_report:report}));
   const title='טיוטת ניתוח מסמכים — טרם אושרה לפרסום';

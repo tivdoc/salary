@@ -143,6 +143,7 @@ export type TopicAnalysisResult = Readonly<{
 }>;
 
 export type AnalysisResultBundle = Readonly<{
+  document_review?: import("../document-review/contracts.ts").DocumentReviewResult;
   schema_version: "tivdoc-analysis-result-bundle-v0.6.0";
   analysis_run_id: string;
   case_id: string;
@@ -163,6 +164,7 @@ export type AnalysisResultBundle = Readonly<{
 }>;
 
 export type CaseAnalysisCommand = Readonly<{
+  document_review_sha256?: string;
   case_id: string;
   case_revision: number;
   document_snapshot_id: string;

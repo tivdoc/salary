@@ -1,3 +1,4 @@
+import type {DocumentReviewInput} from "../document-review/contracts.ts";
 import type { ImmutableDocument } from "../domain/documents.ts";
 import type { CanonicalFact } from "../facts/contracts.ts";
 import type { NormalizedPayslipExtraction } from "../extraction/payslip.ts";
@@ -9,6 +10,7 @@ import type {
   Wave3Topic,
 } from "../wave3/contracts.ts";
 
+export const CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION='case-analysis@0.6.7' as const;
 export const CASE_ANALYSIS_CODE_VERSION = "case-analysis@0.6.5" as const;
 export const CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION = 'case-analysis@0.6.6' as const;
 
@@ -31,6 +33,8 @@ export type DeclaredFactSnapshot = Readonly<{
 }>;
 
 export type StoredCaseInputSnapshot = Readonly<{
+  /** Server journal routing hint; never a customer supplied answer receipt. */
+  has_document_review_answers?: boolean;
   document_snapshot_id: string;
   document_snapshot_sha256: string;
   documents: readonly ImmutableDocument[];
@@ -38,6 +42,8 @@ export type StoredCaseInputSnapshot = Readonly<{
   extraction_snapshot_sha256: string;
   extractions: readonly NormalizedPayslipExtraction[];
   declared_fact_snapshot: DeclaredFactSnapshot;
+  /** Optional source-reviewed inputs, separately pinned in the command. */
+  document_review_input?: DocumentReviewInput;
 }>;
 
 export interface StoredCaseSnapshotPort {
@@ -51,7 +57,7 @@ export type PinnedAnalysisDependencies = Readonly<{
   source_version_ids: readonly string[];
   parameter_version_ids: readonly string[];
   rule_spec_versions: readonly string[];
-  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1" | "case-analysis@0.6.2" | "case-analysis@0.6.3" | "case-analysis@0.6.4" | typeof CASE_ANALYSIS_CODE_VERSION | typeof CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION;
+  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1" | "case-analysis@0.6.2" | "case-analysis@0.6.3" | "case-analysis@0.6.4" | typeof CASE_ANALYSIS_CODE_VERSION | typeof CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION | typeof CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION;
   template_version: string;
 }>;
 

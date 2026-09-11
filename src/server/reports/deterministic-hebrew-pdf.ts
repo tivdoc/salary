@@ -389,6 +389,8 @@ export type RtlDocument = Readonly<{
   subject: string;
   /** `YYYYMMDD`. Fixed, so the same content is the same bytes on every run. */
   fixed_date: string;
+  /** Opt-in only: absent preserves every historical layout and byte sequence. */
+  layout_version?: "customer-report-v2";
   blocks: readonly RtlBlock[];
 }>;
 
@@ -458,6 +460,35 @@ function measure(ctx: PdfContext, text: string, size: number): number {
   return encodeRun(ctx, text).width * size / 1000;
 }
 
+/** Boundary spaces are independent RTL advances. Keeping a trailing space
+ * inside an LTR numeric run places it on the wrong side and glues the following
+ * Hebrew unit to the number. Interior LTR text (including URLs and amounts)
+ * remains intact; this is a bounded mixed-line layout, not general bidi. */
+function drawCustomerCell(ctx: PdfContext, text: string, x: number, y: number, size: number, color?: string): void {
+  if (!HEBREW_CHARACTER.test(text)) { ltr(ctx, text, x, y, size, "right", color); return; }
+  const chunks = text.match(/[֐-׿]+|[^֐-׿]+/gu) ?? [];
+  let right = x;
+  for (const chunk of chunks) {
+    if (HEBREW_CHARACTER.test(chunk)) {
+      rtl(ctx, chunk, right, y, size, "right", color);
+      right -= measure(ctx, chunk, size);
+      continue;
+    }
+    // Do not trim or replace the source text: every space remains in ActualText.
+    // Colons/commas beside Hebrew belong to the boundary as well. Keeping
+    // ': ' inside the number's LTR run would put its ₪ against the label.
+    const parts = chunk.match(/^([\s.,:;!?]*)([\s\S]*?)([\s.,:;!?]*)$/u);
+    if (!parts) throw new Error("RTL_CUSTOMER_RUN_INVALID");
+    for (const [index, part] of parts.slice(1).entries()) {
+      if (!part) continue;
+      const width = measure(ctx, part, size);
+      if (index === 1) ltr(ctx, part, right - width, y, size, "left", color);
+      else rtl(ctx, part, right, y, size, "right", color);
+      right -= width;
+    }
+  }
+}
+
 /** Split only at complete Unicode symbols, preferring the last whitespace
  * that fits. No trimming, ellipsis or identifier shortening is permitted. */
 function wrapMeasuredCell(ctx: PdfContext, text: string, size: number, width: number): readonly string[] {
@@ -491,6 +522,36 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
   const pages: Uint8Array[] = [];
   let ctx: PdfContext = { metrics, used, commands: [] };
   let y = PAGE_HEIGHT - MARGIN;
+  const customerLayout = document.layout_version === "customer-report-v2";
+  const draw = customerLayout ? drawCustomerCell : drawCell;
+  const contentWidth = PAGE_WIDTH - MARGIN * 2 - 4;
+  const customerLines = (text: string, size: number, width = contentWidth) =>
+    text.split(/\r?\n/u).flatMap((part) => wrapMeasuredCell(ctx, part, size, width));
+  const headingHeight = (block: Extract<RtlBlock, { kind: "heading" }>) => {
+    const size = block.level === 1 ? 15 : 11.5;
+    return customerLines(block.text, size).length * Math.ceil(size * 1.35) + 10;
+  };
+  // Reserve the heading chain and the beginning of the next actual content.
+  // A very long paragraph/row can continue, but its heading never stands alone.
+  const followingHeight = (start: number): number => {
+    let height = 0;
+    for (let index = start; index < document.blocks.length; index += 1) {
+      const next = document.blocks[index];
+      if (next.kind === "heading") { height += headingHeight(next); continue; }
+      if (next.kind === "rule") { height += 14; continue; }
+      if (next.kind === "paragraph") return height + Math.min(2, customerLines(next.text, 9).length) * LINE_HEIGHT;
+      if (next.kind === "hash") return height + LINE_HEIGHT;
+      if (next.rows.length === 0) continue;
+      if (next.columns.length === 0 || next.rows.some((row) => row.length !== next.columns.length)) {
+        throw new Error("RTL_TABLE_COLUMN_COUNT_INVALID");
+      }
+      const width = (PAGE_WIDTH - MARGIN * 2) / next.columns.length - 8;
+      const header = Math.max(...next.columns.map((value) => customerLines(value, 8.4, width).length));
+      const firstRow = Math.max(...next.rows[0].map((value) => customerLines(value, 8.2, width).length));
+      return height + (header + Math.min(2, firstRow)) * LINE_HEIGHT + 4;
+    }
+    return height;
+  };
 
   const newPage = () => {
     pages.push(finishPage(ctx));
@@ -499,7 +560,7 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
   };
   const room = (height: number) => { if (y - height < BOTTOM) newPage(); };
 
-  for (const block of document.blocks) {
+  for (const [blockIndex, block] of document.blocks.entries()) {
     if (block.kind === "rule") {
       room(10);
       line(ctx, MARGIN, y - 4, PAGE_WIDTH - MARGIN, y - 4, "0.86 0.89 0.88", 0.4);
@@ -508,20 +569,31 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
     }
     if (block.kind === "heading") {
       const size = block.level === 1 ? 15 : 11.5;
+      if (customerLayout) {
+        const required = headingHeight(block) + followingHeight(blockIndex + 1);
+        if (required > PAGE_HEIGHT - MARGIN - BOTTOM) throw new Error("RTL_HEADING_GROUP_TOO_TALL");
+        room(required);
+        for (const text of customerLines(block.text, size)) {
+          draw(ctx, text, PAGE_WIDTH - MARGIN - 2, y - size, size, "0.05 0.12 0.20");
+          y -= Math.ceil(size * 1.35);
+        }
+        y -= 10;
+        continue;
+      }
       room(size + 12);
-      drawCell(ctx, block.text, PAGE_WIDTH - MARGIN, y - size, size, "0.05 0.12 0.20");
+      draw(ctx, block.text, PAGE_WIDTH - MARGIN, y - size, size, "0.05 0.12 0.20");
       y -= size + 10;
       continue;
     }
     if (block.kind === "paragraph") {
       // Opt-in measured wrapping preserves legacy report bytes while allowing
       // private source URLs and immutable identifiers to remain fully visible.
-      const lines = block.wrap_text === true
+      const lines = customerLayout ? customerLines(block.text, 9) : block.wrap_text === true
         ? wrapMeasuredCell(ctx, block.text, 9, PAGE_WIDTH - MARGIN * 2 - 4)
         : wrap(block.text, 92);
       for (const lineText of lines) {
         room(LINE_HEIGHT);
-        drawCell(ctx, lineText, PAGE_WIDTH - MARGIN - (block.wrap_text === true ? 2 : 0), y - 9, 9, "0.12 0.18 0.24");
+        draw(ctx, lineText, PAGE_WIDTH - MARGIN - (customerLayout || block.wrap_text === true ? 2 : 0), y - 9, 9, "0.12 0.18 0.24");
         y -= LINE_HEIGHT;
       }
       y -= 4;
@@ -538,11 +610,11 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
     // nothing and looks like something went missing. Nothing is drawn.
     if (block.rows.length === 0) continue;
     const width = (PAGE_WIDTH - MARGIN * 2) / block.columns.length;
-    if (block.wrap_cells === true) {
+    if (customerLayout || block.wrap_cells === true) {
       if (block.columns.length === 0 || block.rows.some((row) => row.length !== block.columns.length)) {
         throw new Error("RTL_TABLE_COLUMN_COUNT_INVALID");
       }
-      const headers = block.columns.map((column) => wrapMeasuredCell(ctx, column, 8.4, width - 8));
+      const headers = block.columns.map((column) => customerLayout ? customerLines(column, 8.4, width - 8) : wrapMeasuredCell(ctx, column, 8.4, width - 8));
       const headerLines = Math.max(...headers.map((column) => column.length));
       const headerHeight = headerLines * LINE_HEIGHT + 4;
       const fullBodyHeight = PAGE_HEIGHT - MARGIN - BOTTOM - headerHeight;
@@ -550,19 +622,19 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
       const wrappedHeader = () => {
         fillRect(ctx, MARGIN, y - headerHeight + 2, PAGE_WIDTH - MARGIN * 2, headerHeight - 2, "0.93 0.95 0.96");
         headers.forEach((column, index) => column.forEach((text, row) => {
-          drawCell(ctx, text, PAGE_WIDTH - MARGIN - index * width - 4, y - 11 - row * LINE_HEIGHT, 8.4, "0.06 0.14 0.22");
+          draw(ctx, text, PAGE_WIDTH - MARGIN - index * width - 4, y - 11 - row * LINE_HEIGHT, 8.4, "0.06 0.14 0.22");
         }));
         y -= headerHeight;
       };
       const continuedTable = () => { newPage(); wrappedHeader(); };
       room(headerHeight + LINE_HEIGHT);
       wrappedHeader();
-      for (const row of block.rows) {
-        const cells = row.map((cell) => wrapMeasuredCell(ctx, cell, 8.2, width - 8));
+      for (const [rowIndex, row] of block.rows.entries()) {
+        const cells = row.map((cell) => customerLayout ? customerLines(cell, 8.2, width - 8) : wrapMeasuredCell(ctx, cell, 8.2, width - 8));
         const rowLines = Math.max(...cells.map((cell) => cell.length));
         // Keep an ordinary row together. Rows taller than a fresh page are
         // split into bounded fragments, each below a repeated table header.
-        if (rowLines * LINE_HEIGHT <= fullBodyHeight && y - rowLines * LINE_HEIGHT < BOTTOM) continuedTable();
+        if ((!customerLayout || rowIndex > 0) && rowLines * LINE_HEIGHT <= fullBodyHeight && y - rowLines * LINE_HEIGHT < BOTTOM) continuedTable();
         let offset = 0;
         while (offset < rowLines) {
           if (y - LINE_HEIGHT < BOTTOM) continuedTable();
@@ -570,7 +642,7 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
           cells.forEach((cell, index) => {
             for (let lineIndex = 0; lineIndex < count; lineIndex += 1) {
               const text = cell[offset + lineIndex];
-              if (text !== undefined) drawCell(ctx, text, PAGE_WIDTH - MARGIN - index * width - 4, y - 9 - lineIndex * LINE_HEIGHT, 8.2, "0.12 0.18 0.24");
+              if (text !== undefined) draw(ctx, text, PAGE_WIDTH - MARGIN - index * width - 4, y - 9 - lineIndex * LINE_HEIGHT, 8.2, "0.12 0.18 0.24");
             }
           });
           y -= count * LINE_HEIGHT;
@@ -584,7 +656,7 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
     const header = () => {
       fillRect(ctx, MARGIN, y - 15, PAGE_WIDTH - MARGIN * 2, 15, "0.93 0.95 0.96");
       block.columns.forEach((column, index) => {
-        drawCell(ctx, column, PAGE_WIDTH - MARGIN - index * width - 4, y - 11, 8.4, "0.06 0.14 0.22");
+        draw(ctx, column, PAGE_WIDTH - MARGIN - index * width - 4, y - 11, 8.4, "0.06 0.14 0.22");
       });
       y -= 17;
     };
@@ -593,7 +665,7 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
     for (const row of block.rows) {
       if (y - 13 < BOTTOM) { newPage(); header(); }
       row.forEach((cell, index) => {
-        drawCell(ctx, cell, PAGE_WIDTH - MARGIN - index * width - 4, y - 9, 8.2, "0.12 0.18 0.24");
+        draw(ctx, cell, PAGE_WIDTH - MARGIN - index * width - 4, y - 9, 8.2, "0.12 0.18 0.24");
       });
       line(ctx, MARGIN, y - 12, PAGE_WIDTH - MARGIN, y - 12, "0.90 0.92 0.93", 0.3);
       y -= 13;

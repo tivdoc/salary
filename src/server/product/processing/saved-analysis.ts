@@ -1,3 +1,6 @@
+import {savedDocumentReviewInput} from "./saved-document-review";
+import {openSavedReviewRequests} from './saved-review-requests';
+import {documentReviewIdempotencyKey} from "./document-review-key";
 import {loadJune2026TestAuthority,assertJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
 import {loadSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,june2026RegularReviewIdempotencyKey,JUNE_REGULAR_READING_POLICY,assertSavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
 import {SavedJune2026RegularRuntime} from './saved-june2026-regular';
@@ -50,17 +53,28 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const regularReadingPolicy=!testAuthority&&input.month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage'?JUNE_REGULAR_READING_POLICY:undefined;
  const regular=regularAuthority?new SavedJune2026RegularRuntime(regularAuthority,job,order,z.string().parse(row.public_id)):null;
  const runtime=canonical??regular;
- const key=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):regularAuthority?june2026RegularIdempotencyKey(job,order.id,regularAuthority):regularReadingPolicy?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,input.month);
+ const baseKey=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):regularAuthority?june2026RegularIdempotencyKey(job,order.id,regularAuthority):regularReadingPolicy?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,input.month);
+
+ const baseSnapshots=new SavedCaseSnapshot(input.context,job,input.month,testAuthority?{authority:testAuthority,orderId:order.id}:undefined,
+  regularAuthority?{authority:regularAuthority,orderId:order.id}:undefined,!runtime),baseSnapshot=await baseSnapshots.read();
+ const review=runtime?undefined:await savedDocumentReviewInput(input.context,job,order,input.month,baseSnapshot);
+ const key=runtime?baseKey:documentReviewIdempotencyKey(baseKey,canonicalSha256(review));
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
- if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report)throw new Error('SAVED_REPLAY_SCOPE');return existing;}
- const snapshots=new SavedCaseSnapshot(input.context,job,input.month,testAuthority?{authority:testAuthority,orderId:order.id}:undefined,
-  regularAuthority?{authority:regularAuthority,orderId:order.id}:undefined),snapshot=await snapshots.read();
+ if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report||review&&existing.command.document_review_sha256!==canonicalSha256(review))throw new Error('SAVED_REPLAY_SCOPE');return existing;}
+ const snapshot={...baseSnapshot,...(review?{document_review_input:review}:{})};
+ const snapshots={async loadPinned(command:CaseAnalysisCommand){
+  const base=await baseSnapshots.loadPinned(command);
+  if(!review)return base;
+  const current=await savedDocumentReviewInput(input.context,job,order,input.month,base);
+  if(canonicalSha256(current)!==command.document_review_sha256)throw Error("SAVED_REVIEW_INPUT_CHANGED");
+  return {...base,document_review_input:current};
+ }};
  const end=new Date(Date.UTC(Number(input.month.slice(0,4)),Number(input.month.slice(5,7)),0)).toISOString().slice(0,10);
  const now=regularAuthority?regularAuthority.authority.assessment.issued_at:new Date(String(row.created_at)).toISOString();
  const collection=input.month==='2026-06'&&order.topics.includes('minimum_wage')?await readSavedJune2026Collection(input.context,job):null;
  let factualContext:SavedJune2026AdmittedContext|null=null;
  let preparedRunId:string|null=null;
- const command:CaseAnalysisCommand={case_id:job.case_id,case_revision:z.coerce.number().int().positive().parse(row.engine_revision),
+ const command:CaseAnalysisCommand={...(review?{document_review_sha256:canonicalSha256(review)}:{}),case_id:job.case_id,case_revision:z.coerce.number().int().positive().parse(row.engine_revision),
   document_snapshot_id:snapshot.document_snapshot_id,document_snapshot_sha256:snapshot.document_snapshot_sha256,
   extraction_snapshot_id:snapshot.extraction_snapshot_id,extraction_snapshot_sha256:snapshot.extraction_snapshot_sha256,
   declared_fact_snapshot_id:snapshot.declared_fact_snapshot.snapshot_id,declared_fact_snapshot_sha256:snapshot.declared_fact_snapshot.snapshot_sha256,
@@ -115,5 +129,6 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  if(!completed?.report)throw new Error('SAVED_ANALYSIS_NOT_COMMITTED');
  if(canonical)await canonical.persist(input.context,bundle.analysis_run_id);
  if(regular)await regular.persist(input.context,bundle.analysis_run_id);
+ if(review&&bundle.document_review?.completions.customer_requests.some(r=>r.target.kind==='factual'))await openSavedReviewRequests(input.context,job,bundle.analysis_run_id);
  return completed;
 }

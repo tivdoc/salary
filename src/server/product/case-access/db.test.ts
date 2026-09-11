@@ -129,3 +129,27 @@ it("maps only the explicit source visibility refusal to absence in both adapters
   }
  }
 });
+
+it.each([
+ ['REVIEW_REQUEST_SOURCE_CHANGED','REQUEST_FIELD_SOURCE_CHANGED'],
+ ['REVIEW_REQUEST_ANSWER_INVALID','REQUEST_ANSWER_INVALID'],
+ ['REVIEW_REQUEST_CLOSED','REQUEST_EDIT_CLOSED'],
+ ['REVIEW_REQUEST_FORBIDDEN','REQUEST_FIELD_FORBIDDEN'],
+])('preserves the exact locked review refusal %s consistently in both adapters',async(message,safe)=>{
+ const error=Object.assign(Error(message),{code:'P0001',detail:'private database detail'});
+ const stores=[postgresCaseAccessDb({async query(){throw error;}}),supabaseCaseAccessDb({async rpc(){return {data:null,error};}})];
+ for(const store of stores)for(const fn of ['case_request_answer_identified','case_request_edit','case_request_review_states'])
+  await expect(store.rpc(fn,{})).rejects.toThrow(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${safe}`);
+});
+
+it.each([
+ ['case_report_source','P0001','REVIEW_REQUEST_SOURCE_CHANGED'],
+ ['case_request_answer_identified','08006','REVIEW_REQUEST_SOURCE_CHANGED'],
+ ['case_request_answer_identified','P0001','REVIEW_REQUEST_SOURCE_CHANGED: private@example.invalid'],
+ ['case_request_answer_identified','P0001','REVIEW_REQUEST_TARGET_INVALID'],
+])('does not broaden review refusal mapping for %s/%s/%s',async(fn,code,message)=>{
+ const error=Object.assign(Error(message),{code});
+ const postgres=postgresCaseAccessDb({async query(){throw error;}}),supabase=supabaseCaseAccessDb({async rpc(){return {data:null,error};}});
+ await expect(postgres.rpc(fn,{})).rejects.toBe(error);
+ await expect(supabase.rpc(fn,{})).rejects.toThrow(`CASE_ACCESS_DB_RPC_FAILED:${fn}:rpc_failed`);
+});

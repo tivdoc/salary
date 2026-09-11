@@ -18,13 +18,65 @@ import {publishSavedAiReport} from '../reports/publish-ai-report';
 import {JUNE_REGULAR_REPORT_TEMPLATE} from '../reports/june2026-regular-service';
 import {SAVED_DRAFT_TEMPLATE} from './saved-draft-report';
 import {SAVED_JUNE_REVIEW_VERSION} from './saved-minimum-wage-review';
-import {readSavedOrders} from './saved-order-scope';
+import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
+import {resolveSavedDocumentReviewKey} from './document-review-key';
+import {renderReviewBundle} from '../reports/document-review-projection';
 
 type Input=Parameters<SavedMonthCompletion>[0];
+const HISTORICAL_REVIEW_CODE_VERSIONS=new Set(['case-analysis@0.6.0','case-analysis@0.6.1','case-analysis@0.6.2',
+ 'case-analysis@0.6.3','case-analysis@0.6.4','case-analysis@0.6.5','case-analysis@0.6.6']);
+
+/** The current document review remains a source/arithmetic draft. Resolve the
+ * exact current review input again before acknowledging this month's saved
+ * bytes. This path cannot reach either financial publisher or DEV calculator. */
+async function completeDocumentReview(input:Input){
+ const {context,job,orderId,month,parent}=input,command=parent.command;
+ const [order]=await readSavedOrders(context,job,orderId);
+ const june=month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage';
+ if(june){
+  const legacy=await loadJune2026TestAuthority(context,job,orderId),authority=await loadSavedJune2026RegularAuthority(context,job,orderId);
+  if(legacy||authority?.state==='ready')throw Error('REGULAR_MANAGED_REVIEW_AUTHORITY_CHANGED');
+ }
+ const baseKey=june?june2026RegularReviewIdempotencyKey(job,orderId):savedMonthIdempotencyKey(job,orderId,month);
+ const current=await resolveSavedDocumentReviewKey(context,job,order,month,baseKey);
+ const end=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
+ if(month<order.from.slice(0,7)||month>order.to.slice(0,7)||!parent.completed||!parent.bundle||!parent.report
+  ||parent.idempotency_key!==current.key||command.idempotency_key!==current.key||command.document_review_sha256!==current.reviewSha256
+  ||command.mode!=='real'||command.case_id!==job.case_id||command.document_snapshot_id!==current.snapshot.document_snapshot_id
+  ||command.document_snapshot_sha256!==current.snapshot.document_snapshot_sha256
+  ||command.extraction_snapshot_id!==current.snapshot.extraction_snapshot_id||command.extraction_snapshot_sha256!==current.snapshot.extraction_snapshot_sha256
+  ||command.declared_fact_snapshot_id!==current.snapshot.declared_fact_snapshot.snapshot_id||command.declared_fact_snapshot_sha256!==current.snapshot.declared_fact_snapshot.snapshot_sha256
+  ||command.period.start_date!==`${month}-01`||command.period.end_date!==end
+  ||canonicalSha256(command.requested_topics)!==canonicalSha256(order.topics)||canonicalSha256(command)!==parent.command_sha256
+  ||parent.analysis_run_id!==savedAnalysisId('case-analysis-run',parent.command_sha256)||parent.selections.length!==order.topics.length)
+  throw Error('DOCUMENT_REVIEW_MANAGED_SCOPE');
+ const catalog=new June2026ReviewCatalog();
+ for(const [index,topic] of order.topics.entries()){
+  const expected=await catalog.resolve({mode:'real',topic,target_date:command.period.end_date,as_of:command.as_of,sector:command.sector,population:command.population});
+  if(canonicalSha256(expected)!==canonicalSha256(parent.selections[index]))throw Error('DOCUMENT_REVIEW_MANAGED_SELECTION');
+ }
+ const bundle=decodeBundle(parent.bundle,order.topics);validateReport(parent.report);
+ if(bundle.case_id!==job.case_id||bundle.analysis_run_id!==parent.analysis_run_id||bundle.case_revision!==command.case_revision
+  ||bundle.document_review?.input_sha256!==current.reviewSha256||canonicalSha256(bundle.document_review.input)!==canonicalSha256(current.review)
+  ||bundle.known_subtotal!==null||bundle.coverage_complete||bundle.topic_results.some(t=>!['blocked_missing_facts','blocked_conflict','blocked_legal_readiness','error'].includes(t.status)||t.amount!==null||t.trace!==null)
+  ||parent.report.report_id!==savedAnalysisId('saved-report',bundle.result_sha256)||parent.report.analysis_result_sha256!==bundle.result_sha256)
+  throw Error('DOCUMENT_REVIEW_MANAGED_RESULT');
+ // Reuse the typed projection and renderer. A self-consistent edited JSON or
+ // PDF hash is insufficient: all formats must be the same saved review result.
+ const expectedReport=renderReviewBundle(bundle,parent.report.report_id);
+ if(parent.report.report_sha256!==expectedReport.report_sha256)throw Error('DOCUMENT_REVIEW_MANAGED_ARTIFACT');
+ const stages=parent.stages.filter(s=>s.stage==='review_pending'),stage=stages[0];
+ if(stages.length!==1||!stage||stage.payload_sha256!==canonicalSha256(stage.payload))throw Error('DOCUMENT_REVIEW_MANAGED_STAGE');
+ const review=z.object({report_sha256:z.literal(parent.report.report_sha256),auto_approved:z.literal(false),export_eligible_before_review:z.literal(false)}).passthrough().parse(stage.payload);
+ if(june)z.object({diagnostics:z.object({schema_version:z.literal(SAVED_JUNE_REVIEW_VERSION),case_id:z.literal(job.case_id),
+  analysis_run_id:z.literal(parent.analysis_run_id),candidate_calculation_performed:z.literal(false),findings_created:z.literal(false),activation_allowed:z.literal(false)}).passthrough()}).passthrough().parse(review);
+}
 /** An unsigned regular review is a completed diagnostic/waiting result. It
  * never falls through to the separate historical engineering calculator. */
 async function completeRegularReview(input:Input){
  const {context,job,orderId,month,parent}=input,command=parent.command;
+ if(!parent.dependencies||!HISTORICAL_REVIEW_CODE_VERSIONS.has(parent.dependencies.code_version)
+  ||command.document_review_sha256||parent.bundle?.document_review)throw Error('REGULAR_MANAGED_HISTORICAL_REVIEW_REQUIRED');
  const legacy=await loadJune2026TestAuthority(context,job,orderId),authority=await loadSavedJune2026RegularAuthority(context,job,orderId);
  if(legacy||authority?.state==='ready')throw Error('REGULAR_MANAGED_REVIEW_AUTHORITY_CHANGED');
  const [order]=await readSavedOrders(context,job,orderId),key=june2026RegularReviewIdempotencyKey(job,orderId);
@@ -140,6 +192,9 @@ export async function saveAutomaticDevCanonicalDraft(input:Input){
  * Answers create a new source revision and therefore a new canonical run;
  * retries reuse both run and artifact rather than appending duplicates. */
 export const runAutomaticDevMonth:SavedMonthCompletion=async input=>{
+ if(input.parent.command.document_review_sha256||input.parent.bundle?.document_review||input.parent.command.idempotency_key?.startsWith('review:')){
+  await completeDocumentReview(input);return;
+ }
  if(input.parent.command.idempotency_key?.startsWith('june-regular-review:')){
   await completeRegularReview(input);return;
  }

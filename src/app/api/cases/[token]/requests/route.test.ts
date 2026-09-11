@@ -7,6 +7,7 @@ vi.mock('@/server/product/case-access/service',()=>({resolveIdentitySession:asyn
 vi.mock('@/server/product/reports/request-document-source',()=>({loadRequestDocumentSource:state.source}));
 vi.mock('@/server/product/reports/case-requests',()=>({answerCaseRequest:state.answer,listCaseRequests:state.list,editCaseRequest:state.edit}));
 import {GET,POST} from './route';
+import {postgresCaseAccessDb,supabaseCaseAccessDb} from '@/server/product/case-access/db';
 const requestId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const context=(token='TV-OWN00001')=>({params:Promise.resolve({token})});
 const get=()=>new Request(`https://test/api?source=${requestId}`);
@@ -39,4 +40,17 @@ it.each(['REQUEST_FIELD_SOURCE_CHANGED','JUNE_COLLECTION_SOURCE_OR_SCOPE_CHANGED
 it('reports an invalid typed June answer without leaking database detail',async()=>{
  state.answer.mockRejectedValue(Error('CASE_ACCESS_DB_RPC_FAILED:case_request_answer_identified:JUNE_COLLECTION_ANSWER_INVALID'));
  const response=await POST(post(),context());expect(response.status).toBe(400);expect((await response.json()).code).toBe('request_answer_invalid');
+});
+it.each(['postgres','supabase'] as const)('maps locked review SQL refusals to the existing HTTP contract through %s',async provider=>{
+ for(const [message,status,code] of [
+  ['REVIEW_REQUEST_SOURCE_CHANGED',409,'request_edit_conflict'],['REVIEW_REQUEST_ANSWER_INVALID',400,'request_answer_invalid'],
+  ['REVIEW_REQUEST_CLOSED',409,'request_edit_conflict'],['REVIEW_REQUEST_FORBIDDEN',404,null],
+ ] as const){
+  const error=Object.assign(Error(message),{code:'P0001',detail:'private customer database detail'});
+  const store=provider==='postgres'?postgresCaseAccessDb({async query(){throw error;}}):supabaseCaseAccessDb({async rpc(){return {data:null,error};}});
+  state.answer.mockImplementation(()=>store.rpc('case_request_answer_identified',{}));
+  const response=await POST(post(),context()),body=await response.text();
+  expect(response.status).toBe(status);expect(body).not.toContain('REVIEW_REQUEST');expect(body).not.toContain('private customer');
+  if(code)expect(JSON.parse(body).code).toBe(code);else expect(body).toBe('');
+ }
 });

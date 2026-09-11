@@ -1,4 +1,4 @@
-import {describe,it,expect,vi} from 'vitest';
+import {beforeEach,describe,it,expect,vi} from 'vitest';
 vi.mock('server-only',()=>({}));
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
@@ -8,6 +8,16 @@ import {admitSavedSource} from './saved-admission';
 import {purchasedMonths,savedMonthIdempotencyKey,readSavedOrders,type SavedOrderScope} from './saved-order-scope';
 import {june2026RegularReviewIdempotencyKey} from './saved-june2026-regular-authority';
 import {SOURCE_JOB_KIND,type SourceJob} from './source-dispatch';
+import {documentReviewIdempotencyKey} from './document-review-key';
+
+const reviewPorts=vi.hoisted(()=>({sha256:'e'.repeat(64)}));
+vi.mock('./document-review-key',async importOriginal=>{
+ const original=await importOriginal<typeof import('./document-review-key')>();
+ return {...original,resolveSavedDocumentReviewKey:vi.fn(async(_context:PostgresTransactionContext,_job:SourceJob,_order:SavedOrderScope,_month:string,baseKey:string)=>({
+  key:original.documentReviewIdempotencyKey(baseKey,reviewPorts.sha256),reviewSha256:reviewPorts.sha256,
+ }))};
+});
+beforeEach(()=>{reviewPorts.sha256='e'.repeat(64);});
 
 // Authority/case locking is independently exercised with the actual worker DB
 // role. These tests isolate receipt completeness and terminal write behavior.
@@ -19,8 +29,8 @@ function setup(){
  const row={job_id:'saved-test',tenant_id:`saved-case:${caseId}`,canonical_case_id:caseId,job_kind:SOURCE_JOB_KIND,payload:job,
   payload_sha256:canonicalSha256(job),state:'running',fencing_token:2,lease_owner:'worker',lease_valid:true,cancellation_requested:false,terminal_effect_sha256:null as string|null};
  const receipts=purchasedMonths(order).map(month=>{
-  const key=savedMonthIdempotencyKey(job,order.id,month),end=month==='2025-01'?'31':'28';
-  const command={...fixture.command,idempotency_key:key,period:{start_date:`${month}-01`,end_date:`${month}-${end}`}};
+  const key=documentReviewIdempotencyKey(savedMonthIdempotencyKey(job,order.id,month),reviewPorts.sha256),end=month==='2025-01'?'31':'28';
+  const command={...fixture.command,idempotency_key:key,document_review_sha256:reviewPorts.sha256,period:{start_date:`${month}-01`,end_date:`${month}-${end}`}};
   return {idempotency_key:key,analysis_run_id:`run-${month}`,command,command_sha256:canonicalSha256(command),result_sha256:'c'.repeat(64),report_id:`report-${month}`,report_revision:1,report_sha256:'d'.repeat(64)};
  });
  const responses:Record<string,Record<string,unknown>[]>={saved_job_read:[row],saved_job_lock:[row],saved_order_entitlements:[{orders:[order],current_orders:[order]}],saved_job_month_receipts:receipts,saved_job_complete_atomic:[{outbox_id:'saved-draft:saved-test'}]};
@@ -36,7 +46,7 @@ function setup(){
 describe('saved draft job exact purchased completion',()=>{
  it.each(['missing','expired'] as const)('completes only the regular blocked-review receipt when authority is %s',async(state)=>{
   const s=setup();s.order.from='2026-06-01';s.order.to='2026-06-01';s.order.topics=['minimum_wage'];
-  const key=june2026RegularReviewIdempotencyKey(s.job,s.order.id);
+  const key=documentReviewIdempotencyKey(june2026RegularReviewIdempotencyKey(s.job,s.order.id),reviewPorts.sha256);
   const command={...s.receipts[0].command,idempotency_key:key,requested_topics:['minimum_wage'],period:{start_date:'2026-06-01',end_date:'2026-06-30'}};
   s.responses.saved_job_month_receipts=[{...s.receipts[0],idempotency_key:key,command,command_sha256:canonicalSha256(command)}];
   s.responses.june_test_authority=[{authority:null}];
@@ -53,6 +63,24 @@ describe('saved draft job exact purchased completion',()=>{
   expect(s.calls.some(c=>c.name==='saved_job_complete_atomic')).toBe(false);
  });
 
+ it('refuses a prior completed review after its saved input changes without changing the source job',async()=>{
+  const s=setup(),oldKeys=s.receipts.map(r=>r.idempotency_key);
+  reviewPorts.sha256='f'.repeat(64);
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('SAVED_JOB_MONTHS_INCOMPLETE');
+  const requested=JSON.parse(String(s.calls.find(c=>c.name==='saved_job_month_receipts')!.values[2]));
+  expect(requested).not.toEqual(oldKeys);expect(s.calls.some(c=>c.name==='saved_job_complete_atomic')).toBe(false);
+ });
+ it('requires the exact current review pin in the command even when its command hash is valid',async()=>{
+  const s=setup();s.receipts[0].command.document_review_sha256='f'.repeat(64);s.receipts[0].command_sha256=canonicalSha256(s.receipts[0].command);
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('SAVED_JOB_RECEIPT_SCOPE');
+  expect(s.calls.some(c=>c.name==='saved_job_complete_atomic')).toBe(false);
+ });
+ it('does not finalize a new nonterminal job using a pre-review legacy key',async()=>{
+  const s=setup();s.receipts[0].idempotency_key=savedMonthIdempotencyKey(s.job,s.order.id,'2025-01');
+  s.receipts[0].command.idempotency_key=s.receipts[0].idempotency_key;s.receipts[0].command_sha256=canonicalSha256(s.receipts[0].command);
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('SAVED_JOB_MONTHS_INCOMPLETE');
+  expect(s.calls.some(c=>c.name==='saved_job_complete_atomic')).toBe(false);
+ });
  it('binds both months, distinct order scopes and their durable receipts to one draft manifest',async()=>{
   const s=setup(),result=await completeSavedDraftJob(s.input);
   expect(result.manifest.months.map(m=>m.month)).toEqual(['2025-01','2025-02']);
@@ -120,7 +148,7 @@ describe('saved terminal receipt replay across authority dependency changes',()=
   const s=setup();
   s.job.authority_dependency_sha256='1'.repeat(64);s.row.payload_sha256=canonicalSha256(s.job);
   s.order.from='2026-06-01';s.order.to='2026-06-01';s.order.topics=['minimum_wage'];
-  const key=june2026RegularReviewIdempotencyKey(s.job,s.order.id);
+  const key=documentReviewIdempotencyKey(june2026RegularReviewIdempotencyKey(s.job,s.order.id),reviewPorts.sha256);
   const command={...s.receipts[0].command,idempotency_key:key,requested_topics:['minimum_wage'],period:{start_date:'2026-06-01',end_date:'2026-06-30'}};
   const receipt={...s.receipts[0],idempotency_key:key,command,command_sha256:canonicalSha256(command)};
   s.responses.saved_job_month_receipts=[receipt];s.responses.saved_job_replay_month_receipts=[receipt];

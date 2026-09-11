@@ -56,7 +56,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //158 adds four internal completion-round helpers and three worker-only API
 // boundaries. Exact names/ACL groups are inventoried below; source review is
 // recorded in docs/release-evidence/managed-completion-definer-review-20260911.md.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 314;
+//159 adds five reviewed source-review boundaries. No direct target writes;
+// worker-only open/history, internal currentness/guard, identity-bound UI state.
+// See docs/release-evidence/document-review-definer-review-20260911.md.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 319;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -84,6 +87,19 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
 }
 
 describe("security definer search_path contract", () => {
+  it('accounts for the five identified review boundaries and narrow grants',async()=>{
+    const file='20260911144617_document_review_identified_completions.sql';
+    expect((await securityDefinerDefinitions()).filter(d=>d.file===file).map(d=>d.name).sort()).toEqual([
+      'private.document_review_answer_history','private.document_review_request_current','private.document_review_request_open',
+      'private.guard_document_review_request','public.case_request_review_states',
+    ]);
+    const sql=(await readFile(path.join(MIGRATION_ROOT,file),'utf8')).replaceAll(/\s+/gu,' ').toLowerCase();
+    expect(sql).toContain("session_user<>'tivdoc_worker_runtime'");
+    expect(sql).toContain('grant execute on function private.document_review_request_open(uuid,integer,text,text,text,text) to tivdoc_worker_runtime');
+    expect(sql).toContain('grant execute on function private.document_review_answer_history(uuid,integer,text) to tivdoc_worker_runtime');
+    expect(sql).toContain('grant execute on function public.case_request_review_states(uuid,uuid) to tivdoc_web_runtime,service_role');
+    expect(sql).toContain('revoke all on private.document_review_request_targets from public,anon,authenticated,service_role,tivdoc_web_runtime,tivdoc_worker_runtime,tivdoc_operations_runtime');
+  });
   it("accounts for all seven reviewed completion-round definitions and their role boundaries", async () => {
     const file = "20260911063456_managed_dev_completion_rounds.sql";
     const definitions = await securityDefinerDefinitions();

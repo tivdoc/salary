@@ -1,3 +1,4 @@
+import {runDocumentReview} from "../document-review/service.ts";
 import {JUNE2026_TEST_READINESS,decodeJune2026TestReadiness} from "../minimum-wage-june2026/test-catalog.ts";
 import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts.ts";
 import { employmentSnapshotSchema, type EmploymentSnapshot } from "../facts/snapshot.ts";
@@ -25,6 +26,7 @@ import { WAVE3_TOPICS } from "../wave3/contracts.ts";
 import {
   CaseAnalysisError,
   CASE_ANALYSIS_CODE_VERSION,
+  CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION,
   CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION,
   type CaseAnalysisLogPort,
   type CaseAnalysisRepositoryPort,
@@ -177,6 +179,13 @@ function verifyStoredSnapshot(command: CaseAnalysisCommand, stored: StoredCaseIn
       || actualDeclaredHash !== command.declared_fact_snapshot_sha256 || actualDeclaredHash !== stored.declared_fact_snapshot.snapshot_sha256) {
     throw new CaseAnalysisError("PINNED_SNAPSHOT_HASH_MISMATCH");
   }
+  if (stored.document_review_input || command.document_review_sha256) {
+    if (!stored.document_review_input || !command.document_review_sha256
+      || hashCanonical(stored.document_review_input) !== command.document_review_sha256
+      || stored.document_review_input.case_id !== command.case_id
+      || stored.document_review_input.period.from !== command.period.start_date
+      || stored.document_review_input.period.to !== command.period.end_date) throw new CaseAnalysisError("REVIEW_SNAPSHOT_PIN_MISMATCH");
+  }
   const declaredPaths = new Set<CanonicalFact["path"]>();
   const declaredIds = new Set<string>();
   for (const candidate of stored.declared_fact_snapshot.facts) {
@@ -187,7 +196,7 @@ function verifyStoredSnapshot(command: CaseAnalysisCommand, stored: StoredCaseIn
     declaredPaths.add(fact.path);
     declaredIds.add(fact.fact_id);
   }
-  if (stored.documents.length === 0 || stored.documents.length !== stored.extractions.length) {
+  if ((stored.documents.length === 0 && !stored.document_review_input) || stored.documents.length !== stored.extractions.length) {
     throw new CaseAnalysisError("DOCUMENT_EXTRACTION_CARDINALITY_MISMATCH");
   }
 }
@@ -238,6 +247,15 @@ function projectFacts(input: Readonly<{
     // a saved document value or its provenance. Conflicts remain unresolved;
     // agreement preserves the least-confirmed status across the sources.
     if (declared) candidates.push(canonicalFactSchema.parse(declared));
+    if(candidates.length===0&&input.stored.document_review_input){
+      // The review stage has considered these sources, but has not admitted a
+      // canonical financial fact. Preserve the absence with actual provenance.
+      const source=input.stored.document_review_input.documents[0];
+      candidates.push(canonicalFactSchema.parse({fact_id:input.ids.derive('review-missing-fact',canonicalSha256({run:input.analysisRunId,path})),
+        case_id:input.command.case_id,path,value:null,status:'missing',confidence:0,
+        provenance:[{source_type:'documented',source_reference:{kind:'document',document_id:source.document_id},read_by:'machine',verified:false}],
+        conflicting_fact_ids:[],resolution:null,created_at:input.createdAt}));
+    }
     return aggregateFact(
       path,
       candidates,
@@ -409,6 +427,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       created_at: createdAt,
       selections,
       provider_independent: true,
+      ...(stored.document_review_input ? {document_review_input:stored.document_review_input,document_review_sha256:command.document_review_sha256} : {}),
     });
 
     const facts = projectFacts({ command, stored, analysisRunId, createdAt, ids: this.dependencies.ids,readingPolicy:this.dependencies.readingPolicy });
@@ -440,7 +459,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       rule_spec_versions: sortStrings([...new Set(selections.flatMap((selection) => selection.rule_spec_id && selection.rule_spec_version
         ? [`${selection.rule_spec_id}@${selection.rule_spec_version}`]
         : []))]),
-      code_version: this.dependencies.readingPolicy===IDENTIFIED_AGREEING_CANDIDATES_POLICY?CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION:CASE_ANALYSIS_CODE_VERSION,
+      code_version: stored.document_review_input?CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION:this.dependencies.readingPolicy===IDENTIFIED_AGREEING_CANDIDATES_POLICY?CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION:CASE_ANALYSIS_CODE_VERSION,
       template_version: this.dependencies.templateVersion,
     });
     await this.stage(analysisRunId, "analysis_run", { selections, dependencies });
@@ -491,7 +510,9 @@ export class CaseAnalysisService implements CaseAnalysisPort {
     }
     const subtotal = knownSubtotal(topicResults);
     const coverageComplete = topicResults.every((result) => result.status === "calculated" || result.status === "not_applicable");
+    const documentReview=stored.document_review_input ? runDocumentReview(stored.document_review_input,analysisRunId) : undefined;
     const bundleSeed = {
+      ...(documentReview ? {document_review:documentReview} : {}),
       schema_version: "tivdoc-analysis-result-bundle-v0.6.0" as const,
       analysis_run_id: analysisRunId,
       case_id: command.case_id,

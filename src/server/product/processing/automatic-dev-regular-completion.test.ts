@@ -134,6 +134,8 @@ async function unsignedReview(){
  const payload={report_sha256:report.report_sha256,diagnostics:{schema_version:SAVED_JUNE_REVIEW_VERSION,case_id:input.job.case_id,analysis_run_id:runId,
   candidate_calculation_performed:false,findings_created:false,activation_allowed:false}};
  return {...input,parent:{...input.parent,analysis_run_id:runId,idempotency_key:key,command,command_sha256:commandSha,selections:[selection],bundle,report,
+  dependencies:{extraction_snapshot_sha256:command.extraction_snapshot_sha256,facts_snapshot_sha256:bundle.facts_snapshot_sha256,catalog_sha256:bundle.catalog_sha256,
+   source_version_ids:selection.source_version_ids,parameter_version_ids:[],rule_spec_versions:[],code_version:'case-analysis@0.6.6' as const,template_version:'saved-source-analysis-draft-v1'},
   stages:[{stage:'review_pending' as const,payload,payload_sha256:canonicalSha256(payload)}]}};
 }
 it('keeps a current unsigned REAL regular review waiting without creating an engineering calculation',async()=>{

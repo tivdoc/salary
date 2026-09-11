@@ -83,8 +83,9 @@ export function derivePrivateExtraction(request:ExtractionRequest,mapped:MappedO
  * storage mutation, customer-session, notification or publication dependency.
  * One count and one genuine existing extractor pass; no automatic retry.
  * The reference is hash-checked only and is NEVER supplied to the model. */
-export async function runPrivatePayslipExtraction(input:{privateRoot:string;documentId:string;apiKey:string;codeRevision:string}){
+export async function runPrivatePayslipExtraction(input:{privateRoot:string;documentId:string;apiKey:string;codeRevision:string;attempt?:number}){
  if(process.env.VERCEL||process.env.VERCEL_ENV||!input.apiKey||!/^[a-f0-9]{40}$/u.test(input.codeRevision))throw Error('PRIVATE_LOCAL_SCOPE');
+ const attempt=z.number().int().min(1).max(6).parse(input.attempt??1);
  const root=privateArtifactPath(input.privateRoot);
  const authorizationBytes=readFileSync(child(root,'authorization.private.json'));
  const authorization=privateExtractionAuthorizationSchema.parse(JSON.parse(authorizationBytes.toString('utf8')));
@@ -102,7 +103,18 @@ export async function runPrivatePayslipExtraction(input:{privateRoot:string;docu
   ||imported.source_document.size!==job.size_bytes||imported.source_document.mime_type!==job.mime_type||imported.source_document.document_type!=='payslip'
   ||imported.source_document.created_at!==job.source_created_at
   ||sourceReceipt.source_is_qa!==(job.source_qa_classification==='paid_qa_ownership_unresolved'))throw Error('PRIVATE_SOURCE_RECEIPT_MISMATCH');
- const directory=child(root,`${job.work_id}/provider/${job.document_id}`);mkdirSync(directory,{recursive:true});
+ const originalDirectory=child(root,`${job.work_id}/provider/${job.document_id}`);
+ const directory=attempt===1?originalDirectory:path.join(originalDirectory,`attempt-${attempt}`);
+ if(attempt>1){
+  const previousDirectory=attempt===2?originalDirectory:path.join(originalDirectory,`attempt-${attempt-1}`);
+  const previousPath=path.join(previousDirectory,'result.private.json');
+  if(!existsSync(previousPath))throw Error('PRIVATE_RETRY_HISTORY_REQUIRED');
+  const previous=JSON.parse(readFileSync(previousPath,'utf8'));
+  const receipt=parseOpenAiProviderReceipt(previous.payload?.mapped?.provider_receipt);
+  if(previous.source_sha256!==job.source_sha256||previous.document_id!==job.document_id||previous.case_id!==job.case_id
+   ||receipt.status!=='failed'||receipt.origin!=='openai_live'||!receipt.provider_attempted)throw Error('PRIVATE_RETRY_REQUIRES_FAILED_RECEIPT');
+ }
+ mkdirSync(directory,{recursive:true});
  const resultPath=path.join(directory,'result.private.json'),ledgerPath=child(root,'package-budget-ledger.private.json');
  const lock=acquireSolBudgetLock({ledgerPath,codeRevision:input.codeRevision});
  try{
@@ -131,7 +143,7 @@ export async function runPrivatePayslipExtraction(input:{privateRoot:string;docu
     document_period:null,supersedes_document_id:null,created_at:job.source_created_at}});
   const prepared=await preprocessPayslipDocument({bytes,mime_type:job.mime_type,regions:['header','earnings','totals','pension']});
   const providerRequest=buildOpenAiV2ResponsesRequest({model:SOL_COMPARISON_POLICY.model,prepared,kind:'first_pass',requested_fields:payslipFieldKeySchema.options,executionProfile:OPENAI_SOL_COMPARISON_PROFILE,sourcePagePolicy:OPENAI_SOURCE_FILE_PAGE_POLICY});
-  const counted=solInputCountRequest(providerRequest),reservation={sourceSha256:job.source_sha256,requestSha256:counted.requestSha256,codeRevision:input.codeRevision,attempt:1};
+  const counted=solInputCountRequest(providerRequest),reservation={sourceSha256:job.source_sha256,requestSha256:counted.requestSha256,codeRevision:input.codeRevision,attempt};
   saveNew(path.join(directory,'request-context.private.json'),{request,source_job:job,authorization_sha256:hash(authorizationBytes),codeRevision:input.codeRevision,request_sha256:counted.requestSha256,
    scope:'private_actual_paid_copy_no_legal_admission',historical_version_id:null,observed_version:'observed-sha256:'+job.source_sha256,container_pages:inspected.pages,printed_pages:job.printed_page_count,
    actual_source_storage_path:imported.source_document.storage_path,virtual_engine_path:request.document.storage_path,

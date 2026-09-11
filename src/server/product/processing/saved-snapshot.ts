@@ -32,7 +32,7 @@ const checkpointSchema = z.object({
  * immutable journal revision and extraction policy can become engine inputs.
  * Revalidates source scope even on retry; it never calls a provider in a lock. */
 export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
- constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string,private readonly testScope?:{authority:June2026TestAuthority;orderId:string},private readonly regularScope?:{authority:SavedJune2026RegularAuthority;orderId:string}) {}
+ constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string,private readonly testScope?:{authority:June2026TestAuthority;orderId:string},private readonly regularScope?:{authority:SavedJune2026RegularAuthority;orderId:string},private readonly allowEmptyReview=false) {}
 
  async read():Promise<StoredCaseInputSnapshot> {
   const job=sourceJobSchema.parse(this.candidate);
@@ -46,7 +46,7 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   if(source.case_id!==job.case_id)throw new Error('SAVED_INPUT_CASE_MISMATCH');
   const selectedMonth=month.parse(this.targetMonth??source.month);
   const payslips=source.documents.filter(d=>d.type==='payslip'&&(d.month??source.month)===selectedMonth);
-  if(!payslips.length)throw new Error('SAVED_PAYSLIP_REQUIRED');
+  if(!payslips.length&&!this.allowEmptyReview)throw new Error('SAVED_PAYSLIP_REQUIRED');
   if(new Set(source.documents.map(d=>d.version_id)).size!==source.documents.length)throw new Error('SAVED_VERSION_DUPLICATE');
   const documents=[],extractions=[];
   for(const pinned of payslips){
@@ -92,7 +92,9 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
    if(declarations.length>1)throw Error('SAVED_HOURS_DECLARATION_AMBIGUOUS');
    facts.push(...declarations);
   }
-  return deepFreeze({document_snapshot_id:`saved-documents:${selectedMonth}:${job.input_sha256}`,document_snapshot_sha256:canonicalSha256(documents),documents,
+  const reviewAnswers=z.object({answers:z.array(z.object({code:z.string().optional()}).passthrough()).optional()}).passthrough().parse(row.input)
+   .answers?.some(a=>a.code?.startsWith('document_review:'));
+  return deepFreeze({...(reviewAnswers?{has_document_review_answers:true}:{}),document_snapshot_id:`saved-documents:${selectedMonth}:${job.input_sha256}`,document_snapshot_sha256:canonicalSha256(documents),documents,
    extraction_snapshot_id:`saved-extractions:${selectedMonth}:${job.input_sha256}`,extraction_snapshot_sha256:canonicalSha256(extractions),extractions,
    declared_fact_snapshot:{snapshot_id:`saved-declarations:${selectedMonth}:${job.input_sha256}`,snapshot_sha256:canonicalSha256(facts),facts}});
  }

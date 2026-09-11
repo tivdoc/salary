@@ -1,3 +1,4 @@
+import {replayDocumentReview} from "../../../../../engine/document-review/service";
 import {JUNE2026_TEST_READINESS,decodeJune2026TestReadiness} from "../../../../../engine/minimum-wage-june2026/test-catalog";
 import { createHash } from "node:crypto";
 
@@ -283,11 +284,12 @@ function decodeLegalReadiness(value: unknown): LegalReadinessDecision {
 }
 
 export function decodeCommand(value: unknown): CaseAnalysisCommand {
-  const row = object(value, [
+  const parsed=parseJson(value),hasReview=typeof parsed==='object'&&parsed!==null&&Object.prototype.hasOwnProperty.call(parsed,'document_review_sha256');
+  const row = object(parsed, [
     "case_id", "case_revision", "document_snapshot_id", "document_snapshot_sha256",
     "extraction_snapshot_id", "extraction_snapshot_sha256", "declared_fact_snapshot_id",
     "declared_fact_snapshot_sha256", "period", "as_of", "requested_topics", "sector",
-    "population", "mode", "idempotency_key",
+    "population", "mode", "idempotency_key",...(hasReview?["document_review_sha256"]:[]),
   ]);
   const period = object(row.period, ["start_date", "end_date"]);
   const requestedTopics = array(row.requested_topics).map((topic) => decodeTopic(topic));
@@ -300,6 +302,7 @@ export function decodeCommand(value: unknown): CaseAnalysisCommand {
   const mode = string(row.mode);
   if (mode !== "real" && mode !== "synthetic_test") throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
   return Object.freeze({
+    ...(hasReview?{document_review_sha256:sha256(row.document_review_sha256)}:{}),
     case_id: string(row.case_id),
     case_revision: integer(row.case_revision),
     document_snapshot_id: string(row.document_snapshot_id),
@@ -333,7 +336,7 @@ export function decodeDependencies(value: unknown): PinnedAnalysisDependencies {
     "parameter_version_ids", "rule_spec_versions", "code_version", "template_version",
   ]);
   for (const hash of [row.extraction_snapshot_sha256, row.facts_snapshot_sha256, row.catalog_sha256]) assertSha256(hash);
-  if (row.code_version !== "case-analysis@0.6.0" && row.code_version !== "case-analysis@0.6.1" && row.code_version !== "case-analysis@0.6.2" && row.code_version !== "case-analysis@0.6.3" && row.code_version !== "case-analysis@0.6.4" && row.code_version !== "case-analysis@0.6.5" && row.code_version !== "case-analysis@0.6.6") throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
+  if (row.code_version !== "case-analysis@0.6.0" && row.code_version !== "case-analysis@0.6.1" && row.code_version !== "case-analysis@0.6.2" && row.code_version !== "case-analysis@0.6.3" && row.code_version !== "case-analysis@0.6.4" && row.code_version !== "case-analysis@0.6.5" && row.code_version !== "case-analysis@0.6.6" && row.code_version !== "case-analysis@0.6.7") throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
   return Object.freeze({
     extraction_snapshot_sha256: sha256(row.extraction_snapshot_sha256),
     facts_snapshot_sha256: sha256(row.facts_snapshot_sha256),
@@ -393,11 +396,12 @@ export function validateTopicResult(value: unknown): TopicAnalysisResult {
 }
 
 export function decodeBundle(value: unknown, expectedTopics: readonly Wave3Topic[] = WAVE3_TOPICS): AnalysisResultBundle {
-  const row = object(value, [
+  const parsed=parseJson(value),hasReview=typeof parsed==='object'&&parsed!==null&&Object.prototype.hasOwnProperty.call(parsed,'document_review');
+  const row = object(parsed, [
     "schema_version", "analysis_run_id", "case_id", "case_revision", "period", "as_of",
     "document_snapshot_sha256", "extraction_snapshot_sha256", "declared_fact_snapshot_sha256",
     "facts_snapshot_sha256", "facts", "rule_inputs", "catalog_sha256", "topic_results",
-    "known_subtotal", "coverage_complete", "result_sha256",
+    "known_subtotal", "coverage_complete", "result_sha256",...(hasReview?["document_review"]:[]),
   ]);
   if (row.schema_version !== "tivdoc-analysis-result-bundle-v0.6.0") {
     throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
@@ -413,7 +417,10 @@ export function decodeBundle(value: unknown, expectedTopics: readonly Wave3Topic
     throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
   }
   const period = object(row.period, ["start_date", "end_date"]);
+  const review=hasReview?replayDocumentReview(row.document_review):undefined;
+  if(review&&(review.case_id!==row.case_id||review.analysis_run_id!==row.analysis_run_id||review.period.from!==period.start_date||review.period.to!==period.end_date))throw new PostgresAnalysisError('ANALYSIS_ROW_MALFORMED');
   const decoded = {
+    ...(review?{document_review:review}:{}),
     schema_version: row.schema_version,
     analysis_run_id: string(row.analysis_run_id),
     case_id: string(row.case_id),
