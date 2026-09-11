@@ -1,4 +1,10 @@
-## Active private paid-case processing — 2026-09-11
+## Private paid-case scope delivered — 2026-09-11
+
+[Final handoff and precise limits](private-paid-cases-handoff-2026-09-11-he.md). Tested code29ea4663496f455907e717c917cf2af0d3de8a03, both CI34579842981/34579839962PASS:4302tests passed/101skipped, typecheck/lint/build/Production-closure PASS. Five private owner drafts, all11relevant files reviewed,75existing-interpreter arithmetic checks replayed (65calculated/10blocked). All17PDFpages/hash/money checks and local Chrome index+5reports verified. Actual customer artifacts are outside Git and CI, and no customer delivery/REAL admission occurred.
+
+Provider generation returned503twice after2successful counts:4content requests,USD1.424reserved,2unknown generation costs. No successful new live extraction; provider authorization paused without ledger reset. Prior DEV stayscb73918/schema158, no migration/deployment in this private package. Production SELECT/download only; UI checkout untouched. AllTivdoc tasks disabled; prior machine permissions revoked, webhook disabled and ingress protected. Final payment inventory and each case's next action are private. Remaining source/data/rule-code/authority/delivery gaps are separately recorded; no automatic new package.
+
+## Historical checkpoint: active private paid-case processing — 2026-09-11
 
 The owner's latest request cancels the earlier four-hour delivery limit for this package. Follow [current worklist](private-paid-cases-work-package-2026-09-11.md) and [original payment/scope contract](private-analysis-payment-contract-2026-09-11.md). Production is selected read-only access; no queue, payment, QA classification or customer delivery changes. Customer documents and drafts stay in the locally Git-excluded private sibling workspace. Four verified non-QA cases plus one paid ownership-ambiguous QA case are being reviewed; two historical internal QA cases are separately excluded. First private partial reports and existing-interpreter arithmetic are saved. No new legal admission or client debt is claimed.
 

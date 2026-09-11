@@ -1,4 +1,8 @@
-# Private paid-case analysis — active owner package
+# Private paid-case analysis — delivered scope
+
+The acceptance scope below is now delivered as private drafts/precise partial results. [Final handoff](private-paid-cases-handoff-2026-09-11-he.md) records code29ea466, both green CI runs, final payment inventory, all11source files,75replayed arithmetic checks and five owner HTML/PDF reports. PC00–PC03 and PC06 are complete for the observed inventory; PC04 reached two genuine503generation failures and paused without resetting its4request/USD1.424reserved ledger; PC05 completed available private arithmetic/source research and records rule-code and evidence gaps separately. No successful new live extraction, customer publication or legal activation is claimed. All remaining customer/provider/activation dependencies are explicit. The original plan below is historical context, not a pending instruction to restart work.
+
+## Original execution worklist
 
 The owner replaced the bounded DEV operations priority on 2026-09-11. The former four-hour delivery deadline is cancelled for this package. Continue until all relevant paid cases have a private draft or precise partial result; checkpoints are recovery points, not STOP instructions.
 

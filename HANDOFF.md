@@ -1,4 +1,12 @@
-## Active private paid-case package — 2026-09-11
+## Private paid-case package delivered — 2026-09-11
+
+See [final private-analysis handoff](docs/private-paid-cases-handoff-2026-09-11-he.md). Tested code and private report artifacts: **29ea4663496f455907e717c917cf2af0d3de8a03**; both CI34579842981/34579839962 PASS (4,302 passed, 101 skipped; typecheck/lint/build/48-check closure PASS). No new deployment or migration: prior DEV Preview remains cb73918/schema158, and Production was SELECT/download only.
+
+Final payment inventory found four verified non-QA customer cases, two historically identified internal QA and one paid QA-flagged ownership-ambiguous case. All11relevant source files were reviewed. Five private owner HTML/PDF drafts cover the historical nine-topic scope and targeted completions.75existing-interpreter checks were replayed:65calculated,10explicitlyblocked; this is document/conditional arithmetic, not full legal entitlement. All17PDFpages passed bounds/amount/hash checks, AI visual review completed and six local Chrome pages passed without external requests. Private index: release-work/customer-analysis-20260911/deliverables/29ea4663496f455907e717c917cf2af0d3de8a03/index.html, outside Git and CI.
+
+Live provider:2count requests succeeded and2Sol generations returned503; no successful new extraction or report from live provider output.4content requests, USD1.424reserved,2unknown generation costs; history/ledger unchanged and private authorization paused. Workers/tasks remain disabled/revoked, webhook disabled and ingress protected. No customer notification/publication or real authority was created. The bounded private scope is delivered; data, provider, legal-source and unimplemented service-rule gaps are explicitly separate in the handoff. No automatic new package.
+
+## Historical checkpoint: active private paid-case package — 2026-09-11
 
 The owner's latest pasted execution request supersedes the former four-hour STOP. Continue the [private paid-case worklist](docs/private-paid-cases-work-package-2026-09-11.md) until its acceptance criteria are met. Local/remote starting HEAD7b5519b on codex/tivdoc-release-completion. Preserve the [original paid service contract](docs/private-analysis-payment-contract-2026-09-11.md); do not restrict legacy purchases to the June single-component proof.
 
