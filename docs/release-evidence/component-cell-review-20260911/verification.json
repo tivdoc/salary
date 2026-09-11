@@ -1,0 +1,86 @@
+{
+  "schema_version": "component-cell-review-public-verification-v1",
+  "privacy": "Only code/schema versions, aggregate counts and proof categories; customer artifacts and identifiers are private.",
+  "base": "e3f060b099670dd899ba0a09d8e54ca6cbb20e88",
+  "tested_application": "7ec25d7e8254e7a6e20aaecd7e0c3d42a3966851",
+  "branch": "codex/tivdoc-release-completion",
+  "dev_schema": {
+    "chain_position": 169,
+    "tail": "20260911195557_document_row_cell_readings.sql",
+    "sha256": "8900dd7ceb096455290ffe4beaf7c61c9516f3a7e13b69b62b4322fe55ef6233",
+    "rollback_preflight": "PASS",
+    "applied_at": "2026-09-11T20:44:33.718Z",
+    "production_changed": false
+  },
+  "ci": {
+    "runs": [34649733194, 34649728906],
+    "state": "PASS",
+    "tests_passed": 4973,
+    "configured_skips": 103,
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "build": "PASS",
+    "production_closure_checks": 48
+  },
+  "proofs": {
+    "exact_row_scope_transcription_targets_in_dev": "PASS",
+    "purchased_topic_month_and_source_currentness_in_dev": "PASS",
+    "browser_confirm_correct_unknown_unreadable": "PASS",
+    "same_case_source_revisions": 3,
+    "independent_phase_assertions_passed": 165,
+    "unrelated_results_unchanged": "PASS",
+    "identical_answer_parallel_retry_statuses": [200, 200],
+    "stale_answer_status": 409,
+    "stale_report_status": 410,
+    "foreign_and_missing_source_same_body_status": 404,
+    "anonymous_pdf_status": 404,
+    "new_process_restart_same_manifest": "PASS",
+    "browser_downloads_match_saved_pdf": 2,
+    "same_finding_json_html_pdf_amounts": 74,
+    "primary_pdf_pages_visually_checked": 12,
+    "private_comparison_drafts_updated": 5,
+    "comparison_independent_oracles": 11,
+    "comparison_pdf_pages_visually_checked": 25,
+    "preserved_historical_topics": 9,
+    "monthly_included_checks": 22,
+    "excluded_checks_preserved_with_period_and_hash": 24,
+    "natural_cell_request_expiry_new_db_proof": "NOT_RUN",
+    "new_cloud_scheduler_proof": "NOT_RUN"
+  },
+  "question_effort": {
+    "same_snapshot_before": 25,
+    "same_snapshot_after": 11,
+    "method": "Saved projection comparison, not measured before/after user clicks",
+    "measured_browser_phase": {"decisions": 9, "action_clicks": 12, "text_entries": 1, "source_opens": 2},
+    "final_active_cards": 1,
+    "caveat": "Final count also reflects answers given, not only interface changes. Structural gaps remain explicit in reports."
+  },
+  "source_provenance": {
+    "new_provider_calls": 0,
+    "live_case": "Exact retained Sol provider receipt, same document version/hash, plus identified agent QA readings through the product",
+    "other_primary_case": "Previously admitted private AI source readings, not successful live extraction or human verification",
+    "controlled_change": "Synthetic QA cell correction restored to the source reading; original output retained",
+    "comparison_drafts": "Private curated inputs, distinct from the normal live-receipt report"
+  },
+  "preview": {
+    "url": "https://salary-ot99ll2qv-tivdoccom-5042s-projects.vercel.app",
+    "built": true,
+    "authenticated_browser_verified": false,
+    "blocker": "302 Vercel SSO; connector cannot authorize this deployment",
+    "verified_fallback": "Full local application localhost:3420 against isolated DEV"
+  },
+  "stop": {
+    "owned_machines_revoked": 2,
+    "revoked_runtime_install_denied": true,
+    "owned_configs_paused": 3,
+    "viewing_app_kept": true,
+    "outbox_enabled": false,
+    "managed_worker_enabled": false,
+    "automatic_extraction_enabled": false,
+    "customer_messages": 0,
+    "charges": 0
+  },
+  "budget": {"content_requests": 10, "request_ceiling": 12, "reserved_usd": 3.56, "usd_ceiling": 5, "historical_unknown_generation_costs": 2, "ledger_reset": false},
+  "remaining_code": ["Source relationship receipts for contribution/base and resolver admission", "Deduction-group membership and inventory admission", "Balance opening/accrued/used cell readings and units", "Wider entitlement rules"],
+  "remaining_real": "Source authenticity, rounding, applicability and genuine authority under the existing trust policy remain separate from numeric reading verification."
+}
