@@ -11,6 +11,7 @@ import {extractionRequestSchema} from '@/engine/extraction/contracts';
 import {SOURCE_ROW_DUPLICATE_POLICY} from '@/engine/extraction/validation';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {OpenAiPayslipV2PassExtractor} from '@/server/engine/extraction/providers/openai/v2-adapter';
+import {authorizeManagedOpenAiRecovery,assertManagedOpenAiRecovery,type ManagedOpenAiRecoveryAuthority} from '@/server/engine/extraction/providers/openai/managed-package-recovery';
 import {buildOpenAiV2ResponsesRequest,OPENAI_SOL_COMPARISON_PROFILE} from '@/server/engine/extraction/providers/openai/v2-request';
 import {inspectExtractionBytes} from '@/server/engine/extraction/verified-upload-source';
 import {parseSolComparisonLedger,reserveSolRequest,recordSolCount,recordSolReceipt,solInputCountRequest,
@@ -31,7 +32,7 @@ export function createSolBudgetedExtractor(input:SolBudgetedInput){
  if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')throw Error('SOL_SAVED_WORKER_SCOPE');
  return createBoundedSolExtractor(input);
 }
-function createBoundedSolExtractor(input:SolBudgetedInput){
+function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthority?:ManagedOpenAiRecoveryAuthority){
  const sources=z.array(sourceSchema).min(1).max(4).parse(input.allowedSources);
  if(new Set(sources.map(source=>source.sha256)).size!==sources.length||!Number.isSafeInteger(input.maxGenerations)
   ||input.maxGenerations<1||input.maxGenerations>4||!input.apiKey||!/^[a-f0-9]{40}$/u.test(input.codeRevision))throw Error('SOL_SAVED_WORKER_CONFIGURATION');
@@ -60,7 +61,8 @@ function createBoundedSolExtractor(input:SolBudgetedInput){
    try{writeFileSync(file,JSON.stringify(ledger,null,2)+'\n');fsyncSync(file);}finally{closeSync(file);}renameSync(temp,input.ledgerPath);};
   const sdk=new OpenAI({apiKey:input.apiKey,baseURL:'https://api.openai.com/v1',timeout:120000,maxRetries:0});
   const extractor=new OpenAiPayslipV2PassExtractor({apiKey:input.apiKey,model:SOL_COMPARISON_POLICY.model,timeoutMs:120000},
-   {extractorVersion:PAYSLIP_EXTRACTION_V21_VERSION,executionProfile:OPENAI_SOL_COMPARISON_PROFILE,recoveryExecution:'skip_package_budget',componentDuplicatePolicy:SOURCE_ROW_DUPLICATE_POLICY});
+   {extractorVersion:PAYSLIP_EXTRACTION_V21_VERSION,executionProfile:OPENAI_SOL_COMPARISON_PROFILE,
+    recoveryExecution:managedRecoveryAuthority?'skip_managed_package_budget':'skip_package_budget',managedRecoveryAuthority,componentDuplicatePolicy:SOURCE_ROW_DUPLICATE_POLICY});
   const actual=extractor.extractPreparedPass.bind(extractor);
   extractor.extractPreparedPass=async request=>{
    if(closed||busy)throw Error('SOL_EXTRACTOR_CLOSED_OR_BUSY');
@@ -94,11 +96,13 @@ function createBoundedSolExtractor(input:SolBudgetedInput){
     save('source-context.json',{codeRevision:input.codeRevision,request:boundRequest,requestSha256:counted.requestSha256,
      sourceSha256:source.sha256,model:SOL_COMPARISON_POLICY.model,reasoningEffort:'medium',sourcePageCount:1});
     if(input.expiresAt&&Date.now()>=Date.parse(input.expiresAt))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
+    if(managedRecoveryAuthority)assertManagedOpenAiRecovery(managedRecoveryAuthority,input.apiKey,boundRequest);
     ledger=reserveSolRequest({ledger,...reservation,kind:'input_tokens',now:new Date().toISOString()});persist();
     const count=await sdk.responses.inputTokens.count(counted.request);save('input-count.json',count);
     if(count.object!=='response.input_tokens')throw Error('SOL_COUNT_RESPONSE_INVALID');
     ledger=recordSolCount(ledger,counted.requestSha256,count.input_tokens);persist();
     if(input.expiresAt&&Date.now()>=Date.parse(input.expiresAt))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
+    if(managedRecoveryAuthority)assertManagedOpenAiRecovery(managedRecoveryAuthority,input.apiKey,boundRequest);
     ledger=reserveSolRequest({ledger,...reservation,kind:'generation',now:new Date().toISOString()});persist();entered++;
     const result=await actual({...request,request:boundRequest,sourcePageCount:1,onStructuredOutput:diagnostic=>{
      if(diagnostic.origin!=='openai_live'||diagnostic.request_sha256!==counted.requestSha256||diagnostic.source_sha256!==source.sha256)
@@ -123,17 +127,19 @@ export function createManagedSolBudgetedExtractor(environment:Readonly<Record<st
  if(!control.enabled||environment.VERCEL||environment.OPENAI_EXTRACTION_MODEL!=='gpt-5.6-sol')throw Error('SOL_MANAGED_PACKAGE_SCOPE');
  const expected=path.resolve('../release-work/sol-scheduled-package-20260911.private.json');
  if(!environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE||path.resolve(environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE)!==expected)throw Error('SOL_MANAGED_PACKAGE_REQUIRED');
+ const packageBytes=readFileSync(expected);
  const config=z.object({version:z.literal('sol-scheduled-dev-package-20260911-v1'),enabled:z.literal(true),
   buildSha:z.literal(buildSha),expiresAt:z.iso.datetime({offset:true}),
   ledgerPath:z.string(),artifactDirectory:z.string(),allowedCaseIds:z.array(z.uuid()).min(1).max(4),
-  allowedSources:z.array(sourceSchema).min(1).max(4)}).strict().parse(JSON.parse(readFileSync(expected,'utf8')));
+  allowedSources:z.array(sourceSchema).min(1).max(4)}).strict().parse(JSON.parse(packageBytes.toString('utf8')));
  const expiry=Date.parse(config.expiresAt);
  if(expiry<=Date.now()||expiry>Date.parse('2026-09-11T04:19:48Z'))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
  const ledger=path.resolve('output/release-completion/sol-scheduled-20260911/package-budget-ledger.json');
  const artifacts=path.resolve('output/release-completion/sol-scheduled-20260911/provider');
  if(path.resolve(config.ledgerPath)!==ledger||path.resolve(config.artifactDirectory)!==artifacts||!environment.OPENAI_API_KEY)throw Error('SOL_MANAGED_PACKAGE_PATH');
+ const authority=authorizeManagedOpenAiRecovery({apiKey:environment.OPENAI_API_KEY,buildSha,environment,packageSha256:createHash('sha256').update(packageBytes).digest('hex')});
  return createBoundedSolExtractor({apiKey:environment.OPENAI_API_KEY,ledgerPath:ledger,artifactDirectory:artifacts,codeRevision:buildSha,
-  allowedSources:config.allowedSources,allowedCaseIds:config.allowedCaseIds,expiresAt:config.expiresAt,maxGenerations:2});
+  allowedSources:config.allowedSources,allowedCaseIds:config.allowedCaseIds,expiresAt:config.expiresAt,maxGenerations:2},authority);
 }
 
 export function recoverManagedSolBudgetLock(input:{expectedLockSha256:string;expectedLedgerSha256:string},environment:Readonly<Record<string,string|undefined>>=process.env){

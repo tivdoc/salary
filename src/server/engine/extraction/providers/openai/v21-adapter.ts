@@ -84,7 +84,7 @@ export async function runOpenAiPayslipExtractionV21(input: {
   });
   const plan = firstMapped.extraction.status === "failed" ? null : selectTargetedRecoveryV21(firstPass);
   const providerReceipts=firstMapped.provider_receipt?[firstMapped.provider_receipt]:[];
-  const skipForBudget=plan!==null&&input.extractor.recoveryExecution==='skip_package_budget';
+  const skipForBudget=plan!==null&&['skip_package_budget','skip_managed_package_budget'].includes(input.extractor.recoveryExecution);
   const recoveryDecision = skipForBudget
     ? recoveryDecisionSchema.parse({requested:false,skipped:true,fields_requested:plan.fields,regions:plan.regions,
       reason_codes:[...plan.reason_codes,'recovery_skipped_package_budget'],expected_information_gain:plan.expected_information_gain})

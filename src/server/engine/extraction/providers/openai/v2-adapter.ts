@@ -35,6 +35,7 @@ import { buildOpenAiV2ResponsesRequest, OPENAI_SOL_COMPARISON_PROFILE, type Open
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {createOpenAiProviderReceipt,safeProviderIdentifier,type OpenAiProviderReceipt} from './provider-receipt';
+import {assertManagedOpenAiRecovery,type ManagedOpenAiRecoveryAuthority} from './managed-package-recovery';
 
 export type OpenAiV2TransportResponse = Readonly<{
   id: string;
@@ -108,7 +109,7 @@ type SafeLogSink = (entry: SafeEngineLog) => void;
 export class OpenAiPayslipV2PassExtractor {
   readonly providerId = "openai";
   readonly extractorVersion: string;
-  readonly recoveryExecution: 'automatic' | 'skip_package_budget';
+  readonly recoveryExecution: 'automatic' | 'skip_package_budget' | 'skip_managed_package_budget';
   readonly componentDuplicatePolicy: Gate0Validation['component_duplicate_policy'];
   private readonly transport: OpenAiV2ResponsesTransport | null;
   private readonly origin:OpenAiProviderReceipt['origin'];
@@ -122,7 +123,8 @@ export class OpenAiPayslipV2PassExtractor {
       log?: SafeLogSink;
       extractorVersion?: string;
       executionProfile?: Parameters<typeof buildOpenAiV2ResponsesRequest>[0]['executionProfile'];
-      recoveryExecution?: 'automatic' | 'skip_package_budget';
+      recoveryExecution?: 'automatic' | 'skip_package_budget' | 'skip_managed_package_budget';
+      managedRecoveryAuthority?: ManagedOpenAiRecoveryAuthority;
       componentDuplicatePolicy?: Gate0Validation['component_duplicate_policy'];
     } = {},
   ) {
@@ -131,10 +133,15 @@ export class OpenAiPayslipV2PassExtractor {
     this.extractorVersion = versionSchema.parse(options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION);
     this.componentDuplicatePolicy=options.componentDuplicatePolicy===undefined?undefined:componentDuplicatePolicySchema.parse(options.componentDuplicatePolicy);
     this.recoveryExecution=options.recoveryExecution??'automatic';
-    if(!['automatic','skip_package_budget'].includes(this.recoveryExecution)
+    if(!['automatic','skip_package_budget','skip_managed_package_budget'].includes(this.recoveryExecution)
       ||(this.recoveryExecution==='skip_package_budget'&&(options.executionProfile!==OPENAI_SOL_COMPARISON_PROFILE
         ||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')))
       throw new TypeError('OPENAI_RECOVERY_EXECUTION_SCOPE');
+    if(this.recoveryExecution==='skip_managed_package_budget'){
+      if(options.transport||options.executionProfile!==OPENAI_SOL_COMPARISON_PROFILE||config.model!=='gpt-5.6-sol')
+        throw new TypeError('OPENAI_RECOVERY_EXECUTION_SCOPE');
+      assertManagedOpenAiRecovery(options.managedRecoveryAuthority,config.apiKey);
+    }else if(options.managedRecoveryAuthority!==undefined)throw new TypeError('OPENAI_RECOVERY_EXECUTION_SCOPE');
     if(options.executionProfile!==undefined&&(options.executionProfile!==OPENAI_SOL_COMPARISON_PROFILE||config.model!=='gpt-5.6-sol'))
       throw new TypeError('OPENAI_COMPARISON_PROFILE_MODEL_MISMATCH');
     this.origin=options.transport?'injected_test_provider':config.apiKey?'openai_live':'not_configured';
@@ -232,6 +239,10 @@ export class OpenAiPayslipV2PassExtractor {
     onStructuredOutput?:(diagnostic:OpenAiV2StructuredDiagnostic)=>void;
   }): Promise<MappedOpenAiV2Pass> {
     const request = extractionRequestSchema.parse(input.request);
+    if(this.recoveryExecution==='skip_managed_package_budget'){
+      assertManagedOpenAiRecovery(this.options.managedRecoveryAuthority,this.config.apiKey,request);
+      if(input.kind!=='first_pass')throw new TypeError('OPENAI_MANAGED_RECOVERY_DISABLED');
+    }
     const durationClock = this.options.durationClock ?? (() => performance.now());
     const clock = this.options.clock ?? (() => new Date());
     const startedAt = durationClock();
