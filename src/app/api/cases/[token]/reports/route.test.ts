@@ -91,3 +91,14 @@ describe('canonical isolated DEV report transport',()=>{
   state.canonicalRead.mockResolvedValue({current:false});expect((await GET(new Request(url),context())).status).toBe(410);
  });
 });
+
+
+it('gives identical empty404 for nonexistent or foreign source versions without leaking a reason',async()=>{
+ state.rpc.mockResolvedValue([]);
+ for(const id of [version,report]){
+  const response=await GET(new Request(`https://test/api?report=${report}&version=${id}`),context());
+  expect(response.status).toBe(404);expect(await response.text()).toBe('');expect(response.headers.get('cache-control')).toContain('no-store');
+ }
+ state.rpc.mockRejectedValue(Error('DB_UNAVAILABLE'));
+ expect((await GET(new Request(`https://test/api?report=${report}&version=${version}`),context())).status).toBe(503);
+});

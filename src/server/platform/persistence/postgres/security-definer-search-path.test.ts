@@ -51,7 +51,8 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //139–141 add seven authority, identified-hours and ordinary report boundaries.
 // Their DEV ACL receipt denies direct authority/result writes to every runtime.
 //144 adds a private current-authority predicate and its case/identity-bound snapshot wrapper.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 302;
+//149 adds one capability-scoped QA health read; no authority/source payload.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 303;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

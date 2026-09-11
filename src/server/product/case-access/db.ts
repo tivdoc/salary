@@ -25,6 +25,14 @@ export type CaseAccessDb = Readonly<{
 const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|order|privacy|funnel|abandonment|reminder)_[a-z_]+$/u;
 // This existing versioned report boundary has a historical non-case prefix.
 // Admit its exact name; no wildcard for other June or private functions.
+// Both nonexistent and foreign versions intentionally share this refusal.
+// Only the exact source RPC's explicit authorization result becomes no rows;
+// database outages and corrupt/missing authorized storage remain failures.
+function sourceNotVisible(fn:string,error:unknown):boolean {
+  return fn==='case_report_source' && typeof error==='object' && error!==null
+    && 'code' in error && error.code==='P0001'
+    && 'message' in error && error.message==='REPORT_SOURCE_FORBIDDEN';
+}
 const VERSIONED_REPORT_FUNCTIONS = new Set(['june2026_regular_report_artifact']);
 
 export function supabaseCaseAccessDb(client: {
@@ -35,6 +43,7 @@ export function supabaseCaseAccessDb(client: {
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
       if (!FUNCTION_NAME.test(fn) && !VERSIONED_REPORT_FUNCTIONS.has(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const result = await client.rpc(fn, { ...args });
+      if (sourceNotVisible(fn,result.error)) return [];
       if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^(?:UPLOAD|ORDER|PRIVACY|REQUEST|JUNE_COLLECTION)_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
       const data = result.data;
       if (Array.isArray(data)) return data as T[];
@@ -55,7 +64,9 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
       const names = Object.keys(args);
       for (const name of names) if (!/^[a-z_][a-z0-9_]*$/u.test(name)) throw new Error(`CASE_ACCESS_DB_ARGUMENT_UNKNOWN:${name}`);
       const placeholders = names.map((name, index) => `${name} => $${index + 1}`).join(", ");
-      const result = await pool.query(`select * from public.${fn}(${placeholders})`, names.map((name) => args[name]));
+      let result:Awaited<ReturnType<PgPoolLike['query']>>;
+      try { result = await pool.query(`select * from public.${fn}(${placeholders})`, names.map((name) => args[name])); }
+      catch(error) { if(sourceNotVisible(fn,error))return []; throw error; }
       return result.rows.map((row) => {
         // A scalar-returning function yields one column named after the function; expose it as { value }.
         const record = row as Record<string, unknown>;

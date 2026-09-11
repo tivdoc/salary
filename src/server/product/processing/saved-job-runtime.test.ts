@@ -106,6 +106,10 @@ describe('scoped saved job runtime',()=>{
  });
  it.each([
   ['SAVED_EXTRACTION_OUTCOME_PENDING','dead_letter','saved_provider_outcome_unknown'],
+  ['SOL_BUDGET_EXHAUSTED','dead_letter','saved_provider_budget_exhausted'],
+  ['SOL_UNKNOWN_OUTCOME_REQUIRES_REVIEW','dead_letter','saved_provider_outcome_unknown'],
+  ['SOL_REPLAY_REQUIRES_REVIEW','dead_letter','saved_provider_replay_review'],
+  ['SOL_MANAGED_PACKAGE_EXPIRED','dead_letter','saved_provider_budget_expired'],
   ['SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED','dead_letter','saved_documents_missing'],
   ['ANALYSIS_INPUT_SUPERSEDED','cancelled','saved_source_superseded'],
   ['ANALYSIS_AUTHORITY_SUPERSEDED','cancelled','saved_authority_superseded'],

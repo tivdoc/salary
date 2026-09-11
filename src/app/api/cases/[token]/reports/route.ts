@@ -56,7 +56,7 @@ export async function GET(request:Request,context:Context){
   const version=z.uuid().safeParse(url.searchParams.get('version'));if(!version.success)return new Response(null,{status:404});
   const db=await resolveCaseAccessDb();if(!db)throw new Error('unavailable');
   const rows=await db.rpc<{value:{path:string;mime:string;size:number;sha256:string}}>('case_report_source',{target_case:owner.item.case_id,target_identity:owner.identity,target_report:report.id,target_version:version.data});
-  const source=rows[0]?.value;if(!source||!source.path.startsWith(`cases/${owner.item.case_id}/`)||source.size>10*1024*1024)throw new Error('invalid_source');
+  const source=rows[0]?.value;if(!source)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});if(!source.path.startsWith(`cases/${owner.item.case_id}/`)||source.size>10*1024*1024)throw new Error('invalid_source');
   const {data,error}=await getSupabaseAdmin().storage.from('salary-documents').download(source.path);if(error||!data||data.size!==source.size)throw new Error('source_missing');
   const bytes=Buffer.from(await data.arrayBuffer());if(createHash('sha256').update(bytes).digest('hex')!==source.sha256)throw new Error('source_changed');
   return new Response(bytes,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':source.mime,'Content-Disposition':`attachment; filename="source-${version.data}.${source.mime==='application/pdf'?'pdf':source.mime==='image/png'?'png':'jpg'}"`}});

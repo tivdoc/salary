@@ -116,3 +116,16 @@ describe("case access store adapters", () => {
     await expect(supabase.rpc("case_access_identity_upsert", {})).resolves.toEqual([{ value: "id-1" }]);
   });
 });
+
+
+it("maps only the explicit source visibility refusal to absence in both adapters",async()=>{
+ for(const message of ['REPORT_SOURCE_FORBIDDEN','REPORT_SOURCE_MISSING','connection failed']){
+  const error=Object.assign(Error(message),{code:'P0001'});
+  const stores=[postgresCaseAccessDb({async query(){throw error;}}),supabaseCaseAccessDb({async rpc(){return {data:null,error};}})];
+  for(const store of stores){
+   if(message==='REPORT_SOURCE_FORBIDDEN')await expect(store.rpc('case_report_source',{})).resolves.toEqual([]);
+   else await expect(store.rpc('case_report_source',{})).rejects.toThrow();
+   await expect(store.rpc('case_report_review_source',{})).rejects.toThrow();
+  }
+ }
+});

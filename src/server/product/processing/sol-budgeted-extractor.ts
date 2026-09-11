@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import {createHash,randomUUID} from 'node:crypto';
 import {readFileSync,writeFileSync,mkdirSync,openSync,closeSync,fsyncSync,renameSync,unlinkSync} from 'node:fs';
 import path from 'node:path';
+import {managedWorkerControlConfig} from './managed-worker-config';
 import {z} from 'zod';
 import {PAYSLIP_EXTRACTION_V21_VERSION} from '@/engine/extraction/v21';
 import {extractionRequestSchema} from '@/engine/extraction/contracts';
@@ -22,10 +23,14 @@ export type SolBudgetedSource=z.infer<typeof sourceSchema>;
  * actual worker request identity and provider origin. No transport injection,
  * source substitution, checkpoint seeding, or automatic recovery is available.
  * Keep the returned lock for the caller's bounded sequence and close in finally. */
-export function createSolBudgetedExtractor(input:{apiKey:string;ledgerPath:string;artifactDirectory:string;codeRevision:string;
+type SolBudgetedInput={apiKey:string;ledgerPath:string;artifactDirectory:string;codeRevision:string;
  allowedSources:readonly SolBudgetedSource[];maxGenerations:number;retainedDiagnosticPath?:string;
- reviewedRetry?:{sourceSha256:string;priorReceiptSha256:string;reason:'header-observation-classification-r5'}}){
+ reviewedRetry?:{sourceSha256:string;priorReceiptSha256:string;reason:'header-observation-classification-r5'};allowedCaseIds?:readonly string[];expiresAt?:string};
+export function createSolBudgetedExtractor(input:SolBudgetedInput){
  if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')throw Error('SOL_SAVED_WORKER_SCOPE');
+ return createBoundedSolExtractor(input);
+}
+function createBoundedSolExtractor(input:SolBudgetedInput){
  const sources=z.array(sourceSchema).min(1).max(4).parse(input.allowedSources);
  if(new Set(sources.map(source=>source.sha256)).size!==sources.length||!Number.isSafeInteger(input.maxGenerations)
   ||input.maxGenerations<1||input.maxGenerations>4||!input.apiKey||!/^[a-f0-9]{40}$/u.test(input.codeRevision))throw Error('SOL_SAVED_WORKER_CONFIGURATION');
@@ -58,11 +63,13 @@ export function createSolBudgetedExtractor(input:{apiKey:string;ledgerPath:strin
   const actual=extractor.extractPreparedPass.bind(extractor);
   extractor.extractPreparedPass=async request=>{
    if(closed||busy)throw Error('SOL_EXTRACTOR_CLOSED_OR_BUSY');
+   if(input.expiresAt&&Date.now()>=Date.parse(input.expiresAt))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
    busy=true;
    try{
    if(request.kind!=='first_pass')throw Error('SOL_AUTOMATIC_RECOVERY_NOT_AUTHORIZED');
    if(entered>=input.maxGenerations)throw Error('SOL_SAVED_GENERATION_LIMIT');
    const boundRequest=extractionRequestSchema.parse(request.request),document=boundRequest.document;
+   if(input.allowedCaseIds&&!input.allowedCaseIds.includes(boundRequest.case_id))throw Error('SOL_SAVED_CASE_NOT_ALLOWED');
    if(document.case_id!==boundRequest.case_id)throw Error('SOL_SAVED_REQUEST_CASE_MISMATCH');
    const source=sources.find(source=>source.sha256===document.content_sha256);
    const bytes=request.prepared.original.bytes;
@@ -102,4 +109,26 @@ export function createSolBudgetedExtractor(input:{apiKey:string;ledgerPath:strin
   };
   return {extractor,summary:()=>({...summarizeSolBudget(ledger),instanceGenerations:entered}),close};
  }catch(error){close();throw error;}
+}
+
+
+/** Owner-provisioned, finite DEV package. It wraps the genuine SDK transport,
+ * never a test response. Enrollment/session authorization is still enforced
+ * by the managed host before any source is passed to this extractor. */
+export function createManagedSolBudgetedExtractor(environment:Readonly<Record<string,string|undefined>>,buildSha:string){
+ const control=managedWorkerControlConfig({...environment,TIVDOC_MANAGED_DEV_BUILD_SHA:buildSha});
+ if(!control.enabled||environment.VERCEL||environment.OPENAI_EXTRACTION_MODEL!=='gpt-5.6-sol')throw Error('SOL_MANAGED_PACKAGE_SCOPE');
+ const expected=path.resolve('../release-work/sol-scheduled-package-20260911.private.json');
+ if(!environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE||path.resolve(environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE)!==expected)throw Error('SOL_MANAGED_PACKAGE_REQUIRED');
+ const config=z.object({version:z.literal('sol-scheduled-dev-package-20260911-v1'),enabled:z.literal(true),
+  buildSha:z.literal(buildSha),expiresAt:z.iso.datetime({offset:true}),
+  ledgerPath:z.string(),artifactDirectory:z.string(),allowedCaseIds:z.array(z.uuid()).min(1).max(4),
+  allowedSources:z.array(sourceSchema).min(1).max(4)}).strict().parse(JSON.parse(readFileSync(expected,'utf8')));
+ const expiry=Date.parse(config.expiresAt);
+ if(expiry<=Date.now()||expiry>Date.parse('2026-09-11T04:19:48Z'))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
+ const ledger=path.resolve('output/release-completion/sol-scheduled-20260911/package-budget-ledger.json');
+ const artifacts=path.resolve('output/release-completion/sol-scheduled-20260911/provider');
+ if(path.resolve(config.ledgerPath)!==ledger||path.resolve(config.artifactDirectory)!==artifacts||!environment.OPENAI_API_KEY)throw Error('SOL_MANAGED_PACKAGE_PATH');
+ return createBoundedSolExtractor({apiKey:environment.OPENAI_API_KEY,ledgerPath:ledger,artifactDirectory:artifacts,codeRevision:buildSha,
+  allowedSources:config.allowedSources,allowedCaseIds:config.allowedCaseIds,expiresAt:config.expiresAt,maxGenerations:2});
 }

@@ -73,3 +73,14 @@ it('refuses a claimed prompt-fix retry without the exact retained completed rece
  expect(JSON.parse(readFileSync(input.ledgerPath,'utf8')).reservations).toEqual([]);
  const fresh=createSolBudgetedExtractor(input);fresh.close();
 });
+
+
+it('refuses an unenrolled case and an expired package before sending either content request',async()=>{
+ const {input,pass}=await setup();
+ for(const restriction of [{allowedCaseIds:['00000000-0000-4000-8000-000000000000']},{expiresAt:'2000-01-01T00:00:00Z'}]){
+  const runtime=createSolBudgetedExtractor({...input,...restriction});
+  try { await expect(runtime.extractor.extractPreparedPass(pass)).rejects.toThrow(/CASE_NOT_ALLOWED|PACKAGE_EXPIRED/); }
+  finally{runtime.close();}
+ }
+ expect(sdk.count).not.toHaveBeenCalled();expect(sdk.parse).not.toHaveBeenCalled();
+});

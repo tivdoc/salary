@@ -91,7 +91,10 @@ export function savedJobFailure(error:unknown){
  if(code==='ANALYSIS_INPUT_SUPERSEDED')return {state:'cancelled' as const,reason:'saved_source_superseded'};
  if(code==='ANALYSIS_AUTHORITY_SUPERSEDED')return {state:'cancelled' as const,reason:'saved_authority_superseded'};
  if(code==='SAVED_JOB_INTERRUPTED')return {state:'retry_wait' as const,reason:'saved_worker_interrupted'};
- const holds:Readonly<Record<string,string>>={SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED:'saved_documents_missing',
+ const holds:Readonly<Record<string,string>>={SOL_BUDGET_EXHAUSTED:'saved_provider_budget_exhausted',
+  SOL_SAVED_GENERATION_LIMIT:'saved_provider_budget_exhausted',SOL_MANAGED_PACKAGE_EXPIRED:'saved_provider_budget_expired',
+  SOL_UNKNOWN_OUTCOME_REQUIRES_REVIEW:'saved_provider_outcome_unknown',SOL_REPLAY_REQUIRES_REVIEW:'saved_provider_replay_review',
+  SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED:'saved_documents_missing',
   SAVED_EXTRACTION_OUTCOME_PENDING:'saved_provider_outcome_unknown',SAVED_EXTRACTION_PERIOD_MISMATCH:'saved_period_confirmation_required',
   SAVED_EXTRACTION_PROVIDER_DISABLED:'saved_provider_disabled',SAVED_EXTRACTION_PROVIDER_UNCONFIGURED:'saved_provider_unconfigured',
   SAVED_ORDER_ENTITLEMENT_REQUIRED:'saved_entitlement_unavailable',SAVED_PAID_SOURCE_REQUIRED:'saved_payment_unavailable'};
