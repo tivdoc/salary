@@ -1,8 +1,12 @@
 import {describe,expect,it,vi} from 'vitest';
 import path from 'node:path';
-import {assertLocalIngressOperator,INGRESS_PROJECT,INGRESS_TEAM,runIngressOperator} from './dev-ingress-deploy.mjs';
+import {assertLocalIngressOperator,INGRESS_PROJECT,INGRESS_TEAM,isProtectedPreviewResponse,runIngressOperator} from './dev-ingress-deploy.mjs';
 
 const NOW=Date.parse('2026-09-11T06:40:00Z');
+function vercelSsoResponse(requestedUrl){
+ const url=new URL('/sso-api','https://vercel.com');url.searchParams.set('url',new URL(requestedUrl).href);url.searchParams.set('nonce','synthetic-nonce');
+ return new Response(null,{status:302,headers:{location:url.href,'set-cookie':'_vercel_sso_nonce=synthetic-only; Secure; HttpOnly'}});
+}
 function fixture(){
  const config={schema_version:'dev-ingress-operator-v1',vercel_cli_path:path.resolve('synthetic-cli.js'),main_preview_id:'dpl_mainSynthetic',
   main_preview_commit:'a'.repeat(40),resend_webhook_secret:`whsec_${Buffer.alloc(32,7).toString('base64')}`,expires_at:new Date(NOW+3600000).toISOString()};
@@ -13,7 +17,7 @@ function fixture(){
  const artifact={source_commit:'b'.repeat(40),bundle_sha256:'c'.repeat(64),files:[
   '.vercel/output/config.json','.vercel/output/functions/api/resend.func/.vc-config.json','.vercel/output/functions/api/resend.func/index.js',
  ].map(file=>({file,data:'synthetic artifact bytes',encoding:'utf-8'}))};
- const ctx={state:null,project,main,ingress:null,override:false,protectedGetStatus:405,sharedNext:null,shareSequence:0,clock:NOW};
+ const ctx={state:null,project,main,ingress:null,override:false,protectedGetStatus:405,sharedNext:null,shareSequence:0,clock:NOW,vercelSso:false,propagationUntil:0};
  const api=vi.fn(async(endpoint,method='GET',body)=>{
   const url=new URL(endpoint,'https://api.vercel.com');expect(url.searchParams.get('teamId')).toBe(INGRESS_TEAM);
   if(method==='GET'){
@@ -39,19 +43,31 @@ function fixture(){
  });
  const transport=vi.fn(async(input,options={})=>{
   const url=new URL(input);
-  if(url.host===main.url)return new Response(null,{status:401});
+  if(url.host===main.url)return ctx.vercelSso?vercelSsoResponse(url):new Response(null,{status:401});
   expect(url.host).toBe(ctx.ingress.url);
   if(url.searchParams.has('_vercel_share'))return new Response(null,{status:307,headers:{location:`https://${url.host}/api/resend`,'set-cookie':'_vercel_jwt=synthetic-only; Secure; HttpOnly'}});
   if(new Headers(options.headers).has('cookie'))return new Response(null,{status:ctx.protectedGetStatus});
-  if(!ctx.override)return new Response(null,{status:401});
+  if(!ctx.override||ctx.clock<ctx.propagationUntil)return ctx.vercelSso?vercelSsoResponse(url):new Response(null,{status:401});
   if(url.pathname!=='/api/resend')return new Response(null,{status:404});
   return new Response(null,{status:options.method==='POST'?401:405});
  });
- const deps={config,artifact,api,transport,now:()=>ctx.clock,newId:()=> 'synthetic-operation-only',
+ const deps={config,artifact,api,transport,now:()=>ctx.clock,pause:vi.fn(async ms=>{ctx.clock+=ms;}),newId:()=> 'synthetic-operation-only',
   loadState:()=>structuredClone(ctx.state),saveState:state=>{ctx.state=structuredClone(state);}};
  return {ctx,deps,run:command=>runIngressOperator(command,deps)};
 }
 describe('DEV ingress operator, synthetic API/transport only; no real deployment proof',()=>{
+ it('recognizes the observed Vercel SSO302 only with its exact Preview return URL and challenge',()=>{
+  const origin='https://salary-synthetic-tivdoccom-5042s-projects.vercel.app';
+  expect(isProtectedPreviewResponse(vercelSsoResponse(origin),origin)).toBe(true);
+  expect(isProtectedPreviewResponse(vercelSsoResponse('https://foreign.example'),origin)).toBe(false);
+  expect(isProtectedPreviewResponse(vercelSsoResponse(`${origin}/other`),origin)).toBe(false);
+  const foreign=vercelSsoResponse(origin);foreign.headers.set('location','https://attacker.example/sso-api');
+  expect(isProtectedPreviewResponse(foreign,origin)).toBe(false);
+  const ordinary=new Response(null,{status:302,headers:{location:`${origin}/login`}});
+  expect(isProtectedPreviewResponse(ordinary,origin)).toBe(false);
+  const withoutChallenge=vercelSsoResponse(origin);withoutChallenge.headers.delete('set-cookie');
+  expect(isProtectedPreviewResponse(withoutChallenge,origin)).toBe(false);
+ });
  it('refuses a remote or Production process before any private config is read',()=>{
   for(const env of [{VERCEL:'1'},{VERCEL_ENV:'preview'},{VERCEL_ENV:'production'},{NODE_ENV:'production'}])expect(()=>assertLocalIngressOperator(env)).toThrow('INGRESS_LOCAL_OPERATOR_REQUIRED');
   expect(()=>assertLocalIngressOperator({NODE_ENV:'test'})).not.toThrow();
@@ -117,6 +133,22 @@ describe('DEV ingress operator, synthetic API/transport only; no real deployment
   const overrides=f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override);
   expect(overrides.map(([, ,body])=>body.override.action)).toEqual(['create','revoke']);
   expect(overrides.every(([endpoint])=>endpoint.includes('/aliases/dpl_ingressSynthetic/'))).toBe(true);expect(f.ctx.override).toBe(false);
+  expect(f.ctx.state.last_boundary_probe.ingress_unknown_path_status).toBe(200);
+  expect(f.ctx.state.boundary_probe_history).toHaveLength(1);expect(f.deps.pause).not.toHaveBeenCalled();
+ });
+ it('waits only for recognized protection propagation after one override, preserving every failed probe',async()=>{
+  const f=fixture();f.ctx.vercelSso=true;f.ctx.propagationUntil=NOW+4000;await f.run('deploy');
+  expect(await f.run('enable')).toMatchObject({phase:'enabled',main_protected:true});
+  expect(f.ctx.state.boundary_probe_history.map(x=>x.checks.ingress_get_status)).toEqual([302,302,405]);
+  expect(f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override?.action==='create')).toHaveLength(1);
+  expect(f.deps.pause).toHaveBeenCalledTimes(2);
+ });
+ it('rolls back after the 20-second propagation bound with the last protected tuple preserved',async()=>{
+  const f=fixture();f.ctx.vercelSso=true;f.ctx.propagationUntil=NOW+60000;await f.run('deploy');
+  await expect(f.run('enable')).rejects.toThrow('INGRESS_PUBLIC_BOUNDARY_PROBE_FAILED');
+  expect(f.ctx.clock-NOW).toBe(20000);expect(f.ctx.state.last_boundary_probe).toMatchObject({ingress_get_status:302,main_protected:true});
+  expect(f.ctx.state.boundary_probe_history).toHaveLength(11);expect(f.ctx.override).toBe(false);
+  expect(f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override?.action==='create')).toHaveLength(1);
  });
  it('supports disable after expiry without extending or regenerating any share',async()=>{
   const f=fixture();await f.run('deploy');await f.run('enable');f.ctx.clock=NOW+7200000;
@@ -125,6 +157,11 @@ describe('DEV ingress operator, synthetic API/transport only; no real deployment
   expect(f.ctx.state.forward_share.expired_at).toBeDefined();expect(f.ctx.state.forward_share.revoked_at).toBeUndefined();
   const calls=f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.revoke);
   expect(calls.every(([, ,body])=>body.revoke.regenerate===false)).toBe(true);
+ });
+ it('enables and observes STOP with the real Vercel302 response shape while leaving the main Preview protected',async()=>{
+  const f=fixture();f.ctx.vercelSso=true;await f.run('deploy');
+  expect(await f.run('enable')).toMatchObject({phase:'enabled',main_unauthenticated_status:302,main_protected:true});
+  expect(await f.run('disable')).toMatchObject({phase:'disabled',protected:true,public_status:302});
  });
  it('leaves a durable mutation intent on a lost response, and refuses blind replay',async()=>{
   const f=fixture(),normal=f.deps.api;

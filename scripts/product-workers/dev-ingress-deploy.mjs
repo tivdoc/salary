@@ -17,6 +17,20 @@ const origin=d=>{requireThat(/^salary-[a-z0-9]+-tivdoccom-5042s-projects\.vercel
 export function assertLocalIngressOperator(env){
  requireThat(!env.VERCEL&&!env.VERCEL_ENV&&env.NODE_ENV!=='production','INGRESS_LOCAL_OPERATOR_REQUIRED');
 }
+/** Actual Vercel SSO uses 302. A generic application redirect is not proof of
+ * protection: require Vercel's SSO target, challenge and exact return URL. */
+export function isProtectedPreviewResponse(response,requestedUrl){
+ if([401,403].includes(response.status))return true;
+ if(![302,307,308].includes(response.status))return false;
+ try{
+  const redirect=new URL(response.headers.get('location'));
+  const returnTo=new URL(redirect.searchParams.get('url'));
+  return redirect.origin==='https://vercel.com'&&redirect.pathname==='/sso-api'
+   &&!redirect.username&&!redirect.password&&Boolean(redirect.searchParams.get('nonce'))
+   &&!returnTo.username&&!returnTo.password&&returnTo.href===new URL(requestedUrl).href
+   &&response.headers.getSetCookie().some(value=>value.startsWith('_vercel_sso_nonce='));
+ }catch{return false;}
+}
 export function parseIngressOperatorConfig(value){
  requireThat(value&&value.schema_version==='dev-ingress-operator-v1','INGRESS_CONFIG_VERSION');
  requireThat(deploymentId(value.main_preview_id)&&/^[a-f0-9]{40}$/u.test(value.main_preview_commit??''),'INGRESS_MAIN_PREVIEW_PIN');
@@ -58,11 +72,13 @@ export function redactedIngressStatus(state,extra={}){
   source_commit:state.source_commit,bundle_sha256:state.bundle_sha256,main_preview_id:state.main_preview.id,
   main_preview_commit:state.main_preview.commit,ingress_deployment_id:state.deployment?.id??null,
   ingress_origin:state.deployment?.origin??null,expires_at:state.expires_at,
-  inherited_env_key_count:state.inherited_env_keys?.length??0,pending_mutation:state.pending_mutation?.label??null,...extra};
+  inherited_env_key_count:state.inherited_env_keys?.length??0,pending_mutation:state.pending_mutation?.label??null,
+  last_boundary_probe:state.last_boundary_probe??null,boundary_probe_count:state.boundary_probe_history?.length??0,...extra};
 }
 /** All external effects are explicit ports so tests cannot accidentally deploy.
  * The CLI implementation below supplies the authenticated Vercel API port. */
-export async function runIngressOperator(command,{config,artifact,api,transport=fetch,loadState,saveState,now=()=>Date.now(),newId=randomUUID}){
+export async function runIngressOperator(command,{config,artifact,api,transport=fetch,loadState,saveState,now=()=>Date.now(),newId=randomUUID,
+ pause=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){
  requireThat(['deploy','status','enable','disable'].includes(command),'INGRESS_COMMAND_UNKNOWN');
  config=parseIngressOperatorConfig(config);
  let state=loadState();
@@ -104,14 +120,25 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
   }
   finished();
  };
- const probe=async(url,options={})=>transport(url,{...options,redirect:'manual',signal:AbortSignal.timeout(15000)});
- const publicChecks=async()=>{
-  const get=await probe(`${state.deployment.origin}/api/resend`);
-  const unknown=await probe(`${state.deployment.origin}/case/never-served`);
-  const unsigned=await probe(`${state.deployment.origin}/api/resend`,{method:'POST',body:'{}',headers:{'content-type':'application/json'}});
-  const main=await probe(state.main_preview.origin);
-  return {ingress_get_status:get.status,ingress_unknown_path_status:unknown.status,unsigned_post_status:unsigned.status,main_unauthenticated_status:main.status};
+ const probe=async(url,options={},timeout=15000)=>transport(url,{...options,redirect:'manual',signal:AbortSignal.timeout(timeout)});
+ const publicChecks=async(timeout=15000)=>{
+  const [get,unknown,unsigned,main]=await Promise.all([
+   probe(`${state.deployment.origin}/api/resend`,{},timeout),probe(`${state.deployment.origin}/case/never-served`,{},timeout),
+   probe(`${state.deployment.origin}/api/resend`,{method:'POST',body:'{}',headers:{'content-type':'application/json'}},timeout),
+   probe(state.main_preview.origin,{},timeout),
+  ]);
+  return {ingress_get_status:get.status,ingress_unknown_path_status:unknown.status,unsigned_post_status:unsigned.status,
+   ingress_get_protected:isProtectedPreviewResponse(get,`${state.deployment.origin}/api/resend`),
+   ingress_unknown_path_protected:isProtectedPreviewResponse(unknown,`${state.deployment.origin}/case/never-served`),
+   unsigned_post_protected:isProtectedPreviewResponse(unsigned,`${state.deployment.origin}/api/resend`),
+   main_unauthenticated_status:main.status,main_protected:isProtectedPreviewResponse(main,state.main_preview.origin)};
  };
+ const publicBoundaryReady=checks=>checks.ingress_get_status===405&&checks.ingress_unknown_path_status===404
+  &&checks.unsigned_post_status===401&&checks.main_protected;
+ const awaitingProtectionPropagation=checks=>checks.main_protected
+  &&(checks.ingress_get_status===405||checks.ingress_get_protected)
+  &&(checks.ingress_unknown_path_status===404||checks.ingress_unknown_path_protected)
+  &&(checks.unsigned_post_status===401||checks.unsigned_post_protected);
  if(command==='deploy'){
   requireThat(!state,'INGRESS_STATE_EXISTS_USE_STATUS_OR_DISABLE');
   const ttl=deadline()-60;
@@ -162,7 +189,7 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
   const actual=await currentProject();
   const response=state.deployment?await probe(`${state.deployment.origin}/api/resend`):null;
   return redactedIngressStatus(state,{project_unchanged:hash(actual)===hash(state.project_before),public_status:response?.status??null,
-   protected:response?[401,403,307,308].includes(response.status):null});
+   protected:response?isProtectedPreviewResponse(response,`${state.deployment.origin}/api/resend`):null});
  }
  deadline();requireThat(!state.pending_mutation,'INGRESS_PENDING_MUTATION_REQUIRES_RECONCILIATION');
  requireThat(!state.forward_share?.revoked_at&&Date.parse(state.forward_share?.expires_at??'')>now(),'INGRESS_FORWARD_SHARE_UNAVAILABLE');
@@ -182,13 +209,24 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
   const get=await probe(`${state.deployment.origin}/api/resend`,{headers:{cookie}});
   requireThat(get.status===405,'INGRESS_RUNTIME_SCOPE_PROBE_FAILED');
   // Check the main application before opening anything and again afterward.
-  requireThat([401,403,307,308].includes((await probe(state.main_preview.origin)).status),'INGRESS_MAIN_NOT_PROTECTED');
+  requireThat(isProtectedPreviewResponse(await probe(state.main_preview.origin),state.main_preview.origin),'INGRESS_MAIN_NOT_PROTECTED');
   state.override_intent=true;save();
   await mutate(`/aliases/${state.deployment.id}/protection-bypass`,{override:{scope:'alias-protection-override',action:'create'}},'enable_ingress');
   state.override_enabled=true;finished();
-  const checks=await publicChecks();
-  requireThat(checks.ingress_get_status===405&&checks.ingress_unknown_path_status===404&&checks.unsigned_post_status===401
-   &&[401,403,307,308].includes(checks.main_unauthenticated_status),'INGRESS_PUBLIC_BOUNDARY_PROBE_FAILED');
+  let checks;
+  const propagationDeadline=now()+20000;
+  for(let attempt=0;attempt<=10;attempt++){
+   const remaining=Math.max(1,propagationDeadline-now());
+   checks=await publicChecks(Math.min(15000,remaining));
+   // Persist the safe tuple BEFORE asserting or rolling back. Failed earlier
+   // attempts stay available even when a later attempt succeeds.
+   (state.boundary_probe_history??=[]).push({at:new Date(now()).toISOString(),attempt,checks});
+   state.last_boundary_probe=checks;save();
+   if(publicBoundaryReady(checks))break;
+   requireThat(awaitingProtectionPropagation(checks)&&attempt<10&&now()<propagationDeadline,'INGRESS_PUBLIC_BOUNDARY_PROBE_FAILED');
+   await pause(Math.min(2000,propagationDeadline-now()));
+  }
+  requireThat(publicBoundaryReady(checks),'INGRESS_PUBLIC_BOUNDARY_PROBE_FAILED');
   await unchanged();await revokeShare('probe_share');
   state.phase='enabled';state.enabled_at=new Date(now()).toISOString();state.boundary_checks=checks;save();
   return redactedIngressStatus(state,checks);
