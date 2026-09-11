@@ -1,11 +1,14 @@
 import type {AnalysisResultBundle} from '@/engine/wave3/contracts';
 import {renderDocumentReviewArtifacts,type DocumentReviewPresentationInput} from './document-review-artifacts';
+import {DOCUMENT_REVIEW_RENDER_POLICY,type DocumentReviewRenderPolicy} from './document-review-render-policy';
 const TOPICS={minimum_wage:'שכר ושעות',working_time:'זמני עבודה ונוכחות',pension:'רישומי פנסיה',travel:'נסיעות',convalescence:'הבראה',vacation:'חופשה',sick_leave:'מחלה',rest_day:'מנוחה שבועית',bonuses:'רכיבים נוספים',contract:'תנאי ההעסקה'} as const;
 const customerTitle=(title:string)=>title.replace(/(?<=\p{Script=Hebrew})(?=\d)|(?<=\d)(?=\p{Script=Hebrew})/gu,' ');
+export const GROUPED_REVIEW_GAP_PRESENTATION=DOCUMENT_REVIEW_RENDER_POLICY;
+export type ReviewProjectionOptions={gapPresentation?:DocumentReviewRenderPolicy};
 
 /** Explicit projection: arithmetic differences are not a collectible debt and
  * provider/source/debug metadata belongs in the private evidence appendix. */
-export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string){
+export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,options:ReviewProjectionOptions={}){
  const review=bundle.document_review;if(!review)throw Error('DOCUMENT_REVIEW_REQUIRED');
  const sourceId=(id:string,version:string,page:number)=>`${id}:${version}:${page}`;
  const sources=review.documents.flatMap(d=>Array.from({length:d.page_count??1},(_,i)=>({
@@ -43,7 +46,25 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string){
  const missing=review.checks.filter(c=>c.calculation.state==='blocked').map(c=>({title:c.title,detail:c.explanation||'אין עדיין בסיס מספיק לתוצאה.',next_step:'יש לעיין בהשלמות הממוקדות להלן.'}));
  // Ownership is an internal delivery/admission task. It stays in the private
  // review appendix and must not expose account matching to a customer.
- for(const gap of review.coverage_gaps.filter(g=>g.kind!=='ownership'))missing.push({title:gap.kind==='missing_rule'?'בדיקה שטרם נתמכת במערכת':gap.kind==='missing_applicability'?'בירור תחולה':'מידע ממוקד להמשך',detail:gap.detail,next_step:gap.next_step});
+ const visibleGaps=review.coverage_gaps.filter(g=>g.kind!=='ownership');
+ const gapGroups:typeof visibleGaps[]=[];
+ if(options.gapPresentation===GROUPED_REVIEW_GAP_PRESENTATION){
+  const index=new Map<string,number>();
+  for(const gap of visibleGaps){
+   // Exact presentation equality only. A different reason, kind or next action
+   // remains separate; original check IDs and topics stay in the appendix.
+   const key=JSON.stringify([gap.kind,gap.detail,gap.next_step]);
+   const existing=index.get(key);
+   if(existing===undefined){index.set(key,gapGroups.length);gapGroups.push([gap]);}
+   else gapGroups[existing].push(gap);
+  }
+ }else for(const gap of visibleGaps)gapGroups.push([gap]);
+ for(const group of gapGroups){
+  const gap=group[0],count=new Set(group.map(g=>g.check_id)).size;
+  const topics=[...new Set(group.map(g=>TOPICS[g.topic]))];
+  const scope=group.length>1?` המידע החסר נוגע ל־${count} בדיקות בנושאים: ${topics.join(', ')}.`:'';
+  missing.push({title:gap.kind==='missing_rule'?'בדיקה שטרם נתמכת במערכת':gap.kind==='missing_applicability'?'בירור תחולה':'מידע ממוקד להמשך',detail:gap.detail+scope,next_step:gap.next_step});
+ }
  for(const request of review.completions.customer_requests)missing.push({title:'השלמה ממוקדת',detail:request.target.question,next_step:'התשובה נדרשת רק לבדיקות התלויות בנתון זה.'});
  const topicCounts=new Map<string,number>();
  for(const check of review.checks)topicCounts.set(check.topic,(topicCounts.get(check.topic)??0)+1);
@@ -61,5 +82,6 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string){
   documents_checked:review.documents.map(d=>({label:d.label,source_ids:Array.from({length:d.page_count??1},(_,i)=>sourceId(d.document_id,d.version_id,i+1))})),
   sources,findings,missing_inputs:missing};
  return renderDocumentReviewArtifacts(input,{document_review:review,analysis_run_id:bundle.analysis_run_id,
-  analysis_result_sha256:bundle.result_sha256,legal_topic_results:bundle.topic_results});
+  analysis_result_sha256:bundle.result_sha256,legal_topic_results:bundle.topic_results,
+  ...(options.gapPresentation===GROUPED_REVIEW_GAP_PRESENTATION?{render_policy:GROUPED_REVIEW_GAP_PRESENTATION}:{})});
 }

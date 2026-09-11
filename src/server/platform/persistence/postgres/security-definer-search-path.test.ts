@@ -59,7 +59,11 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //159 adds five reviewed source-review boundaries. No direct target writes;
 // worker-only open/history, internal currentness/guard, identity-bound UI state.
 // See docs/release-evidence/document-review-definer-review-20260911.md.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 319;
+//160–166: 32 literal declarations (2+2+22+3+2+0+1), including redeclarations.
+// Dynamic pg_get_functiondef body replacements are separately inventoried below;
+// they preserve existing ownership/ACL and do not add declarations to this count.
+// See docs/release-evidence/product-upload-definer-review-20260911.md.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 351;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -86,7 +90,180 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
   return found;
 }
 
+// Reviewed names and complete explicit EXECUTE-grant sets, including invoker
+// helpers. This is an intentional migration inventory, not an inferred ACL audit.
+const PRODUCT_UPLOAD_SURFACE = [
+  {
+    "file": "20260911164033_identified_cell_reading_v2.sql",
+    "definers": [
+      "private.guard_document_cell_decision",
+      "public.case_request_field_reading_targets"
+    ],
+    "grants": [
+      "private.document_field_answer_v2_valid(text) to service_role,tivdoc_web_runtime",
+      "public.case_request_field_reading_targets(uuid,uuid) to tivdoc_web_runtime,service_role",
+      "private.document_field_question_fields_v3(text[]) to tivdoc_worker_runtime"
+    ],
+    "dynamic": []
+  },
+  {
+    "file": "20260911164425_private_document_review_artifacts.sql",
+    "definers": [
+      "public.case_report_private_review_list",
+      "public.case_report_private_review_artifact"
+    ],
+    "grants": [
+      "public.case_report_private_review_list(uuid,uuid) to tivdoc_web_runtime",
+      "public.case_report_private_review_artifact(uuid,uuid,uuid) to tivdoc_web_runtime"
+    ],
+    "dynamic": []
+  },
+  {
+    "file": "20260911165540_legacy_paid_review_upload_flow.sql",
+    "definers": [
+      "private.legacy_paid_scopes_internal",
+      "private.legacy_paid_scopes",
+      "private.legacy_paid_scope_register",
+      "private.legacy_paid_period_register",
+      "private.legacy_paid_scope_revoke",
+      "private.document_review_upload_validate",
+      "private.document_review_upload_bind",
+      "private.document_review_upload_commit_guard",
+      "private.document_review_upload_received",
+      "private.document_review_upload_pin_current",
+      "private.document_review_upload_batch_scope",
+      "private.document_review_upload_snapshot",
+      "private.document_review_upload_journal",
+      "private.document_review_upload_capture",
+      "private.document_review_paid_scope_current",
+      "private.document_review_scope_insert_guard",
+      "private.document_field_request_open",
+      "public.case_order_legacy_receipts",
+      "private.document_review_upload_assess",
+      "private.document_review_upload_state",
+      "private.document_review_upload_assessment_inputs",
+      "public.case_request_review_upload_states"
+    ],
+    "grants": [
+      "private.legacy_paid_scopes(uuid) to tivdoc_worker_runtime",
+      "private.legacy_paid_scope_register(uuid,bytea,jsonb) to tivdoc_operations_runtime",
+      "private.legacy_paid_period_register(uuid,jsonb) to tivdoc_operations_runtime",
+      "private.legacy_paid_scope_revoke(uuid,uuid,text,text) to tivdoc_operations_runtime",
+      "private.document_review_upload_validate(uuid,uuid,jsonb) to tivdoc_web_runtime,service_role",
+      "private.document_review_upload_bind(uuid,uuid) to tivdoc_web_runtime,service_role",
+      "private.document_review_upload_commit_guard(uuid,uuid) to tivdoc_web_runtime,service_role",
+      "private.document_review_upload_received(uuid,uuid,jsonb) to tivdoc_web_runtime,service_role",
+      "private.document_review_upload_batch_scope(uuid,uuid) to service_role,tivdoc_web_runtime",
+      "private.document_review_upload_snapshot(uuid,jsonb) to service_role,tivdoc_web_runtime",
+      "private.document_review_upload_capture(uuid,uuid) to service_role,tivdoc_web_runtime",
+      "private.document_field_request_open(uuid,integer,text,jsonb,text) to tivdoc_worker_runtime",
+      "public.case_order_legacy_receipts(uuid,uuid) to tivdoc_web_runtime,service_role",
+      "private.document_review_upload_assess(uuid,integer,text,uuid,text,text) to tivdoc_worker_runtime",
+      "private.document_review_upload_assessment_inputs(uuid,integer,text,text,text) to tivdoc_worker_runtime",
+      "public.case_request_review_upload_states(uuid,uuid) to service_role,tivdoc_web_runtime"
+    ],
+    "dynamic": [
+      "private.capture_case_input(uuid,text)",
+      "private.document_review_request_open(uuid,integer,text,text,text,text)",
+      "private.document_review_request_current(uuid,uuid)",
+      "public.case_documents_reserve(uuid,uuid,jsonb)",
+      "public.case_documents_batch(uuid,uuid)",
+      "public.case_documents_commit(uuid,uuid,jsonb)",
+      "public.case_documents_snapshot(uuid)",
+      "private.capture_case_input(uuid,text)",
+      "private.document_review_request_current(uuid,uuid)",
+      "private.document_review_request_open(uuid,integer,text,text,text,text)",
+      "private.document_review_upload_bind(uuid,uuid)",
+      "private.document_review_upload_snapshot(uuid,jsonb)"
+    ]
+  },
+  {
+    "file": "20260911171000_document_review_source_revisions.sql",
+    "definers": [
+      "private.document_review_source_refs",
+      "private.document_review_source_admit",
+      "private.document_review_source_read"
+    ],
+    "grants": [
+      "private.document_review_source_admit(uuid,integer,text,uuid,date,text,jsonb,text) to tivdoc_worker_runtime",
+      "private.document_review_source_read(uuid,integer,text,uuid,date,text) to tivdoc_worker_runtime"
+    ],
+    "dynamic": [
+      "private.capture_case_input(uuid,text)"
+    ]
+  },
+  {
+    "file": "20260911171700_private_review_canonical_case_binding.sql",
+    "definers": [
+      "public.case_report_private_review_list",
+      "public.case_report_private_review_artifact"
+    ],
+    "grants": [
+      "public.case_report_private_review_list(uuid,uuid) to tivdoc_web_runtime",
+      "public.case_report_private_review_artifact(uuid,uuid,uuid) to tivdoc_web_runtime"
+    ],
+    "dynamic": []
+  },
+  {
+    "file": "20260911173000_legacy_scope_period_variable.sql",
+    "definers": [],
+    "grants": [],
+    "dynamic": [
+      "private.legacy_paid_scope_register(uuid,bytea,jsonb)"
+    ]
+  },
+  {
+    "file": "20260911173500_scoped_financial_source_completion.sql",
+    "definers": [
+      "private.document_review_information_satisfied_for_sweep"
+    ],
+    "grants": [
+      "private.document_review_information_satisfied_for_sweep(uuid,uuid) to tivdoc_worker_runtime"
+    ],
+    "dynamic": [
+      "private.document_review_upload_assess(uuid,integer,text,uuid,text,text)",
+      "private.managed_dev_notification_event_current(uuid,text)",
+      "public.case_request_sweep(timestamptz,integer)",
+      "public.case_notification_request_reminders(integer)",
+      "public.case_notification_reminder_enqueue(uuid,text,text,uuid,uuid,text,jsonb,timestamptz)",
+      "public.case_notification_outbox_claim(uuid)"
+    ]
+  }
+] as const;
+
 describe("security definer search_path contract", () => {
+  it('accounts for every product-upload declaration and exact EXECUTE role group in migrations 160–166',async()=>{
+    const definitions=await securityDefinerDefinitions();
+    expect(PRODUCT_UPLOAD_SURFACE.reduce((count,row)=>count+row.definers.length,0)).toBe(32);
+    for(const reviewed of PRODUCT_UPLOAD_SURFACE){
+      expect(definitions.filter(d=>d.file===reviewed.file).map(d=>d.name),reviewed.file).toEqual(reviewed.definers);
+      const sql=(await readFile(path.join(MIGRATION_ROOT,reviewed.file),'utf8')).replaceAll(/\s+/gu,' ').toLowerCase();
+      expect([...sql.matchAll(/grant execute on function ([^;]+);/gu)].map(m=>m[1]),reviewed.file).toEqual(reviewed.grants);
+      for(const name of reviewed.definers){
+        // Every literal definer explicitly removes PostgreSQL's default PUBLIC
+        // execute; a later grant is allowed only by the exact role groups above.
+        const escaped=name.replaceAll('.','\\.');
+        expect(sql,`${reviewed.file}: ${name}`).toMatch(new RegExp(`revoke all on function ${escaped}\\([^;]+from public,anon,authenticated`,'u'));
+      }
+    }
+  });
+  it('inventories dynamic body-only replacements separately and refuses an unnoticed target or ACL rewrite',async()=>{
+    for(const reviewed of PRODUCT_UPLOAD_SURFACE){
+      const sql=await readFile(path.join(MIGRATION_ROOT,reviewed.file),'utf8');
+      const targets=[...sql.matchAll(/pg_get_functiondef\('([^']+)'::regprocedure\)/gu)].map(m=>m[1]);
+      expect(targets,reviewed.file).toEqual(reviewed.dynamic);
+      expect(sql,reviewed.file).not.toMatch(/drop\s+function|alter\s+function[\s\S]*?owner\s+to/iu);
+      if(reviewed.dynamic.length)expect(sql,reviewed.file).toMatch(/raise exception/iu);
+    }
+    const cell=await readFile(path.join(MIGRATION_ROOT,PRODUCT_UPLOAD_SURFACE[0].file),'utf8');
+    expect(cell).toContain("foreach signature in array array['public.case_request_answer(uuid,uuid,text)','public.case_request_edit(uuid,uuid,uuid,text,integer,text)'] loop");
+    expect(cell).toContain('definition:=pg_get_functiondef(signature::regprocedure)');
+    expect(cell).toContain('READING_V2_WRITER_BASE_MISMATCH');
+    const scoped=await readFile(path.join(MIGRATION_ROOT,PRODUCT_UPLOAD_SURFACE[6].file),'utf8');
+    expect(scoped).toContain("pd->'review_completed_fact_keys'='[\"payslip.financial_source\"]'::jsonb");
+    expect(scoped).toContain("session_user<>'tivdoc_worker_runtime'");
+    expect(scoped).toContain('private.document_review_request_current(target_case,target_request)');
+  });
   it('accounts for the five identified review boundaries and narrow grants',async()=>{
     const file='20260911144617_document_review_identified_completions.sql';
     expect((await securityDefinerDefinitions()).filter(d=>d.file===file).map(d=>d.name).sort()).toEqual([

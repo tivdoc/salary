@@ -3,7 +3,7 @@ import type {AnalysisResultBundle} from '@/engine/wave3/contracts';
 import {runDocumentReview} from '@/engine/document-review/service';
 import {calculateDocumentReview} from '@/engine/document-review/calculations';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
-import {renderReviewBundle} from './document-review-projection';
+import {GROUPED_REVIEW_GAP_PRESENTATION,renderReviewBundle} from './document-review-projection';
 
 function bundle():AnalysisResultBundle{
  const caseId='11111111-1111-4111-8111-111111111111',sha='a'.repeat(64),period={from:'2026-06-01',to:'2026-06-30'};
@@ -42,4 +42,36 @@ it('labels an identified recorded answer as an answer rather than a printed docu
  expect(body.findings[0].amounts.map((a:{label:string})=>a.label)).toContain('סכום שנמסר בתשובה מזוהה');
  expect(body.findings[0].amounts.map((a:{label:string})=>a.label)).not.toContain('סכום במסמך');
  expect(body.findings[0].summary).toContain('תשובה מזוהה שנמסרה');
+});
+
+it('groups only identical gap presentations, discloses count and topics, and retains every original gap privately',()=>{
+ const original=bundle(),review=original.document_review!;
+ const same={kind:'missing_fact' as const,detail:'הבדיקה כוללת ימים מחוץ ליוני ולא פוצלה או חושבה באופן יחסי.',next_step:'יש לבדוק את התקופה המקורית בנפרד.'};
+ const gaps=[...review.coverage_gaps,
+  ...Array.from({length:23},(_,i)=>({...same,check_id:`outside.${i}`,topic:i%2?'working_time' as const:'pension' as const})),
+  {...same,check_id:'outside.may21',topic:'sick_leave' as const,detail:'בדיקה זו מתייחסת ליום 21 במאי.'},
+  {...same,check_id:'different.action',topic:'pension' as const,next_step:'יש לברר תחילה את התקופה המדויקת.'},
+  {...same,check_id:'different.kind',topic:'pension' as const,kind:'missing_applicability' as const},
+ ];
+ const input={...original,document_review:{...review,coverage_gaps:gaps}},before=JSON.stringify(input);
+ const report=renderReviewBundle(input,'synthetic-grouped-report',{gapPresentation:GROUPED_REVIEW_GAP_PRESENTATION});
+ const body=JSON.parse(Buffer.from(report.json).toString('utf8'));
+ expect(body.missing_inputs).toHaveLength(4);
+ expect(body.missing_inputs[0].detail).toContain('23 בדיקות');
+ expect(body.missing_inputs[0].detail).toContain('רישומי פנסיה, זמני עבודה ונוכחות');
+ expect(body.missing_inputs[1].detail).toBe('בדיקה זו מתייחסת ליום 21 במאי.');
+ expect(body.missing_inputs[2].next_step).toBe('יש לברר תחילה את התקופה המדויקת.');
+ expect(body.missing_inputs[3].title).toBe('בירור תחולה');
+ const appendix=JSON.parse(Buffer.from(report.private_evidence_appendix).toString('utf8'));
+ expect(JSON.stringify(appendix)).toContain('"render_policy":"group-identical-v2"');
+ expect(JSON.stringify(appendix)).toContain('outside.22');
+ for(const gap of gaps)expect(JSON.stringify(appendix)).toContain(gap.check_id);
+ expect(Buffer.from(report.html).toString('utf8')).not.toContain('private ownership matching marker');
+ expect(JSON.stringify(input)).toBe(before);
+});
+
+it('preserves legacy default artifacts byte for byte under explicit individual-v1 selection',()=>{
+ const input=bundle(),original=renderReviewBundle(input,'synthetic-legacy-report');
+ const explicit=renderReviewBundle(input,'synthetic-legacy-report',{gapPresentation:'individual-v1'});
+ for(const key of ['json','html','pdf','private_evidence_appendix'] as const)expect(Buffer.from(explicit[key])).toEqual(Buffer.from(original[key]));
 });

@@ -6,11 +6,11 @@ import path from 'node:path';
 let diagnosticRoot:string|undefined;
 async function main(){
  const [{CaseAnalysisService},{documentReviewInputSchema},{canonicalSha256},{June2026ReviewCatalog},
-  {InMemoryCaseAnalysisRepository},{SavedAnalysisDraftBuilder,savedAnalysisId},{privateArtifactPath},{WAVE3_TOPICS},{validateReport,decodeBundle}]=await Promise.all([
+  {InMemoryCaseAnalysisRepository},{SavedAnalysisDraftBuilder,savedAnalysisId},{privateArtifactPath},{WAVE3_TOPICS},{validateReport,decodeBundle},{DOCUMENT_REVIEW_RENDER_POLICY}]=await Promise.all([
   import('../../src/engine/case-analysis/service.ts'),import('../../src/engine/document-review/contracts.ts'),import('../../src/engine/rule-runtime/canonical.ts'),
   import('../../src/engine/legal-operations/june2026-catalog.ts'),import('../../src/server/engine/case-analysis/in-memory-repository.ts'),
   import('../../src/server/product/processing/saved-draft-report.ts'),import('../../src/server/private-analysis/extraction.ts'),import('../../src/engine/wave3/contracts.ts'),
-  import('../../src/server/platform/persistence/postgres/analysis/validation.ts')]);
+  import('../../src/server/platform/persistence/postgres/analysis/validation.ts'),import('../../src/server/product/reports/document-review-render-policy.ts')]);
  const [manifestPath,outArg,revision]=process.argv.slice(2);
  if(!manifestPath||!outArg||!revision)throw Error('PRIVATE_REVIEW_ARGUMENTS');
  const packet=JSON.parse(readFileSync(privateArtifactPath(manifestPath),'utf8'));
@@ -34,12 +34,12 @@ async function main(){
   const repository=new InMemoryCaseAnalysisRepository();
   const service=new CaseAnalysisService({clock:{now:()=>created},ids:{derive:savedAnalysisId},hashes:{hashCanonical:canonicalSha256,hashBytes:digest},
    snapshots:{async loadPinned(){return stored;}},repository,legalCatalog:new June2026ReviewCatalog(),executor:{async execute(){throw Error('UNAUTHORIZED_REAL_EXECUTION');}},
-   reportBuilder:new SavedAnalysisDraftBuilder(),reportRegistration:{registerReport(){}},logs:{write(){}},templateVersion:'document-review-product-v1'});
+   reportBuilder:new SavedAnalysisDraftBuilder(),reportRegistration:{registerReport(){}},logs:{write(){}},templateVersion:`document-review-product-v1:${DOCUMENT_REVIEW_RENDER_POLICY}`});
   const requested=review.purchased_scope.topics.filter((t):t is typeof WAVE3_TOPICS[number]=>WAVE3_TOPICS.some(v=>v===t));
   const command={case_id:review.case_id,case_revision:item.report_revision,document_snapshot_id:stored.document_snapshot_id,document_snapshot_sha256:empty,
    extraction_snapshot_id:stored.extraction_snapshot_id,extraction_snapshot_sha256:empty,declared_fact_snapshot_id:stored.declared_fact_snapshot.snapshot_id,declared_fact_snapshot_sha256:empty,
    document_review_sha256:hash,period:{start_date:review.period.from,end_date:review.period.to},as_of:created.slice(0,10),requested_topics:requested,
-   sector:'unverified',population:'unverified',mode:'real' as const,idempotency_key:`private-review:${hash}:${item.report_revision}`};
+   sector:'unverified',population:'unverified',mode:'real' as const,idempotency_key:`private-review:${hash}:${item.report_revision}:${DOCUMENT_REVIEW_RENDER_POLICY}`};
   const bundle=await service.runCaseAnalysis(command),run=await service.getCompletedRun(bundle.analysis_run_id);
   if(!run?.report)throw Error('PRIVATE_REVIEW_REPORT_MISSING');
   validateReport(run.report);decodeBundle(bundle,requested);

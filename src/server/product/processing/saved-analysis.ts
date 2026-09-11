@@ -73,7 +73,10 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  }};
  const end=new Date(Date.UTC(Number(input.month.slice(0,4)),Number(input.month.slice(5,7)),0)).toISOString().slice(0,10);
  const now=regularAuthority?regularAuthority.authority.assessment.issued_at:new Date(String(row.created_at)).toISOString();
- const collection=input.month==='2026-06'&&order.topics.includes('minimum_wage')?await readSavedJune2026Collection(input.context,job):null;
+ // A document-review command has its own source hash and idempotency key.
+ // The canonical June factual loader accepts only canonical runtime commands;
+ // do not reinterpret a wider source review as an admitted minimum-wage run.
+ const collection=!review&&input.month==='2026-06'&&order.topics.includes('minimum_wage')?await readSavedJune2026Collection(input.context,job):null;
  let factualContext:SavedJune2026AdmittedContext|null=null;
  let preparedRunId:string|null=null;
  const command:CaseAnalysisCommand={...(review?{document_review_sha256:canonicalSha256(review)}:{}),case_id:job.case_id,case_revision:z.coerce.number().int().positive().parse(row.engine_revision),
