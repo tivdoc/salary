@@ -5,7 +5,7 @@ import {productPageSession} from '@/server/product/auth/next-session';
 import {readStableProductRouteFlags} from '@/server/product/routes/flags';
 import {resolveCanonicalOperationsService} from '@/server/product/routes/runtime';
 import {requireSupportOwner} from '@/server/product/reports/support';
-import {readManagedDevStatus} from '@/server/product/processing/managed-worker-host';
+import {readManagedDevStatus,readManagedDevHealth} from '@/server/product/processing/managed-worker-host';
 import {ManagedWorkerPanel} from './managed-worker-panel';
 
 export const dynamic='force-dynamic';
@@ -16,9 +16,11 @@ export default async function ManagedWorkerPage(){
  const session=await productPageSession('operations');if(!session)notFound();
  try{requireSupportOwner(session.actor);}catch{notFound();}
  let rows:Awaited<ReturnType<typeof readManagedDevStatus>>=[];let unavailable=false;
+ let health:Awaited<ReturnType<typeof readManagedDevHealth>>=null;
  try{rows=await readManagedDevStatus();}catch{unavailable=true;}
+ try{health=await readManagedDevHealth();}catch{unavailable=true;}
  return <main dir="rtl" style={{maxWidth:1100,margin:'2rem auto',padding:'1rem'}}><h1>עובד הניתוח ב־DEV</h1>
   <p>תיקי בדיקה מורשים בלבד. התזמון תלוי במחשב המארח; זה אינו שירות Production.</p>
   <p>השלמת הריצה אינה אישור לניתוח לקוח אמיתי. הפעלת הכללים המשפטיים דורשת את תנאי ההפעלה המתועדים.</p>
-  <ManagedWorkerPanel initial={rows} unavailable={unavailable} csrfToken={session.csrf_token}/></main>;
+  <ManagedWorkerPanel initial={rows} initialHealth={health} unavailable={unavailable} csrfToken={session.csrf_token}/></main>;
 }

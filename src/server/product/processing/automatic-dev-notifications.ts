@@ -9,12 +9,14 @@ import {normalizeContact} from '../case-access/crypto';
 import {recipientRefusal,payloadDigest,type NotificationMessage,type NotificationProvider} from '../case-access/notifications';
 import {resendProvider} from '../case-access/resend-provider';
 import {encryptNotification,deliverClaimedNotification} from '../case-access/notification-outbox';
-const eventSchema=z.object({event_key:z.string(),event_kind:z.enum(['request_required','engineering_report_ready','report_ready']),case_id:z.uuid(),public_id:z.string().regex(/^TV-[A-Z0-9]{8}$/u),identity_id:z.uuid(),contact:z.email(),request_id:z.uuid().nullable(),report_id:z.uuid().nullable()}).strict();
+const eventSchema=z.object({event_key:z.string(),event_kind:z.enum(['request_required','engineering_report_ready','report_ready']),case_id:z.uuid(),public_id:z.string().regex(/^TV-[A-Z0-9]{8}$/u),identity_id:z.uuid(),contact:z.email(),request_id:z.uuid().nullable(),report_id:z.uuid().nullable()}).strict()
+ .refine(event=>event.event_kind==='request_required'?event.request_id!==null&&event.report_id===null:event.report_id!==null&&event.request_id===null);
 
 /** Uses the existing encrypted outbox and Resend idempotency/fencing protocol.
  * Configuration and DB both restrict DEV destinations. Provider acceptance is
  * never returned as delivery; authenticated webhooks alone record delivery. */
-export async function runAutomaticNotificationPass(input:{db:CaseAccessDb;capability:string;secret:string;origin:string;provider:NotificationProvider;enqueueEventKeys?:readonly string[]}){
+export async function runAutomaticNotificationPass(input:{db:CaseAccessDb;capability:string;secret:string;origin:string;provider:NotificationProvider;enqueueEventKeys?:readonly string[];signal?:AbortSignal}){
+ if(input.signal?.aborted)return {state:'interrupted' as const,queued:0,attempts:[],deliveryConfirmed:false};
  const url=new URL(input.origin);if(url.protocol!=='https:'||!url.hostname.endsWith('.vercel.app'))throw Error('MANAGED_NOTIFICATION_ORIGIN');
  if(Buffer.from(input.secret,'base64').length!==32)throw Error('NOTIFICATION_KEY_INVALID');
  const events=z.array(eventSchema).max(10).parse(await input.db.rpc('case_notification_managed_pending',{target_capability:input.capability}));
@@ -23,6 +25,7 @@ export async function runAutomaticNotificationPass(input:{db:CaseAccessDb;capabi
  // RPC. Delivery still drains existing authorized capability claims; this is
  // not a claim filter. Enqueue/claim independently recheck source and authority.
  for(const event of events.filter(event=>input.enqueueEventKeys===undefined||input.enqueueEventKeys.includes(event.event_key))){
+  if(input.signal?.aborted)break;
   const contact=normalizeContact(event.contact);if(recipientRefusal(event.contact)||!contact)continue;
   const request=event.event_kind==='request_required',engineering=event.event_kind==='engineering_report_ready';
   const link=request?`${url.origin}/case/${event.public_id}/thread?requestId=${event.request_id}`:`${url.origin}/case/${event.public_id}/reports?${engineering?'engineering=1&':''}report=${event.report_id}`;
@@ -35,15 +38,20 @@ export async function runAutomaticNotificationPass(input:{db:CaseAccessDb;capabi
  }
  const attempts:{state:string;provider:string;provider_message_id?:string;error_code:string|null}[]=[],workerId=randomUUID();
  for(let index=0;index<2;index++){
+  if(input.signal?.aborted)break;
   const rows=await input.db.rpc<{delivery_id:string;encrypted_payload:unknown;fencing_token:number}>('case_notification_managed_claim',{target_capability:input.capability,target_worker:workerId});
   if(!rows[0])break;
+  // If shutdown arrived during claim, keep the durable lease for recovery.
+  // Never turn shutdown into a new provider request or a fake finish receipt.
+  if(input.signal?.aborted)break;
   const outcome=await deliverClaimedNotification(input.db,rows[0],workerId,input.secret,input.provider);
   attempts.push({state:outcome.state==='sent'&&outcome.provider_message_id?'provider_accepted':outcome.state==='sent'?'unconfirmed_test_acceptance':outcome.state,provider:outcome.provider,provider_message_id:outcome.provider_message_id,error_code:outcome.error_code});
  }
- return {state:'finished' as const,queued,attempts,deliveryConfirmed:false};
+ return {state:input.signal?.aborted?'interrupted' as const:'finished' as const,queued,attempts,deliveryConfirmed:false};
 }
 
-export async function runManagedDevNotificationTick(env:Readonly<Record<string,string|undefined>>=process.env){
+export async function runManagedDevNotificationTick(env:Readonly<Record<string,string|undefined>>=process.env,signal?:AbortSignal){
+ if(signal?.aborted)return {state:'interrupted' as const};
  if(env.TIVDOC_MANAGED_DEV_WORKER_ENABLED!=='true'||env.TIVDOC_NOTIFICATION_OUTBOX_ENABLED!=='true')return {state:'disabled' as const};
  const config=managedWorkerControlConfig(env);if(!config.enabled)return {state:'disabled' as const};
  if(env.TIVDOC_NOTIFICATION_PROVIDER!=='resend'||!env.RESEND_API_KEY?.trim()||!env.TIVDOC_NOTIFICATION_FROM?.trim())return {state:'blocked' as const,code:'notification_provider_unconfigured'};
@@ -51,6 +59,6 @@ export async function runManagedDevNotificationTick(env:Readonly<Record<string,s
  if(!env.DELIVERY_RECIPIENT_ALLOWLIST?.trim())return {state:'blocked' as const,code:'notification_recipient_unconfigured'};
  const origin=env.TIVDOC_MANAGED_DEV_NOTIFICATION_ORIGIN;if(!origin)return {state:'blocked' as const,code:'notification_preview_origin_unconfigured'};
  const pool=new pg.Pool({connectionString:config.connectionUrl,ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},max:1,connectionTimeoutMillis:15000,statement_timeout:15000});
- try{return await runAutomaticNotificationPass({db:postgresCaseAccessDb(pool),capability:config.capability,secret,origin,provider:resendProvider(env.RESEND_API_KEY!.trim(),env.TIVDOC_NOTIFICATION_FROM!.trim())});}
+ try{return await runAutomaticNotificationPass({db:postgresCaseAccessDb(pool),capability:config.capability,secret,origin,provider:resendProvider(env.RESEND_API_KEY!.trim(),env.TIVDOC_NOTIFICATION_FROM!.trim()),signal});}
  finally{await pool.end();}
 }

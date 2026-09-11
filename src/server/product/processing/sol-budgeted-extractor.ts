@@ -1,9 +1,10 @@
 import 'server-only';
 import OpenAI from 'openai';
 import {createHash,randomUUID} from 'node:crypto';
-import {readFileSync,writeFileSync,mkdirSync,openSync,closeSync,fsyncSync,renameSync,unlinkSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,openSync,closeSync,fsyncSync,renameSync} from 'node:fs';
 import path from 'node:path';
 import {managedWorkerControlConfig} from './managed-worker-config';
+import {acquireSolBudgetLock,recoverStaleSolBudgetLock} from './sol-budget-lock';
 import {z} from 'zod';
 import {PAYSLIP_EXTRACTION_V21_VERSION} from '@/engine/extraction/v21';
 import {extractionRequestSchema} from '@/engine/extraction/contracts';
@@ -42,9 +43,9 @@ function createBoundedSolExtractor(input:SolBudgetedInput){
  }
  // Never initialize/reset a ledger here. It must be the same package ledger
  // already used by the model comparison, including its unknown charged row.
- const lockPath=input.ledgerPath+'.lock',lock=openSync(lockPath,'wx'),instanceId=randomUUID();
+ const lock=acquireSolBudgetLock(input),instanceId=randomUUID();
  let closed=false,busy=false,entered=0;
- const close=()=>{if(closed)return;if(busy)throw Error('SOL_EXTRACTOR_STILL_RUNNING');closed=true;closeSync(lock);unlinkSync(lockPath);};
+ const close=()=>{if(closed)return;if(busy)throw Error('SOL_EXTRACTOR_STILL_RUNNING');closed=true;lock.close();};
  try{
   let ledger=parseSolComparisonLedger(JSON.parse(readFileSync(input.ledgerPath,'utf8')));
   const reviewed=input.reviewedRetry;
@@ -92,10 +93,12 @@ function createBoundedSolExtractor(input:SolBudgetedInput){
    const save=(name:string,value:unknown)=>writeFileSync(path.join(directory,name),JSON.stringify(value,null,2)+'\n');
     save('source-context.json',{codeRevision:input.codeRevision,request:boundRequest,requestSha256:counted.requestSha256,
      sourceSha256:source.sha256,model:SOL_COMPARISON_POLICY.model,reasoningEffort:'medium',sourcePageCount:1});
+    if(input.expiresAt&&Date.now()>=Date.parse(input.expiresAt))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
     ledger=reserveSolRequest({ledger,...reservation,kind:'input_tokens',now:new Date().toISOString()});persist();
     const count=await sdk.responses.inputTokens.count(counted.request);save('input-count.json',count);
     if(count.object!=='response.input_tokens')throw Error('SOL_COUNT_RESPONSE_INVALID');
     ledger=recordSolCount(ledger,counted.requestSha256,count.input_tokens);persist();
+    if(input.expiresAt&&Date.now()>=Date.parse(input.expiresAt))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
     ledger=reserveSolRequest({ledger,...reservation,kind:'generation',now:new Date().toISOString()});persist();entered++;
     const result=await actual({...request,request:boundRequest,sourcePageCount:1,onStructuredOutput:diagnostic=>{
      if(diagnostic.origin!=='openai_live'||diagnostic.request_sha256!==counted.requestSha256||diagnostic.source_sha256!==source.sha256)
@@ -131,4 +134,18 @@ export function createManagedSolBudgetedExtractor(environment:Readonly<Record<st
  if(path.resolve(config.ledgerPath)!==ledger||path.resolve(config.artifactDirectory)!==artifacts||!environment.OPENAI_API_KEY)throw Error('SOL_MANAGED_PACKAGE_PATH');
  return createBoundedSolExtractor({apiKey:environment.OPENAI_API_KEY,ledgerPath:ledger,artifactDirectory:artifacts,codeRevision:buildSha,
   allowedSources:config.allowedSources,allowedCaseIds:config.allowedCaseIds,expiresAt:config.expiresAt,maxGenerations:2});
+}
+
+export function recoverManagedSolBudgetLock(input:{expectedLockSha256:string;expectedLedgerSha256:string},environment:Readonly<Record<string,string|undefined>>=process.env){
+ const packagePath=path.resolve('../release-work/sol-scheduled-package-20260911.private.json');
+ const ledgerPath=path.resolve('output/release-completion/sol-scheduled-20260911/package-budget-ledger.json');
+ const assertOwnerPaused=()=>{
+  if(environment.VERCEL||environment.VERCEL_ENV||environment.NODE_ENV!=='development'||environment.TIVDOC_MANAGED_DEV_WORKER_ENABLED!=='false'
+   ||environment.TIVDOC_MANAGED_DEV_OWNER_RECOVERY!=='true'||!environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE
+   ||path.resolve(environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE)!==packagePath)throw Error('SOL_LEDGER_OWNER_RECOVERY_REQUIRED');
+  const config=JSON.parse(readFileSync(packagePath,'utf8')) as Record<string,unknown>;
+  if(config.version!=='sol-scheduled-dev-package-20260911-v1'||config.enabled!==false||typeof config.ledgerPath!=='string'
+   ||path.resolve(config.ledgerPath)!==ledgerPath)throw Error('SOL_LEDGER_OWNER_RECOVERY_REQUIRED');
+ };
+ return recoverStaleSolBudgetLock({...input,ledgerPath,assertOwnerPaused});
 }

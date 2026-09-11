@@ -42,4 +42,16 @@ describe('managed DEV operations boundary',()=>{
   expect(response.status).toBe(200);expect(s.verify.mock.calls[0]).toEqual([expect.any(Request),'operations',false]);expect(s.read).toHaveBeenCalledOnce();
   expect(response.headers.get('cache-control')).toContain('no-store');
  });
+ it('does not query operational health for an unauthenticated or foreign operator',async()=>{
+  const s=setup(),readHealth=vi.fn(async()=>null),handler=createManagedWorkerHttpHandler({...s.config,readHealth});
+  s.verify.mockResolvedValueOnce(null);expect((await handler(new Request('http://127.0.0.1/api/operations/dev-worker'))).status).toBe(404);
+  s.session.actor.actor_id='other.owner';expect((await handler(new Request('http://127.0.0.1/api/operations/dev-worker'))).status).toBe(404);
+  expect(readHealth).not.toHaveBeenCalled();expect(s.read).not.toHaveBeenCalled();
+ });
+ it('preserves readable queue status and reports health failure without database text',async()=>{
+  const s=setup(),readHealth=vi.fn(async()=>{throw Error('private SQL capability');});
+  const response=await createManagedWorkerHttpHandler({...s.config,readHealth})(new Request('http://127.0.0.1/api/operations/dev-worker'));
+  expect(response.status).toBe(200);expect(await response.json()).toEqual({data:[],health:null,healthUnavailable:true});
+  expect(readHealth).toHaveBeenCalledOnce();
+ });
 });

@@ -24,10 +24,17 @@ export function managedWorkerError(error:unknown):string{
   SAVED_EXTRACTION_PROVIDER_UNCONFIGURED:'provider_unconfigured',SAVED_EXTRACTION_PERIOD_MISMATCH:'period_confirmation_required',
   SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED:'purchased_document_missing',SAVED_ORDER_ENTITLEMENT_REQUIRED:'entitlement_unavailable',
   SAVED_PAID_SOURCE_REQUIRED:'payment_unavailable',ANALYSIS_INPUT_SUPERSEDED:'source_superseded',
+  ANALYSIS_AUTHORITY_SUPERSEDED:'authority_superseded',
   SAVED_JOB_INTERRUPTED:'worker_interrupted',SAVED_JOB_FENCE:'worker_lease_lost',
   SAVED_WORKER_SCOPE_FORBIDDEN:'worker_scope_forbidden',MANAGED_DEV_SCOPE_UNSUPPORTED:'scope_unsupported',
   DEV_FINANCIAL_SCENARIO_UNSUPPORTED:'scenario_unsupported',DEV_FINANCIAL_CANONICAL_SCENARIO:'canonical_confirmation_required',
   MANAGED_DEV_CANONICAL_ACTIVATION_BLOCKED:'canonical_activation_blocked',MANAGED_DEV_BUDGET_EXHAUSTED:'daily_budget_exhausted',
+  MANAGED_DEV_SOL_BUDGET_UNCONFIGURED:'provider_budget_unconfigured',SOL_SAVED_GENERATION_LIMIT:'provider_budget_exhausted',
+  SOL_BUDGET_EXHAUSTED:'provider_budget_exhausted',SOL_MANAGED_PACKAGE_EXPIRED:'provider_budget_expired',
+  SOL_PRICING_EXPIRED:'provider_pricing_expired',SOL_UNKNOWN_OUTCOME_REQUIRES_REVIEW:'provider_outcome_unknown',
+  SOL_REPLAY_REQUIRES_REVIEW:'provider_outcome_requires_review',SOL_MANAGED_PACKAGE_REQUIRED:'provider_budget_unconfigured',
+  SOL_SAVED_SOURCE_NOT_ALLOWED:'provider_source_not_allowed',SOL_SAVED_CASE_NOT_ALLOWED:'provider_case_not_allowed',
+  SOL_LEDGER_RECOVERY_ACTIVE:'provider_budget_locked',SOL_LEDGER_LOCK_OWNERSHIP_CHANGED:'provider_budget_locked',
  };
  return known[message]??'processing_failed';
 }

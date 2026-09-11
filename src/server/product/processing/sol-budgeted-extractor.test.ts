@@ -18,7 +18,7 @@ beforeEach(()=>{
  sdk.parse.mockReset().mockResolvedValue({id:'resp_synthetic_unit_only',status:'failed',output_parsed:null,model:'gpt-5.6-sol',
   _request_id:'req_synthetic_unit_only',usage:{input_tokens:2000,output_tokens:2,total_tokens:2002}});
 });
-afterEach(()=>{vi.unstubAllEnvs();for(const directory of directories.splice(0))rmSync(directory,{recursive:true,force:true});});
+afterEach(()=>{vi.useRealTimers();vi.unstubAllEnvs();for(const directory of directories.splice(0))rmSync(directory,{recursive:true,force:true});});
 async function setup(){
  const directory=mkdtempSync(path.join(tmpdir(),'tivdoc-sol-unit-'));directories.push(directory);
  const pdf=await PDFDocument.create();pdf.addPage([595,842]);const bytes=await pdf.save();
@@ -83,4 +83,14 @@ it('refuses an unenrolled case and an expired package before sending either cont
   finally{runtime.close();}
  }
  expect(sdk.count).not.toHaveBeenCalled();expect(sdk.parse).not.toHaveBeenCalled();
+});
+it('retains a successful count but refuses generation when the package expires during that count',async()=>{
+ const {input,pass}=await setup();const now=new Date('2026-09-11T00:30:00Z').getTime();vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(now);
+ const runtime=createSolBudgetedExtractor({...input,expiresAt:new Date(now+500).toISOString()});
+ sdk.count.mockImplementation(async()=>{vi.setSystemTime(now+1000);return {object:'response.input_tokens',input_tokens:2000};});
+ try{
+  await expect(runtime.extractor.extractPreparedPass(pass)).rejects.toThrow('SOL_MANAGED_PACKAGE_EXPIRED');
+  expect(sdk.count).toHaveBeenCalledOnce();expect(sdk.parse).not.toHaveBeenCalled();
+  const ledger=JSON.parse(readFileSync(input.ledgerPath,'utf8'));expect(ledger.reservations).toHaveLength(1);expect(ledger.reservations[0].outcome).toBe('count_recorded');
+ }finally{runtime.close();}
 });

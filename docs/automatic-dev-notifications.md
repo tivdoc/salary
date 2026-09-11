@@ -5,15 +5,15 @@ adapter, idempotency keys, leases and authenticated provider webhook. No message
 is sent to a current customer by this DEV worker. Its DB capability includes at
 most four recipient hashes and only owner-enrolled synthetic QA cases.
 
-## Configuration boundary
+## Configuration boundary and historical investigation
 
-The configuration investigation inspected process, Windows User/Machine scopes,
+The original September 9 configuration investigation inspected process, Windows User/Machine scopes,
 relevant checkout/private environment files and the same Vercel project's global
 Development/Preview and branch Preview settings. No Resend key, configured sender,
 webhook secret or notification encryption key was found. The first User/Machine
 inspection command failed; a separate successful inspection confirmed absence.
 The connected account profile identifies an owner-controlled inbox privately,
-but no real email has been sent. Sender DNS could not be verified without a
+but at that checkpoint no real email had been sent. Sender DNS could not be verified without a
 configured sender; it is not reported as a diagnosed DNS fault.
 
 Required secret/settings names, supplied outside Git:
@@ -39,7 +39,8 @@ enabling this code. Do not point any of these settings at Production. Provision
 Resend's webhook to `/api/notifications/resend` on the test deployment only after
 the sender, receiver and signature secret are configured. Deployment protection
 must also permit that authenticated provider request; no protected Preview
-webhook ingress has been proved in this package.
+webhook ingress had been proved at that original checkpoint. The later proof
+and the current package's boundaries are distinguished below.
 
 ## Meaning of states
 
@@ -78,5 +79,46 @@ delivery or a provider-originated HTTP request.
 The scheduled proof separately covers events created by actual analysis and
 questions. See the final package handoff for its eventual result and exact SHA.
 Synthetic browser session cookies in that proof must not be reported as live OTP
-login. A real integrated login/mailbox/notification proof remains blocked until
-the configuration above is supplied and verified using the owner's destination.
+login. At that original checkpoint a real integrated login/mailbox/notification
+proof remained blocked until the configuration above was supplied and verified.
+
+## 2026-09-11 managed package status
+
+The later source-completion handoff records actual owner OTP, actual Resend
+provider IDs, signed webhook sent/delivered events and an owner mailbox report
+link. See
+[`source-completions-final-handoff-2026-09-10-he.md`](source-completions-final-handoff-2026-09-10-he.md).
+The owner observed some messages in Spam. This is historical live evidence, not
+proof of this new package's delivery or broad inbox placement. The only current
+authorized destination is `tivdoc.com@gmail.com`; no customer mailing is enabled.
+
+The ordinary managed iteration now runs notification delivery independently of
+an OCR configuration/budget hold, then reads safe operational health. Abort is
+checked before queuing/claiming and before provider send. If interruption arrives
+during claim, the lease is retained and no send is attempted. If a request is
+already in flight, its acknowledged outcome is durably finished before the loop
+stops; no second claim is made. The event contract rejects a request event with
+a report ID, or a report event with a request ID. These checks supplement the
+existing SQL current-source, identity, recipient, expiry and idempotency fences.
+
+The existing protected-Preview ingress is reusable without exposing the whole
+Preview: a temporary localhost relay accepts only bounded POST `/api/resend`,
+verifies the original Svix signature, and forwards unchanged bytes/signatures to
+the exact immutable deployment's `/api/notifications/resend`. It exchanges an
+expiring deployment share token for the scoped Vercel cookie, with no redirect
+following. Relay TTL, request/body/concurrency limits and exact deployment
+allowlist remain enforced; inherited database, provider-sending and encryption
+secrets are rejected. Its only success is the application webhook's accepted
+response, not a locally manufactured delivery receipt. The parent owns any
+temporary tunnel/provider configuration and shutdown; no new relay activation
+is claimed by this document.
+
+Current scheduler receipts always label provider acceptance as unconfirmed
+delivery. A new-package delivery claim requires the matching stored provider ID,
+authenticated webhook evidence and, separately, owner mailbox observation.
+Superseded or expired report events must be refused by SQL before enqueue/claim;
+the report endpoint independently checks current source and authority validity.
+No retry or operational label grants legal authority or converts a stale report
+into a current one. The new package's actual expiry/late-event integration proof
+must be supplied by its final receipt; local interruption tests alone do not
+prove those database behaviors.
