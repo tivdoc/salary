@@ -5,7 +5,7 @@ import {sourceStructureSubject,type SourceStructureSelector} from '../extraction
 import type {NormalizedPayslipExtraction} from '../extraction/payslip.ts';
 import type {DocumentReviewInput,ReviewDocument} from './contracts.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput,type DocumentReviewOperand} from './calculations.ts';
-import {SOURCE_STRUCTURE_BLOCKER_POLICY,documentReviewSourceStructureSchema,sourceRelationshipUsable,sourceStructureGroupDisjoint,type DocumentReviewSourceStructure} from './source-structure-evidence.ts';
+import {SOURCE_STRUCTURE_BLOCKER_POLICY,documentReviewSourceStructureSchema,sourceRelationshipUsable,sourceStructureGroupDisjoint,reviewSourceStructureBlockers,type DocumentReviewSourceStructure} from './source-structure-evidence.ts';
 import type {ReviewCompletionNeed} from './completions.ts';
 
 type Materialized=ReturnType<typeof materializeValidatedPayslipReadings>;
@@ -49,6 +49,21 @@ export function appendPayslipSourceStructures(input:{index:number;case_id:string
   input.add(check.check_id.slice(`document.${index}.`.length),check.topic,check.title,
    'יחס חשבוני בין סכום לבסיס שבקשר המקור המסומן. זיהוי הקרן והקשר נשמר בנפרד מקריאת המספרים; אין כאן שיעור חובה, פיצול רכיבים או אישור הפקדה.',calc.operands,
    {...op,same_period_and_base:ready,basis:'Identified source relationship and fund classification; numeric readings remain independently required.'},ready,witness);
+  if(!ready){
+   const blocker=reviewSourceStructureBlockers({...calc,source_structure:witness})[0];
+   const details:Record<string,string>={
+    source_fund_unknown:'סוג הקרן או המוצר לא זוהה בקריאת המקור המזוהה. הקשר שנמסר לבסיס אינו מספיק כדי לחשב את היחס של הרכיב הנבדק.',
+    source_relationship_different_base:'הקריאה המזוהה מצביעה על בסיס שונה מהבסיס שנבחר לבדיקה. הסתירה נשמרה, ולא חושב יחס בין הסכומים האלה.',
+    source_fund_conflicts_with_original:'סוג הקרן בקריאה המזוהה סותר את סיווג הקרן שכבר מופיע במקור המקושר. הסתירה נשמרה ולא הוחלף סיווג המקור.',
+    source_fund_incompatible:'סוג הקרן שנקרא אינו מתאים לרכיב שאת היחס שלו בודקים. אי־ההתאמה נשמרה, והסכום לא הועבר לסוג קרן אחר.',
+   };
+   // This source gap is part of the new v3 input hash. Stored review inputs
+   // replay unchanged; it adds no number request or source-reading approval.
+   input.gaps.push({check_id:`${check.check_id}.relationship`,topic:check.topic,kind:blocker?.state==='conflict'?'missing_fact':'missing_source',
+    detail:details[blocker?.reason??'']??'אין קריאת מקור חיובית ושמישה שמזהה את הקרן או המוצר וקושרת את רכיב ההפרשה לבסיס באותו חודש. אין בכך קביעה שטרם נמסרה תשובה; תשובה לא ידועה אינה משלימה את הקשר.',
+    next_step:`${blocker?.state==='conflict'?'יש לברר את הסתירה מול מקור שמזהה':'נדרש מקור שמזהה'} את הקרן או המוצר, רכיב ההפרשה, הבסיס והחודש, או הפניה מפורשת המקשרת ביניהם. אין צורך להקליד שוב את אותם הסכומים. אין כאן בקשת אישור לשיעור חובה או להפקדה.${kind==='combined_employer_funds'?' פיצול להפרשות מעסיק נפרדות אינו נדרש לעצם בדיקת יחס מצרפי שהמקור קושר לבסיס.':''}`,
+    source_pins:[{case_id:input.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256}]});
+  }
  }
  if(input.topics.includes('minimum_wage')&&original.additional_components.some(r=>r.semantic_kind==='deduction')){
   let e;try{e=entry({kind:'deduction_group'});}catch{e=null;}

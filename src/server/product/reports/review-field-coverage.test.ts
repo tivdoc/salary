@@ -355,12 +355,27 @@ function structureProjectionFixture(){
  };
  return {input,review,build,structures,unit,scalar,generic,relation,checkpoint,ids};
 }
-it.each(['salary_type','pension_base','pension_employee_contribution'])('projects v3 %s against exact role witnesses without legacy relationship gaps',field=>{
+it.each(['salary_type','pension_base','pension_employee_contribution'])('keeps the v3 source relationship gap visible while deferring non-consumable %s',field=>{
  const f=structureProjectionFixture(),request=f.scalar(field),before=canonicalSha256(f.review);
  expect(f.review.checks.some(c=>c.calculation.input.source_structure?.kind==='balance_movement')).toBe(true);
- expect(f.review.coverage_gaps.some(g=>g.check_id.endsWith('.relationship'))).toBe(false);
+ const ratio=f.review.checks.find(c=>c.calculation.input.source_structure?.kind==='source_relationship')!;
+ expect(f.review.coverage_gaps.filter(g=>g.check_id===`${ratio.check_id}.relationship`)).toEqual([expect.objectContaining({kind:'missing_source',topic:'pension',source_pins:[{
+  case_id:f.review.case_id,document_id:f.review.documents[0].document_id,version_id:f.review.documents[0].version_id,source_sha256:f.review.documents[0].file_sha256}]})]);
+ expect(ratio.calculation.state).toBe('blocked');expect(ratio.calculation.input.operation).toMatchObject({same_period_and_base:false});
  expect(reviewFieldRequestsNotRequired({review:f.review,fieldRequests:[request,...f.structures],nowMs})).toContainEqual({field_request_id:request.request_id,reason:'no_current_check_dependency'});
  expect(canonicalSha256(f.review)).toBe(before);
+});
+it.each(['unrelated_gap','missing_witness']as const)('does not bypass a missing-source gap without the exact v3 relationship proof: %s',change=>{
+ const f=structureProjectionFixture(),input=structuredClone(f.input),request=f.scalar('pension_base');
+ const ratio=input.checks.find(c=>documentReviewCalculationInputSchema.parse(c.calculation).source_structure?.kind==='source_relationship')!;
+ if(change==='unrelated_gap')input.coverage_gaps=input.coverage_gaps.map(g=>g.check_id===`${ratio.check_id}.relationship`?{...g,check_id:`${ratio.check_id}.other_source`}:g);
+ if(change==='missing_witness'){
+  const {source_structure:_source,...calculation}=documentReviewCalculationInputSchema.parse(ratio.calculation);void _source;
+  ratio.calculation=calculation;
+ }
+ const review=runDocumentReview(input,'synthetic-unproved-relationship-gap');
+ expect(review.coverage_gaps.some(g=>g.kind==='missing_source')).toBe(true);
+ expect(reviewFieldRequestsNotRequired({review,fieldRequests:[request,...f.structures],nowMs})).toEqual([]);
 });
 it('keeps pension numeric readings active after a compatible identified relationship; no number is approved by the relation',()=>{
  const f=structureProjectionFixture(),request=f.scalar('pension_base');f.relation();const review=runDocumentReview(f.build(),'synthetic-compatible-relation');

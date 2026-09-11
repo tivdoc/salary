@@ -288,11 +288,22 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
     return sameDocumentSource(operand.source)&&!!locator&&'field'in locator
      &&({gross:'gross_salary',deductions:'total_deductions',net:'net_salary'} as Record<string,string>)[operand.id]===locator.field;
    });
-  const knownStructuralGap=(gap:typeof review.coverage_gaps[number])=>gap.source_pins?.length===1&&gap.source_pins.every(matchesPin)&&gap.kind==='missing_fact'
-   &&(gap.topic==='pension'&&inactiveRatios.has(gap.check_id.replace(/\.relationship$/u,''))&&gap.check_id.endsWith('.relationship')
+  const knownStructuralGap=(gap:typeof review.coverage_gaps[number])=>{
+   if(gap.source_pins?.length!==1||!gap.source_pins.every(matchesPin))return false;
+   const relationshipId=gap.check_id.endsWith('.relationship')?gap.check_id.slice(0,-'.relationship'.length):null;
+   const relationship=relationshipId&&inactiveRatios.has(relationshipId)?review.checks.find(c=>c.check_id===relationshipId):null;
+   // The v3 missing-source gap explains why these exact numbers cannot yet
+   // be consumed. It remains in the report; only the redundant action is deferred.
+   if(gap.kind==='missing_source')return gap.topic==='pension'&&!!relationship
+    &&boundStructure(relationship.calculation.input,review)?.kind==='source_relationship'
+    &&gap.source_pins[0].case_id===review.case_id
+    &&(gap.source_pins[0].document_id===document.document_id||gap.source_pins[0].document_id===document.version_id);
+   return gap.kind==='missing_fact'
+   &&(gap.topic==='pension'&&!!relationship
     ||gap.check_id.endsWith('.blank_basis')&&(deferredPrices.get(gap.check_id.slice(0,-'.blank_basis'.length))?.size??0)>0
     ||gap.topic==='minimum_wage'&&standaloneTotals&&gap.check_id===`document.${sourceIndex}.deductions.grouping`
      &&!review.checks.some(check=>check.check_id===gap.check_id)&&!needs.some(n=>n.dependent_check_ids.includes(gap.check_id)));
+  };
   for(const need of needs){
    if(need.kind==='legal'||need.kind==='ownership')continue;
    if(need.kind!=='factual')return [];

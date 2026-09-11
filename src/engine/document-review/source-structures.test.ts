@@ -10,7 +10,8 @@ import {reviewInputFromPayslips,PAYSLIP_SOURCE_STRUCTURE_POLICY,PAYSLIP_REVIEW_P
 import {runDocumentReview,replayDocumentReview} from './service.ts';
 import {calculateDocumentReview,replayDocumentReviewCalculation,documentReviewCalculationInputSchema} from './calculations.ts';
 import {documentReviewReadingDependencies} from './source-dependencies.ts';
-import type {DocumentReviewInput} from './contracts.ts';
+import {documentReviewInputSchema,type DocumentReviewInput} from './contracts.ts';
+import {parseReviewCompletionInput} from './completions.ts';
 
 const basis={page:1,locator:'synthetic source block A',text:'Explicit current source block and row labels'};
 function fixture(){
@@ -67,6 +68,37 @@ describe('source structure v3 through the ordinary adapter and RuleSpec runtime'
   expect(c).toMatchObject({state:'calculated',observed_ratio:{numerator:'1',denominator:'20',unit:'ratio'},real_activation_allowed:false,human_attestation:null});
   expect(c).toHaveProperty('source_structure_trace_binding');expect(f.machine.fields.find(v=>v.candidate_id===f.ids.employee)?.source.source_scope?.fund_kind).toBe('unknown');
   expect(replayDocumentReview(r)).toEqual(r);
+  expect(r.coverage_gaps.some(g=>g.check_id==='document.0.ratio.pension_employee_contribution.relationship')).toBe(false);
+ });
+ it.each([
+  ['missing','missing_source','אין קריאת מקור חיובית ושמישה'],
+  ['unknown','missing_source','סוג הקרן או המוצר לא זוהה'],
+  ['different_base','missing_fact','מצביעה על בסיס שונה'],
+  ['known_conflict','missing_fact','סותר את סיווג הקרן'],
+  ['incompatible','missing_fact','אינו מתאים לרכיב'],
+ ] as const)('describes the %s source gap without reviving unusable number requests',(scenario,kind,detail)=>{
+  const f=fixture();f.machine.fields=f.machine.fields.map(v=>['pension_base','pension_employee_contribution'].includes(v.field)?{...v,confidence:.94}:v);
+  if(scenario==='known_conflict')f.machine.fields=f.machine.fields.map(v=>v.candidate_id===f.ids.base?{...v,source:{...v.source,source_scope:{period_kind:'current' as const,fund_kind:'study' as const,column_label:'study source'}}}:v);
+  f.rehash();
+  if(scenario!=='missing')f.relation(scenario==='unknown'?'unknown':scenario==='incompatible'?'study':'pension',scenario==='different_base'?'different_base':'same_base');
+  const input=f.build(),r=runDocumentReview(input,'synthetic.guidance'),id='document.0.ratio.pension_employee_contribution';
+  const gaps=r.coverage_gaps.filter(g=>g.check_id===`${id}.relationship`);expect(gaps).toHaveLength(1);
+  expect(gaps[0]).toMatchObject({kind,detail:expect.stringContaining(detail),source_pins:[{case_id:f.d.case_id,document_id:f.d.document_id,version_id:f.d.document_id,source_sha256:f.d.content_sha256}]});
+  for(const term of ['הקרן או המוצר','רכיב ההפרשה','הבסיס והחודש','הפניה מפורשת','אין צורך להקליד שוב','אין כאן בקשת אישור'])expect(gaps[0].next_step).toContain(term);
+  expect(check(r,'ratio.pension_employee_contribution')).toMatchObject({state:'blocked',observed_ratio:null,real_activation_allowed:false,human_attestation:null});
+  expect(parseReviewCompletionInput(input.completion_input).needs.some(n=>n.dependent_check_ids.includes(id))).toBe(false);
+  expect(input.answer_bindings.some(b=>b.check_id===id)).toBe(false);
+  const deps=documentReviewReadingDependencies({review:r,document_id:f.d.document_id,extraction:f.extraction()});
+  expect(deps.scalar_fields.some(d=>d.check_ids.includes(id))).toBe(false);
+ });
+ it('changes the new v3 input for guidance while replaying retained gap-free review bytes unchanged',()=>{
+  const f=fixture(),currentInput=f.build(),legacyInput=documentReviewInputSchema.parse(currentInput);
+  legacyInput.coverage_gaps=legacyInput.coverage_gaps.filter(g=>!g.check_id.endsWith('.relationship'));
+  const legacy=runDocumentReview(legacyInput,'synthetic.retained'),bytes=JSON.stringify(legacy),current=runDocumentReview(currentInput,'synthetic.retained');
+  expect(current.input_sha256).not.toBe(legacy.input_sha256);expect(current.result_sha256).not.toBe(legacy.result_sha256);
+  expect(current.checks).toEqual(legacy.checks);expect(current.completions).toEqual(legacy.completions);
+  expect(JSON.stringify(replayDocumentReview(JSON.parse(bytes)))).toBe(bytes);
+  expect(current.coverage_gaps.find(g=>g.check_id==='document.0.ratio.combined_employer_funds.relationship')?.next_step).toContain('אינו נדרש לעצם בדיקת יחס מצרפי');
  });
  it.each(['unknown','study','combined'])('blocks an incompatible %s fund even with same_base',fund=>{
   const f=fixture();f.relation(fund);const c=check(f.run(),'ratio.pension_employee_contribution');
@@ -74,7 +106,8 @@ describe('source structure v3 through the ordinary adapter and RuleSpec runtime'
  });
  it('does not promote low-confidence numeric cells after relationship acceptance',()=>{
   const f=fixture();f.machine.fields=f.machine.fields.map(v=>v.field==='pension_employee_contribution'?{...v,confidence:.94}:v);f.rehash();f.relation();
-  const c=check(f.run(),'ratio.pension_employee_contribution');expect(c.state).toBe('blocked');expect(c.input.operands.find(o=>o.id==='contribution')?.state).toBe('unknown');
+  const r=f.run(),c=check(r,'ratio.pension_employee_contribution');expect(c.state).toBe('blocked');expect(c.input.operands.find(o=>o.id==='contribution')?.state).toBe('unknown');
+  expect(r.coverage_gaps.some(g=>g.check_id==='document.0.ratio.pension_employee_contribution.relationship')).toBe(false);
  });
  it('preserves different-base evidence and refuses an edited calculation flag',()=>{
   const f=fixture();f.relation('pension','different_base');const c=check(f.run(),'ratio.pension_employee_contribution'),i=documentReviewCalculationInputSchema.parse(c.input);
