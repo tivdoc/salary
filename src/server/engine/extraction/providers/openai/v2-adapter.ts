@@ -32,7 +32,7 @@ import {
   OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
 } from "./v2-prompt";
 import { buildOpenAiV2ResponsesRequest, OPENAI_SOL_COMPARISON_PROFILE, openAiV2PromptVersion, type OpenAiV2ResponsesRequest } from "./v2-request";
-import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import { openAiPayslipV2AcceptedOutputSchema, type OpenAiPayslipV2AcceptedOutput as OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {createOpenAiProviderReceipt,safeProviderIdentifier,type OpenAiProviderReceipt} from './provider-receipt';
 import {assertManagedOpenAiRecovery,type ManagedOpenAiRecoveryAuthority} from './managed-package-recovery';
@@ -277,7 +277,7 @@ export class OpenAiPayslipV2PassExtractor {
       }
       const now = clock().toISOString();
       const durationMs = Math.max(0, Math.round(durationClock() - startedAt));
-      const output=openAiPayslipV2StructuredOutputSchema.parse(response.outputParsed);
+      const output=openAiPayslipV2AcceptedOutputSchema.parse(response.outputParsed);
       if(input.onStructuredOutput){
         if(Buffer.byteLength(JSON.stringify(output),'utf8')>OPENAI_V2_STRUCTURED_DIAGNOSTIC_MAX_BYTES)
           throw new TypeError('OPENAI_DIAGNOSTIC_SIZE_LIMIT');

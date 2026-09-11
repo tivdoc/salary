@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 // UX Run 1 / U3 (D-1.4). Login and recovery are one route. A live session
 // skips the form: one case goes to the case, more than one to the list.
-export default async function LoginPage({searchParams}:{searchParams:Promise<{reauth?:string}>}={searchParams:Promise.resolve({})}) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reauth?: string }> }) {
   await guardStableAppEntrypoint("CEP-097");
   const session = await resolveIdentitySession(await readCaseSessionCookie());
   const reauth=(await searchParams).reauth==="1";

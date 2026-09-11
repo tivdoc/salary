@@ -5,7 +5,7 @@ import {claimSavedDraftJob,recordSavedJobFailure} from './saved-job-runtime';
 import {runSavedDraftJob,type SavedMonthCompletion} from './saved-job-runner';
 import {sourceJobSchema} from './source-dispatch';
 import {admitSavedSource} from './saved-admission';
-import {readSavedOrders} from './saved-order-scope';
+import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {managedWorkerError} from './managed-worker-contract';
 
@@ -25,6 +25,15 @@ async function scope(context:PostgresTransactionContext,caseId:string){
   ...(row.authority_dependency_sha256==null?{}:{authority_dependency_sha256:row.authority_dependency_sha256})});
  await admitSavedSource(context,job);
  const orders=await readSavedOrders(context,job);
+ if(orders.length===1&&orders[0].kind==='legacy_initial'){
+  // Enrollment, current receipt, machine session and the shared spend ceiling
+  // still apply. This is private draft processing in the isolated QA database.
+  const months=purchasedMonths(orders[0]);
+  if(months.length<1||months.length>12)throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
+  const source=z.object({documents:z.array(z.object({type:z.string(),month:z.string().nullable()})).max(24)}).parse(row.input);
+  if(source.documents.some(d=>d.type==='payslip'&&(!d.month||!months.includes(d.month.slice(0,7)))))throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
+  return;
+ }
  if(orders.length!==1||!['initial','full'].includes(orders[0].kind)||orders[0].from!=='2026-06-01'||orders[0].to!=='2026-06-01'
   ||orders[0].topics.length!==1||orders[0].topics[0]!=='minimum_wage')throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
  if(orders[0].kind==='full'){

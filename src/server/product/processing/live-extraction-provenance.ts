@@ -45,7 +45,7 @@ export function readSavedExtractionProvenance(input:unknown):SavedExtractionProv
      ||receipt.analysis_run_id!==checkpoint.run.snapshot.analysis_run_id)))throw Error('LIVE_EXTRACTION_RECEIPT_BINDING');
   if(receipt.source_page_count!==undefined&&raw.status!=='failed'
    &&(raw.quality_metrics.page_count!==receipt.source_page_count
-     ||[...raw.fields,...raw.additional_components,...(raw.aggregate_total_observations??[]).flatMap(value=>[value.row,value.total_candidate])]
+     ||[...raw.fields,...raw.additional_components,...(raw.source_scope_observations??[]).map(o=>o.candidate),...(raw.aggregate_total_observations??[]).flatMap(value=>[value.row,value.total_candidate])]
       .some(value=>value.source.page>receipt.source_page_count!)))
     throw Error('LIVE_EXTRACTION_SOURCE_PAGE_BINDING');
  }

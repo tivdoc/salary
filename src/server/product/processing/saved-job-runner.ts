@@ -1,3 +1,6 @@
+import {savedDocumentReviewSourceScope} from './saved-document-review';
+import {loadJune2026TestAuthority} from './saved-june2026-test-authority';
+import {loadSavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
 import 'server-only';
 import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
@@ -12,6 +15,7 @@ import {completeSavedDraftJob} from './saved-job-completion';
 type Lease={jobId:string;workerId:string;fencingToken:number};
 type ExtractionInput=Parameters<typeof runSavedWorkerExtraction>[0];
 export type SavedMonthCompletion=(input:{context:PostgresTransactionContext;job:SourceJob;orderId:string;month:string;parent:Awaited<ReturnType<typeof runSavedWorkerMonth>>})=>Promise<void>;
+/** Historical host error contract; new inventory reviews do not throw it. */
 export class SavedJobMissingDocuments extends Error {
  constructor(readonly months:readonly string[]){super('SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED');}
 }
@@ -48,7 +52,7 @@ async function admit(context:PostgresTransactionContext,input:Lease){
 
 async function plan(context:PostgresTransactionContext,input:Lease){
  const admitted=await admit(context,input);
- if(admitted.completed)return {...admitted,months:[],versions:[],missingMonths:[]};
+ if(admitted.completed)return {...admitted,months:[],versions:[]};
  const orders=await readSavedOrders(context,admitted.job);
  const months=orders.flatMap(order=>purchasedMonths(order).map(month=>({orderId:order.id,month})));
  const result=await context.client.query(statement('saved_runner_journal',
@@ -62,8 +66,24 @@ async function plan(context:PostgresTransactionContext,input:Lease){
  if(new Set(journal.documents.map(d=>d.version_id)).size!==journal.documents.length)throw new Error('SAVED_VERSION_DUPLICATE');
  const covered=new Set(months.map(m=>m.month));
  const documents=journal.documents.filter(d=>d.type==='payslip'&&covered.has(d.month??journal.month));
- const missingMonths=[...new Set(months.filter(m=>!documents.some(d=>(d.month??journal.month)===m.month)).map(m=>m.month))].sort();
- return {...admitted,months:months.filter(m=>!missingMonths.includes(m.month)),missingMonths,versions:documents.map(d=>d.version_id).sort()};
+ const reviewedScopes=new Map<string,Awaited<ReturnType<typeof savedDocumentReviewSourceScope>>>();
+ for(const order of orders)for(const scopeMonth of purchasedMonths(order)){
+  // Match canonical analysis routing: an active computation runtime still
+  // requires its actual extraction. A source review is never a legal token.
+  const june=scopeMonth==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage';
+  const testAuthority=june?await loadJune2026TestAuthority(context,admitted.job,order.id):null;
+  const regular=!testAuthority&&june?await loadSavedJune2026RegularAuthority(context,admitted.job,order.id):null;
+  if(testAuthority||regular?.state==='ready')continue;
+  reviewedScopes.set(`${order.id}:${scopeMonth}`,await savedDocumentReviewSourceScope(context,admitted.job,order,scopeMonth));
+ }
+ const extractionDocuments=documents.filter(document=>{
+  const sourceMonth=document.month??journal.month;
+  return months.filter(scope=>scope.month===sourceMonth).some(scope=>!reviewedScopes.get(`${scope.orderId}:${scope.month}`)?.sourceVersionIds.includes(document.version_id));
+ });
+ // A missing financial source is an input to the normal document review, not
+ // permission to drop a purchased month. Only existing payslips enter OCR; the
+ // monthly service persists source requests and a partial review for the rest.
+ return {...admitted,months,versions:extractionDocuments.map(d=>d.version_id).sort()};
 }
 
 /** Database time is the authority. A delayed pulse cannot resurrect an expired,
@@ -136,9 +156,9 @@ export async function runSavedDraftJob(input:Lease&{
   // Stop and drain the pulse before terminal success; no timer can race a
   // successful finalizer and turn its cleared lease into a spurious failure.
   await stop();healthy();
-  // Available months remain committed and reusable. Missing months are neither
-  // extrapolated nor dropped from the purchased scope's completion obligation.
-  if(saved.missingMonths.length)throw new SavedJobMissingDocuments(saved.missingMonths);
+  // The finalizer still requires a persisted receipt for every purchased month.
+  // A partial document review completes this job's assessment, not its missing
+  // facts or any financial entitlement. No receipt is synthesized by this runner.
   await transactions(context=>renew(context,input,timing.leaseMs));
   const completion=await transactions(context=>completeSavedDraftJob({...input,context}));
   return {completion,extractedVersions:saved.versions.length,analyzedMonths:saved.months.length};

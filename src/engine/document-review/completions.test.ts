@@ -83,6 +83,16 @@ describe('document review completion planning',()=>{
   const p=generateReviewCompletions({...input([n]),documents:[{pin,kind:'payslip',period,review:'not_reviewed'}]});
   expect(p.customer_requests).toHaveLength(0);expect(p.internal_tasks[0].kind).toBe('review_existing_source');
  });
+ it('keeps a scoped financial-source review separate from historical full-payslip completion',()=>{
+  const n=need({kind:'document',document_kind:'payslip',required_evidence_kind:'document',answer_kind:'document',fact_key:'payslip.full'});
+  const scoped:ReviewCompletionInput={...input([n]),documents:[{pin,kind:'payslip',period,review:'partial',review_completed_fact_keys:['payslip.financial_source']}],
+   evidence:[evidence({fact_key:'payslip.financial_source',origin:'document',state:'observed',source_pins:[pin],value:'Four identified source cells with physical page receipt'})]};
+  expect(generateReviewCompletions(scoped).customer_requests[0].target.fact_key).toBe('payslip.full');
+  const narrow=generateReviewCompletions({...scoped,needs:[{...n,fact_key:'payslip.financial_source'}]});
+  expect(narrow.customer_requests).toHaveLength(0);expect(narrow.suppressed[0].reason).toBe('already_known');
+  expect(()=>parseReviewCompletionInput({...scoped,documents:[{...scoped.documents[0],review_completed_fact_keys:['payslip.full']}]})).toThrow();
+  expect(()=>generateReviewCompletions({...scoped,documents:[{...scoped.documents[0],review:'unreadable'}]})).toThrow();
+ });
  it('does not mistake a prior-month payslip for the missing month or assign scope to an undated contract',()=>{
   const n=need({kind:'document',document_kind:'payslip',required_evidence_kind:'document',answer_kind:'document'});
   expect(generateReviewCompletions({...input([n]),documents:[{pin,kind:'payslip',period:{from:'2026-05-01',to:'2026-05-31'},review:'complete'}]}).customer_requests).toHaveLength(1);

@@ -10,6 +10,8 @@ import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable
 import {loadRequestDocumentSource} from '@/server/product/reports/request-document-source';
 import {PRODUCT_HTTP_HEADERS} from '@/server/product/routes/http-common';
 import {z} from 'zod';
+import {resolveCaseAccessDb} from '@/server/product/case-access/db';
+import {markReadingSource} from '@/server/product/reports/marked-reading-source';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +28,11 @@ export async function GET(request:Request,context:{params:Promise<{token:string}
   if(!found||!id.success)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
   const source=await loadRequestDocumentSource({caseId:found.case_id,identityId:session.identity_id,requestId:id.data});
   if(!source)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+  if(new URL(request.url).searchParams.get('view')==='marked'){
+   const db=await resolveCaseAccessDb();if(!db)throw Error('REQUEST_STORE_UNAVAILABLE');
+   const marked=await markReadingSource({caseId:found.case_id,identityId:session.identity_id,requestId:id.data,...source},db);
+   if(marked)return new Response(marked,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':'application/pdf','Content-Disposition':`inline; filename="source-${source.version}-marked.pdf"`,'X-Tivdoc-Source-View':'derived-marker'}});
+  }
   return new Response(source.bytes,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':source.mime,'Content-Disposition':`inline; filename="source-${source.version}.${source.extension}"`}});
  }catch{return NextResponse.json({code:'request_source_unavailable'},{status:503,headers:PRODUCT_HTTP_HEADERS});}
 }
@@ -84,7 +91,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     }
     const remaining = await listCaseRequests(found.case_id,undefined,session.identity_id);
     return NextResponse.json(
-      { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && Date.parse(row.expires_at)>Date.now()).length },
+      { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && !(row.document_upload_state?.state==='satisfied'&&row.document_upload_state.information_satisfied) && Date.parse(row.expires_at)>Date.now()).length },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

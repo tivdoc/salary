@@ -6,12 +6,15 @@ import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {SOURCE_JOB_KIND} from './source-dispatch';
 import {runSavedDraftJob,type SavedMonthCompletion} from './saved-job-runner';
 
-const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn(),extract:vi.fn(),month:vi.fn(),complete:vi.fn()}));
+const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn(),extract:vi.fn(),month:vi.fn(),complete:vi.fn(),reviewScope:vi.fn(),testAuthority:vi.fn(),regularAuthority:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./saved-admission',()=>({savedCaseTenant:(id:string)=>`saved-case:${id}`,admitSavedSource:ports.admit}));
 vi.mock('./saved-order-scope',async importOriginal=>({...await importOriginal<typeof import('./saved-order-scope')>(),readSavedOrders:ports.orders}));
 vi.mock('./saved-extraction-worker',()=>({runSavedWorkerExtraction:ports.extract}));
 vi.mock('./saved-worker',()=>({runSavedWorkerMonth:ports.month}));
+vi.mock('./saved-document-review',()=>({savedDocumentReviewSourceScope:ports.reviewScope}));
+vi.mock('./saved-june2026-test-authority',()=>({loadJune2026TestAuthority:ports.testAuthority}));
+vi.mock('./saved-june2026-regular-authority',()=>({loadSavedJune2026RegularAuthority:ports.regularAuthority}));
 vi.mock('./saved-job-completion',()=>({completeSavedDraftJob:ports.complete}));
 beforeEach(()=>vi.resetAllMocks());
 afterEach(()=>vi.useRealTimers());
@@ -62,6 +65,30 @@ describe('saved draft job consumer',()=>{
   expect(result).toMatchObject({extractedVersions:2,analyzedMonths:3,completion:{manifest:{publication:'draft'}}});
   expect(s.state.heartbeats).toBe(5);expect(s.state.outbox).toBe(1);
  });
+ it('skips OCR only when every purchased scope consuming each version has an admitted pinned review',async()=>{
+  const s=setup();ports.reviewScope.mockImplementation(async(_context,_job,order)=>({orderId:order.id,reviewSha256:'c'.repeat(64),sourceVersionIds:[s.january,s.february]}));
+  const result=await runSavedDraftJob(s.input);
+  expect(result).toMatchObject({extractedVersions:0,analyzedMonths:3});expect(ports.extract).not.toHaveBeenCalled();expect(ports.month).toHaveBeenCalledTimes(3);
+ });
+ it.each(['one_order_unreviewed','one_month_unreviewed','version_omitted'])( 'preserves real extraction when %s still needs the source',async kind=>{
+  const s=setup();ports.reviewScope.mockImplementation(async(_context,_job,order,month)=>{
+   if(kind==='one_order_unreviewed'&&order.id===s.initialId||kind==='one_month_unreviewed'&&month==='2025-01')return undefined;
+   return {orderId:order.id,reviewSha256:'c'.repeat(64),sourceVersionIds:kind==='version_omitted'?[s.february]:[s.january,s.february]};
+  });
+  await runSavedDraftJob(s.input);expect(ports.extract.mock.calls.map(([input])=>input.versionId)).toEqual([s.january]);
+ });
+ it('refuses a changed admitted source scope before any provider or month work',async()=>{
+  const s=setup();ports.reviewScope.mockRejectedValue(Error('SAVED_REVIEW_SOURCE_SCOPE'));
+  await expect(runSavedDraftJob(s.input)).rejects.toThrow('SAVED_REVIEW_SOURCE_SCOPE');
+  expect(ports.extract).not.toHaveBeenCalled();expect(ports.month).not.toHaveBeenCalled();
+ });
+ it.each(['test','regular'])('retains extraction for an active %s canonical runtime even if a reviewed source exists',async kind=>{
+  const s=setup();s.source.month='2026-06';s.source.documents=s.source.documents.filter(d=>d.version_id===s.january);
+  ports.orders.mockResolvedValue([{id:s.fullId,kind:'initial',from:'2026-06-01',to:'2026-06-01',topics:['minimum_wage'],offer_sha256:'b'.repeat(64)}]);
+  ports.reviewScope.mockResolvedValue({orderId:s.fullId,reviewSha256:'c'.repeat(64),sourceVersionIds:[s.january]});
+  if(kind==='test')ports.testAuthority.mockResolvedValue({});else ports.regularAuthority.mockResolvedValue({state:'ready'});
+  await runSavedDraftJob(s.input);expect(ports.extract.mock.calls.map(([input])=>input.versionId)).toEqual([s.january]);expect(ports.reviewScope).not.toHaveBeenCalled();
+ });
  it('replays a completed job through the durable manifest without OCR, analysis or a heartbeat',async()=>{
   const s=setup(),onMonth=vi.fn();s.row.state='succeeded';s.row.lease_valid=false;
   expect((await runSavedDraftJob({...s.input,onMonth})).completion.replayed).toBe(true);
@@ -105,12 +132,47 @@ describe('saved draft job consumer',()=>{
    if(mutation==='duplicate_version')s.source.documents.push({...s.source.documents[0]});
    await expect(runSavedDraftJob(s.input)).rejects.toThrow();expect(ports.extract).not.toHaveBeenCalled();expect(ports.complete).not.toHaveBeenCalled();
   });
- it('persists available purchased months but refuses whole-job completion when another month has no document',async()=>{
+ it('reviews every purchased month when one financial source is missing, extracting only existing in-scope payslips',async()=>{
   const s=setup();s.source.documents.splice(1,1);
-  await expect(runSavedDraftJob(s.input)).rejects.toMatchObject({message:'SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED',months:['2025-02']});
+  const result=await runSavedDraftJob(s.input);
   expect(ports.extract.mock.calls.map(c=>c[0].versionId)).toEqual([s.january]);
-  expect(s.state.receipts.sort()).toEqual([s.fullId+':2025-01',s.initialId+':2025-01'].sort());
+  expect(s.state.receipts.sort()).toEqual([s.fullId+':2025-01',s.fullId+':2025-02',s.initialId+':2025-01'].sort());
+  expect(result).toMatchObject({extractedVersions:1,analyzedMonths:3});
+  expect(ports.complete).toHaveBeenCalledOnce();expect(s.state.outbox).toBe(1);
+ });
+ it.each(['attendance_and_contract','contract_only','empty_inventory'])(
+  'persists all month reviews for %s without storage or provider work, preserving ordinary service output on retry',async inventory=>{
+   const s=setup();s.source.documents.splice(0,s.source.documents.length);
+   if(inventory!=='empty_inventory')s.source.documents.push({id:randomUUID(),version_id:randomUUID(),type:'contract',month:null});
+   if(inventory==='attendance_and_contract')s.source.documents.push({id:randomUUID(),version_id:randomUUID(),type:'attendance',month:'2025-01'});
+   const normal=ports.month.getMockImplementation()!;
+   const partial={bundle:{findings:[],document_review:{completions:{customer_requests:[{kind:'file_upload'}]}}}};
+   ports.month.mockImplementation(async input=>{await normal(input);return partial;});
+   const onMonth=vi.fn<SavedMonthCompletion>(async input=>{expect(input.parent).toBe(partial);});
+   const result=await runSavedDraftJob({...s.input,onMonth});
+   await runSavedDraftJob({...s.input,onMonth});
+   expect(result).toMatchObject({extractedVersions:0,analyzedMonths:3});
+   expect(ports.extract).not.toHaveBeenCalled();expect(s.input.storage.download).not.toHaveBeenCalled();
+   expect(ports.month.mock.calls.map(([input])=>[input.orderId,input.month])).toEqual([
+    [s.fullId,'2025-01'],[s.fullId,'2025-02'],[s.initialId,'2025-01'],
+    [s.fullId,'2025-01'],[s.fullId,'2025-02'],[s.initialId,'2025-01'],
+   ]);
+   expect(s.state.receipts).toHaveLength(3);expect(onMonth).toHaveBeenCalledTimes(6);
+   expect(partial.bundle.findings).toEqual([]);expect(s.state.outbox).toBe(1);
+  });
+ it('does not acknowledge a missing-source month without the normal monthly receipt',async()=>{
+  const s=setup();s.source.documents.splice(1,1);
+  const normal=ports.month.getMockImplementation()!;
+  ports.month.mockImplementation(async input=>{if(input.month==='2025-02')throw Error('REVIEW_PERSISTENCE_FAILED');return normal(input);});
+  await expect(runSavedDraftJob(s.input)).rejects.toThrow('REVIEW_PERSISTENCE_FAILED');
+  expect(s.state.receipts).toEqual([s.fullId+':2025-01']);
   expect(ports.complete).not.toHaveBeenCalled();expect(s.state.outbox).toBe(0);
+ });
+ it('rechecks source admission before an inventory-only month and withholds stale reviews',async()=>{
+  const s=setup();s.source.documents.splice(0,s.source.documents.length);
+  ports.admit.mockResolvedValueOnce({}).mockRejectedValueOnce(Error('ANALYSIS_INPUT_SUPERSEDED'));
+  await expect(runSavedDraftJob(s.input)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
+  expect(ports.extract).not.toHaveBeenCalled();expect(ports.month).not.toHaveBeenCalled();expect(ports.complete).not.toHaveBeenCalled();
  });
  it('keeps earlier committed months through a failure, then retries all scope without duplicating receipts',async()=>{
   const s=setup(),normal=ports.month.getMockImplementation()!;let failed=false;

@@ -56,3 +56,20 @@ it('confirming a reading cannot clear an arithmetic mismatch',()=>{
  const fact=s.resolve(undefined,validation).facts.find(f=>f.path==='compensation.base_monthly_salary');
  expect(fact).toMatchObject({status:'needs_confirmation',confidence:0.6});expect(fact?.provenance[0]).toMatchObject({verified:true});
 });
+it('consumes an authenticated v2 correction then unknown then a new correction without rewriting original OCR',()=>{
+ const s=setup(),original=canonicalSha256(s.checkpoint);
+ const set=(action:string,raw?:string)=>{s.answer.answer_revision++;s.answer.answer=JSON.stringify({schema_version:'document-field-answer-v2',action,...(raw?{corrected_raw_value:raw}:{})});};
+ set('correct','4321.00');const first=savedDocumentFieldReadings(s.input);
+ expect(first[0]).toMatchObject({correction:{raw_value:'4321.00',normalized_value:{currency:'ILS',minor_units:432100}}});
+ expect(s.resolve().facts.find(f=>f.path==='compensation.base_monthly_salary')?.value).toEqual({currency:'ILS',minor_units:432100});
+ set('unknown');expect(savedDocumentFieldReadings(s.input)).toEqual([]);
+ expect(s.resolve().facts.find(f=>f.path==='compensation.base_monthly_salary')?.value).toEqual(s.candidate.normalized_value);
+ set('correct','5432.00');expect(s.resolve().facts.find(f=>f.path==='compensation.base_monthly_salary')?.value).toEqual({currency:'ILS',minor_units:543200});
+ expect(first[0].correction?.normalized_value).toEqual({currency:'ILS',minor_units:432100});expect(canonicalSha256(s.checkpoint)).toBe(original);
+});
+it('a corrected cell still cannot discard caller-supplied non-reading validation gates',()=>{
+ const s=setup();s.answer.answer=JSON.stringify({schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:'4321.00'});
+ const validation=validatePayslipGate0(s.extraction,{reference_year:2025}),assessment=validation.field_assessments.find(a=>a.candidate_id===s.candidate.candidate_id)!;
+ assessment.issue_codes.push('critical_source_applicability_missing');assessment.status='requires_confirmation';
+ expect(s.resolve(undefined,validation).facts.find(f=>f.path==='compensation.base_monthly_salary')?.status).not.toBe('confirmed');
+});

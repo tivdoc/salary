@@ -5,7 +5,8 @@ import {reviewCompletionSchema,reviewCompletionTargetSchema,type ReviewCompletio
 import {replayDocumentReview} from '@/engine/document-review/service';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatch';
-import {readSavedOrders} from './saved-order-scope';
+import {readSavedOrders,savedOrderOrigin,savedOrderReceiptSha256,purchasedMonths} from './saved-order-scope';
+import {supportedReviewUpload} from '../documents/review-fulfillment';
 
 export const REVIEW_REQUEST_NAMESPACE='document_review:';
 export const REVIEW_UNKNOWN_ANSWER='לא יודע';
@@ -55,17 +56,16 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
  const row=rows.rows[0];if(canonicalSha256(row.payload)!==row.payload_sha256)throw Error('REVIEW_REQUEST_STAGE_HASH');
  const payload=z.object({bundle:z.object({document_review:z.unknown()})}).parse(row.payload);
  const review=replayDocumentReview(payload.bundle.document_review);
- if(review.case_id!==job.case_id||review.analysis_run_id!==analysisRunId||review.purchased_scope.origin!=='saved_order')throw Error('REVIEW_REQUEST_STAGE_SCOPE');
+ if(review.case_id!==job.case_id||review.analysis_run_id!==analysisRunId)throw Error('REVIEW_REQUEST_STAGE_SCOPE');
  const [order]=await readSavedOrders(context,job,review.purchased_scope.order_id);
  const month=review.period.from.slice(0,7),lastDay=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
- if(!order||order.offer_sha256!==review.purchased_scope.receipt_sha256||canonicalSha256(order.topics)!==canonicalSha256(review.purchased_scope.topics)
-  ||review.period.from!==month+'-01'||review.period.to!==lastDay||order.from>review.period.from||order.to<review.period.from)throw Error('REVIEW_REQUEST_ORDER_SCOPE');
+ if(!order||savedOrderReceiptSha256(order)!==review.purchased_scope.receipt_sha256||savedOrderOrigin(order)!==review.purchased_scope.origin||canonicalSha256(order.topics)!==canonicalSha256(review.purchased_scope.topics)
+  ||review.period.from!==month+'-01'||review.period.to!==lastDay||order.from>review.period.from||order.to<review.period.from||!purchasedMonths(order).includes(month))throw Error('REVIEW_REQUEST_ORDER_SCOPE');
  const planned=review.completions.customer_requests.map(r=>reviewCompletionSchema.parse(r));
- // The existing upload finalizer does not yet produce this namespace's
- // identified batch/source fulfillment. Keep the precise document request in
- // the report and its normal upload action; do not create an unanswerable row.
- const documentTargets=planned.filter(r=>r.target.kind==='document'||r.target.answer_kind==='document');
- const requests=planned.filter(r=>r.target.kind!=='document'&&r.target.answer_kind!=='document');
+ // Only upload kinds supported by the actual reserve/commit protocol can open
+ // a bound request. Receiving bytes keeps it pending until source assessment.
+ const unsupported=planned.filter(r=>(r.target.kind==='document'||r.target.answer_kind==='document')&&!supportedReviewUpload(r.target));
+ const requests=planned.filter(r=>!unsupported.includes(r));
  // Fail before the first SQL insert if any question cannot be represented.
  for(const request of requests)savedReviewRequestQuestion(request.target);
  const opened:string[]=[];
@@ -76,8 +76,8 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
   if(saved.row_count!==1)throw Error('REVIEW_REQUEST_RECEIPT_MISSING');
   const id=z.uuid().nullable().parse(saved.rows[0]?.id);if(id!==null)opened.push(id);
  }
- return {opened_request_ids:opened,skipped_document_targets:documentTargets.map(r=>({
-  target_sha256:r.target.target_sha256,reason:'verified_upload_fulfillment_not_integrated' as const}))};
+ return {opened_request_ids:opened,skipped_document_targets:unsupported.map(r=>({
+  target_sha256:r.target.target_sha256,reason:'unsupported_upload_document_kind' as const}))};
 }
 
 const historyEntry=z.object({request_id:z.uuid(),revision:z.number().int().positive(),identity_id:z.uuid(),

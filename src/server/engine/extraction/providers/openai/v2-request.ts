@@ -2,7 +2,7 @@ import "server-only";
 import { zodTextFormat } from "openai/helpers/zod";
 import type { PayslipFieldKey } from "@/engine/extraction/contracts";
 import type { PreparedPayslipDocument } from "../../preprocessing";
-import { openAiPayslipV2StructuredOutputSchema } from "./v2-schema";
+import { openAiPayslipV2R8StructuredOutputSchema } from "./v2-schema";
 import {
   OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
   OPENAI_PAYSLIP_V2_INSTRUCTIONS,
@@ -71,7 +71,7 @@ export function buildOpenAiV2ResponsesRequest(input: {
         ...cropInputs,
       ],
     }],
-    text: { format: zodTextFormat(openAiPayslipV2StructuredOutputSchema, promptVersion) },
+    text: { format: zodTextFormat(openAiPayslipV2R8StructuredOutputSchema, promptVersion) },
     max_output_tokens: 10_000,
     store: false,
     ...(input.executionProfile === OPENAI_SOL_COMPARISON_PROFILE

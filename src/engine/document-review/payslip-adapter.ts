@@ -1,12 +1,25 @@
+import {z} from 'zod';
 import type {StoredCaseInputSnapshot} from '../case-analysis/contracts.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {resolvePayslipSnapshot,resolvedPayslipFactPaths,IDENTIFIED_AGREEING_CANDIDATES_POLICY} from '../extraction/resolver.ts';
 import {validatePayslipGate0,SOURCE_ROW_DUPLICATE_POLICY} from '../extraction/validation.ts';
 import {normalizeMoney,normalizeDecimal,normalizePercentage} from '../extraction/normalization.ts';
+import {materializeValidatedPayslipReadings,identifiedMappedRowCell} from '../extraction/reading-resolution.ts';
 import type {NormalizedCandidateField,NormalizedPayslipExtraction} from '../extraction/payslip.ts';
 import {DOCUMENT_REVIEW_POLICY,type DocumentReviewInput} from './contracts.ts';
 import type {DocumentReviewCalculationInput,DocumentReviewOperand} from './calculations.ts';
-import type {ReviewCompletionNeed} from './completions.ts';
+import type {ReviewCompletionNeed,ReviewCompletionInput} from './completions.ts';
+
+export const PAYSLIP_FINANCIAL_SOURCE_FACT='payslip.financial_source';
+export const PAYSLIP_FINANCIAL_SOURCE_POLICY='payslip-financial-source-v1';
+const financialSourceProofSchema=z.object({policy_version:z.literal(PAYSLIP_FINANCIAL_SOURCE_POLICY),case_id:z.uuid(),document_id:z.uuid(),
+ source_sha256:z.string().regex(/^[a-f0-9]{64}$/u),normalized_extraction_sha256:z.string().regex(/^[a-f0-9]{64}$/u),
+ provider_receipt_sha256:z.string().regex(/^[a-f0-9]{64}$/u),source_page_count:z.number().int().min(1).max(12),complete_original_source:z.literal(true)}).strict();
+/** Server supplies only after validating the checkpoint, raw-pass receipts and
+ * original-file page coverage. A provider-reported page count is insufficient. */
+export type PayslipFinancialSourceProof=Readonly<z.infer<typeof financialSourceProofSchema>>;
+const financialSourceFields=['salary_period','gross_salary','total_deductions','net_salary'] as const;
+const incompleteSourceFlags=new Set(['cropped_content','partial_visibility','incomplete_document','missing_page','truncated_document']);
 
 type Topic=DocumentReviewInput['purchased_scope']['topics'][number];
 type Component=NormalizedPayslipExtraction['additional_components'][number];
@@ -23,8 +36,10 @@ const rowTopic:Partial<Record<Component['semantic_kind'],Topic>>={base_salary:'m
 /** Source arithmetic from the SAME saved extraction and canonical reading
  * policy. Neither a model confidence nor a customer's cell reading is legal
  * authority. Every original observation remains in the immutable receipt. */
-export function reviewInputFromPayslips(input:{case_id:string;period:DocumentReviewInput['period'];purchased_scope:DocumentReviewInput['purchased_scope'];snapshot:StoredCaseInputSnapshot}):DocumentReviewInput{
+export function reviewInputFromPayslips(input:{case_id:string;period:DocumentReviewInput['period'];purchased_scope:DocumentReviewInput['purchased_scope'];snapshot:StoredCaseInputSnapshot;financial_source_proofs?:readonly PayslipFinancialSourceProof[]}):DocumentReviewInput{
  const {snapshot}=input;
+ const proofs=(input.financial_source_proofs??[]).map(proof=>financialSourceProofSchema.parse(proof));
+ if(new Set(proofs.map(p=>p.document_id)).size!==proofs.length||proofs.some(p=>p.case_id!==input.case_id||!snapshot.documents.some(d=>d.document_id===p.document_id&&d.content_sha256===p.source_sha256)))throw Error('DOCUMENT_REVIEW_FINANCIAL_SOURCE_PROOF_BINDING');
  if(snapshot.documents.length!==snapshot.extractions.length||new Set(snapshot.documents.map(d=>d.document_id)).size!==snapshot.documents.length
   ||new Set(snapshot.extractions.map(e=>e.document_id)).size!==snapshot.extractions.length)throw Error('DOCUMENT_REVIEW_EXTRACTION_IDENTITY');
  const pairs=snapshot.documents.map(d=>{
@@ -38,11 +53,14 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
   label:e.detected_document_type==='payslip'?`תלוש ${input.period.from.slice(0,7)} — מסמך ${i+1}`:`מסמך ${i+1} — לא זוהה כתלוש`,
   period:d.document_period?.start_date&&d.document_period.end_date?{from:d.document_period.start_date,to:d.document_period.end_date}:null,
   reading_origin:'provider_extraction' as const,reading_sha256:canonicalSha256(e)}));
+ const evidence:ReviewCompletionInput['evidence'][number][]=[],completedFinancialSources=new Set<string>();
  const checks:DocumentReviewInput['checks']=[],needs:ReviewCompletionNeed[]=[],coverage_gaps:DocumentReviewInput['coverage_gaps']=[],answer_bindings:DocumentReviewInput['answer_bindings']=[];
- for(const [index,{d:original,e:extraction}] of pairs.entries()){
+ for(const [index,{d:original,e:originalExtraction}] of pairs.entries()){
+  const materialized=materializeValidatedPayslipReadings({document:original,extraction:originalExtraction,case_id:input.case_id,requireDistinctTargets:true});
+  const extraction=materialized.extraction;
   const d=documents[index],receipt=d.reading_sha256,pin={case_id:input.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256};
   const gap=(id:string,topic:Topic,detail:string,next_step:string,kind:'missing_source'|'missing_fact'='missing_fact')=>{
-   if(input.purchased_scope.topics.includes(topic))coverage_gaps.push({check_id:`document.${index}.${id}`,topic,kind,detail,next_step});
+   if(input.purchased_scope.topics.includes(topic))coverage_gaps.push({check_id:`document.${index}.${id}`,topic,kind,detail,next_step,source_pins:[pin]});
   };
   if(extraction.detected_document_type!=='payslip'){
    const topic=input.purchased_scope.topics[0];
@@ -53,7 +71,7 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
   const validation=validatePayslipGate0(extraction,{reference_year:Number(input.period.from.slice(0,4)),component_duplicate_policy:SOURCE_ROW_DUPLICATE_POLICY});
   const context={snapshot_id:uuid([receipt,'snapshot']),analysis_run_id:uuid([receipt,'reading-run']),case_id:input.case_id,schema_version:'1.0.0',created_at:extraction.extracted_at,
    fact_ids:Object.fromEntries(resolvedPayslipFactPaths.map(p=>[p,uuid([receipt,p])]))};
-  const resolved=resolvePayslipSnapshot({document:original,extraction,validation,context,reading_policy:IDENTIFIED_AGREEING_CANDIDATES_POLICY});
+  const resolved=resolvePayslipSnapshot({document:original,extraction:originalExtraction,validation,context,reading_policy:IDENTIFIED_AGREEING_CANDIDATES_POLICY});
   const globallyUnreadable=extraction.status==='failed'||extraction.document_quality_confidence<0.65;
   const periodFact=resolved.facts.find(f=>f.path==='documents.period');
   const periods=extraction.fields.filter(f=>f.field==='salary_period');
@@ -79,10 +97,35 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    const identified=extraction.customer_readings?.some(r=>r.candidate_id===f.candidate_id)&&a.issue_codes.every(c=>readingIssues.has(c));
    return identified||extraction.document_quality_confidence>=0.95&&f.confidence>=0.95&&a.status==='valid'&&f.warning_flags.length===0?'observed':'unknown';
   };
+  const proof=proofs.find(p=>p.document_id===d.document_id);
+  if(proof){
+   const {customer_readings:ignoredReadings,...providerOriginal}=originalExtraction;void ignoredReadings;
+   if(proof.normalized_extraction_sha256!==canonicalSha256(providerOriginal)
+    ||proof.source_page_count!==originalExtraction.quality_metrics?.page_count
+    ||[...originalExtraction.fields,...originalExtraction.additional_components,...(originalExtraction.source_scope_observations??[]).map(o=>o.candidate)]
+     .some(o=>o.source.document_id!==d.document_id||o.source.page>proof.source_page_count))throw Error('DOCUMENT_REVIEW_FINANCIAL_SOURCE_PROOF_BINDING');
+   const cells=financialSourceFields.map(field=>extraction.fields.filter(f=>f.field===field));
+   // This policy verifies only the four requested current-period source cells.
+   // Unrelated pension rows stay partial and retain their own requests. No
+   // model confidence, source receipt or whole-file flag confirms these cells.
+   const ready=!globallyUnreadable&&extraction.status==='completed'
+    &&![...extraction.warnings,...extraction.fields.flatMap(c=>c.warning_flags),...extraction.additional_components.flatMap(c=>c.warning_flags),...(extraction.source_scope_observations??[]).flatMap(o=>o.candidate.warning_flags)].some(flag=>incompleteSourceFlags.has(flag))
+    &&cells.every(group=>group.length===1&&group.every(c=>materialized.readings.has(c.candidate_id)
+     &&c.source.source_scope?.period_kind==='current'&&c.source.text_fragment?.trim()
+     &&!c.warning_flags.some(flag=>incompleteSourceFlags.has(flag))))
+    &&financialSourceFields.slice(1).every(field=>fieldState(field)==='observed');
+   if(ready){
+    completedFinancialSources.add(d.document_id);
+    evidence.push({evidence_id:`financial-source:${canonicalSha256([proof,cells.map(group=>group[0].candidate_id)])}`,case_id:input.case_id,
+     fact_key:PAYSLIP_FINANCIAL_SOURCE_FACT,period:input.period,origin:'document',state:'observed',source_reviewed:true,source_pins:[pin],
+     value:JSON.stringify({policy_version:PAYSLIP_FINANCIAL_SOURCE_POLICY,proof,cells:cells.map(group=>({candidate_id:group[0].candidate_id,
+      field:group[0].field,reading_sha256:canonicalSha256(materialized.readings.get(group[0].candidate_id))}))})});
+   }
+  }
   const moneyOperand=(field:string,id:string,label:string):DocumentReviewOperand=>{
    const candidates=extraction.fields.filter(f=>f.field===field),f=candidates[0],m=monetary(f);
    return {id,observation_id:f?.candidate_id??`${d.version_id}:${field}`,state:fieldState(field),printed_value:m?.currency==='ILS'?decimalMoney(m.minor_units):null,
-    representation:'money_ils',quantity_unit:null,precision:'printed_precision',source:source(f?.source.page??1,label,{field,observations:candidates.map(f=>({candidate_id:f.candidate_id,raw:f.raw_value,source:f.source}))})};
+    representation:'money_ils',quantity_unit:null,precision:'printed_precision',source:{...source(f?.source.page??1,label,{field,candidate_ids:candidates.map(f=>f.candidate_id),observations:candidates.map(f=>({candidate_id:f.candidate_id,raw:f.raw_value,source:f.source,original:originalExtraction.fields.find(o=>o.candidate_id===f.candidate_id)?.raw_value,reading_sha256:materialized.readings.has(f.candidate_id)?canonicalSha256(materialized.readings.get(f.candidate_id)):null}))}),reading:candidates.length>0&&candidates.every(f=>materialized.readings.has(f.candidate_id))?'identified_document_reading':'provider_extraction'}};
   };
   const add=(checkId:string,topic:Topic,title:string,explanation:string,operands:DocumentReviewOperand[],operation:DocumentReviewCalculationInput['operation'])=>{
    if(!input.purchased_scope.topics.includes(topic))return;
@@ -132,17 +175,33 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    const cells=(r:Component)=>[r.semantic_kind,r.quantity_raw,r.rate_raw,r.percentage_raw,r.amount_raw,r.quantity,r.rate,r.percentage,r.amount];
    const conflict=new Set(rows.map(r=>canonicalSha256(cells(r)))).size>1;
    const uncertain=globallyUnreadable||extraction.document_quality_confidence<0.95||rows.some(r=>r.confidence<0.95||r.warning_flags.length>0||r.normalization_warnings.length>0);
+   const confirmedCell=(id:'quantity'|'rate'|'amount'|'percentage')=>{
+    const originalRow=originalExtraction.additional_components.find(r=>r.component_id===row.component_id);
+    if(!originalRow||conflict||globallyUnreadable||extraction.document_quality_confidence<.95
+     ||rows.some(r=>r.warning_flags.length>0||r.normalization_warnings.length>0))return null;
+    const candidate=identifiedMappedRowCell({original:originalExtraction,effective:extraction,readings:materialized.readings,row:originalRow,cell:id});
+    if(!candidate)return null;
+    const field=candidate.field;
+    const assessment=validation.field_assessments.find(a=>a.candidate_id===candidate.candidate_id);
+    const paths:Readonly<Record<string,string>>={base_monthly_salary:'compensation.base_monthly_salary',hourly_rate:'compensation.hourly_rate',regular_hours:'work.regular_hours',
+     overtime_125_hours:'work.overtime_125_hours',overtime_150_hours:'work.overtime_150_hours',travel_amount:'travel.reimbursement',convalescence_amount:'convalescence.payment'};
+    const agreeingGroup=resolved.facts.find(f=>f.path===paths[field])?.status==='confirmed';
+    if(!assessment||assessment.status==='invalid'||assessment.issue_codes.some(code=>!readingIssues.has(code)&&!(code==='duplicate_candidate'&&agreeingGroup)))return null;
+    const value=candidate.normalized_value;
+    const normalized=value&&typeof value==='object'&&'amount' in value?value.amount:value;
+    return normalized===null?null:{candidate,normalized};
+   };
    const rowOperand=(id:'quantity'|'rate'|'amount'|'percentage'):DocumentReviewOperand=>{
-    const raw=row[`${id}_raw`],normalized=row[id];
+    const confirmed=confirmedCell(id),raw=confirmed?.candidate.raw_value??row[`${id}_raw`],normalized=confirmed?.normalized??row[id];
     const money=id==='rate'||id==='amount';
-    const value=money?row[id as 'rate'|'amount']:null;
+    const value=money&&normalized&&typeof normalized==='object'&&'minor_units' in normalized?normalized:null;
     const rawNormalized=raw===null?null:money?normalizeMoney(raw):id==='quantity'?normalizeDecimal(raw):normalizePercentage(raw);
     const invalid=normalized===null||money&&value?.currency!=='ILS'||canonicalSha256(normalized)!==canonicalSha256(rawNormalized);
-    const state:DocumentReviewOperand['state']=conflict?'conflict':raw===null?'missing':invalid?'unreadable':uncertain?'unknown':'observed';
-    const printed=money?value?.currency==='ILS'?decimalMoney(value.minor_units):null:id==='quantity'?row.quantity:row.percentage?decimalMoney(row.percentage.basis_points):null;
+    const state:DocumentReviewOperand['state']=conflict?'conflict':raw===null?'missing':invalid?'unreadable':confirmed?'observed':uncertain?'unknown':'observed';
+    const printed=money?value?.currency==='ILS'?decimalMoney(value.minor_units):null:id==='quantity'?typeof normalized==='string'?normalized:null:row.percentage?decimalMoney(row.percentage.basis_points):null;
     return {id,observation_id:`${row.component_id}:${id}`,state,printed_value:printed,representation:money?'money_ils':id==='percentage'?'percent':'decimal_quantity',
      quantity_unit:money?null:id==='percentage'?'ratio':row.semantic_kind==='hourly_base'||row.semantic_kind.startsWith('overtime_')?'hours':'count',precision:'printed_precision',
-     source:source(row.source.page,`${row.source_label} — ${{quantity:'כמות',rate:'תעריף',amount:'סכום',percentage:'אחוז'}[id]}`,{component_ids:rows.map(r=>r.component_id),raw,source:row.source,semantic_kind:row.semantic_kind})};
+     source:{...source(row.source.page,`${row.source_label} — ${{quantity:'כמות',rate:'תעריף',amount:'סכום',percentage:'אחוז'}[id]}`,{component_ids:rows.map(r=>r.component_id),candidate_id:confirmed?.candidate.candidate_id??null,raw,original_raw:originalExtraction.additional_components.find(r=>r.component_id===row.component_id)?.[`${id}_raw`]??null,source:row.source,semantic_kind:row.semantic_kind}),reading:confirmed?'identified_document_reading':'provider_extraction'}};
    };
    const operands=[rowOperand('rate'),rowOperand('quantity'),rowOperand('amount')],factors=['quantity'];
    // Apply a displayed premium only when the displayed rate is positively
@@ -156,5 +215,6 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
   }
  }
  return {schema_version:DOCUMENT_REVIEW_POLICY,coverage_gaps,answer_bindings,answer_history:[],case_id:input.case_id,period:input.period,purchased_scope:input.purchased_scope,documents,checks,
-  completion_input:{case_id:input.case_id,period:input.period,documents:documents.map(d=>({pin:{case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256},kind:d.kind,review:'partial',period:d.period})),needs,evidence:[]}};
+  completion_input:{case_id:input.case_id,period:input.period,documents:documents.map(d=>({pin:{case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256},kind:d.kind,review:'partial',period:completedFinancialSources.has(d.document_id)?input.period:d.period,
+   ...(completedFinancialSources.has(d.document_id)?{review_completed_fact_keys:[PAYSLIP_FINANCIAL_SOURCE_FACT]}:{})})),needs,evidence}};
 }

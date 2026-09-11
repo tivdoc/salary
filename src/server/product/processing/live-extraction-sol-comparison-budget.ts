@@ -20,10 +20,13 @@ export const SOL_RETAINED_DRIVER_FAILURE=Object.freeze({
  codeRevision:'c5051f3e8a53f254ca824dbe85ec36eadc4a49a6',
  diagnosticFileSha256:'f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937'} as const);
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
+export const solPolicyRevalidationSchema=z.object({purpose:z.literal('policy_revalidation'),reason:z.literal('explicit-source-scope-r8'),
+ priorReceiptSha256:sha,fromPromptVersion:z.literal('payslip-extraction-openai-v2-first-r7-fp1'),toPromptVersion:z.literal('payslip-extraction-openai-v2-first-r8-fp1')}).strict();
+export type SolPolicyRevalidation=z.infer<typeof solPolicyRevalidationSchema>;
 const reservationSchema=z.object({key:z.string().min(1),sourceSha256:sha,requestSha256:sha,codeRevision:z.string().regex(/^[a-f0-9]{40}$/u),
  attempt:z.number().int().min(1).max(6),kind:z.enum(['input_tokens','generation']),reservedAt:z.iso.datetime({offset:true}),
  reservedMicroUsd:z.number().int().positive(),outcome:z.enum(['reserved_unknown','count_recorded','receipt_recorded']),
- inputTokens:z.number().int().nonnegative().nullable(),receipt:z.unknown().nullable(),priorUnknownAcknowledgment:sha.optional()}).strict();
+ inputTokens:z.number().int().nonnegative().nullable(),receipt:z.unknown().nullable(),priorUnknownAcknowledgment:sha.optional(),policyRevalidation:solPolicyRevalidationSchema.optional()}).strict();
 const ledgerSchema=z.object({version:z.literal(SOL_COMPARISON_POLICY.version),model:z.literal(SOL_COMPARISON_POLICY.model),
  reservations:z.array(reservationSchema).max(SOL_COMPARISON_POLICY.maxRequests)}).strict();
 export type SolComparisonLedger=z.infer<typeof ledgerSchema>;
@@ -45,12 +48,25 @@ export function parseSolComparisonLedger(value:unknown):SolComparisonLedger{
    &&prior.outcome==='count_recorded'&&Date.parse(prior.reservedAt)<=Date.parse(row.reservedAt)))throw Error('SOL_GENERATION_WITHOUT_COUNT');
   if(row.attempt>1&&!ledger.reservations.some(prior=>prior.sourceSha256===row.sourceSha256&&prior.attempt===row.attempt-1
    &&prior.kind==='generation'&&prior.outcome==='receipt_recorded'))throw Error('SOL_RETRY_HISTORY_MISSING');
+  if(row.policyRevalidation){
+   const prior=ledger.reservations.find(p=>p.sourceSha256===row.sourceSha256&&p.attempt===row.attempt-1&&p.kind==='generation'&&p.outcome==='receipt_recorded');
+   const receipt=prior&&parseOpenAiProviderReceipt(prior.receipt);
+   if(!receipt||receipt.status!=='completed'||receipt.origin!=='openai_live'||receipt.source_sha256!==row.sourceSha256
+    ||receipt.receipt_sha256!==row.policyRevalidation.priorReceiptSha256||receipt.prompt_version!==row.policyRevalidation.fromPromptVersion
+    ||receipt.request_sha256===row.requestSha256)throw Error('SOL_POLICY_REVALIDATION_HISTORY');
+   if(ledger.reservations.some(other=>other!==row&&other.sourceSha256===row.sourceSha256&&other.policyRevalidation
+    &&other.policyRevalidation.priorReceiptSha256===row.policyRevalidation!.priorReceiptSha256
+    &&(other.attempt!==row.attempt||canonicalSha256(other.policyRevalidation)!==canonicalSha256(row.policyRevalidation))))throw Error('SOL_POLICY_REVALIDATION_DUPLICATE');
+   if(row.kind==='generation'&&!ledger.reservations.some(p=>p.kind==='input_tokens'&&p.sourceSha256===row.sourceSha256&&p.attempt===row.attempt
+    &&canonicalSha256(p.policyRevalidation??null)===canonicalSha256(row.policyRevalidation)))throw Error('SOL_POLICY_REVALIDATION_COUNT');
+   if(row.outcome==='receipt_recorded'&&parseOpenAiProviderReceipt(row.receipt).prompt_version!==row.policyRevalidation.toPromptVersion)throw Error('SOL_POLICY_REVALIDATION_PROMPT');
+  }
  }
  if(ledger.reservations.reduce((sum,row)=>sum+row.reservedMicroUsd,0)>SOL_COMPARISON_POLICY.maxReservedMicroUsd)throw Error('SOL_BUDGET_EXHAUSTED');
  return ledger;
 }
 export function reserveSolRequest(input:{ledger:SolComparisonLedger;sourceSha256:string;requestSha256:string;codeRevision:string;
- attempt:number;kind:'input_tokens'|'generation';now:string;priorUnknownAcknowledgment?:string}){
+ attempt:number;kind:'input_tokens'|'generation';now:string;priorUnknownAcknowledgment?:string;policyRevalidation?:SolPolicyRevalidation}){
  const ledger=parseSolComparisonLedger(input.ledger),now=Date.parse(input.now);
  if(!Number.isFinite(now)||now<Date.parse('2026-09-10T00:00:00Z')||now>=Date.parse(SOL_COMPARISON_POLICY.pricingValidUntil))throw Error('SOL_PRICING_EXPIRED');
  if(ledger.reservations.some(row=>row.outcome==='reserved_unknown'&&(!isKnownRetainedUnknown(row)
@@ -62,7 +78,8 @@ export function reserveSolRequest(input:{ledger:SolComparisonLedger;sourceSha256
   requestSha256:input.requestSha256,codeRevision:input.codeRevision,attempt:input.attempt,kind:input.kind,reservedAt:input.now,
   reservedMicroUsd:input.kind==='input_tokens'?SOL_COMPARISON_POLICY.countReservedMicroUsd:SOL_COMPARISON_POLICY.generationReservedMicroUsd,
   outcome:'reserved_unknown',inputTokens:null,receipt:null,
-  ...(input.priorUnknownAcknowledgment?{priorUnknownAcknowledgment:input.priorUnknownAcknowledgment}:{})}]});
+  ...(input.priorUnknownAcknowledgment?{priorUnknownAcknowledgment:input.priorUnknownAcknowledgment}:{}),
+  ...(input.policyRevalidation?{policyRevalidation:input.policyRevalidation}:{})}]});
 }
 function isKnownRetainedUnknown(row:SolComparisonLedger['reservations'][number]){
  return row.outcome==='reserved_unknown'&&row.kind==='generation'&&row.attempt===1

@@ -18,10 +18,12 @@ export async function admitSavedSource(context:PostgresTransactionContext,candid
  const selected=await context.client.query(statement('saved_worker_paid_source',
   `select v.created_at from private.case_input_versions v
    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3
-   and exists(select 1 from private.product_orders o
+   and (exists(select 1 from private.product_orders o
     where o.case_id=v.case_id and o.state='paid' and o.refund_state<>'refunded'
     and exists(select 1 from jsonb_array_elements(v.input->'orders') pinned
-     where pinned->>'id'=o.id::text and pinned->>'offer_sha256'=o.offer_sha256))`,
+     where pinned->>'id'=o.id::text and pinned->>'offer_sha256'=o.offer_sha256))
+    or exists(select 1 from jsonb_array_elements(coalesce(v.input->'legacy_orders','[]'::jsonb)) pinned
+     where private.legacy_paid_scopes(v.case_id) @> jsonb_build_array(pinned)))`,
   [job.case_id,job.revision,job.input_sha256]));
  if(!selected.rows[0])throw new Error('SAVED_PAID_SOURCE_REQUIRED');
  const lifecycle=intake_factory(context,tenantId).case_lifecycle;

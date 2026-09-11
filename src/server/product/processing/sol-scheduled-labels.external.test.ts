@@ -29,7 +29,7 @@ const reviewedR6ReceiptSha256='a08b4657df59640b0bc1ad7d3edcdb1f97daf7f3a8a75506f
 it.skipIf(process.env.TIVDOC_SOL_SCHEDULED_LABELS_PROOF!=='1')('compares the two retained Hebrew overtime labels with one explicitly reviewed real r7 generation',async()=>{
  if(process.env.VERCEL||process.env.VERCEL_ENV||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1'
   ||process.env.TIVDOC_SOL_SCHEDULED_LABELS_RETRY!=='r7-label-cell'||!process.env.OPENAI_API_KEY||Date.now()>=Date.parse(expiresAt))throw Error('SOL_LABEL_PROOF_SCOPE');
- if(OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION!=='payslip-extraction-openai-v2-first-r7')throw Error('SOL_LABEL_R7_REQUIRED');
+ if(String(OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION)!=='payslip-extraction-openai-v2-first-r7')throw Error('SOL_LABEL_R7_REQUIRED');
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
  expect(gitSha).toMatch(/^[a-f0-9]{40}$/u);
  expect(execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()).toBe('');

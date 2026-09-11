@@ -11,6 +11,7 @@ import {
 import {
   candidateSourceSchema,
   aggregateTotalObservationSchema,
+  sourceScopeObservationSchema,
   candidateWarningSchema,
   detectedDocumentTypeSchema,
   documentQualityMetricsSchema,
@@ -131,6 +132,7 @@ export const normalizedPayslipExtractionSchema = z
     fields: z.array(normalizedCandidateFieldSchema),
     additional_components: z.array(normalizedAdditionalComponentSchema),
     aggregate_total_observations:z.array(aggregateTotalObservationSchema).max(3).optional(),
+    source_scope_observations:z.array(sourceScopeObservationSchema).max(300).optional(),
     sensitive_metadata: z.array(sensitiveMetadataCandidateSchema),
     earnings_components_complete: z.boolean(),
     warnings: z.array(domainCodeSchema),

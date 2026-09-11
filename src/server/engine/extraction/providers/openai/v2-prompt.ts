@@ -1,8 +1,8 @@
 import "server-only";
 import type { PayslipFieldKey } from "@/engine/extraction/contracts";
 
-export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r7";
-export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r7";
+export const OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION = "payslip-extraction-openai-v2-first-r8";
+export const OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION = "payslip-extraction-openai-v2-recovery-r8";
 
 export const OPENAI_PAYSLIP_V2_R5_INSTRUCTIONS = `
 You are a document-transcription component for Tivdoc. Read Israeli salary payslips and return only the supplied structured output.
@@ -49,13 +49,25 @@ Separate observations and literal labels:
 - source_label and evidence.source_label are literal transcriptions of printed labels, not normalized classifications. Do not append a percentage, multiplier, translated word, or explanatory suffix that is printed in another column or inferred from semantic_kind. A printed percentage belongs in percentage_raw; semantic_kind may identify the row independently. Preserve a percentage in the label only if it is actually printed as part of that label.
 `.trim();
 
-export const OPENAI_PAYSLIP_V2_INSTRUCTIONS=`${OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS}
+export const OPENAI_PAYSLIP_V2_R7_INSTRUCTIONS=`${OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS}
 
 Printed label-cell transcription:
 - Before classifying a payment row, identify the separate description, code, quantity, rate, percentage and amount cells using the table's repeated horizontal alignment. A percentage column may have no printed heading; an unheaded neighboring cell does not become part of the description cell.
 - Copy the description cell alone into payroll_rows.source_label and payroll_rows.evidence.source_label. These two fields are the same literal cell transcription, not a whole-row quotation, a unique row name, or a summary. Distinct rows can have identical description labels; their numeric cells and semantic_kind distinguish them.
 - Read and populate the numeric cells independently. Do not concatenate a neighboring percentage, rate, quantity or row code with the description to make its semantic classification explicit. Preserve characters that are visibly inside the description cell, including a percentage genuinely printed there; do not mechanically remove suffixes.
 - Check the two label fields against that description cell again after semantic_kind has been selected. The classification must not add words or numbers to the transcription. If the cell boundary itself is unclear, retain the uncertainty warning instead of claiming a certain cell reading; do not repair the document or infer a desired label.
+`.trim();
+
+export const OPENAI_PAYSLIP_V2_INSTRUCTIONS=`${OPENAI_PAYSLIP_V2_R7_INSTRUCTIONS}
+
+Source scope (payslip-v2-source-scope-r8):
+- Every evidence record carries source_scope. period_kind records only an explicit current, cumulative or retroactive table/column context. Without a legible scope heading use unknown; an amount, its order or an arithmetic match never proves scope.
+- fund_kind distinguishes pension, study fund (קרן השתלמות / קה״ש), severance and explicitly combined funds. Use unknown for an ambiguous fund/column; do not guess from rates, provider name, an exemption amount or nearby totals. column_label is the literal printed column heading, nullable when absent or unreadable. Keep row source_label literal and separate.
+- Retain current and retroactive/cumulative entries separately even when their row labels or values agree. Do not add them, copy their bases across funds, or infer an unprinted contribution. Study-fund observations must keep fund_kind study, never be claimed as pension. A combined employer contribution is not a known pension-versus-severance split.
+- Salary net, final payable after voluntary deductions/advances, mandatory deduction subtotal and total deductions have different scopes. Preserve each printed label and value; do not flag different clearly labeled concepts as a visual conflict. Do not calculate or fill an unprinted total. Retain every individual mandatory deduction and every fund deduction row separately.
+- Total attendance/work hours are not automatically regular/base paid hours. Preserve the exact label and separate values; never infer overtime from their difference. Different clearly labeled scopes are not contradictory cell readings.
+- Inspect leave/sick closing balances and the employee-fund deduction section explicitly. If a readable contribution occurs there, retain its source label and fund evidence. A taxable exemption reference is not a proven contribution.
+- A physically blank quantity/rate/amount cell is null, even if the same number appears on another row or multiplication would fit. Do not fill a holiday or sick-pay rate from the base hourly rate. Literal labels retain printed retroactive/gross-up wording. Noncash taxable-benefit rows remain distinct from cash earnings and must not make earnings_components_complete claim cash reconciliation.
 `.trim();
 
 export function v2FirstPassUserText() {

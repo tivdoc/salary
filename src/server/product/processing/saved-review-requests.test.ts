@@ -74,10 +74,16 @@ it('adds a readable unknown-answer instruction; document requests remain upload-
  expect(savedReviewRequestQuestion(document)).toBe(document.question);expect(()=>normalizeSavedReviewAnswer(document,'לא יודע')).toThrow('ANSWER_INVALID');
  expect(savedReviewRequestQuestion(setup().review.completions.customer_requests[0].target)).toContain('אפשר להשיב "לא יודע".');
 });
-it('keeps a document request in the product review and reports its missing fulfillment binding without opening an unanswerable row',async()=>{
+it('opens a supported document request from the persisted target without pretending its information was received or satisfied',async()=>{
  const s=setup(fixture({kind:'document',document_kind:'attendance',answer_kind:'document',required_evidence_kind:'document'}));
+ expect(await s.run()).toEqual({opened_request_ids:[requestId],skipped_document_targets:[]});
+ expect(s.review.completions.customer_requests).toHaveLength(1);expect(s.state.events).toContain('review_request_open');
+ expect(s.state.queries.at(-1)?.values).toEqual([caseId,3,s.job.input_sha256,'synthetic-review-run',s.review.completions.customer_requests[0].target.target_sha256,s.job.authority_dependency_sha256]);
+});
+it('keeps an unsupported document kind explicit without opening an upload path that cannot handle it',async()=>{
+ const s=setup(fixture({kind:'document',document_kind:'transfer_receipt',answer_kind:'document',required_evidence_kind:'actual_transfer'}));
  expect(await s.run()).toEqual({opened_request_ids:[],skipped_document_targets:[{
-  target_sha256:s.review.completions.customer_requests[0].target.target_sha256,reason:'verified_upload_fulfillment_not_integrated'}]});
+  target_sha256:s.review.completions.customer_requests[0].target.target_sha256,reason:'unsupported_upload_document_kind'}]});
  expect(s.review.completions.customer_requests).toHaveLength(1);expect(s.state.events).not.toContain('review_request_open');
 });
 it('normalizes only exact typed declarations and never accepts a client receipt or converts unknown to zero',()=>{

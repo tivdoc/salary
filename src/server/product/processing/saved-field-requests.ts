@@ -6,7 +6,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {documentFieldTarget,documentFieldQuestion,confirmationFieldLabels} from '../reports/document-field-confirmation';
 import {admitSavedSource} from './saved-admission';
 import type {SourceJob} from './source-dispatch';
-import {readSavedOrders} from './saved-order-scope';
+import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
 import {hasHoursConflictObservations} from '@/engine/extraction/hours-conflict';
 
@@ -21,15 +21,15 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
  if(saved.period_mismatch)return [];
  const orders=await readSavedOrders(context,job);
  const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u).parse(saved.expected_month);
- const topics=[...new Set(orders.filter(order=>order.from<=month+'-01'&&order.to>=month+'-01').flatMap(order=>order.topics))].sort();
+ const topics=[...new Set(orders.filter(order=>purchasedMonths(order).includes(month)).flatMap(order=>order.topics))].sort();
  if(!topics.length)throw Error('REQUEST_FIELD_UNPURCHASED_MONTH');
  // One versioned database policy is shared with the write boundary. Neither
  // the browser nor a caller-provided topic list authorizes opening a request.
  const scope=await context.client.query(statement('saved_field_question_scope',
-  'select private.document_field_question_fields_v2(array(select jsonb_array_elements_text($1::jsonb))) fields',[JSON.stringify(topics)]));
+  'select private.document_field_question_fields_v3(array(select jsonb_array_elements_text($1::jsonb))) fields',[JSON.stringify(topics)]));
  if(scope.rows.length!==1)throw Error('REQUEST_FIELD_SCOPE_ACK');
  const allowed=new Set(z.array(z.enum(Object.keys(confirmationFieldLabels) as [keyof typeof confirmationFieldLabels,...(keyof typeof confirmationFieldLabels)[]]))
-  .max(14).refine(fields=>new Set(fields).size===fields.length).parse(scope.rows[0].fields));
+  .max(Object.keys(confirmationFieldLabels).length).refine(fields=>new Set(fields).size===fields.length).parse(scope.rows[0].fields));
  const extraction=saved.run.result.final_extraction;
  const hoursConflict=month==='2026-06'&&topics.includes('minimum_wage')&&hasHoursConflictObservations(extraction);
  const validation=validatePayslipGate0(extraction,{reference_year:Number(saved.expected_month.slice(0,4))});
@@ -49,7 +49,7 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
   opened.push(z.uuid().parse(result.rows[0]?.id));
  }
  if(month==='2026-06'&&topics.includes('minimum_wage')&&(hoursConflict||!extraction.fields.some(f=>f.field==='regular_hours'))){
-  for(const order of orders.filter(o=>o.from<='2026-06-01'&&o.to>='2026-06-01'&&o.topics.includes('minimum_wage'))){
+  for(const order of orders.filter(o=>o.kind!=='legacy_initial'&&purchasedMonths(o).includes('2026-06')&&o.topics.includes('minimum_wage'))){
    const result=await context.client.query(statement('saved_regular_hours_open',
     hoursConflict?'select private.june2026_hours_conflict_request_open($1::uuid,$2::uuid,$3,$4) id':'select private.june2026_hours_request_open($1::uuid,$2::uuid,$3,$4) id',[job.case_id,order.id,job.revision,job.input_sha256]));
    if(result.rows[0]?.id!==null)opened.push(z.uuid().parse(result.rows[0]?.id));

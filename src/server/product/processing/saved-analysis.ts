@@ -1,4 +1,5 @@
-import {savedDocumentReviewInput} from "./saved-document-review";
+import {assessSavedReviewUploads} from '../documents/review-fulfillment-saved';
+import {savedDocumentReviewInput,savedDocumentReviewSourceScope} from "./saved-document-review";
 import {openSavedReviewRequests} from './saved-review-requests';
 import {documentReviewIdempotencyKey} from "./document-review-key";
 import {loadJune2026TestAuthority,assertJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
@@ -20,7 +21,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatch';
 import {SavedCaseSnapshot} from './saved-snapshot';
 import {SavedAnalysisDraftBuilder,SAVED_DRAFT_TEMPLATE,savedAnalysisId} from './saved-draft-report';
-import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
+import {readSavedOrders,savedMonthIdempotencyKey,purchasedMonths,savedOrderLegalTopics} from './saved-order-scope';
 import {buildSavedJune2026ReviewDiagnostic} from './saved-minimum-wage-review';
 import {readSavedJune2026Collection} from './saved-june2026-collection';
 import {loadSavedJune2026AdmittedContext,type SavedJune2026AdmittedContext} from './saved-june2026-admitted-context';
@@ -38,7 +39,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  // Recheck the selected entitlement even on replay. A different paid order in
  // this case, or an old cached result, cannot authorize a revoked purchase.
  const [order]=await readSavedOrders(input.context,job,input.orderId);
- if(input.month<order.from.slice(0,7)||input.month>order.to.slice(0,7))throw new Error('SAVED_ORDER_SCOPE');
+ if(!purchasedMonths(order).includes(input.month))throw new Error('SAVED_ORDER_SCOPE');
  const selected=await input.context.client.query(statement('saved_analysis_order',
   `select v.created_at,ecs.revision as engine_revision,(select public_id from public.cases where id=v.case_id) public_id from private.case_input_versions v
    join public.engine_case_state ecs on ecs.canonical_case_id=v.case_id::text and ecs.tenant_id=$3
@@ -51,16 +52,17 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   ?await loadSavedJune2026RegularAuthority(input.context,job,order.id):null;
  const regularAuthority=regularState?.state==='ready'?regularState:null;
  const regularReadingPolicy=!testAuthority&&input.month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage'?JUNE_REGULAR_READING_POLICY:undefined;
- const regular=regularAuthority?new SavedJune2026RegularRuntime(regularAuthority,job,order,z.string().parse(row.public_id)):null;
+ const regular=regularAuthority&&order.kind!=='legacy_initial'?new SavedJune2026RegularRuntime(regularAuthority,job,order,z.string().parse(row.public_id)):null;
  const runtime=canonical??regular;
  const baseKey=testAuthority?june2026TestIdempotencyKey(job,order.id,testAuthority):regularAuthority?june2026RegularIdempotencyKey(job,order.id,regularAuthority):regularReadingPolicy?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,input.month);
 
+ const sourceScope=!runtime?await savedDocumentReviewSourceScope(input.context,job,order,input.month):undefined;
  const baseSnapshots=new SavedCaseSnapshot(input.context,job,input.month,testAuthority?{authority:testAuthority,orderId:order.id}:undefined,
-  regularAuthority?{authority:regularAuthority,orderId:order.id}:undefined,!runtime),baseSnapshot=await baseSnapshots.read();
+  regularAuthority?{authority:regularAuthority,orderId:order.id}:undefined,!runtime,sourceScope),baseSnapshot=await baseSnapshots.read();
  const review=runtime?undefined:await savedDocumentReviewInput(input.context,job,order,input.month,baseSnapshot);
  const key=runtime?baseKey:documentReviewIdempotencyKey(baseKey,canonicalSha256(review));
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
- if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report||review&&existing.command.document_review_sha256!==canonicalSha256(review))throw new Error('SAVED_REPLAY_SCOPE');return existing;}
+ if(existing){if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report||review&&existing.command.document_review_sha256!==canonicalSha256(review))throw new Error('SAVED_REPLAY_SCOPE');if(review)await assessSavedReviewUploads(input.context,job,existing.bundle.analysis_run_id);return existing;}
  const snapshot={...baseSnapshot,...(review?{document_review_input:review}:{})};
  const snapshots={async loadPinned(command:CaseAnalysisCommand){
   const base=await baseSnapshots.loadPinned(command);
@@ -78,7 +80,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   document_snapshot_id:snapshot.document_snapshot_id,document_snapshot_sha256:snapshot.document_snapshot_sha256,
   extraction_snapshot_id:snapshot.extraction_snapshot_id,extraction_snapshot_sha256:snapshot.extraction_snapshot_sha256,
   declared_fact_snapshot_id:snapshot.declared_fact_snapshot.snapshot_id,declared_fact_snapshot_sha256:snapshot.declared_fact_snapshot.snapshot_sha256,
-  period:{start_date:`${input.month}-01`,end_date:end},as_of:now.slice(0,10),requested_topics:order.topics,
+  period:{start_date:`${input.month}-01`,end_date:end},as_of:now.slice(0,10),requested_topics:savedOrderLegalTopics(order),
   sector:runtime?JUNE2026_MINIMUM_WAGE_POLICY.sector:'unverified',population:runtime?JUNE2026_MINIMUM_WAGE_POLICY.population:'unverified',mode:testAuthority?'synthetic_test':regularAuthority?.mode??'real',idempotency_key:key};
  const service=new CaseAnalysisService({clock:{now:()=>now},ids:{derive:savedAnalysisId},
   readingPolicy:regularReadingPolicy,
@@ -129,6 +131,9 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  if(!completed?.report)throw new Error('SAVED_ANALYSIS_NOT_COMMITTED');
  if(canonical)await canonical.persist(input.context,bundle.analysis_run_id);
  if(regular)await regular.persist(input.context,bundle.analysis_run_id);
- if(review&&bundle.document_review?.completions.customer_requests.some(r=>r.target.kind==='factual'))await openSavedReviewRequests(input.context,job,bundle.analysis_run_id);
+ if(review){
+  if(bundle.document_review?.completions.customer_requests.length)await openSavedReviewRequests(input.context,job,bundle.analysis_run_id);
+  await assessSavedReviewUploads(input.context,job,bundle.analysis_run_id);
+ }
  return completed;
 }

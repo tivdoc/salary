@@ -8,10 +8,25 @@ import { formatRequestDate, formatRequestMonth } from "@/lib/request-display";
 import type { StoredRequest } from "@/server/product/reports/case-requests";
 import {HoursConflictAnswer} from './hours-conflict-answer';
 import {HOURS_CONFLICT_NAMESPACE,formatHoursConflictAnswer} from '@/server/product/reports/document-hours-conflict-answer';
+import {DocumentFieldAnswer} from './document-field-answer';
+import {displayDocumentReadingAnswer} from '@/lib/document-reading-display';
 
 function displayAnswer(request:StoredRequest){
+ if(request.code.startsWith('document_field:'))return displayDocumentReadingAnswer(request.answer_text);
  if(!request.code.startsWith(HOURS_CONFLICT_NAMESPACE))return request.answer_text;
  try{return formatHoursConflictAnswer(request.answer_text??'');}catch{return 'התשובה השמורה אינה זמינה להצגה.';}
+}
+
+const documentSatisfied=(request:StoredRequest)=>request.source_current!==false&&request.document_upload_state?.state==='satisfied'&&request.document_upload_state.information_satisfied;
+function DocumentUploadStatus({request}:{request:StoredRequest}){
+ const upload=request.document_upload_state;if(!upload||upload.state==='requested')return null;
+ if(upload.state==='satisfied')return <p role="status">המידע הנדרש נמצא במסמך שהעלית. ההשלמה נשמרת בהיסטוריה.</p>;
+ if(upload.state==='received_pending_review')return <p role="status">הקובץ התקבל וממתין לבדיקה. עדיין לא נקבע שהמידע הנדרש נמצא בו. אין צורך להעלות שוב את אותו קובץ.</p>;
+ if(upload.state==='stale')return <p role="status">המסמך שנבדק הוחלף. הגרסה החדשה תיבדק בנפרד; ההשלמה הקודמת נשמרת בהיסטוריה.</p>;
+ const detail=upload.reason==='duplicate_content'?'זהו תוכן שכבר קיים בתיק. כדי להשלים את המידע, יש לצרף מסמך אחר או גרסה מלאה וברורה יותר.'
+  :upload.reason==='dependent_check_not_evaluated'||upload.reason==='unsupported_document_kind'?'המידע הדרוש עדיין לא אומת בבדיקה. הקובץ נשמר בתיק.'
+   :'המידע הדרוש עדיין לא נמצא באופן ברור ומלא. יש לצרף מסמך שמציג אותו עבור התקופה המבוקשת.';
+ return <p role="status">הקובץ התקבל, אך ההשלמה עדיין חסרה. {detail}</p>;
 }
 
 // Site S3.4 / D-2. The thread renders questions the engine asked and the
@@ -50,9 +65,10 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
   }
 
   if(request.code.startsWith(HOURS_CONFLICT_NAMESPACE))return <HoursConflictAnswer request={request} publicId={publicId} onAnswered={onAnswered} correction={correction}/>;
+  if(request.code.startsWith('document_field:')&&request.reading_display)return <DocumentFieldAnswer request={request} publicId={publicId} onAnswered={onAnswered} correction={correction}/>;
 
   if (request.answer_kind === "document") {
-    return <AddDocumentButton publicId={publicId} label="צירוף המסמך לתיק" requestId={request.id} />;
+    return <AddDocumentButton publicId={publicId} label={request.document_upload_state?.state==='received_pending_review'?"צירוף מסמך נוסף לבקשה":"צירוף המסמך לתיק"} requestId={request.id} />;
   }
 
   if (request.answer_kind === "choice" && request.options) {
@@ -108,18 +124,19 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
 
 export function ThreadView({ publicId, requests, renderedAt }: { publicId: string; requests: readonly StoredRequest[]; renderedAt: number }) {
   const router = useRouter();
-  const open = requests.filter((request) => request.answered_at === null && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
-  const expired = requests.filter((request) => request.answered_at === null && request.source_current !== false && Date.parse(request.expires_at) <= renderedAt);
+  const open = requests.filter((request) => request.answered_at === null && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
+  const expired = requests.filter((request) => request.answered_at === null && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) <= renderedAt);
   const superseded = requests.filter((request) => request.answered_at === null && request.source_current === false);
   // The initial render uses the same server instant through hydration. The DB
   // remains the expiry authority; refresh at the next deadline while open.
   useEffect(() => {
-    const deadlines = requests.filter(request => request.answered_at === null && request.source_current !== false && Date.parse(request.expires_at) > renderedAt).map(request => Date.parse(request.expires_at));
+    const deadlines = requests.filter(request => request.answered_at === null && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt).map(request => Date.parse(request.expires_at));
     if (deadlines.length === 0) return;
     const timer = window.setTimeout(() => router.refresh(), Math.min(2_147_483_647, Math.max(0, Math.min(...deadlines) - Date.now()) + 100));
     return () => window.clearTimeout(timer);
   }, [requests, renderedAt, router]);
   const answered = requests.filter((request) => request.answered_at !== null);
+  const fulfilled = requests.filter((request) => request.answered_at === null && documentSatisfied(request));
   const blocking = open.filter((request) => request.blocking);
 
   return (
@@ -132,6 +149,8 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           <p>
             {blocking.length > 0
               ? "יש שאלה שאנחנו ממתינים לתשובה עליה כדי להמשיך. שעון הזמנים עצור עד שתענה."
+              : open.every(request=>request.document_upload_state?.state==='received_pending_review')
+                ? "הקבצים התקבלו וממתינים לבדיקת המידע. מצב כל השלמה מופיע כאן."
               : open.some(request=>request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE))
                 ? "השאלות נועדו להשלמת מידע על תקופת העבודה ורכיבי השכר. התשובות נשמרות בתיק."
                 : "יש שאלה שתשפר את הדיוק. אפשר לענות בכל רגע — היא לא מעכבת את הבדיקה."}
@@ -146,6 +165,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           </p>
           {request.statement_month ? <p className="thread-card__meta">תקופת השאלה: {formatRequestMonth(request.statement_month)}</p> : null}
           <h2>{request.question}</h2>
+          <DocumentUploadStatus request={request}/>
           {request.field_crop && !request.code.startsWith('document_field:') && !request.code.startsWith('minimum_wage_june2026:') && !request.code.startsWith('document_transcription:') && !request.code.startsWith(HOURS_CONFLICT_NAMESPACE) ? <p className="thread-card__crop">השדה בתלוש: {request.field_crop}</p> : null}
           {request.code.startsWith(HOURS_CONFLICT_NAMESPACE)?<p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת התלוש לבירור הסתירה</a></p>:null}
           {(request.code.startsWith('document_field:')||request.code.startsWith('document_transcription:')) ? <p><a href={`/api/cases/${publicId}/requests?source=${request.id}`} target="_blank" rel="noopener noreferrer">פתיחת המסמך לאימות השדה</a><br />האישור מתייחס לקריאת הנתון במסמך ואינו אישור של החישוב או של הזכאות.</p> : null}
@@ -156,6 +176,8 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
 
       {expired.length > 0 ? <div className="received-card"><h2>שאלות שנסגרו ללא תשובה</h2>{expired.map(request => <p key={request.id}>{request.question} — הסתיים המועד להשלמה.</p>)}</div> : null}
       {superseded.length > 0 ? <div className="received-card"><h2>שאלות ממסמך קודם</h2><p>המסמך או תקופתו השתנו. השאלות נשמרות בהיסטוריה ואינן ממתינות לאישור. אם יהיה צורך בהשלמה מהמסמך העדכני, תופיע שאלה חדשה.</p>{superseded.map(request => <p key={request.id}>{request.question}</p>)}</div> : null}
+
+      {fulfilled.length>0?<div className="received-card"><h2>השלמות שהמידע בהן נמצא</h2><ul className="thread-answered">{fulfilled.map(request=><li key={request.id} id={`request-${request.id}`}><p className="thread-answered__question">{request.question}</p><DocumentUploadStatus request={request}/>{request.statement_month?<p>תקופת ההשלמה: {formatRequestMonth(request.statement_month)}</p>:null}</li>)}</ul></div>:null}
 
       {answered.length > 0 ? (
         <div className="received-card">

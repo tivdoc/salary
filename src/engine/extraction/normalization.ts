@@ -186,7 +186,7 @@ function normalizeBalance(raw: string) {
   return amount === null || unit === null ? null : { amount, unit };
 }
 
-function normalizedValue(candidate: RawCandidateField) {
+export function normalizePayslipFieldValue(candidate: RawCandidateField) {
   switch (candidate.field) {
     case "document_type":
       return normalizeDocumentType(candidate.raw_value);
@@ -225,7 +225,7 @@ function normalizedValue(candidate: RawCandidateField) {
 export function normalizePayslipExtraction(input: ExtractionResult): NormalizedPayslipExtraction {
   const extraction = extractionResultSchema.parse(input);
   const fields = extraction.fields.map((candidate) => {
-    const value = normalizedValue(candidate);
+    const value = normalizePayslipFieldValue(candidate);
     const warningFlags = value === null && !candidate.warning_flags.includes("normalization_failed")
       ? [...candidate.warning_flags, "normalization_failed"]
       : candidate.warning_flags;

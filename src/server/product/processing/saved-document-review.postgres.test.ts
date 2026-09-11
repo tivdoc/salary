@@ -7,13 +7,15 @@ import {execFileSync} from 'node:child_process';
 import {PDFDocument,StandardFonts} from 'pdf-lib';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewInputSchema,type DocumentReviewResult} from '@/engine/document-review/contracts';
-import {compareDocumentReviewDependencies,replayDocumentReview} from '@/engine/document-review/service';
+import {compareDocumentReviewDependencies,replayDocumentReview,runDocumentReview} from '@/engine/document-review/service';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
 import {postgresCaseAccessDb} from '../case-access/db';
 import {offerSnapshot} from '../orders/contracts';
 import {answerCaseRequest,editCaseRequest,listCaseRequests} from '../reports/case-requests';
-import {saveSavedDocumentReview} from './saved-document-review';
+import {privateDocumentReviewReports,privateDocumentReviewArtifact} from '../reports/private-document-review';
+import {saveSavedDocumentReview,savedDocumentReviewInput} from './saved-document-review';
+import {readSavedOrders} from './saved-order-scope';
 import {runSavedWorkerMonth} from './saved-worker';
 import {claimSavedDraftJob} from './saved-job-runtime';
 import {completeSavedDraftJob} from './saved-job-completion';
@@ -105,7 +107,7 @@ it.skipIf(process.env.TIVDOC_DOCUMENT_REVIEW_DB_PROOF!=='1')('persists ordinary 
   await owner.query("select private.capture_case_input($1,'synthetic_document_review_paid_scope')",[caseId]);
   await owner.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,'synthetic.document.review.worker',$3,now()-interval '1 minute',now()+interval '30 minutes',$4,now())",[tenant,sid,jti,canonicalSha256({sid,jti})]);
   await owner.query('commit');seeded=true;own();
-  const firstLease=await claim(),pin={case_id:caseId,document_id:documentId,version_id:versionId,source_sha256:sourceSha},readingSha=canonicalSha256({sourceSha,lines,reading:'automated_known_synthetic_source_review'});
+  const sourceLease=await claim(),pin={case_id:caseId,document_id:documentId,version_id:versionId,source_sha256:sourceSha},readingSha=canonicalSha256({sourceSha,lines,reading:'automated_known_synthetic_source_review'});
   const source={document_id:documentId,version_id:versionId,file_sha256:sourceSha,page:1,locator:'synthetic source table',label:'נתוני בדיקה סינתטיים',reading:'ai_document_review',reading_receipt_sha256:readingSha};
   const operand=(id:string,value:string|null,representation='money_ils',quantity_unit:string|null=null)=>({id,observation_id:'synthetic.'+id,state:value===null?'missing':'observed',printed_value:value,representation,quantity_unit,precision:'source_exact',source});
   const base={schema_version:'document-review-calculation-input-v1',case_id:caseId,run_id:'pending',period,evaluated_at:'2026-09-11T00:00:00Z',
@@ -117,7 +119,10 @@ it.skipIf(process.env.TIVDOC_DOCUMENT_REVIEW_DB_PROOF!=='1')('persists ordinary 
     {check_id:'hours.product',topic:'working_time',title:'התאמת כמות ותשלום',explanation:'כפל הכמות בתעריף הרשום בלבד; אין קביעת זכאות משפטית.',calculation:{...base,check_id:'hours.product',operands:[operand('rate','50.00'),operand('hours',null,'decimal_quantity','hours'),operand('paid','400.00')],operation:{kind:'product',money_ref:'rate',factor_refs:['hours'],recorded_ref:'paid',rounding:'half_up',rounding_basis:'Independent accounting arithmetic; no legal wage rule'}}}],
    answer_bindings:[{fact_key:'hours.quantity',check_id:'hours.product',operand_id:'hours'}],
    completion_input:{case_id:caseId,period,documents:[{pin,kind:'attendance',period,review:'complete'}],evidence:[],needs:[{fact_key:'hours.quantity',kind:'factual',reason:'missing',required_evidence_kind:'customer_declaration',question:'כמה שעות עבודה בפועל היו בתקופה המסומנת?',answer_kind:'number',source_pins:[pin],dependent_check_ids:['hours.product'],general_question:false}]}});
-  phase='save-curated-source';await transactions(worker)(context=>saveSavedDocumentReview(context,firstLease.job,input));
+  phase='save-curated-source';const admitted=await transactions(worker)(context=>saveSavedDocumentReview(context,sourceLease.job,input));
+  expect(admitted.changed).toBe(true);expect(admitted.source_job.revision).toBeGreaterThan(sourceLease.job.revision);
+  await expect(calculate(sourceLease.job)).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
+  const firstLease=await claim();expect(firstLease.job).toEqual(admitted.source_job);
   checks.push('actual worker saves source-bound curated synthetic input through verified SID/JTI and the normal immutable source checkpoint; no OCR/checkpoint/finding/report result was seeded');
   phase='rollback-before-request';failBeforeOpen=true;
   try{await expect(calculate(firstLease.job)).rejects.toThrow('INJECTED_BEFORE_REVIEW_REQUEST');}finally{failBeforeOpen=false;}
@@ -159,6 +164,41 @@ it.skipIf(process.env.TIVDOC_DOCUMENT_REVIEW_DB_PROOF!=='1')('persists ordinary 
   const restart=await calculate(thirdLease.job,restarted);expect(restart.report?.report_sha256).toBe(third.report!.report_sha256);
   expect(await counts()).toEqual({analyses:4,targets:1,provider_invocations:0});
   checks.push('a new authenticated worker connection replays the exact stored report; four historical runs, one question, zero provider invocations');
+  phase='private-owner-artifacts';
+  const privateList=await privateDocumentReviewReports(caseId,identity,webDb);
+  expect(privateList).toHaveLength(4);expect(privateList.filter(r=>r.current).map(r=>r.report_id)).toEqual([third.report!.report_id]);
+  const currentPrivate=await privateDocumentReviewArtifact(caseId,identity,third.report!.report_id,webDb);
+  expect(currentPrivate?.current).toBe(true);expect(currentPrivate?.report.html_sha256).toBe(third.report!.html_sha256);expect(currentPrivate?.report.pdf_sha256).toBe(third.report!.pdf_sha256);
+  expect(currentPrivate?.report.html).toEqual(third.report!.html);expect(currentPrivate?.report.pdf).toEqual(third.report!.pdf);
+  const oldPrivate=await privateDocumentReviewArtifact(caseId,identity,first.report!.report_id,webDb);
+  expect(oldPrivate?.current).toBe(false);expect(oldPrivate?.report.html).toEqual(first.report!.html);expect(oldPrivate?.report.pdf).toEqual(first.report!.pdf);
+  expect(await privateDocumentReviewReports(caseId,foreignIdentity,peerWebDb)).toEqual([]);
+  expect(await privateDocumentReviewArtifact(caseId,foreignIdentity,third.report!.report_id,peerWebDb)).toBeNull();
+  expect(await privateDocumentReviewArtifact(foreignCaseId,foreignIdentity,third.report!.report_id,peerWebDb)).toBeNull();
+  checks.push('actual web adapter and protected draft RPC decode the exact owner HTML/PDF; old bytes remain readable but not current; foreign identity/case sees no draft or source bundle');
+  phase='same-documents-enhancement';
+  const sourceBefore=(await owner.query('select review_sha256,input,source_documents from private.document_review_source_versions where case_id=$1 order by review_sha256',[caseId])).rows;
+  expect(sourceBefore).toHaveLength(1);
+  const enhancement=documentReviewInputSchema.parse({...input,coverage_gaps:[...input.coverage_gaps,{check_id:'pension.transfer.evidence',topic:'pension',kind:'missing_source',
+   detail:'לא הוצגה אסמכתה לקליטת כספים בקרן; היחס החשבוני לבדו אינו מוכיח העברה.',next_step:'נדרשת התאמה לאסמכתה של הקרן לפני קביעה שהסכום הועבר.'}]});
+  const enhancedAdmission=await transactions(worker)(context=>saveSavedDocumentReview(context,thirdLease.job,enhancement));
+  expect(enhancedAdmission.changed).toBe(true);expect(enhancedAdmission.review_ref.review_sha256).not.toBe(admitted.review_ref.review_sha256);
+  expect(enhancedAdmission.source_job.revision).toBeGreaterThan(thirdLease.job.revision);
+  const admittedAgain=await transactions(worker)(context=>saveSavedDocumentReview(context,enhancedAdmission.source_job,enhancement));
+  expect(admittedAgain.changed).toBe(false);expect(admittedAgain.source_job).toEqual(enhancedAdmission.source_job);expect(admittedAgain.review_ref).toEqual(enhancedAdmission.review_ref);
+  const enhancedLease=await claim();expect(enhancedLease.job).toEqual(enhancedAdmission.source_job);
+  const enhancedRun=await calculate(enhancedLease.job),enhancedReview=saveArtifacts('same-source-enhancement',enhancedRun);await finish(enhancedLease);
+  expect(enhancedReview.analysis_run_id).not.toBe(thirdReview.analysis_run_id);expect(enhancedReview.coverage_gaps.map(g=>g.check_id)).toContain('pension.transfer.evidence');
+  expect(enhancedReview.checks[1].calculation.difference).toEqual({kind:'money',currency:'ILS',minor_units:ORACLE.correctedDifferenceMinor});
+  expect(enhancedReview.input.answer_history.map(h=>h.receipt.state)).toEqual(['provided','unknown','provided']);
+  expect(await counts()).toEqual({analyses:5,targets:1,provider_invocations:0});
+  const sourceAfter=(await owner.query('select review_sha256,input,source_documents from private.document_review_source_versions where case_id=$1 order by review_sha256',[caseId])).rows;
+  expect(sourceAfter).toHaveLength(2);expect(sourceAfter.find(v=>v.review_sha256===sourceBefore[0].review_sha256)).toEqual(sourceBefore[0]);
+  expect(sourceAfter.every(v=>canonicalSha256(v.source_documents)===canonicalSha256(sourceBefore[0].source_documents))).toBe(true);
+  const historicalAfter=await privateDocumentReviewArtifact(caseId,identity,third.report!.report_id,webDb);
+  expect(historicalAfter?.current).toBe(false);expect(historicalAfter?.report.pdf).toEqual(third.report!.pdf);
+  expect((await privateDocumentReviewArtifact(caseId,identity,enhancedRun.report!.report_id,webDb))?.current).toBe(true);
+  checks.push('enhanced source review on identical physical document bytes gets its own immutable source ref and fifth analysis; same SHA retry is idempotent; all identified answer revisions and original source/report bytes survive');
   phase='rollback-source-and-entitlement-fences';await owner.query('begin');
   await owner.query('update public.documents set version_id=$2,content_sha256=$3 where case_id=$1 and id=$4',[caseId,randomUUID(),'f'.repeat(64),documentId]);
   expect((await owner.query('select private.document_review_request_current($1,$2) value',[caseId,request.id])).rows[0].value).toBe(false);await owner.query('rollback');
@@ -166,6 +206,28 @@ it.skipIf(process.env.TIVDOC_DOCUMENT_REVIEW_DB_PROOF!=='1')('persists ordinary 
   expect((await owner.query('select private.document_review_request_current($1,$2) value',[caseId,request.id])).rows[0].value).toBe(false);await owner.query('rollback');
   expect((await listCaseRequests(caseId,webDb,identity)).find(r=>r.id===request.id)).toMatchObject({source_current:true,answer_revision:3,answer_text:'11'});
   checks.push('actual SQL currentness refuses a replaced source and suspended entitlement inside rolled-back owned-fixture mutations; historical report bytes are unchanged');
+  phase='committed-owned-source-version-invalidation';
+  // This synthetic metadata-only replacement proves source-head invalidation;
+  // it is not a Storage upload proof or a claim that fresh OCR was performed.
+  const replacedVersion=randomUUID();await owner.query('begin');
+  await owner.query('update public.documents set version_id=$2,content_sha256=$3 where case_id=$1 and id=$4',[caseId,replacedVersion,'f'.repeat(64),documentId]);
+  await owner.query('commit');
+  const replacedHead=await head();expect(replacedHead.revision).toBeGreaterThan(enhancedLease.job.revision);
+  const pinnedInput=(await owner.query('select input from private.case_input_versions where case_id=$1 and revision=$2',[caseId,replacedHead.revision])).rows[0].input;
+  expect(pinnedInput.document_reviews).toBeUndefined();
+  const fallback=await transactions(worker)(async context=>{
+   const [scope]=await readSavedOrders(context,replacedHead,orderId);
+   return savedDocumentReviewInput(context,replacedHead,scope,'2026-06',{document_snapshot_id:'synthetic.changed.no-extraction',document_snapshot_sha256:replacedHead.input_sha256,
+    documents:[],extraction_snapshot_id:'synthetic.changed.no-extraction',extraction_snapshot_sha256:canonicalSha256([]),extractions:[],
+    declared_fact_snapshot:{snapshot_id:'synthetic.empty',snapshot_sha256:canonicalSha256([]),facts:[]}});
+  });
+  expect(fallback.documents[0].version_id).toBe(replacedVersion);expect(fallback.documents[0].reading_origin).toBe('source_inventory');expect(fallback.checks).toEqual([]);
+  expect(runDocumentReview(fallback,'synthetic.current.inventory.only').completions.customer_requests[0].target.fact_key).toBe('payslip.financial_source');
+  expect((await privateDocumentReviewReports(caseId,identity,webDb)).every(r=>r.current===false)).toBe(true);
+  const replacedHistorical=await privateDocumentReviewArtifact(caseId,identity,enhancedRun.report!.report_id,webDb);
+  expect(replacedHistorical?.current).toBe(false);expect(replacedHistorical?.report.pdf).toEqual(enhancedRun.report!.pdf);
+  expect((await owner.query('select count(*)::int n from private.document_review_source_versions where case_id=$1',[caseId])).rows[0].n).toBe(2);
+  checks.push('actual committed synthetic source-version replacement removes the review reference and uses source inventory until new extraction; owner history survives as not current; source versions are not rewritten');
   const customer=(await web.query('select public.case_report_customer_snapshot($1,$2) value',[caseId,identity])).rows[0].value;expect(customer.reports).toEqual([]);
   expect((await owner.query('select count(*)::int n from public.case_notifications where case_id=$1',[caseId])).rows[0].n).toBe(0);
   checks.push('ordinary artifacts remain private drafts; no customer report publication or notification was created');
@@ -176,7 +238,7 @@ it.skipIf(process.env.TIVDOC_DOCUMENT_REVIEW_DB_PROOF!=='1')('persists ordinary 
    if(jobs.length)await owner.query("update public.engine_durable_jobs set state='cancelled',cancellation_requested=true,lease_owner=null,lease_expires_at=null,revision=revision+1 where tenant_id=$1 and canonical_case_id=$2 and job_id=any($3::text[]) and state in ('queued','leased','running','retry_wait')",[tenant,caseId,jobs]);
    const revoked=await owner.query('update public.product_identity_sessions set revoked_at=coalesce(revoked_at,now()) where tenant_id=$1 and sid=$2 returning sid',[tenant,sid]);expect(revoked.rowCount).toBe(1);await owner.query('commit');machineRevoked=true;}}
   catch(error){cleanupFailure=safeError(error);await owner.query('rollback').catch(()=>{});}
-  writeFileSync(directory+'/proof.json',JSON.stringify({verdict:failure===null&&cleanupFailure===null&&checks.length===10?'PASS':'FAIL',gitSha,dirty,database:'tivdoc_release_replay_20260907',schema:159,migration,migration_sha256:sha(readFileSync('supabase/migrations/'+migration)),caseId,checks,artifacts,answerHistory,
+  writeFileSync(directory+'/proof.json',JSON.stringify({verdict:failure===null&&cleanupFailure===null&&checks.length===13?'PASS':'FAIL',gitSha,dirty,database:'tivdoc_release_replay_20260907',schema:163,migration,migration_sha256:sha(readFileSync('supabase/migrations/'+migration)),caseId,checks,artifacts,answerHistory,
    fixture:'synthetic source metadata and local source bytes; curated automated known-fixture readings; real worker/web principals and provisioned synthetic identities',
    providerCalls:0,liveOcr:false,remoteStorageUploadReproved:false,browserVerified:false,customerSessionsCreated:false,customerPublication:false,notificationsSent:false,productionChanged:false,
    retainedOwnedQaCases:seeded?2:0,machineRevoked,failure,cleanupFailure},null,2)+'\n');own();

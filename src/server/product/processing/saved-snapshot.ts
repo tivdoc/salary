@@ -1,7 +1,8 @@
+import {assertSavedDocumentReviewSourceScope,type SavedDocumentReviewSourceScope} from './saved-document-review';
 import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from './saved-june2026-test-authority';
 import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,type SavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
 import {savedHoursDeclarations} from './saved-hours-declarations';
-import {readSavedOrders} from './saved-order-scope';
+import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import {savedDeclaredFacts} from './saved-request-facts';
 import {savedDocumentFieldReadings} from './saved-field-readings';
 import { z } from 'zod';
@@ -32,7 +33,7 @@ const checkpointSchema = z.object({
  * immutable journal revision and extraction policy can become engine inputs.
  * Revalidates source scope even on retry; it never calls a provider in a lock. */
 export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
- constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string,private readonly testScope?:{authority:June2026TestAuthority;orderId:string},private readonly regularScope?:{authority:SavedJune2026RegularAuthority;orderId:string},private readonly allowEmptyReview=false) {}
+ constructor(private readonly context:PostgresTransactionContext,private readonly candidate:SourceJob,private readonly targetMonth?:string,private readonly testScope?:{authority:June2026TestAuthority;orderId:string},private readonly regularScope?:{authority:SavedJune2026RegularAuthority;orderId:string},private readonly allowEmptyReview=false,private readonly sourceReviewScope?:SavedDocumentReviewSourceScope) {}
 
  async read():Promise<StoredCaseInputSnapshot> {
   const job=sourceJobSchema.parse(this.candidate);
@@ -45,8 +46,12 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   const source=sourceSchema.parse(row.input);
   if(source.case_id!==job.case_id)throw new Error('SAVED_INPUT_CASE_MISMATCH');
   const selectedMonth=month.parse(this.targetMonth??source.month);
-  const payslips=source.documents.filter(d=>d.type==='payslip'&&(d.month??source.month)===selectedMonth);
-  if(!payslips.length&&!this.allowEmptyReview)throw new Error('SAVED_PAYSLIP_REQUIRED');
+  if(this.sourceReviewScope){
+   if(this.testScope||this.regularScope||!this.targetMonth)throw Error('SAVED_REVIEW_SOURCE_MODE');
+   await assertSavedDocumentReviewSourceScope(this.context,job,selectedMonth,this.sourceReviewScope);
+  }
+  const payslips=this.sourceReviewScope?[]:source.documents.filter(d=>d.type==='payslip'&&(d.month??source.month)===selectedMonth);
+  if(!payslips.length&&!this.allowEmptyReview&&!this.sourceReviewScope)throw new Error('SAVED_PAYSLIP_REQUIRED');
   if(new Set(source.documents.map(d=>d.version_id)).size!==source.documents.length)throw new Error('SAVED_VERSION_DUPLICATE');
   const documents=[],extractions=[];
   for(const pinned of payslips){
@@ -87,7 +92,7 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
    .answers?.some(a=>a.code?.startsWith('june2026_regular_hours:'));
   if(hasHoursAnswer&&selectedMonth==='2026-06'&&payslips.length===1&&!extractions[0].fields.some(f=>f.field==='regular_hours')){
    const orders=await readSavedOrders(this.context,job);
-   const scoped=orders.filter(o=>o.from<='2026-06-01'&&o.to>='2026-06-01'&&o.topics.includes('minimum_wage'));
+   const scoped=orders.filter(o=>purchasedMonths(o).includes('2026-06')&&o.topics.includes('minimum_wage'));
    const declarations=(await Promise.all(scoped.map(o=>savedHoursDeclarations(this.context,job,o.id)))).flat();
    if(declarations.length>1)throw Error('SAVED_HOURS_DECLARATION_AMBIGUOUS');
    facts.push(...declarations);
@@ -100,6 +105,11 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
  }
 
  async loadPinned(command:CaseAnalysisCommand):Promise<StoredCaseInputSnapshot>{
+  if(this.sourceReviewScope){
+   if(!command.document_review_sha256)throw new Error('SAVED_REVIEW_COMMAND_REQUIRED');
+   const end=new Date(Date.UTC(Number(this.targetMonth?.slice(0,4)),Number(this.targetMonth?.slice(5,7)),0)).toISOString().slice(0,10);
+   if(command.period.start_date!==`${this.targetMonth}-01`||command.period.end_date!==end)throw Error('SAVED_COMMAND_SCOPE');
+  }
   if(command.case_id!==this.candidate.case_id)throw new Error('SAVED_COMMAND_SCOPE');
   if(this.testScope){
    const {authority,orderId}=this.testScope;assertJune2026TestAuthority(authority,this.candidate,orderId);

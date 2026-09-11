@@ -15,6 +15,9 @@ import { requestFor, slaPaused, type ThreadRequest } from "./refusal-requests.ts
 import {HOURS_CONFLICT_NAMESPACE} from './document-hours-conflict-answer';
 import {z} from 'zod';
 import {reviewCompletionTargetSchema,type ReviewCompletionTarget} from '@/engine/document-review/completions';
+import type {DocumentReadingDisplay} from '@/lib/document-reading-display';
+import {documentFieldTargetSchema} from './document-field-confirmation';
+import {documentFieldVerificationDisplay} from './reading-verification';
 
 const reviewNamespace='document_review:';
 const reviewStateSchema=z.object({request_id:z.uuid(),source_current:z.boolean(),target:reviewCompletionTargetSchema.nullable()}).strict();
@@ -24,9 +27,26 @@ function parseReviewStates(value:unknown,caseId:string){
  return rows;
 }
 
+const reviewUploadStateSchema=z.object({request_id:z.uuid(),state:z.enum(['requested','received_pending_review','insufficient','satisfied','stale']),
+ source_current:z.boolean(),information_satisfied:z.boolean(),analysis_run_id:z.string().min(1).max(200).nullable(),
+ reason:z.enum(['submitted_source_replaced','duplicate_content','dependent_check_not_evaluated','requested_evidence_unresolved',
+  'target_specific_observation_required','submitted_document_not_fully_verified','target_specific_observed_source','unsupported_document_kind']).nullable(),
+}).strict().superRefine((row,ctx)=>{
+ if(row.information_satisfied!==(row.state==='satisfied')||row.information_satisfied&&!row.source_current)
+  ctx.addIssue({code:'custom',message:'Inconsistent document satisfaction state'});
+ if(['requested','received_pending_review'].includes(row.state)?row.analysis_run_id!==null||row.reason!==null:row.analysis_run_id===null||row.reason===null)
+  ctx.addIssue({code:'custom',message:'Inconsistent document assessment receipt'});
+ if(row.state==='satisfied'&&row.reason!=='target_specific_observed_source')ctx.addIssue({code:'custom',message:'Positive document evidence required'});
+});
+type DocumentUploadState=Omit<z.infer<typeof reviewUploadStateSchema>,'request_id'|'source_current'>;
+
 const conflictSourceSchema=z.object({conflict_reason:z.enum(['conflicting_observations','provider_reported_conflict']),
  source_observations:z.array(z.object({candidate_id:z.uuid(),raw_value:z.string().max(1000).nullable(),page:z.number().int().positive().max(100),source_label:z.string().max(1000).nullable()}).strict()).max(12)}).strict();
-export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
+export type StoredRequest = ThreadRequest & Readonly<{ id: string; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; document_upload_state?:DocumentUploadState; reading_display?:DocumentReadingDisplay; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
+
+export function documentRequestSatisfied(request:StoredRequest):boolean{
+ return request.source_current!==false&&request.document_upload_state?.state==='satisfied'&&request.document_upload_state.information_satisfied===true;
+}
 
 type RequestRow = Readonly<{
   id: string;
@@ -70,6 +90,15 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const bound = rows.filter(row => row.code.startsWith('document_field:'));
   const june=rows.filter(row=>row.code.startsWith('minimum_wage_june2026:'));
   const fields = identityId && bound.length ? await store.rpc<{request_id:string;source_current:boolean}>('case_request_field_states',{target_case:caseId,target_identity:identityId}) : [];
+  const fieldTargets=identityId&&bound.length?await store.rpc<{request_id:string;target:unknown}>('case_request_field_reading_targets',{target_case:caseId,target_identity:identityId}):[];
+  const displays=new Map<string,DocumentReadingDisplay>();
+  for(const entry of fieldTargets){
+   const target=documentFieldTargetSchema.parse(entry.target),request=bound.find(r=>r.id===entry.request_id);
+   if(!request||target.case_id!==caseId||request.code!==`document_field:${target.target_sha256}`||displays.has(entry.request_id))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+   const display=documentFieldVerificationDisplay(target);
+   displays.set(entry.request_id,{question:display.question,field:display.field,raw_value:display.raw_value,
+    page:display.source.page,text_fragment:display.source.text_fragment,bounding_box:display.source.bounding_box});
+  }
   const juneStates=identityId&&june.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_june_states',{target_case:caseId,target_identity:identityId}):[];
   const transcriptions=rows.filter(row=>row.code.startsWith('document_transcription:'));
   const transcriptionStates=identityId&&transcriptions.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_transcription_states',{target_case:caseId,target_identity:identityId}):[];
@@ -80,15 +109,21 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const reviews=rows.filter(row=>row.code.startsWith(reviewNamespace));
   const reviewStates=identityId&&reviews.length?parseReviewStates(await store.rpc('case_request_review_states',{target_case:caseId,target_identity:identityId}),caseId):[];
   if(reviewStates.some(s=>s.target&&reviews.find(r=>r.id===s.request_id)?.code!==reviewNamespace+s.target.target_sha256))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+  const documentReviews=reviews.filter(r=>r.answer_kind==='document');
+  const uploadStates=identityId&&documentReviews.length?z.array(reviewUploadStateSchema).parse(await store.rpc('case_request_review_upload_states',{target_case:caseId,target_identity:identityId})):[];
+  if(identityId&&documentReviews.length&&(uploadStates.length!==documentReviews.length||new Set(uploadStates.map(s=>s.request_id)).size!==uploadStates.length
+   ||uploadStates.some(s=>!documentReviews.some(r=>r.id===s.request_id)||reviewStates.find(r=>r.request_id===s.request_id)?.source_current!==s.source_current)))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates,...reviewStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts,...reviews];
   if (identityId && allBound.length && (states.length !== allBound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!allBound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   return rows.map(row => {
     const revision = revisions.find(value => value.request_id === row.id);
     const state = states.find(value => value.request_id === row.id);
     const conflict=conflictStates.find(value=>value.request_id===row.id);
+    const upload=uploadStates.find(value=>value.request_id===row.id);
+    const document_upload_state:DocumentUploadState|undefined=upload?{state:upload.state,information_satisfied:upload.information_satisfied,analysis_run_id:upload.analysis_run_id,reason:upload.reason}:undefined;
     const source=conflict&&!(conflict.source_current===false&&conflict.conflict_reason===null)
       ?conflictSourceSchema.parse({conflict_reason:conflict.conflict_reason,source_observations:conflict.source_observations}):undefined;
-    return {...toRequest(row),...(state?{source_current:state.source_current}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
+    return {...toRequest(row),...(state?{source_current:state.source_current}:{}),...(document_upload_state?{document_upload_state}:{}),...(displays.has(row.id)?{reading_display:displays.get(row.id)}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
   });
 }
 
@@ -171,12 +206,12 @@ export async function answerCaseRequest(
 
 /** D-7.2: the clock runs unless a blocking request is open. */
 export function caseSlaPaused(requests: readonly StoredRequest[]): boolean {
-  return slaPaused(requests);
+  return slaPaused(requests.filter(request=>request.source_current!==false&&!documentRequestSatisfied(request)));
 }
 
 /** D-9: a request past its expiry is closed and stops holding the case. */
 export function expiredRequests(requests: readonly StoredRequest[], now: Date = new Date()): readonly StoredRequest[] {
-  return requests.filter((request) => request.answered_at === null && new Date(request.expires_at) <= now);
+  return requests.filter((request) => request.answered_at === null && !documentRequestSatisfied(request) && new Date(request.expires_at) <= now);
 }
 
 export async function editCaseRequest(input:{caseId:string;requestId:string;identityId:string;answer:string;expectedRevision:number;kind:'draft'|'correction'},db?:CaseAccessDb|null){

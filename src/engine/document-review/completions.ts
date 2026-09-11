@@ -9,7 +9,9 @@ export const reviewPeriodSchema=z.object({from:z.iso.date(),to:z.iso.date()}).st
 export const reviewSourcePinSchema=z.object({case_id:z.uuid(),document_id:id,version_id:id,source_sha256:sha}).strict();
 export type ReviewSourcePin=Readonly<z.infer<typeof reviewSourcePinSchema>>;
 export const reviewDocumentSchema=z.object({pin:reviewSourcePinSchema,kind:id,period:reviewPeriodSchema.nullable().optional(),
- review:z.enum(['complete','partial','unreadable','not_reviewed'])}).strict();
+ review:z.enum(['complete','partial','unreadable','not_reviewed']),
+ review_completed_fact_keys:z.array(z.literal('payslip.financial_source')).max(1).optional()}).strict().refine(d=>!d.review_completed_fact_keys?.length
+ ||d.kind==='payslip'&&d.review==='partial'&&d.period!==null&&d.period!==undefined,'Scoped financial-source review requires a partial payslip with a known period');
 export const reviewEvidenceSchema=z.object({evidence_id:id,case_id:z.uuid(),fact_key:id,
  period:reviewPeriodSchema.nullable(),origin:z.enum(['document','questionnaire','answer','derived','transfer_receipt']),
  state:z.enum(['observed','declared','derived','unknown','conflicted','stale']),value:value.nullable(),

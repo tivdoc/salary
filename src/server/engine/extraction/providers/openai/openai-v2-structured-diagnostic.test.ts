@@ -49,7 +49,8 @@ describe('bounded structured response diagnostics preserve provider/mapper attri
   expect(test.calls()).toBe(1);expect(JSON.stringify(result)).not.toContain('synthetic-secret-writer-message');expect(JSON.stringify(test.logs)).not.toContain('synthetic-secret-writer-message');
  });
  it('does not emit schema-invalid structured output to the diagnostic sink',async()=>{
-  const test=await setup({...output(),unrecognized:true} as OpenAiPayslipV2StructuredOutput),sink=vi.fn();
+  const malformed={...output(),unrecognized:true};
+  const test=await setup(malformed),sink=vi.fn();
   const result=await test.extractor.extractPreparedPass({...test.input,onStructuredOutput:sink});
   expect(result.extraction.status).toBe('failed');expect(sink).not.toHaveBeenCalled();expect(test.calls()).toBe(1);
  });

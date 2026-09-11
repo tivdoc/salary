@@ -8,10 +8,11 @@ import {
 } from "@/engine/extraction/contracts";
 import type { Gate0CriticalContext } from "@/engine/extraction/validation";
 import { salaryTypeAssessmentSchema, type SalaryTypeAssessment } from "@/engine/extraction/v2";
-import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import { openAiPayslipV2AcceptedOutputSchema, type OpenAiPayslipV2AcceptedOutput as OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import type {OpenAiProviderReceipt} from './provider-receipt';
 import {classifyOpenAiV2AggregateTotalRows} from './v2-aggregate-totals';
 import {explicitHourlyBaseCells} from './v2-hourly-row-evidence';
+import {classifyOpenAiV2SourceScopes} from './v2-source-scope';
 
 type ValueCandidate = OpenAiPayslipV2StructuredOutput["totals"]["gross_candidates"][number];
 type ModelConfidence = ValueCandidate["confidence"];
@@ -45,6 +46,7 @@ function candidateSource(input: {
     document_id: input.documentId,
     page: input.candidate.evidence.page ?? 1,
     text_fragment: `${label}: ${input.candidate.raw_value}`.slice(0, 500),
+    ...('source_scope' in input.candidate.evidence?{source_scope:input.candidate.evidence.source_scope,...(input.candidate.evidence.region?{region:input.candidate.evidence.region}:{})}:{}),
   };
 }
 
@@ -68,7 +70,7 @@ export function mapOpenAiV2Output(input: {
   extractedAt: string;
   allowedFields?: readonly PayslipFieldKey[];
 }): MappedOpenAiV2Pass {
-  const output = openAiPayslipV2StructuredOutputSchema.parse(input.output);
+  const output = openAiPayslipV2AcceptedOutputSchema.parse(input.output);
   // A malformed optional assessment is not evidence against unrelated cells.
   // Omit only the invalid branch; never invent raw evidence or promote an
   // inference into the documentary field. Keep the diagnostic in the receipt's
@@ -81,10 +83,12 @@ export function mapOpenAiV2Output(input: {
   const documentId = input.request.document.document_id;
   const allowed = input.allowedFields ? new Set(input.allowedFields) : null;
   const fields: RawCandidateField[] = [];
+  const literalLabels=new Map<string,string>();
   let sequence = 0;
   const addCandidate = (field: PayslipFieldKey, value: ValueCandidate, fallbackLabel: string, derivedWarnings: readonly string[] = []) => {
     if (allowed && !allowed.has(field)) return null;
     const candidateId = uuidFrom(`${input.request.extraction_id}:v2:${sequence++}:${field}`);
+    if(value.evidence.source_label)literalLabels.set(candidateId,value.evidence.source_label);
     fields.push({
       candidate_id: candidateId,
       field,
@@ -191,6 +195,7 @@ export function mapOpenAiV2Output(input: {
         document_id: documentId,
         page: row.evidence.page ?? 1,
         text_fragment: row.source_label,
+        ...('source_scope' in row.evidence?{source_scope:row.evidence.source_scope,...(row.evidence.region?{region:row.evidence.region}:{})}:{}),
       },
       extraction_method: "ai_vision" as const,
       warning_flags: row.warnings,
@@ -232,7 +237,7 @@ export function mapOpenAiV2Output(input: {
   if (!allowed || allowed.has("salary_period")) requiredFields.push("salary_period");
   if(!documentedPairValid&&(!allowed||allowed.has('salary_type')))requiredFields.push('salary_type');
 
-  const extraction = classifyOpenAiV2AggregateTotalRows(extractionResultSchema.parse({
+  const extraction = classifyOpenAiV2SourceScopes(classifyOpenAiV2AggregateTotalRows(extractionResultSchema.parse({
     extraction_id: input.request.extraction_id,
     document_id: documentId,
     status: fields.length > 1 ? "completed" : "partial",
@@ -257,7 +262,7 @@ export function mapOpenAiV2Output(input: {
     },
     extracted_at: input.extractedAt,
     error_code: null,
-  }));
+  })),literalLabels,{hasSeparateEmployeeFunds:output.payroll_rows.some(row=>row.semantic_kind==='deduction'&&/(?:ניכוי(?:י)? קופ|ניכוי(?:י)? קרנ|employee funds)/u.test(row.source_label))});
   return {
     extraction,
     salary_type_assessment: salaryTypeAssessment,

@@ -9,7 +9,7 @@ const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict();
 const state=z.enum(['observed','declared','missing','unknown','conflict','unreadable','stale','expired']);
 const sourceSchema=z.object({document_id:contextId,version_id:contextId,file_sha256:hash,page:z.number().int().positive(),
  locator:z.string().min(1).max(500),label:z.string().min(1).max(300),
- reading:z.enum(['ai_document_review','provider_extraction','customer_declaration','source_research']),reading_receipt_sha256:hash,
+ reading:z.enum(['ai_document_review','provider_extraction','identified_document_reading','customer_declaration','source_research']),reading_receipt_sha256:hash,
 }).strict();
 const operandSchema=z.object({id,observation_id:contextId,state,printed_value:z.string().max(100).nullable(),
  representation:z.enum(['money_ils','decimal_quantity','hours_minutes','percent','integer','boolean']),
@@ -37,6 +37,13 @@ const candidateSchema=z.object({kind:z.literal('candidate_rule'),rule:ruleSpecPa
  parameter_bindings:z.array(z.object({ref_id:id,operand_id:id}).strict()).max(64),
  required_decision_ids:z.array(id).min(1).max(32),decisions:z.array(decisionSchema).max(32),
  expected_output_ref:id.nullable(),recorded_ref:id.nullable(),
+ // Opt-in comparison; old candidate receipts retain their exact null-difference semantics.
+ comparison:z.object({schema_version:z.literal('candidate-comparison-v1'),expected_ref:id,recorded_ref:id,difference_ref:id,
+  recorded_basis:z.enum(['document_amount','document_allocation','identified_answer'])}).strict().optional(),
+ // Counterfactual conditions remain unresolved. This does not change the decision,
+ // a source observation, a confidence status, or the REAL authority boundary.
+ conditional_assumptions:z.array(z.object({decision_id:id,explanation:z.string().min(1).max(1000)}).strict()).min(1).max(32).optional(),
+ execution_preconditions:z.array(id).min(1).max(16).optional(),
 }).strict();
 
 export const DOCUMENT_REVIEW_CALCULATION_POLICY={version:'document-review-calculation-v1',
@@ -135,6 +142,22 @@ function validate(input:DocumentReviewCalculationInput){
   const op=input.operation;
   if(new Set(op.required_decision_ids).size!==op.required_decision_ids.length||new Set(op.decisions.map(d=>d.decision_id)).size!==op.decisions.length)throw Error('DOCUMENT_REVIEW_DUPLICATE_DECISION');
   for(const decision of op.decisions)for(const source of decision.sources)assertSource(source,input);
+  if(op.conditional_assumptions){
+   if(new Set(op.conditional_assumptions.map(a=>a.decision_id)).size!==op.conditional_assumptions.length)throw Error('DOCUMENT_REVIEW_DUPLICATE_ASSUMPTION');
+   for(const assumption of op.conditional_assumptions){
+    const decision=op.decisions.find(d=>d.decision_id===assumption.decision_id);
+    if(!op.required_decision_ids.includes(assumption.decision_id)||!decision||!['missing','unknown'].includes(decision.state)||!decision.sources.length)throw Error('DOCUMENT_REVIEW_ASSUMPTION_NOT_UNRESOLVED_SOURCED_DECISION');
+    if(decision.valid_until!==null&&Date.parse(decision.valid_until)<=Date.parse(input.evaluated_at))throw Error('DOCUMENT_REVIEW_ASSUMPTION_EXPIRED');
+   }
+  }
+  if(op.comparison){
+   const c=op.comparison,node=op.rule.nodes.find(n=>n.node_id===c.difference_ref);
+   if(op.expected_output_ref!==c.expected_ref||op.rule.output_ref!==c.difference_ref||op.recorded_ref!==null||!node||node.operation!=='subtract'||node.left_ref!==c.expected_ref||node.right_ref!==c.recorded_ref)throw Error('DOCUMENT_REVIEW_COMPARISON_BINDING');
+   // Neither amount may be a freestanding parameter masquerading as a case result.
+   const refs=new Set([...op.rule.facts.map(f=>f.ref_id),...op.rule.nodes.map(n=>n.node_id)]);
+   if(!refs.has(c.expected_ref)||!refs.has(c.recorded_ref))throw Error('DOCUMENT_REVIEW_COMPARISON_BINDING');
+  }
+  if(op.execution_preconditions&&(new Set(op.execution_preconditions).size!==op.execution_preconditions.length||op.execution_preconditions.some(ref=>op.rule.nodes.find(n=>n.node_id===ref)?.operation!=='compare.gte')))throw Error('DOCUMENT_REVIEW_PRECONDITION_REF');
   const factRefs=op.fact_bindings.map(b=>b.ref_id),paramRefs=op.parameter_bindings.map(b=>b.ref_id);
   if(new Set(factRefs).size!==factRefs.length||new Set(paramRefs).size!==paramRefs.length)throw Error('DOCUMENT_REVIEW_DUPLICATE_BINDING');
   // A caller cannot substitute a modified rule while retaining its old hash.
@@ -156,7 +179,7 @@ function blockers(input:DocumentReviewCalculationInput):Blocker[]{
   for(const required of op.required_decision_ids){
    const decision=op.decisions.find(d=>d.decision_id===required);
    if(!decision){result.push({dependency_id:required,state:'missing',reason:'required_applicability_decision_absent'});continue;}
-   if(decision.state!=='accepted')result.push({dependency_id:required,state:decision.state,reason:'applicability_not_accepted'});
+   if(decision.state!=='accepted'&&!op.conditional_assumptions?.some(a=>a.decision_id===required))result.push({dependency_id:required,state:decision.state,reason:'applicability_not_accepted'});
    else if(!decision.sources.length)result.push({dependency_id:required,state:'missing',reason:'applicability_source_missing'});
    else if(decision.valid_until!==null&&decision.valid_until<=input.evaluated_at)result.push({dependency_id:required,state:'expired',reason:'applicability_expired'});
    else if(decision.basis==='customer_declaration')result.push({dependency_id:required,state:'unknown',reason:'declaration_alone_is_not_rule_applicability'});
@@ -181,7 +204,10 @@ export function calculateDocumentReview(candidate:unknown){
  const common={schema_version:'document-review-calculation-receipt-v1' as const,policy:DOCUMENT_REVIEW_CALCULATION_POLICY,input,
   dependency_fingerprint,claim:op.kind==='candidate_rule'?'conditional_entitlement_candidate':op.kind==='observed_ratio'?'observed_ratio':'document_arithmetic',
   remittance_status:input.remittance_status,input_basis:input.operands.some(o=>o.source.reading==='customer_declaration')?'includes_customer_declaration':'document_only',legal_requirement_status:op.kind==='candidate_rule'?'conditional_not_real_approval':'not_determined',
-  human_attestation:null,real_activation_allowed:false};
+  human_attestation:null,real_activation_allowed:false,
+  ...(op.kind==='candidate_rule'&&op.conditional_assumptions?{unresolved_conditions:op.conditional_assumptions.map(a=>({decision:op.decisions.find(d=>d.decision_id===a.decision_id)!,assumption:a.explanation})),counterfactual_only:true as const}:{}),
+  ...(op.kind==='candidate_rule'&&op.comparison?{comparison_basis:op.comparison.recorded_basis}:{}),
+ };
  if(blocked.length)return deepFreeze({...common,state:'blocked' as const,blockers:blocked,execution:null,expected:null,recorded:null,difference:null,observed_ratio:null});
  const values=new Map(input.operands.map(o=>[o.id,parseValue(o)]));
  const get=(ref:string)=>values.get(ref)!;
@@ -239,12 +265,23 @@ export function calculateDocumentReview(candidate:unknown){
    resource_policy:{max_steps:20,max_depth:16,max_aggregate_items:32,max_integer_digits:64}});
  }
  const execution=executeRuleSpec({rule,facts,parameters});
+ if(op.kind==='candidate_rule'&&op.execution_preconditions){
+  const failed=op.execution_preconditions.filter(ref=>{const value=execution.trace.find(t=>t.step_id===ref)?.result;return value?.kind!=='boolean'||value.value!==true;});
+  if(failed.length)return deepFreeze({...common,state:'blocked' as const,blockers:failed.map(dependency_id=>({dependency_id,state:'unknown',reason:'rule_execution_precondition_false'})),execution:null,expected:null,recorded:null,difference:null,observed_ratio:null});
+ }
  const expected=expectedRef===null?execution.output:execution.trace.find(t=>t.step_id===expectedRef)?.result??facts.find(f=>f.ref_id===expectedRef)?.value;
  if(expected===undefined)throw Error('DOCUMENT_REVIEW_EXPECTED_REF');
  // Candidate rules own their output semantics. Never assume a candidate's
  // output is a shortfall unless its caller identifies an output comparison.
- const difference=op.kind==='observed_ratio'||op.kind==='candidate_rule'?null:execution.output;
+ let difference=op.kind==='observed_ratio'||op.kind==='candidate_rule'?null:execution.output;
+ if(op.kind==='candidate_rule'&&op.comparison){
+  recorded=execution.trace.find(t=>t.step_id===op.comparison!.recorded_ref)?.result??facts.find(f=>f.ref_id===op.comparison!.recorded_ref)?.value??null;
+  difference=execution.output;
+  if(expected.kind!=='money'||recorded?.kind!=='money'||difference.kind!=='money'||expected.currency!==recorded.currency||expected.currency!==difference.currency||BigInt(expected.minor_units)-BigInt(recorded.minor_units)!==BigInt(difference.minor_units))throw Error('DOCUMENT_REVIEW_COMPARISON_AMOUNTS');
+ }
+ const assumptionBinding=op.kind==='candidate_rule'&&op.conditional_assumptions?{schema_version:'candidate-counterfactual-trace-v1',assumptions_sha256:canonicalSha256({assumptions:op.conditional_assumptions,decisions:op.decisions}),execution_trace_sha256:execution.trace_sha256,rule_sha256:rule.content_sha256,dependency_fingerprint}:null;
  const seed={...common,state:'calculated' as const,blockers:[],rule,facts,parameters,transformations,execution,expected,recorded,difference,
+  ...(assumptionBinding?{conditional_trace_binding:{...assumptionBinding,binding_sha256:canonicalSha256(assumptionBinding)}}:{}),
   observed_ratio:op.kind==='observed_ratio'?execution.output:null,
   precision_warning:input.operands.some(o=>o.precision==='printed_precision')?'printed_precision_not_hidden_precision':null};
  return deepFreeze({...seed,result_sha256:canonicalSha256(seed)});

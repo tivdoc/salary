@@ -5,9 +5,10 @@ import { canonicalFactSchema, type CanonicalFact, type EvidenceReference } from 
 import { employmentSnapshotSchema } from "../facts/snapshot.ts";
 import { factPathSchema, type FactPath } from "../facts/fact-paths.ts";
 import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip.ts";
-import { gate0ValidationSchema, type Gate0Validation } from "./validation.ts";
+import { gate0ValidationSchema, validatePayslipGate0, type Gate0Validation } from "./validation.ts";
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import type {CustomerDocumentReading} from './customer-reading.ts';
+import {materializeValidatedPayslipReadings} from './reading-resolution.ts';
 
 // Opt-in analysis policy. Its absence preserves the old serialized snapshots;
 // it is never supplied by OCR and does not change an extraction checkpoint.
@@ -211,27 +212,33 @@ export function resolvePayslipSnapshot(input: {
   reading_policy?:typeof IDENTIFIED_AGREEING_CANDIDATES_POLICY;
 }) {
   const document = immutableDocumentSchema.parse(input.document);
-  const extraction = normalizedPayslipExtractionSchema.parse(input.extraction);
-  const validation = gate0ValidationSchema.parse(input.validation);
+  let extraction = normalizedPayslipExtractionSchema.parse(input.extraction);
+  let validation = gate0ValidationSchema.parse(input.validation);
   const context = snapshotResolutionContextSchema.parse(input.context);
   if(input.reading_policy!==undefined&&input.reading_policy!==IDENTIFIED_AGREEING_CANDIDATES_POLICY)throw new TypeError('DOCUMENT_READING_POLICY_UNSUPPORTED');
   if (document.case_id !== context.case_id || document.document_id !== extraction.document_id) {
     throw new TypeError("Snapshot resolution inputs must reference one case and document");
   }
-  const {customer_readings=[],...machineExtraction}=extraction;
-  const readings=new Map<string,CustomerDocumentReading>();
-  const readingRequestIds=new Set<string>(),readingTargetHashes=new Set<string>();
-  for(const reading of customer_readings){
-    const candidates=extraction.fields.filter(field=>field.candidate_id===reading.candidate_id);
-    const periods=extraction.fields.filter(field=>field.field==='salary_period');
-    if(reading.case_id!==document.case_id||reading.document_id!==document.document_id||reading.source_sha256!==document.content_sha256
-      ||reading.normalized_extraction_sha256!==canonicalSha256(machineExtraction)||candidates.length!==1
-      ||reading.candidate_sha256!==canonicalSha256(candidates[0])||readings.has(reading.candidate_id)
-      ||input.reading_policy===IDENTIFIED_AGREEING_CANDIDATES_POLICY&&(readingRequestIds.has(reading.request_id)||readingTargetHashes.has(reading.target_sha256))
-      ||!periods.length||periods.some(period=>!period.normalized_value||`${period.normalized_value.year}-${String(period.normalized_value.month).padStart(2,'0')}`!==reading.month))
-      throw new TypeError('DOCUMENT_READING_BINDING_MISMATCH');
-    readings.set(reading.candidate_id,reading);
-    readingRequestIds.add(reading.request_id);readingTargetHashes.add(reading.target_sha256);
+  const materialized=materializeValidatedPayslipReadings({document,extraction,case_id:context.case_id,requireDistinctTargets:input.reading_policy===IDENTIFIED_AGREEING_CANDIDATES_POLICY});
+  const readings=materialized.readings;
+  if(materialized.hasCorrections){
+    const options={reference_year:Number(context.created_at.slice(0,4)),component_duplicate_policy:validation.component_duplicate_policy};
+    const originalDefault=validatePayslipGate0(extraction,options),supplied=validation;
+    extraction=materialized.extraction;
+    validation=validatePayslipGate0(extraction,options);
+    // Recompute arithmetic affected by the changed cell, but preserve caller
+    // gates/critical context that default Gate0 does not know how to recreate.
+    for(const assessment of supplied.field_assessments){
+      const oldCodes=originalDefault.field_assessments.find(a=>a.candidate_id===assessment.candidate_id)?.issue_codes??[];
+      const extra=assessment.issue_codes.filter(code=>!oldCodes.includes(code));
+      const current=validation.field_assessments.find(a=>a.candidate_id===assessment.candidate_id);
+      if(current&&extra.length){
+        current.issue_codes=[...new Set([...current.issue_codes,...extra])];
+        if(assessmentRank[assessment.status]>assessmentRank[current.status])current.status=assessment.status;
+        if(assessmentRank[assessment.status]>assessmentRank[validation.status])validation.status=assessment.status;
+      }
+    }
+    validation.issues.push(...supplied.issues.filter(issue=>!originalDefault.issues.some(old=>canonicalSha256(old)===canonicalSha256(issue))));
   }
 
   const facts = new Map<FactPath, CanonicalFact>();

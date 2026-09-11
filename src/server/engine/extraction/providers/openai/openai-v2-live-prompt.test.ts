@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {preprocessPayslipDocument} from '../../preprocessing';
 import {buildOpenAiV2ResponsesRequest} from './v2-request';
-import {OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,OPENAI_PAYSLIP_V2_INSTRUCTIONS,OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS} from './v2-prompt';
+import {OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,OPENAI_PAYSLIP_V2_INSTRUCTIONS,OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS,OPENAI_PAYSLIP_V2_R7_INSTRUCTIONS} from './v2-prompt';
 import {openAiPayslipV2R6StructuredOutputSchema,openAiPayslipV2StructuredOutputSchema} from './v2-schema';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 vi.mock('server-only',()=>({}));
@@ -15,7 +15,7 @@ describe('versioned prompt correction after actual live transcription errors',()
   expect(createHash('sha256').update(OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS).digest('hex')).toBe('7be593a29692b07d46e4866530b6d8ed7009434c3bbe786f4f9888d252a22c4d');
   expect(openAiPayslipV2StructuredOutputSchema).toBe(openAiPayslipV2R6StructuredOutputSchema);
   expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS.startsWith(OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS)).toBe(true);
-  const added=OPENAI_PAYSLIP_V2_INSTRUCTIONS.slice(OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS.length);
+  const added=OPENAI_PAYSLIP_V2_R7_INSTRUCTIONS.slice(OPENAI_PAYSLIP_V2_R6_INSTRUCTIONS.length);
   expect(added).toContain('an unheaded neighboring cell does not become part of the description cell');
   expect(added).toContain('Distinct rows can have identical description labels');
   expect(added).toContain('do not mechanically remove suffixes');
@@ -35,7 +35,7 @@ describe('versioned prompt correction after actual live transcription errors',()
   const prepared=await preprocessPayslipDocument({bytes:readFileSync('docs/release-evidence/automatic-dev-live-extraction/live-ocr-clear-june-2026.pdf'),mime_type:'application/pdf'});
   for(const [kind,version] of [['first_pass',OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION],['targeted_recovery',OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION]] as const){
    const request=buildOpenAiV2ResponsesRequest({model:'gpt-4o-mini-2024-07-18',prepared,kind,requested_fields:['salary_period']});
-   expect(request.text.format.name).toBe(version);expect(version).toMatch(/-r7$/u);
+   expect(request.text.format.name).toBe(version);expect(version).toMatch(/-r8$/u);
    expect(request.max_output_tokens).toBe(10000);expect(request.store).toBe(false);expect(request).not.toHaveProperty('tools');
   }
  expect(OPENAI_PAYSLIP_V2_INSTRUCTIONS).not.toMatch(/3300|3540|3,300|3,540|06\/2026|June|יוני|2026/u);

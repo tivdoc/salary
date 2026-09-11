@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import type {generateReviewCompletions} from './completions.ts';
 import type {calculateDocumentReview} from './calculations.ts';
-import {reviewCompletionSchema,reviewCompletionAnswerReceiptSchema} from './completions.ts';
+import {reviewCompletionSchema,reviewCompletionAnswerReceiptSchema,reviewSourcePinSchema} from './completions.ts';
 import {documentReviewCalculationInputSchema} from './calculations.ts';
 
 export const DOCUMENT_REVIEW_POLICY='document-review-product-v1' as const;
@@ -23,7 +23,7 @@ export const documentReviewInputSchema=z.object({
  period:z.object({from:z.iso.date(),to:z.iso.date()}).strict(),
  purchased_scope:z.object({order_id:z.string().min(1),receipt_sha256:sha,topics:z.array(reviewTopicSchema).min(1),
   origin:z.enum(['saved_order','legacy_paid_receipt'])}).strict(),
- coverage_gaps:z.array(z.object({check_id:z.string().min(1),topic:reviewTopicSchema,kind:z.enum(['missing_source','missing_fact','missing_rule','missing_applicability','ownership']),detail:z.string().min(1),next_step:z.string().min(1)}).strict()).max(100).default([]),
+ coverage_gaps:z.array(z.object({check_id:z.string().min(1),topic:reviewTopicSchema,kind:z.enum(['missing_source','missing_fact','missing_rule','missing_applicability','ownership']),detail:z.string().min(1),next_step:z.string().min(1),source_pins:z.array(reviewSourcePinSchema).min(1).max(32).optional()}).strict()).max(100).default([]),
  documents:z.array(reviewDocumentSchema).min(1).max(64),checks:z.array(reviewCheckSchema).max(400),
  // The planner validates its own source-bound contract; it is included in the
  // immutable input hash rather than read from a mutable questionnaire later.
@@ -31,7 +31,13 @@ export const documentReviewInputSchema=z.object({
  answer_bindings:z.array(z.object({fact_key:z.string().min(1),check_id:z.string().min(1),operand_id:z.string().min(1)}).strict()).max(400).default([]),
  answer_history:z.array(z.object({request:reviewCompletionSchema,receipt:reviewCompletionAnswerReceiptSchema,
   original_checks:z.array(documentReviewCalculationInputSchema).max(100)}).strict()).max(100).default([]),
-}).strict();
+}).strict().superRefine((input,ctx)=>{
+ for(const [index,gap] of input.coverage_gaps.entries())for(const pin of gap.source_pins??[]){
+  if(pin.case_id!==input.case_id||!input.documents.some(d=>d.case_id===pin.case_id&&d.version_id===pin.version_id
+   &&d.file_sha256===pin.source_sha256&&(d.document_id===pin.document_id||d.document_id===pin.version_id)))
+   ctx.addIssue({code:'custom',path:['coverage_gaps',index,'source_pins'],message:'REVIEW_GAP_SOURCE_MISMATCH'});
+ }
+});
 export type DocumentReviewInput=z.infer<typeof documentReviewInputSchema>;
 export type ReviewDocument=z.infer<typeof reviewDocumentSchema>;
 export type DocumentReviewCheckResult=Readonly<{

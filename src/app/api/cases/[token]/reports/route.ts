@@ -12,6 +12,7 @@ import {sameOriginSessionRequest} from '@/server/product/case-access/session-act
 import {getSupabaseAdmin} from '@/lib/supabase-admin';
 import {PRODUCT_HTTP_HEADERS,strictJsonObject,refusedEntrypoint} from '@/server/product/routes/http-common';
 import {guardStableHttpEntrypoint} from '@/server/platform/capabilities/stable-http-entrypoint';
+import {privateDocumentReviewArtifact} from '@/server/product/reports/private-document-review';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 type Context={params:Promise<{token:string}>};
 async function scope(context:Context){const session=await resolveIdentitySession(await readCaseSessionCookie());if(!session)return null;const {token}=await context.params;const item=(await listIdentityCases(session.identity_id)).find(c=>c.public_id===token);return item?{item,identity:session.identity_id}:null;}
@@ -20,6 +21,16 @@ export async function GET(request:Request,context:Context){
  try{
   const owner=await scope(context);if(!owner)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
   const url=new URL(request.url);const id=z.uuid().safeParse(url.searchParams.get('report'));if(!id.success)return new Response(null,{status:404});
+  if(url.searchParams.get('review')==='1'){
+   const saved=await privateDocumentReviewArtifact(owner.item.case_id,owner.identity,id.data);
+   if(!saved)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   if(!saved.current)return Response.json({code:'analysis_superseded'},{status:410,headers:PRODUCT_HTTP_HEADERS});
+   const html=url.searchParams.get('format')==='html';
+   return new Response(Buffer.from(html?saved.report.html:saved.report.pdf),{headers:{...PRODUCT_HTTP_HEADERS,
+    'Content-Type':html?'text/html; charset=utf-8':'application/pdf',
+    ...(!html?{'Content-Disposition':`attachment; filename="Tivdoc-private-${id.data}.pdf"`}:{}),
+    'X-Tivdoc-Analysis-Run':saved.bundle.analysis_run_id,'X-Tivdoc-Report-Revision':String(saved.report.report_revision)}});
+  }
   if(url.searchParams.get('canonical')==='1'){
    const saved=await readJune2026CanonicalTest(owner.item.case_id,owner.identity,id.data);
    if(!saved)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});

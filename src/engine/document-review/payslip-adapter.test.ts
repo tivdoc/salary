@@ -8,7 +8,7 @@ import {documentFieldTarget,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from '../../ser
 import {savedDocumentFieldReadings} from '../../server/product/processing/saved-field-readings.ts';
 import {documentReviewInputSchema} from './contracts.ts';
 import {runDocumentReview} from './service.ts';
-import {reviewInputFromPayslips} from './payslip-adapter.ts';
+import {reviewInputFromPayslips,PAYSLIP_FINANCIAL_SOURCE_POLICY,PAYSLIP_FINANCIAL_SOURCE_FACT,type PayslipFinancialSourceProof} from './payslip-adapter.ts';
 import type {DocumentReviewCalculationInput} from './calculations.ts';
 
 type Mutable<T>={-readonly [K in keyof T]:T[K]};
@@ -29,18 +29,111 @@ function fixture(){
    source:{document_id:d.document_id,page:1,text_fragment:'Synthetic unique row quantity and unit price'},extraction_method:'fixture',warning_flags:[],normalization_warnings:[]};
   e.additional_components.push(r);return r;
  };
- const build=()=>reviewInputFromPayslips({case_id:d.case_id,period,purchased_scope:{order_id:'synthetic-paid-order',receipt_sha256:'a'.repeat(64),origin:'saved_order',topics:['minimum_wage','working_time','pension','travel','convalescence','bonuses']},snapshot:{...f.stored,documents:[d],extractions:[e]}});
+ const build=(financial_source_proofs?:readonly PayslipFinancialSourceProof[])=>reviewInputFromPayslips({financial_source_proofs,case_id:d.case_id,period,purchased_scope:{order_id:'synthetic-paid-order',receipt_sha256:'a'.repeat(64),origin:'saved_order',topics:['minimum_wage','working_time','pension','travel','convalescence','bonuses']},snapshot:{...f.stored,documents:[d],extractions:[e]}});
  const run=()=>runDocumentReview(documentReviewInputSchema.parse(build()),'synthetic-normal-review-run');
- const identify=(candidates:NormalizedCandidateField[])=>{
+ const identify=(candidates:NormalizedCandidateField[],includeDeductions=false)=>{
   const {customer_readings:_,...machine}=e;void _;
   const checkpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:d.case_id,product_document_id:randomUUID(),version_id:d.document_id,input_sha256:d.content_sha256,expected_month:'2026-06',period_mismatch:false,result_sha256:canonicalSha256({final_extraction:machine}),run:{result:{final_extraction:machine}}};
-  const answers=candidates.filter(c=>c.field!=='total_deductions').map(c=>{const target=documentFieldTarget({checkpoint,policyVersion:'synthetic-adapter-reading-v1',candidateId:c.candidate_id});return {id:randomUUID(),case_id:d.case_id,scope_month:'2026-06',code:`document_field:${target.target_sha256}`,answer_kind:'choice',answer:DOCUMENT_FIELD_CONFIRMATION_ANSWERS[0],answer_revision:1,answer_identity_id:randomUUID(),answer_created_at:'2026-07-03T12:00:00Z',field_target:target};});
+  const answers=candidates.filter(c=>includeDeductions||c.field!=='total_deductions').map(c=>{const target=documentFieldTarget({checkpoint,policyVersion:'synthetic-adapter-reading-v1',candidateId:c.candidate_id});return {id:randomUUID(),case_id:d.case_id,scope_month:'2026-06',code:`document_field:${target.target_sha256}`,answer_kind:'choice',answer:DOCUMENT_FIELD_CONFIRMATION_ANSWERS[0],answer_revision:1,answer_identity_id:randomUUID(),answer_created_at:'2026-07-03T12:00:00Z',field_target:target};});
   e.customer_readings=[...savedDocumentFieldReadings({caseId:d.case_id,month:'2026-06',policyVersion:'synthetic-adapter-reading-v1',journal:{answers},checkpoint})];
  };
  const totals=(confidence=1)=>[money('gross_salary','100.00',confidence),money('total_deductions','10.00'),money('net_salary','90.00',confidence)];
  return {d,e,p,build,run,money,row,identify,totals};
 }
+function financialFixture(){
+ const f=fixture(),cells=[f.p,...f.totals(.94)];
+ for(const c of cells)c.source={...c.source,text_fragment:`Synthetic current ${c.field}: ${c.raw_value}`,source_scope:{period_kind:'current',fund_kind:'unknown',column_label:'חודש נוכחי'}};
+ const proof=():PayslipFinancialSourceProof=>{
+  const {customer_readings:ignored,...original}=f.e;void ignored;
+  return {policy_version:PAYSLIP_FINANCIAL_SOURCE_POLICY,case_id:f.d.case_id,document_id:f.d.document_id,source_sha256:f.d.content_sha256,
+   normalized_extraction_sha256:canonicalSha256(original),provider_receipt_sha256:'b'.repeat(64),source_page_count:f.e.quality_metrics!.page_count,complete_original_source:true};
+ };
+ return {...f,cells,proof,confirm:()=>f.identify(cells,true)};
+}
+describe('narrow requested financial source receipt',()=>{
+ it('accepts four identified current cells and physical source proof without marking the whole payslip reviewed',()=>{
+  const f=financialFixture();f.confirm();const original=structuredClone(f.e),input=documentReviewInputSchema.parse(f.build([f.proof()]));
+  const completion=input.completion_input as {documents:{review:string;review_completed_fact_keys:string[]}[];evidence:{fact_key:string;value:string}[]};
+  expect(completion.documents[0]).toMatchObject({review:'partial',review_completed_fact_keys:[PAYSLIP_FINANCIAL_SOURCE_FACT]});
+  expect(completion.evidence).toHaveLength(1);expect(completion.evidence[0].fact_key).toBe(PAYSLIP_FINANCIAL_SOURCE_FACT);
+  expect(JSON.parse(completion.evidence[0].value).cells).toHaveLength(4);
+  expect(f.e).toEqual(original);expect(f.e.earnings_components_complete).toBe(false);expect(f.e.fields.some(c=>c.field==='pension_base')).toBe(false);
+ });
+ it.each(['no_physical_proof','no_readings','missing_cell','one_unconfirmed','unknown_scope','cumulative_scope','cropped','partial','foreign_period','conflict'])(
+  'does not emit positive source evidence for %s',kind=>{
+   const f=financialFixture();
+   if(kind==='missing_cell')f.e.fields=f.e.fields.filter(c=>c.field!=='total_deductions');
+   if(kind==='unknown_scope'||kind==='cumulative_scope')f.cells[1].source.source_scope!.period_kind=kind==='unknown_scope'?'unknown':'cumulative';
+   if(kind==='cropped')f.e.warnings.push('cropped_content');
+   if(kind==='partial')f.e.status='partial';
+   if(kind==='foreign_period')f.d.document_period={start_date:'2026-05-01',end_date:'2026-05-31'};
+   if(kind==='conflict')f.money('gross_salary','110.00');
+   if(kind!=='no_readings')f.identify(f.e.fields, true);
+   if(kind==='one_unconfirmed')f.e.customer_readings=f.e.customer_readings!.filter(r=>r.candidate_id!==f.cells[2].candidate_id);
+   const input=f.build(kind==='no_physical_proof'?undefined:[f.proof()]);
+   const completion=input.completion_input as {documents:{review_completed_fact_keys?:string[]}[];evidence:unknown[]};
+   expect(completion.evidence).toEqual([]);expect(completion.documents[0].review_completed_fact_keys).toBeUndefined();
+  });
+ it.each(['source','case','receipt_binding','page_count'])( 'rejects altered physical proof %s',kind=>{
+  const f=financialFixture();f.confirm();const proof={...f.proof()};
+  if(kind==='source')proof.source_sha256='f'.repeat(64);
+  if(kind==='case')proof.case_id=randomUUID();
+  if(kind==='receipt_binding')proof.normalized_extraction_sha256='e'.repeat(64);
+  if(kind==='page_count')proof.source_page_count++;
+  expect(()=>f.build([proof])).toThrow('DOCUMENT_REVIEW_FINANCIAL_SOURCE_PROOF_BINDING');
+ });
+});
+
 describe('saved extraction to ordinary source review',()=>{
+ it('admits each exact mapped row cell separately and never confirms its siblings or a different source label',()=>{
+  const f=fixture(),row=f.row();row.confidence=.94;row.source.text_fragment=row.source_label;
+  const rate=f.money('hourly_rate',row.rate_raw!,.94),amount=f.money('base_monthly_salary',row.amount_raw!,.94);
+  const quantity:NormalizedCandidateField={...structuredClone(rate),candidate_id:randomUUID(),field:'regular_hours',raw_value:row.quantity_raw!,normalized_value:{amount:row.quantity!,unit:'hours_per_month'}};
+  f.e.fields.push(quantity);
+  for(const candidate of [rate,amount,quantity])candidate.source.text_fragment=`${row.source_label}: ${candidate.raw_value}`;
+  f.identify([rate]);let result=f.run().checks.find(c=>c.check_id.includes('.row.'))!.calculation;
+  expect(result.state).toBe('blocked');expect(result.input.operands.map(o=>o.state)).toEqual(['observed','unknown','unknown']);
+  f.identify([rate,amount,quantity]);result=f.run().checks.find(c=>c.check_id.includes('.row.'))!.calculation;
+  expect(result.state).toBe('calculated');expect(result.difference).toMatchObject({minor_units:0});
+  expect(result.input.operands.every(o=>o.source.reading==='identified_document_reading')).toBe(true);expect(row.confidence).toBe(.94);
+  const headerRate={...structuredClone(rate),candidate_id:randomUUID(),source:{...rate.source,text_fragment:`תעריף שעה: ${rate.raw_value}`}};
+  f.e.fields.push(headerRate);f.identify([rate,headerRate,amount,quantity]);
+  expect(f.run().checks.find(c=>c.check_id.includes('.row.'))!.calculation.state).toBe('calculated');
+  // A new saved source hash and genuine reading still cannot turn a different
+  // labeled scalar into this row's quantity merely because the number agrees.
+  quantity.source.text_fragment=`תווית אחרת: ${quantity.raw_value}`;f.identify([rate,headerRate,amount,quantity]);
+  result=f.run().checks.find(c=>c.check_id.includes('.row.'))!.calculation;
+  expect(result.state).toBe('blocked');expect(result.input.operands.find(o=>o.id==='quantity')?.state).toBe('unknown');
+ });
+ it('uses a separately identified corrected cell through the normal engine while preserving provider observations',()=>{
+  const f=fixture(),fields=f.totals(.94),gross=fields[0];gross.raw_value='99.00';gross.normalized_value=normalizeMoney('99.00');
+  f.identify(fields);const reading=f.e.customer_readings!.find(r=>r.candidate_id===gross.candidate_id)!;
+  reading.correction={schema_version:'document-field-correction-v1',raw_value:'100.00',normalized_value:normalizeMoney('100.00'),verification_sha256:'e'.repeat(64)};
+  const before=structuredClone(f.e),result=f.run(),check=result.checks[0].calculation;
+  expect(check.state).toBe('calculated');expect(check.difference).toMatchObject({minor_units:0});
+  expect(check.input.operands[0]).toMatchObject({printed_value:'100.00',source:{reading:'identified_document_reading'}});
+  expect(gross).toMatchObject({raw_value:'99.00',confidence:.94,normalized_value:{minor_units:9900}});expect(f.e).toEqual(before);
+  f.e.customer_readings=f.e.customer_readings!.filter(r=>r.candidate_id!==gross.candidate_id);
+  expect(f.run().checks[0].calculation.state).toBe('blocked');expect(gross.raw_value).toBe('99.00');
+ });
+ it('keeps the corrected scalar and its exact copied row cell consistent without changing the saved row',()=>{
+  const f=fixture(),row=f.row('hourly_base','2','50.00','99.00');row.confidence=.94;row.source.text_fragment=row.source_label;
+  const amount=f.money('base_monthly_salary','99.00',.94),rate=f.money('hourly_rate','50.00',.94);
+  const quantity:NormalizedCandidateField={...structuredClone(rate),candidate_id:randomUUID(),field:'regular_hours',raw_value:'2',normalized_value:{amount:'2',unit:'hours_per_month'}};f.e.fields.push(quantity);
+  for(const c of [amount,rate,quantity])c.source.text_fragment=`${row.source_label}: ${c.raw_value}`;
+  f.identify([amount,rate,quantity]);const r=f.e.customer_readings!.find(r=>r.candidate_id===amount.candidate_id)!;
+  r.correction={schema_version:'document-field-correction-v1',raw_value:'100.00',normalized_value:normalizeMoney('100.00'),verification_sha256:'a'.repeat(64)};
+  const original=structuredClone(f.e),result=f.run().checks.find(c=>c.check_id.includes('.row.'))!.calculation;
+  expect(result.state).toBe('calculated');expect(result.difference).toMatchObject({minor_units:0});
+  expect(result.input.operands.find(o=>o.id==='amount')).toMatchObject({printed_value:'100.00',source:{reading:'identified_document_reading'}});
+  expect(result.input.operands.find(o=>o.id==='amount')?.source.locator).toContain('99.00');expect(f.e).toEqual(original);expect(row.amount?.minor_units).toBe(9900);
+ });
+ it.each(['value','currency','month'] as const)('rejects a forged corrected %s instead of trusting the proposed normalized value',kind=>{
+  const f=fixture(),fields=f.totals(.94);f.identify(fields);const r=f.e.customer_readings![0];
+  r.correction={schema_version:'document-field-correction-v1',raw_value:kind==='currency'?'USD 100':'100.00',normalized_value:kind==='value'?normalizeMoney('900.00'):normalizeMoney('100.00'),verification_sha256:'e'.repeat(64)};
+  if(kind==='month')r.month='2026-07';
+  expect(f.build).toThrow(/DOCUMENT_READING_(?:CORRECTION_INVALID|BINDING_MISMATCH)/u);
+ });
  it('uses canonical identified .94 readings without modifying source confidence or identity',()=>{
   const f=fixture(),fields=f.totals(.94);expect(f.run().checks[0].calculation.state).toBe('blocked');
   f.identify(fields);const original=canonicalSha256(f.e),r=f.run(),c=r.checks[0].calculation;

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { matchesDocumentSignature, type DocumentUpload, type UploadSnapshot } from "@/lib/document-upload";
 import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db";
+import { reviewUploadReceiptSchema, reviewUploadScopeSchema, type ReviewUploadReceipt, type ReviewUploadScope } from "./review-fulfillment";
 
 export class UploadError extends Error {
   constructor(public readonly code: string, public readonly status = 409) { super(code); }
@@ -9,7 +10,8 @@ export class UploadError extends Error {
 export type ReservedFile = DocumentUpload["files"][number] & {
   documentId: string; versionId: string; path: string; slot: string;
 };
-export type UploadBatch = { id: string; case_id: string; files: ReservedFile[]; completed_at: string | null; cancelled_at: string | null; expires_at: string };
+export type UploadBatch = { id: string; case_id: string; files: ReservedFile[]; completed_at: string | null; cancelled_at: string | null; expires_at: string; review_scope?: ReviewUploadScope | null };
+export type ReviewUploadSnapshot = UploadSnapshot & { reviewReceipts?: ReviewUploadReceipt[] };
 
 async function rpc<T>(fn: string, args: Record<string, unknown>, db?: CaseAccessDb): Promise<T> {
   const store = db ?? await resolveCaseAccessDb();
@@ -26,14 +28,42 @@ async function rpc<T>(fn: string, args: Record<string, unknown>, db?: CaseAccess
   }
 }
 
-export function uploadSnapshot(caseId: string, db?: CaseAccessDb): Promise<UploadSnapshot> {
-  return rpc("case_documents_snapshot", { target_case: caseId }, db);
+function batchReviewScope(caseId: string, batch: UploadBatch, requestId?: string) {
+  if (batch.review_scope == null) return null;
+  const parsed = reviewUploadScopeSchema.safeParse(batch.review_scope);
+  if (!parsed.success) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+  if (batch.case_id !== caseId || parsed.data.request.target.case_id !== caseId || requestId !== undefined && parsed.data.request_id !== requestId) throw new UploadError("UPLOAD_FORBIDDEN", 403);
+  return parsed.data;
+}
+function reviewSnapshot(caseId: string, snapshot: ReviewUploadSnapshot, expected?: { scope: ReviewUploadScope; batchId: string; files: ReservedFile[] }): ReviewUploadSnapshot {
+  const receipts = snapshot.reviewReceipts;
+  if (receipts !== undefined) {
+    if (!Array.isArray(receipts)) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+    const parsed = receipts.map(r => reviewUploadReceiptSchema.safeParse(r));
+    if (parsed.some(r => !r.success)) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+    if (receipts.some(r => r.case_id !== caseId)) throw new UploadError("UPLOAD_FORBIDDEN", 403);
+  }
+  if (expected) {
+    const matches = (receipts ?? []).filter(r => r.batch_id === expected.batchId && r.request_id === expected.scope.request_id);
+    if (matches.length !== 1 || matches[0].target_sha256 !== expected.scope.request.target.target_sha256
+      || matches[0].order_id !== expected.scope.order_id || matches[0].order_origin !== expected.scope.order_origin
+      || matches[0].order_receipt_sha256 !== expected.scope.order_receipt_sha256) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+    const submitted = expected.files.filter(f => f.documentType === expected.scope.request.target.document_kind);
+    if (matches[0].files.length !== submitted.length || matches[0].files.some(f => !submitted.some(s =>
+      s.documentId === f.document_id && s.versionId === f.version_id && s.sha256 === f.source_sha256
+      && s.documentType === f.document_kind && (s.periodMonth ?? null) === f.period_month))) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+  }
+  return snapshot;
+}
+export async function uploadSnapshot(caseId: string, db?: CaseAccessDb): Promise<ReviewUploadSnapshot> {
+  return reviewSnapshot(caseId, await rpc("case_documents_snapshot", { target_case: caseId }, db));
 }
 
 export async function prepareUpload(manifest: DocumentUpload) {
   const batch = await rpc<UploadBatch>("case_documents_reserve", {
     target_case: manifest.caseId, target_batch: manifest.batchId, target_manifest: manifest,
   });
+  batchReviewScope(manifest.caseId, batch, manifest.requestId);
   if (batch.completed_at) return { batchId: batch.id, completed: true, uploads: [] };
   const storage = getSupabaseAdmin().storage.from("salary-documents");
   const uploads = [];
@@ -54,9 +84,11 @@ export async function prepareUpload(manifest: DocumentUpload) {
   return { batchId: batch.id, completed: false, uploads };
 }
 
-export async function completeUpload(caseId: string, batchId: string): Promise<UploadSnapshot> {
+export async function completeUpload(caseId: string, batchId: string): Promise<ReviewUploadSnapshot> {
   const batch = await rpc<UploadBatch>("case_documents_batch", { target_case: caseId, target_batch: batchId });
-  if (batch.completed_at) return uploadSnapshot(caseId);
+  const scope = batchReviewScope(caseId, batch);
+  const expected = scope ? { scope, batchId, files: batch.files } : undefined;
+  if (batch.completed_at) return reviewSnapshot(caseId, await uploadSnapshot(caseId), expected);
   if (batch.cancelled_at) throw new UploadError("UPLOAD_CANCELLED");
   if (Date.parse(batch.expires_at) <= Date.now()) throw new UploadError("UPLOAD_EXPIRED");
   const storage = getSupabaseAdmin().storage.from("salary-documents");
@@ -71,7 +103,7 @@ export async function completeUpload(caseId: string, batchId: string): Promise<U
     checks[file.versionId] = digest;
   }
   // No storage deletion, and no independently committed case/request changes.
-  return rpc("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: checks });
+  return reviewSnapshot(caseId, await rpc("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: checks }), expected);
 }
 
 export function cancelUpload(caseId: string, batchId: string): Promise<UploadSnapshot> {

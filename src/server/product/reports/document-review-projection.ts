@@ -22,9 +22,10 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string){
   if(c.expected?.kind==='money')amounts.push({label:c.claim==='conditional_entitlement_candidate'?'סכום מחושב בתנאים המפורטים':'סכום שחושב',currency:'ILS',minor_units:c.expected.minor_units});
   const recordedRef='recorded_ref' in c.input.operation?c.input.operation.recorded_ref:null;
   const recordedOperand=c.input.operands.find(o=>o.id===recordedRef);
-  if(c.recorded?.kind==='money')amounts.push({label:recordedOperand?.source.reading==='customer_declaration'?'סכום שנמסר בתשובה מזוהה':'סכום במסמך',currency:'ILS',minor_units:c.recorded.minor_units});
+  if(c.recorded?.kind==='money')amounts.push({label:c.comparison_basis==='document_allocation'?'סכום שיוחס מתוך רכיבי התלוש':recordedOperand?.source.reading==='customer_declaration'?'סכום שנמסר בתשובה מזוהה':'סכום במסמך',currency:'ILS',minor_units:c.recorded.minor_units});
   if(c.difference?.kind==='money')amounts.push({label:'הפרש חשבוני',currency:'ILS',minor_units:c.difference.minor_units});
   let detail=check.explanation;
+  if(c.input.operands.some(o=>o.source.reading==='identified_document_reading'))detail+=' קריאת תאים מסוימים אושרה או תוקנה בתשובה מזוהה; האימות חל על תאים אלה בלבד.';
   if(c.input_basis==='includes_customer_declaration')detail+=' חלק מהקלט בחישוב מבוסס על תשובה מזוהה שנמסרה, ולא על תא שנקרא במסמך.';
   if(c.observed_ratio?.kind==='rational'){
    const r=c.observed_ratio;
@@ -36,7 +37,7 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string){
    detail+=` הפרש הכמויות הוא ${value.toLocaleString('he-IL',{maximumFractionDigits:6})}. יחידות המקור נשמרו בחישוב; הפרש כמות אינו קובע חוב.`;
   }
   if(c.claim==='conditional_entitlement_candidate')return {...common,status:'conditional' as const,summary:detail,amounts,
-   conditions:['החישוב מותנה בתחולה ובפרשנות המפורטות; הוא אינו אישור הפעלה או חוב שנקבע.']};
+   conditions:[...(c.unresolved_conditions??[]).map(condition=>condition.assumption),'החישוב מותנה בתחולה ובפרשנות המפורטות; הוא אינו אישור הפעלה או חוב שנקבע.']};
   return {...common,status:'derived_arithmetic' as const,summary:detail,amounts};
  });
  const missing=review.checks.filter(c=>c.calculation.state==='blocked').map(c=>({title:c.title,detail:c.explanation||'אין עדיין בסיס מספיק לתוצאה.',next_step:'יש לעיין בהשלמות הממוקדות להלן.'}));

@@ -5,7 +5,7 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {decodeCommand} from '@/server/platform/persistence/postgres/analysis/validation';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {admitSavedSource,savedCaseTenant} from './saved-admission';
-import {purchasedMonths,readSavedOrders,savedMonthIdempotencyKey,type SavedOrderScope} from './saved-order-scope';
+import {purchasedMonths,readSavedOrders,savedMonthIdempotencyKey,savedOrderReceiptSha256,savedOrderLegalTopics,type SavedExecutionOrder} from './saved-order-scope';
 import {SOURCE_JOB_KIND,sourceJobSchema,type SourceJob} from './source-dispatch';
 import {resolveSavedDocumentReviewKey} from './document-review-key';
 
@@ -16,9 +16,9 @@ const jobRow=z.object({job_id:z.string(),tenant_id:z.string(),canonical_case_id:
 const receiptSchema=z.object({idempotency_key:z.string(),analysis_run_id:z.string(),command:z.unknown(),command_sha256:sha,
  result_sha256:sha,report_id:z.string(),report_revision:z.coerce.number().int().positive(),report_sha256:sha});
 const EFFECT_KIND='saved_analysis_draft_ready_v1';
-const manifestMonthSchema=z.object({order_id:z.uuid(),offer_sha256:sha,month:z.string().regex(/^\d{4}-\d{2}$/),
+const manifestMonthSchema=z.object({order_id:z.uuid(),offer_sha256:sha.optional(),order_origin:z.literal('legacy_paid_receipt').optional(),receipt_sha256:sha.optional(),month:z.string().regex(/^\d{4}-\d{2}$/),
  analysis_run_id:z.string().min(1),result_sha256:sha,report_id:z.string().min(1),
- report_revision:z.number().int().positive(),report_sha256:sha}).strict();
+ report_revision:z.number().int().positive(),report_sha256:sha}).strict().refine(value=>value.order_origin==='legacy_paid_receipt'?value.receipt_sha256!==undefined&&value.offer_sha256===undefined:value.offer_sha256!==undefined&&value.receipt_sha256===undefined);
 const manifestSchema=z.object({schema_version:z.literal(EFFECT_KIND),job_id:z.string().min(1),source:sourceJobSchema,
  publication:z.literal('draft'),months:z.array(manifestMonthSchema).min(1)}).strict();
 
@@ -39,7 +39,7 @@ async function lockTerminalReplaySource(context:PostgresTransactionContext,job:S
 }
 
 async function replayTerminalManifest(context:PostgresTransactionContext,jobId:string,job:SourceJob,tenant:string,
- terminalHash:string|null,orders:SavedOrderScope[]){
+ terminalHash:string|null,orders:SavedExecutionOrder[]){
  const existing=await context.client.query(statement('saved_job_manifest_replay',
   `select payload,payload_sha256 from public.engine_outbox_events where tenant_id=$1 and canonical_case_id=$2
    and outbox_id=$3 and logical_effect_id=$4 and effect_kind=$5`,[tenant,job.case_id,`saved-draft:${jobId}`,jobId,EFFECT_KIND]));
@@ -54,7 +54,7 @@ async function replayTerminalManifest(context:PostgresTransactionContext,jobId:s
   ||new Set(manifest.months.map(month=>month.analysis_run_id)).size!==expected.length)throw new Error('SAVED_JOB_MANIFEST_MISMATCH');
  for(const [index,{order,month}] of expected.entries()){
   const saved=manifest.months[index];
-  if(saved.order_id!==order.id||saved.offer_sha256!==order.offer_sha256||saved.month!==month)throw new Error('SAVED_JOB_MANIFEST_MISMATCH');
+  if(saved.order_id!==order.id||(saved.order_origin==='legacy_paid_receipt'?saved.receipt_sha256:saved.offer_sha256)!==savedOrderReceiptSha256(order)||saved.month!==month)throw new Error('SAVED_JOB_MANIFEST_MISMATCH');
  }
  // Select the historical run IDs, never keys derived from current approvals.
  // The joins bind each report to its immutable completed analysis bundle.
@@ -82,7 +82,7 @@ async function replayTerminalManifest(context:PostgresTransactionContext,jobId:s
   const end=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
   if(canonicalSha256(command)!==receipt.command_sha256||command.case_id!==job.case_id
    ||command.idempotency_key!==receipt.idempotency_key||command.period.start_date!==`${month}-01`||command.period.end_date!==end
-   ||canonicalSha256(command.requested_topics)!==canonicalSha256(order.topics)
+   ||canonicalSha256(command.requested_topics)!==canonicalSha256(savedOrderLegalTopics(order))
    ||receipt.result_sha256!==saved.result_sha256||receipt.report_id!==saved.report_id
    ||receipt.report_revision!==saved.report_revision||receipt.report_sha256!==saved.report_sha256)throw new Error('SAVED_JOB_RECEIPT_SCOPE');
  }
@@ -143,15 +143,15 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
  const receipts=selected.rows.map(row=>receiptSchema.parse(row));
  if(receipts.length!==expected.length||new Set(receipts.map(r=>r.idempotency_key)).size!==expected.length)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
  const byKey=new Map(receipts.map(r=>[r.idempotency_key,r]));
- const months=expected.map(({order,month,key,mode,reviewSha256})=>{
+ const months:z.infer<typeof manifestMonthSchema>[]=expected.map(({order,month,key,mode,reviewSha256})=>{
   const receipt=byKey.get(key);if(!receipt)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
   const command=decodeCommand(receipt.command);
   const end=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
   if(canonicalSha256(command)!==receipt.command_sha256||command.case_id!==job.case_id||command.idempotency_key!==key
    ||command.period.start_date!==`${month}-01`||command.period.end_date!==end
-   ||canonicalSha256(command.requested_topics)!==canonicalSha256(order.topics)||command.mode!==mode
+   ||canonicalSha256(command.requested_topics)!==canonicalSha256(savedOrderLegalTopics(order))||command.mode!==mode
    ||command.document_review_sha256!==reviewSha256)throw new Error('SAVED_JOB_RECEIPT_SCOPE');
-  return {order_id:order.id,offer_sha256:order.offer_sha256,month,analysis_run_id:receipt.analysis_run_id,
+  return {order_id:order.id,...(order.kind==='legacy_initial'?{order_origin:'legacy_paid_receipt' as const,receipt_sha256:order.receipt_sha256}:{offer_sha256:order.offer_sha256}),month,analysis_run_id:receipt.analysis_run_id,
    result_sha256:receipt.result_sha256,report_id:receipt.report_id,report_revision:receipt.report_revision,report_sha256:receipt.report_sha256};
  });
  const manifest={schema_version:EFFECT_KIND,job_id:input.jobId,source:job,publication:'draft',months} as const;

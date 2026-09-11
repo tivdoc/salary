@@ -29,9 +29,10 @@ const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|ord
 // Only the exact source RPC's explicit authorization result becomes no rows;
 // database outages and corrupt/missing authorized storage remain failures.
 function sourceNotVisible(fn:string,error:unknown):boolean {
-  return fn==='case_report_source' && typeof error==='object' && error!==null
+  return typeof error==='object' && error!==null
     && 'code' in error && error.code==='P0001'
-    && 'message' in error && error.message==='REPORT_SOURCE_FORBIDDEN';
+    && 'message' in error && (fn==='case_report_source'&&error.message==='REPORT_SOURCE_FORBIDDEN'
+      ||fn==='case_request_document_source'&&error.message==='REQUEST_FIELD_FORBIDDEN');
 }
 const VERSIONED_REPORT_FUNCTIONS = new Set(['june2026_regular_report_artifact']);
 const REVIEW_REQUEST_CLIENT_FUNCTIONS=new Set(['case_request_answer_identified','case_request_edit','case_request_review_states']);

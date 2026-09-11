@@ -13,6 +13,7 @@ import { customerReports, type CustomerReports } from "@/server/product/reports/
 import { listIdentityCases, resolveIdentitySession } from "@/server/product/case-access/service";
 import { readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
+import {privateDocumentReviewReports} from '@/server/product/reports/private-document-review';
 
 export const metadata: Metadata = {
   title: "הדוח | Tivdoc",
@@ -35,12 +36,21 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
   let engineering:Awaited<ReturnType<typeof devFinancialCustomerReports>>=[];
   let engineeringUnavailable=false;
   if(devFinancialPreviewEnabled())try{engineering=await devFinancialCustomerReports(item.case_id,session.identity_id);}catch{engineeringUnavailable=true;}
+  let reviews:Awaited<ReturnType<typeof privateDocumentReviewReports>>=[];let reviewsUnavailable=false;
+  if(devFinancialPreviewEnabled())try{reviews=await privateDocumentReviewReports(item.case_id,session.identity_id);}catch{reviewsUnavailable=true;}
 
   return (
     <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
       {engineeringUnavailable?<p role="alert">לא ניתן לטעון את דוחות הניסוי ההנדסי כרגע. זו אינה תוצאת ניתוח.</p>:null}
       {engineering.map(report=><DevFinancialReport key={report.run.run_id} report={report}/>)}
-      {engineering.length>0 ? null : saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
+      {reviewsUnavailable?<p role="alert">לא ניתן לטעון את הטיוטות הפרטיות כרגע.</p>:null}
+      {reviews.map(report=><article key={report.report_id} data-review-run={report.analysis_run_id}>
+       <h2>טיוטת סקירת מסמכים פרטית</h2><p><bdi>{report.period.from} – {report.period.to}</bdi> · גרסה {report.report_revision}</p>
+       <p>הטיוטה כוללת בדיקות ומידע חסר בהיקף השירות שנרכש. היא אינה דוח שאושר לפרסום או קביעת חוב.</p>
+       {report.current?<p><a href={`/api/cases/${token}/reports?report=${report.report_id}&review=1&format=html`}>פתיחת הטיוטה העדכנית</a>{' · '}<a href={`/api/cases/${token}/reports?report=${report.report_id}&review=1`}>הורדת PDF של אותה גרסה</a></p>
+        :<p>הקלט השתנה או שנוצרה גרסה חדשה. הטיוטה נשמרה בהיסטוריה ואינה מוצגת כתוצאה עדכנית.</p>}
+      </article>)}
+      {engineering.length>0||reviews.length>0 ? null : saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
         : saved.reports.length === 0 ? <div><h1>הדוח עדיין לא מוכן</h1>{saved.checkPeriodMonth ? <p>חודש הבדיקה: <bdi>{saved.checkPeriodMonth}</bdi></p> : null}<p>כשיפורסם דוח לתיק, הוא יופיע כאן. אפשר לראות את המצב והבקשות בעמוד התיק.</p></div>
         : saved.reports.map((report) => report.state==='authority_unavailable'?<article key={report.id} aria-label="דוח שאינו זמין">
           <p>דוח היסטורי מתאריך {new Date(report.publishedAt).toLocaleDateString('he-IL')}</p>

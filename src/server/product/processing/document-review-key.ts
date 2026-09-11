@@ -3,9 +3,9 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {DOCUMENT_REVIEW_POLICY} from '@/engine/document-review/contracts';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import type {SourceJob} from './source-dispatch';
-import type {SavedOrderScope} from './saved-order-scope';
+import type {SavedExecutionOrder} from './saved-order-scope';
 import {SavedCaseSnapshot} from './saved-snapshot';
-import {savedDocumentReviewInput} from './saved-document-review';
+import {savedDocumentReviewInput,savedDocumentReviewSourceScope} from './saved-document-review';
 
 /** A source review can be appended after a normalized extraction. Its immutable
  * input hash is therefore an execution dependency in addition to the source job.
@@ -17,8 +17,9 @@ export function documentReviewIdempotencyKey(baseKey:string,reviewSha256:string)
 
 /** Use the same authenticated snapshot/receipt adapters as saved analysis.
  * This only resolves current inputs; it neither calculates nor publishes. */
-export async function resolveSavedDocumentReviewKey(context:PostgresTransactionContext,job:SourceJob,order:SavedOrderScope,month:string,baseKey:string){
- const snapshot=await new SavedCaseSnapshot(context,job,month,undefined,undefined,true).read();
+export async function resolveSavedDocumentReviewKey(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,baseKey:string){
+ const sourceScope=await savedDocumentReviewSourceScope(context,job,order,month);
+ const snapshot=await new SavedCaseSnapshot(context,job,month,undefined,undefined,true,sourceScope).read();
  const review=await savedDocumentReviewInput(context,job,order,month,snapshot);
  const reviewSha256=canonicalSha256(review);
  return {key:documentReviewIdempotencyKey(baseKey,reviewSha256),review,reviewSha256,snapshot};

@@ -18,7 +18,7 @@ import {publishSavedAiReport} from '../reports/publish-ai-report';
 import {JUNE_REGULAR_REPORT_TEMPLATE} from '../reports/june2026-regular-service';
 import {SAVED_DRAFT_TEMPLATE} from './saved-draft-report';
 import {SAVED_JUNE_REVIEW_VERSION} from './saved-minimum-wage-review';
-import {readSavedOrders,savedMonthIdempotencyKey} from './saved-order-scope';
+import {readSavedOrders,savedMonthIdempotencyKey,purchasedMonths,savedOrderLegalTopics} from './saved-order-scope';
 import {resolveSavedDocumentReviewKey} from './document-review-key';
 import {renderReviewBundle} from '../reports/document-review-projection';
 
@@ -40,22 +40,22 @@ async function completeDocumentReview(input:Input){
  const baseKey=june?june2026RegularReviewIdempotencyKey(job,orderId):savedMonthIdempotencyKey(job,orderId,month);
  const current=await resolveSavedDocumentReviewKey(context,job,order,month,baseKey);
  const end=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
- if(month<order.from.slice(0,7)||month>order.to.slice(0,7)||!parent.completed||!parent.bundle||!parent.report
+ if(!purchasedMonths(order).includes(month)||!parent.completed||!parent.bundle||!parent.report
   ||parent.idempotency_key!==current.key||command.idempotency_key!==current.key||command.document_review_sha256!==current.reviewSha256
   ||command.mode!=='real'||command.case_id!==job.case_id||command.document_snapshot_id!==current.snapshot.document_snapshot_id
   ||command.document_snapshot_sha256!==current.snapshot.document_snapshot_sha256
   ||command.extraction_snapshot_id!==current.snapshot.extraction_snapshot_id||command.extraction_snapshot_sha256!==current.snapshot.extraction_snapshot_sha256
   ||command.declared_fact_snapshot_id!==current.snapshot.declared_fact_snapshot.snapshot_id||command.declared_fact_snapshot_sha256!==current.snapshot.declared_fact_snapshot.snapshot_sha256
   ||command.period.start_date!==`${month}-01`||command.period.end_date!==end
-  ||canonicalSha256(command.requested_topics)!==canonicalSha256(order.topics)||canonicalSha256(command)!==parent.command_sha256
-  ||parent.analysis_run_id!==savedAnalysisId('case-analysis-run',parent.command_sha256)||parent.selections.length!==order.topics.length)
+  ||canonicalSha256(command.requested_topics)!==canonicalSha256(savedOrderLegalTopics(order))||canonicalSha256(command)!==parent.command_sha256
+  ||parent.analysis_run_id!==savedAnalysisId('case-analysis-run',parent.command_sha256)||parent.selections.length!==savedOrderLegalTopics(order).length)
   throw Error('DOCUMENT_REVIEW_MANAGED_SCOPE');
  const catalog=new June2026ReviewCatalog();
- for(const [index,topic] of order.topics.entries()){
+ for(const [index,topic] of savedOrderLegalTopics(order).entries()){
   const expected=await catalog.resolve({mode:'real',topic,target_date:command.period.end_date,as_of:command.as_of,sector:command.sector,population:command.population});
   if(canonicalSha256(expected)!==canonicalSha256(parent.selections[index]))throw Error('DOCUMENT_REVIEW_MANAGED_SELECTION');
  }
- const bundle=decodeBundle(parent.bundle,order.topics);validateReport(parent.report);
+ const bundle=decodeBundle(parent.bundle,savedOrderLegalTopics(order));validateReport(parent.report);
  if(bundle.case_id!==job.case_id||bundle.analysis_run_id!==parent.analysis_run_id||bundle.case_revision!==command.case_revision
   ||bundle.document_review?.input_sha256!==current.reviewSha256||canonicalSha256(bundle.document_review.input)!==canonicalSha256(current.review)
   ||bundle.known_subtotal!==null||bundle.coverage_complete||bundle.topic_results.some(t=>!['blocked_missing_facts','blocked_conflict','blocked_legal_readiness','error'].includes(t.status)||t.amount!==null||t.trace!==null)
@@ -80,8 +80,8 @@ async function completeRegularReview(input:Input){
  const legacy=await loadJune2026TestAuthority(context,job,orderId),authority=await loadSavedJune2026RegularAuthority(context,job,orderId);
  if(legacy||authority?.state==='ready')throw Error('REGULAR_MANAGED_REVIEW_AUTHORITY_CHANGED');
  const [order]=await readSavedOrders(context,job,orderId),key=june2026RegularReviewIdempotencyKey(job,orderId);
- if(month!=='2026-06'||!order||canonicalSha256(order.topics)!==canonicalSha256(['minimum_wage'])
-  ||month<order.from.slice(0,7)||month>order.to.slice(0,7)||!parent.completed||!parent.bundle||!parent.report
+ if(month!=='2026-06'||!order||canonicalSha256(savedOrderLegalTopics(order))!==canonicalSha256(['minimum_wage'])
+  ||!purchasedMonths(order).includes(month)||!parent.completed||!parent.bundle||!parent.report
   ||parent.idempotency_key!==key||command.idempotency_key!==key||command.mode!=='real'||command.case_id!==job.case_id
   ||command.document_snapshot_id!==`saved-documents:2026-06:${job.input_sha256}`
   ||command.period.start_date!=='2026-06-01'||command.period.end_date!=='2026-06-30'

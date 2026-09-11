@@ -13,7 +13,7 @@ import {decodeCommand, decodeStage} from '@/server/platform/persistence/postgres
 import {statement, type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {lockCurrentSource, sourceJobSchema, type SourceJob} from './source-dispatch';
 import {savedCaseTenant} from './saved-admission';
-import {readSavedOrders, savedMonthIdempotencyKey} from './saved-order-scope';
+import {readSavedOrders, savedMonthIdempotencyKey,savedOrderLegalTopics} from './saved-order-scope';
 import {SavedCaseSnapshot, SAVED_EXTRACTION_POLICY} from './saved-snapshot';
 import {readSavedJune2026Collection} from './saved-june2026-collection';
 import {readSavedExtractionProvenance} from './live-extraction-provenance';
@@ -67,7 +67,7 @@ export async function loadSavedJune2026AdmittedContext(input: {
     || run.source_revision !== job.revision || run.source_input_sha256 !== job.input_sha256 || run.actual_input_sha256 !== job.input_sha256
     || command.mode !== (input.testAuthority?'synthetic_test':input.regularAuthority?.mode??'real') || command.period.start_date !== '2026-06-01' || command.period.end_date !== '2026-06-30'
     || canonicalSha256(command) !== run.command_sha256 || run.idempotency_key !== (input.testAuthority?june2026TestIdempotencyKey(job,orderId,input.testAuthority):input.regularAuthority?june2026RegularIdempotencyKey(job,orderId,input.regularAuthority):input.regularReadingPolicy===JUNE_REGULAR_READING_POLICY?june2026RegularReviewIdempotencyKey(job,orderId):savedMonthIdempotencyKey(job, orderId, '2026-06'))
-    || command.idempotency_key !== run.idempotency_key || canonicalSha256(command.requested_topics) !== canonicalSha256(order.topics)) throw Error('SAVED_JUNE_CONTEXT_RUN_BINDING');
+    || command.idempotency_key !== run.idempotency_key || canonicalSha256(command.requested_topics) !== canonicalSha256(savedOrderLegalTopics(order))) throw Error('SAVED_JUNE_CONTEXT_RUN_BINDING');
   const stageRows = await context.client.query(statement('saved_june_context_stages',
     `select s.stage,s.payload,s.payload_sha256 from public.engine_analysis_stage_versions s
      join public.analysis_runs ar on ar.id=s.analysis_run_id
@@ -130,7 +130,7 @@ export async function loadSavedJune2026AdmittedContext(input: {
   const collection = await readSavedJune2026Collection(context, job);
   let admitted:ReturnType<typeof prepareJune2026AdmittedContext>;
   try{admitted = prepareJune2026AdmittedContext({current: {case_id: job.case_id, analysis_run_id: analysisRunId, input_revision: job.revision, input_sha256: job.input_sha256,
-    order_id: orderId, month: '2026-06', topics: order.topics, document: {product_document_id: row.product_document_id, version_id: document.document_id, sha256: document.content_sha256, page_count: pageCount}},
+    order_id: orderId, month: '2026-06', topics: savedOrderLegalTopics(order), document: {product_document_id: row.product_document_id, version_id: document.document_id, sha256: document.content_sha256, page_count: pageCount}},
     saved: {case_id: run.case_id, analysis_run_id: run.analysis_run_id, input_revision: run.source_revision, input_sha256: run.source_input_sha256,
       order_id: order.id, month: '2026-06'}, canonicalStage, ruleInput: ruleInputs[topicIndex], checkpoint: row.result, extractionPolicyVersion: SAVED_EXTRACTION_POLICY, collection});}
   catch(error){if(error instanceof Error&&error.message==='JUNE_COLLECTION_PERIOD_UNSUPPORTED')return blocked('document_period_unresolved',job.case_id,analysisRunId);throw error;}
