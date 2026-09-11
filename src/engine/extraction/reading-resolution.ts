@@ -1,3 +1,5 @@
+import {assertSourceStructureSubject,normalizeSourceStructureValue,sourceStructureSubjectKey,parseSourceStructureReadingValue} from './source-structure-resolution.ts';
+import type {CustomerSourceStructureReading,SourceStructureSubject} from './source-structure.ts';
 import {immutableDocumentSchema} from '../domain/documents.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {rawCandidateFieldSchema} from './contracts.ts';
@@ -36,8 +38,8 @@ export function identifiedMappedRowCell(input:{original:NormalizedPayslipExtract
 /** Schema parsing validates annotation shape. Call materialize for source trust
  * before using a reading; hashing by itself does not admit any annotation. */
 export function payslipMachineExtraction(input:unknown):NormalizedPayslipExtraction {
- const {customer_readings:scalar,customer_row_readings:rows,customer_scope_readings:scopes,customer_source_transcriptions:transcriptions,source_reading_context:context,...machine}=normalizedPayslipExtractionSchema.parse(input);
- void scalar;void rows;void scopes;void transcriptions;void context;return machine;
+ const {customer_readings:scalar,customer_row_readings:rows,customer_scope_readings:scopes,customer_source_transcriptions:transcriptions,customer_source_structures:structures,source_reading_context:context,...machine}=normalizedPayslipExtractionSchema.parse(input);
+ void scalar;void rows;void scopes;void transcriptions;void structures;void context;return machine;
 }
 export function payslipMachineExtractionSha256(input:unknown):string{return canonicalSha256(payslipMachineExtraction(input));}
 export function rowCellReadingKey(componentId:string,cell:RowReadingCell):string{return `${componentId}:${cell}`;}
@@ -76,7 +78,7 @@ export function identifiedScopeObservation(input:{original:NormalizedPayslipExtr
 
 export function hasPayslipReadingAnnotations(extraction:NormalizedPayslipExtraction):boolean {
  return extraction.customer_readings!==undefined||extraction.customer_row_readings!==undefined||extraction.customer_scope_readings!==undefined
-  ||extraction.customer_source_transcriptions!==undefined||extraction.source_reading_context!==undefined;
+  ||extraction.customer_source_transcriptions!==undefined||extraction.customer_source_structures!==undefined||extraction.source_reading_context!==undefined;
 }
 /** Decimal reported totals remain distinct from paid regular hours. Balance
  * answers resolve only the unit, never replace the original printed number. */
@@ -123,7 +125,7 @@ export function identifiedDirectRowCell(input:{original:NormalizedPayslipExtract
 export function materializeValidatedPayslipReadings(input:{document:unknown;extraction:NormalizedPayslipExtraction;case_id:string;requireDistinctTargets?:boolean}){
  const document=immutableDocumentSchema.parse(input.document),original=normalizedPayslipExtractionSchema.parse(input.extraction);
  if(document.case_id!==input.case_id||document.document_id!==original.document_id)throw new TypeError('DOCUMENT_READING_BINDING_MISMATCH');
- const {customer_readings=[],customer_row_readings=[],customer_scope_readings=[],customer_source_transcriptions=[],source_reading_context}=original,machine=payslipMachineExtraction(original),readings=new Map<string,CustomerDocumentReading>(),rowReadings=new Map<string,CustomerDocumentRowCellReading>(),scopeReadings=new Map<string,CustomerDocumentScopeReading>(),sourceTranscriptions=new Map<string,CustomerSourceTranscription>(),requests=new Set<string>(),targets=new Set<string>();
+ const {customer_readings=[],customer_row_readings=[],customer_scope_readings=[],customer_source_transcriptions=[],customer_source_structures=[],source_reading_context}=original,machine=payslipMachineExtraction(original),readings=new Map<string,CustomerDocumentReading>(),rowReadings=new Map<string,CustomerDocumentRowCellReading>(),scopeReadings=new Map<string,CustomerDocumentScopeReading>(),sourceTranscriptions=new Map<string,CustomerSourceTranscription>(),structureReadings=new Map<string,CustomerSourceStructureReading>(),requests=new Set<string>(),targets=new Set<string>();
  for(const reading of customer_readings){
   const candidates=original.fields.filter(f=>f.candidate_id===reading.candidate_id),periods=original.fields.filter(f=>f.field==='salary_period');
   if(reading.case_id!==document.case_id||reading.document_id!==document.document_id||reading.source_sha256!==document.content_sha256
@@ -163,7 +165,7 @@ export function materializeValidatedPayslipReadings(input:{document:unknown;extr
   if(originalValue!==null&&typeof originalValue==='object'&&'currency' in originalValue&&originalValue.currency!=='ILS')throw new TypeError('DOCUMENT_SCOPE_READING_CURRENCY');
   scopeReadings.set(reading.candidate_id,reading);requests.add(reading.request_id);targets.add(reading.target_sha256);
  }
- if(source_reading_context!==undefined&&original.customer_source_transcriptions===undefined)throw new TypeError('DOCUMENT_SOURCE_TRANSCRIPTION_CONTEXT_ORPHAN');
+ if(source_reading_context!==undefined&&original.customer_source_transcriptions===undefined&&original.customer_source_structures===undefined)throw new TypeError('DOCUMENT_SOURCE_TRANSCRIPTION_CONTEXT_ORPHAN');
  if(customer_source_transcriptions.length){
   if(!source_reading_context)throw new TypeError('DOCUMENT_SOURCE_TRANSCRIPTION_CONTEXT_REQUIRED');
   const firstPass=normalizedPayslipExtractionSchema.parse(source_reading_context.first_pass);
@@ -187,6 +189,20 @@ export function materializeValidatedPayslipReadings(input:{document:unknown;extr
    const value=normalizeSourceTranscriptionValue(subject,reading.transcription.raw_value);
    if(value===null||canonicalSha256(value)!==canonicalSha256(reading.transcription.normalized_value))throw new TypeError('DOCUMENT_SOURCE_TRANSCRIPTION_VALUE_INVALID');
    sourceTranscriptions.set(reading.target_sha256,reading);subjects.add(key);requests.add(reading.request_id);targets.add(reading.target_sha256);
+  }
+ }
+ if(customer_source_structures.length){
+  if(!source_reading_context)throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_CONTEXT_REQUIRED');
+  for(const reading of customer_source_structures){
+   const first=assertSourceStructureSubject({subject:reading.subject,extraction:machine,firstPass:source_reading_context.first_pass});
+   const periods=machine.fields.filter(f=>f.field==='salary_period'),key=sourceStructureSubjectKey(reading.subject);
+   if(hasPayslipReadingAnnotations(first)||reading.case_id!==document.case_id||reading.document_id!==document.document_id||reading.source_sha256!==document.content_sha256
+    ||reading.normalized_extraction_sha256!==canonicalSha256(machine)||reading.first_pass_extraction_sha256!==canonicalSha256(first)
+    ||reading.extraction_result_sha256!==source_reading_context.checkpoint_result_sha256||structureReadings.has(key)||requests.has(reading.request_id)||targets.has(reading.target_sha256)
+    ||!periods.length||periods.some(f=>!f.normalized_value||`${f.normalized_value.year}-${String(f.normalized_value.month).padStart(2,'0')}`!==reading.month))throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_BINDING_MISMATCH');
+   const {normalized_value:value}=parseSourceStructureReadingValue(reading);
+   if(canonicalSha256(value)!==canonicalSha256(reading.value))throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_VALUE_INVALID');
+   structureReadings.set(key,reading);requests.add(reading.request_id);targets.add(reading.target_sha256);
   }
  }
  const fields=original.fields.map(field=>{
@@ -220,5 +236,16 @@ export function materializeValidatedPayslipReadings(input:{document:unknown;extr
   const correction=scopeReadings.get(observation.candidate.candidate_id)?.correction;
   return correction?{...observation,candidate:{...observation.candidate,raw_value:correction.raw_value}}:observation;
  });
- return {original,extraction:normalizedPayslipExtractionSchema.parse({...effective,additional_components,...(source_scope_observations!==undefined?{source_scope_observations}:{})}),readings,rowReadings,scopeReadings,sourceTranscriptions,hasCorrections:customer_readings.some(r=>r.correction!==undefined)||customer_row_readings.some(r=>r.correction!==undefined)||customer_scope_readings.some(r=>r.correction!==undefined)};
+ return {original,extraction:normalizedPayslipExtractionSchema.parse({...effective,additional_components,...(source_scope_observations!==undefined?{source_scope_observations}:{})}),readings,rowReadings,scopeReadings,sourceTranscriptions,structureReadings,hasCorrections:customer_readings.some(r=>r.correction!==undefined)||customer_row_readings.some(r=>r.correction!==undefined)||customer_scope_readings.some(r=>r.correction!==undefined)};
+}
+
+/** Consumers must use the validated map, keeping structure evidence separate
+ * from the numeric operands' own source reading receipts. */
+export function identifiedSourceStructure(input:{original:NormalizedPayslipExtraction;structureReadings:ReadonlyMap<string,CustomerSourceStructureReading>;subject:SourceStructureSubject}){
+ const reading=input.structureReadings.get(sourceStructureSubjectKey(input.subject));if(!reading)return null;
+ if(reading.document_id!==input.original.document_id||reading.normalized_extraction_sha256!==payslipMachineExtractionSha256(input.original)
+  ||canonicalSha256(reading.subject)!==canonicalSha256(input.subject))throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_BINDING_MISMATCH');
+ const value=normalizeSourceStructureValue(input.subject,reading.value,reading.month);
+ if(canonicalSha256(value)!==canonicalSha256(reading.value))throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_VALUE_INVALID');
+ return {reading,subject:reading.subject,normalized_value:value};
 }

@@ -31,3 +31,12 @@ it('labels only the new transcription history as unit completion and preserves h
  expect(displayDocumentReadingAnswer(answer)).toBe('הקריאה תוקנה לערך: days');
  expect(displayDocumentReadingAnswer(answer,{...base,transcription_context:{kind:'balance_unit'}})).toBe('יחידת היתרה הועתקה מהמסמך: ימים. המספר המקורי נשמר ללא שינוי.');
 });
+it('groups balance cells independently from payroll rows and never merges repeated balance subjects',()=>{
+ const balances=(['opening','accrued','used']as const).map(cell=>({id:cell,source_current:true,reading_display:{...display('quantity'),row_context:undefined,
+  structure_context:{kind:'balance_movement' as const,group_id:'a'.repeat(64),label:'חופשה',cell,proposed_value:null}}}));
+ const grouped=groupDocumentReadingRequests([...requests,...balances]);expect(grouped.map(g=>g.kind)).toEqual(['row','balance']);
+ expect(grouped[1].requests.map(r=>r.id)).toEqual(['opening','accrued','used']);
+ expect(groupDocumentReadingRequests([...balances,{...balances[0],id:'second-opening'}]).every(g=>g.kind==='single')).toBe(true);
+ const foreign={...balances[1],reading_display:{...balances[1].reading_display,structure_context:{...balances[1].reading_display.structure_context,group_id:'b'.repeat(64)}}};
+ expect(groupDocumentReadingRequests([balances[0],foreign]).every(g=>g.kind==='single')).toBe(true);
+});

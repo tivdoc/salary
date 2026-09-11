@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import type {StoredRequest} from '@/server/product/reports/case-requests';
 import {customerErrorFromResponse,customerErrorMessage} from '@/lib/customer-copy';
+import {SourceStructureAnswer} from './source-structure-answer';
 
 type Action='confirm'|'correct'|'unreadable'|'unknown';
 const labels:Record<Action,string>={confirm:'זה הערך בתא',correct:'הערך בתא שונה',unreadable:'לא קריא',unknown:'לא יודע'};
@@ -9,7 +10,12 @@ function previous(value:string|null|undefined):{action:Action|null;raw:string}{
  try{const parsed=JSON.parse(value??'');if(parsed.schema_version==='document-field-answer-v2'&&Object.hasOwn(labels,parsed.action))return {action:parsed.action,raw:typeof parsed.corrected_raw_value==='string'?parsed.corrected_raw_value:''};}catch{}
  return {action:null,raw:''};
 }
-export function DocumentFieldAnswer({request,publicId,onAnswered,correction=false,sourceShared=false}:{request:StoredRequest;publicId:string;onAnswered:()=>void;correction?:boolean;sourceShared?:boolean}){
+type Props={request:StoredRequest;publicId:string;onAnswered:()=>void;correction?:boolean;sourceShared?:boolean};
+export function DocumentFieldAnswer(props:Props){
+ const context=props.request.reading_display?.structure_context;
+ return context?<SourceStructureAnswer {...props} context={context}/>:<ScalarDocumentFieldAnswer {...props}/>;
+}
+function ScalarDocumentFieldAnswer({request,publicId,onAnswered,correction=false,sourceShared=false}:Props){
  const initial=previous(request.draft_text??(correction?request.answer_text:null));
  const [action,setAction]=useState<Action|null>(initial.action),[raw,setRaw]=useState(initial.raw),[busy,setBusy]=useState(false),[error,setError]=useState(''),[conflict,setConflict]=useState(false);
  const display=request.reading_display;

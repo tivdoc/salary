@@ -3,6 +3,8 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
 import type {CustomerDocumentReading,CustomerDocumentRowCellReading,CustomerDocumentScopeReading,CustomerSourceTranscription} from '@/engine/extraction/customer-reading';
 import {hasPayslipReadingAnnotations} from '@/engine/extraction/reading-resolution';
+import type {CustomerSourceStructureReading} from '@/engine/extraction/source-structure';
+import {sourceStructureSubjectKey} from '@/engine/extraction/source-structure-resolution';
 import {documentReadingTargetSchema} from '../reports/document-field-confirmation';
 import {resolveDocumentReadingVerification,materializeDocumentVerification} from '../reports/reading-verification';
 const answerSchema=z.object({id:z.uuid(),case_id:z.uuid(),scope_month:z.string(),code:z.string(),answer_kind:z.literal('choice'),answer:z.string(),
@@ -19,7 +21,7 @@ export function savedDocumentReadings(input:{caseId:string;month:string;policyVe
  const checkpoint=z.object({version_id:z.uuid(),run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema})})}).parse(input.checkpoint);
  const extraction=checkpoint.run.result.final_extraction;
  if(hasPayslipReadingAnnotations(extraction))throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
- const readings:{scalar:CustomerDocumentReading[];row_cell:CustomerDocumentRowCellReading[];source_scope:CustomerDocumentScopeReading[];source_transcription:CustomerSourceTranscription[]}={scalar:[],row_cell:[],source_scope:[],source_transcription:[]},seen=new Set<string>();
+ const readings:{scalar:CustomerDocumentReading[];row_cell:CustomerDocumentRowCellReading[];source_scope:CustomerDocumentScopeReading[];source_transcription:CustomerSourceTranscription[];source_structure:CustomerSourceStructureReading[]}={scalar:[],row_cell:[],source_scope:[],source_transcription:[],source_structure:[]},seen=new Set<string>();
  for(const value of answers){
   if(typeof value.code!=='string'||!value.code.startsWith('document_field:'))continue;
   const answer=answerSchema.parse(value);
@@ -34,10 +36,12 @@ export function savedDocumentReadings(input:{caseId:string;month:string;policyVe
   else if(reading?.kind==='row_cell')readings.row_cell.push(reading.reading);
   else if(reading?.kind==='source_scope')readings.source_scope.push(reading.reading);
   else if(reading?.kind==='source_transcription')readings.source_transcription.push(reading.reading);
+  else if(reading?.kind==='source_structure')readings.source_structure.push(reading.reading);
  }
  if(new Set(readings.scalar.map(r=>r.candidate_id)).size!==readings.scalar.length
   ||new Set(readings.row_cell.map(r=>`${r.component_id}:${r.cell}`)).size!==readings.row_cell.length
   ||new Set(readings.source_scope.map(r=>r.candidate_id)).size!==readings.source_scope.length
-  ||new Set(readings.source_transcription.map(r=>r.subject.kind==='balance_unit'?`balance_unit:${r.subject.original_candidate.candidate_id}`:r.subject.kind)).size!==readings.source_transcription.length)throw Error('REQUEST_FIELD_READING_AMBIGUOUS');
+  ||new Set(readings.source_transcription.map(r=>r.subject.kind==='balance_unit'?`balance_unit:${r.subject.original_candidate.candidate_id}`:r.subject.kind)).size!==readings.source_transcription.length
+  ||new Set(readings.source_structure.map(r=>sourceStructureSubjectKey(r.subject))).size!==readings.source_structure.length)throw Error('REQUEST_FIELD_READING_AMBIGUOUS');
  return readings;
 }

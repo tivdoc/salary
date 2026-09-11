@@ -57,3 +57,5 @@ export const customerSourceTranscriptionSchema=z.object({
 }).strict();
 export type CustomerSourceTranscription=Readonly<z.infer<typeof customerSourceTranscriptionSchema>>;
 export const sourceReadingContextSchema=z.object({checkpoint_result_sha256:hash,first_pass:z.record(z.string(),z.unknown())}).strict();
+
+export {customerSourceStructureReadingSchema,type CustomerSourceStructureReading} from './source-structure.ts';

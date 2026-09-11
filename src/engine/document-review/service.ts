@@ -27,6 +27,10 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
   }
   if(calculation.case_id!==input.case_id||calculation.check_id!==check.check_id
    ||calculation.period.from<input.period.from||calculation.period.to>input.period.to)throw Error('REVIEW_CHECK_SCOPE');
+  if(calculation.source_structure){
+   const s=calculation.source_structure,document=input.documents.find(d=>d.document_id===s.document_id&&d.version_id===s.version_id);
+   if(!document||document.file_sha256!==s.file_sha256||document.reading_sha256!==s.reading_sha256)throw Error('REVIEW_SOURCE_STRUCTURE_READING_CHANGED');
+  }
   const citedSources=[...calculation.operands.map(o=>o.source),...(calculation.operation.kind==='candidate_rule'?calculation.operation.decisions.flatMap(d=>d.sources):[])];
   for(const pin of calculation.source_manifest){
    // Identified answers are admitted through the planner, not arbitrary source

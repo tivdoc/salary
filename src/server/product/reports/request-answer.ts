@@ -1,13 +1,14 @@
 import type {StoredRequest} from './case-requests';
 import {HOURS_CONFLICT_NAMESPACE,parseHoursConflictAnswer} from './document-hours-conflict-answer';
 import {parseDocumentFieldAnswer} from './reading-verification';
+import {parseDocumentFieldAnswerV3} from './document-source-structure';
 export class RequestAnswerError extends Error { constructor(){super('REQUEST_ANSWER_INVALID');} }
 export function validateRequestAnswer(request:Pick<StoredRequest,'answer_kind'|'options'|'code'>,value:string):string{
  const answer=value.trim();
  if(!answer||answer.length>2000||request.answer_kind==='document'||request.answer_kind==='none')throw new RequestAnswerError();
  if(request.code.startsWith('document_field:')&&answer.startsWith('{')){
   if(request.answer_kind!=='choice')throw new RequestAnswerError();
-  try{return JSON.stringify(parseDocumentFieldAnswer(answer));}catch{throw new RequestAnswerError();}
+  try{return JSON.stringify(JSON.parse(answer).schema_version==='document-field-answer-v3'?parseDocumentFieldAnswerV3(answer):parseDocumentFieldAnswer(answer));}catch{throw new RequestAnswerError();}
  }
  if(request.code.startsWith(HOURS_CONFLICT_NAMESPACE)){
   if(request.answer_kind!=='text')throw new RequestAnswerError();

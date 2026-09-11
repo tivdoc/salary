@@ -10,6 +10,7 @@ import {HoursConflictAnswer} from './hours-conflict-answer';
 import {HOURS_CONFLICT_NAMESPACE,formatHoursConflictAnswer} from '@/server/product/reports/document-hours-conflict-answer';
 import {DocumentFieldAnswer} from './document-field-answer';
 import {displayDocumentReadingAnswer,documentRowCellLabels,groupDocumentReadingRequests,type DocumentReadingRequestGroup} from '@/lib/document-reading-display';
+import {balanceMovementLabels} from '@/lib/source-structure-display';
 
 function displayAnswer(request:StoredRequest){
  if(request.code.startsWith('document_field:'))return displayDocumentReadingAnswer(request.answer_text,request.reading_display);
@@ -122,16 +123,19 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
   );
 }
 
-function RowReadingGroup({group,publicId,onAnswered}:{group:Extract<DocumentReadingRequestGroup<StoredRequest>,{kind:'row'}>;publicId:string;onAnswered:()=>void}){
+function RowReadingGroup({group,publicId,onAnswered}:{group:Extract<DocumentReadingRequestGroup<StoredRequest>,{kind:'row'|'balance'}>;publicId:string;onAnswered:()=>void}){
  const first=group.requests[0],display=first.reading_display!;
+ const cellLabel=(request:StoredRequest)=>{const context=request.reading_display!.structure_context;return group.kind==='balance'&&context?.kind==='balance_movement'
+  ?balanceMovementLabels[context.cell]:documentRowCellLabels[request.reading_display!.row_context!.cell];};
  return <div className="received-card thread-card">
-  <h2>בדיקת תאים בשורה: {group.label}</h2>
+  <h2>{group.kind==='balance'?'בדיקת תאים בטבלת יתרות':'בדיקת תאים בשורה'}: {group.label}</h2>
   <p>עמוד {group.page}. פותחים את המקור פעם אחת ובודקים כל תא בנפרד. אישור של תא אינו מאשר את השורה כולה, את החישוב או את הזכאות.</p>
   <p><a href={`/api/cases/${publicId}/requests?source=${first.id}&view=marked#page=${group.page}`} target="_blank" rel="noopener noreferrer">פתיחת שורת המקור לבדיקה</a></p>
   {display.text_fragment?<blockquote>{display.text_fragment}</blockquote>:null}
   {!display.bounding_box?<p>לא התקבל מיקום מדויק של השורה. יש לאתר אותה בעמוד המקור לפי הכיתוב והערכים.</p>:null}
-  {group.requests.map(request=><section key={request.id} id={`request-${request.id}`} aria-label={`בדיקת ${documentRowCellLabels[request.reading_display!.row_context!.cell]} בשורה`}>
-   <h3>{documentRowCellLabels[request.reading_display!.row_context!.cell]}</h3>
+  {group.kind==='balance'?<p>כל תא יתרה, יחידתו ותקופתו נשמרים בהחלטה נפרדת. תאים שכבר נענו נשארים בהיסטוריה.</p>:null}
+  {group.requests.map(request=><section key={request.id} id={`request-${request.id}`} aria-label={`בדיקת ${cellLabel(request)} בשורה`}>
+   <h3>{cellLabel(request)}</h3>
    <p>{request.question}</p>
    <p className="thread-card__meta">פתוח עד {formatRequestDate(request.expires_at)}{request.statement_month?` · תקופת השאלה: ${formatRequestMonth(request.statement_month)}`:''}</p>
    <DocumentFieldAnswer key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} onAnswered={onAnswered} sourceShared/>
@@ -179,7 +183,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
       </div>
 
       {groupDocumentReadingRequests(open).map(group => {
-       if(group.kind==='row')return <RowReadingGroup key={group.group_id} group={group} publicId={publicId} onAnswered={()=>router.refresh()}/>;
+       if(group.kind==='row'||group.kind==='balance')return <RowReadingGroup key={`${group.kind}:${group.group_id}`} group={group} publicId={publicId} onAnswered={()=>router.refresh()}/>;
        const request=group.requests[0];return (
         <div className={`received-card thread-card${request.blocking ? " thread-card--blocking" : ""}`} key={request.id} id={`request-${request.id}`}>
           <p className="thread-card__meta">

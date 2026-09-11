@@ -1,3 +1,5 @@
+import {documentSourceStructureTargetSchema,documentSourceStructureQuestion,validateDocumentSourceStructureAnswer,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from './document-source-structure';
+export {documentFieldAnswerV3Schema,parseDocumentFieldAnswerV3,serializeDocumentFieldAnswerV3,type DocumentFieldAnswerV3} from './document-source-structure';
 import {z} from 'zod';
 import {rawCandidateFieldSchema} from '@/engine/extraction/contracts';
 import {normalizePayslipFieldValue} from '@/engine/extraction/normalization';
@@ -84,8 +86,10 @@ function transcriptionAnswerValue(target:z.infer<typeof documentSourceTranscript
 /** Validate an answer against its authenticated stored target before persisting
  * a journal revision. This checks value semantics only: callers must still
  * enforce request authorization/currentness, and the worker replays all pins. */
-export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answerInput:unknown):DocumentFieldAnswerV2 {
- const target=documentReadingTargetSchema.parse(targetInput),answer=parseDocumentFieldAnswer(answerInput);
+export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answerInput:unknown) {
+ const target=documentReadingTargetSchema.parse(targetInput);
+ if('proposed_value' in target)return validateDocumentSourceStructureAnswer(target,answerInput);
+ const answer=parseDocumentFieldAnswer(answerInput);
  if(answer.action==='unknown'||answer.action==='unreadable')return answer;
  switch(target.schema_version){
   case 'document-field-confirmation-v1':scalarAnswerValue(target,answer);break;
@@ -136,6 +140,7 @@ export function materializeDocumentFieldVerification(verification:DocumentFieldV
 
 export function documentFieldVerificationDisplay(input:unknown){
  const parsed=documentReadingTargetSchema.parse(input);
+ if('proposed_value' in parsed)return documentSourceStructureDisplay(parsed);
  if(parsed.schema_version==='document-row-cell-confirmation-v1'){
   const row=parsed.original_component,question=documentRowCellQuestion(parsed);
   return {question:question.question,field:`row_cell.${parsed.cell}`,raw_value:row[`${parsed.cell}_raw`],
@@ -212,6 +217,7 @@ function resolveDocumentSourceTranscriptionVerification(input:ResolveInput){
 }
 export function resolveDocumentReadingVerification(input:ResolveInput){
  const target=documentReadingTargetSchema.parse(input.target);
+ if('proposed_value' in target)return resolveDocumentSourceStructureVerification({...input,target});
  if(target.schema_version==='document-field-confirmation-v1')return resolveDocumentFieldVerification({...input,target});
  if(target.schema_version==='document-row-cell-confirmation-v1')return resolveDocumentRowCellVerification({...input,target});
  return target.schema_version==='document-source-scope-confirmation-v1'?resolveDocumentScopeVerification({...input,target}):resolveDocumentSourceTranscriptionVerification({...input,target});
@@ -219,6 +225,7 @@ export function resolveDocumentReadingVerification(input:ResolveInput){
 export type DocumentReadingVerification=ReturnType<typeof resolveDocumentReadingVerification>;
 export function materializeDocumentVerification(verification:DocumentReadingVerification,normalizedExtractionSha256:string){
  if(verification.state!=='confirmed_reading'&&verification.state!=='corrected_reading')return null;
+ if('source_structure_subject' in verification)return materializeDocumentSourceStructureVerification(verification,normalizedExtractionSha256);
  if('original_candidate' in verification){
   const reading=materializeDocumentFieldVerification(verification,normalizedExtractionSha256);
   return reading?{kind:'scalar' as const,reading}:null;
@@ -252,4 +259,18 @@ export function materializeDocumentVerification(verification:DocumentReadingVeri
    raw_value:verification.answer.corrected_raw_value,normalized_value:verification.effective_value,verification_sha256:verification.receipt_sha256}}:{}),
  });
  return {kind:'row_cell' as const,reading};
+}
+
+function documentSourceStructureDisplay(input:unknown){
+ const target=documentSourceStructureTargetSchema.parse(input),subject=target.subject;
+ const ref=subject.kind==='source_relationship'?subject.contribution:subject.kind==='deduction_group'?subject.mandatory_total:subject.anchor;
+ const source={version_id:target.version_id,source_sha256:target.source_sha256,page:ref.source.page,text_fragment:ref.source.text_fragment??null,
+  region:ref.source.region??null,source_scope:ref.source.source_scope??null,bounding_box:ref.source.bounding_box??null};
+ const structure_context=subject.kind==='source_relationship'?{kind:subject.kind,component_kind:subject.component_kind,allows_explicit_confirmation:true as const,
+  contribution:{label:subject.contribution.label,raw_value:subject.contribution.raw_value,page:subject.contribution.source.page},base:{label:subject.base.label,raw_value:subject.base.raw_value,page:subject.base.source.page},proposed_value:null}
+  :subject.kind==='deduction_group'?{kind:subject.kind,allows_voluntary:subject.voluntary_total!==null,rows:subject.rows.map(r=>({component_id:r.id,label:r.label,raw_value:r.raw_value,page:r.source.page})),proposed_value:null}
+  :{kind:subject.kind,group_id:canonicalSha256({version_id:target.version_id,month:target.month,anchor:subject.anchor,balance_kind:subject.balance_kind}),
+    label:subject.balance_kind==='vacation'?'חשבון חופשה':'חשבון מחלה',cell:subject.cell,proposed_value:null};
+ return {question:documentSourceStructureQuestion(target).question,field:`source_structure.${subject.kind}`,raw_value:subject.kind==='balance_movement'?subject.original_raw_value:null,
+  source,target_sha256:target.target_sha256,actions:subject.kind==='source_relationship'?['confirm','correct','unreadable','unknown'] as const:['correct','unreadable','unknown'] as const,scope:'source_structure_reading_only' as const,structure_context};
 }

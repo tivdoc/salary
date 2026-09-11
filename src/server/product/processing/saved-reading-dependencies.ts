@@ -9,6 +9,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {documentRowCellTarget,documentRowCellQuestion} from '../reports/document-row-cell-confirmation';
 import {documentSourceScopeTarget,documentSourceScopeQuestion} from '../reports/document-source-scope-confirmation';
 import {documentSourceTranscriptionTarget,documentSourceTranscriptionQuestion} from '../reports/document-source-transcription';
+import {documentSourceStructureTargetFromSubject,documentSourceStructureQuestion} from '../reports/document-source-structure';
 import {documentReadingTargetSchema,documentReadingTargetForCheckpoint,documentFieldTarget,documentFieldQuestion} from '../reports/document-field-confirmation';
 import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
 import type {SourceJob} from './source-dispatch';
@@ -20,7 +21,7 @@ export async function openSavedReadingDependencies(context:PostgresTransactionCo
  for(const extraction of snapshot.extractions){
   if(!review.documents.some(d=>d.document_id===extraction.document_id))continue;
   const dependencies=documentReviewReadingDependencies({review,document_id:extraction.document_id,extraction});
-  if(!dependencies.row_cells.length&&!dependencies.scope_fields.length&&!dependencies.source_transcriptions.length&&!dependencies.scalar_fields.length)continue;
+  if(!dependencies.row_cells.length&&!dependencies.scope_fields.length&&!dependencies.source_transcriptions.length&&!dependencies.scalar_fields.length&&!dependencies.source_structures?.length)continue;
   const rows=await context.client.query(statement('review_dependency_checkpoint',
    `select c.result,c.result_sha256 from private.case_extraction_checkpoints c
     join private.case_input_versions v on v.case_id=c.case_id and v.revision=c.revision
@@ -49,10 +50,11 @@ export async function openSavedReadingDependencies(context:PostgresTransactionCo
   const targets=[...rowsToOpen.map(dep=>({target:documentRowCellTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,componentId:dep.component_id,cell:dep.cell}),checkIds:dep.check_ids})),
    ...dependencies.scalar_fields.filter(dep=>!scalarIds.has(dep.candidate_id)&&saved.run.result.final_extraction.fields.some(f=>f.candidate_id===dep.candidate_id&&f.normalized_value!==null)).map(dep=>({target:documentFieldTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,candidateId:dep.candidate_id}),checkIds:dep.check_ids})),
    ...dependencies.scope_fields.map(dep=>({target:documentSourceScopeTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,candidateId:dep.candidate_id}),checkIds:dep.check_ids})),
-   ...dependencies.source_transcriptions.map(dep=>({target:documentSourceTranscriptionTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject}),checkIds:dep.check_ids}))];
+   ...dependencies.source_transcriptions.map(dep=>({target:documentSourceTranscriptionTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject}),checkIds:dep.check_ids})),
+   ...(dependencies.source_structures??[]).map(dep=>({target:documentSourceStructureTargetFromSubject({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject}),checkIds:dep.check_ids}))];
   for(const {target,checkIds} of targets){
    const question=target.schema_version==='document-field-confirmation-v1'?documentFieldQuestion(target):target.schema_version==='document-row-cell-confirmation-v1'?documentRowCellQuestion(target)
-    :target.schema_version==='document-source-scope-confirmation-v1'?documentSourceScopeQuestion(target):documentSourceTranscriptionQuestion(target);
+    :target.schema_version==='document-source-scope-confirmation-v1'?documentSourceScopeQuestion(target):target.schema_version==='document-source-transcription-v1'?documentSourceTranscriptionQuestion(target):documentSourceStructureQuestion(target);
    const titles=review.checks.filter(c=>checkIds.includes(c.check_id)).map(c=>c.title);
    const explanation=` האימות יאפשר לבדוק: ${titles.join('; ')}.`;
    const text=question.question.length+explanation.length<=400?question.question+explanation:question.question;

@@ -25,6 +25,7 @@ export const reviewPeriodProjectionSchema=z.object({schema_version:z.literal('do
 export const reviewSourceObservationInventorySchema=z.object({schema_version:z.literal('payslip-unresolved-fields-v1'),
  document_id:z.string().min(1),version_id:z.string().min(1),source_sha256:sha,reading_sha256:sha,
  checkpoint_result_sha256:sha,original_pass_sha256:sha,
+ outside_purchased_topics:z.array(reviewTopicSchema).max(10).optional(),
  machine_extraction_sha256:sha.optional(),unit_readings:z.array(customerSourceTranscriptionSchema).max(48).optional(),
  observations:z.array(normalizedCandidateFieldSchema).min(1).max(48),
 }).strict().refine(i=>i.observations.every(o=>(o.field==='vacation_balance'||o.field==='sick_balance')&&o.normalized_value===null),'REVIEW_UNRESOLVED_BALANCE_ONLY');
@@ -71,6 +72,7 @@ export const documentReviewInputSchema=z.object({
   ctx.addIssue({code:'custom',path:['period_projection'],message:'REVIEW_PROJECTION_POLICY_REQUIRED'});
  for(const [index,inventory] of (input.source_observation_inventory??[]).entries()){
   const document=input.documents.find(d=>d.document_id===inventory.document_id&&d.version_id===inventory.version_id);
+  if(inventory.outside_purchased_topics?.some(t=>input.purchased_scope.topics.includes(t)||!['vacation','sick_leave'].includes(t)))ctx.addIssue({code:'custom',path:['source_observation_inventory',index],message:'REVIEW_SOURCE_INVENTORY_SCOPE'});
   if(!input.coverage_policy||!document||document.file_sha256!==inventory.source_sha256||document.reading_sha256!==inventory.reading_sha256
    ||new Set(inventory.observations.map(o=>o.candidate_id)).size!==inventory.observations.length
    ||inventory.observations.some(o=>o.source.document_id!==document.document_id||o.source.page>(document.page_count??0)))
@@ -91,7 +93,7 @@ export type DocumentReviewCoverageInventory=Readonly<{
  source_periods:readonly {document_id:string;version_id:string;kind:ReviewDocument['kind'];period:ReviewDocument['period']}[];
  period_projection?:z.infer<typeof reviewPeriodProjectionSchema>;
  unresolved_source_observations:readonly {document_id:string;version_id:string;field:'vacation_balance'|'sick_balance';candidate_id:string;raw_value:string;unit:null;page:number}[];
- source_balance_observations:readonly {document_id:string;version_id:string;field:'vacation_balance'|'sick_balance';candidate_id:string;raw_value:string;unit:'days'|'hours'|null;page:number;reading_status:'unit_unresolved'|'identified_unit_reading';amount_verified:false}[];
+ source_balance_observations:readonly {document_id:string;version_id:string;field:'vacation_balance'|'sick_balance';candidate_id:string;raw_value:string;unit:'days'|'hours'|null;page:number;reading_status:'unit_unresolved'|'identified_unit_reading';amount_verified:false;scope_status?:'outside_purchased_scope'}[];
  topics:readonly {topic:z.infer<typeof reviewTopicSchema>;calculated_check_ids:string[];blocked_check_ids:string[];
   excluded_check_ids:string[];gap_ids:string[];coverage:'partial'|'not_evaluated'}[];
  legal_coverage_complete:false;

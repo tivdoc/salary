@@ -1,3 +1,4 @@
+import {customerSourceStructureReadingSchema} from './source-structure.ts';
 import { z } from "zod";
 import {customerDocumentReadingSchema,customerDocumentRowCellReadingSchema,customerDocumentScopeReadingSchema,customerSourceTranscriptionSchema,sourceReadingContextSchema} from './customer-reading.ts';
 import {
@@ -126,6 +127,7 @@ export const normalizedPayslipExtractionSchema = z
     customer_row_readings:z.array(customerDocumentRowCellReadingSchema).max(400).optional(),
     customer_scope_readings:z.array(customerDocumentScopeReadingSchema).max(300).optional(),
     customer_source_transcriptions:z.array(customerSourceTranscriptionSchema).max(100).optional(),
+    customer_source_structures:z.array(customerSourceStructureReadingSchema).max(150).optional(),
     source_reading_context:sourceReadingContextSchema.optional(),
     extraction_id: z.uuid(),
     document_id: z.uuid(),

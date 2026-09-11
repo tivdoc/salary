@@ -1,4 +1,6 @@
 import {z} from 'zod';
+import {appendPayslipSourceStructures} from './payslip-source-structures.ts';
+import type {DocumentReviewSourceStructure} from './source-structure-evidence.ts';
 import type {StoredCaseInputSnapshot} from '../case-analysis/contracts.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {resolvePayslipSnapshot,resolvedPayslipFactPaths,IDENTIFIED_AGREEING_CANDIDATES_POLICY} from '../extraction/resolver.ts';
@@ -14,6 +16,7 @@ import {deferredDocumentReviewRowPriceOperands} from './source-dependencies.ts';
 export const PAYSLIP_FINANCIAL_SOURCE_FACT='payslip.financial_source';
 export const PAYSLIP_FINANCIAL_SOURCE_POLICY='payslip-financial-source-v1';
 export const PAYSLIP_REVIEW_POLICY='payslip-review-coverage-v2' as const;
+export const PAYSLIP_SOURCE_STRUCTURE_POLICY='payslip-review-source-structures-v3' as const;
 const financialSourceProofSchema=z.object({policy_version:z.literal(PAYSLIP_FINANCIAL_SOURCE_POLICY),case_id:z.uuid(),document_id:z.uuid(),
  source_sha256:z.string().regex(/^[a-f0-9]{64}$/u),normalized_extraction_sha256:z.string().regex(/^[a-f0-9]{64}$/u),
  provider_receipt_sha256:z.string().regex(/^[a-f0-9]{64}$/u),source_page_count:z.number().int().min(1).max(12),complete_original_source:z.literal(true)}).strict();
@@ -44,11 +47,12 @@ const monetary=(f:NormalizedCandidateField|undefined)=>f?.normalized_value&&type
 /** Source arithmetic from the SAME saved extraction and canonical reading
  * policy. Neither a model confidence nor a customer's cell reading is legal
  * authority. Every original observation remains in the immutable receipt. */
-export function reviewInputFromPayslips(input:{case_id:string;period:DocumentReviewInput['period'];purchased_scope:DocumentReviewInput['purchased_scope'];snapshot:StoredCaseInputSnapshot;financial_source_proofs?:readonly PayslipFinancialSourceProof[];review_policy?:typeof PAYSLIP_REVIEW_POLICY;retained_unresolved_fields?:readonly RetainedUnresolvedPayslipFields[]}):DocumentReviewInput{
+export function reviewInputFromPayslips(input:{case_id:string;period:DocumentReviewInput['period'];purchased_scope:DocumentReviewInput['purchased_scope'];snapshot:StoredCaseInputSnapshot;financial_source_proofs?:readonly PayslipFinancialSourceProof[];review_policy?:typeof PAYSLIP_REVIEW_POLICY|typeof PAYSLIP_SOURCE_STRUCTURE_POLICY;retained_unresolved_fields?:readonly RetainedUnresolvedPayslipFields[]}):DocumentReviewInput{
  const {snapshot}=input;
+ const withCoverage=input.review_policy===PAYSLIP_REVIEW_POLICY||input.review_policy===PAYSLIP_SOURCE_STRUCTURE_POLICY;
  const proofs=(input.financial_source_proofs??[]).map(proof=>financialSourceProofSchema.parse(proof));
  const retained=(input.retained_unresolved_fields??[]).map(r=>retainedUnresolvedFieldsSchema.parse(r));
- if(retained.length&&input.review_policy!==PAYSLIP_REVIEW_POLICY
+ if(retained.length&&!withCoverage
   ||new Set(retained.map(r=>r.document_id)).size!==retained.length
   ||retained.some(r=>r.case_id!==input.case_id||!snapshot.documents.some(d=>d.document_id===r.document_id&&d.content_sha256===r.source_sha256)))throw Error('DOCUMENT_REVIEW_RETAINED_SOURCE_BINDING');
  if(new Set(proofs.map(p=>p.document_id)).size!==proofs.length||proofs.some(p=>p.case_id!==input.case_id||!snapshot.documents.some(d=>d.document_id===p.document_id&&d.content_sha256===p.source_sha256)))throw Error('DOCUMENT_REVIEW_FINANCIAL_SOURCE_PROOF_BINDING');
@@ -92,7 +96,7 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    &&f.normalized_value.start_date>=input.period.from&&f.normalized_value.end_date<=input.period.to
    &&(!original.document_period||f.normalized_value.start_date===original.document_period.start_date&&f.normalized_value.end_date===original.document_period.end_date));
   if(!periodValid){gap('period',input.purchased_scope.topics[0],'לא אומתה התאמה בין חודש התלוש לתקופה הנבדקת.','יש לברר את חודש המקור לפני שיוך חישובים אליו.');continue;}
-  if(input.review_policy===PAYSLIP_REVIEW_POLICY&&d.period===null){
+  if(withCoverage&&d.period===null){
    const observedPeriod=periods[0]?.normalized_value;
    // The immutable reading receipt already pins these candidates and the
    // canonical resolver has confirmed their agreement. This is source scope,
@@ -120,8 +124,9 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
     });
     source_observation_inventory.push({schema_version:'payslip-unresolved-fields-v1',document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256,
      reading_sha256:receipt,checkpoint_result_sha256:prior.checkpoint_result_sha256,original_pass_sha256:canonicalSha256(prior.first_pass),observations,
+     ...(input.review_policy===PAYSLIP_SOURCE_STRUCTURE_POLICY?{outside_purchased_topics:observations.flatMap(o=>o.field==='sick_balance'&&!input.purchased_scope.topics.includes('sick_leave')?['sick_leave' as const]:o.field==='vacation_balance'&&!input.purchased_scope.topics.includes('vacation')?['vacation' as const]:[])}:{}),
      ...(unitReadings.length?{machine_extraction_sha256:prior.final_extraction_sha256,unit_readings:unitReadings}:{})});
-    for(const field of ['vacation_balance','sick_balance'] as const){
+    for(const field of (input.review_policy===PAYSLIP_SOURCE_STRUCTURE_POLICY?[]:['vacation_balance','sick_balance']) as ('vacation_balance'|'sick_balance')[]){
      const rows=observations.filter(o=>o.field===field);if(!rows.length)continue;
      const topic=field==='vacation_balance'?'vacation' as const:'sick_leave' as const,id=`balance.${field}.unit`,label=field==='vacation_balance'?'חופשה':'מחלה';
      if(rows.every(o=>unitReadings.some(r=>r.subject.kind==='balance_unit'&&r.subject.original_candidate.candidate_id===o.candidate_id))){
@@ -135,7 +140,7 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
   }
   const manifest=[{document_id:d.document_id,version_id:d.version_id,file_sha256:d.file_sha256,page_count:d.page_count,kind:'case_document' as const,case_id:input.case_id}];
   const source=(page:number,label:string,locator:unknown):DocumentReviewOperand['source']=>{
-   const encoded=JSON.stringify(input.review_policy===PAYSLIP_REVIEW_POLICY&&locator!==null&&typeof locator==='object'?{schema_version:'document-review-source-locator-v2',...locator}:locator),bounded=input.review_policy===PAYSLIP_REVIEW_POLICY&&encoded.length>500
+   const encoded=JSON.stringify(withCoverage&&locator!==null&&typeof locator==='object'?{schema_version:'document-review-source-locator-v2',...locator}:locator),bounded=withCoverage&&encoded.length>500
     ?JSON.stringify({schema_version:'document-review-source-locator-v2',unavailable:'source_locator_too_large',observation_sha256:canonicalSha256(locator)}):encoded.slice(0,500);
    return {document_id:d.document_id,version_id:d.version_id,file_sha256:d.file_sha256,page,label:label.slice(0,300),locator:bounded,reading:'provider_extraction',reading_receipt_sha256:receipt};
   };
@@ -181,21 +186,21 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
   const moneyOperand=(field:string,id:string,label:string):DocumentReviewOperand=>{
    const candidates=extraction.fields.filter(f=>f.field===field),f=candidates[0],m=monetary(f);
    return {id,observation_id:f?.candidate_id??`${d.version_id}:${field}`,state:fieldState(field),printed_value:m?.currency==='ILS'?decimalMoney(m.minor_units):null,
-    representation:'money_ils',quantity_unit:null,precision:'printed_precision',source:{...source(f?.source.page??1,label,input.review_policy===PAYSLIP_REVIEW_POLICY
+    representation:'money_ils',quantity_unit:null,precision:'printed_precision',source:{...source(f?.source.page??1,label,withCoverage
      ?{field,candidate_ids:candidates.map(c=>c.candidate_id),candidate_sha256:candidates.map(c=>canonicalSha256(originalExtraction.fields.find(o=>o.candidate_id===c.candidate_id))),raw_values:candidates.map(c=>c.raw_value)}
      :{field,candidate_ids:candidates.map(f=>f.candidate_id),observations:candidates.map(f=>({candidate_id:f.candidate_id,raw:f.raw_value,source:f.source,original:originalExtraction.fields.find(o=>o.candidate_id===f.candidate_id)?.raw_value,reading_sha256:materialized.readings.has(f.candidate_id)?canonicalSha256(materialized.readings.get(f.candidate_id)):null}))}),reading:candidates.length>0&&candidates.every(f=>materialized.readings.has(f.candidate_id))?'identified_document_reading':'provider_extraction'}};
   };
-  const add=(checkId:string,topic:Topic,title:string,explanation:string,operands:DocumentReviewOperand[],operation:DocumentReviewCalculationInput['operation'],requestReadings=true)=>{
+  const add=(checkId:string,topic:Topic,title:string,explanation:string,operands:DocumentReviewOperand[],operation:DocumentReviewCalculationInput['operation'],requestReadings=true,structure?:DocumentReviewSourceStructure)=>{
    if(!input.purchased_scope.topics.includes(topic))return;
    const check_id=`document.${index}.${checkId}`;
    const calculation:DocumentReviewCalculationInput={schema_version:'document-review-calculation-input-v1',case_id:input.case_id,run_id:'pending',check_id,
-    period:input.period,evaluated_at:new Date(extraction.extracted_at).toISOString(),source_manifest:manifest,operands,operation,remittance_status:'not_assessed'};
+    period:input.period,evaluated_at:new Date(extraction.extracted_at).toISOString(),source_manifest:manifest,operands,operation,remittance_status:'not_assessed',...(structure?{source_structure:structure}:{})};
    checks.push({check_id,topic,title,explanation,calculation});
    // A number cannot establish that a contribution belongs to this base.
    // Retain the blocked arithmetic and relationship gap until source linkage
    // exists; do not request cell confirmations that cannot change the result.
-   if(!requestReadings||input.review_policy===PAYSLIP_REVIEW_POLICY&&operation.kind==='observed_ratio'&&!operation.same_period_and_base)return;
-   const deferredPrices=input.review_policy===PAYSLIP_REVIEW_POLICY?deferredDocumentReviewRowPriceOperands(calculation,originalExtraction):new Set<string>();
+   if(!requestReadings||withCoverage&&operation.kind==='observed_ratio'&&!operation.same_period_and_base)return;
+   const deferredPrices=withCoverage?deferredDocumentReviewRowPriceOperands(calculation,originalExtraction):new Set<string>();
    if(deferredPrices.size){
     needs.push({fact_key:`${check_id}.missing_basis`,kind:'factual',reason:'missing',required_evidence_kind:'observed_reading',
      question:`לגבי ${title.slice(0,100)}: תאי הכמות והסכום ריקים. האם קיים רישום או מסמך נוסף שמפרט את הכמות או השעות ואת התשלום בשורה זו? ציין מה קיים ומה מקורו; אם אין או לא ידוע, ציין זאת. אין צורך להעתיק מספר שאינו מופיע בתלוש.`,
@@ -227,7 +232,7 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
     source:{...source(candidate?.source.page??1,label,{scope,candidate_ids:candidates.map(o=>o.candidate.candidate_id),
      scope_observation_sha256:candidates.map(o=>canonicalSha256(originalExtraction.source_scope_observations?.find(c=>c.candidate.candidate_id===o.candidate.candidate_id))),raw_values:candidates.map(o=>o.candidate.raw_value)}),reading:confirmed?'identified_document_reading':'provider_extraction'}};
   };
-  if(input.review_policy===PAYSLIP_REVIEW_POLICY){
+  if(withCoverage){
    const scopes=extraction.source_scope_observations??[];
    if(scopes.some(o=>o.scope==='voluntary_deduction'||o.scope==='final_payable'))
     add('net.final','minimum_wage','התאמת נטו וסכום לתשלום לאחר ניכויי רשות','בדיקת הנטו המודפס פחות ניכויי הרשות, מול שדה לתשלום הנפרד. אין בכך אימות של העברה לחשבון.',
@@ -266,7 +271,7 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    add('gross.net','minimum_wage','התאמת ברוטו, ניכויים ונטו','בדיקת חיסור הסכומים הכוללים שנקראו. פער חשבוני דורש בירור ואינו חוב; התאמה אינה הוכחת העברה לחשבון.',
     [moneyOperand('gross_salary','gross','ברוטו'),moneyOperand('total_deductions','deductions','סך הניכויים'),moneyOperand('net_salary','net','נטו')],
     {kind:'reconciliation',add_refs:['gross'],subtract_refs:['deductions'],recorded_ref:'net',inventory_complete:true,inventory_basis:'Explicit total fields; individual deduction rows are not added again.',disjoint_components:true,overlap_basis:'Gross less one deduction total; no component aggregation.'});
-  if(input.review_policy===PAYSLIP_REVIEW_POLICY&&extraction.additional_components.some(r=>r.semantic_kind==='deduction')
+  if(withCoverage&&extraction.additional_components.some(r=>r.semantic_kind==='deduction')
    &&extraction.fields.some(f=>f.field==='total_deductions'))
    gap('deductions.grouping','minimum_wage','שורות הניכוי שנקראו נשמרו, אך לא זוהה באופן מלא אילו שורות נכללות בכל סיכום ניכויים. לכן לא בוצעה התאמת סכומי השורות לסיכומים; התאמת הברוטו והנטו נבדקת בנפרד.',
     'יש לזהות במקור את שיוך השורות לקבוצות הניכויים ואת גבולות כל קבוצה. אישור המספרים בלבד אינו קובע את השיוך, ואין להסיק אותו מהתאמה בין סכומים.');
@@ -285,13 +290,13 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    const conflict=new Set(rows.map(r=>canonicalSha256(cells(r)))).size>1;
    const cellNormalizationWarnings=new Set(['quantity_normalization_failed','rate_normalization_failed','amount_normalization_failed','percentage_normalization_failed']);
    const uncertain=(cell:string)=>globallyUnreadable||extraction.document_quality_confidence<0.95||rows.some(r=>r.confidence<0.95||r.warning_flags.length>0
-    ||input.review_policy===PAYSLIP_REVIEW_POLICY&&r.source.source_scope?.period_kind!=='current'
-    ||r.normalization_warnings.some(w=>input.review_policy!==PAYSLIP_REVIEW_POLICY||!cellNormalizationWarnings.has(w)||w===`${cell}_normalization_failed`));
+    ||withCoverage&&r.source.source_scope?.period_kind!=='current'
+    ||r.normalization_warnings.some(w=>!withCoverage||!cellNormalizationWarnings.has(w)||w===`${cell}_normalization_failed`));
    const confirmedCell=(id:'quantity'|'rate'|'amount'|'percentage')=>{
     const originalRow=originalExtraction.additional_components.find(r=>r.component_id===row.component_id);
     if(!originalRow||conflict||globallyUnreadable||extraction.document_quality_confidence<.95
-     ||rows.some(r=>r.warning_flags.length>0||input.review_policy===PAYSLIP_REVIEW_POLICY&&r.source.source_scope?.period_kind!=='current'
-      ||r.normalization_warnings.some(w=>input.review_policy!==PAYSLIP_REVIEW_POLICY||!cellNormalizationWarnings.has(w))))return null;
+     ||rows.some(r=>r.warning_flags.length>0||withCoverage&&r.source.source_scope?.period_kind!=='current'
+      ||r.normalization_warnings.some(w=>!withCoverage||!cellNormalizationWarnings.has(w))))return null;
     const direct=rows.map(r=>{
      const original=originalExtraction.additional_components.find(o=>o.component_id===r.component_id);
      return original?identifiedDirectRowCell({original:originalExtraction,effective:extraction,rowReadings:materialized.rowReadings,row:original,cell:id}):null;
@@ -324,13 +329,13 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
     const printed=money?value?.currency==='ILS'?decimalMoney(value.minor_units):null:id==='quantity'?typeof normalized==='string'?normalized:null:row.percentage?decimalMoney(row.percentage.basis_points):null;
     return {id,observation_id:`${row.component_id}:${id}`,state,printed_value:printed,representation:money?'money_ils':id==='percentage'?'percent':'decimal_quantity',
      quantity_unit:money?null:id==='percentage'?'ratio':row.semantic_kind==='hourly_base'||row.semantic_kind.startsWith('overtime_')?'hours':'count',precision:'printed_precision',
-     source:{...source(row.source.page,`${row.source_label} — ${{quantity:'כמות',rate:'תעריף',amount:'סכום',percentage:'אחוז'}[id]}`,input.review_policy===PAYSLIP_REVIEW_POLICY
+     source:{...source(row.source.page,`${row.source_label} — ${{quantity:'כמות',rate:'תעריף',amount:'סכום',percentage:'אחוז'}[id]}`,withCoverage
       ?{component_ids:rows.map(r=>r.component_id),cell:id,original_component_sha256:rows.map(r=>canonicalSha256(originalExtraction.additional_components.find(o=>o.component_id===r.component_id))),raw_values:rows.map(r=>r[`${id}_raw`]),
        ...(mapped?{mapped_candidate:{candidate_id:mapped.candidate_id,candidate_sha256:canonicalSha256(mapped)}}:{})}
       :{component_ids:rows.map(r=>r.component_id),candidate_id:confirmed?.candidate_id??null,...(confirmed?.row_reading_sha256.length?{row_reading_sha256:confirmed.row_reading_sha256}:{}),raw,original_raw:originalExtraction.additional_components.find(r=>r.component_id===row.component_id)?.[`${id}_raw`]??null,source:row.source,semantic_kind:row.semantic_kind}),reading:confirmed?'identified_document_reading':'provider_extraction'}};
    };
    printedAmounts.push({rows,operand:rowOperand('amount'),conflict});
-   if(input.review_policy===PAYSLIP_REVIEW_POLICY&&row.semantic_kind==='hourly_base'
+   if(withCoverage&&row.semantic_kind==='hourly_base'
     &&[...groups.values()].filter(group=>group[0].semantic_kind==='hourly_base').length===1&&d.page_count===1){
     const transcribed=identifiedSourceTranscription({original:originalExtraction,sourceTranscriptions:materialized.sourceTranscriptions,subjectKind:'reported_work_hours'});
     const value=transcribed?.normalized_value,raw=value?.kind==='reported_work_hours'?value.amount:null;
@@ -352,7 +357,7 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    if(deferredPrices?.size)gap(`${rowId}.blank_basis`,topic,`בשורה ${row.source_label} תאי הכמות והסכום ריקים במקור שנקרא. הם נשארו חסרים ולא הוזנו כאפס. אישור התעריף לבדו לא יאפשר לבדוק את השורה, ולכן אינו מתבקש כעת.`,
     'אם קיימים נתוני כמות וסכום מפורשים ממקור מתאים, ניתן להשלים אותם ולבחון שוב את השורה. תשובה לא ידועה משאירה את החסר; הצהרה אינה אישור לקריאת מסמך.');
   }
-  if(input.review_policy===PAYSLIP_REVIEW_POLICY&&extraction.fields.some(f=>f.field==='gross_salary')){
+  if(withCoverage&&extraction.fields.some(f=>f.field==='gross_salary')){
    const populated=printedAmounts.filter(p=>p.rows.some(r=>r.amount_raw!==null));
    const blanks=printedAmounts.filter(p=>p.rows.every(r=>r.amount_raw===null&&r.quantity_raw===null));
    const unboundBlank=printedAmounts.some(p=>p.rows.some(r=>r.amount_raw===null&&r.quantity_raw!==null));
@@ -378,8 +383,10 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
      next_step:'נדרשת החלטת היקף מפורשת לפני בדיקת השורות הנוספות. לא שונו הנושאים שנרכשו ולא נפתחו עבורן שאלות; בדיקות עצמאיות בתחום השירות ממשיכות.'});
    }
   }
+  if(input.review_policy===PAYSLIP_SOURCE_STRUCTURE_POLICY&&prior)appendPayslipSourceStructures({index,case_id:input.case_id,period:input.period,topics:input.purchased_scope.topics,
+   document:d,original:originalExtraction,materialized,firstPass:prior.first_pass,checkpointSha256:prior.checkpoint_result_sha256,checks,gaps:coverage_gaps,needs,bindings:answer_bindings,add,moneyOperand,scopedOperand});
  }
- return {schema_version:DOCUMENT_REVIEW_POLICY,...(input.review_policy===PAYSLIP_REVIEW_POLICY?{coverage_policy:DOCUMENT_REVIEW_COVERAGE_POLICY,...(source_observation_inventory.length?{source_observation_inventory}:{})}:{}),coverage_gaps,answer_bindings,answer_history:[],case_id:input.case_id,period:input.period,purchased_scope:input.purchased_scope,documents,checks,
+ return {schema_version:DOCUMENT_REVIEW_POLICY,...(withCoverage?{coverage_policy:DOCUMENT_REVIEW_COVERAGE_POLICY,...(source_observation_inventory.length?{source_observation_inventory}:{})}:{}),coverage_gaps,answer_bindings,answer_history:[],case_id:input.case_id,period:input.period,purchased_scope:input.purchased_scope,documents,checks,
   completion_input:{case_id:input.case_id,period:input.period,documents:documents.map(d=>({pin:{case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256},kind:d.kind,review:'partial',period:completedFinancialSources.has(d.document_id)?input.period:d.period,
    ...(completedFinancialSources.has(d.document_id)?{review_completed_fact_keys:[PAYSLIP_FINANCIAL_SOURCE_FACT]}:{})})),needs,evidence}};
 }

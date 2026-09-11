@@ -1,4 +1,8 @@
 import {z} from 'zod';
+import {sourceStructureEntries} from './source-structure-evidence.ts';
+import {sourceStructureSelector,assertSourceStructureSubject,type SourceStructureSelector} from '../extraction/source-structure-resolution.ts';
+import type {SourceStructureSubject} from '../extraction/source-structure.ts';
+import {payslipMachineExtractionSha256} from '../extraction/reading-resolution.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {normalizedPayslipExtractionSchema,type NormalizedPayslipExtraction} from '../extraction/payslip.ts';
 import type {DocumentReviewCalculationInput} from './calculations.ts';
@@ -59,10 +63,24 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
  const rows=new Map<string,{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage';check_ids:string[]}>();
  const scopes=new Map<string,{candidate_id:string;scope:string;check_ids:string[]}>(),fields=new Map<string,{candidate_id:string;check_ids:string[]}>();
  const transcriptions=new Map<string,{subject:{kind:'reported_work_hours';page:number}|{kind:'balance_unit';candidateId:string};check_ids:string[]}>();
+ const structures=new Map<string,{subject:SourceStructureSubject;selector:SourceStructureSelector;check_ids:string[]}>();
  const unmapped:{check_id:string;operand_id:string;reason:'locator_unavailable'|'source_changed'|'blank_source'}[]=[];
  for(const check of input.review.checks){
   if(check.calculation.state!=='blocked')continue;
   const operation=check.calculation.input.operation;
+  const structure=check.calculation.input.source_structure;
+  if(structure&&structure.document_id===document.document_id){
+   if(structure.reading_sha256!==document.reading_sha256||structure.machine_extraction_sha256!==payslipMachineExtractionSha256(extraction))throw Error('REVIEW_STRUCTURE_DEPENDENCY_CHANGED');
+   // Subjects for absent answers are source requests, not manufactured values.
+   // The authenticated opener reconstructs them from its saved first pass.
+   for(const e of sourceStructureEntries(structure).filter(e=>!e.reading)){
+    if(extraction.source_reading_context)assertSourceStructureSubject({subject:e.subject,extraction,firstPass:extraction.source_reading_context.first_pass});
+    const key=canonicalSha256(e.subject),selected=structures.get(key)??{subject:e.subject,selector:sourceStructureSelector(e.subject),check_ids:[]};
+    if(!selected.check_ids.includes(check.check_id))selected.check_ids.push(check.check_id);structures.set(key,selected);
+   }
+   if(structure.kind==='balance_movement'||sourceStructureEntries(structure).some(e=>!e.reading)
+    ||operation.kind==='reconciliation'&&(!operation.inventory_complete||!operation.disjoint_components))continue;
+  }
   if(operation.kind==='observed_ratio'&&!operation.same_period_and_base)continue;
   if(check.printed_inventory?.document_id===document.document_id&&check.printed_inventory.populated_component_ids.some(id=>{
    const row=extraction.additional_components.find(r=>r.component_id===id),topic=row?PAYSLIP_ROW_REVIEW_TOPICS[row.semantic_kind]:undefined;
@@ -93,7 +111,7 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
     if(value===null||!value.trim()){unmapped.push({check_id:check.check_id,operand_id:operand.id,reason:'blank_source'});continue;}
     if('component_ids' in locator){
      const sourceRow=extraction.additional_components.find(c=>c.component_id===id)!,topic=PAYSLIP_ROW_REVIEW_TOPICS[sourceRow.semantic_kind];
-     if(!topic||!input.review.purchased_scope.topics.includes(topic))continue;
+     if((!topic||!input.review.purchased_scope.topics.includes(topic))&&!(structure?.kind==='deduction_group'&&locator.cell==='amount'&&operation.kind==='reconciliation'&&operation.inventory_complete&&structure.row_bindings.some(b=>b.component_id===id)&&input.review.purchased_scope.topics.includes('minimum_wage')))continue;
      if(locator.mapped_candidate){
       const row=extraction.additional_components.find(c=>c.component_id===id)!,mapped=mappedRowCellCandidate({fields:extraction.fields,row,cell:locator.cell});
       if(!mapped||mapped.candidate_id!==locator.mapped_candidate.candidate_id||canonicalSha256(mapped)!==locator.mapped_candidate.candidate_sha256){unmapped.push({check_id:check.check_id,operand_id:operand.id,reason:'source_changed'});continue;}
@@ -111,5 +129,5 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
    &&g.source_pins?.some(p=>p.document_id===document.document_id&&p.version_id===document.version_id&&p.source_sha256===document.file_sha256)).map(g=>g.check_id);
   if(checks.length)transcriptions.set(`balance_unit:${row.candidate_id}`,{subject:{kind:'balance_unit',candidateId:row.candidate_id},check_ids:checks});
  }
- return {row_cells:[...rows.values()],scope_fields:[...scopes.values()],scalar_fields:[...fields.values()],source_transcriptions:[...transcriptions.values()],unmapped};
+ return {row_cells:[...rows.values()],scope_fields:[...scopes.values()],scalar_fields:[...fields.values()],source_transcriptions:[...transcriptions.values()],...(structures.size?{source_structures:[...structures.values()]}:{}),unmapped};
 }

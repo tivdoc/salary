@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {documentReviewSourceStructureSchema,validateReviewSourceStructure,reviewSourceStructureBlockers,sourceStructureEntries,balanceStructureGroupSha256} from './source-structure-evidence.ts';
 import {canonicalSha256, deepFreeze} from '../rule-runtime/canonical.ts';
 import {createRuleSpecPackage, executeRuleSpec, ruleSpecPackageSchema, type RuleSpecDraft, type RuleSpecInputValue} from '../legal-operations/rulespec.ts';
 
@@ -13,7 +14,7 @@ const sourceSchema=z.object({document_id:contextId,version_id:contextId,file_sha
 }).strict();
 const operandSchema=z.object({id,observation_id:contextId,state,printed_value:z.string().max(100).nullable(),
  representation:z.enum(['money_ils','decimal_quantity','hours_minutes','percent','integer','boolean']),
- quantity_unit:z.enum(['hours','hours_per_month','days','calendar_days','count','ratio','days_per_week']).nullable(),
+ quantity_unit:z.enum(['hours','hours_per_month','days','calendar_days','count','ratio','days_per_week','source_native_unknown']).nullable(),
  precision:z.enum(['printed_precision','source_exact']),source:sourceSchema,
 }).strict();
 const decisionSchema=z.object({decision_id:id,state:z.enum(['accepted','missing','unknown','conflict','stale','expired']),
@@ -57,6 +58,7 @@ export const documentReviewCalculationInputSchema=z.object({
    kind:z.enum(['case_document','customer_answer','legal_source']),case_id:contextId.nullable(),
  }).strict()).min(1).max(64),
  operands:z.array(operandSchema).min(1).max(64),
+ source_structure:documentReviewSourceStructureSchema.optional(),
  operation:z.discriminatedUnion('kind',[productSchema,reconciliationSchema,observedRatioSchema,comparisonSchema,candidateSchema]),
  remittance_status:z.enum(['not_assessed','missing','unverified','confirmed']).default('not_assessed'),
 }).strict();
@@ -72,7 +74,7 @@ function decimal(raw:string){
  if(!match)throw Error('DOCUMENT_REVIEW_NUMBER_FORMAT');
  return {numerator:BigInt((match[1]||'')+match[2]+(match[3]??'')),denominator:BigInt(10)**BigInt(match[3]?.length??0)};
 }
-function parseValue(operand:DocumentReviewOperand):Value{
+function parseValue(operand:DocumentReviewOperand,input:DocumentReviewCalculationInput):Value{
  const raw=operand.printed_value;
  if(!['observed','declared'].includes(operand.state)||raw===null)throw Error('DOCUMENT_REVIEW_OBSERVATION_REQUIRED');
  if(operand.representation==='boolean'){
@@ -102,7 +104,7 @@ function parseValue(operand:DocumentReviewOperand):Value{
   if(number.denominator!==BigInt(1)||number.numerator>BigInt(Number.MAX_SAFE_INTEGER)||number.numerator<BigInt(Number.MIN_SAFE_INTEGER))throw Error('DOCUMENT_REVIEW_INTEGER');
   return {kind:'integer',value:Number(number.numerator),unit:operand.quantity_unit};
  }
- return {kind:'rational',numerator:number.numerator.toString(),denominator:number.denominator.toString(),unit:operand.quantity_unit};
+ return {kind:'rational',numerator:number.numerator.toString(),denominator:number.denominator.toString(),unit:operand.quantity_unit==='source_native_unknown'?`source.balance.${balanceStructureGroupSha256(input.source_structure!)}`:operand.quantity_unit};
 }
 function operationRefs(input:DocumentReviewCalculationInput){
  const op=input.operation;
@@ -125,6 +127,7 @@ function assertSource(source:DocumentReviewSource,input:DocumentReviewCalculatio
  if(source.reading==='customer_declaration'&&document.kind!=='customer_answer')throw Error('DOCUMENT_REVIEW_DECLARATION_SOURCE');
 }
 function validate(input:DocumentReviewCalculationInput){
+ validateReviewSourceStructure(input);
  if(input.period.to<input.period.from)throw Error('DOCUMENT_REVIEW_PERIOD');
  if(new Set(input.operands.map(o=>o.id)).size!==input.operands.length)throw Error('DOCUMENT_REVIEW_DUPLICATE_OPERAND');
  if(new Set(input.source_manifest.map(d=>`${d.document_id}:${d.version_id}`)).size!==input.source_manifest.length)throw Error('DOCUMENT_REVIEW_DUPLICATE_SOURCE');
@@ -167,7 +170,7 @@ function validate(input:DocumentReviewCalculationInput){
  }
 }
 function blockers(input:DocumentReviewCalculationInput):Blocker[]{
- const result:Blocker[]=input.operands.filter(o=>!['observed','declared'].includes(o.state)).map(o=>({dependency_id:o.id,state:o.state,reason:'source_observation_not_usable'}));
+ const result:Blocker[]=[...reviewSourceStructureBlockers(input),...input.operands.filter(o=>!['observed','declared'].includes(o.state)).map(o=>({dependency_id:o.id,state:o.state,reason:'source_observation_not_usable'}))];
  const op=input.operation;
  if(op.kind==='reconciliation'){
   if(!op.inventory_complete)result.push({dependency_id:'inventory.complete',state:'missing',reason:'subtotal_inventory_incomplete'});
@@ -205,11 +208,13 @@ export function calculateDocumentReview(candidate:unknown){
   dependency_fingerprint,claim:op.kind==='candidate_rule'?'conditional_entitlement_candidate':op.kind==='observed_ratio'?'observed_ratio':'document_arithmetic',
   remittance_status:input.remittance_status,input_basis:input.operands.some(o=>o.source.reading==='customer_declaration')?'includes_customer_declaration':'document_only',legal_requirement_status:op.kind==='candidate_rule'?'conditional_not_real_approval':'not_determined',
   human_attestation:null,real_activation_allowed:false,
+  ...(input.source_structure?{source_structure_qualification:{kind:input.source_structure.kind,legal_entitlement_assessed:false as const,
+   ...(input.source_structure.kind==='balance_movement'?{unit:input.operands.find(o=>o.state==='observed')?.quantity_unit??null,group_sha256:balanceStructureGroupSha256(input.source_structure)}:{})}}:{}),
   ...(op.kind==='candidate_rule'&&op.conditional_assumptions?{unresolved_conditions:op.conditional_assumptions.map(a=>({decision:op.decisions.find(d=>d.decision_id===a.decision_id)!,assumption:a.explanation})),counterfactual_only:true as const}:{}),
   ...(op.kind==='candidate_rule'&&op.comparison?{comparison_basis:op.comparison.recorded_basis}:{}),
  };
  if(blocked.length)return deepFreeze({...common,state:'blocked' as const,blockers:blocked,execution:null,expected:null,recorded:null,difference:null,observed_ratio:null});
- const values=new Map(input.operands.map(o=>[o.id,parseValue(o)]));
+ const values=new Map(input.operands.map(o=>[o.id,parseValue(o,input)]));
  const get=(ref:string)=>values.get(ref)!;
  const transformations:{operand_id:string;kind:string;from:Value;to:Value}[]=[];
  let facts:RuleSpecInputValue[]=input.operands.map(o=>({ref_id:`fact.${o.id}`,value:get(o.id)}));
@@ -280,7 +285,12 @@ export function calculateDocumentReview(candidate:unknown){
   if(expected.kind!=='money'||recorded?.kind!=='money'||difference.kind!=='money'||expected.currency!==recorded.currency||expected.currency!==difference.currency||BigInt(expected.minor_units)-BigInt(recorded.minor_units)!==BigInt(difference.minor_units))throw Error('DOCUMENT_REVIEW_COMPARISON_AMOUNTS');
  }
  const assumptionBinding=op.kind==='candidate_rule'&&op.conditional_assumptions?{schema_version:'candidate-counterfactual-trace-v1',assumptions_sha256:canonicalSha256({assumptions:op.conditional_assumptions,decisions:op.decisions}),execution_trace_sha256:execution.trace_sha256,rule_sha256:rule.content_sha256,dependency_fingerprint}:null;
+ const structureBinding=input.source_structure?{schema_version:'document-review-source-structure-trace-v1',source_structure_sha256:canonicalSha256(input.source_structure),
+  reading_verification_sha256:sourceStructureEntries(input.source_structure).flatMap(e=>e.reading?[e.reading.verification_sha256]:[]),
+  decision_sha256:sourceStructureEntries(input.source_structure).flatMap(e=>e.reading?[e.reading.decision_sha256]:[]),
+  execution_trace_sha256:execution.trace_sha256,rule_sha256:rule.content_sha256,dependency_fingerprint}:null;
  const seed={...common,state:'calculated' as const,blockers:[],rule,facts,parameters,transformations,execution,expected,recorded,difference,
+  ...(structureBinding?{source_structure_trace_binding:{...structureBinding,binding_sha256:canonicalSha256(structureBinding)}}:{}),
   ...(assumptionBinding?{conditional_trace_binding:{...assumptionBinding,binding_sha256:canonicalSha256(assumptionBinding)}}:{}),
   observed_ratio:op.kind==='observed_ratio'?execution.output:null,
   precision_warning:input.operands.some(o=>o.precision==='printed_precision')?'printed_precision_not_hidden_precision':null};

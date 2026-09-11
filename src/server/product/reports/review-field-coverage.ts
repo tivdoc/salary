@@ -10,13 +10,15 @@ import {parseDocumentReviewSourceLocator,deferredDocumentReviewRowPriceOperands}
 import {parseReviewCompletionInput,reviewCompletionTargetSchema,type ReviewCompletionTarget} from '@/engine/document-review/completions';
 import {documentReadingTargetSchema,type DocumentReadingTarget} from './document-field-confirmation';
 import {parseDocumentFieldAnswer,validateDocumentReadingAnswerForTarget} from './reading-verification';
+import {parseDocumentFieldAnswerV3} from './document-source-structure';
 
 export type ExistingFieldReadingRequest=Readonly<{request_id:string;code:string;target:DocumentReadingTarget;source_current:boolean;answered_at:string|null;answer_text?:string|null;expires_at:string;expired_at?:string|null}>;
 export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'}|{transcription_kind:'balance_unit';candidate_id:string})>;
-function unresolvedAnswer(text:string|null|undefined){try{const answer=parseDocumentFieldAnswer(text);return answer.action==='unknown'||answer.action==='unreadable';}catch{return false;}}
+function unresolvedAnswer(text:string|null|undefined){try{const answer=typeof text==='string'&&JSON.parse(text).schema_version==='document-field-answer-v3'?parseDocumentFieldAnswerV3(text):parseDocumentFieldAnswer(text);return answer.action==='unknown'||answer.action==='unreadable';}catch{return false;}}
 const rowLocator=z.object({component_ids:z.array(z.uuid()).min(1),candidate_id:z.uuid().nullable(),raw:z.string().nullable(),original_raw:z.string().nullable(),
  source:candidateSourceSchema,semantic_kind:normalizedAdditionalComponentSchema.shape.semantic_kind}).passthrough();
 function coversOperand(operand:DocumentReviewOperand,target:DocumentReadingTarget,phase:'pending'|'identified'='pending',effectiveRaw?:string):boolean{
+ if('proposed_value'in target)return false; // Structure decisions do not certify numeric operands.
  const rawFor=(raw:string|null)=>effectiveRaw??raw;
  if(target.schema_version==='document-source-transcription-v1'){
   const subject=target.subject,locator=parseDocumentReviewSourceLocator(operand.source.locator);
@@ -132,7 +134,7 @@ export function reviewRequestsCoveredByFieldReadings(input:{review:unknown;field
    &&target.source_pins.length===1&&target.source_pins[0].case_id===row.target.case_id&&target.source_pins[0].version_id===row.target.version_id
    &&target.source_pins[0].source_sha256===row.target.source_sha256&&coversOperand(operand,row.target));
   if(matches.length!==1)continue;
-  const match=matches[0];if(match.target.schema_version==='document-source-transcription-v1'&&match.target.subject.kind!=='reported_work_hours')continue;
+  const match=matches[0];if('proposed_value'in match.target||match.target.schema_version==='document-source-transcription-v1'&&match.target.subject.kind!=='reported_work_hours')continue;
   const subject=match.target.schema_version==='document-source-transcription-v1'?{transcription_kind:'reported_work_hours' as const}
    :match.target.schema_version==='document-field-confirmation-v1'?{candidate_id:match.target.candidate.candidate_id}
    :match.target.schema_version==='document-row-cell-confirmation-v1'?{component_id:match.target.original_component.component_id,cell:match.target.cell}
@@ -288,6 +290,7 @@ export type ExistingGenericReviewRequest=Readonly<{request_id:string;code:string
 function acceptedIdentifiedAnswer(operand:DocumentReviewOperand,field:ExistingFieldReadingRequest){
  try{
   const target=field.target,answer=validateDocumentReadingAnswerForTarget(target,field.answer_text);
+  if('proposed_value'in target||answer.schema_version==='document-field-answer-v3')return false;
   if(answer.action!=='confirm'&&answer.action!=='correct')return false;
   const raw=answer.action==='correct'?answer.corrected_raw_value:target.schema_version==='document-field-confirmation-v1'?target.candidate.raw_value
    :target.schema_version==='document-row-cell-confirmation-v1'?target.original_component[`${target.cell}_raw`]

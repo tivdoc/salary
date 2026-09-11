@@ -3,7 +3,7 @@ import {z} from 'zod';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewInputSchema,DOCUMENT_REVIEW_POLICY,type DocumentReviewInput} from '@/engine/document-review/contracts';
-import {reviewInputFromPayslips,PAYSLIP_REVIEW_POLICY} from '@/engine/document-review/payslip-adapter';
+import {reviewInputFromPayslips,PAYSLIP_SOURCE_STRUCTURE_POLICY} from '@/engine/document-review/payslip-adapter';
 import {attachDocumentReviewCoverage} from '@/engine/document-review/coverage';
 import {runDocumentReview,applyDocumentReviewAnswer} from '@/engine/document-review/service';
 import {readSavedReviewAnswers} from './saved-review-requests';
@@ -139,7 +139,7 @@ async function sourceReviewInput(context:PostgresTransactionContext,job:SourceJo
  const evidence=await savedReviewSourceEvidence(context,job,snapshot);
  return withSavedPurchaseCoverage(reviewInputFromPayslips({case_id:job.case_id,period:{from:month+'-01',to:new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10)},
   purchased_scope:{order_id:order.id,receipt_sha256:savedOrderReceiptSha256(order),topics:[...order.topics],origin:savedOrderOrigin(order)},snapshot,
-  financial_source_proofs:evidence.proofs,retained_unresolved_fields:evidence.retained,review_policy:PAYSLIP_REVIEW_POLICY}),order);
+  financial_source_proofs:evidence.proofs,retained_unresolved_fields:evidence.retained,review_policy:PAYSLIP_SOURCE_STRUCTURE_POLICY}),order);
 }
 
 export function withSavedPurchaseCoverage(input:DocumentReviewInput,order:SavedExecutionOrder){

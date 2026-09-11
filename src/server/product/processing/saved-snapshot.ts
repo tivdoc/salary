@@ -85,7 +85,9 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
    const readings=savedDocumentReadings({caseId:job.case_id,month:selectedMonth,policyVersion:SAVED_EXTRACTION_POLICY,journal:row.input,checkpoint:d.result});
    extractions.push({...extraction,...(readings.scalar.length?{customer_readings:readings.scalar}:{}),
     ...(readings.row_cell.length?{customer_row_readings:readings.row_cell}:{}),...(readings.source_scope.length?{customer_scope_readings:readings.source_scope}:{}),
-    ...(readings.source_transcription.length?{customer_source_transcriptions:readings.source_transcription,
+    ...(readings.source_transcription.length?{customer_source_transcriptions:readings.source_transcription}:{}),
+    ...(readings.source_structure.length?{customer_source_structures:readings.source_structure}:{}),
+    ...(readings.source_transcription.length||readings.source_structure.length?{
      source_reading_context:{checkpoint_result_sha256:checkpoint.result_sha256,
       first_pass:z.object({first_pass:z.object({normalized_extraction:normalizedPayslipExtractionSchema})}).parse(checkpoint.run.result).first_pass.normalized_extraction}}:{})});
   }

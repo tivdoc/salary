@@ -1,3 +1,6 @@
+import {documentSourceStructureTargetSchema,documentSourceStructureTarget} from './document-source-structure';
+import {sourceStructureSelector} from '@/engine/extraction/source-structure-resolution';
+import {hasPayslipReadingAnnotations} from '@/engine/extraction/reading-resolution';
 import {documentSourceTranscriptionTargetSchema,documentSourceTranscriptionTarget} from './document-source-transcription';
 import {documentSourceScopeTargetSchema,documentSourceScopeTarget} from './document-source-scope-confirmation';
 import {documentRowCellTargetSchema,documentRowCellTarget} from './document-row-cell-confirmation';
@@ -39,7 +42,7 @@ export type DocumentFieldTarget=Readonly<z.infer<typeof documentFieldTargetSchem
  * A confirmation is a reading of one cell, not a legal or arithmetic approval. */
 export function documentFieldTarget(input:{checkpoint:unknown;policyVersion:string;candidateId:string}):DocumentFieldTarget {
  const checkpoint=checkpointSchema.parse(input.checkpoint),extraction=checkpoint.run.result.final_extraction;
- if(extraction.customer_readings!==undefined||extraction.customer_row_readings!==undefined||extraction.customer_scope_readings!==undefined||extraction.customer_source_transcriptions!==undefined||extraction.source_reading_context!==undefined)throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
+ if(hasPayslipReadingAnnotations(extraction))throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
  if(canonicalSha256(checkpoint.run.result)!==checkpoint.result_sha256||extraction.document_id!==checkpoint.version_id)throw Error('REQUEST_FIELD_SOURCE_MISMATCH');
  const periods=extraction.fields.filter(f=>f.field==='salary_period');
  if(checkpoint.period_mismatch||!periods.length||periods.some(p=>!p.normalized_value||`${p.normalized_value.year}-${String(p.normalized_value.month).padStart(2,'0')}`!==checkpoint.expected_month))throw Error('REQUEST_FIELD_PERIOD_UNKNOWN');
@@ -87,13 +90,14 @@ export function resolveDocumentFieldReading(input:{target:unknown;currentCheckpo
 }
 
 /** Versioned union for new consumers; scalar v1 constructors and bytes stay intact. */
-export const documentReadingTargetSchema=z.union([documentFieldTargetSchema,documentRowCellTargetSchema,documentSourceScopeTargetSchema,documentSourceTranscriptionTargetSchema]);
+export const documentReadingTargetSchema=z.union([documentFieldTargetSchema,documentRowCellTargetSchema,documentSourceScopeTargetSchema,documentSourceTranscriptionTargetSchema,documentSourceStructureTargetSchema]);
 export type DocumentReadingTarget=Readonly<z.infer<typeof documentReadingTargetSchema>>;
 
 /** Reconstruct, do not mutate, from the exact saved checkpoint. Callers compare
  * the returned hash with the original target and retain their source fence. */
 export function documentReadingTargetForCheckpoint(input:{target:unknown;currentCheckpoint:unknown}):DocumentReadingTarget {
  const target=documentReadingTargetSchema.parse(input.target),base={checkpoint:input.currentCheckpoint,policyVersion:target.policy_version};
+ if('proposed_value' in target)return documentSourceStructureTarget({...base,selector:sourceStructureSelector(target.subject)});
  if(target.schema_version==='document-field-confirmation-v1')return documentFieldTarget({...base,candidateId:target.candidate.candidate_id});
  if(target.schema_version==='document-row-cell-confirmation-v1')return documentRowCellTarget({...base,componentId:target.original_component.component_id,cell:target.cell});
  if(target.schema_version==='document-source-scope-confirmation-v1')return documentSourceScopeTarget({...base,candidateId:target.original_observation.candidate.candidate_id});

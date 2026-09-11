@@ -41,6 +41,7 @@ export function documentReviewCoverageInventory(input:DocumentReviewInput,checks
    ||reading.extraction_result_sha256!==i.checkpoint_result_sha256||!value||value.kind!=='balance_unit'
    ||canonicalSha256(value)!==canonicalSha256(reading.transcription.normalized_value)))throw Error('REVIEW_BALANCE_READING_BINDING');
   return [{document_id:i.document_id,version_id:i.version_id,field:o.field,candidate_id:o.candidate_id,raw_value:o.raw_value,
+   ...(i.outside_purchased_topics?.includes(o.field==='sick_balance'?'sick_leave':'vacation')?{scope_status:'outside_purchased_scope' as const}:{}),
    unit:value?.kind==='balance_unit'?value.unit:null,page:o.source.page,reading_status:reading?'identified_unit_reading' as const:'unit_unresolved' as const,amount_verified:false as const}];
  }));
  return {schema_version:DOCUMENT_REVIEW_COVERAGE_POLICY,review_period:input.period,

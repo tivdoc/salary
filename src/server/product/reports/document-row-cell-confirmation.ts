@@ -1,3 +1,4 @@
+import {hasPayslipReadingAnnotations} from '@/engine/extraction/reading-resolution';
 import {z} from 'zod';
 import {normalizedAdditionalComponentSchema,normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
 import {rowReadingCellSchema} from '@/engine/extraction/customer-reading';
@@ -20,7 +21,7 @@ export const documentRowCellTargetSchema=z.object({schema_version:z.literal('doc
 export type DocumentRowCellTarget=Readonly<z.infer<typeof documentRowCellTargetSchema>>;
 export function documentRowCellTarget(input:{checkpoint:unknown;policyVersion:string;componentId:string;cell:z.infer<typeof rowReadingCellSchema>}):DocumentRowCellTarget {
  const checkpoint=checkpointSchema.parse(input.checkpoint),extraction=checkpoint.run.result.final_extraction;
- if(extraction.customer_readings!==undefined||extraction.customer_row_readings!==undefined||extraction.customer_scope_readings!==undefined||extraction.customer_source_transcriptions!==undefined||extraction.source_reading_context!==undefined)throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
+ if(hasPayslipReadingAnnotations(extraction))throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
  if(canonicalSha256(checkpoint.run.result)!==checkpoint.result_sha256||extraction.document_id!==checkpoint.version_id)throw Error('REQUEST_FIELD_SOURCE_MISMATCH');
  const periods=extraction.fields.filter(f=>f.field==='salary_period');
  if(checkpoint.period_mismatch||!periods.length||periods.some(p=>!p.normalized_value||`${p.normalized_value.year}-${String(p.normalized_value.month).padStart(2,'0')}`!==checkpoint.expected_month))throw Error('REQUEST_FIELD_PERIOD_UNKNOWN');
