@@ -1,4 +1,6 @@
-import {it,expect} from 'vitest';
+import {it,expect, vi } from 'vitest';
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import {sameOriginSessionRequest,refreshSession,revokeSession} from './session-actions';
 import type {CaseAccessDb} from './db';
 it('P07 cookie lifetime matches stored expiry, and revoke hashes the opaque session',async()=>{

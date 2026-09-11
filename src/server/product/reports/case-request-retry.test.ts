@@ -1,4 +1,6 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect, vi } from 'vitest';
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import {answerCaseRequest,editCaseRequest,listCaseRequests} from './case-requests';
 import type {CaseAccessDb} from '../case-access/db';
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';

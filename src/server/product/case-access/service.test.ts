@@ -5,6 +5,8 @@
 // ceiling holds; an unknown contact answers like a known one; the token is in
 // the message alone.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import { productOffer } from "@/lib/product-offer";
 import { hashToken } from "./crypto.ts";
 import { fakeCaseAccessDb, type FakeCase } from "./fake-db.ts";

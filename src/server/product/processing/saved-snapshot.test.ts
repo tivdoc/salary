@@ -93,6 +93,9 @@ describe('exact saved source to canonical snapshot',()=>{
   const order={id:orderId,kind:'full',from:'2025-01-01',to:'2025-01-01',topics:s.fixture.command.requested_topics,offer_sha256:'b'.repeat(64)};
   s.responses.saved_order_entitlements=[{orders:[order],current_orders:[order]}];
   s.responses.saved_analysis_order=[{created_at:'2025-02-01T00:00:00Z',engine_revision:'1'}];
+  // This fixture has no previously opened identified field request. The new
+  // scoped lookup must run, and cannot suppress any completion on an empty set.
+  s.responses.review_existing_field_targets=[];
   // Deliberately hermetic: this checks real service/catalog/renderer behavior,
   // not PostgreSQL commit/rollback or provider extraction.
   const analysis={caseAnalysis:new InMemoryCaseAnalysisRepository(),reports:new FixtureCaseReviewPort()} as unknown as PostgresAnalysisRepositories;
@@ -112,6 +115,8 @@ describe('exact saved source to canonical snapshot',()=>{
   const args={context,analysis,tenantId:'synthetic-test',job:s.job,orderId,month:'2025-01'};
   const completed=await runSavedMonthAnalysis(args);
   expect(completed.completed).toBe(true);expect(completed.stages).toHaveLength(7);
+  const existingFields=s.calls.filter(call=>call.name==='review_existing_field_targets');
+  expect(existingFields).toHaveLength(1);expect(existingFields[0].values).toEqual([s.job.case_id,s.job.revision,s.job.input_sha256]);
   expect(completed.bundle?.topic_results).toHaveLength(7);
   expect(completed.bundle?.topic_results.every(t=>t.amount===null&&t.trace===null)).toBe(true);
   expect(completed.bundle?.coverage_complete).toBe(false);

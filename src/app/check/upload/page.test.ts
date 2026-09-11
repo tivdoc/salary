@@ -1,6 +1,8 @@
 // UX Run 1 / U7 acceptance: /check/upload with no case cookie redirects to
 // /check rather than rendering the picker.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 
 const cookieJar = new Map<string, string>();
 

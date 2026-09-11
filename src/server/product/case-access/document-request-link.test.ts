@@ -7,7 +7,9 @@
 // would ask for money before the check could begin. What it is still gated on
 // is the contact — an access link to an address nobody proved they own is the
 // exact failure the access system was rebuilt to remove.
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it , vi } from "vitest";
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import { fakeCaseAccessDb, type FakeCase } from "./fake-db.ts";
 import { installNotificationProviderForTests, type NotificationMessage } from "./notifications.ts";
 import { sendDocumentRequestLink, verifyFunnelCode } from "./service.ts";

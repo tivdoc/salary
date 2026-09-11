@@ -1,4 +1,6 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect, vi } from 'vitest';
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import {overviewFrom} from './overview';
 import type {StoredRequest} from '../reports/case-requests';
 const now=Date.parse('2026-09-07T09:00:00Z');

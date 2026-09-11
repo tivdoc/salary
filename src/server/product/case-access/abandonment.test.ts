@@ -3,7 +3,9 @@
 // A reminder is the one thing this product sends that nobody asked for, so the
 // properties worth holding are all about restraint: it goes once, it stops when
 // told to, and a refusal is not something to keep trying.
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it , vi } from "vitest";
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import { fakeCaseAccessDb, type FakeCase } from "./fake-db.ts";
 import { installNotificationProviderForTests, type NotificationMessage } from "./notifications.ts";
 import { sweepAbandonedCases } from "./service.ts";
