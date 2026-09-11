@@ -31,7 +31,7 @@ import {
   OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
   OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
 } from "./v2-prompt";
-import { buildOpenAiV2ResponsesRequest, OPENAI_SOL_COMPARISON_PROFILE, type OpenAiV2ResponsesRequest } from "./v2-request";
+import { buildOpenAiV2ResponsesRequest, OPENAI_SOL_COMPARISON_PROFILE, openAiV2PromptVersion, type OpenAiV2ResponsesRequest } from "./v2-request";
 import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {createOpenAiProviderReceipt,safeProviderIdentifier,type OpenAiProviderReceipt} from './provider-receipt';
@@ -123,6 +123,7 @@ export class OpenAiPayslipV2PassExtractor {
       log?: SafeLogSink;
       extractorVersion?: string;
       executionProfile?: Parameters<typeof buildOpenAiV2ResponsesRequest>[0]['executionProfile'];
+      sourcePagePolicy?: Parameters<typeof buildOpenAiV2ResponsesRequest>[0]['sourcePagePolicy'];
       recoveryExecution?: 'automatic' | 'skip_package_budget' | 'skip_managed_package_budget';
       managedRecoveryAuthority?: ManagedOpenAiRecoveryAuthority;
       componentDuplicatePolicy?: Gate0Validation['component_duplicate_policy'];
@@ -131,6 +132,7 @@ export class OpenAiPayslipV2PassExtractor {
     // Validate before constructing the transport: otherwise even the failure
     // receipt can throw after a paid response when the version is malformed.
     this.extractorVersion = versionSchema.parse(options.extractorVersion ?? PAYSLIP_EXTRACTION_V2_VERSION);
+    openAiV2PromptVersion('first_pass',options.sourcePagePolicy);
     this.componentDuplicatePolicy=options.componentDuplicatePolicy===undefined?undefined:componentDuplicatePolicySchema.parse(options.componentDuplicatePolicy);
     this.recoveryExecution=options.recoveryExecution??'automatic';
     if(!['automatic','skip_package_budget','skip_managed_package_budget'].includes(this.recoveryExecution)
@@ -190,9 +192,7 @@ export class OpenAiPayslipV2PassExtractor {
       duration_ms: durationMs,
       error_code: input.code,
       pass_kind: input.kind,
-      prompt_version: input.kind === "first_pass"
-        ? OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION
-        : OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+      prompt_version: openAiV2PromptVersion(input.kind,this.options.sourcePagePolicy),
       requested_field_count: input.requestedFields.length,
       region_count: input.prepared.crops.length,
       preprocessing_version: input.prepared.metadata.preprocessing_version,
@@ -220,7 +220,7 @@ export class OpenAiPayslipV2PassExtractor {
       ...(input.sourcePageCount===undefined?{}:{source_page_count:input.sourcePageCount}),
       request_sha256:input.requestHash,raw_extraction_sha256:canonicalSha256(extraction),pass_kind:input.kind,
       requested_model:this.config.model,actual_model:safeProviderIdentifier(input.response?.model),
-      extractor_version:this.extractorVersion,prompt_version:input.kind==='first_pass'?OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION:OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+      extractor_version:this.extractorVersion,prompt_version:openAiV2PromptVersion(input.kind,this.options.sourcePagePolicy),
       provider_response_id:safeProviderIdentifier(input.response?.id),provider_request_id:safeProviderIdentifier(input.response?.requestId??error.requestID),
       provider_attempted:input.requestHash!==null,status:extraction.status==='failed'?'failed':'completed',
       error_code:extraction.status==='failed'?openAiExtractionErrorCodeSchema.parse(extraction.error_code):null,
@@ -267,6 +267,7 @@ export class OpenAiPayslipV2PassExtractor {
         kind: input.kind,
         requested_fields: input.requestedFields,
         ...(this.options.executionProfile ? {executionProfile: this.options.executionProfile} : {}),
+        ...(this.options.sourcePagePolicy?{sourcePagePolicy:this.options.sourcePagePolicy}:{}),
       });
       requestHash=canonicalSha256(providerRequest);
       const response = await this.transport.parse(providerRequest);
@@ -274,8 +275,6 @@ export class OpenAiPayslipV2PassExtractor {
       if (response.status !== "completed" || response.outputParsed === null) {
         return this.failed({ ...input, request, startedAt, code: "provider_invalid_response",requestHash,response });
       }
-      if(input.sourcePageCount!==undefined&&!providerPagesMatch(response.outputParsed,input.sourcePageCount))
-        return this.failed({...input,request,startedAt,code:'provider_source_page_mismatch',requestHash,response});
       const now = clock().toISOString();
       const durationMs = Math.max(0, Math.round(durationClock() - startedAt));
       const output=openAiPayslipV2StructuredOutputSchema.parse(response.outputParsed);
@@ -285,10 +284,15 @@ export class OpenAiPayslipV2PassExtractor {
         input.onStructuredOutput(deepFreeze({schema_version:'tivdoc-openai-structured-diagnostic-v1',origin:this.origin,
           case_id:request.case_id,analysis_run_id:request.analysis_run_id,document_id:request.document.document_id,
           source_sha256:request.document.content_sha256,request_sha256:requestHash,pass_kind:input.kind,
-          prompt_version:input.kind==='first_pass'?OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION:OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+          prompt_version:openAiV2PromptVersion(input.kind,this.options.sourcePagePolicy),
           provider_response_id:safeProviderIdentifier(response.id),provider_request_id:safeProviderIdentifier(response.requestId),
           structured_output:structuredClone(output),structured_output_sha256:canonicalSha256(output)}));
       }
+      // Retain the paid, schema-valid provider response for private diagnosis
+      // even when its source coordinates are refused. It is never mapped or
+      // promoted to a successful extraction by this diagnostic sink.
+      if(input.sourcePageCount!==undefined&&!providerPagesMatch(output,input.sourcePageCount))
+        return this.failed({...input,request,startedAt,code:'provider_source_page_mismatch',requestHash,response});
       let mapped:MappedOpenAiV2Pass;
       try{mapped = mapOpenAiV2Output({
         request,
@@ -319,9 +323,7 @@ export class OpenAiPayslipV2PassExtractor {
         duration_ms: durationMs,
         ...(response.usage ?? {}),
         pass_kind: input.kind,
-        prompt_version: input.kind === "first_pass"
-          ? OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION
-          : OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+        prompt_version: openAiV2PromptVersion(input.kind,this.options.sourcePagePolicy),
         requested_field_count: input.requestedFields.length,
         region_count: input.prepared.crops.length,
         preprocessing_version: input.prepared.metadata.preprocessing_version,

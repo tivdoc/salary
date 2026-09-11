@@ -1,5 +1,6 @@
 import {describe,expect,it,vi} from 'vitest';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {assertLocalIngressOperator,INGRESS_PROJECT,INGRESS_TEAM,isProtectedPreviewResponse,runIngressOperator} from './dev-ingress-deploy.mjs';
 
 const NOW=Date.parse('2026-09-11T06:40:00Z');
@@ -17,7 +18,7 @@ function fixture(){
  const artifact={source_commit:'b'.repeat(40),bundle_sha256:'c'.repeat(64),files:[
   '.vercel/output/config.json','.vercel/output/functions/api/resend.func/.vc-config.json','.vercel/output/functions/api/resend.func/index.js',
  ].map(file=>({file,data:'synthetic artifact bytes',encoding:'utf-8'}))};
- const ctx={state:null,project,main,ingress:null,override:false,protectedGetStatus:405,sharedNext:null,shareSequence:0,clock:NOW,vercelSso:false,propagationUntil:0};
+ const ctx={state:null,project,main,ingress:null,override:false,protectedGetStatus:405,sharedNext:null,shareSequence:0,clock:NOW,vercelSso:false,propagationUntil:0,forwardShareValid:true};
  const api=vi.fn(async(endpoint,method='GET',body)=>{
   const url=new URL(endpoint,'https://api.vercel.com');expect(url.searchParams.get('teamId')).toBe(INGRESS_TEAM);
   if(method==='GET'){
@@ -43,7 +44,13 @@ function fixture(){
  });
  const transport=vi.fn(async(input,options={})=>{
   const url=new URL(input);
-  if(url.host===main.url)return ctx.vercelSso?vercelSsoResponse(url):new Response(null,{status:401});
+  if(url.host===main.url){
+   if(url.searchParams.has('_vercel_share'))return ctx.forwardShareValid
+    ?new Response(null,{status:307,headers:{location:`https://${main.url}/api/health`,'set-cookie':'_vercel_jwt=synthetic-main-only; Secure; HttpOnly'}})
+    :vercelSsoResponse(url);
+   if(url.pathname==='/api/notifications/resend'&&new Headers(options.headers).has('cookie'))return new Response(null,{status:405});
+   return ctx.vercelSso?vercelSsoResponse(url):new Response(null,{status:401});
+  }
   expect(url.host).toBe(ctx.ingress.url);
   if(url.searchParams.has('_vercel_share'))return new Response(null,{status:307,headers:{location:`https://${url.host}/api/resend`,'set-cookie':'_vercel_jwt=synthetic-only; Secure; HttpOnly'}});
   if(new Headers(options.headers).has('cookie'))return new Response(null,{status:ctx.protectedGetStatus});
@@ -120,6 +127,15 @@ describe('DEV ingress operator, synthetic API/transport only; no real deployment
   expect(f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override?.action==='create')).toHaveLength(0);
   expect(f.ctx.state.probe_share.revoked_at).toBeDefined();expect(f.ctx.override).toBe(false);
  });
+ it('refuses a recorded but no-longer-working main share before opening ingress, and reports the safe failed exchange',async()=>{
+  const f=fixture();await f.run('deploy');const priorMutations=f.deps.api.mock.calls.filter(([,method])=>method!=='GET').length;
+  f.ctx.forwardShareValid=false;
+  await expect(f.run('enable')).rejects.toThrow('INGRESS_FORWARD_SHARE_EXCHANGE_FAILED');
+  expect(f.ctx.state.forwarding_probe).toMatchObject({available:false,exchange_status:302,redirect_is_pinned:false,scoped_cookie_present:false,target_method_status:null,reason:'share_exchange_refused'});
+  expect(f.deps.api.mock.calls.filter(([,method])=>method!=='GET')).toHaveLength(priorMutations);
+  const status=await f.run('status');expect(status.forwarding_probe).toMatchObject({available:false,exchange_status:302});
+  expect(JSON.stringify(status)).not.toContain('synthetic-share-value');expect(f.ctx.override).toBe(false);
+ });
  it('rejects changed Production/settings and mismatched artifact metadata before enabling',async()=>{
   const f=fixture();await f.run('deploy');f.ctx.project.framework=null;
   await expect(f.run('enable')).rejects.toThrow('INGRESS_PROJECT_SETTINGS_OR_PRODUCTION_CHANGED');
@@ -170,5 +186,37 @@ describe('DEV ingress operator, synthetic API/transport only; no real deployment
   expect(f.ctx.state.pending_mutation.label).toBe('create_ingress_preview');
   await expect(f.run('deploy')).rejects.toThrow('INGRESS_STATE_EXISTS_USE_STATUS_OR_DISABLE');
   expect(f.deps.api.mock.calls.filter(([,method])=>method==='POST')).toHaveLength(1);
+ });
+ async function alreadyAbsentFixture(){
+  const f=fixture();await f.run('deploy');await f.run('enable');f.ctx.override=false;f.ctx.state.override_enabled=false;
+  const body={revoke:{secret:f.ctx.state.forward_share.secret,regenerate:false}};
+  f.ctx.state.pending_mutation={label:'revoke_forward_share',path:`/aliases/${f.ctx.main.id}/protection-bypass`,
+   body_sha256:createHash('sha256').update(JSON.stringify(body)).digest('hex')};
+  f.deps.recoveryEvidence={
+   missing_share:{filename:'synthetic-missing.response.private.json',request:body,response:{method:'PATCH',
+    endpoint:`/aliases/${f.ctx.main.id}/protection-bypass?teamId=${INGRESS_TEAM}`,status:1,stdout:'',stderr:'Error: The specified shareable link does not exist. (404)\n'}},
+   override_revoke:{filename:'synthetic-override.response.private.json',request:{override:{scope:'alias-protection-override',action:'revoke'}},response:{method:'PATCH',
+    endpoint:`/aliases/${f.ctx.ingress.id}/protection-bypass?teamId=${INGRESS_TEAM}`,status:0,stdout:JSON.stringify({protectionBypass:{}}),stderr:''}},
+  };
+  return f;
+ }
+ it('reconciles only exact already-absent share evidence with a protected ingress, without remote mutation',async()=>{
+  const f=await alreadyAbsentFixture();const mutations=f.deps.api.mock.calls.filter(([,method])=>method!=='GET').length;
+  const result=await f.run('reconcile-absent-share');
+  expect(result).toMatchObject({phase:'disabled',cleanup_reconciled:true,protected:true,remote_mutations:0,pending_mutation:null});
+  expect(f.ctx.state.forward_share.absent_at).toBeDefined();expect(f.ctx.state.forward_share.revoked_at).toBeUndefined();
+  expect(f.ctx.state.cleanup_reconciliations).toHaveLength(1);
+  expect(f.deps.api.mock.calls.filter(([,method])=>method!=='GET')).toHaveLength(mutations);
+ });
+ it.each(['different_secret','generic_404','foreign_endpoint','override_still_present','ingress_still_public'])('refuses an unproved cleanup condition: %s',async kind=>{
+  const f=await alreadyAbsentFixture();const evidence=f.deps.recoveryEvidence;
+  if(kind==='different_secret')evidence.missing_share.request.revoke.secret='foreign-secret';
+  if(kind==='generic_404')evidence.missing_share.response.stderr='Error: Deployment was not found. (404)';
+  if(kind==='foreign_endpoint')evidence.missing_share.response.endpoint='/aliases/dpl_foreign/protection-bypass';
+  if(kind==='override_still_present')evidence.override_revoke.response.stdout=JSON.stringify({protectionBypass:{synthetic:{scope:'alias-protection-override'}}});
+  if(kind==='ingress_still_public')f.ctx.override=true;
+  await expect(f.run('reconcile-absent-share')).rejects.toThrow();
+  expect(f.ctx.state.phase).toBe('enabled');expect(f.ctx.state.pending_mutation.label).toBe('revoke_forward_share');
+  expect(f.ctx.state.forward_share.absent_at).toBeUndefined();
  });
 });

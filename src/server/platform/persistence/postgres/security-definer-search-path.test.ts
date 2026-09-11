@@ -53,7 +53,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //144 adds a private current-authority predicate and its case/identity-bound snapshot wrapper.
 //149 adds one capability-scoped QA health read; no authority/source payload.
 //150 adds worker admit/open, identified-answer guard and owned UI metadata.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 307;
+//158 adds four internal completion-round helpers and three worker-only API
+// boundaries. Exact names/ACL groups are inventoried below; source review is
+// recorded in docs/release-evidence/managed-completion-definer-review-20260911.md.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 314;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -81,6 +84,28 @@ async function securityDefinerDefinitions(): Promise<readonly Definition[]> {
 }
 
 describe("security definer search_path contract", () => {
+  it("accounts for all seven reviewed completion-round definitions and their role boundaries", async () => {
+    const file = "20260911063456_managed_dev_completion_rounds.sql";
+    const definitions = await securityDefinerDefinitions();
+    expect(definitions.filter((definition) => definition.file === file)
+      .map((definition) => definition.name).sort()).toEqual([
+      "private.managed_completion_event_current",
+      "private.managed_completion_has_new",
+      "private.managed_completion_ready",
+      "private.managed_completion_scope",
+      "public.case_notification_completion_enqueue",
+      "public.case_notification_completion_pending",
+      "public.case_notification_managed_dispatch",
+    ]);
+    const sql = (await readFile(path.join(MIGRATION_ROOT, file), "utf8"))
+      .replaceAll(/\s+/gu, " ").toLowerCase();
+    const internal = "private.managed_completion_scope(text,uuid),private.managed_completion_ready(uuid),private.managed_completion_has_new(uuid,uuid[]),private.managed_completion_event_current(uuid,text)";
+    const boundary = "public.case_notification_completion_pending(text),public.case_notification_completion_enqueue(text,text,text,jsonb,timestamptz,uuid,uuid,text,text,uuid[]),public.case_notification_managed_dispatch(text,text,uuid,integer)";
+    expect(sql).toContain(`revoke all on function ${internal} from public,anon,authenticated,service_role,tivdoc_web_runtime,tivdoc_worker_runtime,tivdoc_operations_runtime;`);
+    expect(sql).toContain(`revoke all on function ${boundary} from public,anon,authenticated,service_role,tivdoc_web_runtime,tivdoc_operations_runtime;`);
+    expect([...sql.matchAll(/grant execute on function ([^;]+);/gu)].map((match) => match[1]))
+      .toEqual([`${boundary} to tivdoc_worker_runtime`]);
+  });
   it("accounts explicitly for ordinary signed-authority and publication boundaries",async()=>{
     const definitions=await securityDefinerDefinitions();
     expect(definitions.filter(d=>["20260910160042_june2026_regular_service_authority.sql","20260910160553_june2026_regular_hours_declarations.sql","20260910161527_june2026_regular_results_publication.sql"].includes(d.file)).map(d=>d.name).sort()).toEqual([

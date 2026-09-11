@@ -73,13 +73,43 @@ export function redactedIngressStatus(state,extra={}){
   main_preview_commit:state.main_preview.commit,ingress_deployment_id:state.deployment?.id??null,
   ingress_origin:state.deployment?.origin??null,expires_at:state.expires_at,
   inherited_env_key_count:state.inherited_env_keys?.length??0,pending_mutation:state.pending_mutation?.label??null,
-  last_boundary_probe:state.last_boundary_probe??null,boundary_probe_count:state.boundary_probe_history?.length??0,...extra};
+  last_boundary_probe:state.last_boundary_probe??null,boundary_probe_count:state.boundary_probe_history?.length??0,
+  forwarding_probe:state.forwarding_probe??null,...extra};
+}
+function receiptEndpointMatches(receipt,id){
+ try{const url=new URL(receipt.response.endpoint,'https://api.vercel.com');return receipt.response.method==='PATCH'
+  &&url.origin==='https://api.vercel.com'&&url.pathname===`/aliases/${id}/protection-bypass`
+  &&url.searchParams.get('teamId')===INGRESS_TEAM&&[...url.searchParams.keys()].length===1;}catch{return false;}
+}
+/** An already-absent share is different from a successful revocation. This
+ * recovery trusts only our exact saved request/response pair, matches the
+ * pending operation and verifies current protection without another mutation. */
+export function validateAbsentShareRecovery(state,evidence){
+ const label=state.pending_mutation?.label;
+ const field=label==='revoke_forward_share'?'forward_share':label==='revoke_probe_share'?'probe_share':null;
+ requireThat(field&&state.override_enabled===false&&state.deployment,'INGRESS_RECOVERY_PENDING_SCOPE');
+ const id=field==='forward_share'?state.main_preview.id:state.deployment.id,share=state[field];
+ const missing=evidence?.missing_share,override=evidence?.override_revoke;
+ requireThat(missing&&override&&share?.deployment_id===id&&receiptEndpointMatches(missing,id),'INGRESS_RECOVERY_RECEIPT_SCOPE');
+ requireThat(state.pending_mutation.path===`/aliases/${id}/protection-bypass`
+  &&state.pending_mutation.body_sha256===hash(missing.request)
+  &&JSON.stringify(missing.request)===JSON.stringify({revoke:{secret:share.secret,regenerate:false}}),'INGRESS_RECOVERY_REQUEST_MISMATCH');
+ requireThat(missing.response.status===1&&missing.response.stderr?.trim()==='Error: The specified shareable link does not exist. (404)',
+  'INGRESS_RECOVERY_NOT_EXPLICIT_ABSENCE');
+ requireThat(receiptEndpointMatches(override,state.deployment.id)&&override.response.status===0
+  &&JSON.stringify(override.request)===JSON.stringify({override:{scope:'alias-protection-override',action:'revoke'}}),'INGRESS_RECOVERY_OVERRIDE_RECEIPT');
+ let result;try{result=JSON.parse(override.response.stdout);}catch{throw Error('INGRESS_RECOVERY_OVERRIDE_RESPONSE');}
+ requireThat(result.protectionBypass&&typeof result.protectionBypass==='object'
+  &&Object.values(result.protectionBypass).every(value=>value.scope!=='alias-protection-override'),'INGRESS_RECOVERY_OVERRIDE_NOT_ABSENT');
+ const other=state[field==='forward_share'?'probe_share':'forward_share'];
+ requireThat(!other||other.revoked_at||other.expired_at||other.absent_at,'INGRESS_RECOVERY_OTHER_SHARE_UNRESOLVED');
+ return field;
 }
 /** All external effects are explicit ports so tests cannot accidentally deploy.
  * The CLI implementation below supplies the authenticated Vercel API port. */
 export async function runIngressOperator(command,{config,artifact,api,transport=fetch,loadState,saveState,now=()=>Date.now(),newId=randomUUID,
- pause=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){
- requireThat(['deploy','status','enable','disable'].includes(command),'INGRESS_COMMAND_UNKNOWN');
+ pause=ms=>new Promise(resolve=>setTimeout(resolve,ms)),recoveryEvidence}){
+ requireThat(['deploy','status','enable','disable','reconcile-absent-share'].includes(command),'INGRESS_COMMAND_UNKNOWN');
  config=parseIngressOperatorConfig(config);
  let state=loadState();
  const endpoint=value=>`${value}${value.includes('?')?'&':'?'}teamId=${INGRESS_TEAM}`;
@@ -110,7 +140,7 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
   requireThat(value.expires*1000<=Date.parse(config.expires_at),'INGRESS_SHARE_EXCEEDS_DEADLINE');
  };
  const revokeShare=async field=>{
-  const share=state[field];if(!share||share.revoked_at||share.expired_at)return;
+  const share=state[field];if(!share||share.revoked_at||share.expired_at||share.absent_at)return;
   requireThat(share.deployment_id===(field==='forward_share'?state.main_preview.id:state.deployment?.id),'INGRESS_SHARE_SCOPE');
   if(Date.parse(share.expires_at)>now()){
    await mutate(`/aliases/${share.deployment_id}/protection-bypass`,{revoke:{secret:share.secret,regenerate:false}},`revoke_${field}`);
@@ -121,6 +151,26 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
   finished();
  };
  const probe=async(url,options={},timeout=15000)=>transport(url,{...options,redirect:'manual',signal:AbortSignal.timeout(timeout)});
+ const forwardingProbe=async()=>{
+  const result={checked_at:new Date(now()).toISOString(),available:false,exchange_status:null,
+   redirect_is_pinned:false,scoped_cookie_present:false,target_method_status:null};
+  if(!state.forward_share||state.forward_share.revoked_at||state.forward_share.expired_at||state.forward_share.absent_at
+   ||Date.parse(state.forward_share.expires_at)<=now())return {...result,reason:'share_unavailable'};
+  try{
+   const access=new URL('/api/health',state.main_preview.origin);access.searchParams.set('_vercel_share',state.forward_share.secret);
+   const exchange=await probe(access);result.exchange_status=exchange.status;
+   const location=exchange.headers.get('location'),destination=location?new URL(location,state.main_preview.origin):null;
+   result.redirect_is_pinned=destination?.origin===state.main_preview.origin&&destination.pathname==='/api/health'&&!destination.search;
+   const cookie=exchange.headers.getSetCookie().map(value=>value.split(';',1)[0]).find(value=>value.startsWith('_vercel_jwt='));
+   result.scoped_cookie_present=Boolean(cookie&&cookie.length<=16384);
+   if(exchange.status!==307||!result.redirect_is_pinned||!result.scoped_cookie_present)return {...result,reason:'share_exchange_refused'};
+   // GET cannot ingest an event. It proves the cookie reaches the existing
+   // webhook route; it does not claim a receipt was persisted or delivered.
+   const target=await probe(`${state.main_preview.origin}/api/notifications/resend`,{method:'GET',headers:{cookie}});
+   result.target_method_status=target.status;result.available=target.status===405;
+   return {...result,reason:result.available?'ready':'forward_route_unavailable'};
+  }catch{return {...result,reason:'forward_transport_unavailable'};}
+ };
  const publicChecks=async(timeout=15000)=>{
   const [get,unknown,unsigned,main]=await Promise.all([
    probe(`${state.deployment.origin}/api/resend`,{},timeout),probe(`${state.deployment.origin}/case/never-served`,{},timeout),
@@ -170,11 +220,26 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
   return redactedIngressStatus(state,{ready_state:result.readyState??null});
  }
  checkState(state,config);
+ if(command==='reconcile-absent-share'){
+  const field=validateAbsentShareRecovery(state,recoveryEvidence);
+  await unchanged();checkIngress(await read(`/v13/deployments/${state.deployment.id}`),state);
+  const url=`${state.deployment.origin}/api/resend`,response=await probe(url);
+  requireThat(isProtectedPreviewResponse(response,url),'INGRESS_RECOVERY_NOT_PROTECTED');
+  const at=new Date(now()).toISOString();
+  (state.cleanup_reconciliations??=[]).push({at,previous_phase:state.phase,pending_label:state.pending_mutation.label,
+   missing_share_receipt:recoveryEvidence.missing_share.filename,override_revoke_receipt:recoveryEvidence.override_revoke.filename,
+   reason:'exact_saved_share_not_found_404',public_status:response.status,remote_mutations:0});
+  state[field].absent_at=at;state[field].absence_reason='vercel_share_not_found_404';
+  state[field].absence_receipt=recoveryEvidence.missing_share.filename;
+  state.phase='disabled';state.disabled_at=at;finished();
+  return redactedIngressStatus(state,{cleanup_reconciled:true,protected:true,public_status:response.status,remote_mutations:0});
+ }
  if(command==='status'){
   const actual=await currentProject();
   const current=state.deployment?await read(`/v13/deployments/${state.deployment.id}`):null;
   if(current)checkIngress(current,state);
-  return redactedIngressStatus(state,{ready_state:current?.readyState??null,project_unchanged:hash(actual)===hash(state.project_before),expired:Date.parse(state.expires_at)<=now()});
+  return redactedIngressStatus(state,{ready_state:current?.readyState??null,project_unchanged:hash(actual)===hash(state.project_before),
+   expired:Date.parse(state.expires_at)<=now(),forwarding_probe:await forwardingProbe()});
  }
  if(command==='disable'){
   // Recovery must still work after expiry and after a failed enable, but it
@@ -197,6 +262,8 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
  const before=await unchanged();checkMain(await read(`/v13/deployments/${state.main_preview.id}`),config,before);
  const current=await read(`/v13/deployments/${state.deployment.id}`);checkIngress(current,state);
  requireThat(current.readyState==='READY','INGRESS_NOT_READY');
+ state.forwarding_probe=await forwardingProbe();save();
+ requireThat(state.forwarding_probe.available,'INGRESS_FORWARD_SHARE_EXCHANGE_FAILED');
  if(state.phase==='enabled')return redactedIngressStatus(state,await publicChecks());
  try{
   await createShare(state.deployment.id,'probe_share',Math.min(300,deadline()-60));
@@ -259,7 +326,8 @@ function artifactFromDisk(repo){
 async function main(){
  assertLocalIngressOperator(process.env); // Before reading private config.
  const [command,flag,configFile,...extra]=process.argv.slice(2);
- requireThat(flag==='--config'&&configFile&&extra.length===0,'USAGE_DEV_INGRESS_DEPLOY_COMMAND_CONFIG');
+ requireThat(flag==='--config'&&configFile&&(command==='reconcile-absent-share'
+  ?extra.length===4&&extra[0]==='--receipt'&&extra[2]==='--override-receipt':extra.length===0),'USAGE_DEV_INGRESS_DEPLOY_COMMAND_CONFIG');
  const repo=realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'));
  const privateFile=realpathSync(path.resolve(configFile)),directory=path.dirname(privateFile);
  const relative=path.relative(repo,privateFile);
@@ -269,6 +337,14 @@ async function main(){
  const stateFile=`${privateFile}.state.private.json`,lockFile=`${privateFile}.lock`;
  const lock=openSync(lockFile,'wx');
  try{
+  const readRecoveryReceipt=filename=>{
+   const actual=realpathSync(path.resolve(filename));
+   requireThat(path.dirname(actual)===directory&&/^dev-ingress-[a-f0-9-]+\.response\.private\.json$/u.test(path.basename(actual)),'INGRESS_RECOVERY_PRIVATE_RECEIPT_REQUIRED');
+   return {filename:path.basename(actual),response:JSON.parse(readFileSync(actual,'utf8')),
+    request:JSON.parse(readFileSync(actual.replace('.response.private.json','.request.private.json'),'utf8'))};
+  };
+  const recoveryEvidence=command==='reconcile-absent-share'
+   ?{missing_share:readRecoveryReceipt(extra[1]),override_revoke:readRecoveryReceipt(extra[3])}:undefined;
   const saveState=state=>{const temp=`${stateFile}.tmp`;writeFileSync(temp,JSON.stringify(state,null,2),{mode:0o600});renameSync(temp,stateFile);};
   const api=async(endpoint,method='GET',body)=>{
    const args=[config.vercel_cli_path,'api',endpoint,'-X',method,'--raw'];
@@ -281,7 +357,7 @@ async function main(){
    requireThat(result.status===0,'INGRESS_VERCEL_REQUEST_FAILED');
    try{return JSON.parse(result.stdout);}catch{throw Error('INGRESS_VERCEL_RESPONSE_INVALID');}
   };
-  const result=await runIngressOperator(command,{config,artifact:command==='deploy'?artifactFromDisk(repo):null,api,
+  const result=await runIngressOperator(command,{config,artifact:command==='deploy'?artifactFromDisk(repo):null,api,recoveryEvidence,
    loadState:()=>existsSync(stateFile)?JSON.parse(readFileSync(stateFile,'utf8')):null,saveState});
   mkdirSync(path.join(repo,'output/release-completion/dev-resend-ingress'),{recursive:true});
   writeFileSync(path.join(repo,'output/release-completion/dev-resend-ingress/operator-status.json'),JSON.stringify(result,null,2));

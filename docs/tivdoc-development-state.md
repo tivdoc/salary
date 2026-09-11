@@ -1,4 +1,10 @@
-## Scheduled live DEV package delivered — STOP (2026-09-11)
+## Active private paid-case processing — 2026-09-11
+
+The owner's latest request cancels the earlier four-hour delivery limit for this package. Follow [current worklist](private-paid-cases-work-package-2026-09-11.md) and [original payment/scope contract](private-analysis-payment-contract-2026-09-11.md). Production is selected read-only access; no queue, payment, QA classification or customer delivery changes. Customer documents and drafts stay in the locally Git-excluded private sibling workspace. Four verified non-QA cases plus one paid ownership-ambiguous QA case are being reviewed; two historical internal QA cases are separately excluded. First private partial reports and existing-interpreter arithmetic are saved. No new legal admission or client debt is claimed.
+
+Prior operations actually reached cb73918/schema158: aggregate14questions→one provider-accepted email, separate signed short-lived authority→scheduled result→natural expiry/410→new authority/new result, and restart without OCR reuse charges. See [updated operations checkpoint](dev-operations-handoff-2026-09-11-he.md). Workers are stopped/revoked; webhook disabled; ingress protected. Live webhook forwarding was502, not successful ingestion. CI7b5519b failed one new-definer inventory count; a reviewed correction is in progress. Earlier STOP and “not implemented” entries below are historical and must not reopen completed work.
+
+## Historical: Scheduled live DEV package delivered — STOP (2026-09-11)
 
 [Handoff, current acceptance matrix and remaining work](sol-scheduled-dev-handoff-2026-09-11-he.md). Final tested application56e1bb5133f162734cd6cf01bd766a9c220b9fee / schema156 / READY Preview salary-am5irlzin; CI34554252667 and34554250160 PASS. New browser-uploaded synthetic source→real scheduled Solr7→unknown then identified correction→ordinary canonical engine/Finding/report→Resend owner mailbox was proved on5065488/schema155; final deployment reverified OTP, source-history UI, unchanged report HTML/PDF download bytes, uniform foreign404 and scheduler restart without duplicate effects. See [final receipt](release-evidence/sol-scheduled-20260911/final-verification.json) and [generated PDF](release-evidence/sol-scheduled-20260911/scheduled-report.pdf).
 

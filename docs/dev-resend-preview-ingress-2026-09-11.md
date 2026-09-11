@@ -80,6 +80,16 @@ The private state is saved beside the config as `<config>.state.private.json`; p
 
 `status` is read-only. A stopped or expired share cannot be restarted by extending its timestamp. A new explicitly authorized bounded package must supply a new config/state and deadline, a current verified main Preview and a new scoped share. Provider/OCR budgets and worker/authority state are independent and must not be reset by this tool.
 
+### Reconcile one already-absent share after STOP
+
+If override revocation succeeded but the following share revoke returned the exact Vercel error `The specified shareable link does not exist. (404)`, do not repeat `disable` blindly. Keep both private response files and their matching request files, and run:
+
+```powershell
+node scripts/product-workers/dev-ingress-deploy.mjs reconcile-absent-share --config <PRIVATE_CONFIG_PATH> --receipt <EXACT_MISSING_SHARE_RESPONSE_PRIVATE_JSON> --override-receipt <EXACT_SUCCESSFUL_OVERRIDE_REVOKE_RESPONSE_PRIVATE_JSON>
+```
+
+This performs no remote mutation. It matches the saved missing-share request, secret and hash to the pending operation, requires the successful override-revoke receipt for the pinned ingress deployment, and checks that the ingress is currently protected. A generic 404, another deployment/share, remaining override or public ingress is refused. It records the link as **absent**, preserves the receipts and reconciliation history, clears only the matching pending operation, and marks local state disabled. It never calls this an active share revocation.
+
 ## Local evidence and remaining external proof
 
 | Check | Evidence in this package |
@@ -91,4 +101,3 @@ The private state is saved beside the config as `<config>.state.private.json`; p
 | Operator no-Production/main-scope guards, empty inherited overrides, protected probe, exact exception, rollback, expiry, uncertain retry | 16 focused synthetic operator tests passed; operator lint passed. No remote mutation by the test. |
 | Real deployment and provider callback | Must be supplied by the root's actual operator receipt and live Resend/DB evidence. Not proved by this document or by a locally signed test event. |
 | Early receipt before provider acceptance, duplicate event, delayed delivery correlation | Existing SQL keeps receipt identity and applies early events when acceptance is recorded. Actual DB/provider evidence for the current package must be reported separately. No SQL was changed in this lane. |
-
