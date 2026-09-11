@@ -112,10 +112,13 @@ export const openAiPayslipV2R5StructuredOutputSchema = z
   .strict();
 
 export const OPENAI_PAYSLIP_V2_OBSERVATION_SCHEMA_VERSION='payslip-v2-header-observations-v1' as const;
-export const openAiPayslipV2StructuredOutputSchema=openAiPayslipV2R5StructuredOutputSchema.extend({
+export const openAiPayslipV2R6StructuredOutputSchema=openAiPayslipV2R5StructuredOutputSchema.extend({
  generic_fields:z.array(genericFieldSchema.extend({field:z.enum([
   'salary_period','employment_start_date','vacation_balance','sick_balance','regular_hours','hourly_rate',
  ])}).strict()),
 }).strict();
+
+// R7 changes transcription instructions, not the structured source vocabulary.
+export const openAiPayslipV2StructuredOutputSchema=openAiPayslipV2R6StructuredOutputSchema;
 
 export type OpenAiPayslipV2StructuredOutput = Readonly<z.infer<typeof openAiPayslipV2StructuredOutputSchema>>;

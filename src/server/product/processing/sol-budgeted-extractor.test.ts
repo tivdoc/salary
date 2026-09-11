@@ -8,6 +8,7 @@ import {syntheticPayslipFixtures} from '@/engine/extraction/fixtures/source-fixt
 import {preprocessPayslipDocument} from '@/server/engine/extraction/preprocessing';
 import {createSolBudgetedExtractor} from './sol-budgeted-extractor';
 import {newSolComparisonLedger} from './live-extraction-sol-comparison-budget';
+import {createOpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
 const sdk=vi.hoisted(()=>({count:vi.fn(),parse:vi.fn(),construct:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('openai',()=>({default:class{responses={inputTokens:{count:sdk.count},parse:sdk.parse};constructor(options:unknown){sdk.construct(options);}}}));
@@ -65,10 +66,10 @@ it('keeps a failed oversized count charged and never invokes generation',async()
   expect(sdk.parse).not.toHaveBeenCalled();expect(runtime.summary()).toMatchObject({contentRequests:1,unknownOutcomes:1,reservedUpperBoundUsd:0.256});
  }finally{runtime.close();}
 });
-it('refuses a claimed prompt-fix retry without the exact retained completed receipt before any content request',async()=>{
+it.each(['header-observation-classification-r5','literal-label-cell-transcription-r7'] as const)('refuses %s without the exact retained completed receipt before any content request',async(reason)=>{
  const {input}=await setup();
  expect(()=>createSolBudgetedExtractor({...input,reviewedRetry:{sourceSha256:input.allowedSources[0].sha256,
-  priorReceiptSha256:'f'.repeat(64),reason:'header-observation-classification-r5'}})).toThrow('REVIEWED_RETRY_RECEIPT_REQUIRED');
+  priorReceiptSha256:'f'.repeat(64),reason}})).toThrow('REVIEWED_RETRY_RECEIPT_REQUIRED');
  expect(sdk.count).not.toHaveBeenCalled();expect(sdk.parse).not.toHaveBeenCalled();
  expect(JSON.parse(readFileSync(input.ledgerPath,'utf8')).reservations).toEqual([]);
  const fresh=createSolBudgetedExtractor(input);fresh.close();
@@ -93,4 +94,32 @@ it('retains a successful count but refuses generation when the package expires d
   expect(sdk.count).toHaveBeenCalledOnce();expect(sdk.parse).not.toHaveBeenCalled();
   const ledger=JSON.parse(readFileSync(input.ledgerPath,'utf8'));expect(ledger.reservations).toHaveLength(1);expect(ledger.reservations[0].outcome).toBe('count_recorded');
  }finally{runtime.close();}
+});
+
+it('allows one explicitly reviewed r6-to-r7 retry while preserving the first attempt and refusing changed receipt bytes',async()=>{
+ const {input,pass}=await setup(),first=createSolBudgetedExtractor(input);
+ await first.extractor.extractPreparedPass(pass);first.close();
+ const ledger=JSON.parse(readFileSync(input.ledgerPath,'utf8'));
+ const prior=ledger.reservations[1];
+ // Synthetic SDK contract fixture only; never written to a package ledger.
+ const {receipt_sha256:ignored,...body}=prior.receipt;void ignored;
+ for(const row of ledger.reservations)row.requestSha256='1'.repeat(64);
+ prior.receipt=createOpenAiProviderReceipt({...body,request_sha256:'1'.repeat(64),status:'completed',error_code:null,prompt_version:'payslip-extraction-openai-v2-first-r6'});
+ writeFileSync(input.ledgerPath,JSON.stringify(ledger));
+ const retained=JSON.stringify(ledger.reservations);
+ const reviewedRetry={reason:'literal-label-cell-transcription-r7' as const,sourceSha256:input.allowedSources[0].sha256,priorReceiptSha256:prior.receipt.receipt_sha256};
+ const changed=structuredClone(ledger);changed.reservations[1].receipt.duration_ms++;
+ writeFileSync(input.ledgerPath,JSON.stringify(changed));
+ expect(()=>createSolBudgetedExtractor({...input,reviewedRetry})).toThrow('PROVIDER_RECEIPT_HASH_MISMATCH');
+ writeFileSync(input.ledgerPath,JSON.stringify(ledger));
+ const second=createSolBudgetedExtractor({...input,reviewedRetry});
+ sdk.parse.mockResolvedValue({id:'resp_synthetic_unit_second',status:'failed',output_parsed:null,model:'gpt-5.6-sol',
+  _request_id:'req_synthetic_unit_second',usage:{input_tokens:2000,output_tokens:2,total_tokens:2002}});
+ try{
+  await second.extractor.extractPreparedPass(pass);
+  const after=JSON.parse(readFileSync(input.ledgerPath,'utf8'));
+  expect(JSON.stringify(after.reservations.slice(0,2))).toBe(retained);
+  expect(after.reservations.map((r:{attempt:number})=>r.attempt)).toEqual([1,1,2,2]);
+  expect(second.summary()).toMatchObject({contentRequests:4,generations:2,unknownOutcomes:0});
+ }finally{second.close();}
 });

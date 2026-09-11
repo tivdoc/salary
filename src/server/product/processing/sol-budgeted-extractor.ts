@@ -11,6 +11,7 @@ import {extractionRequestSchema} from '@/engine/extraction/contracts';
 import {SOURCE_ROW_DUPLICATE_POLICY} from '@/engine/extraction/validation';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {OpenAiPayslipV2PassExtractor} from '@/server/engine/extraction/providers/openai/v2-adapter';
+import {parseOpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
 import {authorizeManagedOpenAiRecovery,assertManagedOpenAiRecovery,type ManagedOpenAiRecoveryAuthority} from '@/server/engine/extraction/providers/openai/managed-package-recovery';
 import {buildOpenAiV2ResponsesRequest,OPENAI_SOL_COMPARISON_PROFILE} from '@/server/engine/extraction/providers/openai/v2-request';
 import {inspectExtractionBytes} from '@/server/engine/extraction/verified-upload-source';
@@ -27,7 +28,7 @@ export type SolBudgetedSource=z.infer<typeof sourceSchema>;
  * Keep the returned lock for the caller's bounded sequence and close in finally. */
 type SolBudgetedInput={apiKey:string;ledgerPath:string;artifactDirectory:string;codeRevision:string;
  allowedSources:readonly SolBudgetedSource[];maxGenerations:number;retainedDiagnosticPath?:string;
- reviewedRetry?:{sourceSha256:string;priorReceiptSha256:string;reason:'header-observation-classification-r5'};allowedCaseIds?:readonly string[];expiresAt?:string};
+ reviewedRetry?:{sourceSha256:string;priorReceiptSha256:string;reason:'header-observation-classification-r5'|'literal-label-cell-transcription-r7'};allowedCaseIds?:readonly string[];expiresAt?:string};
 export function createSolBudgetedExtractor(input:SolBudgetedInput){
  if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')throw Error('SOL_SAVED_WORKER_SCOPE');
  return createBoundedSolExtractor(input);
@@ -52,9 +53,13 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
   const reviewed=input.reviewedRetry;
   const prior=reviewed?ledger.reservations.find(r=>r.sourceSha256===reviewed.sourceSha256&&r.kind==='generation'&&r.attempt===1&&r.outcome==='receipt_recorded'):undefined;
   if(reviewed){
-   const receipt=prior?.receipt as {receipt_sha256?:string;status?:string}|undefined;
-   if(reviewed.reason!=='header-observation-classification-r5'||sources.length!==1||sources[0].sha256!==reviewed.sourceSha256
-    ||!prior||receipt?.receipt_sha256!==reviewed.priorReceiptSha256||receipt.status!=='completed')throw Error('SOL_REVIEWED_RETRY_RECEIPT_REQUIRED');
+   const receipt=prior?.receipt as {receipt_sha256?:string;status?:string;prompt_version?:string}|undefined;
+   if(!['header-observation-classification-r5','literal-label-cell-transcription-r7'].includes(reviewed.reason)||sources.length!==1||sources[0].sha256!==reviewed.sourceSha256
+    ||!prior||receipt?.receipt_sha256!==reviewed.priorReceiptSha256||receipt.status!=='completed'
+    ||(reviewed.reason==='literal-label-cell-transcription-r7'&&receipt.prompt_version!=='payslip-extraction-openai-v2-first-r6'))throw Error('SOL_REVIEWED_RETRY_RECEIPT_REQUIRED');
+   const authenticatedReceipt=parseOpenAiProviderReceipt(prior.receipt);
+   if(authenticatedReceipt.source_sha256!==reviewed.sourceSha256||authenticatedReceipt.request_sha256!==prior.requestSha256)
+    throw Error('SOL_REVIEWED_RETRY_RECEIPT_REQUIRED');
   }
   mkdirSync(input.artifactDirectory,{recursive:true});
   const persist=()=>{const temp=input.ledgerPath+'.'+instanceId+'.tmp',file=openSync(temp,'wx');
@@ -88,7 +93,8 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
    const providerRequest=buildOpenAiV2ResponsesRequest({model:SOL_COMPARISON_POLICY.model,prepared:request.prepared,
     kind:request.kind,requested_fields:request.requestedFields,executionProfile:OPENAI_SOL_COMPARISON_PROFILE});
    const counted=solInputCountRequest(providerRequest);
-   if(reviewed&&(providerRequest.text.format.name!=='payslip-extraction-openai-v2-first-r5'||prior?.requestSha256===counted.requestSha256))throw Error('SOL_REVIEWED_RETRY_NEW_PROMPT_REQUIRED');
+   const retryPrompt=reviewed?.reason==='literal-label-cell-transcription-r7'?'payslip-extraction-openai-v2-first-r7':'payslip-extraction-openai-v2-first-r5';
+   if(reviewed&&(providerRequest.text.format.name!==retryPrompt||prior?.requestSha256===counted.requestSha256))throw Error('SOL_REVIEWED_RETRY_NEW_PROMPT_REQUIRED');
    const reservation={sourceSha256:source.sha256,requestSha256:counted.requestSha256,
     codeRevision:input.codeRevision,attempt:reviewed?2:1,priorUnknownAcknowledgment};
    const directory=path.join(input.artifactDirectory,boundRequest.extraction_id);mkdirSync(directory,{recursive:true});

@@ -20,14 +20,16 @@ const digest=(value:Uint8Array)=>createHash('sha256').update(value).digest('hex'
 const packageRoot='output/release-completion/sol-scheduled-20260911';
 const ledgerPath=path.resolve(packageRoot,'package-budget-ledger.json');
 const expiresAt='2026-09-11T04:19:48Z';
+const reviewedR6Proof=path.resolve(packageRoot,'labels-r6-aa21e32-ae109f30-02ca-49d5-abb1-ba6bbbfb0c31/proof.json');
+const reviewedR6ReceiptSha256='a08b4657df59640b0bc1ad7d3edcdb1f97daf7f3a8a75506f6e3ed962399c1f0';
 
 /** Live SDK only. One existing synthetic complex PDF, unchanged oracle, no
  * scan, retry, checkpoint seeding, worker invocation or financial output.
  * The shared package lock/ledger belongs to createSolBudgetedExtractor. */
-it.skipIf(process.env.TIVDOC_SOL_SCHEDULED_LABELS_PROOF!=='1')('compares the two retained Hebrew overtime labels with one real r6 generation',async()=>{
+it.skipIf(process.env.TIVDOC_SOL_SCHEDULED_LABELS_PROOF!=='1')('compares the two retained Hebrew overtime labels with one explicitly reviewed real r7 generation',async()=>{
  if(process.env.VERCEL||process.env.VERCEL_ENV||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1'
-  ||!process.env.OPENAI_API_KEY||Date.now()>=Date.parse(expiresAt))throw Error('SOL_LABEL_PROOF_SCOPE');
- if(OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION!=='payslip-extraction-openai-v2-first-r6')throw Error('SOL_LABEL_R6_REQUIRED');
+  ||process.env.TIVDOC_SOL_SCHEDULED_LABELS_RETRY!=='r7-label-cell'||!process.env.OPENAI_API_KEY||Date.now()>=Date.parse(expiresAt))throw Error('SOL_LABEL_PROOF_SCOPE');
+ if(OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION!=='payslip-extraction-openai-v2-first-r7')throw Error('SOL_LABEL_R7_REQUIRED');
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
  expect(gitSha).toMatch(/^[a-f0-9]{40}$/u);
  expect(execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()).toBe('');
@@ -40,13 +42,17 @@ it.skipIf(process.env.TIVDOC_SOL_SCHEDULED_LABELS_PROOF!=='1')('compares the two
  const bytes=readFileSync(entry.path);expect(digest(bytes)).toBe(entry.sha256);expect(bytes.length).toBe(entry.sizeBytes);
  expect(await inspectExtractionBytes(bytes,entry.mimeType)).toMatchObject({pages:1});
  const historyFiles=[entry.path,'docs/release-evidence/live-provider-june2026/independent-input-oracles.json',
-  'docs/release-evidence/sol-comparison-20260910/sol-clear-structured.json'];
+  'docs/release-evidence/sol-comparison-20260910/sol-clear-structured.json',reviewedR6Proof,path.join(path.dirname(reviewedR6Proof),'structured.json')];
  const immutable=historyFiles.map(file=>({file,sha256:digest(readFileSync(file))}));
  const retained=JSON.parse(readFileSync(historyFiles[2],'utf8'));
  expect(retained.origin).toBe('openai_live');expect(canonicalSha256(retained.structured_output)).toBe(retained.structured_output_sha256);
+ const priorProof=JSON.parse(readFileSync(reviewedR6Proof,'utf8'));
+ expect(priorProof).toMatchObject({state:'LABEL_QUALITY_FAIL',gitSha:'aa21e32a9433eca872b06014f46a86029c140df3',promptVersion:'payslip-extraction-openai-v2-first-r6',
+  source:{sha256:entry.sha256},receipt:{origin:'openai_live',status:'completed',receipt_sha256:reviewedR6ReceiptSha256}});
+ expect(priorProof.fullOracleComparison.failures).toEqual(['ROW_overtime_125','ROW_overtime_150']);
  const prepared=await preprocessPayslipDocument({bytes,mime_type:entry.mimeType});
  const proofId=randomUUID(),caseId=randomUUID(),documentId=randomUUID(),extractionId=randomUUID(),now=new Date().toISOString();
- const directory=path.resolve(packageRoot,`labels-r6-${gitSha.slice(0,7)}-${proofId}`);mkdirSync(directory,{recursive:true});
+ const directory=path.resolve(packageRoot,`labels-r7-${gitSha.slice(0,7)}-${proofId}`);mkdirSync(directory,{recursive:true});
  const request=extractionRequestSchema.parse({case_id:caseId,analysis_run_id:randomUUID(),extraction_id:extractionId,declared_document_type:'payslip',requested_at:now,
   document:{document_id:documentId,case_id:caseId,document_type:'payslip',original_filename:path.basename(entry.path),mime_type:entry.mimeType,
    size_bytes:entry.sizeBytes,content_sha256:entry.sha256,storage_path:`cases/${caseId}/documents/${documentId}/original.pdf`,document_period:null,supersedes_document_id:null,created_at:now}});
@@ -64,11 +70,13 @@ it.skipIf(process.env.TIVDOC_SOL_SCHEDULED_LABELS_PROOF!=='1')('compares the two
   budgetAfter:runtime?.summary(),providerInvocationEntered,providerOutcome:receipt?'receipt_recorded':providerInvocationEntered?'check_durable_ledger_unknown_possible':'not_entered',
   sdkRetries:0,maxGenerations:1,maxContentRequestsForThisTest:2,automaticRecovery:false,oracleSentToProvider:false,safeError,
   realProviderReceiptRequired:true,syntheticDocument:true,databaseChanged:false,financialResultGenerated:false,legalActivation:false,humanReview:false,
+  reviewedRetry:{attempt:2,reason:'literal-label-cell-transcription-r7',priorProof:reviewedR6Proof,priorReceiptSha256:reviewedR6ReceiptSha256},
   scope:'Only the two previously mismatched printed overtime labels. Full oracle failures remain separately visible; labels passing does not establish global extraction quality.'});
  try{
   proof();
   runtime=createSolBudgetedExtractor({apiKey:process.env.OPENAI_API_KEY,ledgerPath,artifactDirectory:path.join(directory,'provider'),codeRevision:gitSha,
-   allowedSources:[{sha256:entry.sha256,sizeBytes:entry.sizeBytes,mimeType:entry.mimeType}],allowedCaseIds:[caseId],maxGenerations:1,expiresAt});
+   allowedSources:[{sha256:entry.sha256,sizeBytes:entry.sizeBytes,mimeType:entry.mimeType}],allowedCaseIds:[caseId],maxGenerations:1,expiresAt,
+   reviewedRetry:{sourceSha256:entry.sha256,priorReceiptSha256:reviewedR6ReceiptSha256,reason:'literal-label-cell-transcription-r7'}});
   before=runtime.summary();
   const ledger=parseSolComparisonLedger(JSON.parse(readFileSync(ledgerPath,'utf8')));
   // Under the shared lock, reserve capacity for BOTH calls before starting.
@@ -76,7 +84,10 @@ it.skipIf(process.env.TIVDOC_SOL_SCHEDULED_LABELS_PROOF!=='1')('compares the two
   expect(before.unknownOutcomes).toBe(0);expect(before.contentRequests+2).toBeLessThanOrEqual(SOL_COMPARISON_POLICY.maxRequests);
   expect(Math.round(before.reservedUpperBoundUsd*1e6)+SOL_COMPARISON_POLICY.countReservedMicroUsd+SOL_COMPARISON_POLICY.generationReservedMicroUsd)
    .toBeLessThanOrEqual(SOL_COMPARISON_POLICY.maxReservedMicroUsd);
-  expect(ledger.reservations.some(row=>row.sourceSha256===entry.sha256)).toBe(false);
+  const prior=ledger.reservations.filter(row=>row.sourceSha256===entry.sha256);
+  expect(prior).toHaveLength(2);expect(prior.map(row=>row.kind)).toEqual(['input_tokens','generation']);
+  expect(prior.every(row=>row.attempt===1&&row.outcome!=='reserved_unknown')).toBe(true);
+  expect(prior[1].receipt).toMatchObject({receipt_sha256:reviewedR6ReceiptSha256});
   phase='actual-provider';providerInvocationEntered=true;proof();
   const mapped=await runtime.extractor.extractPreparedPass({request,prepared,kind:'first_pass',requestedFields:[],sourcePageCount:1,
    onStructuredOutput:value=>{diagnostic=value;save('structured.json',value);}});
