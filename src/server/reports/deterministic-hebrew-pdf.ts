@@ -379,7 +379,7 @@ const REPORT_CREATOR = "tivdoc-rtl-hebrew-report-template-v0.8.0";
 
 export type RtlBlock =
   | Readonly<{ kind: "heading"; text: string; level: 1 | 2 }>
-  | Readonly<{ kind: "paragraph"; text: string }>
+  | Readonly<{ kind: "paragraph"; text: string; wrap_text?: boolean }>
   | Readonly<{ kind: "rule" }>
   | Readonly<{ kind: "table"; columns: readonly string[]; rows: readonly (readonly string[])[]; wrap_cells?: boolean }>
   | Readonly<{ kind: "hash"; label: string; value: string }>;
@@ -514,9 +514,14 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
       continue;
     }
     if (block.kind === "paragraph") {
-      for (const lineText of wrap(block.text, 92)) {
+      // Opt-in measured wrapping preserves legacy report bytes while allowing
+      // private source URLs and immutable identifiers to remain fully visible.
+      const lines = block.wrap_text === true
+        ? wrapMeasuredCell(ctx, block.text, 9, PAGE_WIDTH - MARGIN * 2 - 4)
+        : wrap(block.text, 92);
+      for (const lineText of lines) {
         room(LINE_HEIGHT);
-        drawCell(ctx, lineText, PAGE_WIDTH - MARGIN, y - 9, 9, "0.12 0.18 0.24");
+        drawCell(ctx, lineText, PAGE_WIDTH - MARGIN - (block.wrap_text === true ? 2 : 0), y - 9, 9, "0.12 0.18 0.24");
         y -= LINE_HEIGHT;
       }
       y -= 4;

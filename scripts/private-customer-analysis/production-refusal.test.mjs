@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
 import { guardPosition, PRODUCTION_REFUSAL_CODE } from "../production-closure/entry-points.mjs";
 
@@ -53,6 +54,49 @@ describe("private customer script entry guards", () => {
       expect(result.stderr).not.toContain("Usage:");
       expect(result.stdout).toBe("");
     }
+  });
+
+  it("the direct MTS entry refuses with the production closure Node flags", () => {
+    for (const vercelEnv of ["production", "preview"]) {
+      const environment = Object.fromEntries([
+        "PATH", "SYSTEMROOT", "SystemRoot", "TEMP", "TMP", "WINDIR", "USERPROFILE",
+        "HOME", "APPDATA", "LOCALAPPDATA", "ProgramData", "COMSPEC",
+      ].filter((name) => process.env[name]).map((name) => [name, process.env[name]]));
+      const result = spawnSync(process.execPath, [
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--experimental-strip-types",
+        "scripts/private-customer-analysis/run.mts",
+      ], {
+        cwd: ROOT, encoding: "utf8", timeout: 10_000,
+        env: { ...environment, NODE_ENV: "production", VERCEL_ENV: vercelEnv },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain(PRODUCTION_REFUSAL_CODE);
+      expect(result.stdout).toBe("");
+    }
+  });
+
+  it("the development CJS bundle retains the deferred application graph without writing an artifact", async () => {
+    const result = await build({
+      absWorkingDir: ROOT, entryPoints: ["scripts/private-customer-analysis/run.mts"],
+      bundle: true, platform: "node", format: "cjs", target: "node22",
+      packages: "external", metafile: true, write: false,
+      plugins: [{ name: "private-node-server-marker", setup(api) {
+        api.onResolve({ filter: /^server-only$/ }, () => ({ path: "server-only", namespace: "private-marker" }));
+        api.onLoad({ filter: /.*/, namespace: "private-marker" }, () => ({ contents: "export {};", loader: "js" }));
+      } }],
+    });
+    expect(Object.hasOwn(result.metafile.inputs, "src/server/private-analysis/extraction.ts")).toBe(true);
+    const bundle = result.outputFiles[0].text;
+    const run = spawnSync(process.execPath, ["--input-type=commonjs"], {
+      cwd: ROOT, encoding: "utf8", timeout: 10_000, input: bundle,
+      env: { ...baseEnvironment, NODE_ENV: "development", NODE_PATH: path.join(ROOT, "node_modules") },
+    });
+    expect(run.error).toBeUndefined();
+    // No arguments or credentials: reaches the intended validation boundary.
+    expect(run.status).toBe(1);
+    expect(run.stderr.trim()).toBe("PRIVATE_ANALYSIS_FAILED_SEE_PRIVATE_DIAGNOSTIC");
+    expect(run.stdout).toBe("");
   });
 
   it("a development importer starts from another cwd without reading private input", () => {

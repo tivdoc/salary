@@ -79,3 +79,19 @@ it('keeps the historical single-line path opt-in and reproduces the clipping def
  expect(Buffer.from(legacy).equals(Buffer.from(explicit))).toBe(true);
  const pages=await readLayout(legacy);expect(pages.flatMap(page=>page.runs).some(run=>run.text===value&&run.x<42)).toBe(true);
 });
+
+it('preserves an unbroken source URL in measured paragraphs while leaving legacy bytes unchanged',async()=>{
+ const value='https://example.test/source/'+('W'.repeat(600));
+ const document:RtlDocument={title:'Synthetic source URL',subject:'paragraph width regression',fixed_date:'20260911',blocks:[{kind:'paragraph',text:value}]};
+ const legacy=renderDeterministicRtlDocument(document);
+ const explicit=renderDeterministicRtlDocument({...document,blocks:[{kind:'paragraph',text:value,wrap_text:false}]});
+ expect(legacy).toEqual(explicit);
+ expect((await readLayout(legacy)).flatMap(p=>p.runs).some(r=>r.x<0)).toBe(true);
+ const measured=await readLayout(renderDeterministicRtlDocument({...document,blocks:[{kind:'paragraph',text:value,wrap_text:true}]}));
+ expect(measured.flatMap(p=>p.runs.map(r=>r.text)).join('')).toBe(value);
+ for(const p of measured)for(const r of p.runs){
+  expect(r.x).toBeGreaterThanOrEqual(41.9);
+  expect(r.x+r.width).toBeLessThanOrEqual(p.width-41.9);
+  expect(r.y).toBeGreaterThanOrEqual(66);
+ }
+});

@@ -19,7 +19,7 @@ export function privateMarkdownBlocks(markdown:string):RtlBlock[]{
   if(/^[-*_]{3,}$/u.test(line)){blocks.push({kind:'rule'});continue;}
   let text=line;
   while(i+1<lines.length&&lines[i+1].trim()&&!/^(#|\||[-*] |\d+\.)/u.test(lines[i+1].trim()))text+=' '+lines[++i].trim();
-  blocks.push({kind:'paragraph',text:plain(text)});
+  blocks.push({kind:'paragraph',text:plain(text),wrap_text:true});
  }
  return blocks;
 }
