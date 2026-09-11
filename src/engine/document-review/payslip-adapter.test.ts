@@ -7,11 +7,12 @@ import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {documentFieldTarget,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from '../../server/product/reports/document-field-confirmation.ts';
 import {savedDocumentFieldReadings} from '../../server/product/processing/saved-field-readings.ts';
 import {documentReviewInputSchema} from './contracts.ts';
-import {runDocumentReview} from './service.ts';
+import {runDocumentReview,applyDocumentReviewAnswer} from './service.ts';
 import {reviewInputFromPayslips,PAYSLIP_REVIEW_POLICY,PAYSLIP_FINANCIAL_SOURCE_POLICY,PAYSLIP_FINANCIAL_SOURCE_FACT,type PayslipFinancialSourceProof} from './payslip-adapter.ts';
 import {payslipMachineExtraction,payslipMachineExtractionSha256,normalizeSourceTranscriptionValue} from '../extraction/reading-resolution.ts';
 import {customerSourceTranscriptionSchema,sourceTranscriptionSubjectSchema,type SourceTranscriptionSubject} from '../extraction/customer-reading.ts';
-import {documentReviewReadingDependencies,parseDocumentReviewSourceLocator} from './source-dependencies.ts';
+import {documentReviewReadingDependencies,parseDocumentReviewSourceLocator,deferredDocumentReviewRowPriceOperands} from './source-dependencies.ts';
+import {parseReviewCompletionInput} from './completions.ts';
 import type {DocumentReviewCalculationInput} from './calculations.ts';
 
 type Mutable<T>={-readonly [K in keyof T]:T[K]};
@@ -71,7 +72,104 @@ function populatedEarningsFixture(){
  return {...f,rows,gross,identifyRows,review};
 }
 
+function priceOnlyRowFixture(){
+ const f=fixture(),row=f.row('overtime_125','2','50.00','100.00');
+ row.quantity_raw=null;row.quantity=null;row.amount_raw=null;row.amount=null;row.confidence=.94;
+ row.source={...row.source,source_scope:{period_kind:'current',fund_kind:'unknown',column_label:'סכום'}};
+ const input=()=>f.build(undefined,{review_policy:PAYSLIP_REVIEW_POLICY});
+ return {...f,row,input};
+}
+
+describe('deferred price readings for a source row with no quantity or amount',()=>{
+ it('keeps blank cells but asks about another source instead of requesting impossible numeric transcriptions, with legacy requests unchanged',()=>{
+  const f=priceOnlyRowFixture(),original=canonicalSha256(f.e),input=f.input(),review=runDocumentReview(input,'synthetic.blank.price');
+  const check=review.checks[0];
+  expect(check.calculation).toMatchObject({state:'blocked',difference:null});
+  expect(check.calculation.input.operands.map(o=>[o.id,o.state,o.printed_value])).toEqual([['rate','unknown','50.00'],['quantity','missing',null],['amount','missing',null]]);
+  expect(review.completions.customer_requests).toHaveLength(1);
+  expect(review.completions.customer_requests[0]).toMatchObject({target:{fact_key:`${check.check_id}.missing_basis`,kind:'factual',answer_kind:'text',required_evidence_kind:'observed_reading'},
+   dependent_check_ids:[check.check_id,`${check.check_id}.blank_basis`]});
+  expect(review.completions.customer_requests[0].target.question).toContain('אין צורך להעתיק מספר שאינו מופיע');
+  expect(input.answer_bindings).toEqual([]);
+  expect(review.coverage_gaps).toContainEqual(expect.objectContaining({check_id:`${check.check_id}.blank_basis`,kind:'missing_fact'}));
+  const deps=documentReviewReadingDependencies({review,document_id:f.d.document_id,extraction:f.e});
+  expect(deps.row_cells).toEqual([]);expect(deps.unmapped.filter(u=>u.reason==='blank_source')).toHaveLength(2);
+  expect(f.build().answer_bindings.map(b=>b.operand_id).sort()).toEqual(['amount','quantity','rate']);
+  expect(canonicalSha256(f.e)).toBe(original);
+ });
+ it.each(['unknown','provided'] as const)('does not treat a %s answer about another source as an observed reading',state=>{
+  const f=priceOnlyRowFixture(),input=f.input(),before=runDocumentReview(input,'synthetic.blank.before');
+  const request=before.completions.customer_requests.find(q=>q.target.fact_key.endsWith('.missing_basis'))!;
+  const changed=applyDocumentReviewAnswer(input,{request,actor:{case_id:f.d.case_id,identity_id:randomUUID()},
+   answer:{request_id:randomUUID(),revision:1,answered_at:'2026-07-03T12:00:00Z',state,value:state==='provided'?'קיים פירוט שעות נוסף מהמעסיק':null}});
+  const after=runDocumentReview(changed.input,'synthetic.blank.answer');
+  if(changed.resolution.state==='stale')throw Error('Synthetic answer unexpectedly stale');
+  expect(changed.resolution.requires_source_verification).toBe(true);
+  expect(after.checks[0].calculation.input.operands.find(o=>o.id==='quantity')?.state).toBe('missing');
+  expect(documentReviewReadingDependencies({review:after,document_id:f.d.document_id,extraction:f.e}).row_cells).toEqual([]);
+  expect(after.checks[0].calculation.state).toBe('blocked');
+  expect(after.completions.customer_requests).toEqual([]);
+  expect(after.completions.suppressed).toMatchObject([{target_sha256:request.target.target_sha256,reason:'previous_answer',state}]);
+  expect(after.input.answer_history).toHaveLength(1);
+  expect(Object.keys(after.completions.dependency_index)).toEqual([request.target.target_sha256]);
+  const retry=runDocumentReview(changed.input,'synthetic.blank.answer.retry');
+  expect(retry.completions).toEqual(after.completions);
+  expect(retry.checks[0].calculation.state).toBe('blocked');
+  if(state==='provided')expect(after.completions.internal_tasks.some(t=>t.kind==='review_existing_source')).toBe(true);
+ });
+ it('allows a new populated source to request its cells again without reusing any old reading',()=>{
+  const f=priceOnlyRowFixture(),original=structuredClone(f.e),old=runDocumentReview(f.input(),'synthetic.blank.old');
+  f.e.extraction_id=randomUUID();f.row.quantity_raw='2';f.row.quantity='2';f.row.amount_raw='100.00';f.row.amount=normalizeMoney('100.00');
+  const next=runDocumentReview(f.input(),'synthetic.blank.replaced');
+  expect(next.checks[0].calculation.state).toBe('blocked');
+  expect(next.completions.customer_requests.map(q=>q.target.fact_key.split('.').at(-1)).sort()).toEqual(['amount','quantity','rate']);
+  expect(documentReviewReadingDependencies({review:next,document_id:f.d.document_id,extraction:f.e}).row_cells.map(r=>r.cell).sort()).toEqual(['amount','quantity','rate']);
+  expect(next.coverage_gaps.some(g=>g.check_id.endsWith('.blank_basis'))).toBe(false);
+  expect(old.documents[0].reading_sha256).toBe(canonicalSha256(original));expect(next.documents[0].reading_sha256).not.toBe(old.documents[0].reading_sha256);
+  expect(original.additional_components[0].quantity_raw).toBeNull();
+ });
+ it('does not permanently suppress the price when separately admitted declaration operands become available',()=>{
+  const f=priceOnlyRowFixture(),sourceInput=f.input(),legacy=f.build(),completion=parseReviewCompletionInput(legacy.completion_input);
+  // Explicit synthetic declaration contract, distinct from the adapter's
+  // observed-reading requests. No product policy is changed by this fixture.
+  const numericBindings=legacy.answer_bindings.filter(b=>b.operand_id==='quantity'||b.operand_id==='amount');
+  let input:ReturnType<typeof f.input>={...sourceInput,answer_bindings:numericBindings,
+   completion_input:{...completion,needs:completion.needs.filter(n=>numericBindings.some(b=>b.fact_key===n.fact_key)).map(n=>({...n,required_evidence_kind:'customer_declaration' as const}))}};
+  for(const [cell,value] of [['quantity','2'],['amount','100.00']] as const){
+   const review=runDocumentReview(input,`synthetic.declared.${cell}`),request=review.completions.customer_requests.find(q=>q.target.fact_key.endsWith(`.${cell}`))!;
+   input=applyDocumentReviewAnswer(input,{request,actor:{case_id:f.d.case_id,identity_id:randomUUID()},answer:{request_id:randomUUID(),revision:1,answered_at:'2026-07-03T12:00:00Z',state:'provided',value:Number(value)}}).input;
+  }
+  const result=runDocumentReview(input,'synthetic.declared.ready'),calculation=result.checks[0].calculation.input;
+  expect(calculation.operands.filter(o=>o.id!=='rate').every(o=>o.state==='declared'&&o.source.reading==='customer_declaration')).toBe(true);
+  expect(deferredDocumentReviewRowPriceOperands(calculation,f.e).size).toBe(0);
+  expect(documentReviewReadingDependencies({review:result,document_id:f.d.document_id,extraction:f.e}).row_cells).toMatchObject([{component_id:f.row.component_id,cell:'rate'}]);
+  expect(f.e.additional_components[0].quantity_raw).toBeNull();expect(f.e.additional_components[0].amount_raw).toBeNull();
+ });
+});
+
 describe('versioned printed earnings and exact dependency consumers',()=>{
+ it('fills a missing source period only from the confirmed saved reading, preserving purchase uncertainty and legacy output',()=>{
+  const f=financialFixture();f.d.document_period=null;f.p.confidence=.94;
+  const pending=f.build([f.proof()],{review_policy:PAYSLIP_REVIEW_POLICY});
+  expect(pending.documents[0].period).toBeNull();expect(pending.checks).toEqual([]);
+  f.confirm();const original=canonicalSha256(f.e),input=f.build([f.proof()],{review_policy:PAYSLIP_REVIEW_POLICY});
+  const purchasePeriod={schema_version:'document-review-purchase-period-v1' as const,state:'missing' as const,periods:[],receipt_sha256:input.purchased_scope.receipt_sha256};
+  const review=runDocumentReview({...input,purchased_scope:{...input.purchased_scope,purchase_period_evidence:purchasePeriod}},'synthetic.source.period');
+  expect(review.documents[0]).toMatchObject({period:{from:'2026-06-01',to:'2026-06-30'},reading_sha256:original,file_sha256:f.d.content_sha256,version_id:f.d.document_id});
+  expect(review.coverage_inventory?.source_periods[0].period).toEqual({from:'2026-06-01',to:'2026-06-30'});
+  expect(review.coverage_inventory?.purchase_period_evidence).toEqual(purchasePeriod);
+  expect(f.build([f.proof()]).documents[0].period).toBeNull();
+  expect(f.d.document_period).toBeNull();expect(canonicalSha256(f.e)).toBe(original);
+ });
+ it.each(['conflict','outside_review'] as const)('does not fill source period from %s candidates',reason=>{
+  const f=fixture();f.d.document_period=null;
+  if(f.p.field!=='salary_period')throw Error('Synthetic period type');
+  const other={...structuredClone(f.p),candidate_id:randomUUID(),raw_value:'05/2026',normalized_value:{year:2026,month:5,start_date:'2026-05-01',end_date:'2026-05-31'}};
+  if(reason==='conflict')f.e.fields.push(other);else f.e.fields=[other];
+  const input=f.build(undefined,{review_policy:PAYSLIP_REVIEW_POLICY});
+  expect(input.documents[0].period).toBeNull();expect(input.checks).toEqual([]);
+  expect(input.coverage_gaps.some(g=>g.check_id==='document.0.period')).toBe(true);
+ });
  it('keeps aggregate earnings blocked when a required component is outside purchased topics and opens no unsupported row or scalar alias',()=>{
   const f=populatedEarningsFixture(),travel=f.rows[1],scalar=f.money('travel_amount',travel.amount_raw!,.94);
   scalar.source={...travel.source,text_fragment:`${travel.source_label}: ${travel.amount_raw}`};

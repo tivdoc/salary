@@ -13,6 +13,9 @@ import {documentSourceTranscriptionTarget} from './document-source-transcription
 export function reviewFieldCoverageFixture(row=false){
  const f=buildSyntheticCaseFixture({fixture_id:'synthetic-reading-action-coverage',mode:'real'}),d=f.stored.documents[0],e=structuredClone(f.stored.extractions[0]);
  const candidate=e.fields.find(c=>c.field===(row?'regular_hours':'gross_salary'))!;
+ const normalized=candidate.normalized_value;
+ if(normalized&&typeof normalized==='object'&&'amount'in normalized)candidate.raw_value=normalized.amount;
+ else if(normalized&&typeof normalized==='object'&&'minor_units'in normalized)candidate.raw_value=(normalized.minor_units/100).toFixed(2);
  candidate.confidence=.94;candidate.source={...candidate.source,page:1,text_fragment:row?`שכר בסיס: ${candidate.raw_value}`:`${candidate.field}: ${candidate.raw_value}`};
  const componentId=randomUUID(),rowSource={...candidate.source,text_fragment:'שכר בסיס'};
  const result={final_extraction:e};const checkpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:d.case_id,product_document_id:randomUUID(),version_id:d.document_id,input_sha256:d.content_sha256,expected_month:'2025-01',period_mismatch:false,result_sha256:canonicalSha256(result),run:{result}};

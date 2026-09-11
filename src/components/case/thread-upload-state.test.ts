@@ -37,3 +37,17 @@ it('links a covered numeric request instead of another answer form, preserving i
  const answered=render({...request,answered_at:'2026-09-10T00:00:00Z',answer_text:'100'});
  expect(answered).toContain('מה כבר עניתם');expect(answered).toContain('הצהרה');expect(answered).toContain('#request-'+request.covered_by_field_request_id);
 });
+it.each(['confirmed','unresolved']as const)('links a duplicate request to saved %s history without another answer form',state=>{
+ const field={...row,id:'33333333-3333-4333-8333-333333333333',code:'document_field:'+'b'.repeat(64),answer_kind:'text' as const,
+  answered_at:'2026-09-10T00:00:00Z',answer_text:state==='confirmed'?'כן, בדקתי במסמך והערך נכון':'לא ניתן לקרוא את השדה'};
+ const question={...row,answer_kind:'text' as const,covered_by_field_request_id:field.id,
+  ...(state==='confirmed'?{covered_by_confirmed_reading:true as const}:{covered_by_unresolved_reading:true as const})};
+ const html=renderToStaticMarkup(createElement(ThreadView,{publicId:'TV-SYNTH001',requests:[question,field],renderedAt:Date.parse('2026-09-11T12:00:00Z')}));
+ expect(html).toContain(`id="request-${field.id}"`);expect(html).toContain(`href="#request-${field.id}"`);
+ expect(html).toContain(state==='confirmed'?'הקריאה כבר נבדקה ונכללה בדוח העדכני':'הבדיקה נשארת חסרה');
+ expect(html).toContain('מה כבר עניתם');expect(question.answered_at).toBeNull();
+});
+it('preserves blank-cell history and links its single current source question',()=>{
+ const html=render({...row,answer_kind:'text',not_required_for_current_review:true,replacement_review_request_id:'33333333-3333-4333-8333-333333333333'});
+ expect(html).toContain('תאי המקור ריקים');expect(html).toContain('מעבר לשאלה על מקור נוסף לשורה');expect(html).not.toContain('<textarea');
+});

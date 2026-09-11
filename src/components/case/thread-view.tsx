@@ -196,19 +196,19 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
         </div>
       );})}
 
-      {covered.length>0?<div className="received-card"><h2>שאלות שמטופלות באימות השדה</h2><p>אין צורך להשיב על אותו תא פעמיים. אימות הקריאה אינו אישור לחישוב או לזכאות.</p>{covered.map(request=><p key={request.id} id={`request-${request.id}`}>{request.question} — <a href={`#request-${request.covered_by_field_request_id}`}>מעבר לשאלת אימות הקריאה</a></p>)}</div>:null}
+      {covered.length>0?<div className="received-card"><h2>שאלות שמטופלות באימות השדה</h2><p>אין צורך להשיב על אותו תא פעמיים. אימות הקריאה אינו אישור לחישוב או לזכאות.</p>{covered.map(request=><p key={request.id} id={`request-${request.id}`}>{request.question} — {request.covered_by_confirmed_reading?'הקריאה כבר נבדקה ונכללה בדוח העדכני. ':request.covered_by_unresolved_reading?'נשמרה תשובה שלא ניתן לאמת את התא. הבדיקה נשארת חסרה; אפשר לתקן את התשובה או לצרף מקור ברור. ':''}<a href={`#request-${request.covered_by_field_request_id}`}>{request.covered_by_confirmed_reading||request.covered_by_unresolved_reading?'מעבר לקריאה שנשמרה':'מעבר לשאלת אימות הקריאה'}</a></p>)}</div>:null}
       {expired.length > 0 ? <div className="received-card"><h2>שאלות שנסגרו ללא תשובה</h2>{expired.map(request => <p key={request.id}>{request.question} — הסתיים המועד להשלמה.</p>)}</div> : null}
       {superseded.length > 0 ? <div className="received-card"><h2>שאלות ממסמך קודם</h2><p>המסמך או תקופתו השתנו. השאלות נשמרות בהיסטוריה ואינן ממתינות לאישור. אם יהיה צורך בהשלמה מהמסמך העדכני, תופיע שאלה חדשה.</p>{superseded.map(request => <p key={request.id}>{request.question}</p>)}</div> : null}
 
       {fulfilled.length>0?<div className="received-card"><h2>השלמות שהמידע בהן נמצא</h2><ul className="thread-answered">{fulfilled.map(request=><li key={request.id} id={`request-${request.id}`}><p className="thread-answered__question">{request.question}</p><DocumentUploadStatus request={request}/>{request.statement_month?<p>תקופת ההשלמה: {formatRequestMonth(request.statement_month)}</p>:null}</li>)}</ul></div>:null}
 
-      {deferred.length?<div className="received-card"><h2>לא נדרש לבדיקה הנוכחית</h2><p>שאלות אלה נשמרו ללא תשובה. מענה עליהן אינו דרוש לקידום הבדיקות האפשריות בדוח הנוכחי. פערי שיוך המקור עדיין מופיעים בדוח. זו אינה קביעה שהנתונים אינם נדרשים לבדיקות אחרות או לזכאות; שינוי במסמך או בבדיקה עשוי להחזיר שאלה לרשימה הפעילה.</p><ul>{deferred.map(request=><li key={request.id} id={`request-${request.id}`}>{request.question}</li>)}</ul></div>:null}
+      {deferred.length?<div className="received-card"><h2>לא נדרש לבדיקה הנוכחית</h2><p>שאלות אלה נשמרו ללא תשובה. מענה עליהן אינו דרוש לקידום הבדיקות האפשריות בדוח הנוכחי. פערי שיוך המקור עדיין מופיעים בדוח. זו אינה קביעה שהנתונים אינם נדרשים לבדיקות אחרות או לזכאות; שינוי במסמך או בבדיקה עשוי להחזיר שאלה לרשימה הפעילה.</p><ul>{deferred.map(request=><li key={request.id} id={`request-${request.id}`}>{request.question}{request.replacement_review_request_id?<p>תאי המקור ריקים. <a href={`#request-${request.replacement_review_request_id}`}>מעבר לשאלה על מקור נוסף לשורה</a></p>:null}</li>)}</ul></div>:null}
       {answered.length > 0 ? (
         <div className="received-card">
           <h2>מה כבר עניתם</h2>
           <ul className="thread-answered">
             {answered.map((request) => (
-              <li key={request.id}>
+              <li key={request.id} id={`request-${request.id}`}>
                 <p className="thread-answered__question">{request.question}</p>
                 {request.statement_month ? <p>תקופת התשובה: {formatRequestMonth(request.statement_month)}</p> : null}
                 <p className="thread-answered__answer">{displayAnswer(request)}</p>

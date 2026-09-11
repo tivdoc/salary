@@ -9,6 +9,7 @@ import {normalizedPayslipExtractionSchema,type NormalizedCandidateField,type Nor
 import {DOCUMENT_REVIEW_POLICY,DOCUMENT_REVIEW_COVERAGE_POLICY,PAYSLIP_ROW_REVIEW_TOPICS as rowTopic,type DocumentReviewInput} from './contracts.ts';
 import type {DocumentReviewCalculationInput,DocumentReviewOperand} from './calculations.ts';
 import type {ReviewCompletionNeed,ReviewCompletionInput} from './completions.ts';
+import {deferredDocumentReviewRowPriceOperands} from './source-dependencies.ts';
 
 export const PAYSLIP_FINANCIAL_SOURCE_FACT='payslip.financial_source';
 export const PAYSLIP_FINANCIAL_SOURCE_POLICY='payslip-financial-source-v1';
@@ -91,6 +92,14 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    &&f.normalized_value.start_date>=input.period.from&&f.normalized_value.end_date<=input.period.to
    &&(!original.document_period||f.normalized_value.start_date===original.document_period.start_date&&f.normalized_value.end_date===original.document_period.end_date));
   if(!periodValid){gap('period',input.purchased_scope.topics[0],'לא אומתה התאמה בין חודש התלוש לתקופה הנבדקת.','יש לברר את חודש המקור לפני שיוך חישובים אליו.');continue;}
+  if(input.review_policy===PAYSLIP_REVIEW_POLICY&&d.period===null){
+   const observedPeriod=periods[0]?.normalized_value;
+   // The immutable reading receipt already pins these candidates and the
+   // canonical resolver has confirmed their agreement. This is source scope,
+   // not evidence of the period originally purchased or a file metadata edit.
+   if(observedPeriod&&periods.every(p=>p.normalized_value?.start_date===observedPeriod.start_date&&p.normalized_value.end_date===observedPeriod.end_date))
+    d.period={from:observedPeriod.start_date,to:observedPeriod.end_date};
+  }
   const prior=retained.find(r=>r.document_id===d.document_id);
   if(prior){
    const passes=retainedCheckpointPassesSchema.safeParse(prior.checkpoint_result);
@@ -179,18 +188,29 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
   const add=(checkId:string,topic:Topic,title:string,explanation:string,operands:DocumentReviewOperand[],operation:DocumentReviewCalculationInput['operation'],requestReadings=true)=>{
    if(!input.purchased_scope.topics.includes(topic))return;
    const check_id=`document.${index}.${checkId}`;
-   checks.push({check_id,topic,title,explanation,calculation:{schema_version:'document-review-calculation-input-v1',case_id:input.case_id,run_id:'pending',check_id,
-    period:input.period,evaluated_at:new Date(extraction.extracted_at).toISOString(),source_manifest:manifest,operands,operation,remittance_status:'not_assessed'}});
+   const calculation:DocumentReviewCalculationInput={schema_version:'document-review-calculation-input-v1',case_id:input.case_id,run_id:'pending',check_id,
+    period:input.period,evaluated_at:new Date(extraction.extracted_at).toISOString(),source_manifest:manifest,operands,operation,remittance_status:'not_assessed'};
+   checks.push({check_id,topic,title,explanation,calculation});
    // A number cannot establish that a contribution belongs to this base.
    // Retain the blocked arithmetic and relationship gap until source linkage
    // exists; do not request cell confirmations that cannot change the result.
    if(!requestReadings||input.review_policy===PAYSLIP_REVIEW_POLICY&&operation.kind==='observed_ratio'&&!operation.same_period_and_base)return;
-   for(const operand of operands.filter(o=>o.state!=='observed')){
+   const deferredPrices=input.review_policy===PAYSLIP_REVIEW_POLICY?deferredDocumentReviewRowPriceOperands(calculation,originalExtraction):new Set<string>();
+   if(deferredPrices.size){
+    needs.push({fact_key:`${check_id}.missing_basis`,kind:'factual',reason:'missing',required_evidence_kind:'observed_reading',
+     question:`לגבי ${title.slice(0,100)}: תאי הכמות והסכום ריקים. האם קיים רישום או מסמך נוסף שמפרט את הכמות או השעות ואת התשלום בשורה זו? ציין מה קיים ומה מקורו; אם אין או לא ידוע, ציין זאת. אין צורך להעתיק מספר שאינו מופיע בתלוש.`,
+     answer_kind:'text',source_pins:[pin],dependent_check_ids:[check_id,`${check_id}.blank_basis`],general_question:false});
+    // Text describes potential evidence. It is never bound to a numeric
+    // operand, and the existing planner requires source review after receipt.
+    return deferredPrices;
+   }
+   for(const operand of operands.filter(o=>o.state!=='observed'&&!deferredPrices.has(o.id))){
     const fact_key=`document.${index}.${checkId}.${operand.id}`;
     needs.push({fact_key,kind:'factual',reason:operand.state==='conflict'?'conflicted':operand.state==='missing'?'missing':operand.state==='unreadable'?'unreadable':'unknown',
      required_evidence_kind:'observed_reading',question:`לצורך ${title}: מהו ${operand.source.label} במקור המסומן? אם לא ניתן לקבוע, יש לציין זאת.`,answer_kind:'number',source_pins:[pin],dependent_check_ids:[check_id],general_question:false});
     answer_bindings.push({fact_key,check_id,operand_id:operand.id});
    }
+   return deferredPrices;
   };
   const scopedOperand=(scope:NonNullable<NormalizedPayslipExtraction['source_scope_observations']>[number]['scope'],id:string,label:string):DocumentReviewOperand=>{
    const candidates=extraction.source_scope_observations?.filter(o=>o.scope===scope)??[],candidate=candidates[0]?.candidate;
@@ -327,8 +347,10 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    const base=moneyOperand('hourly_rate','hourly.base','תעריף בסיס לשעה');
    const usePercentage=row.semantic_kind.startsWith('overtime_')&&row.percentage_raw!==null&&base.state==='observed'&&row.rate?.currency==='ILS'&&base.printed_value===decimalMoney(row.rate.minor_units);
    if(usePercentage){operands.push(rowOperand('percentage'));factors.push('percentage');}
-   add(rowId,topic,`בדיקת שורה — ${row.source_label}`,'השוואת הכמות והתעריף המפורשים לסכום השורה. זהו בירור חשבוני בלבד, לפי עיגול מועמד לאגורה; אין כאן קביעת זכאות או חוב.',operands,
+   const deferredPrices=add(rowId,topic,`בדיקת שורה — ${row.source_label}`,'השוואת הכמות והתעריף המפורשים לסכום השורה. זהו בירור חשבוני בלבד, לפי עיגול מועמד לאגורה; אין כאן קביעת זכאות או חוב.',operands,
     {kind:'product',money_ref:'rate',factor_refs:factors,recorded_ref:'amount',rounding:'half_up',rounding_basis:usePercentage?'Candidate half-up to agorot; explicit percentage applied to the source-identified base rate.':'Candidate half-up to agorot; quantity times the explicitly printed unit price. No extra OT multiplier inferred; any percentage remains in the source receipt.'});
+   if(deferredPrices?.size)gap(`${rowId}.blank_basis`,topic,`בשורה ${row.source_label} תאי הכמות והסכום ריקים במקור שנקרא. הם נשארו חסרים ולא הוזנו כאפס. אישור התעריף לבדו לא יאפשר לבדוק את השורה, ולכן אינו מתבקש כעת.`,
+    'אם קיימים נתוני כמות וסכום מפורשים ממקור מתאים, ניתן להשלים אותם ולבחון שוב את השורה. תשובה לא ידועה משאירה את החסר; הצהרה אינה אישור לקריאת מסמך.');
   }
   if(input.review_policy===PAYSLIP_REVIEW_POLICY&&extraction.fields.some(f=>f.field==='gross_salary')){
    const populated=printedAmounts.filter(p=>p.rows.some(r=>r.amount_raw!==null));

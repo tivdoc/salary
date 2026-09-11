@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
-import {normalizedPayslipExtractionSchema} from '../extraction/payslip.ts';
+import {normalizedPayslipExtractionSchema,type NormalizedPayslipExtraction} from '../extraction/payslip.ts';
+import type {DocumentReviewCalculationInput} from './calculations.ts';
 import {mappedRowCellCandidate} from '../extraction/reading-resolution.ts';
 import {PAYSLIP_ROW_REVIEW_TOPICS,type DocumentReviewResult} from './contracts.ts';
 
@@ -24,6 +25,32 @@ export function parseDocumentReviewSourceLocator(value:string):DocumentReviewSou
  try{const result=documentReviewSourceLocatorSchema.safeParse(JSON.parse(value));return result.success?result.data:null;}catch{return null;}
 }
 
+/** Defer a price reading only for an exact v2 row whose source quantity and
+ * amount are both blank. Valid, separately admitted declarations can satisfy
+ * these operands without becoming document readings; unknown answers cannot. */
+export function deferredDocumentReviewRowPriceOperands(calculation:DocumentReviewCalculationInput,
+ extraction:{document_id:string;additional_components:readonly NormalizedPayslipExtraction['additional_components'][number][]}):ReadonlySet<string>{
+ const deferred=new Set<string>(),op=calculation.operation;if(op.kind!=='product')return deferred;
+ const price=calculation.operands.find(o=>o.id===op.money_ref),amount=calculation.operands.find(o=>o.id===op.recorded_ref);
+ const locator=price?parseDocumentReviewSourceLocator(price.source.locator):null;
+ if(!price||!amount||!locator||!('component_ids' in locator)||locator.cell!=='rate'||price.source.document_id!==extraction.document_id)return deferred;
+ const rows=locator.component_ids.map(id=>extraction.additional_components.find(r=>r.component_id===id));
+ if(rows.some((r,i)=>!r||canonicalSha256(r)!==locator.original_component_sha256[i]||r.quantity_raw!==null||r.amount_raw!==null))return deferred;
+ const sameCell=(operand:DocumentReviewCalculationInput['operands'][number],cell:string)=>{
+  const target=parseDocumentReviewSourceLocator(operand.source.locator);
+  return target&&'component_ids' in target&&target.cell===cell&&operand.source.document_id===extraction.document_id
+   &&canonicalSha256(target.component_ids)===canonicalSha256(locator.component_ids)
+   &&canonicalSha256(target.original_component_sha256)===canonicalSha256(locator.original_component_sha256);
+ };
+ const usable=(operand:DocumentReviewCalculationInput['operands'][number])=>['observed','declared'].includes(operand.state)&&operand.printed_value!==null;
+ const quantities=calculation.operands.filter(o=>op.factor_refs.includes(o.id)&&(sameCell(o,'quantity')
+  ||o.state==='declared'&&['decimal_quantity','hours_minutes','integer'].includes(o.representation)&&o.quantity_unit!=='ratio'));
+ if(quantities.length!==1||!sameCell(amount,'amount')&&amount.state!=='declared'||usable(quantities[0])&&usable(amount))return deferred;
+ deferred.add(price.id);
+ for(const operand of calculation.operands)if(op.factor_refs.includes(operand.id)&&sameCell(operand,'percentage'))deferred.add(operand.id);
+ return deferred;
+}
+
 /** Selection only, never an answer or an admission. The opener still verifies
  * the authenticated current checkpoint and creates its own exact target. */
 export function documentReviewReadingDependencies(input:{review:DocumentReviewResult;document_id:string;extraction:unknown}){
@@ -41,7 +68,9 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
    const row=extraction.additional_components.find(r=>r.component_id===id),topic=row?PAYSLIP_ROW_REVIEW_TOPICS[row.semantic_kind]:undefined;
    return !topic||!input.review.purchased_scope.topics.includes(topic);
   }))continue;
+  const deferredPrices=deferredDocumentReviewRowPriceOperands(check.calculation.input,extraction);
   for(const operand of check.calculation.input.operands){
+   if(deferredPrices.has(operand.id))continue;
    if(operand.state==='observed'||operand.source.document_id!==document.document_id)continue;
    if(operand.source.version_id!==document.version_id||operand.source.file_sha256!==document.file_sha256||operand.source.reading_receipt_sha256!==document.reading_sha256){
     unmapped.push({check_id:check.check_id,operand_id:operand.id,reason:'source_changed'});continue;
