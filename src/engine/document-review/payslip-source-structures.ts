@@ -5,7 +5,7 @@ import {sourceStructureSubject,type SourceStructureSelector} from '../extraction
 import type {NormalizedPayslipExtraction} from '../extraction/payslip.ts';
 import type {DocumentReviewInput,ReviewDocument} from './contracts.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput,type DocumentReviewOperand} from './calculations.ts';
-import {documentReviewSourceStructureSchema,sourceRelationshipUsable,sourceStructureGroupDisjoint,type DocumentReviewSourceStructure} from './source-structure-evidence.ts';
+import {SOURCE_STRUCTURE_BLOCKER_POLICY,documentReviewSourceStructureSchema,sourceRelationshipUsable,sourceStructureGroupDisjoint,type DocumentReviewSourceStructure} from './source-structure-evidence.ts';
 import type {ReviewCompletionNeed} from './completions.ts';
 
 type Materialized=ReturnType<typeof materializeValidatedPayslipReadings>;
@@ -18,7 +18,7 @@ export function appendPayslipSourceStructures(input:{index:number;case_id:string
  checks:DocumentReviewInput['checks'];gaps:DocumentReviewInput['coverage_gaps'];needs:ReviewCompletionNeed[];bindings:DocumentReviewInput['answer_bindings'];
  add:Add;moneyOperand:(field:string,id:string,label:string)=>DocumentReviewOperand;scopedOperand:(scope:'voluntary_deduction',id:string,label:string)=>DocumentReviewOperand}){
  const {document:d,original,materialized:m,index}=input;
- const pins={schema_version:'document-review-source-structure-v1' as const,document_id:d.document_id,version_id:d.version_id,file_sha256:d.file_sha256,
+ const pins={schema_version:'document-review-source-structure-v1' as const,blocker_policy:SOURCE_STRUCTURE_BLOCKER_POLICY,document_id:d.document_id,version_id:d.version_id,file_sha256:d.file_sha256,
   reading_sha256:d.reading_sha256,machine_extraction_sha256:payslipMachineExtractionSha256(original),first_pass_sha256:canonicalSha256(input.firstPass),checkpoint_result_sha256:input.checkpointSha256};
  const entry=(selector:SourceStructureSelector)=>{
   const subject=sourceStructureSubject({extraction:original,firstPass:input.firstPass,selector});

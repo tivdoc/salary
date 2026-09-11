@@ -61,9 +61,10 @@ export function validateDocumentSourceStructureAnswer(targetInput:unknown,answer
 }
 export function documentSourceStructureQuestion(targetInput:unknown){
  const target=documentSourceStructureTargetSchema.parse(targetInput),subject=target.subject;
+ const cells={opening:'יתרה קודמת',accrued:'צבירה',used:'ניצול',adjustments:'התאמות',closing:'יתרה חדשה'};
  const question=subject.kind==='source_relationship'?'האם הסכום ובסיס השכר המוצגים שייכים לאותו רכיב באותה תקופה? יש לציין היכן המסמך מראה את הקשר; אישור המספרים אינו מאשר את הקשר.'
   :subject.kind==='deduction_group'?'יש לזהות במקור אילו שורות שייכות לניכויי חובה ואילו לניכויי רשות, ולציין אם רשימת השורות מלאה. אין לבחור קבוצה לפי התאמת הסכום בלבד.'
-  :`יש לקרוא מהמקור את התא בטבלת ${subject.balance_kind==='vacation'?'החופשה':'המחלה'} (${subject.cell}), ולציין בנפרד את המספר, היחידה והתקופה. אם היחידה אינה מודפסת, יש לציין זאת; אין להסיק ימים או שעות.`;
+  :`יש לקרוא מהמקור את התא בטבלת ${subject.balance_kind==='vacation'?'החופשה':'המחלה'} (${cells[subject.cell]}), ולציין בנפרד את המספר, היחידה והתקופה. אם היחידה אינה מודפסת, יש לציין זאת; אין להסיק ימים או שעות.`;
  return {code:`document_field:${target.target_sha256}`,question,answer_kind:'choice' as const,options:[...(subject.kind==='source_relationship'?['אישור הקשר על סמך המקור']:[]),'הערך שונה במסמך','לא ניתן לקרוא את השדה','לא יודע/ת'],field_crop:`source_structure.${subject.kind}`,blocking:false};
 }
 type ResolveInput={target:unknown;currentCheckpoint:unknown;policyVersion:string;caseId:string;month:string;requestId:string;answerRevision:number;identityId:string;answeredAt:string;answer:unknown};

@@ -8,7 +8,7 @@ import type {SourceStructureSelector} from '../extraction/source-structure-resol
 import {documentSourceStructureTarget,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from '../../server/product/reports/document-source-structure.ts';
 import {reviewInputFromPayslips,PAYSLIP_SOURCE_STRUCTURE_POLICY,PAYSLIP_REVIEW_POLICY} from './payslip-adapter.ts';
 import {runDocumentReview,replayDocumentReview} from './service.ts';
-import {calculateDocumentReview,documentReviewCalculationInputSchema} from './calculations.ts';
+import {calculateDocumentReview,replayDocumentReviewCalculation,documentReviewCalculationInputSchema} from './calculations.ts';
 import {documentReviewReadingDependencies} from './source-dependencies.ts';
 import type {DocumentReviewInput} from './contracts.ts';
 
@@ -69,7 +69,8 @@ describe('source structure v3 through the ordinary adapter and RuleSpec runtime'
   expect(replayDocumentReview(r)).toEqual(r);
  });
  it.each(['unknown','study','combined'])('blocks an incompatible %s fund even with same_base',fund=>{
-  const f=fixture();f.relation(fund);expect(check(f.run(),'ratio.pension_employee_contribution')).toMatchObject({state:'blocked',observed_ratio:null});
+  const f=fixture();f.relation(fund);const c=check(f.run(),'ratio.pension_employee_contribution');
+  expect(c).toMatchObject({state:'blocked',observed_ratio:null,blockers:[{dependency_id:'structure.relationship',state:fund==='unknown'?'unknown':'conflict',reason:fund==='unknown'?'source_fund_unknown':'source_fund_incompatible'}]});
  });
  it('does not promote low-confidence numeric cells after relationship acceptance',()=>{
   const f=fixture();f.machine.fields=f.machine.fields.map(v=>v.field==='pension_employee_contribution'?{...v,confidence:.94}:v);f.rehash();f.relation();
@@ -77,12 +78,12 @@ describe('source structure v3 through the ordinary adapter and RuleSpec runtime'
  });
  it('preserves different-base evidence and refuses an edited calculation flag',()=>{
   const f=fixture();f.relation('pension','different_base');const c=check(f.run(),'ratio.pension_employee_contribution'),i=documentReviewCalculationInputSchema.parse(c.input);
-  expect(c.state).toBe('blocked');if(i.operation.kind!=='observed_ratio')throw Error('test ratio');i.operation.same_period_and_base=true;
+  expect(c).toMatchObject({state:'blocked',blockers:[{dependency_id:'structure.relationship',state:'conflict',reason:'source_relationship_different_base'}]});if(i.operation.kind!=='observed_ratio')throw Error('test ratio');i.operation.same_period_and_base=true;
   expect(()=>calculateDocumentReview(i)).toThrow('SOURCE_STRUCTURE_BINDING');
  });
  it('retains an explicit conflict with a previously known source fund',()=>{
   const f=fixture();f.machine.fields=f.machine.fields.map(v=>v.candidate_id===f.ids.base?{...v,source:{...v.source,source_scope:{period_kind:'current' as const,fund_kind:'study' as const,column_label:'study source'}}}:v);f.rehash();f.relation();
-  expect(check(f.run(),'ratio.pension_employee_contribution').state).toBe('blocked');
+  expect(check(f.run(),'ratio.pension_employee_contribution')).toMatchObject({state:'blocked',blockers:[{dependency_id:'structure.relationship',state:'conflict',reason:'source_fund_conflicts_with_original'}]});
  });
  it('blocks repeated source deduction locations with different IDs instead of double counting',()=>{
   const f=fixture(),first=f.machine.additional_components[0];f.machine.additional_components[1]={...f.machine.additional_components[1],source_label:first.source_label,source:first.source};f.rehash();f.group();
@@ -137,6 +138,14 @@ describe('source structure v3 through the ordinary adapter and RuleSpec runtime'
   const f=fixture();f.balance();const c=check(f.run(),'balance.vacation'),i=documentReviewCalculationInputSchema.parse(c.input);i.operands[0].representation='integer';
   expect(()=>calculateDocumentReview(i)).toThrow('SOURCE_STRUCTURE_BINDING');
   const review=f.build();review.documents[0].reading_sha256='f'.repeat(64);expect(()=>runDocumentReview(review,'synthetic.changed')).toThrow();
+ });
+ it('keeps early v3 blocker bytes replayable while opt-in v2 states are precise',()=>{
+  const f=fixture();f.relation('pension','different_base');const current=check(f.run(),'ratio.pension_employee_contribution');
+  const legacy=documentReviewCalculationInputSchema.parse(current.input);if(!legacy.source_structure)throw Error('test structure');delete legacy.source_structure.blocker_policy;
+  const old=calculateDocumentReview(legacy);
+  expect(old.blockers).toEqual([{dependency_id:'structure.relationship',state:'unknown',reason:'source_relationship_or_fund_not_compatible'},{dependency_id:'ratio.base',state:'unknown',reason:'ratio_period_or_base_unresolved'}]);
+  expect(replayDocumentReviewCalculation(old)).toEqual(old);expect(current.dependency_fingerprint).not.toBe(old.dependency_fingerprint);
+  expect(current.input.source_structure?.blocker_policy).toBe('source-structure-blockers-v2');
  });
  it('preserves v2 calculation bytes when v3 is not selected',()=>{
   const f=fixture(),before=f.build(undefined,PAYSLIP_REVIEW_POLICY);expect(before.checks.some(c=>documentReviewCalculationInputSchema.parse(c.calculation).source_structure)).toBe(false);

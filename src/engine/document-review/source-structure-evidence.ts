@@ -6,7 +6,8 @@ import type {DocumentReviewCalculationInput,DocumentReviewOperand} from './calcu
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/u),id=z.string().min(1).max(160);
 const entry=z.object({subject:sourceStructureSubjectSchema,reading:customerSourceStructureReadingSchema.nullable()}).strict();
-const pins={schema_version:z.literal('document-review-source-structure-v1'),document_id:id,version_id:id,file_sha256:sha,
+export const SOURCE_STRUCTURE_BLOCKER_POLICY='source-structure-blockers-v2' as const;
+const pins={schema_version:z.literal('document-review-source-structure-v1'),blocker_policy:z.literal(SOURCE_STRUCTURE_BLOCKER_POLICY).optional(),document_id:id,version_id:id,file_sha256:sha,
  reading_sha256:sha,machine_extraction_sha256:sha,first_pass_sha256:sha,checkpoint_result_sha256:sha};
 export const documentReviewSourceStructureSchema=z.discriminatedUnion('kind',[
  z.object({...pins,kind:z.literal('source_relationship'),entry,numerator_ref:id,denominator_ref:id}).strict(),
@@ -23,6 +24,16 @@ export function sourceRelationshipUsable(s:DocumentReviewSourceStructure){
  const expected={pension_employee:'pension',pension_employer:'pension',severance:'severance',combined_employer_funds:'combined'};
  if(v.fund_kind!==expected[v.component_kind]||s.entry.subject.kind!=='source_relationship')return false;
  return [s.entry.subject.contribution,s.entry.subject.base].every(r=>!r.source.source_scope?.fund_kind||r.source.source_scope.fund_kind==='unknown'||r.source.source_scope.fund_kind===v.fund_kind);
+}
+function preciseRelationshipBlocker(s:DocumentReviewSourceStructure){
+ if(s.kind!=='source_relationship'||s.entry.subject.kind!=='source_relationship'||!s.entry.reading)return null;
+ const v=s.entry.reading.value;if(v.kind!=='source_relationship')return null;
+ if(v.relationship==='different_base')return {state:'conflict',reason:'source_relationship_different_base'};
+ if(v.fund_kind==='unknown')return {state:'unknown',reason:'source_fund_unknown'};
+ if([s.entry.subject.contribution,s.entry.subject.base].some(r=>r.source.source_scope?.fund_kind&&r.source.source_scope.fund_kind!=='unknown'&&r.source.source_scope.fund_kind!==v.fund_kind))
+  return {state:'conflict',reason:'source_fund_conflicts_with_original'};
+ const expected={pension_employee:'pension',pension_employer:'pension',severance:'severance',combined_employer_funds:'combined'};
+ return v.fund_kind===expected[v.component_kind]?null:{state:'conflict',reason:'source_fund_incompatible'};
 }
 export function sourceStructureGroupDisjoint(s:DocumentReviewSourceStructure){
  if(s.kind!=='deduction_group'||s.entry.subject.kind!=='deduction_group')return false;
@@ -105,8 +116,13 @@ export function validateReviewSourceStructure(input:DocumentReviewCalculationInp
 }
 export function reviewSourceStructureBlockers(input:DocumentReviewCalculationInput){
  const s=input.source_structure;if(!s)return [];
+ // Null means no usable affirmative reading; the authenticated answer journal
+ // separately distinguishes unanswered, unknown and unreadable decisions.
  const missing=sourceStructureEntries(s).filter(e=>!e.reading).map(e=>({dependency_id:`structure.${canonicalSha256(e.subject).slice(0,24)}`,state:'missing',reason:'source_structure_reading_required'}));
- if(s.kind==='source_relationship'&&s.entry.reading&&!sourceRelationshipUsable(s))missing.push({dependency_id:'structure.relationship',state:'unknown',reason:'source_relationship_or_fund_not_compatible'});
+ if(s.kind==='source_relationship'&&s.entry.reading&&!sourceRelationshipUsable(s)){
+  const precise=s.blocker_policy===SOURCE_STRUCTURE_BLOCKER_POLICY?preciseRelationshipBlocker(s):null;
+  missing.push({dependency_id:'structure.relationship',...(precise??{state:'unknown',reason:'source_relationship_or_fund_not_compatible'})});
+ }
  if(s.kind==='balance_movement'){
   const units=new Set(input.operands.filter(o=>o.state==='observed').map(o=>o.quantity_unit));
   if(units.size>1)missing.push({dependency_id:'balance.unit',state:'conflict',reason:'balance_movement_units_differ'});

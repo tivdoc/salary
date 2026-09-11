@@ -68,7 +68,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //168 patches only that put body's locked QA check; no additional declaration.
 //169 redeclares the current-source predicate, worker opener and protected source
 // lookup. Their OIDs/ACLs are retained; the new scope helper is security invoker.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 356;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 357;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

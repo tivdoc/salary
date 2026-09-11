@@ -105,7 +105,8 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     ...(target.schema_version==='document-row-cell-confirmation-v1'?{row_context:{group_id:canonicalSha256({case_id:target.case_id,product_document_id:target.product_document_id,
      version_id:target.version_id,source_sha256:target.source_sha256,month:target.month,policy_version:target.policy_version,
       extraction_result_sha256:target.extraction_result_sha256,original_component:target.original_component}),label:target.original_component.source_label,cell:target.cell}}:{}),
-    ...(target.schema_version==='document-source-transcription-v1'?{transcription_context:{kind:target.subject.kind}}:{})});
+    ...(target.schema_version==='document-source-transcription-v1'?{transcription_context:{kind:target.subject.kind}}:{}),
+    ...('structure_context'in display?{structure_context:display.structure_context}:{})});
   }
   const juneStates=identityId&&june.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_june_states',{target_case:caseId,target_identity:identityId}):[];
   const transcriptions=rows.filter(row=>row.code.startsWith('document_transcription:'));
@@ -127,7 +128,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   // Two bounded protected lookups per case, only when both question families
   // can overlap. No artifact, stale artifact or no exact match means no hiding.
   if(identityId&&(reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
-   ||[...displays.values()].some(display=>display.row_context||display.transcription_context||display.field.startsWith('source_scope.')||REVIEW_DEFERRABLE_SCALAR_FIELDS.some(field=>field===display.field)))
+   ||[...displays.values()].some(display=>display.row_context||display.transcription_context||display.structure_context||display.field.startsWith('source_scope.')||REVIEW_DEFERRABLE_SCALAR_FIELDS.some(field=>field===display.field)))
    &&fieldTargets.some(t=>bound.some(r=>r.id===t.request_id&&(r.answered_at===null||reviewStates.some(s=>s.source_current)))&&fields.some(f=>f.request_id===t.request_id&&f.source_current))){
    const summaries=await privateDocumentReviewReports(caseId,identityId,store);
    const summary=summaries.filter(r=>r.current).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
@@ -143,7 +144,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
      for(const match of reviewFieldReadingCheckLabels({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()})){
       const display=displays.get(match.field_request_id);
       // Preserve the historical scalar display contract byte for byte.
-      if(display&&(display.row_context||display.transcription_context||display.field.startsWith('source_scope.'))&&match.check_titles.length)displays.set(match.field_request_id,{...display,dependent_checks:match.check_titles});
+      if(display&&(display.row_context||display.transcription_context||display.structure_context||display.field.startsWith('source_scope.'))&&match.check_titles.length)displays.set(match.field_request_id,{...display,dependent_checks:match.check_titles});
      }
      for(const entry of reviewFieldRequestsNotRequired({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}))notRequired.add(entry.field_request_id);
      const genericRequests=reviewStates.flatMap(state=>{

@@ -1,12 +1,20 @@
 import {expect,it,vi} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {runDocumentReview,applyDocumentReviewAnswer} from '@/engine/document-review/service';
-import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection} from './review-field-coverage';
+import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection,type ExistingFieldReadingRequest} from './review-field-coverage';
 import {documentFieldTarget} from './document-field-confirmation';
 import {reviewFieldCoverageFixture,reviewRowCellCoverageFixture,reviewSourceScopeCoverageFixture,reviewSourceTranscriptionFixture,reviewUnusedFieldFixture,reviewStructurallyBlockedPensionFixture} from './review-field-coverage.fixture';
 import {documentRowCellTarget} from './document-row-cell-confirmation';
 import {documentReviewCalculationInputSchema} from '@/engine/document-review/calculations';
-import {parseReviewCompletionInput} from '@/engine/document-review/completions';
+import {parseReviewCompletionInput,generateReviewCompletions} from '@/engine/document-review/completions';
+import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
+import {reviewInputFromPayslips,PAYSLIP_SOURCE_STRUCTURE_POLICY} from '@/engine/document-review/payslip-adapter';
+import {sourceStructureEntries} from '@/engine/document-review/source-structure-evidence';
+import {sourceStructureSelector} from '@/engine/extraction/source-structure-resolution';
+import {documentSourceStructureTarget,documentSourceStructureTargetSchema,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from './document-source-structure';
+import {documentSourceTranscriptionTarget,documentSourceTranscriptionTargetSchema} from './document-source-transcription';
 vi.mock('server-only',()=>({}));
 const nowMs=Date.parse('2026-09-11T00:00:00Z');
 it.each(['unknown','unreadable']as const)('links the duplicate numeric request to a saved %s reading without claiming confirmation',action=>{
@@ -303,4 +311,108 @@ it('links an answered numeric declaration using its preserved original source, w
  const review=runDocumentReview(applied.input,'answered-declaration');
  expect(reviewRequestsCoveredByFieldReadings({review,fieldRequests:[f.fieldRequest],nowMs})).toHaveLength(1);
  expect(review.checks[0].calculation.state).toBe('blocked');
+});
+
+/** Synthetic counterpart of the v3 report: role witnesses replace old gaps,
+ * while numeric/source decisions remain separate and the report stays blocked. */
+function structureProjectionFixture(){
+ const fixture=buildSyntheticCaseFixture({fixture_id:'synthetic-current-structure-projection',mode:'real'}),d=fixture.stored.documents[0],template=fixture.stored.extractions[0];
+ if(!d.document_period?.end_date)throw new Error('Synthetic structure fixture requires a complete period');
+ const period={from:d.document_period.start_date,to:d.document_period.end_date},ids={base:randomUUID(),employee:randomUUID(),vacation:randomUUID(),row:randomUUID()};
+ const source={document_id:d.document_id,page:1,text_fragment:'Synthetic current source block',source_scope:{period_kind:'current',fund_kind:'unknown',column_label:'current'}};
+ const field=(field:string,candidate_id:string,raw_value:string,normalized_value:unknown)=>({candidate_id,field,raw_value,normalized_value,confidence:.94,source,extraction_method:'fixture',warning_flags:[]});
+ const machine=normalizedPayslipExtractionSchema.parse({...template,document_quality_confidence:1,
+  fields:[...template.fields.filter(f=>['salary_period','salary_type'].includes(f.field)),
+   field('pension_base',ids.base,'2000.00',{currency:'ILS',minor_units:200000}),field('pension_employee_contribution',ids.employee,'100.00',{currency:'ILS',minor_units:10000}),
+   ...([['gross_salary','2000.00',200000],['net_salary','1900.00',190000],['total_deductions','100.00',10000]]as const).map(([name,raw,minor_units])=>({...field(name,randomUUID(),raw,{currency:'ILS',minor_units}),confidence:1}))]
+   .map(f=>({...f,source})),
+  additional_components:[{component_id:ids.row,source_label:'Synthetic deduction A',normalized_label:'deduction',semantic_kind:'deduction',
+   quantity_raw:null,rate_raw:null,percentage_raw:null,amount_raw:'100.00',quantity:null,rate:null,percentage:null,amount:{currency:'ILS',minor_units:10000},confidence:.94,source,extraction_method:'fixture',warning_flags:[],normalization_warnings:[]}]});
+ const first=normalizedPayslipExtractionSchema.parse({...machine,fields:[...machine.fields,field('vacation_balance',ids.vacation,'9.00',null)]});
+ const result={final_extraction:machine,first_pass:{normalized_extraction:first}},checkpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:d.case_id,product_document_id:randomUUID(),version_id:d.document_id,
+  input_sha256:d.content_sha256,expected_month:'2025-01',period_mismatch:false,result_sha256:canonicalSha256(result),run:{result}};
+ const readings:NonNullable<typeof machine.customer_source_structures>=[];
+ const build=()=>reviewInputFromPayslips({case_id:d.case_id,period,review_policy:PAYSLIP_SOURCE_STRUCTURE_POLICY,
+  purchased_scope:{order_id:randomUUID(),receipt_sha256:'a'.repeat(64),origin:'saved_order',topics:['minimum_wage','pension','vacation']},
+  snapshot:{...fixture.stored,documents:[d],extractions:[{...machine,...(readings.length?{customer_source_structures:readings,source_reading_context:{checkpoint_result_sha256:checkpoint.result_sha256,first_pass:first}}:{})}]},
+  retained_unresolved_fields:[{case_id:d.case_id,document_id:d.document_id,source_sha256:d.content_sha256,checkpoint_result_sha256:checkpoint.result_sha256,checkpoint_result:result,final_extraction_sha256:canonicalSha256(machine),first_pass:first}]});
+ const input=build(),review=runDocumentReview(input,'synthetic-v3-projection');
+ const request=(target:ExistingFieldReadingRequest['target']):ExistingFieldReadingRequest=>({request_id:randomUUID(),code:`document_field:${target.target_sha256}`,target,source_current:true,answered_at:null,expires_at:'2099-01-01T00:00:00Z'});
+ const scalar=(name:string)=>request(documentFieldTarget({checkpoint,policyVersion:'synthetic-projection',candidateId:machine.fields.find(f=>f.field===name)!.candidate_id}));
+ const structures=review.checks.flatMap(c=>c.calculation.input.source_structure?sourceStructureEntries(c.calculation.input.source_structure):[])
+  .map(e=>request(documentSourceStructureTarget({checkpoint,policyVersion:'synthetic-projection',selector:sourceStructureSelector(e.subject)})));
+ const unit=request(documentSourceTranscriptionTarget({checkpoint,policyVersion:'synthetic-projection',subject:{kind:'balance_unit',candidateId:ids.vacation}}));
+ const generic=(fact_key:string,answer_kind:'text'|'number'='text')=>{
+  const planner=parseReviewCompletionInput(input.completion_input),target=generateReviewCompletions({...planner,needs:[{fact_key,kind:'factual',reason:'unknown',required_evidence_kind:'observed_reading',
+   question:'Synthetic prior source question',answer_kind,source_pins:[planner.documents[0].pin],dependent_check_ids:[fact_key],general_question:false}]}).customer_requests[0].target;
+  return {request_id:randomUUID(),code:`document_review:${target.target_sha256}`,target,source_current:true,answered_at:null,expires_at:'2099-01-01T00:00:00Z'};
+ };
+ const relation=(relationship:'same_base'|'different_base'='same_base')=>{
+  const target=documentSourceStructureTarget({checkpoint,policyVersion:'synthetic-projection',selector:{kind:'source_relationship',componentKind:'pension_employee',contribution:{kind:'field',id:ids.employee},base:{kind:'field',id:ids.base}}});
+  const decision=resolveDocumentSourceStructureVerification({target,currentCheckpoint:checkpoint,policyVersion:'synthetic-projection',caseId:d.case_id,month:'2025-01',requestId:randomUUID(),answerRevision:1,identityId:randomUUID(),answeredAt:'2025-02-02T00:00:00Z',
+   answer:{schema_version:'document-field-answer-v3',action:relationship==='same_base'?'confirm':'correct',structured_value:{kind:'source_relationship',relationship,component_kind:'pension_employee',fund_kind:'pension',fund_label:'Synthetic fund',source_kind:'labelled_section',basis:{page:1,locator:'section A',text:'Explicit source relation'}}}});
+  const materialized=materializeDocumentSourceStructureVerification(decision,canonicalSha256(machine));if(!materialized)throw Error('SYNTHETIC_RELATION_REQUIRED');readings.push(materialized.reading);
+ };
+ return {input,review,build,structures,unit,scalar,generic,relation,checkpoint,ids};
+}
+it.each(['salary_type','pension_base','pension_employee_contribution'])('projects v3 %s against exact role witnesses without legacy relationship gaps',field=>{
+ const f=structureProjectionFixture(),request=f.scalar(field),before=canonicalSha256(f.review);
+ expect(f.review.checks.some(c=>c.calculation.input.source_structure?.kind==='balance_movement')).toBe(true);
+ expect(f.review.coverage_gaps.some(g=>g.check_id.endsWith('.relationship'))).toBe(false);
+ expect(reviewFieldRequestsNotRequired({review:f.review,fieldRequests:[request,...f.structures],nowMs})).toContainEqual({field_request_id:request.request_id,reason:'no_current_check_dependency'});
+ expect(canonicalSha256(f.review)).toBe(before);
+});
+it('keeps pension numeric readings active after a compatible identified relationship; no number is approved by the relation',()=>{
+ const f=structureProjectionFixture(),request=f.scalar('pension_base');f.relation();const review=runDocumentReview(f.build(),'synthetic-compatible-relation');
+ const ratio=review.checks.find(c=>c.calculation.input.source_structure?.kind==='source_relationship')!;
+ expect(ratio.calculation.input.operation).toMatchObject({same_period_and_base:true});expect(ratio.calculation.state).toBe('blocked');
+ expect(reviewFieldRequestsNotRequired({review,fieldRequests:[request],nowMs})).toEqual([]);
+});
+it('keeps the different-base conflict visible while deferring numbers that cannot resolve it',()=>{
+ const f=structureProjectionFixture(),request=f.scalar('pension_base');f.relation('different_base');const review=runDocumentReview(f.build(),'synthetic-different-source-base');
+ const ratio=review.checks.find(c=>c.calculation.input.source_structure?.kind==='source_relationship')!;
+ expect(ratio.calculation.input.operation).toMatchObject({same_period_and_base:false});expect(ratio.calculation.state).toBe('blocked');
+ expect(reviewFieldRequestsNotRequired({review,fieldRequests:[request],nowMs})).toContainEqual({field_request_id:request.request_id,reason:'no_current_check_dependency'});
+});
+it('retains a separate viable pension operand even when another source relationship is missing',()=>{
+ const f=structureProjectionFixture(),input=structuredClone(f.input),request=f.scalar('pension_base');
+ const ratio=input.checks.find(c=>c.topic==='pension')!,calculation=documentReviewCalculationInputSchema.parse(ratio.calculation),{source_structure:_source,...ordinary}=calculation;void _source;
+ input.checks.push({...ratio,check_id:'independent.pension.ratio',calculation:{...ordinary,check_id:'independent.pension.ratio',operation:{...ordinary.operation,same_period_and_base:true}}});
+ expect(reviewFieldRequestsNotRequired({review:runDocumentReview(input,'independent-numeric-use'),fieldRequests:[request,...f.structures],nowMs})).toEqual([]);
+});
+it.each(['balance','group','relationship']as const)('replaces only the historical generic %s source role with its current structured action',kind=>{
+ const f=structureProjectionFixture(),key=kind==='balance'?'document.0.balance.vacation_balance.unit':kind==='group'?'document.0.deductions.grouping':'document.0.ratio.pension_employee_contribution.relationship';
+ const old=f.generic(key),before=canonicalSha256(old);
+ const result=reviewHistoricalRequestProjection({review:f.review,fieldRequests:f.structures,reviewRequests:[old],nowMs});
+ expect(result).toHaveLength(1);expect(result[0]).toMatchObject({request_id:old.request_id,state:'not_required'});
+ expect(f.structures.some(r=>r.request_id===result[0].field_request_id)).toBe(true);expect(canonicalSha256(old)).toBe(before);
+});
+it.each(['complete','unknown_cell','missing_cell','stale_cell','expired_cell','wrong_checkpoint','wrong_anchor','foreign_source','wrong_period','independent_unit_need']as const)('replaces the old balance-unit question only with the same complete five-role action set: %s',change=>{
+ const f=structureProjectionFixture(),old=f.generic('document.0.balance.vacation_balance.unit'),input=structuredClone(f.input);
+ let fields=f.structures;const index=fields.findIndex(r=>'proposed_value'in r.target&&r.target.subject.kind==='balance_movement'&&r.target.subject.cell==='opening'),r=fields[index];
+ if(change==='missing_cell')fields=fields.filter((_,i)=>i!==index);
+ if(change==='stale_cell'||change==='expired_cell'||change==='unknown_cell')fields=fields.map((row,i)=>i!==index?row:{...row,...(change==='stale_cell'?{source_current:false}:change==='expired_cell'?{expires_at:'2020-01-01T00:00:00Z'}:{answered_at:'2025-02-01T00:00:00Z',answer_text:JSON.stringify({schema_version:'document-field-answer-v3',action:'unknown'})})});
+ if(['wrong_checkpoint','wrong_anchor','foreign_source','wrong_period'].includes(change)){
+  if(!('proposed_value'in r.target)||r.target.subject.kind!=='balance_movement')throw Error('SYNTHETIC_BALANCE_TARGET');
+  const {target_sha256:_hash,...body}=r.target;void _hash;
+  const changed={...body,...(change==='wrong_checkpoint'?{extraction_result_sha256:'e'.repeat(64)}:change==='foreign_source'?{source_sha256:'e'.repeat(64)}:change==='wrong_period'?{month:'2025-02'}:
+   {subject:{...body.subject,anchor:{...r.target.subject.anchor,sha256:'e'.repeat(64)}}})};
+  const target=documentSourceStructureTargetSchema.parse({...changed,target_sha256:canonicalSha256(changed)});fields=fields.map((row,i)=>i!==index?row:{...row,target,code:`document_field:${target.target_sha256}`});
+ }
+ if(change==='independent_unit_need'){
+  const planner=parseReviewCompletionInput(input.completion_input),check=input.checks.find(c=>c.topic==='vacation')!;
+  input.completion_input={...planner,needs:[...planner.needs,{fact_key:old.target.fact_key,kind:'factual',reason:'unknown',required_evidence_kind:'observed_reading',question:'Independent source unit',answer_kind:'text',source_pins:old.target.source_pins,dependent_check_ids:[check.check_id],general_question:false}]};
+ }
+ const review=runDocumentReview(input,'synthetic-balance-replacement'),expected=change==='complete'||change==='unknown_cell';
+ expect(reviewHistoricalRequestProjection({review,fieldRequests:fields,reviewRequests:[old],nowMs})).toHaveLength(expected?1:0);
+ expect(reviewFieldRequestsNotRequired({review,fieldRequests:[f.unit,...fields],nowMs}).some(r=>r.field_request_id===f.unit.request_id)).toBe(expected);
+ expect(review.checks.find(c=>c.topic==='vacation')!.calculation.state).toBe('blocked');
+});
+it.each(['month','checkpoint']as const)('does not defer an old unit target with mismatched %s even if marked source-current',kind=>{
+ const f=structureProjectionFixture();if(f.unit.target.schema_version!=='document-source-transcription-v1')throw Error('SYNTHETIC_UNIT_TARGET');
+ const {target_sha256:_hash,...body}=f.unit.target;void _hash;
+ const changed={...body,...(kind==='month'?{month:'2025-02'}:{extraction_result_sha256:'e'.repeat(64)})};
+ const target=documentSourceTranscriptionTargetSchema.parse({...changed,target_sha256:canonicalSha256(changed)});
+ const request={...f.unit,target,code:`document_field:${target.target_sha256}`};
+ expect(reviewFieldRequestsNotRequired({review:f.review,fieldRequests:[request,...f.structures],nowMs}).some(row=>row.field_request_id===request.request_id)).toBe(false);
 });

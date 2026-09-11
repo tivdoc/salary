@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {documentReviewSourceStructureSchema,validateReviewSourceStructure,reviewSourceStructureBlockers,sourceStructureEntries,balanceStructureGroupSha256} from './source-structure-evidence.ts';
+import {SOURCE_STRUCTURE_BLOCKER_POLICY,documentReviewSourceStructureSchema,validateReviewSourceStructure,reviewSourceStructureBlockers,sourceStructureEntries,balanceStructureGroupSha256} from './source-structure-evidence.ts';
 import {canonicalSha256, deepFreeze} from '../rule-runtime/canonical.ts';
 import {createRuleSpecPackage, executeRuleSpec, ruleSpecPackageSchema, type RuleSpecDraft, type RuleSpecInputValue} from '../legal-operations/rulespec.ts';
 
@@ -176,7 +176,7 @@ function blockers(input:DocumentReviewCalculationInput):Blocker[]{
   if(!op.inventory_complete)result.push({dependency_id:'inventory.complete',state:'missing',reason:'subtotal_inventory_incomplete'});
   if(!op.disjoint_components)result.push({dependency_id:'inventory.disjoint',state:'conflict',reason:'overlapping_components_may_double_count'});
  }
- if(op.kind==='observed_ratio'&&!op.same_period_and_base)result.push({dependency_id:'ratio.base',state:'unknown',reason:'ratio_period_or_base_unresolved'});
+ if(op.kind==='observed_ratio'&&!op.same_period_and_base&&input.source_structure?.blocker_policy!==SOURCE_STRUCTURE_BLOCKER_POLICY)result.push({dependency_id:'ratio.base',state:'unknown',reason:'ratio_period_or_base_unresolved'});
  if(op.kind==='candidate_rule'){
   if(input.period.from<op.rule.effective_period.from||(op.rule.effective_period.to!==null&&input.period.to>op.rule.effective_period.to))result.push({dependency_id:'rule.period',state:'stale',reason:'rule_does_not_cover_calculation_period'});
   for(const required of op.required_decision_ids){

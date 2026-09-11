@@ -135,7 +135,10 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  if(canonical)await canonical.persist(input.context,bundle.analysis_run_id);
  if(regular)await regular.persist(input.context,bundle.analysis_run_id);
  if(review){
-  if(bundle.document_review?.completions.customer_requests.length)await openSavedReviewRequests(input.context,job,bundle.analysis_run_id,baseSnapshot);
+  // Source-structure needs are exact document_field targets. They can exist
+  // after all generic factual questions were answered, so both projections
+  // must run even when the generic completion list is empty.
+  await openSavedReviewRequests(input.context,job,bundle.analysis_run_id,baseSnapshot);
   await assessSavedReviewUploads(input.context,job,bundle.analysis_run_id);
  }
  return completed;

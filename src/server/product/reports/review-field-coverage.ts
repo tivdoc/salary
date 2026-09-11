@@ -6,6 +6,7 @@ import {mappedRowCellCandidate,normalizeDocumentRowCellValue,normalizeDocumentSc
 import {normalizePayslipFieldValue,normalizeMoney,normalizeDecimal,normalizePercentage} from '@/engine/extraction/normalization';
 import {replayDocumentReview} from '@/engine/document-review/service';
 import {documentReviewCalculationInputSchema,type DocumentReviewOperand} from '@/engine/document-review/calculations';
+import {sourceStructureEntries,type DocumentReviewSourceStructure} from '@/engine/document-review/source-structure-evidence';
 import {parseDocumentReviewSourceLocator,deferredDocumentReviewRowPriceOperands} from '@/engine/document-review/source-dependencies';
 import {parseReviewCompletionInput,reviewCompletionTargetSchema,type ReviewCompletionTarget} from '@/engine/document-review/completions';
 import {documentReadingTargetSchema,type DocumentReadingTarget} from './document-field-confirmation';
@@ -14,6 +15,55 @@ import {parseDocumentFieldAnswerV3} from './document-source-structure';
 
 export type ExistingFieldReadingRequest=Readonly<{request_id:string;code:string;target:DocumentReadingTarget;source_current:boolean;answered_at:string|null;answer_text?:string|null;expires_at:string;expired_at?:string|null}>;
 export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'}|{transcription_kind:'balance_unit';candidate_id:string})>;
+type ReplayedReview=ReturnType<typeof replayDocumentReview>;
+type ReviewCalculation=ReplayedReview['checks'][number]['calculation']['input'];
+/** replayDocumentReview already validates each witness and its operand binding.
+ * Also bind it to this report's document/period before using it for presentation. */
+function boundStructure(calculation:ReviewCalculation,review:ReplayedReview){
+ const s=calculation.source_structure;
+ if(!s||calculation.case_id!==review.case_id||canonicalSha256(calculation.period)!==canonicalSha256(review.period))return null;
+ const document=review.documents.find(d=>d.case_id===review.case_id&&d.document_id===s.document_id&&d.version_id===s.version_id
+  &&d.file_sha256===s.file_sha256&&d.reading_sha256===s.reading_sha256);
+ return document&&document.kind==='payslip'?s:null;
+}
+function isBoundBalanceOperand(operand:DocumentReviewOperand,s:DocumentReviewSourceStructure|null){
+ if(s?.kind!=='balance_movement')return false;
+ const binding=s.cell_bindings.find(b=>b.operand_id===operand.id),entry=s.entries.find(e=>e.subject.kind==='balance_movement'&&e.subject.cell===binding?.cell);
+ if(!entry)return false;
+ try{return canonicalSha256(JSON.parse(operand.source.locator))===canonicalSha256({schema_version:'document-review-source-structure-locator-v1',subject_sha256:canonicalSha256(entry.subject)})
+  &&operand.observation_id===`structure:${canonicalSha256(entry.subject)}`;}catch{return false;}
+}
+/** A replacement action must exist for every role; an unknown answer keeps its
+ * own correction/history route. No reading or satisfaction is inferred here. */
+function structureReplacement(s:DocumentReviewSourceStructure,review:ReplayedReview,requests:readonly ExistingFieldReadingRequest[],nowMs:number){
+ const matches=sourceStructureEntries(s).map(entry=>requests.filter(request=>{
+  if(!request.source_current||request.expired_at||Date.parse(request.expires_at)<=nowMs)return false;
+  const target=documentReadingTargetSchema.parse(request.target);
+  return 'proposed_value'in target&&request.code===`document_field:${target.target_sha256}`&&target.case_id===review.case_id
+   &&target.version_id===s.version_id&&target.source_sha256===s.file_sha256&&target.month===review.period.from.slice(0,7)&&target.month===review.period.to.slice(0,7)
+   &&target.extraction_result_sha256===s.checkpoint_result_sha256&&target.normalized_extraction_sha256===s.machine_extraction_sha256
+   &&target.first_pass_extraction_sha256===s.first_pass_sha256&&canonicalSha256(target.subject)===canonicalSha256(entry.subject)
+   &&(!entry.reading||entry.reading.request_id===request.request_id&&entry.reading.target_sha256===target.target_sha256);
+ }));
+ if(matches.some(rows=>rows.length!==1))return null;
+ const selected=s.kind==='balance_movement'?s.entries.findIndex(e=>e.subject.kind==='balance_movement'&&e.subject.cell==='closing'):0;
+ return matches[selected]?.[0]??null;
+}
+function balanceUnitReplacement(review:ReplayedReview,requests:readonly ExistingFieldReadingRequest[],nowMs:number,input:{version_id:string;source_sha256:string;fact_key?:string;candidate_id?:string;candidate_sha256?:string;first_pass_sha256?:string;checkpoint_result_sha256?:string}){
+ const matches=review.checks.flatMap(check=>{
+  const s=boundStructure(check.calculation.input,review);if(s?.kind!=='balance_movement'||s.version_id!==input.version_id||s.file_sha256!==input.source_sha256)return [];
+  const subject=s.entries[0].subject;if(subject.kind!=='balance_movement')return [];
+  const index=review.documents.findIndex(d=>d.document_id===s.document_id&&d.version_id===s.version_id);
+  if(check.check_id!==`document.${index}.balance.${subject.balance_kind}`||check.topic!==(subject.balance_kind==='vacation'?'vacation':'sick_leave')
+   ||input.fact_key!==undefined&&input.fact_key!==`document.${index}.balance.${subject.balance_kind}_balance.unit`
+   ||input.candidate_id!==undefined&&subject.anchor.id!==input.candidate_id||input.candidate_sha256!==undefined&&subject.anchor.sha256!==input.candidate_sha256
+   ||input.first_pass_sha256!==undefined&&s.first_pass_sha256!==input.first_pass_sha256
+   ||input.checkpoint_result_sha256!==undefined&&s.checkpoint_result_sha256!==input.checkpoint_result_sha256)return [];
+  const document=review.documents[index];if(document.period?.from!==review.period.from||document.period.to!==review.period.to)return [];
+  const replacement=structureReplacement(s,review,requests,nowMs);return replacement?[replacement]:[];
+ });
+ return matches.length===1?matches[0]:null;
+}
 function unresolvedAnswer(text:string|null|undefined){try{const answer=typeof text==='string'&&JSON.parse(text).schema_version==='document-field-answer-v3'?parseDocumentFieldAnswerV3(text):parseDocumentFieldAnswer(text);return answer.action==='unknown'||answer.action==='unreadable';}catch{return false;}}
 const rowLocator=z.object({component_ids:z.array(z.uuid()).min(1),candidate_id:z.uuid().nullable(),raw:z.string().nullable(),original_raw:z.string().nullable(),
  source:candidateSourceSchema,semantic_kind:normalizedAdditionalComponentSchema.shape.semantic_kind}).passthrough();
@@ -163,6 +213,14 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
   if(!request.source_current||request.answered_at!==null||request.expired_at||Date.parse(request.expires_at)<=input.nowMs)return [];
   const target=documentReadingTargetSchema.parse(request.target);
   if(target.case_id!==review.case_id||request.code!==`document_field:${target.target_sha256}`)throw Error('REVIEW_FIELD_COVERAGE_TARGET');
+  if(target.schema_version==='document-source-transcription-v1'&&target.subject.kind==='balance_unit'){
+   if(target.month!==review.period.from.slice(0,7)||target.month!==review.period.to.slice(0,7))return [];
+   const old=target.subject.original_candidate;
+   if(planner.needs.some(n=>n.fact_key.endsWith(`.balance.${old.field}.unit`)&&n.source_pins.some(p=>p.version_id===target.version_id&&p.source_sha256===target.source_sha256)))return [];
+   const replacement=balanceUnitReplacement(review,input.fieldRequests,input.nowMs,{version_id:target.version_id,source_sha256:target.source_sha256,
+    candidate_id:old.candidate_id,candidate_sha256:canonicalSha256(old),first_pass_sha256:target.subject.first_pass_extraction_sha256,checkpoint_result_sha256:target.extraction_result_sha256});
+   return replacement?[{field_request_id:request.request_id,reason:'no_current_check_dependency' as const}]:[];
+  }
   const rowPrice=target.schema_version==='document-row-cell-confirmation-v1'&&(target.cell==='rate'||target.cell==='percentage');
   if(!(target.schema_version==='document-field-confirmation-v1'&&eligible.has(target.candidate.field)||rowPrice)
    ||review.period.from.slice(0,7)!==target.month||review.period.to.slice(0,7)!==target.month)return [];
@@ -209,13 +267,16 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
   }
   if(target.schema_version!=='document-field-confirmation-v1')return [];
   const inactiveRatios=new Set(review.checks.filter(check=>{
-   const operation=check.calculation.input.operation;
+   const operation=check.calculation.input.operation,s=boundStructure(check.calculation.input,review);
+   const witnessed=s?.kind==='source_relationship'&&s.entry.subject.kind==='source_relationship'
+    &&s.entry.subject.base.kind==='field'&&check.calculation.blockers.some(b=>['source_structure_reading_required','source_relationship_or_fund_not_compatible',
+     'source_relationship_different_base','source_fund_conflicts_with_original','source_fund_incompatible','source_fund_unknown'].includes(b.reason));
    return check.topic==='pension'&&operation.kind==='observed_ratio'&&!operation.same_period_and_base
-    &&check.calculation.state==='blocked'&&check.calculation.blockers.some(b=>b.reason==='ratio_period_or_base_unresolved')
+    &&check.calculation.state==='blocked'&&(witnessed||check.calculation.blockers.some(b=>b.reason==='ratio_period_or_base_unresolved'))
     &&check.calculation.input.operands.every(o=>sameDocumentSource(o.source))
     &&!needs.some(n=>n.dependent_check_ids.includes(check.check_id))
-    &&review.coverage_gaps.some(g=>g.check_id===`${check.check_id}.relationship`&&g.kind==='missing_fact'&&g.topic==='pension'
-     &&g.source_pins?.length===1&&g.source_pins.every(matchesPin));
+    &&(witnessed||review.coverage_gaps.some(g=>g.check_id===`${check.check_id}.relationship`&&g.kind==='missing_fact'&&g.topic==='pension'
+     &&g.source_pins?.length===1&&g.source_pins.every(matchesPin)));
   }).map(check=>check.check_id));
   const summaryCheck=review.checks.find(check=>check.check_id===`document.${sourceIndex}.gross.net`&&check.topic==='minimum_wage');
   const summaryOperation=summaryCheck?.calculation.input.operation;
@@ -252,6 +313,13 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
     if(operand.source.version_id!==document.version_id)continue;
     if(operand.source.file_sha256!==document.file_sha256)return [];
     documentOperands++;
+    const structure=boundStructure(check.calculation.input,review);
+    if(isBoundBalanceOperand(operand,structure)){
+     // A new balance locator is known, but it must not hide a separate reading
+     // of that same anchor unless the complete replacement action set exists.
+     if(structure?.kind==='balance_movement'&&structure.entries.some(e=>e.subject.kind==='balance_movement'&&e.subject.anchor.id===target.candidate.candidate_id))return [];
+     continue;
+    }
     const locator=parseDocumentReviewSourceLocator(operand.source.locator);if(!locator)return [];
     if('field'in locator&&(locator.field===target.candidate.field||locator.candidate_ids.includes(target.candidate.candidate_id))){
      if(!inactiveRatios.has(check.check_id)||!pensionRatioFields.has(target.candidate.field)||locator.candidate_ids.length!==1
@@ -320,8 +388,26 @@ export function reviewHistoricalRequestProjection(input:{review:unknown;reviewRe
   if(!request.source_current||request.answered_at!==null||Date.parse(request.expires_at)<=input.nowMs)return [];
   const target=reviewCompletionTargetSchema.parse(request.target);
   if(request.code!==`document_review:${target.target_sha256}`||target.case_id!==review.case_id)throw Error('REVIEW_FIELD_COVERAGE_TARGET');
-  if(target.kind!=='factual'||target.answer_kind!=='number'||target.required_evidence_kind!=='observed_reading'||target.source_pins.length!==1
+  if(target.kind!=='factual'||target.required_evidence_kind!=='observed_reading'||target.source_pins.length!==1
    ||target.period.from!==review.period.from||target.period.to!==review.period.to)return [];
+  if(target.answer_kind==='text'){
+   const pin=target.source_pins[0],planner=parseReviewCompletionInput(review.input.completion_input);
+   // Only retired generated source-role questions. An independent current
+   // need of the same fact remains visible even if a structure also exists.
+   if(planner.needs.some(n=>n.fact_key===target.fact_key))return [];
+   const balance=balanceUnitReplacement(review,input.fieldRequests,input.nowMs,{version_id:pin.version_id,source_sha256:pin.source_sha256,fact_key:target.fact_key});
+   const replacements=balance?[balance]:review.checks.flatMap(check=>{
+    const s=boundStructure(check.calculation.input,review);if(!s||s.kind==='balance_movement'||s.version_id!==pin.version_id||s.file_sha256!==pin.source_sha256)return [];
+    const index=review.documents.findIndex(d=>d.document_id===s.document_id&&d.version_id===s.version_id),document=review.documents[index];
+    if(document.period?.from!==review.period.from||document.period.to!==review.period.to)return [];
+    const matches=s.kind==='source_relationship'?target.fact_key===`${check.check_id}.relationship`&&check.topic==='pension'
+     :target.fact_key===`document.${index}.deductions.grouping`&&check.check_id===`document.${index}.deductions.${s.group}`&&check.topic==='minimum_wage';
+    const replacement=matches?structureReplacement(s,review,input.fieldRequests,input.nowMs):null;return replacement?[replacement]:[];
+   });
+   const unique=[...new Map(replacements.map(r=>[r.request_id,r])).values()];
+   return unique.length===1?[{request_id:request.request_id,field_request_id:unique[0].request_id,state:'not_required' as const}]:[];
+  }
+  if(target.answer_kind!=='number')return [];
   const operands=review.checks.flatMap(check=>check.calculation.input.operands.filter(o=>target.fact_key===`${check.check_id}.${o.id}`));
   if(operands.length!==1)return [];
   const operand=operands[0],pin=target.source_pins[0];
