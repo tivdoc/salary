@@ -1,0 +1,319 @@
+{
+  "at": "2026-09-11T02:04:05.204Z",
+  "migration": "supabase/migrations/20260911015947_managed_notification_product_mirror.sql",
+  "sha256": "50cd04c95e3a4f395deb64b8829eef08ef64aa9a19b4e982ba6843e9fd82b319",
+  "productionChanged": false,
+  "recordAclBefore": [
+    {
+      "role": "anon",
+      "can_record": false
+    },
+    {
+      "role": "authenticated",
+      "can_record": false
+    },
+    {
+      "role": "service_role",
+      "can_record": true
+    },
+    {
+      "role": "tivdoc_web_runtime",
+      "can_record": true
+    },
+    {
+      "role": "tivdoc_worker_runtime",
+      "can_record": true
+    },
+    {
+      "role": "tivdoc_operations_runtime",
+      "can_record": false
+    }
+  ],
+  "before": [
+    {
+      "delivery_id": "04054c56e9571ec320792e46579d45502aa356ed9cd4742cdcba7ef1a4e8e204",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "493b7bec-d3c0-4e4f-a563-14bc84f5f28d",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "12b7d2708293d8f65a23fc025abbf61aea3815020b81c74af85b9c1da0dee4ee",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "29f14938-8af2-40b4-a485-9c6de60f2e7e",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "1baa9d5c482834e999c3d661ecee8e056aa522c122bb548ef20ca57a5fdd52b3",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "331bebad-c180-4531-a71c-43108dcfa1ed",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "22b00bafff9c482a7ec0ee7c0e7a140965f23c842334790f37efe85adb627d9c",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "1d3d6465-20ed-40d7-a6e7-d8c5db9a054a",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "2bf981b0d120e024e65e6d2e53372f6a2d9d9c518789c2419c253202ada00096",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "9adbc12a-fabd-4549-936b-f04a921ab679",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "3e10e74a474892cf88b1241670a6d0c04ad4415354404d880e72b5c16047d811",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "c8b0b01c-7817-44c5-a36f-d8b1846cc554",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "6323c249919832fa72cab688eba58194f34866b0991b14b2829854b95a8c6fd6",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "77e007fd-90fa-4b2b-ae87-dd6a9a6ad3a0",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "6dcabd1c22f4fde97d0f1d5f0b5ed39dd625faf3caee7348ff690f10d49ea87e",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "60d11291-6c1a-4ee2-abba-054811f677d9",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "75098fc0c26c6361e3fd3e5b2183e2d0b8432cefc6e27454694ab25466b3219b",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "39c5ecf3-2445-424e-b140-6df49a3a1699",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "77f2d9a8c1db897f726aef619930801d223decbcd24984f5efc3888b6a24b774",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "360c9606-f70c-405d-a7fc-744483665b26",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "a831a28c5272d8ef8a2e7757371ef612c77ff1cec855089c664b29aacc8d164c",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "6b0ae209-cccc-4037-b103-1b2427b9f580",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "ae139ec332d6d61916ae94f3c81f83162510e6d6783e1027af0b98b7ce0c582b",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "ccc6aba7-7434-4c74-9b0f-465cbe1138f8",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "bcd8fa1a6575009defb0401d2bc43d5fa1e4b063d562536c86d269d1d9195f39",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "dffed6d5-5949-483b-bcae-d93b54f1d585",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "d8ca1edd961cbb2eedbed432eaa60b993fd2b22b933347f4d73d65204cae1f92",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "c16f0fdc-821f-4d5d-afca-bd876b70f916",
+      "delivered_at": null,
+      "last_error": null
+    },
+    {
+      "delivery_id": "fa94623f6c7d13ff4440460ba967a43fcda1b14372c8179cd6a9adaa7f31267a",
+      "state": "sent",
+      "attempts": 1,
+      "provider_message_id": "5706f396-be4e-407a-8569-7cc0fe8b9309",
+      "delivered_at": null,
+      "last_error": null
+    }
+  ],
+  "mirrors": [
+    {
+      "id": "47aca7c4-307b-4f81-ad7a-508bf86f0f46",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "493b7bec-d3c0-4e4f-a563-14bc84f5f28d",
+      "delivery_id": "04054c56e9571ec320792e46579d45502aa356ed9cd4742cdcba7ef1a4e8e204",
+      "payload_sha256": "04054c56e9571ec320792e46579d45502aa356ed9cd4742cdcba7ef1a4e8e204"
+    },
+    {
+      "id": "1d9d179b-b6cf-4ed8-930f-7bc3d5e80531",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "29f14938-8af2-40b4-a485-9c6de60f2e7e",
+      "delivery_id": "12b7d2708293d8f65a23fc025abbf61aea3815020b81c74af85b9c1da0dee4ee",
+      "payload_sha256": "12b7d2708293d8f65a23fc025abbf61aea3815020b81c74af85b9c1da0dee4ee"
+    },
+    {
+      "id": "e3cea0f3-9a26-4e74-a52b-9324f870e330",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "331bebad-c180-4531-a71c-43108dcfa1ed",
+      "delivery_id": "1baa9d5c482834e999c3d661ecee8e056aa522c122bb548ef20ca57a5fdd52b3",
+      "payload_sha256": "1baa9d5c482834e999c3d661ecee8e056aa522c122bb548ef20ca57a5fdd52b3"
+    },
+    {
+      "id": "e3514239-4c09-40e3-9ee5-4ca7acb90913",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "1d3d6465-20ed-40d7-a6e7-d8c5db9a054a",
+      "delivery_id": "22b00bafff9c482a7ec0ee7c0e7a140965f23c842334790f37efe85adb627d9c",
+      "payload_sha256": "22b00bafff9c482a7ec0ee7c0e7a140965f23c842334790f37efe85adb627d9c"
+    },
+    {
+      "id": "269a424e-860d-427c-886f-b94b317abaf8",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "9adbc12a-fabd-4549-936b-f04a921ab679",
+      "delivery_id": "2bf981b0d120e024e65e6d2e53372f6a2d9d9c518789c2419c253202ada00096",
+      "payload_sha256": "2bf981b0d120e024e65e6d2e53372f6a2d9d9c518789c2419c253202ada00096"
+    },
+    {
+      "id": "f80688f4-39af-4ab1-95ad-924f92bb96ee",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "c8b0b01c-7817-44c5-a36f-d8b1846cc554",
+      "delivery_id": "3e10e74a474892cf88b1241670a6d0c04ad4415354404d880e72b5c16047d811",
+      "payload_sha256": "3e10e74a474892cf88b1241670a6d0c04ad4415354404d880e72b5c16047d811"
+    },
+    {
+      "id": "e6e06148-ca7e-40d8-ba87-ff59898bc77d",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "77e007fd-90fa-4b2b-ae87-dd6a9a6ad3a0",
+      "delivery_id": "6323c249919832fa72cab688eba58194f34866b0991b14b2829854b95a8c6fd6",
+      "payload_sha256": "6323c249919832fa72cab688eba58194f34866b0991b14b2829854b95a8c6fd6"
+    },
+    {
+      "id": "c7a00942-069b-43df-b345-bce118747be4",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "60d11291-6c1a-4ee2-abba-054811f677d9",
+      "delivery_id": "6dcabd1c22f4fde97d0f1d5f0b5ed39dd625faf3caee7348ff690f10d49ea87e",
+      "payload_sha256": "6dcabd1c22f4fde97d0f1d5f0b5ed39dd625faf3caee7348ff690f10d49ea87e"
+    },
+    {
+      "id": "3213f850-54b9-4906-9584-d50adb56d364",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "39c5ecf3-2445-424e-b140-6df49a3a1699",
+      "delivery_id": "75098fc0c26c6361e3fd3e5b2183e2d0b8432cefc6e27454694ab25466b3219b",
+      "payload_sha256": "75098fc0c26c6361e3fd3e5b2183e2d0b8432cefc6e27454694ab25466b3219b"
+    },
+    {
+      "id": "860221a1-3dff-4c62-a735-6a5f32aba021",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "360c9606-f70c-405d-a7fc-744483665b26",
+      "delivery_id": "77f2d9a8c1db897f726aef619930801d223decbcd24984f5efc3888b6a24b774",
+      "payload_sha256": "77f2d9a8c1db897f726aef619930801d223decbcd24984f5efc3888b6a24b774"
+    },
+    {
+      "id": "c053ea79-51ab-47f4-9c25-a2aa97738e3a",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "6b0ae209-cccc-4037-b103-1b2427b9f580",
+      "delivery_id": "a831a28c5272d8ef8a2e7757371ef612c77ff1cec855089c664b29aacc8d164c",
+      "payload_sha256": "a831a28c5272d8ef8a2e7757371ef612c77ff1cec855089c664b29aacc8d164c"
+    },
+    {
+      "id": "34a1274f-10ce-4166-87ae-f01e2e9aaf79",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "ccc6aba7-7434-4c74-9b0f-465cbe1138f8",
+      "delivery_id": "ae139ec332d6d61916ae94f3c81f83162510e6d6783e1027af0b98b7ce0c582b",
+      "payload_sha256": "ae139ec332d6d61916ae94f3c81f83162510e6d6783e1027af0b98b7ce0c582b"
+    },
+    {
+      "id": "3289d468-4e4d-4714-9aed-4fb21b5b7c5d",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "dffed6d5-5949-483b-bcae-d93b54f1d585",
+      "delivery_id": "bcd8fa1a6575009defb0401d2bc43d5fa1e4b063d562536c86d269d1d9195f39",
+      "payload_sha256": "bcd8fa1a6575009defb0401d2bc43d5fa1e4b063d562536c86d269d1d9195f39"
+    },
+    {
+      "id": "7708f94d-9469-46a5-ab9c-88df486310c2",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "c16f0fdc-821f-4d5d-afca-bd876b70f916",
+      "delivery_id": "d8ca1edd961cbb2eedbed432eaa60b993fd2b22b933347f4d73d65204cae1f92",
+      "payload_sha256": "d8ca1edd961cbb2eedbed432eaa60b993fd2b22b933347f4d73d65204cae1f92"
+    },
+    {
+      "id": "0d654062-220c-4ec5-83bc-f2f1b4aa4d89",
+      "state": "sent",
+      "delivered_at": null,
+      "provider_message_id": "5706f396-be4e-407a-8569-7cc0fe8b9309",
+      "delivery_id": "fa94623f6c7d13ff4440460ba967a43fcda1b14372c8179cd6a9adaa7f31267a",
+      "payload_sha256": "fa94623f6c7d13ff4440460ba967a43fcda1b14372c8179cd6a9adaa7f31267a"
+    }
+  ],
+  "idempotentBackfill": "PASS",
+  "outboxUnchanged": "PASS",
+  "acl": [
+    {
+      "role": "anon",
+      "can_mirror": false,
+      "can_record": false
+    },
+    {
+      "role": "authenticated",
+      "can_mirror": false,
+      "can_record": false
+    },
+    {
+      "role": "service_role",
+      "can_mirror": false,
+      "can_record": true
+    },
+    {
+      "role": "tivdoc_web_runtime",
+      "can_mirror": false,
+      "can_record": true
+    },
+    {
+      "role": "tivdoc_worker_runtime",
+      "can_mirror": false,
+      "can_record": true
+    },
+    {
+      "role": "tivdoc_operations_runtime",
+      "can_mirror": false,
+      "can_record": false
+    }
+  ],
+  "foreignCapability": "REFUSED",
+  "rollbackPreflight": "PASS",
+  "applied": true,
+  "foreignSyntheticSource": [
+    {
+      "public_id": "TV-01BD7821",
+      "version_id": "078c14b7-f35b-48da-823e-2ef9413c0e87"
+    }
+  ]
+}

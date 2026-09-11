@@ -1,0 +1,251 @@
+{
+  "schemaVersion": "tivdoc-sol-scheduled-labels-v1",
+  "proofId": "7840ea3d-3cb4-495d-85d2-07b3bc03a642",
+  "gitSha": "506548866dc6543a4406135e146af7ff61cb8971",
+  "checkedAt": "2026-09-11T01:33:42.327Z",
+  "state": "LABELS_PASS",
+  "phase": "complete",
+  "source": {
+    "id": "he-clear",
+    "path": "docs/release-evidence/live-provider-june2026/he-clear-june-2026.pdf",
+    "sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+    "sizeBytes": 28991,
+    "pageCount": 1
+  },
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "promptVersion": "payslip-extraction-openai-v2-first-r7",
+  "resolutionPolicy": "payslip-v2.1-non-degrading-resolution-4",
+  "focusedLabelOracle": [
+    {
+      "semanticKind": "overtime_125",
+      "sourceLabel": "שעות נוספות",
+      "quantity": "10",
+      "rateMinor": 4425,
+      "amountMinor": 44250,
+      "page": 1
+    },
+    {
+      "semanticKind": "overtime_150",
+      "sourceLabel": "שעות נוספות",
+      "quantity": "2",
+      "rateMinor": 5310,
+      "amountMinor": 10620,
+      "page": 1
+    }
+  ],
+  "labels": [
+    {
+      "expected": {
+        "semanticKind": "overtime_125",
+        "sourceLabel": "שעות נוספות",
+        "quantity": "10",
+        "rateMinor": 4425,
+        "amountMinor": 44250,
+        "page": 1
+      },
+      "actual": [
+        {
+          "componentId": "c343a446-2605-4d09-94e7-1aec0e0c7260",
+          "sourceLabel": "שעות נוספות",
+          "quantity": "10",
+          "rate": {
+            "currency": "ILS",
+            "minor_units": 4425
+          },
+          "amount": {
+            "currency": "ILS",
+            "minor_units": 44250
+          },
+          "source": {
+            "document_id": "615f7e0a-7419-4894-bbe9-46317bb237b7",
+            "page": 1,
+            "text_fragment": "שעות נוספות"
+          }
+        }
+      ]
+    },
+    {
+      "expected": {
+        "semanticKind": "overtime_150",
+        "sourceLabel": "שעות נוספות",
+        "quantity": "2",
+        "rateMinor": 5310,
+        "amountMinor": 10620,
+        "page": 1
+      },
+      "actual": [
+        {
+          "componentId": "29d3a044-5025-493c-9d3f-2977847d6c0e",
+          "sourceLabel": "שעות נוספות",
+          "quantity": "2",
+          "rate": {
+            "currency": "ILS",
+            "minor_units": 5310
+          },
+          "amount": {
+            "currency": "ILS",
+            "minor_units": 10620
+          },
+          "source": {
+            "document_id": "615f7e0a-7419-4894-bbe9-46317bb237b7",
+            "page": 1,
+            "text_fragment": "שעות נוספות"
+          }
+        }
+      ]
+    }
+  ],
+  "fullOracleComparison": {
+    "passed": true,
+    "failures": [],
+    "observedFieldCount": 21,
+    "observedComponentCount": 9,
+    "financialResultGenerated": false,
+    "legalReadinessProved": false
+  },
+  "receipt": {
+    "schema_version": "tivdoc-openai-provider-receipt-v1",
+    "origin": "openai_live",
+    "case_id": "3684ec55-8c15-4796-b3d3-4dee4cc65d04",
+    "analysis_run_id": "50900c1f-7128-4397-a2e4-6cce2d3a152c",
+    "document_id": "615f7e0a-7419-4894-bbe9-46317bb237b7",
+    "extraction_id": "4aa75be9-b8e5-49de-a340-77f4c7e2f499",
+    "source_sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+    "source_size_bytes": 28991,
+    "source_mime_type": "application/pdf",
+    "source_page_count": 1,
+    "request_sha256": "5fa43b2b47e88464e5753607e6ed5be7e9f3b3a91f1d86f2bf5bcf9a46f71df1",
+    "raw_extraction_sha256": "16a3bc0c9f6493bea63f52d9b531e2d96ec7ce9b39c1d861c18166f94e40df04",
+    "pass_kind": "first_pass",
+    "requested_model": "gpt-5.6-sol",
+    "actual_model": "gpt-5.6-sol",
+    "extractor_version": "2.1",
+    "prompt_version": "payslip-extraction-openai-v2-first-r7",
+    "provider_response_id": "resp_020dcecccd87c9ad016aa35a53fe4087d2a58461edc02780dc",
+    "provider_request_id": "req_8d9e86d65b074d6d9fdeb3b7c58df421",
+    "provider_attempted": true,
+    "status": "completed",
+    "error_code": null,
+    "http_status": null,
+    "duration_ms": 35140,
+    "token_usage": {
+      "input_tokens": 4805,
+      "output_tokens": 2524,
+      "total_tokens": 7329
+    },
+    "cost": {
+      "status": "not_returned_by_provider",
+      "amount_usd": null
+    },
+    "created_at": "2026-09-11T01:33:42.238Z",
+    "receipt_sha256": "8cde821f0846278201417997595a7d1211e49b4eaf91e0458ad60bb712ca43d2"
+  },
+  "resultSha256": "a0d7c5fc608b6fc02b08e5f348d50fdbb43b00241cc60115f88efe0134689826",
+  "immutable": [
+    {
+      "file": "docs/release-evidence/live-provider-june2026/he-clear-june-2026.pdf",
+      "sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b"
+    },
+    {
+      "file": "docs/release-evidence/live-provider-june2026/independent-input-oracles.json",
+      "sha256": "936bf1cbe08b7f6a03567ee397e1bfb229cd5af3c850e8c216fbdac19ef078f3"
+    },
+    {
+      "file": "docs/release-evidence/sol-comparison-20260910/sol-clear-structured.json",
+      "sha256": "f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937"
+    },
+    {
+      "file": "C:\\Users\\smart\\Documents\\Codex\\2026-09-07\\high-https-github-com-tivdoc-salary\\work\\salary\\output\\release-completion\\sol-scheduled-20260911\\labels-r6-aa21e32-ae109f30-02ca-49d5-abb1-ba6bbbfb0c31\\proof.json",
+      "sha256": "17165b28365b40c8e8ac881909d8a3486a7d5f4d0e56dfd59b689393b7222714"
+    },
+    {
+      "file": "C:\\Users\\smart\\Documents\\Codex\\2026-09-07\\high-https-github-com-tivdoc-salary\\work\\salary\\output\\release-completion\\sol-scheduled-20260911\\labels-r6-aa21e32-ae109f30-02ca-49d5-abb1-ba6bbbfb0c31\\structured.json",
+      "sha256": "9a33def45acce45ca47dacc7c14b74dc14c54361b3b0b26d891c1cdfa5e41905"
+    }
+  ],
+  "budgetBefore": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 2,
+    "generations": 1,
+    "countRequests": 1,
+    "reservedUpperBoundUsd": 0.712,
+    "unknownOutcomes": 0,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 0
+  },
+  "budgetAfter": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 4,
+    "generations": 2,
+    "countRequests": 2,
+    "reservedUpperBoundUsd": 1.424,
+    "unknownOutcomes": 0,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 1
+  },
+  "providerInvocationEntered": true,
+  "providerOutcome": "receipt_recorded",
+  "sdkRetries": 0,
+  "maxGenerations": 1,
+  "maxContentRequestsForThisTest": 2,
+  "automaticRecovery": false,
+  "oracleSentToProvider": false,
+  "realProviderReceiptRequired": true,
+  "syntheticDocument": true,
+  "databaseChanged": false,
+  "financialResultGenerated": false,
+  "legalActivation": false,
+  "humanReview": false,
+  "reviewedRetry": {
+    "attempt": 2,
+    "reason": "literal-label-cell-transcription-r7",
+    "priorProof": "C:\\Users\\smart\\Documents\\Codex\\2026-09-07\\high-https-github-com-tivdoc-salary\\work\\salary\\output\\release-completion\\sol-scheduled-20260911\\labels-r6-aa21e32-ae109f30-02ca-49d5-abb1-ba6bbbfb0c31\\proof.json",
+    "priorReceiptSha256": "a08b4657df59640b0bc1ad7d3edcdb1f97daf7f3a8a75506f6e3ed962399c1f0"
+  },
+  "scope": "Only the two previously mismatched printed overtime labels. Full oracle failures remain separately visible; labels passing does not establish global extraction quality."
+}

@@ -28,8 +28,9 @@ it.each(['request_required','engineering_report_ready','report_ready'])('renders
  const message=decryptNotification(enqueued[0].args.target_payload,String(enqueued[0].args.target_delivery),secret);
  expect(message.to).toBe(contact);expect(message.body).toContain('כניסה לתיק דרך האימייל המאומת');
  if(event_kind==='request_required'){expect(message.template).toBe('document_request');expect(message.body).toContain(`/thread?requestId=${requestId}`);}
- else{expect(message.template).toBe('report_ready');expect(message.body).toContain(`report=${reportId}`);}
+ else{expect(message.template).toBe('report_ready');expect(message.body).toContain(`report=${reportId}`);expect(message.subject).toContain('DEV');expect(message.body).toContain('סינתטי');expect(message.body).toContain('אינו חוב מאומת');}
  if(event_kind==='engineering_report_ready'){expect(message.body).toContain('engineering=1');expect(message.body).toContain('אינו חוב מאומת');expect(message.subject).toContain('DEV');}
+ if(event_kind==='report_ready'){expect(message.body).toContain('אינו אישור אנושי');expect(message.body).toContain('אינו מעיד שהכלל פעיל בשירות ללקוחות');expect(message.body).not.toContain('engineering=1');}
  expect(JSON.stringify(enqueued[0].args.target_payload)).not.toContain(contact);expect(s.sent).toHaveLength(0);
 });
 it('records provider acceptance separately from delivery and finishes the exact acquired fence',async()=>{

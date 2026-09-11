@@ -30,8 +30,8 @@ export async function runAutomaticNotificationPass(input:{db:CaseAccessDb;capabi
   const request=event.event_kind==='request_required',engineering=event.event_kind==='engineering_report_ready';
   const link=request?`${url.origin}/case/${event.public_id}/thread?requestId=${event.request_id}`:`${url.origin}/case/${event.public_id}/reports?${engineering?'engineering=1&':''}report=${event.report_id}`;
   const message:NotificationMessage={template:request?'document_request':'report_ready',channel:'email',to:event.contact,
-   subject:request?`Tivdoc — נדרשת השלמה בתיק ${event.public_id}`:engineering?`Tivdoc DEV — דוח ניסוי הנדסי בתיק ${event.public_id}`:`Tivdoc — הדוח לתיק ${event.public_id} זמין`,
-   body:[request?'הבדיקה ממתינה להשלמה ממוקדת. השאלה ומסמך המקור מופיעים בתיק.':engineering?'נוצר דוח ניסוי הנדסי ממסמך סינתטי. הכלל אינו פעיל בשירות וזה אינו חוב מאומת של מעסיק.':'נוצר דוח AI עם המקורות וההסברים של הניתוח.',`לצפייה מאובטחת: ${link}`,'הקישור דורש כניסה לתיק דרך האימייל המאומת.'].join('\n')};
+   subject:request?`Tivdoc — נדרשת השלמה בתיק ${event.public_id}`:engineering?`Tivdoc DEV — דוח ניסוי הנדסי בתיק ${event.public_id}`:`Tivdoc DEV — דוח בדיקה סינתטי בתיק ${event.public_id} זמין`,
+   body:[request?'הבדיקה ממתינה להשלמה ממוקדת. השאלה ומסמך המקור מופיעים בתיק.':engineering?'נוצר דוח ניסוי הנדסי ממסמך סינתטי. הכלל אינו פעיל בשירות וזה אינו חוב מאומת של מעסיק.':'נוצר דוח בדיקה בסביבת DEV מתיק וממסמך סינתטיים. הדוח נועד לאימות המסלול בלבד; הוא אינו אישור אנושי, אינו חוב מאומת של מעסיק ואינו מעיד שהכלל פעיל בשירות ללקוחות.',`לצפייה מאובטחת: ${link}`,'הקישור דורש כניסה לתיק דרך האימייל המאומת.'].join('\n')};
   const id=payloadDigest(message);
   const receipt=await input.db.rpc<{value:string|null}>('case_notification_managed_enqueue',{target_capability:input.capability,target_event:event.event_key,target_delivery:id,target_payload:encryptNotification(message,id,input.secret),target_expires:new Date(Date.now()+5*3600000).toISOString(),expected_case:event.case_id,expected_identity:event.identity_id,expected_recipient:contact.hash});
   if(receipt[0]?.value)queued++;

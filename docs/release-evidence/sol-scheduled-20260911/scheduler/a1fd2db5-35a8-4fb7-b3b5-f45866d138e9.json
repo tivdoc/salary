@@ -1,0 +1,66 @@
+{
+  "schema_version": "managed-dev-supervisor-receipt-v1",
+  "control_id": "abf1d07f-ea93-421b-8be0-4fec78bb13cc",
+  "run_id": "a1fd2db5-35a8-4fb7-b3b5-f45866d138e9",
+  "pid": 14912,
+  "child_pid": 4356,
+  "started_at": "2026-09-11T01:58:55.971Z",
+  "finished_at": "2026-09-11T01:59:16.615Z",
+  "build_sha": "506548866dc6543a4406135e146af7ff61cb8971",
+  "bundle_sha256": "7eb7d2d215a7485262789c4711aa1d413ec116733494d420ebfdbe84ee5555bb",
+  "tick": 28,
+  "state": "finished",
+  "stop_reason": null,
+  "exit_code": 0,
+  "stdout_sha256": "4c2918f1f51f186add38bd88e7b3f4511657817f71b484d12945d4cbe5b94e22",
+  "stdout_bytes": 1665,
+  "stderr_bytes": 0,
+  "summary": {
+    "state": "finished",
+    "code": null,
+    "buildSha": "506548866dc6543a4406135e146af7ff61cb8971",
+    "items": [
+      {
+        "caseId": "33f41e2f-56b5-420c-8ee2-310201813d35",
+        "state": "succeeded",
+        "lastError": null,
+        "jobId": "saved_01be68b3728625cfd14d463ef54f38c5d31fd4d74ac5fab16e1b7abc5facf121"
+      }
+    ],
+    "budget": {
+      "contentRequests": 6,
+      "generations": 3,
+      "countRequests": 3,
+      "reservedUpperBoundUsd": 2.136,
+      "unknownOutcomes": 0
+    },
+    "notifications": {
+      "state": "finished",
+      "code": null,
+      "queued": 0,
+      "deliveryConfirmed": false,
+      "attempts": []
+    },
+    "health": {
+      "state": "available",
+      "code": null,
+      "data": {
+        "checked_at": "2026-09-11T01:59:17.207Z",
+        "last_activity_at": "2026-09-11T01:59:16.150Z",
+        "capability_expires_at": "2026-09-11T04:10:00.000Z",
+        "daily_claims": 6,
+        "total_claims": 6,
+        "daily_limit": 20,
+        "total_limit": 20,
+        "cases": [
+          {
+            "case_id": "33f41e2f-56b5-420c-8ee2-310201813d35",
+            "pending_requests": 0,
+            "authority_state": "missing",
+            "authority_expires_at": null
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "at": "2026-09-11T02:13:26.071Z",
+  "state": "PASS",
+  "error": null,
+  "gitSha": "506548866dc6543a4406135e146af7ff61cb8971",
+  "checks": [
+    "applied_enqueue_has_fresh_and_replay_mirror_hooks_private_helper_not_runtime_callable",
+    "both_templates_new_mirror_and_replay_one_row_exact_case_capability_and_identity_required",
+    "synthetic_early_and_late_webhook_replay_delivers_once_no_provider_called",
+    "provider_acceptance_alone_remains_sent_no_delivery_claim",
+    "actual_worker_existing_enqueue_replay_and_foreign_snapshots_refused_no_state_or_outbox_change"
+  ],
+  "rollbackVerified": true,
+  "schemaMigration": "20260911015947_managed_notification_product_mirror.sql",
+  "schemaSha256": "50cd04c95e3a4f395deb64b8829eef08ef64aa9a19b4e982ba6843e9fd82b319",
+  "providerCalls": 0,
+  "syntheticWebhookEventsOnly": true,
+  "ownerDeliveryClaimed": false,
+  "freshManagedEnqueueNewlyProven": false,
+  "productionChanged": false
+}

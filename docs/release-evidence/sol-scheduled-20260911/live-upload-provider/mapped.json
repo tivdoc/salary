@@ -1,0 +1,258 @@
+{
+  "extraction": {
+    "extraction_id": "319c2dc1-cd95-45a3-a3c3-df25c8acfb30",
+    "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+    "status": "completed",
+    "detected_document_type": "payslip",
+    "document_quality_confidence": 0.96,
+    "quality_metrics": {
+      "page_count": 1,
+      "text_coverage": null,
+      "rotation_degrees": 0,
+      "source_resolution_dpi": null
+    },
+    "fields": [
+      {
+        "candidate_id": "b493da73-9532-4950-a744-4f8133b82285",
+        "field": "document_type",
+        "raw_value": "payslip",
+        "confidence": 0.96,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "document type"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "f127f3b5-26d2-4c94-8cd5-993735a044f2",
+        "field": "salary_period",
+        "raw_value": "06/2026",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "חודש שכר: 06/2026"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "567063da-74d1-4685-a207-e10914189dea",
+        "field": "employment_start_date",
+        "raw_value": "15/01/2025",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "תחילת עבודה: 15/01/2025"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "e804c721-9ab3-4521-b110-2f3cc733da3e",
+        "field": "regular_hours",
+        "raw_value": "100",
+        "confidence": 0.84,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "שעות רגילות לפי רישום נוכחות: 100"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": [
+          "conflicting_values"
+        ]
+      },
+      {
+        "candidate_id": "846adac4-8cf5-42e0-8fa9-f0287b438b76",
+        "field": "regular_hours",
+        "raw_value": "120",
+        "confidence": 0.84,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "שעות רגילות לפי רישום נוסף: 120"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": [
+          "conflicting_values"
+        ]
+      },
+      {
+        "candidate_id": "89b91751-b63f-4481-ae3d-2a6827066c48",
+        "field": "salary_type",
+        "raw_value": "שעתי",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "סוג שכר: שעתי"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "601f9eb4-801a-447c-bf86-e0e611b1597d",
+        "field": "base_monthly_salary",
+        "raw_value": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "שכר יסוד שעתי: 3300.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "76678dd9-0351-4037-9b95-ce82d499544a",
+        "field": "gross_salary",
+        "raw_value": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "ברוטו: 3300.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "fd3049bb-80a5-4e9e-8f94-ba44947af78e",
+        "field": "total_deductions",
+        "raw_value": "0.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "סך ניכויים: 0.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "3faea8f0-a2ad-4201-acb7-94b09305606c",
+        "field": "net_salary",
+        "raw_value": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "נטו לתשלום: 3300.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      }
+    ],
+    "additional_components": [
+      {
+        "component_id": "29114c04-38d7-4243-bd05-c7764078b2f9",
+        "source_label": "שכר יסוד שעתי",
+        "normalized_label": "hourly_base",
+        "semantic_kind": "hourly_base",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "3300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+          "page": 1,
+          "text_fragment": "שכר יסוד שעתי"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      }
+    ],
+    "sensitive_metadata": [],
+    "earnings_components_complete": true,
+    "warnings": [
+      "conflicting_values"
+    ],
+    "provider": {
+      "provider_id": "openai",
+      "extractor_version": "2.1",
+      "model_version": "gpt-5.6-sol"
+    },
+    "operation": {
+      "duration_ms": 21467,
+      "provider_response_id": "resp_025d4d26ebd1d477016aa35bf7159087d286d56b932e904066",
+      "token_usage": {
+        "input_tokens": 4717,
+        "output_tokens": 1740,
+        "total_tokens": 6457
+      }
+    },
+    "extracted_at": "2026-09-11T01:40:27.465Z",
+    "error_code": null
+  },
+  "salary_type_assessment": {
+    "documented": {
+      "value": "hourly",
+      "raw_value": "שעתי",
+      "confidence": 0.94,
+      "candidate_id": "89b91751-b63f-4481-ae3d-2a6827066c48"
+    },
+    "inferred": {
+      "value": "hourly",
+      "confidence": 0.94,
+      "basis": [
+        "regular_hours",
+        "payroll_structure"
+      ],
+      "warning_flags": [
+        "inferred_not_documented"
+      ]
+    }
+  },
+  "critical_context": {
+    "required_fields": [
+      "salary_period"
+    ],
+    "hourly_analysis_implied": true,
+    "pension_section_visible": false,
+    "totals_section_visible": true
+  },
+  "pension_section_visible": false,
+  "totals_section_visible": true,
+  "provider_receipt": {
+    "schema_version": "tivdoc-openai-provider-receipt-v1",
+    "origin": "openai_live",
+    "case_id": "33f41e2f-56b5-420c-8ee2-310201813d35",
+    "analysis_run_id": "9a7bb098-99cf-4b23-8ea0-1192bbfaff9a",
+    "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+    "extraction_id": "319c2dc1-cd95-45a3-a3c3-df25c8acfb30",
+    "source_sha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+    "source_size_bytes": 771501,
+    "source_mime_type": "application/pdf",
+    "source_page_count": 1,
+    "request_sha256": "db65f9bc7765f9913a55d2629f3b6e97f40af8614dd4a17d09b43e16c852fec0",
+    "raw_extraction_sha256": "9f4663de672527d4d8f420b9b7cccc67c862ba6836634825d24c4a2173e4bc7a",
+    "pass_kind": "first_pass",
+    "requested_model": "gpt-5.6-sol",
+    "actual_model": "gpt-5.6-sol",
+    "extractor_version": "2.1",
+    "prompt_version": "payslip-extraction-openai-v2-first-r7",
+    "provider_response_id": "resp_025d4d26ebd1d477016aa35bf7159087d286d56b932e904066",
+    "provider_request_id": "req_37c98941fa0c455bada2b1c09a776066",
+    "provider_attempted": true,
+    "status": "completed",
+    "error_code": null,
+    "http_status": null,
+    "duration_ms": 21467,
+    "token_usage": {
+      "input_tokens": 4717,
+      "output_tokens": 1740,
+      "total_tokens": 6457
+    },
+    "cost": {
+      "status": "not_returned_by_provider",
+      "amount_usd": null
+    },
+    "created_at": "2026-09-11T01:40:27.465Z",
+    "receipt_sha256": "4f991a5ded9fab8b384bd5faa8ad519e138f79b3fd4b4806b8e5f4af4d15aab8"
+  }
+}

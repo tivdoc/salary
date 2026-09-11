@@ -1,0 +1,357 @@
+{
+  "schema_version": "tivdoc-openai-structured-diagnostic-v1",
+  "origin": "openai_live",
+  "case_id": "4901cfab-a32d-4693-82bf-291e055b6bb8",
+  "analysis_run_id": "475f89e2-17fa-40ac-9aa3-489f217dccb9",
+  "document_id": "566ecb0b-a369-4871-a588-9aa843fb0807",
+  "source_sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+  "request_sha256": "f91d3ae6386fb87bca1fbd61b6adc8c27efcb2a17673381ba9c7dbb16ca93289",
+  "pass_kind": "first_pass",
+  "prompt_version": "payslip-extraction-openai-v2-first-r6",
+  "provider_response_id": "resp_088fc86af2878a77016aa3579c49f087d2bc9c5910125fee3b",
+  "provider_request_id": "req_349c07d2890243cf83b36d47230b429c",
+  "structured_output": {
+    "detected_document_type": "payslip",
+    "document_quality": "high",
+    "page_count": 1,
+    "rotation_degrees": 0,
+    "source_resolution_dpi": null,
+    "salary_type": {
+      "documented_value": "hourly",
+      "documented_raw_value": "שעתי",
+      "documented_confidence": "high",
+      "documented_evidence": {
+        "page": 1,
+        "region": "header",
+        "source_label": "סוג שכר"
+      },
+      "inferred_value": "hourly",
+      "inferred_confidence": "high",
+      "inference_basis": [
+        "hourly_rate",
+        "regular_hours",
+        "payroll_structure"
+      ],
+      "warnings": []
+    },
+    "generic_fields": [
+      {
+        "field": "salary_period",
+        "candidates": [
+          {
+            "raw_value": "01/06/2026 - 30/06/2026",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "header",
+              "source_label": "תקופת שכר"
+            },
+            "warnings": []
+          }
+        ]
+      },
+      {
+        "field": "employment_start_date",
+        "candidates": [
+          {
+            "raw_value": "15/01/2025",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "header",
+              "source_label": "תחילת עבודה"
+            },
+            "warnings": []
+          }
+        ]
+      },
+      {
+        "field": "regular_hours",
+        "candidates": [
+          {
+            "raw_value": "100",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "header",
+              "source_label": "שעות רגילות בסיכום נוכחות"
+            },
+            "warnings": []
+          }
+        ]
+      }
+    ],
+    "payroll_rows": [
+      {
+        "source_label": "שכר יסוד שעתי",
+        "semantic_kind": "hourly_base",
+        "quantity_raw": "100",
+        "rate_raw": "35.40",
+        "percentage_raw": null,
+        "amount_raw": "3,540.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": "שכר יסוד שעתי"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "שעות נוספות 125%",
+        "semantic_kind": "overtime_125",
+        "quantity_raw": "10",
+        "rate_raw": "44.25",
+        "percentage_raw": "125%",
+        "amount_raw": "442.50",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": "שעות נוספות 125%"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "שעות נוספות 150%",
+        "semantic_kind": "overtime_150",
+        "quantity_raw": "2",
+        "rate_raw": "53.10",
+        "percentage_raw": "150%",
+        "amount_raw": "106.20",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": "שעות נוספות 150%"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "החזר נסיעות",
+        "semantic_kind": "travel",
+        "quantity_raw": "20",
+        "rate_raw": "11.00",
+        "percentage_raw": null,
+        "amount_raw": "220.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": "החזר נסיעות"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "בונוס חד פעמי",
+        "semantic_kind": "bonus",
+        "quantity_raw": "-",
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "300.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "earnings",
+          "source_label": "בונוס חד פעמי"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "פנסיה עובד",
+        "semantic_kind": "deduction",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "212.40",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "pension",
+          "source_label": "פנסיה עובד"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "ביטוח לאומי",
+        "semantic_kind": "deduction",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "80.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "pension",
+          "source_label": "ביטוח לאומי"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "ביטוח בריאות",
+        "semantic_kind": "deduction",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "120.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "pension",
+          "source_label": "ביטוח בריאות"
+        },
+        "warnings": []
+      },
+      {
+        "source_label": "מס הכנסה",
+        "semantic_kind": "deduction",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "0.00",
+        "confidence": "high",
+        "evidence": {
+          "page": 1,
+          "region": "pension",
+          "source_label": "מס הכנסה"
+        },
+        "warnings": []
+      }
+    ],
+    "totals": {
+      "visible": true,
+      "gross_candidates": [
+        {
+          "raw_value": "4,608.70",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": "ברוטו לתשלום"
+          },
+          "warnings": []
+        }
+      ],
+      "deductions_candidates": [
+        {
+          "raw_value": "412.40",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": "סך ניכויי עובד"
+          },
+          "warnings": []
+        }
+      ],
+      "net_candidates": [
+        {
+          "raw_value": "4,196.30",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "totals",
+            "source_label": "נטו לתשלום"
+          },
+          "warnings": []
+        }
+      ]
+    },
+    "pension": {
+      "visible": true,
+      "base_candidates": [
+        {
+          "raw_value": "3,540.00",
+          "confidence": "high",
+          "evidence": {
+            "page": 1,
+            "region": "pension",
+            "source_label": "בסיס להפרשות"
+          },
+          "warnings": []
+        }
+      ],
+      "employee": {
+        "rate_candidates": [
+          {
+            "raw_value": "6.00%",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "pension",
+              "source_label": "עובד"
+            },
+            "warnings": []
+          }
+        ],
+        "amount_candidates": [
+          {
+            "raw_value": "212.40",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "pension",
+              "source_label": "עובד"
+            },
+            "warnings": []
+          }
+        ]
+      },
+      "employer": {
+        "rate_candidates": [
+          {
+            "raw_value": "6.50%",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "pension",
+              "source_label": "מעסיק"
+            },
+            "warnings": []
+          }
+        ],
+        "amount_candidates": [
+          {
+            "raw_value": "230.10",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "pension",
+              "source_label": "מעסיק"
+            },
+            "warnings": []
+          }
+        ]
+      },
+      "severance": {
+        "rate_candidates": [
+          {
+            "raw_value": "6.00%",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "pension",
+              "source_label": "פיצויים"
+            },
+            "warnings": []
+          }
+        ],
+        "amount_candidates": [
+          {
+            "raw_value": "212.40",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "pension",
+              "source_label": "פיצויים"
+            },
+            "warnings": []
+          }
+        ]
+      }
+    },
+    "earnings_components_complete": true,
+    "warnings": []
+  },
+  "structured_output_sha256": "442dd3a198e6bb6f090a3cdc9d3dcee8d2c169c8078b27723477420c2bdb3ae7"
+}

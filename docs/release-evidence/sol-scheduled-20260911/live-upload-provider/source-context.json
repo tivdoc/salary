@@ -1,0 +1,28 @@
+{
+  "codeRevision": "506548866dc6543a4406135e146af7ff61cb8971",
+  "request": {
+    "case_id": "33f41e2f-56b5-420c-8ee2-310201813d35",
+    "analysis_run_id": "9a7bb098-99cf-4b23-8ea0-1192bbfaff9a",
+    "extraction_id": "319c2dc1-cd95-45a3-a3c3-df25c8acfb30",
+    "document": {
+      "document_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+      "case_id": "33f41e2f-56b5-420c-8ee2-310201813d35",
+      "document_type": "payslip",
+      "original_filename": "input.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 771501,
+      "content_sha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+      "storage_path": "cases/33f41e2f-56b5-420c-8ee2-310201813d35/documents/3281dc36-3c28-47f9-a3eb-1923ff7e2c64/original.pdf",
+      "document_period": null,
+      "supersedes_document_id": null,
+      "created_at": "2026-09-11T01:39:34.213Z"
+    },
+    "declared_document_type": "payslip",
+    "requested_at": "2026-09-11T01:40:03.435Z"
+  },
+  "requestSha256": "db65f9bc7765f9913a55d2629f3b6e97f40af8614dd4a17d09b43e16c852fec0",
+  "sourceSha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "sourcePageCount": 1
+}
