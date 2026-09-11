@@ -124,7 +124,7 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
 
 export function ThreadView({ publicId, requests, renderedAt }: { publicId: string; requests: readonly StoredRequest[]; renderedAt: number }) {
   const router = useRouter();
-  const open = requests.filter((request) => request.answered_at === null && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
+  const open = requests.filter((request) => request.answered_at === null && !request.covered_by_field_request_id && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
   const expired = requests.filter((request) => request.answered_at === null && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) <= renderedAt);
   const superseded = requests.filter((request) => request.answered_at === null && request.source_current === false);
   // The initial render uses the same server instant through hydration. The DB
@@ -137,6 +137,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
   }, [requests, renderedAt, router]);
   const answered = requests.filter((request) => request.answered_at !== null);
   const fulfilled = requests.filter((request) => request.answered_at === null && documentSatisfied(request));
+  const covered = requests.filter(request=>request.answered_at===null&&request.source_current!==false&&!!request.covered_by_field_request_id&&Date.parse(request.expires_at)>renderedAt);
   const blocking = open.filter((request) => request.blocking);
 
   return (
@@ -174,6 +175,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
         </div>
       ))}
 
+      {covered.length>0?<div className="received-card"><h2>שאלות שמטופלות באימות השדה</h2><p>אין צורך להשיב על אותו תא פעמיים. אימות הקריאה אינו אישור לחישוב או לזכאות.</p>{covered.map(request=><p key={request.id} id={`request-${request.id}`}>{request.question} — <a href={`#request-${request.covered_by_field_request_id}`}>מעבר לשאלת אימות הקריאה</a></p>)}</div>:null}
       {expired.length > 0 ? <div className="received-card"><h2>שאלות שנסגרו ללא תשובה</h2>{expired.map(request => <p key={request.id}>{request.question} — הסתיים המועד להשלמה.</p>)}</div> : null}
       {superseded.length > 0 ? <div className="received-card"><h2>שאלות ממסמך קודם</h2><p>המסמך או תקופתו השתנו. השאלות נשמרות בהיסטוריה ואינן ממתינות לאישור. אם יהיה צורך בהשלמה מהמסמך העדכני, תופיע שאלה חדשה.</p>{superseded.map(request => <p key={request.id}>{request.question}</p>)}</div> : null}
 
@@ -188,6 +190,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
                 <p className="thread-answered__question">{request.question}</p>
                 {request.statement_month ? <p>תקופת התשובה: {formatRequestMonth(request.statement_month)}</p> : null}
                 <p className="thread-answered__answer">{displayAnswer(request)}</p>
+                {request.covered_by_field_request_id?<p>התשובה המספרית נשמרה כהצהרה. כדי להשתמש בה כקריאת מסמך נדרש אימות התא במקור. <a href={`#request-${request.covered_by_field_request_id}`}>מעבר לאימות השדה</a></p>:null}
                 {request.source_current === true && request.code.startsWith('document_field:') && ['הערך שונה במסמך','לא ניתן לקרוא את השדה'].includes(request.answer_text ?? '') ? <div><p>אפשר לצרף גרסה ברורה או מתוקנת של אותו מסמך. המסמך הקודם נשמר עד להשלמת ההחלפה. התשובה נשארת בהיסטוריה; המסמך החדש ייבדק בנפרד.</p><AddDocumentButton publicId={publicId} sourceRequestId={request.id} label="החלפת המסמך של השאלה" /></div> : null}
                 {(request.answer_revision ?? 1) > 1 ? <p>תשובה מתוקנת · גרסה {request.answer_revision}. התשובה המקורית נשמרה.</p> : null}
                 {request.source_current === false ? <p>התשובה נשמרה ביחס למסמך הקודם. היא אינה מאשרת נתונים מהמסמך העדכני.</p> : request.answer_kind !== "document" ? <details><summary>תיקון התשובה</summary><AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} correction onAnswered={() => router.refresh()} /></details> : null}

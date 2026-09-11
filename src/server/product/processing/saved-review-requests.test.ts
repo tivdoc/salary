@@ -1,3 +1,4 @@
+import {reviewFieldCoverageFixture} from '../reports/review-field-coverage.fixture';
 import {beforeEach,expect,it,vi} from 'vitest';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewInputSchema} from '@/engine/document-review/contracts';
@@ -114,4 +115,21 @@ it('rejects missing history revisions and a foreign journal target',async()=>{
  const foreign='66666666-6666-4666-8666-666666666666';
  const foreignPlan=generateReviewCompletions({case_id:foreign,period,documents:[],evidence:[],needs:[{fact_key:'hours.quantity',kind:'factual',reason:'missing',required_evidence_kind:'customer_declaration',question:'כמה שעות?',answer_kind:'number',source_pins:[],dependent_check_ids:['hours.check'],general_question:false}]});
  s.state.history=[{request:foreignPlan.customer_requests[0],source_current:true,answers:[{...entry,revision:1}]}];await expect(readSavedReviewAnswers(s.context,s.job)).rejects.toThrow('HISTORY_SCOPE');
+});
+
+it.each([true,false])('consolidates an exact live field request only while it is unanswered: %s',async available=>{
+ const f=reviewFieldCoverageFixture(true),review=f.review,payload={bundle:{document_review:review}},queries:PostgresStatement[]=[];
+ const job:SourceJob={schema_version:'saved-case-work-v1',case_id:review.case_id,revision:1,input_sha256:'d'.repeat(64),mode:'draft'};
+ ports.orders.mockResolvedValue([{id:review.purchased_scope.order_id,kind:'initial',from:'2025-01-01',to:'2025-01-01',topics:['working_time'],offer_sha256:review.purchased_scope.receipt_sha256}]);
+ const context:PostgresTransactionContext={transaction_id:'synthetic-coverage',client:{async query(query){queries.push(query);
+  if(query.name==='review_requests_stage')return {rows:[{payload,payload_sha256:canonicalSha256(payload)}],row_count:1};
+  if(query.name==='review_existing_field_targets')return {rows:available?[{...f.fieldRequest,checkpoint:f.checkpoint}]:[],row_count:available?1:0};
+  if(query.name==='review_request_open')return {rows:[{id:requestId}],row_count:1};throw Error('Unexpected query');
+ }}};
+ const result=await openSavedReviewRequests(context,job,review.analysis_run_id);
+ expect(queries.filter(q=>q.name==='review_existing_field_targets')).toHaveLength(1);
+ expect(result.opened_request_ids).toEqual(available?[]:[requestId]);
+ expect(queries.filter(q=>q.name==='review_request_open')).toHaveLength(available?0:1);
+ if(available)expect(result.covered_by_field_requests?.[0].field_request_id).toBe(f.fieldRequest.request_id);
+ expect(review.checks[0].calculation.state).toBe('blocked');
 });

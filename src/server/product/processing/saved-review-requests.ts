@@ -7,6 +7,8 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatch';
 import {readSavedOrders,savedOrderOrigin,savedOrderReceiptSha256,purchasedMonths} from './saved-order-scope';
 import {supportedReviewUpload} from '../documents/review-fulfillment';
+import {documentFieldTarget,documentFieldTargetSchema} from '../reports/document-field-confirmation';
+import {reviewRequestsCoveredByFieldReadings,type ExistingFieldReadingRequest} from '../reports/review-field-coverage';
 
 export const REVIEW_REQUEST_NAMESPACE='document_review:';
 export const REVIEW_UNKNOWN_ANSWER='לא יודע';
@@ -65,7 +67,30 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
  // Only upload kinds supported by the actual reserve/commit protocol can open
  // a bound request. Receiving bytes keeps it pending until source assessment.
  const unsupported=planned.filter(r=>(r.target.kind==='document'||r.target.answer_kind==='document')&&!supportedReviewUpload(r.target));
- const requests=planned.filter(r=>!unsupported.includes(r));
+ const candidates=planned.filter(r=>!unsupported.includes(r));
+ const numeric=candidates.filter(r=>r.target.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading'
+  &&review.input.answer_bindings.some(b=>b.fact_key===r.target.fact_key));
+ let covered:ReturnType<typeof reviewRequestsCoveredByFieldReadings>=[];
+ if(numeric.length){
+  const targets=await context.client.query(statement('review_existing_field_targets',
+   `select t.request_id,t.target,r.code,r.answered_at,r.expires_at,r.expired_at,c.result checkpoint
+    from private.document_field_targets t join public.case_requests r on r.id=t.request_id and r.case_id=t.case_id
+    join private.case_extraction_checkpoints c on c.case_id=t.case_id and c.version_id::text=t.target->>'version_id'
+     and c.policy_version=t.target->>'policy_version' and c.result_sha256=t.target->>'extraction_result_sha256'
+    join private.case_input_versions v on v.case_id=c.case_id and v.revision=c.revision
+    join public.documents d on d.case_id=c.case_id and d.version_id=c.version_id and d.content_sha256=c.input_sha256
+    where t.case_id=$1::uuid and c.revision=$2 and v.input_sha256=$3 and r.answered_at is null
+     and r.expired_at is null and r.expires_at>clock_timestamp()`,[job.case_id,job.revision,job.input_sha256]));
+  const fieldRequests:ExistingFieldReadingRequest[]=targets.rows.map(row=>{
+   const target=documentFieldTargetSchema.parse(row.target),current=documentFieldTarget({checkpoint:row.checkpoint,policyVersion:target.policy_version,candidateId:target.candidate.candidate_id});
+   if(target.case_id!==job.case_id||canonicalSha256(current)!==canonicalSha256(target))throw Error('REVIEW_FIELD_COVERAGE_CHECKPOINT');
+   return {request_id:z.uuid().parse(row.request_id),code:z.string().parse(row.code),target,source_current:true,
+    answered_at:row.answered_at===null?null:z.string().parse(row.answered_at),expires_at:new Date(String(row.expires_at)).toISOString(),
+    expired_at:row.expired_at==null?null:new Date(String(row.expired_at)).toISOString()};
+  });
+  covered=reviewRequestsCoveredByFieldReadings({review,fieldRequests,nowMs:Date.now()});
+ }
+ const requests=candidates.filter(request=>!covered.some(match=>match.target_sha256===request.target.target_sha256));
  // Fail before the first SQL insert if any question cannot be represented.
  for(const request of requests)savedReviewRequestQuestion(request.target);
  const opened:string[]=[];
@@ -76,7 +101,7 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
   if(saved.row_count!==1)throw Error('REVIEW_REQUEST_RECEIPT_MISSING');
   const id=z.uuid().nullable().parse(saved.rows[0]?.id);if(id!==null)opened.push(id);
  }
- return {opened_request_ids:opened,skipped_document_targets:unsupported.map(r=>({
+ return {opened_request_ids:opened,...(covered.length?{covered_by_field_requests:covered}:{}),skipped_document_targets:unsupported.map(r=>({
   target_sha256:r.target.target_sha256,reason:'unsupported_upload_document_kind' as const}))};
 }
 

@@ -8,7 +8,7 @@ const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
 export const DOCUMENT_FIELD_CONFIRMATION_ANSWERS=['כן, בדקתי במסמך והערך נכון','הערך שונה במסמך','לא ניתן לקרוא את השדה','לא יודע/ת'] as const;
 export const confirmationFieldLabels={
  salary_type:'סוג השכר',salary_period:'תקופת השכר',
- base_monthly_salary:'שכר הבסיס החודשי',hourly_rate:'השכר לשעה',gross_salary:'שכר ברוטו',net_salary:'שכר נטו',
+ base_monthly_salary:'סכום שכר הבסיס בתלוש',hourly_rate:'השכר לשעה',gross_salary:'שכר ברוטו',net_salary:'שכר נטו',
  regular_hours:'מספר השעות הרגילות',overtime_125_hours:'שעות נוספות 125%',overtime_150_hours:'שעות נוספות 150%',
  pension_base:'השכר המבוטח לפנסיה',travel_amount:'החזר הנסיעות',convalescence_amount:'דמי הבראה',
  vacation_balance:'יתרת החופשה',sick_balance:'יתרת המחלה',

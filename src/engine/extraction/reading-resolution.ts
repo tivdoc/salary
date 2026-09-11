@@ -13,7 +13,7 @@ const mappedRowFields:Partial<Record<Row['semantic_kind'],Partial<Record<MappedR
 };
 /** Scalar projection and row observation describe the SAME printed cell only
  * with this exact binding. No similarity, arithmetic fit or nearest label. */
-export function identifiedMappedRowCell(input:{original:NormalizedPayslipExtraction;effective:NormalizedPayslipExtraction;readings:ReadonlyMap<string,CustomerDocumentReading>;row:Row;cell:MappedRowCell}):NormalizedCandidateField|null {
+export function mappedRowCellCandidate(input:{fields:readonly NormalizedCandidateField[];row:Pick<Row,'semantic_kind'|'source_label'|'source'|'quantity_raw'|'rate_raw'|'amount_raw'|'percentage_raw'>;cell:MappedRowCell}):NormalizedCandidateField|null {
  const {row,cell}=input,field=mappedRowFields[row.semantic_kind]?.[cell],raw=row[`${cell}_raw`];
  if(!field||raw===null||row.source.text_fragment!==row.source_label)return null;
  const sameSource=(candidate:NormalizedCandidateField)=>candidate.source.document_id===row.source.document_id&&candidate.source.page===row.source.page
@@ -21,9 +21,15 @@ export function identifiedMappedRowCell(input:{original:NormalizedPayslipExtract
   &&canonicalSha256(candidate.source.bounding_box??null)===canonicalSha256(row.source.bounding_box??null)
   &&canonicalSha256(candidate.source.region??null)===canonicalSha256(row.source.region??null)
   &&canonicalSha256(candidate.source.source_scope??null)===canonicalSha256(row.source.source_scope??null);
- const candidates=input.original.fields.filter(c=>c.field===field&&c.raw_value===raw&&sameSource(c));
- if(candidates.length!==1||!input.readings.has(candidates[0].candidate_id))return null;
- return input.effective.fields.find(c=>c.candidate_id===candidates[0].candidate_id)??null;
+ const candidates=input.fields.filter(c=>c.field===field&&c.raw_value===raw&&sameSource(c));
+ return candidates.length===1?candidates[0]:null;
+}
+/** Matching a source cell is not permission to use its value. Identified reading
+ * remains a separate required gate, unchanged by request consolidation. */
+export function identifiedMappedRowCell(input:{original:NormalizedPayslipExtraction;effective:NormalizedPayslipExtraction;readings:ReadonlyMap<string,CustomerDocumentReading>;row:Row;cell:MappedRowCell}):NormalizedCandidateField|null {
+ const candidate=mappedRowCellCandidate({fields:input.original.fields,row:input.row,cell:input.cell});
+ if(!candidate||!input.readings.has(candidate.candidate_id))return null;
+ return input.effective.fields.find(c=>c.candidate_id===candidate.candidate_id)??null;
 }
 
 /** Effective view only: originals and their hashes remain unchanged in the

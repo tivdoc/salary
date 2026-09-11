@@ -29,3 +29,11 @@ it('does not label a replaced source fulfilled or remove its history based on a 
  const html=render({...row,source_current:false,document_upload_state:{state:'satisfied',information_satisfied:true,analysis_run_id:'old-run',reason:'target_specific_observed_source'}});
  expect(html).toContain('שאלות ממסמך קודם');expect(html).toContain(row.question);expect(html).not.toContain('השלמות שהמידע בהן נמצא');expect(html).not.toContain('צירוף המסמך לתיק');
 });
+
+it('links a covered numeric request instead of another answer form, preserving its history and the reading requirement',()=>{
+ const request={...row,answer_kind:'text' as const,question:'כמות שעות מתא המקור',covered_by_field_request_id:'33333333-3333-4333-8333-333333333333'};
+ const html=render(request);expect(html).toContain('שאלות שמטופלות באימות השדה');expect(html).toContain('#request-'+request.covered_by_field_request_id);
+ expect(html).toContain(request.question);expect(html).not.toContain('<textarea');
+ const answered=render({...request,answered_at:'2026-09-10T00:00:00Z',answer_text:'100'});
+ expect(answered).toContain('מה כבר עניתם');expect(answered).toContain('הצהרה');expect(answered).toContain('#request-'+request.covered_by_field_request_id);
+});
