@@ -1,6 +1,9 @@
 import {describe,it,expect} from 'vitest';
 import {answerCaseRequest,editCaseRequest,listCaseRequests} from './case-requests';
 import type {CaseAccessDb} from '../case-access/db';
+import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
+import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {documentFieldTarget} from './document-field-confirmation';
 
 const caseId='11111111-1111-4111-8111-111111111111',requestId='22222222-2222-4222-8222-222222222222',identityId='33333333-3333-4333-8333-333333333333';
 function setup(){
@@ -10,15 +13,24 @@ function setup(){
  const db:CaseAccessDb={provider:'fake',async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>){calls.push({fn,args});if(!(fn in responses))throw new Error('UNEXPECTED_RPC');return responses[fn] as T[];}};
  return {db,row,responses,calls};
 }
+function bindSourceReading(s:ReturnType<typeof setup>){
+ const fixture=buildSyntheticCaseFixture({fixture_id:'request-retry-source-cell',mode:'real'}),document=fixture.stored.documents[0],extraction=fixture.stored.extractions[0];
+ const candidate=extraction.fields.find(f=>f.field==='regular_hours');if(!candidate)throw Error('HOURS_FIXTURE_REQUIRED');
+ const result={final_extraction:extraction};
+ const target=documentFieldTarget({checkpoint:{schema_version:'tivdoc-saved-extraction-v1',case_id:caseId,product_document_id:identityId,version_id:document.document_id,
+  input_sha256:document.content_sha256,expected_month:'2025-01',period_mismatch:false,result_sha256:canonicalSha256(result),run:{result}},policyVersion:'retry-test-v1',candidateId:candidate.candidate_id});
+ s.row.code='document_field:'+target.target_sha256;
+ s.responses.case_request_field_reading_targets=[{request_id:requestId,target}];return target;
+}
 describe('request retry service receipts',()=>{
  it('reads exact identified current-source state while retaining historical answers',async()=>{
-  const s=setup();s.row.code='document_field:'+ 'a'.repeat(64);
+  const s=setup(),target=bindSourceReading(s);
   s.responses.case_request_field_states=[{request_id:requestId,source_current:false}];
-  expect((await listCaseRequests(caseId,s.db,identityId))[0]).toMatchObject({source_current:false,answer_text:'8'});
-  expect(s.calls.at(-1)).toEqual({fn:'case_request_field_states',args:{target_case:caseId,target_identity:identityId}});
+  expect((await listCaseRequests(caseId,s.db,identityId))[0]).toMatchObject({source_current:false,answer_text:'8',reading_display:{field:'regular_hours',raw_value:target.candidate.raw_value,page:target.candidate.source.page}});
+  expect(s.calls.slice(-2)).toEqual(['case_request_field_states','case_request_field_reading_targets'].map(fn=>({fn,args:{target_case:caseId,target_identity:identityId}})));
  });
  it('refuses incomplete, foreign, duplicate or malformed source state instead of treating it as current',async()=>{
-  const s=setup();s.row.code='document_field:'+ 'a'.repeat(64);
+  const s=setup();bindSourceReading(s);
   for(const rows of [[],[{request_id:identityId,source_current:true}],[{request_id:requestId,source_current:'false'}],[{request_id:requestId,source_current:true},{request_id:requestId,source_current:false}]]){
    s.responses.case_request_field_states=rows;await expect(listCaseRequests(caseId,s.db,identityId)).rejects.toThrow('REQUEST_FIELD_STATE_UNAVAILABLE');
   }

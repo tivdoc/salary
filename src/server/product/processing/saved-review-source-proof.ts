@@ -2,7 +2,7 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {PAYSLIP_FINANCIAL_SOURCE_POLICY,type PayslipFinancialSourceProof} from '@/engine/document-review/payslip-adapter';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
-import {readSavedExtractionProvenance} from './live-extraction-provenance';
+import {readAdmittedSavedExtractionProvenance} from './saved-extraction-prompt-admission';
 import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
 import type {SourceJob} from './source-dispatch';
 
@@ -18,7 +18,7 @@ export async function savedReviewFinancialSourceProofs(context:PostgresTransacti
     where c.case_id=$1::uuid and c.revision=$2 and v.input_sha256=$3 and c.version_id=$4::uuid and c.policy_version=$5`,
    [job.case_id,job.revision,job.input_sha256,document.document_id,SAVED_EXTRACTION_POLICY]));
   if(rows.row_count!==1)throw Error('REVIEW_SOURCE_PROOF_CHECKPOINT');
-  const row=rows.rows[0],provenance=readSavedExtractionProvenance(row.result);
+  const row=rows.rows[0],provenance=await readAdmittedSavedExtractionProvenance(context,job,row.result);
   if(provenance.checkpointResultSha256!==row.result_sha256)throw Error('REVIEW_SOURCE_PROOF_HASH');
   // Historical or injected observations remain usable with their own origin,
   // but cannot establish this live-source completion policy.

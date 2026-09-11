@@ -35,3 +35,10 @@ it('rejects foreign or duplicate observation identities',()=>{
  expect(extractionResultSchema.safeParse({...raw,source_scope_observations:[observation]}).success).toBe(false);
  expect(extractionResultSchema.safeParse({...raw,fields:[],source_scope_observations:[{...observation,candidate:{...candidate,source:{...candidate.source,document_id:'00000000-0000-4000-8000-000000000099'}}}]}).success).toBe(false);
 });
+
+it.each(['בסיס להפרשות','הפרשות עובד','הפרשה לפנסיה'])('does not confuse pension contributions with prior-period differences: %s',label=>{
+ expect(explicitSourceScope('pension_base',label,context)).toBeNull();
+});
+it.each(['הפרש','הפרשים','הפרשי שכר','שכר מבוטח - הפרשים','retroactive pension'])('retains explicit prior-period wording: %s',label=>{
+ expect(explicitSourceScope('pension_base',label,context)).toBe('retroactive');
+});

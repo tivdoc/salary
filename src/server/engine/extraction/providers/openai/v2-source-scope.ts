@@ -12,7 +12,7 @@ function labelKey(value:string){return value.normalize('NFKC').replace(/["'״׳.
 export function explicitSourceScope(field:PayslipFieldKey,label:string,context:{hasSalaryNet:boolean;hasVoluntaryDeduction:boolean;hasSeparateEmployeeFunds:boolean}):Scope|null {
  const key=labelKey(label),pension=field.startsWith('pension_')||field.startsWith('severance_');
  if(/(?:מצטבר|מצטברת|cumulative|year to date|\bytd\b)/u.test(key))return 'cumulative';
- if(/(?:הפרש(?:ים)?|רטרו|retroactive|prior period)/u.test(key))return 'retroactive';
+ if(/(?:^|[^\p{L}\p{N}])(?:הפרש(?:ים|י)?|רטרו|retroactive|prior period)(?=$|[^\p{L}\p{N}])/u.test(key))return 'retroactive';
  if(pension&&/(?:קרן השתלמות|קהש|study fund)/u.test(key))return 'study_fund';
  if(field==='total_deductions'&&/^(?:ניכויי רשות|סהכ ניכויי רשות|מקדמה|מקדמות|advance|voluntary deductions)$/u.test(key))return 'voluntary_deduction';
  if(field==='total_deductions'&&context.hasSeparateEmployeeFunds&&/^(?:ניכויי חובה|סהכ ניכויי חובה|mandatory deductions)$/u.test(key))return 'mandatory_deduction_subtotal';

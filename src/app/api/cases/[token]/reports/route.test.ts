@@ -1,5 +1,6 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import {createHash} from 'node:crypto';
+vi.mock('server-only',()=>({}));
 const state=vi.hoisted(()=>({bytes:'original',session:true,rpc:vi.fn(),engineering:false,regular:false,financialRead:vi.fn(),canonicalRead:vi.fn(),regularRead:vi.fn()}));
 vi.mock('@/server/platform/capabilities/stable-http-entrypoint',()=>({guardStableHttpEntrypoint:vi.fn()}));
 vi.mock('@/server/product/case-access/session-cookie',()=>({readCaseSessionCookie:async()=> 'session'}));

@@ -16,6 +16,7 @@ import {savedAnalysisId} from './saved-draft-report';
 import {openSavedDocumentFieldRequests} from './saved-field-requests';
 import {openSavedJune2026Collection} from './saved-june2026-collection';
 import {openSavedTranscriptionRequests} from './saved-transcription-requests';
+import {ensureSavedExtractionPromptProvenance} from './saved-extraction-prompt-admission';
 
 type Extraction=Awaited<ReturnType<typeof extractSavedPayslip>>;
 export type SavedExtractionLease={jobId:string;workerId:string;fencingToken:number;versionId:string};
@@ -135,6 +136,7 @@ export async function recordSavedExtractionResult(context:PostgresTransactionCon
  * month and extraction policy. No customer publication or job completion here. */
 export async function runSavedWorkerExtraction(input:SavedExtractionLease&{
  transactions:SavedWorkerTransactions;storage:UploadExtractionStorage;providerEnabled:boolean;receiptOnly?:boolean;extractor?:OpenAiPayslipV2PassExtractor;
+ promptDerivationAudit?:{codeRevision:string;createdAt:string};
 }){
  if(!input.receiptOnly&&!input.providerEnabled)throw new Error('SAVED_EXTRACTION_PROVIDER_DISABLED');
  if(!input.receiptOnly&&!input.extractor&&!process.env.OPENAI_API_KEY?.trim())throw new Error('SAVED_EXTRACTION_PROVIDER_UNCONFIGURED');
@@ -161,6 +163,9 @@ export async function runSavedWorkerExtraction(input:SavedExtractionLease&{
   const current=await admit(context,input);
   if(current.document.content_sha256!==receipt.input_sha256||current.month!==receipt.expected_month)throw new Error('SAVED_EXTRACTION_SOURCE_SCOPE');
   const saved=await saveExtractionCheckpoint(context,current.job,receipt);
+  // Explicit, audited recovery of a known historical wrapper defect. A normal
+  // receipt never needs this and no provider output is rewritten or retried.
+  if(input.promptDerivationAudit)await ensureSavedExtractionPromptProvenance(context,current.job,saved.result,input.promptDerivationAudit);
   await openSavedDocumentFieldRequests(context,current.job,saved.result);
   await openSavedJune2026Collection(context,current.job,saved.result);
   await openSavedTranscriptionRequests(context,current.job,saved.result);

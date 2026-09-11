@@ -24,7 +24,7 @@ function setup(){
  ports.orders.mockResolvedValue([order]);
  const state:{allowed:unknown;rows?:Record<string,unknown>[];opened:string[];topics:unknown[]}={allowed:['salary_type','salary_period','base_monthly_salary','hourly_rate','gross_salary','net_salary','regular_hours'],opened:[],topics:[]};
  const context:PostgresTransactionContext={transaction_id:'field-unit',client:{async query(s){
-  if(s.name==='saved_field_question_scope'){expect(s.text).toContain('document_field_question_fields_v2(');expect(typeof s.values[0]).toBe('string');state.topics.push(JSON.parse(String(s.values[0])));const rows=state.rows??[{fields:state.allowed}];return {rows,row_count:rows.length};}
+  if(s.name==='saved_field_question_scope'){expect(s.text).toContain('document_field_question_fields_v3(');expect(typeof s.values[0]).toBe('string');state.topics.push(JSON.parse(String(s.values[0])));const rows=state.rows??[{fields:state.allowed}];return {rows,row_count:rows.length};}
   if(s.name==='saved_field_request_open'){state.opened.push(JSON.parse(String(s.values[3])).candidate.field);return {rows:[{id:randomUUID()}],row_count:1};}
   if(s.name==='saved_regular_hours_open'){state.opened.push(s.text.includes('hours_conflict_request_open')?'hours_conflict':'missing_hours');return {rows:[{id:randomUUID()}],row_count:1};}
   throw Error('UNEXPECTED_QUERY:'+s.name);
@@ -60,7 +60,7 @@ it('keeps confident, absent or invalid readings out even when their topic is pur
 it('does not ask from a mismatched document period or a refused case admission',async()=>{
  const s=setup();s.checkpoint.period_mismatch=true;expect(await s.run()).toEqual([]);expect(ports.orders).not.toHaveBeenCalled();ports.admit.mockRejectedValueOnce(Error('SAVED_WORKER_SCOPE_FORBIDDEN'));await expect(s.run()).rejects.toThrow('SAVED_WORKER_SCOPE_FORBIDDEN');expect(s.state.opened).toEqual([]);
 });
-it('opens low-confidence salary type and period readings through purchased v2 scope without changing confidence',async()=>{
+it('opens low-confidence salary type and period readings through purchased v3 scope without changing confidence',async()=>{
  const s=setup();for(const candidate of s.extraction.fields)if(['salary_type','salary_period'].includes(candidate.field))candidate.confidence=0.94;s.rehash();
  await s.run();expect(s.state.opened).toEqual(['salary_period','salary_type','base_monthly_salary']);
  expect(s.extraction.fields.filter(c=>['salary_type','salary_period'].includes(c.field)).every(c=>c.confidence===0.94)).toBe(true);

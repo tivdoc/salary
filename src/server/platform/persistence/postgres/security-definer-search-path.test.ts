@@ -63,7 +63,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // Dynamic pg_get_functiondef body replacements are separately inventoried below;
 // they preserve existing ownership/ACL and do not add declarations to this count.
 // See docs/release-evidence/product-upload-definer-review-20260911.md.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 351;
+//167 adds two worker-only prompt-derivation evidence boundaries. The original
+// checkpoint remains immutable; no catalog, payment or publication grant.
+//168 patches only that put body's locked QA check; no additional declaration.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 353;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -232,6 +235,23 @@ const PRODUCT_UPLOAD_SURFACE = [
 ] as const;
 
 describe("security definer search_path contract", () => {
+  it('accounts for both prompt-derivation boundaries and their sole worker EXECUTE grant',async()=>{
+    const file='20260911183000_extraction_prompt_derivation.sql';
+    expect((await securityDefinerDefinitions()).filter(d=>d.file===file).map(d=>d.name)).toEqual([
+      'private.extraction_prompt_derivation_get','private.extraction_prompt_derivation_put',
+    ]);
+    const sql=(await readFile(path.join(MIGRATION_ROOT,file),'utf8')).replaceAll(/\s+/gu,' ').toLowerCase();
+    const signatures='private.extraction_prompt_derivation_get(uuid,integer,uuid,text),private.extraction_prompt_derivation_put(uuid,integer,uuid,text,jsonb)';
+    expect([...sql.matchAll(/grant execute on function ([^;]+);/gu)].map(m=>m[1])).toEqual([signatures+' to tivdoc_worker_runtime']);
+    expect(sql).toContain('revoke all on function '+signatures+' from public,anon,authenticated,service_role,tivdoc_web_runtime,tivdoc_operations_runtime;');
+    expect(sql).toContain("private.runtime_verified_tenant() is distinct from 'saved-case:'||target_case::text");
+    expect(sql).not.toMatch(/drop\s+function|alter\s+function[\s\S]*?owner\s+to/iu);
+    const forward=await readFile(path.join(MIGRATION_ROOT,'20260911183500_extraction_prompt_qa_lock.sql'),'utf8');
+    expect([...forward.matchAll(/pg_get_functiondef\('([^']+)'::regprocedure\)/gu)].map(m=>m[1]))
+      .toEqual(['private.extraction_prompt_derivation_put(uuid,integer,uuid,text,jsonb)']);
+    expect(forward).not.toMatch(/create\s+(?:or\s+replace\s+)?function|grant\s|revoke\s|alter\s+function/iu);
+    expect(forward).toContain('EXTRACTION_PROMPT_QA_LOCK_DRIFT');
+  });
   it('accounts for every product-upload declaration and exact EXECUTE role group in migrations 160–166',async()=>{
     const definitions=await securityDefinerDefinitions();
     expect(PRODUCT_UPLOAD_SURFACE.reduce((count,row)=>count+row.definers.length,0)).toBe(32);

@@ -1,0 +1,156 @@
+{
+  "verdict": "PASS",
+  "gitSha": "ce6fedbefc52eb8e91c0eef04148db4672c4fbef",
+  "dirty": true,
+  "caseId": "b4a9ac69-65a5-40f1-8a17-721a5a3c8880",
+  "checks": [
+    "real signed Storage upload and ordinary AI source-review analysis create a bound full-source request and a separate factual question; no finding/report was seeded",
+    "wrong purchased month and foreign-case request cannot reserve an upload; foreign identity cannot read the request receipt state",
+    "the same bytes under a new immutable UUID remain insufficient; receipt does not answer or satisfy the request",
+    "a different real uploaded but cropped source stays insufficient after a new saved analysis",
+    "failure immediately before persisted assessment rolls back the new analysis/report/assessment while the committed upload remains received",
+    "only the full-source document request becomes satisfied from target-specific AI source evidence and the same persisted report; missing hours remains open and no customer answer is fabricated",
+    "parallel retry and a new authenticated connection replay identical report and assessment without duplicates; no detached process restart is claimed",
+    "owner sees exact current and historical private HTML/PDF; foreign access is refused; source replacement invalidates satisfaction in rollback; zero answer rows, provider calls or notifications"
+  ],
+  "artifacts": [
+    {
+      "label": "initial-partial",
+      "analysis_run_id": "cf711f76-65b9-452d-8b4c-e470412d1abd",
+      "report_id": "7de7ff4d-2939-4a8d-8dd9-2d6345901ec2",
+      "input_revision": 1,
+      "review_sha256": "427245d75149e9bd13c15f6eb1e054873b9d712e9729a1ca16563256029c29ad",
+      "pdf_sha256": "d85ffd00bdc63639bf13221285cff230698afe79c0567ba8a2a56200a038ef21",
+      "html_sha256": "f6dbc87a5cf5eceb14548ca2adda3c610b8f667f43492a54ba5e7ed97cc13299"
+    },
+    {
+      "label": "duplicate-source",
+      "analysis_run_id": "600a75ba-40cb-4c52-82ee-fb139ec6b4f2",
+      "report_id": "db42707f-dab2-4a84-8e9a-67d8066e1c67",
+      "input_revision": 1,
+      "review_sha256": "ac16412eea5defb835650169e1eeb0f67577fd5b0961d2ca1031003d1dfc0feb",
+      "pdf_sha256": "861bc7d1d46e6773d616fa55cd77d9dfb8184938a52048ec0d487aadd0857ae3",
+      "html_sha256": "2e12b8e47c27ade205ba9e840bdc8c6e5582ff0fa348af4ca532aa59c2f61660"
+    },
+    {
+      "label": "second-partial-source",
+      "analysis_run_id": "bcb9438c-240f-49f7-8918-ad831af71e3c",
+      "report_id": "a11a66fc-6158-429b-87ad-accb6905fbc4",
+      "input_revision": 1,
+      "review_sha256": "12e2b14030fa0f850c5883d72d304fb5c3ea09ee73de612c8f16e816c1dd3ead",
+      "pdf_sha256": "fec9c2851a0899fce6903c42cf15cd6a76991e6bc718e7626aabadce82d08879",
+      "html_sha256": "1671b445dd867ffb83e4f0a1ac118c3ca6ddd16875f45ce0f6047c92e5edc7ed"
+    },
+    {
+      "label": "complete-source",
+      "analysis_run_id": "0f72bf03-d5fb-4c7a-8887-fc3e6d499f2e",
+      "report_id": "fdadff01-55e4-41f6-86fb-bbada435e086",
+      "input_revision": 1,
+      "review_sha256": "3c0ace510b77cbd2a51a8d2bbc35d683c48a05dc17eb3708e662d658f28676cc",
+      "pdf_sha256": "c592c0143e9ff73e58d62ba44377e7d263ebc907fa49d8d43ca3eec5a6f3652f",
+      "html_sha256": "cbe1146074acbecb51d778de3503a391f786dfa19cf3f3adf4c8aae5b87d8782"
+    }
+  ],
+  "receipts": [
+    {
+      "schema_version": "document-review-upload-receipt-v1",
+      "case_id": "b4a9ac69-65a5-40f1-8a17-721a5a3c8880",
+      "request_id": "560d4948-00dd-4b01-aae4-81da0d2c1489",
+      "target_sha256": "6b58f6e6837e97e3496335b370db7b44160f32ed15c19dfa3683d26919948ca1",
+      "order_id": "581b6b81-d6ff-4af5-97dd-b93133cb39c1",
+      "order_origin": "saved_order",
+      "order_receipt_sha256": "4474797a8604c94e276b72bd65bb9b9de8f6f0c56312d3147752a77a50379320",
+      "period": {
+        "from": "2026-06-01",
+        "to": "2026-06-30"
+      },
+      "batch_id": "64f669ad-47ad-490f-8253-6ffd7d2e9a7c",
+      "received_at": "2026-09-11T18:04:34.541Z",
+      "state": "received_pending_review",
+      "files": [
+        {
+          "document_id": "aa98df9e-597e-4059-9152-596d14fc53e0",
+          "version_id": "db1de368-55c3-4530-b8b4-c2f367a99370",
+          "source_sha256": "584d33dc4ad1fb82212a4b34daad6374190f72bd4c626123dbacac7099a72ed1",
+          "document_kind": "payslip",
+          "period_month": "2026-06",
+          "duplicate_content": true
+        }
+      ],
+      "receipt_sha256": "62d473eae628739aada5f9730f1f756935ab8eba3fb0e3d7518f6d49670f80a8"
+    },
+    {
+      "schema_version": "document-review-upload-receipt-v1",
+      "case_id": "b4a9ac69-65a5-40f1-8a17-721a5a3c8880",
+      "request_id": "560d4948-00dd-4b01-aae4-81da0d2c1489",
+      "target_sha256": "6b58f6e6837e97e3496335b370db7b44160f32ed15c19dfa3683d26919948ca1",
+      "order_id": "581b6b81-d6ff-4af5-97dd-b93133cb39c1",
+      "order_origin": "saved_order",
+      "order_receipt_sha256": "4474797a8604c94e276b72bd65bb9b9de8f6f0c56312d3147752a77a50379320",
+      "period": {
+        "from": "2026-06-01",
+        "to": "2026-06-30"
+      },
+      "batch_id": "83675af0-add4-4ada-93f1-3afd09374536",
+      "received_at": "2026-09-11T18:04:49.448Z",
+      "state": "received_pending_review",
+      "files": [
+        {
+          "document_id": "a1e1d9e1-db9f-454c-a64b-5e7c195089ee",
+          "version_id": "6e4166c0-0968-452f-b3f3-75798a8b6c69",
+          "source_sha256": "96f2f239cb9d7817730805350384bb307df6040010559864754fa8d9938213f6",
+          "document_kind": "payslip",
+          "period_month": "2026-06",
+          "duplicate_content": false
+        }
+      ],
+      "receipt_sha256": "7f0b78c15c6bf695b5a874d36f76d30ac880aba9c3d2bcdc9fa03f32de094714"
+    },
+    {
+      "schema_version": "document-review-upload-receipt-v1",
+      "case_id": "b4a9ac69-65a5-40f1-8a17-721a5a3c8880",
+      "request_id": "560d4948-00dd-4b01-aae4-81da0d2c1489",
+      "target_sha256": "6b58f6e6837e97e3496335b370db7b44160f32ed15c19dfa3683d26919948ca1",
+      "order_id": "581b6b81-d6ff-4af5-97dd-b93133cb39c1",
+      "order_origin": "saved_order",
+      "order_receipt_sha256": "4474797a8604c94e276b72bd65bb9b9de8f6f0c56312d3147752a77a50379320",
+      "period": {
+        "from": "2026-06-01",
+        "to": "2026-06-30"
+      },
+      "batch_id": "ebd6ef1f-4042-43cb-a36e-f7b18cf369e0",
+      "received_at": "2026-09-11T18:05:04.446Z",
+      "state": "received_pending_review",
+      "files": [
+        {
+          "document_id": "16120724-f747-486a-8e3e-d83b44c8313e",
+          "version_id": "c0ce7f29-2442-4618-bca4-2f92c5eed958",
+          "source_sha256": "611e2492ab11f1fafed617d975c3242e2a26be445772a335d5310e0bbe26555f",
+          "document_kind": "payslip",
+          "period_month": "2026-06",
+          "duplicate_content": false
+        }
+      ],
+      "receipt_sha256": "8f3d8227dfde09ef89793208dd300dffd951271f2c78a867a3c5bd748b79cc93"
+    }
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "schemaTail": "20260911173500_scoped_financial_source_completion.sql",
+  "schemaTailSha256": "c8311a60795241a56b54910d14a87e6938d2e38b685d485a6a406d14dd57f5ca",
+  "fixture": "Actual signed Storage uploads of synthetic PDFs; automated known-fixture AI source readings admitted through the verified ordinary worker. No result/assessment seeded.",
+  "liveOcr": false,
+  "automaticFinancialFourCellPolicyProved": false,
+  "sourceReviewPolicy": "explicit AI reviewed full source, distinct from live-only payslip.financial_source",
+  "providerCalls": 0,
+  "customerSessionsCreated": false,
+  "browserVerified": false,
+  "notificationsSent": false,
+  "customerPublication": false,
+  "productionChanged": false,
+  "retainedOwnedQaCases": 2,
+  "actualUploads": 4,
+  "storageDownloads": 4,
+  "machineRevoked": true,
+  "failure": null,
+  "cleanupFailure": null
+}

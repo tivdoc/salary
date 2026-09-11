@@ -21,6 +21,7 @@ import {SAVED_JUNE_REVIEW_VERSION} from './saved-minimum-wage-review';
 import {readSavedOrders,savedMonthIdempotencyKey,purchasedMonths,savedOrderLegalTopics} from './saved-order-scope';
 import {resolveSavedDocumentReviewKey} from './document-review-key';
 import {renderReviewBundle} from '../reports/document-review-projection';
+import {DOCUMENT_REVIEW_RENDER_POLICY} from '../reports/document-review-render-policy';
 
 type Input=Parameters<SavedMonthCompletion>[0];
 const HISTORICAL_REVIEW_CODE_VERSIONS=new Set(['case-analysis@0.6.0','case-analysis@0.6.1','case-analysis@0.6.2',
@@ -63,7 +64,7 @@ async function completeDocumentReview(input:Input){
   throw Error('DOCUMENT_REVIEW_MANAGED_RESULT');
  // Reuse the typed projection and renderer. A self-consistent edited JSON or
  // PDF hash is insufficient: all formats must be the same saved review result.
- const expectedReport=renderReviewBundle(bundle,parent.report.report_id);
+ const expectedReport=renderReviewBundle(bundle,parent.report.report_id,{gapPresentation:DOCUMENT_REVIEW_RENDER_POLICY});
  if(parent.report.report_sha256!==expectedReport.report_sha256)throw Error('DOCUMENT_REVIEW_MANAGED_ARTIFACT');
  const stages=parent.stages.filter(s=>s.stage==='review_pending'),stage=stages[0];
  if(stages.length!==1||!stage||stage.payload_sha256!==canonicalSha256(stage.payload))throw Error('DOCUMENT_REVIEW_MANAGED_STAGE');

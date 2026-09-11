@@ -72,7 +72,9 @@ export async function runOpenAiPayslipExtractionV21(input: {
     kind: "first_pass",
     requested_fields: payslipFieldKeySchema.options,
     selected_regions: firstPrepared.crops.map((crop) => crop.region),
-    prompt_version: OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
+    // The provider may use a versioned physical-page policy (for example fp1).
+    // Keep its recorded prompt identity; the checkpoint guard binds the receipt.
+    prompt_version: firstMapped.provider_receipt?.prompt_version ?? OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
     model: firstMapped.extraction.provider.model_version ?? "unknown",
     raw_extraction: firstMapped.extraction,
     salary_type_assessment: firstMapped.salary_type_assessment,
@@ -112,7 +114,7 @@ export async function runOpenAiPayslipExtractionV21(input: {
       kind: "targeted_recovery",
       requested_fields: plan.fields,
       selected_regions: recoveryPrepared.crops.map((crop) => crop.region),
-      prompt_version: OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+      prompt_version: recoveryMapped.provider_receipt?.prompt_version ?? OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
       model: recoveryMapped.extraction.provider.model_version ?? "unknown",
       raw_extraction: recoveryMapped.extraction,
       salary_type_assessment: recoveryMapped.salary_type_assessment,

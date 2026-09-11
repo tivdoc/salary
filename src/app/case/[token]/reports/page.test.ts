@@ -1,6 +1,7 @@
 import {createElement,type ReactNode} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {beforeEach,expect,it,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
 const state=vi.hoisted(()=>({view:vi.fn(()=>null),opened:vi.fn(()=>null),actions:vi.fn(()=>null),inquiry:vi.fn(()=>'נוסח פנייה למעסיק'),
  reportState:'authority_unavailable',namespace:'isolated_test',gap:24058}));
 vi.mock('@/server/platform/capabilities/stable-next-entrypoint',()=>({guardStableAppEntrypoint:async()=>{}}));

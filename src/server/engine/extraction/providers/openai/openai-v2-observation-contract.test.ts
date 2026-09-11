@@ -60,6 +60,12 @@ describe('source observations and semantic classification have separate contract
  it('reproduces the two retained complex-PDF label defects and leaves the raw labels intact',()=>{
   const saved=retained(retainedComplex),mapped=map(saved.output),entry=loadLiveExtractionCorpus('hebrew-june2026','he-clear')[0];
   expect(checkLiveExtractionCorpus({entry,...mapped}).failures).toEqual(['ROW_overtime_125','ROW_overtime_150']);
+  // הפרשות means contributions, not הפרשים (prior-period differences).
+  // Keep the source-backed base in current candidates without changing R5 bytes.
+  const base=mapped.extraction.fields.find(field=>field.field==='pension_base');
+  expect(base).toMatchObject({raw_value:'3,540.00',normalized_value:{currency:'ILS',minor_units:354000}});
+  expect(base?.source.text_fragment).toContain('בסיס להפרשות');
+  expect(mapped.extraction.source_scope_observations?.some(observation=>observation.candidate.candidate_id===base?.candidate_id)??false).toBe(false);
   expect(mapped.extraction.additional_components.filter(row=>row.semantic_kind==='overtime_125'||row.semantic_kind==='overtime_150')
    .map(row=>[row.source_label,row.semantic_kind,row.percentage_raw])).toEqual([
     ['שעות נוספות 125%','overtime_125','125%'],['שעות נוספות 150%','overtime_150','150%']]);
