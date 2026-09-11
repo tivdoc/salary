@@ -4,7 +4,7 @@ Base: `3a2456242f86e9867cff76109b36c2588839f23a`, branch `codex/tivdoc-release-c
 
 This package carries source arithmetic and focused completions into the normal saved analysis and draft report path. Observations and arithmetic do not grant legal admission, prove bank transfers, enlarge purchased scope, or authorize publication. Customer material, source transcriptions, case mappings and generated identifiable reports remain outside the repository.
 
-In progress:
+Delivered implementation ownership (see the final handoff for evidence and remaining limits):
 
 - Root: immutable review input, ordinary analysis integration, source/period/order binding, dependency history, saved draft integration and final verification.
 - Calculation agent: existing RuleSpec interpreter adapter, observed ratios, attendance precision, source research and independent synthetic expectations.
@@ -13,4 +13,4 @@ In progress:
 
 Verification must include partial and zero results, conflicts, foreign source refusal, changed answer/source, retry/restart, historical bytes and focused CI. No production deployment, customer messages or charges are part of this package. Provider diagnosis uses the existing cumulative ledger; unknown costs remain reserved.
 
-This worklist is not a completion claim. The final handoff will distinguish implemented behavior, measured evidence and external blockers.
+Final evidence and limits: [product handoff](document-review-product-handoff-2026-09-11-he.md). Application3ccb33b, CI34616077301/34616072546 PASS, isolated DEV schema159. Five private drafts are updated; source arithmetic and factual completions are integrated. Document-upload fulfillment, broader reading verification and missing rights rules remain explicit software gaps distinct from external facts and REAL decisions.
