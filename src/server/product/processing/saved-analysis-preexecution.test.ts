@@ -32,6 +32,9 @@ function setup() {
   const job: SourceJob = {schema_version: 'saved-case-work-v1', case_id: fixture.command.case_id, revision: 1, input_sha256: 'a'.repeat(64), mode: 'draft'};
   const context: PostgresTransactionContext = {transaction_id: 'unit-composition-only', client: {async query(query) {
     if (query.name === 'june_test_authority'||query.name==='june_regular_authority') return {rows:[{authority:null}],row_count:1};
+    // No separately curated review checkpoint exists in this fixture. Use the
+    // actual payslip-review adapter over the same synthetic saved snapshot.
+    if (query.name === 'review_checkpoint_read') return {rows:[],row_count:0};
     if (query.name !== 'saved_analysis_order') throw Error(`UNEXPECTED_SQL:${query.name}`);
     return {rows: [{created_at: '2026-09-09T20:00:00.000Z', engine_revision: 1}], row_count: 1};
   }}};
@@ -57,6 +60,9 @@ describe('saved June preexecution composition', () => {
       activation_allowed: false, candidate_calculation_performed: false}});
     expect(await runSavedMonthAnalysis(f.input)).toEqual(saved); expect(f.loader).toHaveBeenCalledOnce();
     expect(saved.bundle?.topic_results[0]).toMatchObject({amount: null, trace: null});
+    expect(saved.bundle?.document_review?.documents).toHaveLength(3);
+    expect(saved.command.document_review_sha256).toBe(canonicalSha256(saved.bundle!.document_review!.input));
+    expect(saved.bundle?.document_review?.publication_authority).toBe(false);
   });
   it('does not load June context for an unrelated purchased month', async () => {
     const f = setup(); mocks.order.from = mocks.order.to = '2026-08-01';

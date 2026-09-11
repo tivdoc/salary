@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical';
+import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 
 const id=z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,179}$/u);
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);

@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest';
-import {canonicalSha256} from '../rule-runtime/canonical';
+import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {generateReviewCompletions,parseReviewCompletionInput,resolveReviewCompletion,reviewCompletionSchema,reviewEvidenceSchema,
- type ReviewCompletionInput,type ReviewCompletionNeed,type ReviewEvidence,type ReviewSourcePin} from './completions';
+ type ReviewCompletionInput,type ReviewCompletionNeed,type ReviewEvidence,type ReviewSourcePin} from './completions.ts';
 
 // Only synthetic identifiers and values; no customer source or questionnaire is
 // loaded into tests or public fixtures.
