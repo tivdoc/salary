@@ -25,13 +25,13 @@ export async function saveExtractionCheckpoint(context:PostgresTransactionContex
  if(source.row_count!==1){
   if(job.processing_profile!=='qualified_ai_v1')throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
   const fallback=await context.client.query(statement('checkpoint_intake_source',
-   `select left(d->>'month',7) month,left(v.input->>'month',7) journal_month from private.case_input_versions v
+   `select d->>'type' document_type,left(d->>'month',7) month,left(v.input->>'month',7) journal_month from private.case_input_versions v
     cross join lateral jsonb_array_elements(v.input->'documents') d
     where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3 and d->>'id'=$4 and d->>'version_id'=$5
-     and d->>'sha256'=$6 and d->>'type'='payslip' and d->>'month' is null`,
+     and d->>'sha256'=$6`,
    [job.case_id,job.revision,job.input_sha256,result.product_document_id,result.version_id,result.input_sha256]));
   if(fallback.row_count!==1)throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
-  const orders=await readSavedOrders(context,job),route=savedSourceDocumentRoute(orders,{id:result.product_document_id,version_id:result.version_id,sha256:result.input_sha256,type:'payslip',month:null},z.string().nullable().parse(fallback.rows[0].journal_month));
+  const orders=await readSavedOrders(context,job),route=savedSourceDocumentRoute(orders,{id:result.product_document_id,version_id:result.version_id,sha256:result.input_sha256,type:z.string().parse(fallback.rows[0].document_type),month:z.string().nullable().parse(fallback.rows[0].month)},z.string().nullable().parse(fallback.rows[0].journal_month));
   if(route.state!=='ready'||route.month!==result.expected_month||!savedSourcePeriodEvidence(orders,{caseId:job.case_id,documentId:result.product_document_id,versionId:result.version_id,sha256:result.input_sha256,month:result.expected_month}))throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
  }
  await context.client.query(statement('checkpoint_insert',

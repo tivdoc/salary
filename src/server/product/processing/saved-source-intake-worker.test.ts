@@ -12,17 +12,17 @@ import {admitSavedExtractionLease,recordSavedExtractionResult,type SavedWorkerTr
 import {SavedCaseSnapshot} from './saved-snapshot.ts';
 import {saveExtractionCheckpoint} from './extraction-checkpoint.ts';
 import {savedSourceDocumentRoute,savedSourcePeriodEvidence} from './saved-source-intake-planning.ts';
-const ports=vi.hoisted(()=>({admit:vi.fn(),physical:vi.fn(),extract:vi.fn(),month:vi.fn(),complete:vi.fn()}));
+const ports=vi.hoisted(()=>({admit:vi.fn(),physical:vi.fn(),extract:vi.fn(),month:vi.fn(),complete:vi.fn(),evidence:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./saved-admission.ts',()=>({savedCaseTenant:(id:string)=>`saved-case:${id}`,admitSavedSource:ports.admit}));
 vi.mock('./saved-source-physical-pages.ts',()=>({ensureSavedSourcePhysicalPages:ports.physical}));
 vi.mock('./saved-extraction-worker.ts',async original=>({...await original<typeof import('./saved-extraction-worker.ts')>(),runSavedWorkerExtraction:ports.extract}));
 vi.mock('./saved-worker.ts',()=>({runSavedWorkerMonth:ports.month}));
-vi.mock('./saved-document-evidence-worker.ts',()=>({runSavedWorkerDocumentEvidence:vi.fn()}));
+vi.mock('./saved-document-evidence-worker.ts',()=>({runSavedWorkerDocumentEvidence:ports.evidence}));
 vi.mock('./saved-job-completion.ts',()=>({completeSavedDraftJob:ports.complete}));
 beforeEach(()=>{vi.resetAllMocks();ports.physical.mockResolvedValue({recorded:0,unreadableVersions:[]});ports.month.mockResolvedValue({});ports.complete.mockResolvedValue({manifest:{publication:'draft'}});});
-function setup(){
- const f=legacySourceIntakeFixture();
+function setup(storedKind='payslip'){
+ const f=legacySourceIntakeFixture(storedKind);
  const journal={...structuredClone(f.journal),month:null as string|null,documents:[{...f.document,month:null as string|null}],orders:[] as {id:string;kind:string;from:string;to:string;topics:string[];offer_sha256:string}[]};
  const input={...f.input,journal};
  const job=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:f.caseId,revision:input.revision,input_sha256:input.inputSha256,mode:'draft',processing_profile:'qualified_ai_v1',authority_dependency_sha256:'f'.repeat(64)});
@@ -32,7 +32,7 @@ function setup(){
  const machine=normalizedPayslipExtractionSchema.parse({...base,document_id:f.document.version_id,fields:[{candidate_id:'88888888-8888-4888-8888-888888888888',field:'salary_period',raw_value:'June 2026',normalized_value:{year:2026,month:6,start_date:'2026-06-01',end_date:'2026-06-30'},confidence:.99,source:{document_id:f.document.version_id,page:1,text_fragment:'Synthetic June 2026'},extraction_method:'fixture',warning_flags:[]}],additional_components:[]});
  const run={result:{final_extraction:machine,first_pass:{normalized_extraction:machine}}};
  const checkpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:f.caseId,product_document_id:f.document.id,version_id:f.document.version_id,input_sha256:f.document.sha256,expected_month:'2026-06',period_mismatch:false,requires_confirmation:false,result_sha256:canonicalSha256(run.result),run};
- const stored={id:f.document.id,case_id:f.caseId,version_id:f.document.version_id,document_type:'payslip',content_sha256:f.document.sha256,pinned_month:null,journal_month:null,expected_month:null,
+ const stored={id:f.document.id,case_id:f.caseId,version_id:f.document.version_id,document_type:storedKind,content_sha256:f.document.sha256,pinned_month:null as string|null,journal_month:null,expected_month:null,
   original_filename:'synthetic.pdf',mime_type:'application/pdf',size:200,storage_path:`cases/${f.caseId}/versions/${f.document.version_id}.pdf`,created_at:'2026-07-01T00:00:00Z',checkpoint_input_sha256:f.document.sha256,checkpoint_result_sha256:checkpoint.result_sha256,result:checkpoint};
  const state:{invocation:Record<string,unknown>|null;sourceExists:boolean;recorded:boolean;current:boolean}={invocation:null,sourceExists:true,recorded:false,current:true};
  const seal=()=>{input.journalSha256=canonicalSha256(journal);};seal();
@@ -49,7 +49,7 @@ function setup(){
    case 'source_revision_check':rows=[{revision:state.current?job.revision:job.revision+1,input_sha256:job.input_sha256,processing_profile:job.processing_profile,authority_dependency_sha256:job.authority_dependency_sha256}];break;
    case 'extraction_pinned_document':case 'saved_snapshot_document':rows=[stored];break;
    case 'checkpoint_source_match':break;
-   case 'checkpoint_intake_source':rows=[{month:null,journal_month:null}];break;
+   case 'checkpoint_intake_source':rows=[{document_type:stored.document_type,month:stored.pinned_month,journal_month:stored.journal_month}];break;
    case 'checkpoint_insert':break;
    case 'checkpoint_read':rows=[{result:checkpoint,input_sha256:checkpoint.input_sha256,result_sha256:checkpoint.result_sha256}];break;
    case 'extraction_receipt_authority':rows=[{principal:'tivdoc_worker_runtime',tenant_id:`saved-case:${f.caseId}`}];break;
@@ -76,6 +76,25 @@ describe('ordinary source-intake worker routing',()=>{
   const f=setup(),before=canonicalSha256(f.journal),result=await runSavedDraftJob(f.runInput);
   expect(result).toMatchObject({extractedVersions:1,analyzedMonths:1});expect(ports.extract).toHaveBeenCalledOnce();expect(ports.month.mock.calls[0][0]).toMatchObject({orderId:f.f.scope.id,month:'2026-06'});
   expect(f.journal.legacy_orders[0].period_state).toBe('missing');expect(f.journal.documents[0].month).toBeNull();expect(canonicalSha256(f.journal)).toBe(before);expect(f.opened).toEqual([]);
+ });
+ it.each(['attendance','contract'])('routes a source identified as a payslip from stored %s through admission, checkpoint and snapshot without rewriting it',async storedKind=>{
+  const f=setup(storedKind);
+  const original=canonicalSha256(f.journal),admitted=await admitSavedExtractionLease(f.context,f.lease);
+  expect(admitted.document).toMatchObject({document_type:'payslip',stored_document_type:storedKind});expect(admitted.sourcePeriodEvidence?.origin).toBe('customer_document_reading');
+  const result=await runSavedDraftJob({...f.runInput,documentEvidence:{}});expect(result).toMatchObject({extractedVersions:1,analyzedMonths:1});
+  await saveExtractionCheckpoint(f.context,f.job,f.checkpoint as Parameters<typeof saveExtractionCheckpoint>[2]);
+  const snapshot=await new SavedCaseSnapshot(f.context,f.job,'2026-06').read();expect(snapshot.documents[0].document_type).toBe('payslip');expect(snapshot.extractions[0].fields).toEqual(f.machine.fields);
+  expect(canonicalSha256(f.journal)).toBe(original);expect(f.stored.document_type).toBe(storedKind);expect(ports.evidence).not.toHaveBeenCalled();
+ });
+ it.each(['unknown','unreadable'])('does not reinterpret an upload kind with an %s reading',async action=>{
+  const f=setup('attendance');
+  f.journal.answers[0].answer=JSON.stringify({v:1,action});f.seal();
+  await expect(admitSavedExtractionLease(f.context,f.lease)).rejects.toThrow();expect(f.state.recorded).toBe(false);
+ });
+ it('does not use an identified kind with a changed source hash or contradictory pinned month',async()=>{
+  const f=setup('attendance');
+  f.stored.content_sha256='b'.repeat(64);await expect(admitSavedExtractionLease(f.context,f.lease)).rejects.toThrow('SAVED_EXTRACTION_SOURCE_INTAKE_REQUIRED');
+  f.stored.content_sha256=f.f.document.sha256;f.stored.pinned_month='2026-07';await expect(admitSavedExtractionLease(f.context,f.lease)).rejects.toThrow('SAVED_EXTRACTION_SOURCE_INTAKE_REQUIRED');
  });
  it.each(['unknown','unreadable'])('retains latest %s without retrying its question or dispatching',async action=>{
   const f=setup();f.journal.answers[0].answer=JSON.stringify({v:1,action});f.seal();await held(f);
@@ -125,8 +144,8 @@ describe('ordinary source-intake worker routing',()=>{
   await saveExtractionCheckpoint(f.context,f.job,f.checkpoint as Parameters<typeof saveExtractionCheckpoint>[2]);expect(f.calls.some(c=>c.name==='checkpoint_intake_source')).toBe(true);
   f.state.current=false;await expect(saveExtractionCheckpoint(f.context,f.job,f.checkpoint as Parameters<typeof saveExtractionCheckpoint>[2])).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
  });
- it('retains a late receipt from its immutable invocation proof while current corrections block a new checkpoint',async()=>{
-  const f=setup(),saved=savedLegacySourceIntake(structuredClone(f.input)),order=savedLegacyExecutionScope(f.f.scope,saved);if(!order)throw Error('fixture');
+ it.each(['payslip','attendance'])('retains a late receipt from its immutable invocation proof for stored %s while current corrections block a new checkpoint',async kind=>{
+  const f=setup(kind),saved=savedLegacySourceIntake(structuredClone(f.input)),order=savedLegacyExecutionScope(f.f.scope,saved);if(!order)throw Error('fixture');
   const proof=savedSourcePeriodEvidence([order],{caseId:f.f.caseId,documentId:f.f.document.id,versionId:f.f.document.version_id,sha256:f.f.document.sha256,month:'2026-06'});
   f.state.invocation={invocation_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',case_id:f.f.caseId,version_id:f.f.document.version_id,expected_month:'2026-06',input_sha256:f.f.document.sha256,source_revision:2,result:null,source_period_evidence:proof};
   f.journal.answers[0].answer=JSON.stringify({v:1,action:'unknown'});f.seal();

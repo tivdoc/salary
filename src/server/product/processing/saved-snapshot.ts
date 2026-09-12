@@ -70,7 +70,9 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
       and c.revision=$4 and c.policy_version=$5`,[job.case_id,pinned.id,pinned.version_id,job.revision,SAVED_EXTRACTION_POLICY]));
    const d=rows.rows[0];
    if(!d)throw new Error('SAVED_EXTRACTION_PENDING');
-   if(intake&&d.document_type!=='payslip')throw Error('SAVED_EXTRACTION_BINDING_MISMATCH');
+   // The route above accepts a corrected kind only with the exact current
+   // reading. Stored metadata must still match the immutable input journal.
+   if(intake&&d.document_type!==pinned.type)throw Error('SAVED_EXTRACTION_BINDING_MISMATCH');
    const checkpoint=checkpointSchema.parse(d.result);
    if(checkpoint.case_id!==job.case_id||checkpoint.product_document_id!==pinned.id||checkpoint.version_id!==pinned.version_id
     ||checkpoint.input_sha256!==pinned.sha256||d.content_sha256!==pinned.sha256||d.checkpoint_input_sha256!==pinned.sha256
@@ -112,7 +114,8 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
      source_reading_context:{checkpoint_result_sha256:checkpoint.result_sha256,
       first_pass:first}}:{})});
   }
-  const nonPayslipEvidence=await readSavedNonPayslipEvidence(this.context,job,source.documents,row.input,selectedMonth);
+  const nonPayslipEvidence=await readSavedNonPayslipEvidence(this.context,job,
+   routes.filter(r=>!(r.route.state==='ready'&&r.route.kind==='payslip')).map(r=>r.document),row.input,selectedMonth);
   // Free-text questionnaire/request answers are preserved by the source hash.
   // They cannot be promoted into verified critical facts by this adapter.
   const facts=[...savedDeclaredFacts({caseId:job.case_id,revision:job.revision,inputSha256:job.input_sha256,month:selectedMonth,journal:row.input,createdAt:new Date(String(row.created_at)).toISOString()})];

@@ -49,15 +49,23 @@ export async function admitSavedExtractionLease(context:PostgresTransactionConte
    from private.case_input_versions v cross join lateral jsonb_array_elements(v.input->'documents') p
    join public.documents d on d.id=(p->>'id')::uuid and d.version_id=(p->>'version_id')::uuid and d.case_id=v.case_id
    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3 and d.version_id=$4::uuid
-    and p->>'type'=d.document_type::text and d.document_type::text in(select jsonb_array_elements_text($5::jsonb)) and d.content_sha256=p->>'sha256'`,
-  [job.case_id,job.revision,job.input_sha256,input.versionId,JSON.stringify(kinds)]));
+    and p->>'type'=d.document_type::text and (d.document_type::text in(select jsonb_array_elements_text($5::jsonb)) or $6::boolean) and d.content_sha256=p->>'sha256'`,
+  [job.case_id,job.revision,job.input_sha256,input.versionId,JSON.stringify(kinds),job.processing_profile==='qualified_ai_v1'&&kinds.length===1&&kinds[0]==='payslip']));
  if(rows.row_count!==1)throw new Error('SAVED_EXTRACTION_SOURCE_SCOPE');
  const requestedMonths=[...new Set(orders.flatMap(purchasedMonths))].sort();
- const document=rows.rows[0];let selectedMonth=document.document_type==='payslip'||kinds.length===1&&kinds[0]==='payslip'?document.expected_month:requestedMonths[0];
- if(job.processing_profile==='qualified_ai_v1'&&orders.some(o=>o.kind==='legacy_initial'&&o.source_period_evidence)&&document.document_type==='payslip'){
-  const route=savedSourceDocumentRoute(orders,{id:z.uuid().parse(document.id),version_id:input.versionId,sha256:z.string().parse(document.content_sha256),type:'payslip',month:document.pinned_month===null?null:z.string().parse(document.pinned_month)},document.journal_month===null?null:z.string().parse(document.journal_month));
+ const stored=rows.rows[0],payroll=kinds.length===1&&kinds[0]==='payslip';
+ let document=stored,selectedMonth=stored.document_type==='payslip'||payroll?stored.expected_month:requestedMonths[0];
+ if(job.processing_profile==='qualified_ai_v1'&&orders.some(o=>o.kind==='legacy_initial'&&o.source_period_evidence)&&payroll){
+  const route=savedSourceDocumentRoute(orders,{id:z.uuid().parse(stored.id),version_id:input.versionId,sha256:z.string().parse(stored.content_sha256),type:z.string().parse(stored.document_type),month:stored.pinned_month===null?null:z.string().parse(stored.pinned_month)},stored.journal_month===null?null:z.string().parse(stored.journal_month));
   if(route.state!=='ready'||route.kind!=='payslip')throw Error('SAVED_EXTRACTION_SOURCE_INTAKE_REQUIRED');selectedMonth=route.month;
+  if(stored.document_type!=='payslip'){
+   // Only the exact authenticated reading can select this extractor. This is
+   // an invocation-local projection, never an UPDATE of the uploaded source.
+   if(!savedSourcePeriodEvidence(orders,{caseId:job.case_id,documentId:z.uuid().parse(stored.id),versionId:input.versionId,sha256:z.string().parse(stored.content_sha256),month:route.month}))throw Error('SAVED_EXTRACTION_SOURCE_INTAKE_REQUIRED');
+   document={...stored,stored_document_type:stored.document_type,document_type:'payslip'};
+  }
  }
+ if(!kinds.includes(document.document_type as 'payslip'|'attendance'|'contract'))throw Error('SAVED_EXTRACTION_SOURCE_SCOPE');
  const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u).parse(selectedMonth);
  const sourcePeriodEvidence=job.processing_profile==='qualified_ai_v1'&&document.document_type==='payslip'?savedSourcePeriodEvidence(orders,{caseId:job.case_id,documentId:z.uuid().parse(document.id),versionId:input.versionId,sha256:z.string().parse(document.content_sha256),month}):null;
  if(!orders.some(order=>purchasedMonths(order).includes(month)))throw new Error('SAVED_EXTRACTION_UNPURCHASED_MONTH');
@@ -127,7 +135,7 @@ export async function recordSavedExtractionResult(context:PostgresTransactionCon
  const source=await context.client.query(statement('extraction_receipt_source',
   `select 1 from private.case_input_versions v cross join lateral jsonb_array_elements(v.input->'documents') d
    where v.case_id=$1::uuid and v.revision=$2 and d->>'id'=$3 and d->>'version_id'=$4
-    and d->>'sha256'=$5 and d->>'type'='payslip' and (left(coalesce(d->>'month',v.input->>'month'),7)=$6 or ($7::boolean and d->>'month' is null))`,
+    and d->>'sha256'=$5 and (d->>'type'='payslip' or $7::boolean) and (left(coalesce(d->>'month',v.input->>'month'),7)=$6 or ($7::boolean and d->>'month' is null))`,
   [invocation.case_id,invocation.source_revision,result.product_document_id,invocation.version_id,invocation.input_sha256,invocation.expected_month,sourcePeriodEvidence!==null]));
  if(source.row_count!==1)throw new Error('SAVED_EXTRACTION_RECEIPT_SCOPE');
  if(invocation.result!==null){

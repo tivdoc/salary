@@ -21,7 +21,7 @@ function setup(){
  const caseId=randomUUID(),versionId=randomUUID();let depth=0;
  const job:SourceJob={schema_version:'saved-case-work-v1',case_id:caseId,revision:1,input_sha256:'a'.repeat(64),mode:'draft'};
  const jobRow={job_kind:SOURCE_JOB_KIND,payload:job,payload_sha256:canonicalSha256(job),tenant_id:`saved-case:${caseId}`,canonical_case_id:caseId,state:'running',lease_owner:'worker',fencing_token:1,lease_valid:true,cancellation_requested:false};
- const document={id:randomUUID(),case_id:caseId,version_id:versionId,expected_month:'2025-01',content_sha256:'b'.repeat(64),created_at:'2025-02-01T00:00:00Z'};
+ const document={id:randomUUID(),case_id:caseId,version_id:versionId,document_type:'payslip',expected_month:'2025-01',content_sha256:'b'.repeat(64),created_at:'2025-02-01T00:00:00Z'};
  const run={result:{final_extraction:{document_id:versionId}}};
  const result={schema_version:'tivdoc-saved-extraction-v1',case_id:caseId,product_document_id:document.id,version_id:versionId,input_sha256:document.content_sha256,expected_month:'2025-01',result_sha256:canonicalSha256(run.result),run};
  type Invocation={invocation_id:string;case_id:string;version_id:string;expected_month:string;input_sha256:string;dispatched_at:string;result:typeof result|null};

@@ -113,7 +113,7 @@ async function plan(context:PostgresTransactionContext,input:Lease,documentEvide
  // permission to drop a purchased month. Only existing payslips enter OCR; the
  // monthly service persists source requests and a partial review for the rest.
  return {...admitted,months,versions:extractionDocuments.filter(d=>months.some(s=>s.month===d.routedMonth)).map(d=>d.version_id).sort(),
- evidenceVersions:documentEvidenceEnabled&&(!intake||months.length)?journal.documents.filter(d=>d.type==='attendance'||d.type==='contract').map(d=>d.version_id).sort():[],intake:intake?{...intake,openedRequestIds:[...intake.openedRequestIds,...additionalRequests]}:null,held};
+ evidenceVersions:documentEvidenceEnabled&&(!intake||months.length)?routed.filter(r=>(r.document.type==='attendance'||r.document.type==='contract')&&!(r.route.state==='ready'&&r.route.kind==='payslip')).map(r=>r.document.version_id).sort():[],intake:intake?{...intake,openedRequestIds:[...intake.openedRequestIds,...additionalRequests]}:null,held};
 }
 
 /** Database time is the authority. A delayed pulse cannot resurrect an expired,

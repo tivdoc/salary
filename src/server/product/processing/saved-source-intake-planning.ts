@@ -20,7 +20,10 @@ export function savedSourceDocumentRoute(orders:readonly SavedExecutionOrder[],d
  if(evidence.length){
   const kinds=[...new Set(evidence.map(p=>p.source_document_kind))],months=[...new Set(evidence.flatMap(p=>sourceIntakeFullMonths(p.period)))].sort();
   if(kinds.length!==1)return {state:'held' as const,code:'source_kind_conflict'};
-  if(kinds[0]!==document.type)return {state:'held' as const,code:'source_kind_dispatch_required'};
+  // A current, identified full-month payslip reading can correct the upload
+  // selector. The immutable upload metadata and reading receipt stay intact.
+  // Other kind changes still need their document-evidence dispatch contract.
+  if(kinds[0]!==document.type&&kinds[0]!=='payslip')return {state:'held' as const,code:'source_kind_dispatch_required'};
   if(months.length!==1)return {state:'held' as const,code:'source_multi_month_dispatch_required'};
   if(document.month!==null&&document.month!==months[0])return {state:'held' as const,code:'source_stored_period_conflict'};
   return {state:'ready' as const,kind:kinds[0],month:months[0],reading_sha256s:evidence.map(p=>p.reading_sha256)};
@@ -64,7 +67,7 @@ export async function prepareSavedSourceIntake(context:PostgresTransactionContex
   if(!saved.documents.length)return months.map(month=>({orderId:scope.id,month,code:'source_document_required'}));
   return scope.period_state==='missing'&&sourceIntakeUnresolvedDocuments(saved,scope).length?[{orderId:scope.id,month:null,code:'source_period_required'}]:[];
  });
- return deepFreeze({saved,held,openedRequestIds,technicalDependencies:[...sourceIntakeTechnicalDependencies(saved),...saved.readings.flatMap(r=>{const d=saved.documents.find(d=>d.version_id===r.target.version_id);return r.answer.action==='correct'&&d&&r.answer.value.document_kind!==d.type?[{code:'source_kind_dispatch_required',document_id:d.id,version_id:d.version_id,source_sha256:d.sha256,stored_kind:d.type,source_document_kind:r.answer.value.document_kind}]:[];})]});
+ return deepFreeze({saved,held,openedRequestIds,technicalDependencies:[...sourceIntakeTechnicalDependencies(saved),...saved.readings.flatMap(r=>{const d=saved.documents.find(d=>d.version_id===r.target.version_id);return r.answer.action==='correct'&&d&&r.answer.value.document_kind!==d.type&&r.answer.value.document_kind!=='payslip'?[{code:'source_kind_dispatch_required',document_id:d.id,version_id:d.version_id,source_sha256:d.sha256,stored_kind:d.type,source_document_kind:r.answer.value.document_kind}]:[];})]});
 }
 export function intakeHasExecutableScope(saved:SavedLegacySourceIntake,journal:unknown){
  const modern=z.object({orders:z.array(z.unknown()).optional()}).parse(journal).orders??[];

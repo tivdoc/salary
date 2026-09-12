@@ -18,7 +18,7 @@ export function sourceIntakeReadingCoverage(saved:SavedLegacySourceIntake,scope:
   const {period,document_kind:kind}=answer.value;
   const months=period?sourceIntakeFullMonths(period):[];
   const state=kind!=='payslip'&&kind!=='attendance'?'nonfinancial_source':!period?'period_not_printed':!months.length?'partial_period'
-   :kind!==d.type?'kind_dispatch_required':months.length!==1?'multi_month_dispatch_required':'single_month_identified';
+   :kind!==d.type&&kind!=='payslip'?'kind_dispatch_required':months.length!==1?'multi_month_dispatch_required':'single_month_identified';
   return {...common,state,period,months,kind};
  }));
 }
