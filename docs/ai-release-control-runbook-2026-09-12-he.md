@@ -90,3 +90,30 @@ npx eslint scripts/product-workers/ai-release-control.mjs scripts/product-worker
 ```
 
 הבדיקות סינתטיות ומקומיות: סירוב Production/Preview, תחימת DEV וזהות, קריאה בלבד כברירת מחדל, שלמות תצורה, retry לאחר תפוגה/ביטול, סירוב payload שונה, קישורים ו־Git, סינון פלט והמאמת הקומפל. הוכחת RPC וטרנזקציה במסד DEV מתועדת בנפרד על ידי מפעיל החבילה; בדיקות אלה אינן מציגות כתיבה חיה כאילו בוצעה.
+
+
+## הכנה ראשונה וחידוש מכונה — סכמה180
+
+כלי `dev-lifecycle` הקיים תומך כעת גם בתיק QA שאין לו הרשאת מכונה קודמת. `prepare` רושם predecessor=null במפורש; `resume` אינו ממציא הרשאה קודמת. כל הרשאה חדשה מקבלת epoch/session/capability נפרדים ומתחילה מושהית. חידוש אינו משנה רשומת epoch היסטורית, אינו מחזיר הרשאה שבוטלה ואינו מאפס ledger. מסלול חידוש June ההיסטורי נשמר, אך פקודת `authority` שלו מסרבת לתיק בפרופיל AI ומפנה לכלי התצורה הגרסתי.
+
+לפני הכנה ראשונה יש לשמור תצורת AI קשורה לבנייה ולהעניק הרשאת QA נפרדת באמצעות הפקודות למעלה. התיק חייב להיות QA עם קשר זהות מאומת לאחד מיעדי הבעלים המורשים. אין חובת identity UUID קבוע בקוד; הוא נבדק מול התיק, האימייל ורשימת נמעני הרשאת המכונה ב־DB. היעדים המותרים בחבילה הם tivdoc.com@gmail.com ו־info@tivdoc.com בלבד.
+
+תצורת lifecycle הפרטית ממשיכה להצביע ל־worker bundle נקי, קבלת Preview במצב READY באותו commit, תבנית סודות פרטית וה־ledger הקיים. הגנת SSO של Preview אינה מוסרת. חלון ההפעלה מוגבל לארבע שעות; ה־worker מוגדר saved_receipts_only, ללא מפתח OCR וללא הרשאת הודעות כברירת מחדל. flag ה־AI נכתב רק לתיק שנרשם לפרופיל; הדבר אינו מקדם סטטוס של מקור או שיטה.
+
+```powershell
+# הנתיב הוא תצורת DEV פרטית שהוכנה עם build/Preview/ledger תואמים.
+$devControl = 'C:/private-current-package/dev-lifecycle.private.json'
+$devEpoch = [guid]::NewGuid().ToString()
+node scripts/product-workers/dev-lifecycle.mjs prepare $devControl $devEpoch
+node scripts/product-workers/dev-lifecycle.mjs status $devControl $devEpoch
+node scripts/product-workers/dev-lifecycle.mjs start $devControl $devEpoch
+node scripts/product-workers/dev-lifecycle.mjs pause $devControl $devEpoch
+node scripts/product-workers/dev-lifecycle.mjs stop $devControl $devEpoch
+# לאחר stop: חלון חדש בתצורה + epoch חדש; הרשאה קודמת נשארת מבוטלת.
+$nextDevEpoch = [guid]::NewGuid().ToString()
+node scripts/product-workers/dev-lifecycle.mjs resume $devControl $nextDevEpoch
+```
+
+אין להריץ עם נתיב הדוגמה או חלון שפג תוקפו. retry של `prepare` משתמש באותו epoch ובאותם שדות, בלי ליצור הרשאה נוספת; resume לאחר ביטול חייב epoch חדש. אין להשתמש בפקודת authority ההיסטורית כתחליף להכרעת AI או למחקר מקור. status מפריד את רשומת הרשאת AI מהסמכות ההיסטורית; record_present אינו אישור תחולה או פרסום.
+
+אימות השינוי:17 assertions ב־DEV על טרנזקציות שבוטלו לפני יישום הסכמה, כולל הכנה ראשונה, קשר בעלים, ביטול, predecessor שגוי/פעיל, שמירת ההרשאה הישנה והיעדר הוצאת ספק;29 בדיקות ממוקדות ולינט עברו. שגיאת הבדיקה הראשונה הייתה שם קוד immutability שגוי בציפייה; השומר נשאר ללא שינוי. **הפקודות המורחבות טרם הופעלו ברצף Task Scheduler מלא בגרסת המועמדת**. זהו השלב הבא של הקבלה, ולא הוכחה שכבר עובדת מכונה מתוזמנת.

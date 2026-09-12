@@ -251,6 +251,7 @@ describe("security definer search_path contract", () => {
       ['20260912092000_ai_release_operator_events.sql',[],[]],
       ['20260912094426_ai_release_report_publication.sql',['private.ai_release_report_publish','public.case_notification_managed_dispatch','public.case_notification_managed_dispatch'],['private.ai_release_report_publish(uuid,text,uuid,text,text) to tivdoc_worker_runtime','public.case_notification_managed_dispatch(text,text,uuid,integer,text),public.case_notification_managed_dispatch(text,text,uuid,integer) to tivdoc_worker_runtime']],
       ['20260912102430_ai_release_managed_scope.sql',['private.managed_dev_worker_status','private.managed_dev_worker_status'],['private.managed_dev_worker_status(text,text),private.managed_dev_worker_status(text) to tivdoc_worker_runtime']],
+      ['20260912104926_ai_release_machine_first_enrollment.sql',[],[]],
     ] as const;
     const definitions=await securityDefinerDefinitions();
     for(const [file,names,grants]of reviewed){

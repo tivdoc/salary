@@ -13,9 +13,22 @@ import type {June2026AssessmentPacket} from '../../src/engine/minimum-wage-june2
 const sha=(b:string|Uint8Array)=>createHash('sha256').update(b).digest('hex');
 const read=(f:string)=>JSON.parse(readFileSync(f,'utf8'));
 const repository=path.resolve('.'),privateRoot=path.resolve('../release-work');
-const configSchema=z.object({version:z.literal('managed-dev-lifecycle-v1'),caseId:z.uuid(),ownerIdentityId:z.literal('dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a'),ownerEmail:z.literal('tivdoc.com@gmail.com'),
+const configSchema=z.object({version:z.literal('managed-dev-lifecycle-v1'),caseId:z.uuid(),ownerIdentityId:z.uuid(),ownerEmail:z.enum(['tivdoc.com@gmail.com','info@tivdoc.com']),
  authorizationReference:z.string().min(8).max(1000),expiresAt:z.iso.datetime(),databaseEnvFile:z.string(),workerEnvironmentTemplate:z.string(),ledgerPath:z.string(),previewReceiptPath:z.string(),manifestPath:z.string(),taskName:z.string().regex(/^Tivdoc-[A-Za-z0-9-]{3,90}$/u)}).strict();
 type Config=z.infer<typeof configSchema>;
+/** A missing predecessor is a first prepare, never an invented renewal. */
+export function lifecyclePredecessor(command:string,ownerIdentityId:string,raw:unknown):string|null{
+ if(raw===undefined||raw===null){if(command!=='prepare')throw Error('DEV_FIRST_ENROLLMENT_REQUIRES_PREPARE');return null;}
+ const previous=z.object({capability_sha256:z.string().regex(/^[a-f0-9]{64}$/u),identity_id:z.uuid()}).parse(raw);
+ if(previous.identity_id!==ownerIdentityId)throw Error('DEV_RENEWAL_PREDECESSOR');return previous.capability_sha256;
+}
+export function assertLifecyclePredecessorStopped(expected:string|null,ownerIdentityId:string,raw:unknown,at=Date.now()){
+ if(expected===null){if(raw!==null&&raw!==undefined)throw Error('DEV_EPOCH_PREDECESSOR_CHANGED');return;}
+ const prior=z.object({capability_sha256:z.string(),identity_id:z.uuid(),capability_enabled:z.boolean(),revoked_at:z.coerce.date().nullable(),expires_at:z.coerce.date()}).parse(raw);
+ if(prior.capability_sha256!==expected||prior.identity_id!==ownerIdentityId)throw Error('DEV_EPOCH_PREDECESSOR_CHANGED');
+ if(prior.capability_enabled&&prior.revoked_at===null&&prior.expires_at.getTime()>at)throw Error('DEV_PREDECESSOR_MUST_BE_STOPPED');
+}
+
 export function validateLifecycleConfig(raw:unknown){
  const c=configSchema.parse(raw);
  for(const file of [c.databaseEnvFile,c.workerEnvironmentTemplate,c.previewReceiptPath])assertInside(privateRoot,file);
@@ -56,24 +69,27 @@ export async function main(args:string[]){
   let epoch=existsSync(epochFile)?read(epochFile):null;
   if(!epoch){
    const predecessor=(await db.query('select capability_sha256,identity_id from private.managed_dev_worker_cases where case_id=$1',[c.caseId])).rows[0];
-   if(!predecessor||predecessor.identity_id!==c.ownerIdentityId)throw Error('DEV_RENEWAL_PREDECESSOR');
-   epoch={epochId,caseId:c.caseId,ownerIdentityId:c.ownerIdentityId,capability:randomBytes(32).toString('base64url'),sid:'dev.epoch:'+epochId,jti:randomUUID(),expiresAt:c.expiresAt,predecessor:predecessor.capability_sha256,ledgerSha:ledgerBefore,authorizationReference:c.authorizationReference};
+   const predecessorSha=lifecyclePredecessor(command,c.ownerIdentityId,predecessor);
+   if(!(await db.query("select c.id from public.cases c join public.case_identity_cases ic on ic.case_id=c.id join public.case_identities i on i.id=ic.identity_id where c.id=$1 and c.is_qa and c.contact_verified_at is not null and i.id=$2 and i.channel='email' and i.contact_normalized=$3",[c.caseId,c.ownerIdentityId,c.ownerEmail])).rows.length)throw Error('DEV_OWNER_CASE_SCOPE');
+   epoch={epochId,caseId:c.caseId,ownerIdentityId:c.ownerIdentityId,capability:randomBytes(32).toString('base64url'),sid:'dev.epoch:'+epochId,jti:randomUUID(),expiresAt:c.expiresAt,predecessor:predecessorSha,ledgerSha:ledgerBefore,authorizationReference:c.authorizationReference};
    writeFileSync(epochFile,JSON.stringify(epoch,null,2)+'\n',{flag:'wx',mode:0o600});
   }
   if(epoch.caseId!==c.caseId||epoch.expiresAt!==c.expiresAt||epoch.ownerIdentityId!==c.ownerIdentityId||epoch.ledgerSha!==ledgerBefore||epoch.authorizationReference!==c.authorizationReference)throw Error('DEV_EPOCH_RETRY_MISMATCH');
-  await db.query('begin');await db.query('select pg_advisory_xact_lock(hashtextextended($1,0))',['dev-epoch:'+c.caseId]);
+  await db.query('begin');await db.query('select pg_advisory_xact_lock(hashtextextended($1,0))',['dev-epoch:'+c.caseId]);await db.query('select id from public.cases where id=$1 for update',[c.caseId]);
   const prior=(await db.query('select * from private.managed_dev_lifecycle_epochs where epoch_id=$1',[epochId])).rows[0];
   if(!prior){
    const old=(await db.query('select m.*,b.enabled capability_enabled,s.revoked_at,s.expires_at from private.managed_dev_worker_cases m join private.managed_dev_worker_capabilities b on b.capability_sha256=m.capability_sha256 join public.product_identity_sessions s on s.sid=m.session_sid where m.case_id=$1 for update of m,b,s',[c.caseId])).rows[0];
-   if(!old||old.capability_sha256!==epoch.predecessor||old.capability_enabled&&old.revoked_at===null&&Date.parse(old.expires_at)>Date.now())throw Error('DEV_PREDECESSOR_MUST_BE_STOPPED');
+   assertLifecyclePredecessorStopped(epoch.predecessor,c.ownerIdentityId,old);
    await db.query("insert into public.product_identity_sessions(tenant_id,sid,subject,current_jti,valid_after,expires_at,session_sha256,created_at) values($1,$2,$3,$4,now()-interval '1 second',$5,$6,now())",['saved-case:'+c.caseId,epoch.sid,'synthetic.dev.epoch.'+epochId,epoch.jti,c.expiresAt,sha(epoch.sid+'|'+epoch.jti)]);
    await db.query('insert into private.managed_dev_worker_capabilities(capability_sha256,enabled,expires_at,daily_limit,total_limit,notification_recipients) values($1,false,$2,20,20,$3::text[])',[sha(epoch.capability),c.expiresAt,[sha('email|'+c.ownerEmail)]]);
    await db.query('insert into private.managed_dev_lifecycle_epochs(epoch_id,case_id,capability_sha256,session_sid,predecessor_capability_sha256,owner_identity_id,authorization_reference,expires_at,provider_policy,ledger_sha256) values($1,$2,$3,$4,$5,$6,$7,$8,\'saved_receipts_only\',$9)',[epochId,c.caseId,sha(epoch.capability),epoch.sid,epoch.predecessor,c.ownerIdentityId,c.authorizationReference,c.expiresAt,ledgerBefore]);
-   await db.query('update private.managed_dev_worker_cases set session_sid=$2,capability_sha256=$3,enabled=false,stopped_at=null,last_error_code=null where case_id=$1',[c.caseId,epoch.sid,sha(epoch.capability)]);
+   if(epoch.predecessor===null)await db.query('insert into private.managed_dev_worker_cases(case_id,identity_id,session_sid,capability_sha256,enabled) values($1,$2,$3,$4,false)',[c.caseId,c.ownerIdentityId,epoch.sid,sha(epoch.capability)]);
+   else await db.query('update private.managed_dev_worker_cases set session_sid=$2,capability_sha256=$3,enabled=false,stopped_at=null,last_error_code=null where case_id=$1',[c.caseId,epoch.sid,sha(epoch.capability)]);
   }else if(prior.capability_sha256!==sha(epoch.capability)||prior.session_sid!==epoch.sid)throw Error('DEV_EPOCH_RETRY_MISMATCH');
   await db.query('commit');
   if(!existsSync(supervisorFile)){
    const env=read(c.workerEnvironmentTemplate);delete env.OPENAI_API_KEY;delete env.TIVDOC_MANAGED_SOL_PACKAGE_FILE;env.TIVDOC_NOTIFICATION_OUTBOX_ENABLED='false';env.TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED='false';env.TIVDOC_MANAGED_EXTRACTION_MODE='saved_receipts_only';env.TIVDOC_MANAGED_DEV_WORKER_ENABLED='true';env.NODE_ENV='development';env.TIVDOC_MANAGED_DEV_WORKER_CAPABILITY=epoch.capability;env.TIVDOC_MANAGED_DEV_BUILD_SHA=manifest.gitSha;env.TIVDOC_MANAGED_DEV_NOTIFICATION_ORIGIN='https://'+preview.url;
+   if((await db.query('select 1 from private.ai_release_enrollment_events where case_id=$1 limit 1',[c.caseId])).rows.length)env.TIVDOC_AI_RELEASE_ENABLED='1';
    const u=new URL(env.TIVDOC_WORKER_POSTGRES_URL);u.search='?sslmode=verify-full';env.TIVDOC_WORKER_POSTGRES_URL=u.toString();atomic(environmentFile,env);
    atomic(supervisorFile,{schema_version:'managed-dev-supervisor-v1',control_id:epochId,enabled:false,expires_at:c.expiresAt,expected_git_sha:manifest.gitSha,expected_bundle_sha256:manifest.bundleSha256,expected_manifest_sha256:sha(readFileSync(c.manifestPath)),working_directory:repository,bundle_path:bundlePath,manifest_path:path.resolve(c.manifestPath),environment_path:environmentFile,output_directory:path.join(directory,'supervisor'),max_ticks:240,child_timeout_ms:480000});
    const ps=(s:string)=>"'"+s.replaceAll("'","''")+"'";writeFileSync(launcher,`$ErrorActionPreference='Stop'\nSet-Location -LiteralPath ${ps(repository)}\n& ${ps(process.execPath)} ${ps(path.join(repository,'scripts/product-workers/managed-dev-supervisor.mjs'))} --control ${ps(supervisorFile)}\nexit $LASTEXITCODE\n`,{flag:'wx'});
@@ -85,6 +101,7 @@ export async function main(args:string[]){
  if(command==='authority'){
   const ttl=Number(args[3]),requestId=args[4];if(!Number.isSafeInteger(ttl)||ttl<30||ttl>7200||!requestId||!z.uuid().safeParse(requestId).success)throw Error('DEV_AUTHORITY_ARGUMENTS');
   const epoch=read(epochFile),enrolled=(await db.query('select c.is_qa,m.capability_sha256 from public.cases c join private.managed_dev_worker_cases m on m.case_id=c.id where c.id=$1',[c.caseId])).rows[0];
+  if((await db.query('select 1 from private.ai_release_enrollment_events where case_id=$1 limit 1',[c.caseId])).rows.length)throw Error('DEV_AI_USE_CONFIGURATION_CONTROL');
   if(!enrolled?.is_qa||enrolled.capability_sha256!==sha(epoch.capability)||Date.parse(epoch.expiresAt)<=Date.now())throw Error('DEV_AUTHORITY_SCOPE');
   const authorityFile=path.join(directory,'authority-'+requestId+'.json');
   await db.query('begin');await db.query('select id from public.cases where id=$1 for update',[c.caseId]);
@@ -125,7 +142,8 @@ export async function main(args:string[]){
   if(command==='stop'){await db.query("select set_config('tivdoc.tenant_id',$1,true)",['saved-case:'+c.caseId]);await db.query('update public.product_identity_sessions set revoked_at=coalesce(revoked_at,clock_timestamp()) where sid=$1 and tenant_id=$2',[epoch.sid,'saved-case:'+c.caseId]);}await db.query('commit');receipt(directory,command,{at,epochId,ledgerSha256:ledgerBefore,historyPreserved:true});
  }
  const notificationStatus=(await db.query("select o.state,count(*)::int count,count(*) filter(where r.dispatch_started_at is not null and o.provider_message_id is null)::int dispatch_without_receipt from private.case_notification_outbox o left join private.managed_dev_completion_rounds r on r.delivery_id=o.delivery_id where o.case_id=$1 group by o.state order by o.state",[c.caseId])).rows;
- const result={at:new Date().toISOString(),epochId,caseId:c.caseId,notificationStatus,task:JSON.parse(task('status',c,launcher)),latestTick:existsSync(path.join(directory,'supervisor/latest.json'))?read(path.join(directory,'supervisor/latest.json')):null,epoch:(await db.query('select e.epoch_id,b.enabled,b.expires_at,s.revoked_at from private.managed_dev_lifecycle_epochs e join private.managed_dev_worker_capabilities b on b.capability_sha256=e.capability_sha256 join public.product_identity_sessions s on s.sid=e.session_sid where e.epoch_id=$1',[epochId])).rows[0],ledgerSha256:sha(readFileSync(c.ledgerPath)),calculationAuthority:(await db.query("select id,assessment_revision,payload#>>'{payload,expires_at}' expires_at,revoked_at,case when revoked_at is not null then 'revoked' when (payload#>>'{payload,expires_at}')::timestamptz<=clock_timestamp() then 'expired' else 'record_present' end state from private.june2026_regular_assessments where case_id=$1 order by input_revision desc,assessment_revision desc limit 1",[c.caseId])).rows[0]};
+ const aiAuthority=(await db.query("select 'qualified_ai_v1' profile,e.event_id,e.sequence,e.configuration_sha256,e.kind,e.expires_at,least(e.expires_at,(c.payload#>>'{policy,expires_at}')::timestamptz,(c.payload#>>'{registry,expires_at}')::timestamptz) usable_until,case when e.kind='revoked' then 'revoked' when least(e.expires_at,(c.payload#>>'{policy,expires_at}')::timestamptz,(c.payload#>>'{registry,expires_at}')::timestamptz)<=clock_timestamp() then 'expired' else 'record_present' end state from private.ai_release_enrollment_events e join private.ai_release_configurations c on c.payload_sha256=e.configuration_sha256 where e.case_id=$1 order by e.sequence desc limit 1",[c.caseId])).rows[0];
+ const result={at:new Date().toISOString(),epochId,caseId:c.caseId,notificationStatus,task:JSON.parse(task('status',c,launcher)),latestTick:existsSync(path.join(directory,'supervisor/latest.json'))?read(path.join(directory,'supervisor/latest.json')):null,epoch:(await db.query('select e.epoch_id,b.enabled,b.expires_at,s.revoked_at from private.managed_dev_lifecycle_epochs e join private.managed_dev_worker_capabilities b on b.capability_sha256=e.capability_sha256 join public.product_identity_sessions s on s.sid=e.session_sid where e.epoch_id=$1',[epochId])).rows[0],ledgerSha256:sha(readFileSync(c.ledgerPath)),calculationAuthority:aiAuthority??(await db.query("select id,assessment_revision,payload#>>'{payload,expires_at}' expires_at,revoked_at,case when revoked_at is not null then 'revoked' when (payload#>>'{payload,expires_at}')::timestamptz<=clock_timestamp() then 'expired' else 'record_present' end state from private.june2026_regular_assessments where case_id=$1 order by input_revision desc,assessment_revision desc limit 1",[c.caseId])).rows[0]};
  if(ledgerBefore!==result.ledgerSha256)throw Error('DEV_LEDGER_CHANGED');receipt(directory,command,result);console.log(JSON.stringify(result));
  }catch(error){await db.query('rollback').catch(()=>{});throw error;}finally{await db.end();}
 }
