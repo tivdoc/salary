@@ -80,7 +80,8 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 // below and the isolated DEV upgrade/ACL evidence. No function is excluded.
 //193 redeclares only the same scoped request opener to disambiguate a local
 // variable. Both answer validators are private security invoker functions.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 402;
+//194 extends the existing receipt-scoped upload capture, without new grants.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 403;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -501,6 +502,17 @@ describe("security definer search_path contract", () => {
     ]);
     expect(sql).toContain('cr.code=request_code');
     expect(sql).not.toContain('cr.code=code');
+  });
+
+  it('routes intake capture through the existing receipt boundary without a direct journal grant',async()=>{
+    const file='20260912210515_source_intake_scoped_capture.sql';
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>d.file===file).map(d=>d.name)).toEqual(['private.document_review_upload_capture']);
+    const sql=await readFile(path.join(MIGRATION_ROOT,file),'utf8');
+    expect([...sql.matchAll(/pg_get_functiondef\('([^']+)'::regprocedure\)/gu)].map(m=>m[1])).toEqual(['public.case_documents_commit(uuid,uuid,jsonb)']);
+    expect(sql).not.toMatch(/grant\s+(?:execute|all)|alter\s+function[\s\S]*?owner\s+to/iu);
+    expect(sql).toContain('SOURCE_INTAKE_CAPTURE_BASE_REQUIRED');
+    expect(sql).toContain('private.document_review_upload_capture(target_case,target_batch)');
   });
 
   it("inventories the source-intake definer declarations and worker boundaries",async()=>{
