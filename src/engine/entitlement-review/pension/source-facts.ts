@@ -7,7 +7,8 @@ import {savedNonPayslipEvidenceSchema} from '../../extraction/document-evidence/
 import {normalizeMoney} from '../../extraction/normalization.ts';
 import type {NonPayslipReadingDependency} from '../automatic-nonpay.ts';
 import {pensionEntitlementInputSchema,type PensionEntitlementInput} from './contracts.ts';
-import {emptyPensionSourceFacts,PENSION_SOURCE_FACTS_POLICY} from './source-fact-contracts.ts';
+import {emptyPensionSourceFacts,PENSION_SOURCE_FACTS_POLICY,PENSION_TABLE_SOURCE_POLICY,type PensionSourceFacts} from './source-fact-contracts.ts';
+import {pensionTableSources} from './table-source.ts';
 import {pensionCheckIds,resolvePensionEligibility,pensionOrdinaryWaitingElapsed} from './eligibility.ts';
 
 type Period={from:string;to:string};
@@ -38,7 +39,8 @@ export function attachPensionSourceFacts(candidate:PensionEntitlementInput,revie
  const priorWage=result.pensionable_wage;
  if(isPensionProducedSource(priorWage?.source))result.pensionable_wage=null;
  if(isPensionProducedSource(result.eligible_interval_wage?.operand.source))result.eligible_interval_wage=null;
- result.source_facts=emptyPensionSourceFacts();
+ result.source_facts=emptyPensionSourceFacts({tables:input.source_facts.table_policy===PENSION_TABLE_SOURCE_POLICY});
+ const tables:NonNullable<PensionSourceFacts['arrangement_table']>[]=[];
  const found:Found[]=[],negative:{kind:Literal['kind'];period:Period;state:'unknown'|'unreadable';source:DocumentReviewSource}[]=[];
  const relevant=(literal:Literal)=>literal.kind==='wage'?literal.period.from>=input.period.from&&literal.period.to<=input.period.to
   :literal.kind==='arrangement'?literal.period.from<=input.period.from&&literal.period.to>=input.period.to
@@ -49,6 +51,11 @@ export function attachPensionSourceFacts(candidate:PensionEntitlementInput,revie
   const document=review.documents.find(d=>d.document_id===record.document.document_id&&d.version_id===record.document.document_id);
   if(record.document.case_id!==input.case_id||!document||document.file_sha256!==record.document.content_sha256||document.reading_sha256!==nonPayslipEffectiveReadingSha(record)||document.page_count!==e.physical_page_count)throw Error('PENSION_SOURCE_FACT_RECORD_BINDING');
   const reads=new Map(record.readings.filter(r=>r.target.month===input.period.from.slice(0,7)).map(r=>[r.target.observation.observation_id,r])),pending:string[]=[];
+  if(input.source_facts.table_policy===PENSION_TABLE_SOURCE_POLICY){
+   const selected=pensionTableSources(record,input,{document_id:document.document_id,version_id:document.version_id,file_sha256:document.file_sha256,reading_receipt_sha256:document.reading_sha256});
+   for(const table of selected){tables.push(table.fact);pending.push(...table.pending);}
+   if(selected.length&&!result.source_manifest.some(s=>s.document_id===document.document_id))result.source_manifest.push({document_id:document.document_id,version_id:document.version_id,file_sha256:document.file_sha256,page_count:e.physical_page_count,case_id:input.case_id,kind:'case_document'});
+  }
   for(const observation of e.observations){
    if(!['clause_text','source_label','condition_text'].includes(observation.original.semantic)||observation.issues.includes('duplicate_source_cell'))continue;
    const read=reads.get(observation.observation_id),value=read?.state==='identified_reading'?read.value:null;
@@ -68,6 +75,7 @@ export function attachPensionSourceFacts(candidate:PensionEntitlementInput,revie
   if(pending.length)reading_dependencies.push({version_id:document.version_id,product_document_id:record.product_document_id,checkpoint_sha256:record.checkpoint_result_sha256!,normalized_sha256:canonicalSha256(e),observation_ids:[...new Set(pending)],dependent_check_ids:pensionCheckIds(input.check_prefix)});
  }
  const sourceFacts=result.source_facts;
+ if(tables.length)sourceFacts.arrangement_table=tables.length===1?tables[0]:{state:'conflict',value:null,source:tables[0].source};
  const wageFor=(period:Period,key:'wage_basis'|'eligible_interval_basis')=>{
   const matches=found.filter(f=>f.literal.kind==='wage'&&samePeriod(f.literal.period,period));if(!matches.length)return null;
   const first=matches[0];if(first.literal.kind!=='wage')throw Error('PENSION_SOURCE_WAGE_KIND');

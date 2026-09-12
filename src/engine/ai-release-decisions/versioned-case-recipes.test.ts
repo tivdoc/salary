@@ -29,9 +29,12 @@ function floorSource(){
 }
 
 describe('additive age interval and pension floor case recipes',()=>{
- it('has 54 bounded unique recipes and retains each age parent body and source pins separately',()=>{
-  expect(AI_RELEASE_DECISION_RECIPES).toHaveLength(54);
-  expect(new Set(AI_RELEASE_DECISION_RECIPES.map(r=>r.recipe_id)).size).toBe(54);
+ it('adds four travel floor recipes to the 54 existing recipes and retains each age parent separately',()=>{
+  expect(AI_RELEASE_DECISION_RECIPES).toHaveLength(58);
+  expect(new Set(AI_RELEASE_DECISION_RECIPES.map(r=>r.recipe_id)).size).toBe(58);
+  const additions=AI_RELEASE_DECISION_RECIPES.filter(r=>r.recipe_id.startsWith('ai-case.travel.')&&r.recipe_id.endsWith('.floor-v2'));
+  expect(additions.map(r=>r.decision_id)).toEqual(['travel.general_coverage','travel.fare_basis','travel.ticket_options','travel.general_order_floor']);
+  expect(AI_RELEASE_DECISION_RECIPES.filter(r=>!additions.includes(r))).toHaveLength(54);
   for(const id of ageIds){
    const parent=recipe(id),next=recipe(id+'.age-range-v1');
    expect(next).toMatchObject({decision_id:parent.decision_id,parent_recipe_sha256:parent.recipe_sha256,

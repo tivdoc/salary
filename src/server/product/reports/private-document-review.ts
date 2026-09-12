@@ -1,3 +1,6 @@
+import {resolveSavedOwnerEngineeringProfile,savedOwnerEngineeringContextSchema} from '../processing/saved-owner-engineering-configuration';
+import {assertSavedOwnerEngineeringCurrent} from '../processing/saved-owner-engineering';
+import {replayCaseAnalysisOwnerEngineering,assertCaseAnalysisOwnerEngineeringScope} from '@/engine/case-analysis/contracts';
 import 'server-only';
 import {z} from 'zod';
 import {decodeBundle,decodeReport} from '@/server/platform/persistence/postgres/analysis/validation';
@@ -11,12 +14,18 @@ import type {SavedAiReleaseConfiguration} from '../processing/saved-ai-release-c
 import {resolveCaseAccessDb,type CaseAccessDb} from '../case-access/db';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u),time=z.iso.datetime({offset:true});
-const aiContext=z.discriminatedUnion('state',[
+const qualifiedContext=z.discriminatedUnion('state',[
  z.object({state:z.literal('absent')}).strict(),
  z.object({state:z.literal('unavailable'),reason:z.enum(['revoked','expired']),dependency_sha256:hash}).strict(),
  z.object({state:z.literal('configured'),configuration:z.unknown(),configuration_sha256:hash,enrollment_id:z.uuid(),
   dependency_sha256:hash,evaluated_at:time,expires_at:time,source_created_at:time,is_qa:z.literal(true),environment:z.literal('development')}).strict(),
 ]);
+const aiContext=z.union([qualifiedContext,savedOwnerEngineeringContextSchema]);
+function contextAvailable(context:z.infer<typeof aiContext>|null|undefined){
+ if(context==null)return true;
+ if(context.state==='configured'&&'owner_identity_id' in context){try{resolveSavedOwnerEngineeringProfile(context);return true;}catch{return false;}}
+ return currentAiProfile(context)!==null;
+}
 /** The owner-scoped RPC supplies these pins and the live database clock.
  * This reader has no environment switch or client-provided authority input. */
 function currentAiProfile(context:z.infer<typeof aiContext>|null|undefined):SavedAiReleaseConfiguration|null{
@@ -54,7 +63,7 @@ export async function privateDocumentReviewReports(caseId:string,identityId:stri
  const rows=await store.rpc<{value:unknown}>('case_report_private_review_list',{target_case:caseId,target_identity:identityId});
  if(rows.length!==1)throw Error('PRIVATE_REVIEW_LIST_ACK');
  return z.array(summary).max(100).parse(rows[0].value).map(({ai_context,...item})=>({
-  ...item,current:item.current&&(ai_context==null||currentAiProfile(ai_context)!==null),
+  ...item,current:item.current&&contextAvailable(ai_context),
  }));
 }
 export async function privateDocumentReviewArtifact(caseId:string,identityId:string,reportId:string,db?:CaseAccessDb){
@@ -72,7 +81,17 @@ export async function privateDocumentReviewArtifact(caseId:string,identityId:str
   ||presentation.report_id!==reportId||presentation.analysis_run_id!==bundle.analysis_run_id||presentation.analysis_result_sha256!==bundle.result_sha256
   ||presentation.report_revision!==report.report_revision||canonicalSha256(bundle.document_review.input)!==bundle.document_review.input_sha256)throw Error('PRIVATE_REVIEW_BINDING');
  let current=row.current;
- if(bundle.ai_release){
+ if(bundle.owner_engineering){
+  const envelope=replayCaseAnalysisOwnerEngineering(bundle.owner_engineering);assertCaseAnalysisOwnerEngineeringScope(envelope,bundle);
+  if(envelope.result.owner_scope.case_id!==caseId||envelope.result.owner_scope.identity_id!==identityId)throw Error('PRIVATE_REVIEW_OWNER_SCOPE');
+  const parsed=savedOwnerEngineeringContextSchema.safeParse(row.ai_context);
+  if(!parsed.success)current=false;
+  else{
+   // Corrupt historical bytes fail replay above; a revoked/expired/current-build
+   // mismatch preserves history with current=false, never financial publication.
+   try{assertSavedOwnerEngineeringCurrent(envelope,resolveSavedOwnerEngineeringProfile(parsed.data));}catch{current=false;}
+  }
+ }else if(bundle.ai_release){
   const envelope=replayCaseAnalysisAiRelease(bundle.ai_release);
   assertCaseAnalysisAiReleaseScope(envelope,bundle);
   const profile=currentAiProfile(row.ai_context);

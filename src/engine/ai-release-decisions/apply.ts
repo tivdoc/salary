@@ -6,6 +6,7 @@ import {composeEntitlementReview} from '../entitlement-review/compose.ts';
 import {pensionEntitlementInputSchema} from '../entitlement-review/pension/contracts.ts';
 import {PENSION_STATUTORY_FLOOR_POLICY} from '../entitlement-review/pension/source-fact-contracts.ts';
 import {travelEntitlementInputSchema} from '../entitlement-review/travel/contracts.ts';
+import {TRAVEL_GENERAL_ORDER_FLOOR_POLICY} from '../entitlement-review/travel/floor-policy.ts';
 import {vacationEntitlementInputSchema} from '../entitlement-review/vacation/contracts.ts';
 import {minimumWageEntitlementInputSchema} from '../entitlement-review/minimum-wage/contracts.ts';
 import {workingTimeEntitlementInputSchema} from '../entitlement-review/working-time/contracts.ts';
@@ -96,6 +97,7 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
  caseOrder.push(...['clause_interpretation','agreement_binding','payment_scope','complete_conditions','rounding'].map(id=>'ai-case.obligation.'+id));
  for(const id of ageParentIds)caseOrder.splice(caseOrder.indexOf(id)+1,0,id+'.age-range-v1');
  caseOrder.splice(caseOrder.indexOf('ai-case.pension.pension_fund')+1,0,...['general_coverage','pension_fund','pensionable_wage','prior_coverage_evidence','statutory_floor'].map(id=>'ai-case.pension.'+id+'.floor-v2'));
+ caseOrder.splice(caseOrder.indexOf('ai-case.travel.ticket_options')+1,0,...['general_coverage','fare_basis','ticket_options','general_order_floor'].map(id=>'ai-case.travel.'+id+'.floor-v2'));
  const methods=[...input.methods.filter(m=>caseOrder.includes(m.recipe_id)).sort((a,b)=>caseOrder.indexOf(a.recipe_id)-caseOrder.indexOf(b.recipe_id)),...input.methods.filter(m=>!caseOrder.includes(m.recipe_id))];
  for(const method of methods){
   const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===method.recipe_id);
@@ -152,6 +154,9 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
     unresolved.push({branch:recipe.branch,branch_index:null,decision_id:recipe.decision_id,reason:'pension_recipe_policy_not_selected'});continue;
    }
    const workingCase=recipe.recipe_id.startsWith('ai-case.wt.');
+   if(recipe.recipe_id.startsWith('ai-case.travel.')&&recipe.recipe_id.endsWith('.floor-v2')!==(travelEntitlementInputSchema.parse(entry).calculation_policy===TRAVEL_GENERAL_ORDER_FLOOR_POLICY)){
+    unresolved.push({branch:recipe.branch,branch_index:null,decision_id:recipe.decision_id,reason:'travel_recipe_policy_not_selected'});continue;
+   }
    const week=workingCase?workingTimeEntitlementInputSchema.parse(entry):null;
    const dynamic=week&&(recipe.decision_id==='wt.worked_time'||week.product_facts?.schema_version==='working-time-product-facts-v2'&&['wt.arrangement','wt.workday_assignment','wt.payroll_allocation'].includes(recipe.decision_id));
    const targetDays:(string|null)[]=dynamic?week.workdays.map(d=>d.id):[null];

@@ -143,3 +143,29 @@ export type AiReleaseCurrentContext=z.infer<typeof aiReleaseCurrentContextSchema
 export type AiReleaseAssessmentInput=z.infer<typeof aiReleaseAssessmentInputSchema>;
 export type AiReleaseBranchPolicy=z.infer<typeof aiReleaseBranchPolicySchema>;
 export type AiReleaseSourcePin=z.infer<typeof aiReleaseSourcePinSchema>;
+
+/** Separate owner-only engineering purpose. It cannot parse as a v1 release
+ * policy. Owner identity/enrollment are authenticated by the server loader. */
+export const ownerEngineeringScopeSchema=z.object({case_id:id,identity_id:z.uuid(),enrollment_id:z.uuid()}).strict();
+export const ownerEngineeringPolicySchema=z.object({...aiReleasePolicySchema.shape,
+ schema_version:z.literal('tivdoc-owner-engineering-policy-v1'),purpose:z.literal('owner_engineering_review'),
+ claim_kind:z.literal('owner_engineering_review'),namespace:z.literal('isolated_test'),
+ allowed_environments:z.tuple([z.literal('development')]),owner_scope:ownerEngineeringScopeSchema,
+}).strict().superRefine(checkHash).superRefine((v,ctx)=>{
+ if(new Set(v.branches.map(b=>b.branch_id)).size!==v.branches.length)ctx.addIssue({code:'custom',message:'AI_RELEASE_DUPLICATE_BRANCH'});
+ if(v.branches.some(b=>b.period.from<'2026-05-01'||b.period.to>'2026-07-31'))ctx.addIssue({code:'custom',message:'AI_RELEASE_FROZEN_PERIOD'});
+});
+export const ownerEngineeringCurrentContextSchema=z.object({...aiReleaseCurrentContextSchema.shape,
+ namespace:z.literal('isolated_test'),environment:z.literal('development'),is_qa:z.literal(true),owner_scope:ownerEngineeringScopeSchema,
+}).strict().superRefine((v,ctx)=>{
+ const {owner_scope,...current}=v;
+ if(!aiReleaseCurrentContextSchema.safeParse(current).success)ctx.addIssue({code:'custom',message:'AI_RELEASE_CURRENT_CONTEXT_INVALID'});
+ if(owner_scope.case_id!==current.scope.case_id)ctx.addIssue({code:'custom',message:'OWNER_ENGINEERING_CASE_MISMATCH'});
+});
+export const ownerEngineeringAssessmentInputSchema=z.object({...aiReleaseAssessmentInputSchema.shape,
+ policy:ownerEngineeringPolicySchema,current:ownerEngineeringCurrentContextSchema,
+}).strict();
+export type OwnerEngineeringPolicy=z.infer<typeof ownerEngineeringPolicySchema>;
+export type OwnerEngineeringScope=z.infer<typeof ownerEngineeringScopeSchema>;
+export type OwnerEngineeringCurrentContext=z.infer<typeof ownerEngineeringCurrentContextSchema>;
+export type OwnerEngineeringAssessmentInput=z.infer<typeof ownerEngineeringAssessmentInputSchema>;

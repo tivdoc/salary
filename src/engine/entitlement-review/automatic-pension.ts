@@ -12,6 +12,7 @@ import {entitlementDeclarationsSchema,questionnaireFactSource} from './declarati
 import {pensionEntitlementInputSchema,type PensionEntitlementInput} from './pension/index.ts';
 import {isPinnedEntitlementLegalDocument} from './legal-documents.ts';
 import {emptyPensionSourceFacts,PENSION_STATUTORY_FLOOR_POLICY} from './pension/source-fact-contracts.ts';
+import {pensionProductFacts} from './pension/product-facts.ts';
 import {attachPensionSourceFacts} from './pension/source-facts.ts';
 const uuid=(v:unknown)=>{const h=canonicalSha256(v);return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-8${h.slice(17,20)}-${h.slice(20,32)}`;};
 
@@ -115,7 +116,7 @@ export function attachAutomaticPensionEvidence(candidate:DocumentReviewInput,sna
    prior_coverage_at_start:declared('pension.fund_at_hire'),continuous_employment:missing,
    aged_21_or_more:declared('person.birth_year','aged_21_for_period'),under_60:declared('person.birth_year','under_60_for_period')},
   pensionable_wage:wage,eligible_interval_wage:null,applicability:[],recorded,remittance_status:'missing',
-  ...(options.source_facts?{source_facts:emptyPensionSourceFacts(),calculation_policy:PENSION_STATUTORY_FLOOR_POLICY}:{})});
+  ...(options.source_facts?{source_facts:emptyPensionSourceFacts({tables:true}),product_facts:pensionProductFacts({tables:true}),calculation_policy:PENSION_STATUTORY_FLOOR_POLICY}:{})});
  const prepared=options.source_facts?attachPensionSourceFacts(pension,input).input:pension;
  return documentReviewInputSchema.parse({...input,entitlement_evidence:{schema_version:'entitlement-source-evidence-v1',case_id:input.case_id,
   order_id:input.purchased_scope.order_id,receipt_sha256:input.purchased_scope.receipt_sha256,period:input.period,...(options.source_facts?input.entitlement_evidence:{}),pension:prepared}});

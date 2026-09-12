@@ -25,7 +25,7 @@ export async function loadAiAssemblyHelpers(){
  export {AI_RELEASE_RUNTIME_FAMILIES} from './src/engine/ai-release-runtime/contracts';
  export {AI_RELEASE_DECISION_RECIPES} from './src/engine/ai-release-decisions/catalog';
  export {aiReleaseDecisionMethodSchema,AI_RELEASE_MAX_DECISION_METHODS} from './src/engine/ai-release-decisions/contracts';
- export {aiReleaseConfigurationSchema,aiReleaseFamilyMethodsSha256,verifyAiReleaseConfiguration} from './src/server/product/processing/ai-release-configuration';
+ export {aiReleaseConfigurationSchema,aiReleaseFamilyMethodsSha256,verifyAiReleaseConfiguration,verifyOwnerEngineeringConfiguration} from './src/server/product/processing/ai-release-configuration';
  export {getCompiledAiReleaseBuild} from './src/server/product/processing/ai-release-build';`,resolveDir:ROOT,loader:'ts'},
   absWorkingDir:ROOT,bundle:true,platform:'node',format:'cjs',target:'node22',packages:'external',write:false,logLevel:'silent',
   plugins:[{name:'assembly-server-only',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'server-only',namespace:'empty'}));
@@ -56,12 +56,12 @@ export function aiAssemblySchemas(h){
  const method=z.object({...fields(h.aiReleaseDecisionMethodSchema,['interpretation_receipt_sha256','source_receipts']),interpretation_receipt_id:id}).strict();
  const branch=z.object({...fields(generated(h.aiReleaseBranchPolicySchema),['generator','topic','source_receipt_sha256s','interpretation_receipt_sha256','test_receipt_sha256s']),
   source_receipt_ids:ids,interpretation_receipt_id:id,test_receipt_ids:ids}).strict();
- const policy=z.object({...fields(h.aiReleasePolicySchema,['sha256','branches','product_decision_sha256']),product_decision_evidence_id:id}).strict();
+ const policy=z.union([h.aiReleasePolicySchema,h.ownerEngineeringPolicySchema].map(schema=>z.object({...fields(schema,['sha256','branches','product_decision_sha256']),product_decision_evidence_id:id}).strict()));
  const registry=z.object(fields(h.aiReleaseRegistrySchema,['sha256','policy_sha256'])).strict();
  const result=z.object({schema_version:z.literal('tivdoc-ai-release-test-results-evidence-v1'),branch_id:id,code_sha256:sha,review_binding_sha256:sha,
   test_definition_sha256:sha,independent_oracle_sha256:sha,categories:ids,passed:z.number().int().nonnegative(),failed:z.number().int().nonnegative(),
   outcome:z.enum(['passed','failed','incomplete']),issued_at:z.iso.datetime({offset:true})}).strict();
- const input=z.object({schema_version:z.literal(AI_ASSEMBLY_VERSION),build_manifest_sha256:sha,evaluated_at:z.iso.datetime({offset:true}),
+ const input=z.object({schema_version:z.enum([AI_ASSEMBLY_VERSION,'tivdoc-owner-engineering-assembly-input-v1']),build_manifest_sha256:sha,evaluated_at:z.iso.datetime({offset:true}),
   configuration:z.object({configuration_id:z.uuid(),revision:z.number().int().positive(),population:id}).strict(),
   evidence:z.array(z.object({id,kind:z.enum(kinds),path:z.string().min(1).max(2048),sha256:sha}).strict()).min(1).max(2048),
   policy,registry,source_reviews:z.array(source).min(1).max(256),interpretations:z.array(interpretation).min(1).max(128),
@@ -118,6 +118,8 @@ function preflightReasons(config,at){
  * verifier supplies trust; ports do not supply a replacement build or pins. */
 export async function assembleAiReleaseConfiguration(candidate,h,readEvidence){
  const schemas=aiAssemblySchemas(h),input=schemas.input.parse(candidate),build=h.getCompiledAiReleaseBuild();
+ const owner=input.schema_version==='tivdoc-owner-engineering-assembly-input-v1';
+ assert(owner===(input.policy.schema_version==='tivdoc-owner-engineering-policy-v1'),'AI_ASSEMBLY_PURPOSE_MISMATCH');
  assert(input.build_manifest_sha256===build.manifest.sha256,'AI_ASSEMBLY_BUILD_MISMATCH');
  const evidence=index(input.evidence,'id','AI_ASSEMBLY_DUPLICATE_EVIDENCE'),usedEvidence=new Set(),bytesById=new Map();
  let total=0;
@@ -183,11 +185,11 @@ export async function assembleAiReleaseConfiguration(candidate,h,readEvidence){
  const {product_decision_evidence_id,...policyBody}=input.policy;
  const policy=seal({...policyBody,product_decision_sha256:evidenceHash(product_decision_evidence_id,'product_decision'),branches});
  const registry=seal({...input.registry,policy_sha256:policy.sha256});
- const configuration=seal({schema_version:'tivdoc-ai-release-configuration-v1',...input.configuration,build_manifest_sha256:build.manifest.sha256,
+ const configuration=seal({schema_version:owner?'tivdoc-owner-engineering-configuration-v1':'tivdoc-ai-release-configuration-v1',...input.configuration,build_manifest_sha256:build.manifest.sha256,
   policy,registry,source_receipts:sources,interpretation_receipts:interpretations,test_receipts:tests,methods});
  assert(usedEvidence.size===evidence.size,'AI_ASSEMBLY_UNUSED_EVIDENCE');
- h.verifyAiReleaseConfiguration(configuration,build);
- const receipt=seal({schema_version:'tivdoc-ai-release-assembly-receipt-v1',input_sha256:h.canonicalSha256(input),configuration_sha256:configuration.sha256,
+ (owner?h.verifyOwnerEngineeringConfiguration:h.verifyAiReleaseConfiguration)(configuration,build);
+ const receipt=seal({schema_version:owner?'tivdoc-owner-engineering-assembly-receipt-v1':'tivdoc-ai-release-assembly-receipt-v1',input_sha256:h.canonicalSha256(input),configuration_sha256:configuration.sha256,
   build_manifest_sha256:build.manifest.sha256,source_graph_sha256:build.manifest.source_graph_sha256,evaluated_at:input.evaluated_at,
   evidence:input.evidence.map(e=>({id:e.id,kind:e.kind,sha256:e.sha256,bytes:bytesById.get(e.id).byteLength})),
   integrity_valid:true,runtime_admission_evaluated:false,preflight_reasons:preflightReasons(configuration,input.evaluated_at)});

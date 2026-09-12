@@ -1,6 +1,7 @@
 import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import {aiReleaseAssessmentInputSchema,aiReleaseCurrentContextSchema,type AiReleaseAssessmentInput,type AiReleaseBranchPolicy,type AiReleaseCurrentContext,
- type AiReleaseSourcePin} from './contracts.ts';
+ type AiReleaseSourcePin,ownerEngineeringAssessmentInputSchema,ownerEngineeringCurrentContextSchema,
+ type OwnerEngineeringAssessmentInput,type OwnerEngineeringCurrentContext} from './contracts.ts';
 
 export type AiReleaseBlocker=Readonly<{code:string;dependency_id:string|null}>;
 export type AiReleaseBranchDecision=Readonly<{branch_id:string;topic:AiReleaseBranchPolicy['topic']|null;
@@ -19,7 +20,16 @@ export type AiReleaseAssessmentResult=Readonly<{
  state:'admitted';receipt:AiReleaseAdmission;branches:readonly AiReleaseBranchDecision[];blockers:readonly AiReleaseBlocker[];
 }|{state:'blocked';receipt:null;branches:readonly AiReleaseBranchDecision[];blockers:readonly AiReleaseBlocker[]}>;
 
+export type OwnerEngineeringAdmission=Readonly<Omit<ReceiptBody,'schema_version'|'claim_kind'>&{
+ schema_version:'tivdoc-owner-engineering-admission-v1';claim_kind:'owner_engineering_review';
+ owner_scope:OwnerEngineeringCurrentContext['owner_scope'];release_authorized:false;publication_allowed:false;notification_allowed:false;
+ human_law_reviews:readonly {branch_id:string;interpretation_receipt_sha256:string;human_by_law:OwnerEngineeringAssessmentInput['interpretation_receipts'][number]['human_by_law']}[];
+ sha256:string}>;
+export type OwnerEngineeringAssessmentResult=Readonly<{state:'admitted';receipt:OwnerEngineeringAdmission;branches:readonly AiReleaseBranchDecision[];blockers:readonly AiReleaseBlocker[]}|
+ {state:'blocked';receipt:null;branches:readonly AiReleaseBranchDecision[];blockers:readonly AiReleaseBlocker[]}>;
+
 const issued=new WeakSet<object>();
+const engineeringIssued=new WeakSet<object>();
 const same=(a:unknown,b:unknown)=>canonicalSha256(a)===canonicalSha256(b);
 const setSame=(a:readonly string[],b:readonly string[])=>same([...a].sort(),[...b].sort());
 type Validity={issued_at:string;expires_at:string};
@@ -47,7 +57,25 @@ function uniqueReceipts(items:readonly {receipt_id:string;sha256:string}[]){
 export function evaluateAiReleaseAssessment(candidate:unknown):AiReleaseAssessmentResult{
  const parsed=aiReleaseAssessmentInputSchema.safeParse(candidate);
  if(!parsed.success)return deepFreeze({state:'blocked',receipt:null,branches:[],blockers:[{code:'AI_RELEASE_INPUT_INVALID',dependency_id:null}]});
- const input=parsed.data,{policy,registry,assessment,current}=input,global:AiReleaseBlocker[]=[];
+ const result=evaluateAssessment(parsed.data);
+ if(result.state==='blocked')return result;
+ if(result.receipt.schema_version!=='tivdoc-ai-release-admission-v1')throw Error('AI_RELEASE_PURPOSE_MISMATCH');
+ return deepFreeze({...result,receipt:result.receipt});
+}
+export function evaluateOwnerEngineeringAssessment(candidate:unknown):OwnerEngineeringAssessmentResult{
+ const parsed=ownerEngineeringAssessmentInputSchema.safeParse(candidate);
+ if(!parsed.success)return deepFreeze({state:'blocked',receipt:null,branches:[],blockers:[{code:'OWNER_ENGINEERING_INPUT_INVALID',dependency_id:null}]});
+ const result=evaluateAssessment(parsed.data);
+ if(result.state==='blocked')return result;
+ if(result.receipt.schema_version!=='tivdoc-owner-engineering-admission-v1')throw Error('OWNER_ENGINEERING_PURPOSE_MISMATCH');
+ return deepFreeze({...result,receipt:result.receipt});
+}
+/** One evaluator for all evidence/expiry/currentness fences; only the explicit
+ * engineering purpose retains unresolved human-law review as a qualification. */
+function evaluateAssessment(input:AiReleaseAssessmentInput|OwnerEngineeringAssessmentInput):AiReleaseAssessmentResult|OwnerEngineeringAssessmentResult{
+ const {policy,registry,assessment,current}=input,global:AiReleaseBlocker[]=[];
+ const engineering=policy.schema_version==='tivdoc-owner-engineering-policy-v1';
+ if(engineering&&(!('owner_scope' in current)||!same(policy.owner_scope,current.owner_scope)))add(global,'OWNER_ENGINEERING_OWNER_SCOPE_MISMATCH');
  const now=current.evaluated_at;
  const futureRevocations=new WeakMap<AiReleaseBlocker[],string[]>();
  const revoked=(sha:string)=>registry.revocations.some(r=>r.target_sha256===sha&&Date.parse(r.effective_at)<=Date.parse(now));
@@ -63,7 +91,7 @@ export function evaluateAiReleaseAssessment(candidate:unknown):AiReleaseAssessme
   add(global,'AI_RELEASE_REGISTRY_PIN_MISMATCH');
  if(assessment.sha256!==current.assessment_sha256)add(global,'AI_RELEASE_ASSESSMENT_PIN_MISMATCH');
  if(policy.namespace!==current.namespace||registry.namespace!==current.namespace)add(global,'AI_RELEASE_NAMESPACE_MISMATCH');
- if(!policy.allowed_environments.includes(current.environment))add(global,'AI_RELEASE_ENVIRONMENT_FORBIDDEN');
+ if(!policy.allowed_environments.some(value=>value===current.environment))add(global,'AI_RELEASE_ENVIRONMENT_FORBIDDEN');
  if(current.namespace==='isolated_test'&&(!current.is_qa||!['development','test'].includes(current.environment)))add(global,'AI_RELEASE_TEST_SCOPE_FORBIDDEN');
  if(current.source_pins.some(p=>p.case_id!==current.scope.case_id))add(global,'AI_RELEASE_FOREIGN_CURRENT_SOURCE');
  for(const [label,value] of [['policy',policy],['registry',registry],['assessment',assessment]] as const){
@@ -138,7 +166,7 @@ export function evaluateAiReleaseAssessment(candidate:unknown):AiReleaseAssessme
      ||!setSame(r.source_receipt_sha256s,branch.source_receipt_sha256s))add(blockers,'AI_RELEASE_INTERPRETATION_PIN_MISMATCH',r.receipt_id);
     if(!covers(r.period,current.scope.period)||!r.populations.includes(current.scope.population))add(blockers,'AI_RELEASE_INTERPRETATION_SCOPE',r.receipt_id);
     if(r.human_by_law.source_receipt_sha256s.some(h=>!branch.source_receipt_sha256s.includes(h)))add(blockers,'AI_RELEASE_HUMAN_LAW_SOURCE_MISMATCH',r.receipt_id);
-    if(r.human_by_law.state!=='not_required_for_supported_branch')add(blockers,r.human_by_law.state==='required'?'AI_RELEASE_HUMAN_BY_LAW_REQUIRED':'AI_RELEASE_HUMAN_BY_LAW_UNRESOLVED',r.receipt_id);
+    if(r.human_by_law.state==='required'||r.human_by_law.state==='unresolved'&&!engineering)add(blockers,r.human_by_law.state==='required'?'AI_RELEASE_HUMAN_BY_LAW_REQUIRED':'AI_RELEASE_HUMAN_BY_LAW_UNRESOLVED',r.receipt_id);
     if(sources.some(s=>s&&Date.parse(s.issued_at)>Date.parse(r.issued_at)))add(blockers,'AI_RELEASE_INTERPRETATION_PRECEDES_SOURCE',r.receipt_id);
    }
    const categories=new Set<string>();
@@ -202,6 +230,14 @@ export function evaluateAiReleaseAssessment(candidate:unknown):AiReleaseAssessme
   policy_sha256:policy.sha256,registry_sha256:registry.sha256,registry_revision:registry.revision,assessment_sha256:assessment.sha256,
   scope:current.scope,source_pins:current.source_pins,branches,admitted_branch_ids:admitted.map(b=>b.branch_id),
   dependency_sha256:canonicalSha256(dependencies),evaluated_at:now,expires_at:earliest(admitted.map(b=>b.expires_at!))};
+ if(engineering&&'owner_scope' in current){
+  const engineeringBody={...body,schema_version:'tivdoc-owner-engineering-admission-v1' as const,claim_kind:'owner_engineering_review' as const,
+   owner_scope:current.owner_scope,release_authorized:false as const,publication_allowed:false as const,notification_allowed:false as const,
+   human_law_reviews:assessment.branches.flatMap(b=>{const p=policy.branches.find(p=>p.branch_id===b.branch_id),r=p?interpretationByHash.get(p.interpretation_receipt_sha256):undefined;
+    return r?[{branch_id:b.branch_id,interpretation_receipt_sha256:r.sha256,human_by_law:r.human_by_law}]:[];})};
+  const receipt=deepFreeze({...engineeringBody,sha256:canonicalSha256(engineeringBody)});engineeringIssued.add(receipt);
+  return deepFreeze({state:'admitted',receipt,branches,blockers:[]});
+ }
  const receipt=deepFreeze({...body,sha256:canonicalSha256(body)});issued.add(receipt);
  return deepFreeze({state:'admitted',receipt,branches,blockers:[]});
 }
@@ -211,6 +247,16 @@ export function evaluateAiReleaseAssessment(candidate:unknown):AiReleaseAssessme
  * current context is supplied, also fence time and every server-owned pin. */
 export function assertAiReleaseAdmission(receipt:AiReleaseAdmission,current?:AiReleaseCurrentContext):void{
  if(!issued.has(receipt))throw Error('AI_RELEASE_FACTORY_ADMISSION_REQUIRED');
+ assertAdmissionCurrent(receipt,current);
+}
+export function assertOwnerEngineeringAdmission(receipt:OwnerEngineeringAdmission,current?:OwnerEngineeringCurrentContext):void{
+ if(!engineeringIssued.has(receipt))throw Error('OWNER_ENGINEERING_FACTORY_ADMISSION_REQUIRED');
+ if(current){
+  if(!ownerEngineeringCurrentContextSchema.safeParse(current).success||!same(receipt.owner_scope,current.owner_scope))throw Error('OWNER_ENGINEERING_CURRENT_OWNER_MISMATCH');
+  const {owner_scope,...common}=current;void owner_scope;assertAdmissionCurrent(receipt,common);
+ }
+}
+function assertAdmissionCurrent(receipt:AiReleaseAdmission|OwnerEngineeringAdmission,current?:AiReleaseCurrentContext):void{
  if(!current)return;
  if(!aiReleaseCurrentContextSchema.safeParse(current).success)throw Error('AI_RELEASE_CURRENT_CONTEXT_INVALID');
  if(receipt.policy_sha256!==current.policy_sha256||receipt.registry_sha256!==current.registry_sha256

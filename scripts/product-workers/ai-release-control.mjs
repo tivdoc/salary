@@ -108,7 +108,7 @@ function storedConfiguration(row){
 function configurationSummary(config){
  const counts=values=>values.reduce((all,v)=>({...all,[v.status]:(all[v.status]??0)+1}),{});
  return {configuration_id:config.configuration_id,revision:config.revision,configuration_sha256:config.sha256,
-  build_manifest_sha256:config.build_manifest_sha256,namespace:config.policy.namespace,branches:config.policy.branches.length,
+  build_manifest_sha256:config.build_manifest_sha256,purpose:config.policy.purpose??'qualified_ai_report',namespace:config.policy.namespace,branches:config.policy.branches.length,
   source_review_states:counts(config.source_receipts),interpretation_states:counts(config.interpretation_receipts),
   human_law_states:config.interpretation_receipts.reduce((all,v)=>({...all,[v.human_by_law.state]:(all[v.human_by_law.state]??0)+1}),{}),
   runtime_admission_evaluated:false};
@@ -203,7 +203,7 @@ export async function runAiReleaseControl(args,ports){
  * never interpolated into executable source. No reapproval or manifest write. */
 export async function loadAiControlHelpers(){
  const {build}=await import('esbuild');
- const compiled=await build({stdin:{contents:`export {verifyAiReleaseConfiguration} from './src/server/product/processing/ai-release-configuration';
+ const compiled=await build({stdin:{contents:`export {verifyAiReleaseConfiguration,verifyOwnerEngineeringConfiguration} from './src/server/product/processing/ai-release-configuration';
  export {getCompiledAiReleaseBuild} from './src/server/product/processing/ai-release-build';
  export {SUPABASE_ROOT_2021_CA} from './src/server/product/case-access/supabase-ca';`,resolveDir:ROOT,loader:'ts'},
   absWorkingDir:ROOT,bundle:true,platform:'node',format:'cjs',target:'node22',packages:'external',write:false,logLevel:'silent',
@@ -227,7 +227,7 @@ async function main(){
   readJson:async value=>{const file=aiControlPrivatePath(value);assert(statSync(file).isFile()&&statSync(file).size<=10*1024*1024,'AI_CONTROL_FILE_SIZE');return JSON.parse(readFileSync(file,'utf8'));},
   inspect:async()=>{const current=await getBuild();return {build_manifest_sha256:current.manifest.sha256,source_graph_sha256:current.manifest.source_graph_sha256,
    source_files:current.manifest.files.length,trusted_families:current.trusted_generator_pins.map(p=>p.family_id)};},
-  verifyConfiguration:async candidate=>(await getHelpers()).verifyAiReleaseConfiguration(candidate,await getBuild()).configuration,
+  verifyConfiguration:async candidate=>{const h=await getHelpers();return (candidate?.schema_version==='tivdoc-owner-engineering-configuration-v1'?h.verifyOwnerEngineeringConfiguration:h.verifyAiReleaseConfiguration)(candidate,await getBuild()).configuration;},
   database:async(credentials,apply,operation)=>{
    const file=aiControlPrivatePath(credentials);assert(statSync(file).isFile()&&statSync(file).size<=1024*1024,'AI_CONTROL_FILE_SIZE');
    const helper=await getHelpers(),url=aiControlCredentialUrl(readFileSync(file,'utf8')),{default:pg}=await import('pg');

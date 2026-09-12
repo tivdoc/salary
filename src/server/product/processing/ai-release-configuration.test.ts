@@ -5,7 +5,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {canonicalSha256} from '../../../engine/rule-runtime/canonical';
 import {AI_RELEASE_RUNTIME_FAMILIES} from '../../../engine/ai-release-runtime/contracts';
 import {AI_RELEASE_DECISION_RECIPES} from '../../../engine/ai-release-decisions/catalog';
-import {aiReleaseConfigurationSchema,verifyAiReleaseConfiguration,aiReleaseFamilyMethodsSha256,type AiReleaseConfiguration} from './ai-release-configuration';
+import {aiReleaseConfigurationSchema,verifyAiReleaseConfiguration,aiReleaseFamilyMethodsSha256,type AiReleaseConfiguration,ownerEngineeringConfigurationSchema,verifyOwnerEngineeringConfiguration} from './ai-release-configuration';
 import {getCompiledAiReleaseBuild,aiReleaseBuildManifestSchema} from './ai-release-build';
 
 vi.mock('server-only',()=>({}));
@@ -13,6 +13,24 @@ const build=getCompiledAiReleaseBuild(),h=(label:string)=>canonicalSha256({synth
 const validity={issued_at:'2026-09-12T00:00:00Z',expires_at:'2026-09-13T00:00:00Z'};
 const period={from:'2026-06-01',to:'2026-06-30'},population='general_private_adult_21_59';
 const seal=<T extends object>(body:T)=>({...body,sha256:canonicalSha256(body)});
+function engineeringConfiguration(){
+ const f=fixture(),policy={...f.policy,schema_version:'tivdoc-owner-engineering-policy-v1',purpose:'owner_engineering_review',claim_kind:'owner_engineering_review',namespace:'isolated_test',allowed_environments:['development'],
+  owner_scope:{case_id:'77777777-7777-4777-8777-777777777777',identity_id:'22222222-2222-4222-8222-222222222222',enrollment_id:'33333333-3333-4333-8333-333333333333'}};
+ reseal(policy);const registry={...f.registry,policy_sha256:policy.sha256,namespace:'isolated_test'};reseal(registry);
+ const value={...f,schema_version:'tivdoc-owner-engineering-configuration-v1',policy,registry};reseal(value);
+ return ownerEngineeringConfigurationSchema.parse(value);
+}
+describe('separate compiled owner engineering configuration',()=>{
+ it('verifies exact compiled metadata without resolving its unknown interpretation',()=>{
+  const f=engineeringConfiguration(),r=verifyOwnerEngineeringConfiguration(f,build);expect(r.configuration).toEqual(f);
+  expect(r.configuration.interpretation_receipts.every(i=>i.human_by_law.state==='unresolved'&&i.status==='unknown')).toBe(true);
+  expect(()=>verifyAiReleaseConfiguration(f,build)).toThrow();expect(()=>verifyOwnerEngineeringConfiguration(fixture(),build)).toThrow();
+ });
+ it('retains static build, hash, and namespace validation',()=>{
+  const f=engineeringConfiguration();f.build_manifest_sha256='0'.repeat(64);reseal(f);expect(()=>verifyOwnerEngineeringConfiguration(f,build)).toThrow('AI_CONFIGURATION_BUILD_MISMATCH');
+  const namespace={...engineeringConfiguration().policy,namespace:'real'};reseal(namespace);expect(ownerEngineeringConfigurationSchema.safeParse({...engineeringConfiguration(),policy:namespace}).success).toBe(false);
+ });
+});
 function reseal(record:{sha256:string}){const {sha256,...body}=record;void sha256;record.sha256=canonicalSha256(body);}
 
 // Synthetic configuration metadata only: no source approval, customer facts,

@@ -20,14 +20,15 @@ export const pensionProductFactsSchema=z.object({schema_version:z.literal(PENSIO
  employment_relationship:fact(z.enum(['employee','self_employed','other'])),workplace_sector:fact(z.enum(['private','public','protected_workshop','other'])),
  pension_product:fact(z.enum(['pension_fund','insurance_policy','provident_fund','other'])),
  other_pension_terms_known:fact(z.boolean()),
+ contract_terms_changed:fact(z.boolean()).optional(),
 }).strict();
 export const pensionCaseRecipeBindingSchema=z.object({schema_version:z.literal('pension-case-recipe-binding-v1'),method:aiReleaseDecisionMethodSchema,
  evaluated_at:z.iso.datetime(),binding_sha256:hash}).strict().refine(v=>{const {binding_sha256,...body}=v;return binding_sha256===canonicalSha256(body);},'PENSION_CASE_BINDING_HASH');
 export const pensionDerivedFactSchema=z.object({schema_version:z.literal('pension-derived-fact-v1'),binding_sha256:hash,inputs_sha256:hash}).strict();
 export function pensionCaseBinding(method:AiReleaseDecisionMethod,evaluated_at:string){const body={schema_version:'pension-case-recipe-binding-v1' as const,method,evaluated_at};return pensionCaseRecipeBindingSchema.parse({...body,binding_sha256:canonicalSha256(body)});}
-export function pensionProductFacts(){const missing={state:'missing',value:null,source:null};return pensionProductFactsSchema.parse({schema_version:PENSION_PRODUCT_FACTS_POLICY,
- birth_date:missing,employment_relationship:missing,workplace_sector:missing,pension_product:missing,other_pension_terms_known:missing});}
-type ProductFact=z.infer<typeof pensionProductFactsSchema>[Exclude<keyof z.infer<typeof pensionProductFactsSchema>,'schema_version'>];
+export function pensionProductFacts(options:{tables?:boolean}={}){const missing={state:'missing',value:null,source:null};return pensionProductFactsSchema.parse({schema_version:PENSION_PRODUCT_FACTS_POLICY,
+ birth_date:missing,employment_relationship:missing,workplace_sector:missing,pension_product:missing,other_pension_terms_known:missing,...(options.tables?{contract_terms_changed:missing}:{})});}
+type ProductFact=NonNullable<z.infer<typeof pensionProductFactsSchema>[Exclude<keyof z.infer<typeof pensionProductFactsSchema>,'schema_version'>]>;
 const usable=(f:ProductFact|undefined)=>!!f&&['observed','declared'].includes(f.state)&&f.value!==null&&f.source!==null;
 function sourceBound(s:DocumentReviewSource,input:PensionEntitlementInput,review?:DocumentReviewInput){
  const pins=input.source_manifest.filter(p=>p.document_id===s.document_id&&p.version_id===s.version_id);
@@ -65,18 +66,22 @@ function identifiedFund(input:PensionEntitlementInput,review?:DocumentReviewInpu
  if(arrangement?.state==='observed'&&arrangement.value?.product==='pension_fund'&&isPensionProducedSource(arrangement.source))paths.push('source_facts.arrangement');
  return paths;
 }
-export type PensionProductQuestion={path:string;question:string;fact:ProductFact;answer_kind:'text'|'choice';format?:'iso_date';choices?:readonly {label:string;value:string|boolean|null}[]};
+export type PensionProductQuestion={path:string;question:string;fact:ProductFact;answer_kind:'text'|'choice';format?:'iso_date';choices?:readonly {label:string;value:string|boolean|null}[];dependent_check_ids?:readonly string[]};
 /** Existing employment facts retain their own questions. Never request a second
  * numeric reading or reinterpret an unknown source relationship as confirmed. */
 export function pensionProductFactQuestions(input:PensionEntitlementInput):PensionProductQuestion[]{
  validateFacts(input);const p=input.product_facts;if(!p)return [];
  const out:PensionProductQuestion[]=[];
  if(!['known','derived'].includes(input.facts.aged_21_or_more.state)||!['known','derived'].includes(input.facts.under_60.state))out.push({path:'product_facts.birth_date',question:'מהו תאריך הלידה המלא? הוא ישמש לבדיקת הגיל בתקופת התלוש.',fact:p.birth_date,answer_kind:'text',format:'iso_date'});
- const add=(key:keyof Omit<typeof p,'schema_version'>,question:string,choices:PensionProductQuestion['choices'])=>out.push({path:`product_facts.${key}`,question,fact:p[key],answer_kind:'choice',choices});
+ const add=(key:keyof Omit<typeof p,'schema_version'>,question:string,choices:PensionProductQuestion['choices'])=>{const f=p[key];if(f)out.push({path:`product_facts.${key}`,question,fact:f,answer_kind:'choice',choices});};
  add('employment_relationship','מה היה מעמד העבודה בתקופה הנבדקת?',[{label:'שכיר או שכירה',value:'employee'},{label:'עצמאי או עצמאית',value:'self_employed'},{label:'מעמד אחר',value:'other'}]);
  add('workplace_sector','באיזה מגזר היה מקום העבודה בתקופה הנבדקת?',[{label:'המגזר הפרטי',value:'private'},{label:'המגזר הציבורי',value:'public'},{label:'מפעל מוגן',value:'protected_workshop'},{label:'מגזר אחר',value:'other'}]);
  if(!identifiedFund(input).length)add('pension_product','באיזה מוצר פנסיוני נוהל הביטוח בתקופה הנבדקת?',[{label:'קרן פנסיה',value:'pension_fund'},{label:'פוליסת ביטוח',value:'insurance_policy'},{label:'קופת גמל',value:'provident_fund'},{label:'מוצר אחר',value:'other'}]);
  if(input.calculation_policy!==PENSION_STATUTORY_FLOOR_POLICY)add('other_pension_terms_known','האם ידוע לך על תנאי פנסיה נוספים בחוזה, בהסכם קיבוצי או בהסדר של מקום העבודה?',[{label:'כן',value:true},{label:'לא ידוע לי על תנאים נוספים',value:false}]);
+ const table=input.source_facts?.arrangement_table;
+ if(table?.state==='observed'&&table.value&&table.value.temporal_association!=='identified_source_dates')out.push({path:'product_facts.contract_terms_changed',
+  question:`האם נמסר או סוכם שינוי לתנאי הפנסיה שבטבלה המסומנת בעמוד ${table.source!.page} בחוזה, בתקופה ${input.period.from} עד ${input.period.to}? השאלה מתייחסת למידע שנמסר לך ואינה מבקשת לקבוע תוקף משפטי.`,
+  fact:p.contract_terms_changed??{state:'missing',value:null,source:null},answer_kind:'choice',choices:[{label:'נמסר או סוכם שינוי',value:true},{label:'לא נמסר ולא סוכם שינוי',value:false}],dependent_check_ids:[`${input.check_prefix}.complete_arrangement`]});
  return out.filter(q=>!usable(q.fact)).map(q=>({...q,...(q.choices?{choices:[...q.choices,{label:'לא ידוע',value:null}]}:{})}));
 }
 export type PensionCaseRecipeReadiness={allowed:boolean;reason:string|null;consumed_paths:string[];derived_facts?:{aged_21_or_more:boolean;under_60:boolean}};

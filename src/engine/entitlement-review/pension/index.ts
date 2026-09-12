@@ -117,7 +117,11 @@ export function resolvePensionEntitlement(candidate:unknown){
  if(input.pensionable_wage){sourceBound(input.pensionable_wage.source,input);money(input.pensionable_wage);}
  if(input.eligible_interval_wage){sourceBound(input.eligible_interval_wage.operand.source,input);money(input.eligible_interval_wage.operand);}
  const resolved=resolvePensionEligibility(input),gaps=[...resolved.gaps],decisions=decisionSet(input);
- if(floor)gaps.push(gap(input,'pension.complete_arrangement','unknown','מוצגת רצפת הפרשות בלבד. יש לבדוק בנפרד תנאי פנסיה מיטיבים בחוזה, בהסכם קיבוצי או בצו ענפי, לרבות בסיס גבוה יותר ושיעורים נוספים. פער אפס או עודף לעומת הרצפה אינם מאשרים שההסדר המלא קוים.',[`${input.check_prefix}.complete_arrangement`],'applicability.pension.no_better_arrangement','missing_applicability'));
+ if(floor){
+  const table=input.source_facts?.arrangement_table;
+  const tableText=table?.state==='observed'&&table.value?` בטבלת המקור נקראו שיעורי עובד ${table.value.employee_percent}%, מעסיק ${table.value.employer_percent}% ופיצויים ${table.value.severance_percent}%. הטבלה אינה מזהה את המוצר הפנסיוני שנבחר או את מלוא רכיבי השכר. ${table.value.temporal_association==='identified_source_dates'?'התקופה נקראה במקור.':table.value.temporal_association==='declared_no_change'?'הקישור לתקופה נשען על הצהרה שלא נמסר שינוי; זו אינה הכרעה משפטית.':table.value.temporal_association==='change_reported'?'נמסר שהיה שינוי בתנאים; נדרש מקור התנאים המעודכנים.':'קישור תנאי הטבלה לתקופה הנבדקת עדיין לא הושלם.'}`:'';
+  gaps.push(gap(input,'pension.complete_arrangement','unknown','מוצגת רצפת הפרשות בלבד. יש לבדוק בנפרד תנאי פנסיה מיטיבים בחוזה, בהסכם קיבוצי או בצו ענפי, לרבות בסיס גבוה יותר ושיעורים נוספים. פער אפס או עודף לעומת הרצפה אינם מאשרים שההסדר המלא קוים.'+tableText,[`${input.check_prefix}.complete_arrangement`],'applicability.pension.no_better_arrangement','missing_applicability'));
+ }
  for(const d of decisions)if(d.state!=='accepted'||d.basis==='customer_declaration'||!d.sources.length||(d.valid_until!==null&&d.valid_until<=input.evaluated_at))gaps.push(gap(input,d.decision_id,d.state==='accepted'?'unknown':d.state,d.explanation,ids,`applicability.${d.decision_id}`,'missing_applicability'));
  const finish=()=>deepFreeze({schema_version:'pension-entitlement-resolution-v1' as const,input_sha256:canonicalSha256(input),catalog:floor?PENSION_FLOOR_CATALOG:PENSION_CATALOG,
   eligibility:resolved.eligibility,checks,gaps,comparison_evidence,rule_metadata:{source_review_sha256:PENSION_SOURCE_REVIEW_SHA256,

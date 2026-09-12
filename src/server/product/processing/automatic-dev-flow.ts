@@ -1,3 +1,6 @@
+import {loadSavedOwnerEngineeringConfiguration} from './saved-owner-engineering-configuration';
+import {assertSavedOwnerEngineeringCurrent} from './saved-owner-engineering';
+import {renderOwnerEngineeringBundle,OWNER_ENGINEERING_REPORT_TEMPLATE} from '../reports/owner-engineering-report';
 import {loadJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
 import 'server-only';
 import {z} from 'zod';
@@ -59,6 +62,36 @@ async function completeQualifiedAiMonth(input:Input){
   [job.case_id,parent.analysis_run_id,expected.report_id,expected.report_sha256,bundle.ai_release.sha256]));
  const receipt=z.object({report_id:z.uuid(),analysis_run_id:z.uuid(),published_at:z.iso.datetime({offset:true}),replayed:z.boolean()}).strict().parse(published.rows[0]?.value);
  if(published.row_count!==1||receipt.report_id!==expected.report_id||receipt.analysis_run_id!==parent.analysis_run_id)throw Error('AI_RELEASE_PUBLICATION_ACK');
+}
+async function completeOwnerEngineeringMonth(input:Input){
+ const {context,job,orderId,month,parent}=input;
+ const profile=await loadSavedOwnerEngineeringConfiguration(context,job);
+ if(!profile||!parent.completed||!parent.bundle?.owner_engineering||!parent.report)throw Error('OWNER_ENGINEERING_MANAGED_PROFILE_REQUIRED');
+ const [order]=await readSavedOrders(context,job,orderId);
+ if(!purchasedMonths(order).includes(month))throw Error('OWNER_ENGINEERING_MANAGED_ORDER_SCOPE');
+ const current=await resolveSavedDocumentReviewKey(context,job,order,month,savedAiReleaseBaseKey(job,order.id,month,profile),{ownerProfile:profile});
+ const command=parent.command,bundle=decodeBundle(parent.bundle,savedOrderLegalTopics(order));validateReport(parent.report);
+ if(!bundle.owner_engineering||!parent.dependencies||parent.dependencies.template_version!==OWNER_ENGINEERING_REPORT_TEMPLATE
+  ||command.idempotency_key!==current.key||parent.idempotency_key!==current.key||canonicalSha256(command)!==parent.command_sha256
+  ||command.case_id!==job.case_id||command.population!==profile.configuration.population||command.document_review_sha256!==current.reviewSha256
+  ||canonicalSha256(bundle.owner_engineering.input.source)!==current.reviewSha256||bundle.case_id!==job.case_id||bundle.analysis_run_id!==parent.analysis_run_id
+  ||bundle.owner_engineering.binding.source_journal.input_revision!==job.revision||bundle.owner_engineering.binding.source_journal.input_sha256!==job.input_sha256
+  ||parent.analysis_run_id!==savedAnalysisId('case-analysis-run',parent.command_sha256)
+  ||canonicalSha256(command.requested_topics)!==canonicalSha256(savedOrderLegalTopics(order)))throw Error('OWNER_ENGINEERING_MANAGED_RESULT_BINDING');
+ assertSavedOwnerEngineeringCurrent(bundle.owner_engineering,profile);
+ const expected=renderOwnerEngineeringBundle(bundle,savedAnalysisId('saved-report',bundle.result_sha256));
+ if(parent.report.report_sha256!==expected.report_sha256||parent.report.report_id!==expected.report_id)throw Error('OWNER_ENGINEERING_MANAGED_ARTIFACT');
+ const stage=parent.stages.filter(s=>s.stage==='review_pending');
+ if(stage.length!==1||stage[0].payload_sha256!==canonicalSha256(stage[0].payload)
+  ||z.object({report_sha256:z.string()}).parse(stage[0].payload).report_sha256!==expected.report_sha256)throw Error('OWNER_ENGINEERING_MANAGED_STAGE');
+ // Serialize against answers/replacements and admission revocation once more
+ // at the database boundary. The receipt references these exact saved bytes;
+ // it cannot insert a report, select different findings or invent approval.
+ const published=await context.client.query(statement('owner_engineering_run_record',
+  'select private.owner_engineering_run_record($1::uuid,$2,$3::uuid,$4,$5) value',
+  [job.case_id,parent.analysis_run_id,expected.report_id,expected.report_sha256,bundle.owner_engineering.sha256]));
+ const receipt=z.object({report_id:z.uuid(),analysis_run_id:z.uuid(),recorded_at:z.iso.datetime({offset:true}),replayed:z.boolean()}).strict().parse(published.rows[0]?.value);
+ if(published.row_count!==1||receipt.report_id!==expected.report_id||receipt.analysis_run_id!==parent.analysis_run_id)throw Error('OWNER_ENGINEERING_PUBLICATION_ACK');
 }
 const HISTORICAL_REVIEW_CODE_VERSIONS=new Set(['case-analysis@0.6.0','case-analysis@0.6.1','case-analysis@0.6.2',
  'case-analysis@0.6.3','case-analysis@0.6.4','case-analysis@0.6.5','case-analysis@0.6.6']);
@@ -230,7 +263,8 @@ export async function saveAutomaticDevCanonicalDraft(input:Input){
  * retries reuse both run and artifact rather than appending duplicates. */
 export const runAutomaticDevMonth:SavedMonthCompletion=async input=>{
  if(input.job.processing_profile==='qualified_ai_v1'||input.parent.bundle?.ai_release){
-  await completeQualifiedAiMonth(input);return;
+  if(input.parent.bundle?.owner_engineering)await completeOwnerEngineeringMonth(input);
+  else await completeQualifiedAiMonth(input);return;
  }
  if(input.parent.command.document_review_sha256||input.parent.bundle?.document_review||input.parent.command.idempotency_key?.startsWith('review:')){
   await completeDocumentReview(input);return;

@@ -144,6 +144,7 @@ export type TopicAnalysisResult = Readonly<{
 
 export type AnalysisResultBundle = Readonly<{
   ai_release?: import("../case-analysis/contracts.ts").CaseAnalysisAiRelease;
+  owner_engineering?: import("../case-analysis/contracts.ts").CaseAnalysisOwnerEngineering;
   document_review?: import("../document-review/contracts.ts").DocumentReviewResult;
   schema_version: "tivdoc-analysis-result-bundle-v0.6.0";
   analysis_run_id: string;

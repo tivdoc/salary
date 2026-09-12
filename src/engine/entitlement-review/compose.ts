@@ -9,6 +9,7 @@ import {assertEntitlementSourcePacket} from './source-admission.ts';
 import {entitlementLegalDocuments} from './legal-documents.ts';
 import {obligationsEntitlementInputSchema} from './obligations/contracts.ts';
 import {OBLIGATIONS_CASE_POLICY} from './obligations/source-policy.ts';
+import {travelEntitlementInputSchema} from './travel/contracts.ts';
 import {materializeQuestionnaireAgeRanges} from './age-range-materialization.ts';
 import {pensionProductReview} from './pension-product.ts';
 import {workingTimeProductReview} from './working-time-product.ts';
@@ -64,7 +65,8 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  const obligationPolicy=base.entitlement_evidence?.obligations?obligationsEntitlementInputSchema.parse(base.entitlement_evidence.obligations).case_policy:undefined;
  const topics=['working_time','pension','travel','minimum_wage','vacation','convalescence'].filter(t=>base.entitlement_evidence?.[t as keyof EntitlementEvidence]!==undefined);
  if(obligationPolicy===OBLIGATIONS_CASE_POLICY)topics.push(...base.purchased_scope.topics.filter(t=>t==='contract'||t==='bonuses'));
- const laws=entitlementLegalDocuments(base.case_id,topics,obligationPolicy===OBLIGATIONS_CASE_POLICY?{obligations_policy:obligationPolicy}:undefined),packet=assertEntitlementSourcePacket(base,base.entitlement_evidence,laws);
+ const travelPolicy=base.entitlement_evidence?.travel?travelEntitlementInputSchema.parse(base.entitlement_evidence.travel).calculation_policy:undefined;
+ const laws=entitlementLegalDocuments(base.case_id,topics,{...(obligationPolicy===OBLIGATIONS_CASE_POLICY?{obligations_policy:obligationPolicy}:{}),...(travelPolicy?{travel_policy:travelPolicy}:{})}),packet=assertEntitlementSourcePacket(base,base.entitlement_evidence,laws);
  const baseline=resolve(base,materializeQuestionnaireAgeRanges(packet,packet,base));
  const documents=[...base.documents];for(const law of laws){const at=documents.findIndex(d=>d.document_id===law.document_id);if(at<0)documents.push(law);else documents[at]=law;}
  let withNeeds=documentReviewInputSchema.parse({...base,documents,completion_input:{...parseReviewCompletionInput(base.completion_input),needs:[...parseReviewCompletionInput(base.completion_input).needs,...baseline.needs]}});

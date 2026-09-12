@@ -2,6 +2,7 @@ import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import type {DocumentReviewSource} from '../document-review/calculations.ts';
 import {pensionLegalSource,PENSION_SOURCE_REVIEW_SHA256,PENSION_FLOOR_SOURCE_REVIEW_SHA256} from '../entitlement-review/pension/sources.ts';
 import {travelLegalSource,TRAVEL_SOURCE_REVIEW_SHA256} from '../entitlement-review/travel/sources.ts';
+import {TRAVEL_GENERAL_ORDER_FLOOR_POLICY,TRAVEL_FLOOR_SOURCE_REVIEW_SHA256,travelFloorLegalSource} from '../entitlement-review/travel/floor-policy.ts';
 import {vacationLegalSource,VACATION_SOURCE_REVIEW_SHA256} from '../entitlement-review/vacation/sources.ts';
 import {minimumWageLegalSource,MINIMUM_WAGE_SOURCE_REVIEW_SHA256} from '../entitlement-review/minimum-wage/source-policy.ts';
 import {workingTimeLegalSource,WORKING_TIME_SOURCE_REVIEW,WORKING_TIME_SOURCE_REVIEW_SHA256} from '../entitlement-review/working-time/source-policy.ts';
@@ -144,6 +145,13 @@ function pensionFloorRecipe(decision_id:string,method:string,paths:string[],page
   complete_arrangement_compliance_assessed:false,zero_difference_establishes_compliance:false};
  return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
 }
+function travelFloorRecipe(decision_id:string,method:string,paths:string[],locator:string){
+ const ordinary=recipe('travel',decision_id,method,paths,TRAVEL_FLOOR_SOURCE_REVIEW_SHA256,[travelLegalSource(1,locator),travelFloorLegalSource('סעיף 30(א)–(ב) — הנוסח המקורי; קבלה נפרדת נדרשת לעדכניות ולפרשנות')]);
+ const {recipe_sha256,...body}=ordinary;void recipe_sha256;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id+'.floor-v2',case_predicate:'travel-general-order-floor-case-v2' as const,calculation_policy:TRAVEL_GENERAL_ORDER_FLOOR_POLICY,
+  complete_arrangement_compliance_assessed:false,zero_difference_establishes_compliance:false,current_source_and_interpretation_admission_required:true};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
 export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  ...historicalRecipes,
  ...['ai-case.mw.population','ai-case.cv.population','ai-case.vacation.general_section3','ai-case.wt.coverage'].map(ageRangeRecipe),
@@ -152,5 +160,9 @@ export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  pensionFloorRecipe('pension.pensionable_wage','identified_complete_component_basis_exact_period_and_operand',['period','pensionable_wage','eligible_interval_wage','source_facts'],4,'סעיף 6(ב)–(ג) — בסיס מזוהה לתקופה; אין אישור לתקרה חלקית או להסדר גבוה יותר'),
  pensionFloorRecipe('pension.prior_coverage_evidence','identified_prior_insurance_source_covers_actual_employment_start',['period','facts.employment_start','facts.prior_coverage_at_start','source_facts.prior_insurance'],4,'סעיף 6(ה) — מקור לביטוח קודם במועד תחילת העבודה; תזמון ההפקדה נבדק בנפרד'),
  pensionFloorRecipe('pension.statutory_floor','explicit_general_minimum_on_identified_base_not_complete_entitlement',['period','calculation_policy'],4,'סעיפים 5(א), 6 — רצפת 6% לפיצויים; אין הכרעה במלוא ההסדר או הוכחת העברה'),
+ travelFloorRecipe('travel.general_coverage','explicit_private_employee_and_uniform_route_for_general_order_floor',['period','product_facts.employment_relationship','product_facts.workplace_sector','facts','commute_days'], 'רישת צו 2016 וסעיף 3 — תחום המוצר ועובדות ההגעה; לא מלוא ההסדר'),
+ travelFloorRecipe('travel.fare_basis','identified_route_tariff_daily_cell_for_general_order_floor',['period','product_facts','facts','commute_days','fare_source_context','discounted_daily_fare'],'סעיף 4 — תעריף מוזל מתאים, תקופה וכיוונים מזוהים'),
+ travelFloorRecipe('travel.ticket_options','identified_complete_ticket_inventory_for_general_order_floor',['period','product_facts','facts','commute_days','fare_source_context','discounted_daily_fare','monthly_pass','monthly_pass_cost'],'סעיף 4 — מלאי כרטיסים ומנוי מתאימים; חוסר אינו אי־זמינות'),
+ travelFloorRecipe('travel.general_order_floor','current_source_assessed_general_order_floor_preserving_better_terms',['period','calculation_policy'],'רישת צו 2016 וסעיפים 2–4 — סכום במסלול הכללי בלבד'),
 ]);
 export type AiReleaseDecisionRecipe=(typeof AI_RELEASE_DECISION_RECIPES)[number];

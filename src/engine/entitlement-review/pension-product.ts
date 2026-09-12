@@ -42,7 +42,7 @@ export function pensionProductReview(input:DocumentReviewInput,candidate:unknown
  }
  for(const q of personal){
   const fact_key=`entitlement.pension.${canonicalSha256({period:input.period,pins,path:q.path}).slice(0,32)}`;
-  const ids=[...new Set([...resolved.checks.map(c=>c.check_id),...resolved.gaps.flatMap(g=>g.dependent_check_ids)])];
+  const ids=q.dependent_check_ids?[...q.dependent_check_ids]:[...new Set([...resolved.checks.map(c=>c.check_id),...resolved.gaps.flatMap(g=>g.dependent_check_ids)])];
   if(!ids.length)continue;
   needs.push({fact_key,kind:'factual',reason:q.fact.state==='conflict'?'conflicted':q.fact.state==='unreadable'?'unreadable':q.fact.state==='missing'?'missing':'unknown',
    required_evidence_kind:'customer_declaration',question:q.question,answer_kind:q.answer_kind,source_pins:pins,dependent_check_ids:ids,general_question:false,

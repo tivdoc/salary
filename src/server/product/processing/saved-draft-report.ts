@@ -1,3 +1,4 @@
+import {renderOwnerEngineeringBundle} from '../reports/owner-engineering-report';
 import {renderReviewBundle} from '../reports/document-review-projection';
 import {renderAiReleaseBundle} from '../reports/ai-release-report';
 import {DOCUMENT_REVIEW_RENDER_POLICY} from '../reports/document-review-render-policy';
@@ -20,6 +21,7 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export class SavedAnalysisDraftBuilder implements ReportBuilderPort {
  async build(bundle:AnalysisResultBundle):Promise<DeterministicReportArtifacts>{
   const reportId=savedAnalysisId('saved-report',bundle.result_sha256);
+  if(bundle.owner_engineering)return renderOwnerEngineeringBundle(bundle,reportId);
   if(bundle.ai_release)return renderAiReleaseBundle(bundle,reportId);
   if(bundle.document_review)return renderReviewBundle(bundle,reportId,{gapPresentation:DOCUMENT_REVIEW_RENDER_POLICY});
   const report=buildCanonicalReport(bundle,reportId);

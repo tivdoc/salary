@@ -1,6 +1,6 @@
 import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import {evaluateAiReleaseAssessment,assertAiReleaseAdmission,type AiReleaseAdmission,type AiReleaseBlocker} from '../ai-release/policy.ts';
-import type {AiReleaseSourcePin} from '../ai-release/contracts.ts';
+import type {AiReleaseSourcePin,AiReleaseCurrentContext} from '../ai-release/contracts.ts';
 import {entitlementLegalDocuments,isPinnedEntitlementLegalDocument} from '../entitlement-review/legal-documents.ts';
 import type {DocumentReviewCheckResult,DocumentReviewInput} from '../document-review/contracts.ts';
 import type {RuleSpecInputValue} from '../legal-operations/rulespec.ts';
@@ -15,7 +15,7 @@ const sourceMatch=(pin:AiReleaseSourcePin,source:{case_id:string;document_id:str
  pin.case_id===source.case_id&&pin.version_id===source.version_id&&pin.source_sha256===source.file_sha256
  &&(pin.document_id===source.document_id||source.document_id===pin.version_id);
 
-function currentSources(prepared:AiReleaseRuntimePreparation,input:AiReleaseRuntimeInput){
+export function currentSources(prepared:AiReleaseRuntimePreparation,input:{assessment_input:{current:AiReleaseCurrentContext}}){
  const {current}=input.assessment_input,source=prepared.composed,purchase=source.purchased_scope;
  if(current.scope.case_id!==source.case_id||current.scope.order_id!==purchase.order_id||current.scope.order_origin!==purchase.origin
   ||current.scope.order_receipt_sha256!==purchase.receipt_sha256||!same(current.scope.period,source.period))throw Error('AI_RUNTIME_CURRENT_SCOPE_MISMATCH');
@@ -27,13 +27,13 @@ function currentSources(prepared:AiReleaseRuntimePreparation,input:AiReleaseRunt
  }
 }
 
-function valueUnit(value:Value|null){return value===null?null:value.kind==='money'?'currency.'+value.currency.toLowerCase():value.kind==='boolean'?'boolean':value.unit;}
-function monetaryState(expected:Value|null,recorded:Value|null,difference:Value|null){
+export function valueUnit(value:Value|null){return value===null?null:value.kind==='money'?'currency.'+value.currency.toLowerCase():value.kind==='boolean'?'boolean':value.unit;}
+export function monetaryState(expected:Value|null,recorded:Value|null,difference:Value|null){
  if(expected?.kind!=='money')return 'nonmonetary' as const;
  if(difference?.kind!=='money'||recorded?.kind!=='money')return 'expected_only' as const;
  return difference.minor_units>0?'difference_positive' as const:difference.minor_units<0?'recorded_above_expected' as const:'difference_zero' as const;
 }
-function checkCurrentDecisions(check:DocumentReviewCheckResult,at:string):RuntimeBlocker[]{
+export function checkCurrentDecisions(check:DocumentReviewCheckResult,at:string):RuntimeBlocker[]{
  const calculation=check.calculation,op=calculation.input.operation;
  if(op.kind!=='candidate_rule')return [{code:'AI_RUNTIME_NOT_GENERATED_ENTITLEMENT',dependency_id:check.check_id}];
  const blockers:RuntimeBlocker[]=[];

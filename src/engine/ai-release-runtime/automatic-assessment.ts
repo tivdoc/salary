@@ -2,7 +2,9 @@ import {z} from 'zod';
 import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import {aiReleaseAssessmentSchema,aiReleaseAssessmentInputSchema,aiReleaseCurrentContextSchema,
  aiReleasePolicySchema,aiReleaseRegistrySchema,aiReleaseSourceReceiptSchema,aiReleaseInterpretationReceiptSchema,aiReleaseTestReceiptSchema,
- type AiReleaseAssessmentInput,type AiReleaseCurrentContext,type AiReleaseSourcePin} from '../ai-release/contracts.ts';
+ type AiReleaseAssessmentInput,type AiReleaseCurrentContext,type AiReleaseSourcePin,
+ ownerEngineeringPolicySchema,ownerEngineeringCurrentContextSchema,ownerEngineeringAssessmentInputSchema,
+ type OwnerEngineeringAssessmentInput,type OwnerEngineeringCurrentContext} from '../ai-release/contracts.ts';
 import {isPinnedEntitlementLegalDocument} from '../entitlement-review/legal-documents.ts';
 import type {DocumentReviewInput} from '../document-review/contracts.ts';
 import {prepareAiReleaseRuntime,type AiReleaseRuntimePreparation} from './generator-manifest.ts';
@@ -15,11 +17,17 @@ export type AutomaticAiReleaseAssessmentInput={
  current:Omit<AiReleaseCurrentContext,'assessment_sha256'|'expected_generated_rules'>;
  issuance:{issued_at:string;expires_at:string;reviewer_id:string;reviewer_version:string};
 };
+export type AutomaticOwnerEngineeringAssessmentInput=Omit<AutomaticAiReleaseAssessmentInput,'configuration'|'current'>&{
+ configuration:Pick<OwnerEngineeringAssessmentInput,'policy'|'registry'|'source_receipts'|'interpretation_receipts'|'test_receipts'>;
+ current:Omit<OwnerEngineeringCurrentContext,'assessment_sha256'|'expected_generated_rules'>;
+};
 const configurationSchema=z.object({policy:aiReleasePolicySchema,registry:aiReleaseRegistrySchema,
  source_receipts:z.array(aiReleaseSourceReceiptSchema),interpretation_receipts:z.array(aiReleaseInterpretationReceiptSchema),test_receipts:z.array(aiReleaseTestReceiptSchema)}).strict();
 // The complete current-context refinements run again in the final input parse;
 // source-pin uniqueness is additionally checked before constructing any proof.
 const currentSchema=z.object(aiReleaseCurrentContextSchema.shape).omit({assessment_sha256:true,expected_generated_rules:true}).strict();
+const engineeringConfigurationSchema=configurationSchema.extend({policy:ownerEngineeringPolicySchema});
+const engineeringCurrentSchema=z.object(ownerEngineeringCurrentContextSchema.shape).omit({assessment_sha256:true,expected_generated_rules:true}).strict();
 const issuanceSchema=z.object({issued_at:z.iso.datetime({offset:true}),expires_at:z.iso.datetime({offset:true}),
  reviewer_id:z.string().min(1).max(200),reviewer_version:z.string().min(1).max(200)}).strict();
 const same=(a:unknown,b:unknown)=>canonicalSha256(a)===canonicalSha256(b);
@@ -35,7 +43,16 @@ function matches(pin:AiReleaseSourcePin,document:DocumentReviewInput['documents'
  * The ordinary runtime recomputes the same manifests and independently blocks
  * unavailable operands, decisions and counterfactual-only checks. */
 export function composeAutomaticAiReleaseAssessment(input:AutomaticAiReleaseAssessmentInput){
- const configuration=configurationSchema.parse(input.configuration),current=currentSchema.parse(input.current),issuance=issuanceSchema.parse(input.issuance);
+ const result=composeAssessment(input,false);
+ return deepFreeze({...result,assessment_input:aiReleaseAssessmentInputSchema.parse(result.assessment_input)});
+}
+export function composeAutomaticOwnerEngineeringAssessment(input:AutomaticOwnerEngineeringAssessmentInput){
+ const result=composeAssessment(input,true);
+ return deepFreeze({...result,assessment_input:ownerEngineeringAssessmentInputSchema.parse(result.assessment_input)});
+}
+function composeAssessment(input:AutomaticAiReleaseAssessmentInput|AutomaticOwnerEngineeringAssessmentInput,engineering:boolean){
+ const configuration=engineering?engineeringConfigurationSchema.parse(input.configuration):configurationSchema.parse(input.configuration),
+  current=engineering?engineeringCurrentSchema.parse(input.current):currentSchema.parse(input.current),issuance=issuanceSchema.parse(input.issuance);
  const prepared=prepareAiReleaseRuntime({source:input.source,analysis_run_id:input.prepared.analysis_run_id,
   trusted_generator_pins:[...input.trusted_generator_pins]});
  invariant(same(prepared,input.prepared),'AI_AUTOMATIC_PREPARATION_MISMATCH');
@@ -49,10 +66,11 @@ export function composeAutomaticAiReleaseAssessment(input:AutomaticAiReleaseAsse
   invariant(current.source_pins.some(pin=>matches(pin,document)),'AI_AUTOMATIC_SOURCE_MISMATCH');
  }
  const {policy,registry}=configuration;
+ if(engineering)invariant('owner_scope' in policy&&'owner_scope' in current&&same(policy.owner_scope,current.owner_scope),'OWNER_ENGINEERING_OWNER_SCOPE_MISMATCH');
  invariant(policy.sha256===current.policy_sha256&&registry.policy_sha256===policy.sha256
   &&registry.sha256===current.registry_sha256&&registry.revision===current.registry_revision,'AI_AUTOMATIC_CONFIGURATION_PIN_MISMATCH');
  invariant(policy.namespace===current.namespace&&registry.namespace===current.namespace,'AI_AUTOMATIC_NAMESPACE_MISMATCH');
- invariant(policy.allowed_environments.includes(current.environment)
+ invariant(policy.allowed_environments.some(value=>value===current.environment)
   &&(current.namespace!=='isolated_test'||current.is_qa&&['development','test'].includes(current.environment)),'AI_AUTOMATIC_ENVIRONMENT_FORBIDDEN');
  const reviewer=registry.reviewers.find(r=>r.actor_id===issuance.reviewer_id&&r.actor_version===issuance.reviewer_version);
  invariant(reviewer&&reviewer.review_method_version===policy.review_method_version,'AI_AUTOMATIC_REVIEWER_MISMATCH');
@@ -92,7 +110,7 @@ export function composeAutomaticAiReleaseAssessment(input:AutomaticAiReleaseAsse
   policy_sha256:policy.sha256,registry_sha256:registry.sha256,actor_kind:'ai_reviewer' as const,
   reviewer_id:issuance.reviewer_id,reviewer_version:issuance.reviewer_version,scope,issued_at:issuance.issued_at,expires_at:issuance.expires_at,branches};
  const assessment=aiReleaseAssessmentSchema.parse({...assessmentBody,sha256:canonicalSha256(assessmentBody)});
- const assessment_input=aiReleaseAssessmentInputSchema.parse({...configuration,assessment,current:{...current,
+ const assessment_input=(engineering?ownerEngineeringAssessmentInputSchema:aiReleaseAssessmentInputSchema).parse({...configuration,assessment,current:{...current,
   assessment_sha256:assessment.sha256,expected_generated_rules:prepared.expected_generated_rules}});
  const provenanceBody={schema_version:'ai-automatic-assessment-provenance-v1' as const,assessment_sha256:assessment.sha256,
   actor:{kind:'deterministic_application_of_ai_reviewed_rules' as const,reviewer_id:issuance.reviewer_id,reviewer_version:issuance.reviewer_version,

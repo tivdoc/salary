@@ -34,7 +34,7 @@ export const pensionEntitlementInputSchema=z.object({schema_version:z.literal('p
  recorded:z.array(z.object({share:z.enum(['employee','employer','severance','combined_employer']),
   relationship_check:documentReviewCalculationInputSchema}).strict()).max(4),
  remittance_status:z.enum(['not_assessed','missing','unverified','confirmed']).default('not_assessed'),
-}).strict();
+}).strict().refine(v=>!v.source_facts?.table_policy||!!v.product_facts?.contract_terms_changed,'PENSION_TABLE_TEMPORAL_FACT_REQUIRED');
 export type PensionEntitlementInput=z.infer<typeof pensionEntitlementInputSchema>;
 export type PensionFact=PensionEntitlementInput['facts'][keyof PensionEntitlementInput['facts']];
 export type PensionShare='employee'|'employer'|'severance';

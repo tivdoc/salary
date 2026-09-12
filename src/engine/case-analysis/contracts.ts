@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import {aiReleaseRuntimeInputSchema,type AiReleaseRuntimeInput} from '../ai-release-runtime/contracts.ts';
 import {runAiReleaseRuntime,replayAiReleaseRuntime,type AiReleaseRuntimeResult} from '../ai-release-runtime/runtime.ts';
+import {ownerEngineeringRuntimeInputSchema,runOwnerEngineeringRuntime,replayOwnerEngineeringRuntime,type OwnerEngineeringRuntimeInput,type OwnerEngineeringRuntimeResult} from '../ai-release-runtime/owner-engineering.ts';
 import type { ImmutableDocument } from "../domain/documents.ts";
 import type { CanonicalFact } from "../facts/contracts.ts";
 import type { NormalizedPayslipExtraction } from "../extraction/payslip.ts";
@@ -16,6 +17,7 @@ import type {
 
 export const CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION='case-analysis@0.6.7' as const;
 export const CASE_ANALYSIS_AI_RELEASE_CODE_VERSION='case-analysis@0.6.8' as const;
+export const CASE_ANALYSIS_OWNER_ENGINEERING_CODE_VERSION='case-analysis@0.6.9' as const;
 export const CASE_ANALYSIS_CODE_VERSION = "case-analysis@0.6.5" as const;
 export const CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION = 'case-analysis@0.6.6' as const;
 
@@ -67,7 +69,7 @@ export type PinnedAnalysisDependencies = Readonly<{
   source_version_ids: readonly string[];
   parameter_version_ids: readonly string[];
   rule_spec_versions: readonly string[];
-  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1" | "case-analysis@0.6.2" | "case-analysis@0.6.3" | "case-analysis@0.6.4" | typeof CASE_ANALYSIS_CODE_VERSION | typeof CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION | typeof CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION | typeof CASE_ANALYSIS_AI_RELEASE_CODE_VERSION;
+  code_version: "case-analysis@0.6.0" | "case-analysis@0.6.1" | "case-analysis@0.6.2" | "case-analysis@0.6.3" | "case-analysis@0.6.4" | typeof CASE_ANALYSIS_CODE_VERSION | typeof CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION | typeof CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION | typeof CASE_ANALYSIS_AI_RELEASE_CODE_VERSION | typeof CASE_ANALYSIS_OWNER_ENGINEERING_CODE_VERSION;
   template_version: string;
 }>;
 
@@ -185,4 +187,28 @@ export function assertCaseAnalysisAiReleaseScope(envelope:CaseAnalysisAiRelease,
     ||current.facts_sha256!==scope.facts_snapshot_sha256||current.period.from!==scope.period.start_date
     ||current.period.to!==scope.period.end_date||!scope.document_review
     ||canonicalSha256(result.review)!==canonicalSha256(scope.document_review))throw new CaseAnalysisError('AI_RELEASE_BUNDLE_SCOPE_MISMATCH');
+}
+
+export type CaseAnalysisOwnerEngineering=Readonly<{schema_version:'case-analysis-owner-engineering-v1';
+ binding:CaseAnalysisAiReleaseBinding;input:OwnerEngineeringRuntimeInput;result:OwnerEngineeringRuntimeResult;sha256:string}>;
+const ownerEngineeringEnvelopeSchema=z.object({schema_version:z.literal('case-analysis-owner-engineering-v1'),
+ binding:caseAnalysisAiReleaseBindingSchema,input:ownerEngineeringRuntimeInputSchema,result:z.unknown(),sha256:z.string().regex(/^[a-f0-9]{64}$/u)}).strict();
+export function createCaseAnalysisOwnerEngineering(input:OwnerEngineeringRuntimeInput,binding:CaseAnalysisAiReleaseBinding):CaseAnalysisOwnerEngineering{
+ const parsed=ownerEngineeringRuntimeInputSchema.parse(input),result=runOwnerEngineeringRuntime(parsed);
+ const body={schema_version:'case-analysis-owner-engineering-v1' as const,binding:caseAnalysisAiReleaseBindingSchema.parse(binding),input:parsed,result};
+ return deepFreeze({...body,sha256:canonicalSha256(body)});
+}
+export function replayCaseAnalysisOwnerEngineering(value:unknown):CaseAnalysisOwnerEngineering{
+ const parsed=ownerEngineeringEnvelopeSchema.parse(value),{sha256,...body}=parsed;
+ if(canonicalSha256(body)!==sha256)throw new CaseAnalysisError('OWNER_ENGINEERING_ENVELOPE_HASH_MISMATCH');
+ return deepFreeze({...parsed,result:replayOwnerEngineeringRuntime(parsed.result,parsed.input)});
+}
+export function assertCaseAnalysisOwnerEngineeringScope(envelope:CaseAnalysisOwnerEngineering,scope:CaseAnalysisAiReleaseScope){
+ const {input,result,binding}=envelope,current=input.assessment_input.current.scope;
+ if(input.analysis_run_id!==scope.analysis_run_id||result.analysis_run_id!==scope.analysis_run_id
+  ||result.case_id!==scope.case_id||current.case_id!==scope.case_id||binding.engine_case_revision!==scope.case_revision
+  ||binding.source_journal.case_id!==scope.case_id||current.input_revision!==binding.source_journal.input_revision
+  ||current.input_sha256!==binding.source_journal.input_sha256||current.facts_sha256!==scope.facts_snapshot_sha256
+  ||current.period.from!==scope.period.start_date||current.period.to!==scope.period.end_date||!scope.document_review
+  ||canonicalSha256(result.review)!==canonicalSha256(scope.document_review))throw new CaseAnalysisError('OWNER_ENGINEERING_BUNDLE_SCOPE_MISMATCH');
 }

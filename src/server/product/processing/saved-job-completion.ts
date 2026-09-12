@@ -1,3 +1,7 @@
+import {loadSavedOwnerEngineeringConfiguration,type SavedOwnerEngineeringConfiguration} from './saved-owner-engineering-configuration';
+import {assertSavedOwnerEngineeringCurrent} from './saved-owner-engineering';
+import {OWNER_ENGINEERING_REPORT_TEMPLATE} from '../reports/owner-engineering-report';
+import {CASE_ANALYSIS_OWNER_ENGINEERING_CODE_VERSION,assertCaseAnalysisOwnerEngineeringScope} from '@/engine/case-analysis/contracts';
 import {loadJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
 import {loadSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,june2026RegularReviewIdempotencyKey} from './saved-june2026-regular-authority';
 import {z} from 'zod';
@@ -27,22 +31,25 @@ const manifestSchema=z.object({schema_version:z.literal(EFFECT_KIND),job_id:z.st
  publication:z.literal('draft'),months:z.array(manifestMonthSchema).min(1)}).strict();
 
 const completionKind=z.object({dependencies:z.object({code_version:z.string(),template_version:z.string()}).passthrough(),
- bundle:z.object({ai_release:z.unknown().optional()}).passthrough()}).passthrough();
+ bundle:z.object({ai_release:z.unknown().optional(),owner_engineering:z.unknown().optional()}).passthrough()}).passthrough();
 function isAiReceipt(receipt:z.infer<typeof receiptSchema>){
  if(receipt.completion===undefined)return false;
  const completion=completionKind.parse(receipt.completion);
  return completion.dependencies.code_version===CASE_ANALYSIS_AI_RELEASE_CODE_VERSION
-  ||completion.dependencies.template_version===AI_RELEASE_REPORT_TEMPLATE||completion.bundle.ai_release!==undefined;
+  ||completion.dependencies.template_version===AI_RELEASE_REPORT_TEMPLATE||completion.bundle.ai_release!==undefined
+  ||completion.dependencies.code_version===CASE_ANALYSIS_OWNER_ENGINEERING_CODE_VERSION||completion.dependencies.template_version===OWNER_ENGINEERING_REPORT_TEMPLATE||completion.bundle.owner_engineering!==undefined;
 }
 /** AI terminal reads are still current qualified-result reads. Historical
  * non-AI receipts retain their original immutable replay contract. */
-function assertAiReceipt(receipt:z.infer<typeof receiptSchema>,profile:SavedAiReleaseConfiguration,job:SourceJob,order:SavedExecutionOrder){
- const completion=z.object({bundle:z.unknown(),report:z.unknown(),dependencies:z.object({code_version:z.literal(CASE_ANALYSIS_AI_RELEASE_CODE_VERSION),
-  template_version:z.literal(AI_RELEASE_REPORT_TEMPLATE)}).passthrough()}).passthrough().parse(receipt.completion);
+function assertAiReceipt(receipt:z.infer<typeof receiptSchema>,profile:SavedAiReleaseConfiguration|SavedOwnerEngineeringConfiguration,job:SourceJob,order:SavedExecutionOrder){
+ const owner='owner_scope' in profile;
+ const completion=z.object({bundle:z.unknown(),report:z.unknown(),dependencies:z.object({code_version:z.literal(owner?CASE_ANALYSIS_OWNER_ENGINEERING_CODE_VERSION:CASE_ANALYSIS_AI_RELEASE_CODE_VERSION),
+  template_version:z.literal(owner?OWNER_ENGINEERING_REPORT_TEMPLATE:AI_RELEASE_REPORT_TEMPLATE)}).passthrough()}).passthrough().parse(receipt.completion);
  const bundle=decodeBundle(completion.bundle,savedOrderLegalTopics(order)),report=decodeReport(completion.report),command=decodeCommand(receipt.command);
- if(!bundle.ai_release)throw Error('SAVED_JOB_AI_ENVELOPE_REQUIRED');
- const envelope=assertSavedAiReleaseCurrent(bundle.ai_release,profile),scope=envelope.input.assessment_input.current.scope;
- assertCaseAnalysisAiReleaseScope(envelope,bundle);
+ const envelope=owner?(()=>{if(!bundle.owner_engineering)throw Error('SAVED_JOB_OWNER_ENVELOPE_REQUIRED');
+  assertCaseAnalysisOwnerEngineeringScope(bundle.owner_engineering,bundle);return assertSavedOwnerEngineeringCurrent(bundle.owner_engineering,profile);})()
+  :(()=>{if(!bundle.ai_release)throw Error('SAVED_JOB_AI_ENVELOPE_REQUIRED');assertCaseAnalysisAiReleaseScope(bundle.ai_release,bundle);return assertSavedAiReleaseCurrent(bundle.ai_release,profile);})();
+ const scope=envelope.input.assessment_input.current.scope;
  if(bundle.case_id!==job.case_id||bundle.analysis_run_id!==receipt.analysis_run_id||bundle.result_sha256!==receipt.result_sha256
   ||report.report_id!==receipt.report_id||report.report_revision!==receipt.report_revision||report.report_sha256!==receipt.report_sha256
   ||report.analysis_result_sha256!==bundle.result_sha256||bundle.case_revision!==command.case_revision
@@ -107,7 +114,7 @@ async function replayTerminalManifest(context:PostgresTransactionContext,jobId:s
   ||new Set(receipts.map(row=>row.idempotency_key)).size!==expected.length)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
  const byRun=new Map(receipts.map(row=>[row.analysis_run_id,row]));
  const requiresAi=job.processing_profile==='qualified_ai_v1'||receipts.some(isAiReceipt);
- const aiProfile=requiresAi?await loadSavedAiReleaseConfiguration(context,job):null;
+ const aiProfile=requiresAi?(await loadSavedOwnerEngineeringConfiguration(context,job)??await loadSavedAiReleaseConfiguration(context,job)):null;
  if(requiresAi&&!aiProfile)throw Error('SAVED_JOB_AI_CONFIGURATION_REQUIRED');
  for(const [index,{order,month}] of expected.entries()){
   const saved=manifest.months[index],receipt=byRun.get(saved.analysis_run_id);
@@ -148,7 +155,7 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
  if(locked.state!=='succeeded'&&(locked.state!=='running'||locked.lease_owner!==input.workerId||!locked.lease_valid))throw new Error('SAVED_JOB_FENCE');
  const orders=await readSavedOrders(context,job);
  if(locked.state==='succeeded')return replayTerminalManifest(context,input.jobId,job,tenant,locked.terminal_effect_sha256,orders);
- const aiProfile=await loadSavedAiReleaseConfiguration(context,job);
+ const aiProfile=await loadSavedOwnerEngineeringConfiguration(context,job)??await loadSavedAiReleaseConfiguration(context,job);
  const expected=[];
  for(const order of orders)for(const month of purchasedMonths(order)){
   const june=month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage';
@@ -159,7 +166,7 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
   const ready=regular?.state==='ready'?regular:null;
   const baseKey=aiProfile?savedAiReleaseBaseKey(job,order.id,month,aiProfile):authority?june2026TestIdempotencyKey(job,order.id,authority):ready?june2026RegularIdempotencyKey(job,order.id,ready)
    :june?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,month);
-  const review=authority||ready?null:await resolveSavedDocumentReviewKey(context,job,order,month,baseKey,aiProfile?{aiProfile}:undefined);
+  const review=authority||ready?null:await resolveSavedDocumentReviewKey(context,job,order,month,baseKey,aiProfile?('owner_scope' in aiProfile?{ownerProfile:aiProfile}:{aiProfile}):undefined);
   expected.push({order,month,key:review?.key??baseKey,reviewSha256:review?.reviewSha256,
    mode:authority?'synthetic_test':ready?.mode??'real'});
  }
@@ -179,7 +186,7 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
  const receipts=selected.rows.map(row=>receiptSchema.parse(row));
  if(receipts.length!==expected.length||new Set(receipts.map(r=>r.idempotency_key)).size!==expected.length)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
  const byKey=new Map(receipts.map(r=>[r.idempotency_key,r]));
- const currentProfile=aiProfile?await loadSavedAiReleaseConfiguration(context,job):null;
+ const currentProfile=aiProfile?('owner_scope' in aiProfile?await loadSavedOwnerEngineeringConfiguration(context,job):await loadSavedAiReleaseConfiguration(context,job)):null;
  if(aiProfile&&currentProfile?.profile_sha256!==aiProfile.profile_sha256)throw Error('AI_RELEASE_CONFIGURATION_CHANGED');
  const months:z.infer<typeof manifestMonthSchema>[]=expected.map(({order,month,key,mode,reviewSha256})=>{
   const receipt=byKey.get(key);if(!receipt)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');

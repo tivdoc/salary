@@ -54,3 +54,25 @@ Factory branding is process-local; restart requires verified-input replay.
 
 All `.fixture.ts` and `.test.ts` inputs are synthetic unit data. They are not
 receipts for active legal reviews or external application use.
+# Owner-only engineering purpose
+
+`runOwnerEngineeringRuntime` is an additive versioned projection of the same
+ordinary preparation, generated RuleSpecs and execution receipts. Its policy,
+configuration, admission, runtime result and case-analysis envelope have distinct
+schema discriminants. Existing qualified v1 parsers reject them.
+
+The trusted loader supplies the exact case, owner identity and enrollment plus
+the existing current source, paid scope, canonical facts, build and time pins.
+The engineering policy is restricted to `isolated_test`, QA and `development`.
+It preserves the complete hashed `human_by_law` review. An `unresolved` review
+may remain explicitly unresolved for engineering inspection; `required` still
+blocks. Missing or conflicting source/interpretation/factual evidence, required
+case decisions, expiry and revocation retain their ordinary blocking behavior.
+
+Every engineering check/result sets `release_authorized`, `publication_allowed`,
+`notification_allowed` and `verified_debt` to false. Totals remain null. The
+distinct `owner_engineering` envelope can be retained for an authenticated owner
+draft, but it is not input to a qualified publisher or notification. Those
+persistence, delivery and live currentness fences must be enforced separately
+by the ordinary server pipeline; this pure engine cannot authenticate an owner
+session or establish database currentness.

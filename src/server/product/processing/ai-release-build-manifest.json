@@ -32,11 +32,11 @@
     },
     {
       "path": "src/engine/ai-release-decisions/apply.ts",
-      "sha256": "0ac7c1784ffe6bfe824c3a5c90b30145640f2c20e9d1ec5b51665fd132f9399f"
+      "sha256": "673e1bb287752e46f187a26fd3481798521faf890db2f54b712a1a6b34a5fb11"
     },
     {
       "path": "src/engine/ai-release-decisions/catalog.ts",
-      "sha256": "ba553e94909cefce3378d26d760d80a60a7f0f3cb154173335923926d69219c8"
+      "sha256": "580507a6f63e2ec5890baef5eff84ef07678c982fe3cdafa0ab9e2765a8390ec"
     },
     {
       "path": "src/engine/ai-release-decisions/contracts.ts",
@@ -52,7 +52,7 @@
     },
     {
       "path": "src/engine/ai-release-runtime/automatic-assessment.ts",
-      "sha256": "02ef4522c9c8c658a770f4830b8112c75e1c48d01fbbcd0c612a9855750a4389"
+      "sha256": "1b89277ea3b5103aca9236dfe3783919b5e6bc1e271ed67c50f916baadc49fba"
     },
     {
       "path": "src/engine/ai-release-runtime/contracts.ts",
@@ -64,23 +64,27 @@
     },
     {
       "path": "src/engine/ai-release-runtime/index.ts",
-      "sha256": "b65ef77a99ea134620687f85dbae8be27bd4c9827078f1b80b46fe68e0a0ebec"
+      "sha256": "46df55a987e978bdad422382e8b9a8c9c87dce91d74616a5ec07cbdc7ffa108e"
+    },
+    {
+      "path": "src/engine/ai-release-runtime/owner-engineering.ts",
+      "sha256": "4b36c7d76175e2b4dff9819b3be0cf5f06ef628e000a879e374364f4409cd6e4"
     },
     {
       "path": "src/engine/ai-release-runtime/runtime.ts",
-      "sha256": "2b4bf104e7c16dd1d0867d512facb49db689a84b7078494ed476e7a1b4b9de33"
+      "sha256": "25b29b7da6e38f981614ab8dc161a5e0e6924f8f9c9fbf8fb4e20a2c60a0634c"
     },
     {
       "path": "src/engine/ai-release/contracts.ts",
-      "sha256": "97a7e4352c6e2ee95a89f7e3d70399ce74bc775bf05ef7b3e83addaa0731f5bc"
+      "sha256": "e5ed0b19dddd479f73268bba50ffaba2ecd4e08bd8eca09b57075410d278474b"
     },
     {
       "path": "src/engine/ai-release/index.ts",
-      "sha256": "9aca8b7dbce90e33403526f796b3280027521f6935cfa3016386e6cc98a18978"
+      "sha256": "b2e025b3db98790cb52e9a39fe1d6bb93b56cadb62515bc09e997e9570031056"
     },
     {
       "path": "src/engine/ai-release/policy.ts",
-      "sha256": "9d996d989f48765c66aab3583b4de3d9f411bc1873dfd3c8b9dd3dfc8ccd52fc"
+      "sha256": "6d05bbd44cff4cd2ae1ce58bc08b43aa2f16ae7213c7aab9a3baed8a40002ce9"
     },
     {
       "path": "src/engine/calculations/contracts.ts",
@@ -92,11 +96,11 @@
     },
     {
       "path": "src/engine/case-analysis/contracts.ts",
-      "sha256": "a061e9c358ddb7ac436025fc55c5b443dfd6a9533a425424f3fa8e3b6ccb5dd8"
+      "sha256": "026379611abf5b6c7e90743a2b3c39e1b01547df7693e8e1c1da7cf8fbd04fdc"
     },
     {
       "path": "src/engine/case-analysis/service.ts",
-      "sha256": "758071e71e63097ac5df9744bb1726e4dbe88330f8a8e4426b247a56bbab7016"
+      "sha256": "ce1afdb28318777f784148e037092d3fac0667cbb7cc8aa49c8741005ba176a1"
     },
     {
       "path": "src/engine/case-operations/canonical.ts",
@@ -172,7 +176,7 @@
     },
     {
       "path": "src/engine/entitlement-review/automatic-pension.ts",
-      "sha256": "949d3132f50b1b3965a62622952686635fc6efcd9d57cdb35bae297f5bf05d64"
+      "sha256": "d1f3b3742beb4fb18ec9a086b56eecb61e02d1a89c037cb5c49d416895c8f3cb"
     },
     {
       "path": "src/engine/entitlement-review/branch-contract.ts",
@@ -180,7 +184,7 @@
     },
     {
       "path": "src/engine/entitlement-review/compose.ts",
-      "sha256": "14e46c42556b55929f899870bd9688a8001d292e823af76ab4e0b868e9d0ee96"
+      "sha256": "4db2a76e3eaaa299328903d172d42890e309fe75555c33d69ac47edfcacae407"
     },
     {
       "path": "src/engine/entitlement-review/contracts.ts",
@@ -224,7 +228,7 @@
     },
     {
       "path": "src/engine/entitlement-review/legal-documents.ts",
-      "sha256": "7bc0d45ec0202edca6a1279f83932668b351b44b5b2c257825bbae46c42680ea"
+      "sha256": "f5ccafa38500dd50875a6a09b6e7e2838541d55868d23941f5ed2e658978e31a"
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/contracts.ts",
@@ -292,11 +296,11 @@
     },
     {
       "path": "src/engine/entitlement-review/pension-product.ts",
-      "sha256": "4acae359e15d867ee769b46a2b8db338b1b860a96475dcf8aa7d8962f8a7ae6a"
+      "sha256": "3e2b21a0ffb2c902d82007d52cb4902c1e6bef3db0c1656b74aedc0b09569eef"
     },
     {
       "path": "src/engine/entitlement-review/pension/contracts.ts",
-      "sha256": "8337c25826ba513a093cde48e324dc1a5e8b05fdfb1041dec423a72a9e5bd030"
+      "sha256": "eccf87a304ef6dc17b3c877e117cf0c0420b4d7a50cd63d9e4f56ea80372e4ec"
     },
     {
       "path": "src/engine/entitlement-review/pension/eligibility.ts",
@@ -304,23 +308,27 @@
     },
     {
       "path": "src/engine/entitlement-review/pension/index.ts",
-      "sha256": "1e2d920f509dc0b33d6a3751a532fed8f35cbc80e048f34aa72e5e97ff0d2926"
+      "sha256": "1f40272e1724e1a8a8d325a6e86424e04441b41f30526f7229a6847fc462f0eb"
     },
     {
       "path": "src/engine/entitlement-review/pension/product-facts.ts",
-      "sha256": "f659fb233b67f38ef6d9a9c95fb5e0176be7d444a28b7174592390d35bd324bb"
+      "sha256": "00488106cf4205feb69113bea071205b06a360895d327fdf56786f5875483f86"
     },
     {
       "path": "src/engine/entitlement-review/pension/source-fact-contracts.ts",
-      "sha256": "f342fe65ce9e2801093ff8b19dd6d837b77415720c48eb251c980b05c974ae71"
+      "sha256": "849f8e38ce1002f26dfd45bc6eb414f527c216512935ebd071cb5075aae76bea"
     },
     {
       "path": "src/engine/entitlement-review/pension/source-facts.ts",
-      "sha256": "126247dab4bdc31c6e7d6bfcd3684e6ea5ff7216f86dcf140529fe3bf07b6c90"
+      "sha256": "9cdb12d2156cd5b153e20ae366503696ba35162f83a654e5d7b5872900b7cbe9"
     },
     {
       "path": "src/engine/entitlement-review/pension/sources.ts",
       "sha256": "45ca8d539e4838dde4ee71af6974ef221daaad5569c4b0e3acfafc961efefb02"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/table-source.ts",
+      "sha256": "d5dc39311693a84f476eeb1dbf89dd75fb9975a876e518cffb8daa02c1bc6af5"
     },
     {
       "path": "src/engine/entitlement-review/product-age-range.ts",
@@ -344,7 +352,7 @@
     },
     {
       "path": "src/engine/entitlement-review/simple-product.ts",
-      "sha256": "0f36fbd8bb181b258cfff2bc55b5420bf4068e918f20ffda6bc670acf238a73d"
+      "sha256": "11b9610bd66f5e0f4030e60e99a6e73ffbf72c469a6c6fa6d4771acce0b3a9d6"
     },
     {
       "path": "src/engine/entitlement-review/source-admission.ts",
@@ -352,11 +360,15 @@
     },
     {
       "path": "src/engine/entitlement-review/travel/contracts.ts",
-      "sha256": "a73ddccfea46b4a967a1d1830a058c0ab79469b91ca874894091ec510a184bf1"
+      "sha256": "db0cb763ec2f4eb23ff2ac78d39305edf0848018c1da02fb288655aaa681d88e"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/floor-policy.ts",
+      "sha256": "991e0716c0d54e1632ff454cf108b59819ac2fa4c888d0f336224406d49307a3"
     },
     {
       "path": "src/engine/entitlement-review/travel/index.ts",
-      "sha256": "e85dd03f309c1b4764a0557c5aac1f81411e4f1bd397381bb496f25762c6614d"
+      "sha256": "d1d94daa8ee6678945cf6bd3758ba5f73a23b33eef6838a362c67b2212a9a50c"
     },
     {
       "path": "src/engine/entitlement-review/travel/journey-facts.ts",
@@ -368,7 +380,7 @@
     },
     {
       "path": "src/engine/entitlement-review/travel/product-facts.ts",
-      "sha256": "15ed8042f3818614768f2924c2a6571dbaeb835f23600b21c671064ef45b62df"
+      "sha256": "46cd36f61fdbe72e0c4a9b7ae1d8efdc9a39139d3ae63eab9c1e64cc9d8b4e12"
     },
     {
       "path": "src/engine/entitlement-review/travel/product-labels.ts",
@@ -377,6 +389,14 @@
     {
       "path": "src/engine/entitlement-review/travel/sources.ts",
       "sha256": "448f65e4a72329d2d5de3dcf868f68ee253a38c1c8fdf636c7b1c7a39648a30b"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/tariff-contracts.ts",
+      "sha256": "d7ff600be084927415a1861317169adf3bcfc26f26e55ee712ac07a17d2d90a1"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/tariff-source.ts",
+      "sha256": "187c0449f342003319fd238479bf1e97fb319df0524e474ab799261bfa30a09b"
     },
     {
       "path": "src/engine/entitlement-review/typed-product-facts.ts",
@@ -660,7 +680,7 @@
     },
     {
       "path": "src/engine/wave3/contracts.ts",
-      "sha256": "dc3c173b19fdf006a6266503df7bfc810697546641c5705d3239128dbe69270e"
+      "sha256": "6e2a363d5416cabcdd2a2b101d4c730d1078e4d5ece7a4fb528fad7985fe0b3a"
     },
     {
       "path": "src/engine/wave4/contracts.ts",
@@ -736,7 +756,7 @@
     },
     {
       "path": "src/server/product/processing/ai-release-configuration.ts",
-      "sha256": "5f256080e9a89b9b2987c9f99d5642bac39e2087b9449eb41dc84969ac04b20d"
+      "sha256": "5743650efc64c82eabc79e0603a7cd633239d406a1a69e0263ae830202b84374"
     },
     {
       "path": "src/server/product/processing/automatic-dev-completion-notifications.ts",
@@ -791,6 +811,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "026ab3e57d59d5d5d99ab2d90f90f2ef0e131a8c268c1b6233fd329457d54483",
-  "sha256": "6ea9a6297491f122f77bee3e753fc3e2ea8392d336edcb73b14722461b3548db"
+  "source_graph_sha256": "d96040b87b4455c3699828e1c1fff826f308bcc3d061ad9d22bd5ef77d6cebe0",
+  "sha256": "b69f6f33e87ffa3b882b62ecc37094e5620659154f2931f2b7271c49849796d9"
 }

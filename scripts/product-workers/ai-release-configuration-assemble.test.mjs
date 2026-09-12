@@ -71,6 +71,17 @@ it('shares the bounded method capacity with the ordinary configuration contract'
 });
 
 describe('offline immutable AI configuration assembly',()=>{
+ it('assembles a distinct owner purpose without upgrading source or human-law status',async()=>{
+  const f=fixture();f.input.schema_version='tivdoc-owner-engineering-assembly-input-v1';
+  Object.assign(f.input.policy,{schema_version:'tivdoc-owner-engineering-policy-v1',purpose:'owner_engineering_review',claim_kind:'owner_engineering_review',allowed_environments:['development'],
+   owner_scope:{case_id:'11111111-1111-4111-8111-111111111111',identity_id:'33333333-3333-4333-8333-333333333333',enrollment_id:'44444444-4444-4444-8444-444444444444'}});
+  const r=await f.run();expect(r.configuration.schema_version).toBe('tivdoc-owner-engineering-configuration-v1');
+  expect(r.configuration.interpretation_receipts[0].human_by_law.state).toBe('unresolved');
+  expect(r.configuration.source_receipts[0].status).toBe('unknown');
+  expect(r.receipt.schema_version).toBe('tivdoc-owner-engineering-assembly-receipt-v1');
+  expect(()=>h.verifyAiReleaseConfiguration(r.configuration,h.getCompiledAiReleaseBuild())).toThrow();
+  f.input.schema_version=AI_ASSEMBLY_VERSION;await expect(f.run()).rejects.toThrow('AI_ASSEMBLY_PURPOSE_MISMATCH');
+ });
  it('builds all links from receipt IDs and preserves unresolved status and original input',async()=>{
   const f=fixture(),original=structuredClone(f.input),r=await f.run(),c=r.configuration;
   expect(f.input).toEqual(original);expect(c.source_receipts[0].status).toBe('unknown');expect(c.interpretation_receipts[0].human_by_law.state).toBe('unresolved');

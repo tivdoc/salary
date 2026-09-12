@@ -2,7 +2,7 @@ import 'server-only';
 import {z} from 'zod';
 import {canonicalSha256,deepFreeze} from '../../../engine/rule-runtime/canonical';
 import {aiReleasePolicySchema,aiReleaseRegistrySchema,aiReleaseSourceReceiptSchema,
- aiReleaseInterpretationReceiptSchema,aiReleaseTestReceiptSchema} from '../../../engine/ai-release/contracts';
+ aiReleaseInterpretationReceiptSchema,aiReleaseTestReceiptSchema,ownerEngineeringPolicySchema} from '../../../engine/ai-release/contracts';
 import {aiReleaseDecisionMethodSchema,AI_RELEASE_MAX_DECISION_METHODS,type AiReleaseDecisionMethod} from '../../../engine/ai-release-decisions/contracts';
 import {AI_RELEASE_DECISION_RECIPES} from '../../../engine/ai-release-decisions/catalog';
 import {AI_RELEASE_RUNTIME_FAMILIES} from '../../../engine/ai-release-runtime/contracts';
@@ -22,6 +22,12 @@ export const aiReleaseConfigurationSchema=z.object({schema_version:z.literal(AI_
  if(canonicalSha256(body)!==sha256)ctx.addIssue({code:'custom',message:'AI_CONFIGURATION_CONTENT_HASH'});
 });
 export type AiReleaseConfiguration=z.infer<typeof aiReleaseConfigurationSchema>;
+export const ownerEngineeringConfigurationSchema=z.object({...aiReleaseConfigurationSchema.shape,
+ schema_version:z.literal('tivdoc-owner-engineering-configuration-v1'),policy:ownerEngineeringPolicySchema,
+}).strict().superRefine((value,ctx)=>{const {sha256,...body}=value;
+ if(canonicalSha256(body)!==sha256)ctx.addIssue({code:'custom',message:'AI_CONFIGURATION_CONTENT_HASH'});
+});
+export type OwnerEngineeringConfiguration=z.infer<typeof ownerEngineeringConfigurationSchema>;
 export type AiReleaseFamilyMethod=Pick<AiReleaseDecisionMethod,'recipe_id'|'recipe_version'|'recipe_sha256'|'source_policy_sha256'>;
 const familyMethodSchema=aiReleaseDecisionMethodSchema.pick({recipe_id:true,recipe_version:true,recipe_sha256:true,source_policy_sha256:true});
 
@@ -54,7 +60,15 @@ function unique<T extends {receipt_id:string;sha256:string}>(values:T[]){
  * The caller separately authenticates the immutable DB config/enrollment. */
 export function verifyAiReleaseConfiguration(candidate:unknown,expectedBuild:AiReleaseCompiledBuild){
  assertCompiledAiReleaseBuild(expectedBuild);
- const config=aiReleaseConfigurationSchema.parse(candidate),{policy,registry}=config;
+ return verifyConfiguration(aiReleaseConfigurationSchema.parse(candidate),expectedBuild);
+}
+export function verifyOwnerEngineeringConfiguration(candidate:unknown,expectedBuild:AiReleaseCompiledBuild){
+ assertCompiledAiReleaseBuild(expectedBuild);
+ return verifyConfiguration(ownerEngineeringConfigurationSchema.parse(candidate),expectedBuild);
+}
+function verifyConfiguration<T extends AiReleaseConfiguration|OwnerEngineeringConfiguration>(config:T,expectedBuild:AiReleaseCompiledBuild){
+ assertCompiledAiReleaseBuild(expectedBuild);
+ const {policy,registry}=config;
  assert(config.build_manifest_sha256===expectedBuild.manifest.sha256,'AI_CONFIGURATION_BUILD_MISMATCH');
  assert(registry.policy_sha256===policy.sha256&&registry.namespace===policy.namespace,'AI_CONFIGURATION_REGISTRY_POLICY');
  assert(within(registry,policy),'AI_CONFIGURATION_REGISTRY_WINDOW');
@@ -127,3 +141,4 @@ export function verifyAiReleaseConfiguration(candidate:unknown,expectedBuild:AiR
  return deepFreeze({configuration:config,trusted_generator_pins:expectedBuild.trusted_generator_pins});
 }
 export type VerifiedAiReleaseConfiguration=ReturnType<typeof verifyAiReleaseConfiguration>;
+export type VerifiedOwnerEngineeringConfiguration=ReturnType<typeof verifyOwnerEngineeringConfiguration>;

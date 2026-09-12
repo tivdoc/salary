@@ -2,7 +2,7 @@ import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import type {DocumentReviewInput} from '../document-review/contracts.ts';
 import {documentReviewCalculationInputSchema} from '../document-review/calculations.ts';
 import type {ReviewCompletionNeed} from '../document-review/completions.ts';
-import {travelEntitlementInputSchema,resolveTravelEntitlement,TRAVEL_CATALOG,travelProductAnswerField} from './travel/index.ts';
+import {travelEntitlementInputSchema,resolveTravelEntitlement,travelProductAnswerField} from './travel/index.ts';
 import {minimumWageEntitlementInputSchema,resolveMinimumWageEntitlement,MINIMUM_WAGE_CATALOG} from './minimum-wage/index.ts';
 import {vacationEntitlementInputSchema,resolveVacationEntitlement,VACATION_CATALOG} from './vacation/index.ts';
 import {convalescenceEntitlementInputSchema,resolveConvalescenceEntitlement,CONVALESCENCE_CATALOG} from './convalescence/index.ts';
@@ -18,7 +18,7 @@ export function simpleEntitlementProduct(input:DocumentReviewInput,topic:Topic,c
  const e=topic==='travel'?travelEntitlementInputSchema.parse(candidate):topic==='vacation'?vacationEntitlementInputSchema.parse(candidate):topic==='convalescence'?convalescenceEntitlementInputSchema.parse(candidate):minimumWageEntitlementInputSchema.parse(candidate);
  if(e.case_id!==input.case_id||canonicalSha256(e.period)!==canonicalSha256(input.period))throw Error('ENTITLEMENT_BRANCH_SCOPE');
  const raw=topic==='travel'?resolveTravelEntitlement(e):topic==='vacation'?resolveVacationEntitlement(e):topic==='convalescence'?resolveConvalescenceEntitlement(e):resolveMinimumWageEntitlement(e);
- const catalog=topic==='travel'?TRAVEL_CATALOG:topic==='vacation'?VACATION_CATALOG:topic==='convalescence'?CONVALESCENCE_CATALOG:MINIMUM_WAGE_CATALOG;
+ const catalog=topic==='travel'?resolveTravelEntitlement(e).catalog:topic==='vacation'?VACATION_CATALOG:topic==='convalescence'?CONVALESCENCE_CATALOG:MINIMUM_WAGE_CATALOG;
  const missing:Gap[]='gaps'in raw?raw.gaps.map(g=>({key:g.dependency_id,path:g.input_path,state:g.state,kind:g.kind,question:g.question,ids:g.dependent_check_ids,answer_kind:g.answer_kind,
   ...('value_validation'in g&&g.value_validation?{date_format:g.value_validation.format}:{})})):raw.missing.map(g=>({key:g.fact_key,path:g.input_path,state:g.state,
    kind:g.kind==='source'?'missing_source':g.kind==='applicability'?'missing_applicability':'missing_fact',question:g.question,ids:g.dependent_check_ids,answer_kind:g.answer_kind}));
@@ -38,6 +38,7 @@ export function simpleEntitlementProduct(input:DocumentReviewInput,topic:Topic,c
   }
  }
  const pins=input.documents.filter(d=>e.source_manifest.some(m=>m.kind==='case_document'&&m.document_id===d.document_id)).map(d=>({case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256}));
+ if(topic==='travel'&&travelEntitlementInputSchema.parse(e).calculation_policy)for(const m of missing)if(m.path==='complete_arrangement')m.gap_only=true;
  const gaps:DocumentReviewInput['coverage_gaps']=[],needs:ReviewCompletionNeed[]=[],answer_targets:EntitlementAnswerTarget[]=[];
  for(const m of missing){
   const fact_key=m.typed?.fact_key??`entitlement.${topic}.${canonicalSha256({period:input.period,pins,path:m.path,key:m.key}).slice(0,28)}`;
