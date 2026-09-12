@@ -136,7 +136,7 @@
     },
     {
       "path": "src/engine/document-review/service.ts",
-      "sha256": "c9fcf1dbacc89a0a594014c98a86642ce3901a2c54e403e74e437253c481077b"
+      "sha256": "a174f3a6d7bac361695cc7290f5411657a73b4cfa83ec9a5d96539175b69f88f"
     },
     {
       "path": "src/engine/document-review/source-dependencies.ts",
@@ -176,11 +176,11 @@
     },
     {
       "path": "src/engine/entitlement-review/compose.ts",
-      "sha256": "0700de187a0b86fb6dc367720bc07627e2831238d2db029ae09059710fec8421"
+      "sha256": "014d901a9771f4532f5c375160eabdb866f7bdbc7ef345c272307c72e8844335"
     },
     {
       "path": "src/engine/entitlement-review/contracts.ts",
-      "sha256": "f33038e06132253ecc5923366556eff77c8389ff68626d0c6b052d585c27905c"
+      "sha256": "cd0a669af3b8e1998203765dfbb0ae4f7a3a85c2af85276fb25fd5a6efc0dfbe"
     },
     {
       "path": "src/engine/entitlement-review/convalescence/contracts.ts",
@@ -268,11 +268,19 @@
     },
     {
       "path": "src/engine/entitlement-review/pension/product-facts.ts",
-      "sha256": "1b1058f82dc26238a70e2e1905f530623874930aa9f01848efbc37c4044446c0"
+      "sha256": "153d0b1fa636673b85401f7c814ad04d5fd1d8486cde18f811b6c8cc8d21f3b9"
     },
     {
       "path": "src/engine/entitlement-review/pension/sources.ts",
       "sha256": "a11de9e74ce1d675d8fdbd8eae5bce141b984f76653d643a754273ccfe43ac25"
+    },
+    {
+      "path": "src/engine/entitlement-review/shared-product-fact-contracts.ts",
+      "sha256": "96aff0dbfd78fe80865b8d422a23c0274a9d9363a09d7fe463721af12c7bf2ea"
+    },
+    {
+      "path": "src/engine/entitlement-review/shared-product-facts.ts",
+      "sha256": "7bb6c399c801ba1e7739bf90f8e0db18cac7918739eea8858e8e08263e636dab"
     },
     {
       "path": "src/engine/entitlement-review/simple-product.ts",
@@ -280,7 +288,7 @@
     },
     {
       "path": "src/engine/entitlement-review/source-admission.ts",
-      "sha256": "170d0ca40f8f2e743eda314f337a0e4d5835cc8c3302f9f702778b955db9c3a0"
+      "sha256": "350b62300654dff77bc13e0137357678adcb596ee34675320c7fb4e0c1224401"
     },
     {
       "path": "src/engine/entitlement-review/travel/contracts.ts",
@@ -683,6 +691,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "8b8b4f86196b98be2ec7f6e987c64903f9fce0df7cd5a86b1829820e326a34c1",
-  "sha256": "722c7700e4de68f1544c3f4a5546379bf7a952e17fdcac86b7f0dcee1fa352ed"
+  "source_graph_sha256": "1692036e44844ad8ea1bc7a15b70df17d8755ac21117206f7b8974b4b1543094",
+  "sha256": "40bcce7bec6eb347496cc85120c45419f1142da2059a5d9e632408f768b3c869"
 }

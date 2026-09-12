@@ -10,6 +10,7 @@ import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
 import {materializeMinimumWageCaseFacts} from '../ai-release-decisions/minimum-wage-case.ts';
 import {pensionEntitlementInputSchema} from './pension/contracts.ts';
 import {replayPensionProductFacts} from './pension/product-facts.ts';
+import {sharedPersonalAliasFact,sharedPersonalAnswerIsCurrent,assertSharedPersonalMaterialization} from './shared-product-facts.ts';
 
 /** Inspect source citations rather than treating a caller's 'known' or
  * 'accepted' label as evidence. Legal sources are supplied by the selected
@@ -26,6 +27,7 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
   if(existing)documents[documents.indexOf(existing)]=law;else documents.push(law);
  }
  const completion=parseReviewCompletionInput(input.completion_input);
+ assertSharedPersonalMaterialization(input,packet);
  function citation(value:DocumentReviewSource){
   if(value.reading==='questionnaire_declaration'){assertQuestionnaireSource(input,value);return;}
   if(value.reading==='customer_declaration'){
@@ -34,9 +36,11 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
     &&h.receipt.answer_sha256===value.file_sha256&&h.receipt.answer_sha256===value.reading_receipt_sha256);
    if(!history||history.receipt.case_id!==input.case_id||history.request.target.required_evidence_kind!=='customer_declaration')throw Error('ENTITLEMENT_ANSWER_SOURCE_REQUIRED');
    const r=history.receipt;
-   const admitted=resolveReviewCompletion({request:history.request,current:completion,actor:{case_id:input.case_id,identity_id:r.identity_id},
-    answer:{request_id:r.request_id,revision:r.answer_revision,answered_at:r.answered_at,state:r.state,value:r.value}});
-   if(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==r.answer_sha256)throw Error('ENTITLEMENT_ANSWER_SOURCE_STALE');
+   if(!sharedPersonalAnswerIsCurrent(input,r.answer_sha256)){
+    const admitted=resolveReviewCompletion({request:history.request,current:completion,actor:{case_id:input.case_id,identity_id:r.identity_id},
+     answer:{request_id:r.request_id,revision:r.answer_revision,answered_at:r.answered_at,state:r.state,value:r.value}});
+    if(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==r.answer_sha256)throw Error('ENTITLEMENT_ANSWER_SOURCE_STALE');
+   }
    const newer=input.answer_history.some(h=>h.receipt.request_id===r.request_id&&h.receipt.answer_revision>r.answer_revision);
    if(newer)throw Error('ENTITLEMENT_ANSWER_SOURCE_REPLACED');
    return;
@@ -73,8 +77,9 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
   if(boundSource?.reading==='customer_declaration'&&('value' in object||'printed_value' in object)){
    const h=input.answer_history.find(h=>h.receipt.answer_sha256===boundSource.reading_receipt_sha256);
    const supplied='printed_value' in object?object.printed_value:object.value;
+   const shared=sharedPersonalAliasFact(input,packet,path,object);
    const personal=/^(minimum_wage|pension)\.(product_facts\.[a-z_]+)$/u.exec(path);
-   if(personal){
+   if(personal&&!shared){
     const branch=personal[1]==='pension'?pensionEntitlementInputSchema.parse(packet.pension):minimumWageEntitlementInputSchema.parse(packet.minimum_wage);
     const pins=input.documents.filter(d=>branch.source_manifest.some(m=>m.kind==='case_document'&&m.document_id===d.document_id)).map(d=>({case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256}));
     const key=personal[1]==='pension'?`entitlement.pension.${canonicalSha256({period:input.period,pins,path:personal[2]}).slice(0,32)}`
@@ -83,7 +88,7 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
    }
    if(isDeclaredPeriodSource(boundSource)){
     if(!h||!assertTypedPeriodDerivation(packet,path,object))throw Error('ENTITLEMENT_DECLARED_PERIOD_CHANGED');
-   }else if(!h||(h.receipt.state==='provided'?String(supplied)!==String(reviewDeclaredAnswerValue(h.request.target,h.receipt.value))&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');
+   }else if(!shared&&(!h||(h.receipt.state==='provided'?String(supplied)!==String(reviewDeclaredAnswerValue(h.request.target,h.receipt.value))&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null)))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');
   }
   if('reading_receipt_sha256'in object&&'document_id'in object&&'file_sha256'in object) citation(object as DocumentReviewSource);
   if('source_manifest'in object){

@@ -96,6 +96,7 @@ describe('protected AI report reader authority',()=>{
   const result=await privateDocumentReviewReports(base.bundle.case_id,identity,db([{...base.summary,current:false,ai_context:base.context}]));
   expect(result[0].current).toBe(false);
  });
+ // Includes full-family fixture preparation and protected replay; not a five-second performance contract.
  it('keeps an independent partial pension report current when an unconsumed family source expires',async()=>{
   const input=runtimeFixture(),a=input.assessment_input;
   const prepared=prepareAiReleaseRuntime({source:input.source,analysis_run_id:input.analysis_run_id,trusted_generator_pins:input.trusted_generator_pins});
@@ -118,7 +119,7 @@ describe('protected AI report reader authority',()=>{
   expect(summaries[0].current).toBe(true);
   const result=await privateDocumentReviewArtifact(f.bundle.case_id,identity,reportId,db({current:true,ai_context:f.context,completion:{bundle:f.bundle,report:report(f.bundle)}}));
   expect(result?.current).toBe(true);expect(result?.bundle.ai_release?.result.checks.some(c=>c.topic==='pension'&&c.state==='calculated')).toBe(true);
- });
+ },15_000);
  it('ignores a live revocation of an unused reviewer while preserving actual admission checks',async()=>{
   const input=structuredClone(base.input),registry=input.assessment_input.registry;
   const unused={...registry.reviewers[0],actor_id:'unused-synthetic-reviewer'};

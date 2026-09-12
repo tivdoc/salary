@@ -22,6 +22,7 @@ import {documentFieldVerificationDisplay} from './reading-verification';
 import {privateDocumentReviewReports,privateDocumentReviewArtifact} from './private-document-review';
 import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection,REVIEW_DEFERRABLE_SCALAR_FIELDS} from './review-field-coverage';
 import {validateSavedReadingAnswer} from './validate-reading-answer';
+import {reviewSharedPersonalRequestProjection} from './review-shared-personal-coverage';
 
 const reviewNamespace='document_review:';
 const reviewStateSchema=z.object({request_id:z.uuid(),source_current:z.boolean(),target:reviewCompletionTargetSchema.nullable()}).strict();
@@ -128,9 +129,12 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const covered=new Map<string,string>(),notRequired=new Set<string>(),alreadyRead=new Set<string>(),unresolvedRead=new Set<string>(),replacementReviews=new Map<string,string>();
   // Two bounded protected lookups per case, only when both question families
   // can overlap. No artifact, stale artifact or no exact match means no hiding.
-  if(identityId&&(reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
+  const sharedPersonalCandidates=reviewStates.filter(r=>r.source_current&&r.target?.kind==='factual'
+   &&r.target.required_evidence_kind==='customer_declaration'&&/^entitlement\.(minimum_wage|pension)\./u.test(r.target.fact_key));
+  const fieldOverlap=(reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
    ||[...displays.values()].some(display=>display.row_context||display.transcription_context||display.structure_context||display.field.startsWith('source_scope.')||REVIEW_DEFERRABLE_SCALAR_FIELDS.some(field=>field===display.field)))
-   &&fieldTargets.some(t=>bound.some(r=>r.id===t.request_id&&(r.answered_at===null||reviewStates.some(s=>s.source_current)))&&fields.some(f=>f.request_id===t.request_id&&f.source_current))){
+   &&fieldTargets.some(t=>bound.some(r=>r.id===t.request_id&&(r.answered_at===null||reviewStates.some(s=>s.source_current)))&&fields.some(f=>f.request_id===t.request_id&&f.source_current));
+  if(identityId&&(fieldOverlap||sharedPersonalCandidates.length>1)){
    const summaries=await privateDocumentReviewReports(caseId,identityId,store);
    const summary=summaries.filter(r=>r.current).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
    if(summary){
@@ -142,20 +146,23 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
        source_current:fields.find(f=>f.request_id===request.id)?.source_current===true,answered_at:request.answered_at,
        answer_text:revisions.find(r=>r.request_id===request.id)?.latest_answer??request.answer_text,expires_at:request.expires_at};
      });
-     for(const match of reviewFieldReadingCheckLabels({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()})){
+     for(const match of fieldOverlap?reviewFieldReadingCheckLabels({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}):[]){
       const display=displays.get(match.field_request_id);
       // Preserve the historical scalar display contract byte for byte.
       if(display&&(display.row_context||display.transcription_context||display.structure_context||display.field.startsWith('source_scope.'))&&match.check_titles.length)displays.set(match.field_request_id,{...display,dependent_checks:match.check_titles});
      }
-     for(const entry of reviewFieldRequestsNotRequired({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}))notRequired.add(entry.field_request_id);
+     for(const entry of fieldOverlap?reviewFieldRequestsNotRequired({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}):[])notRequired.add(entry.field_request_id);
      const genericRequests=reviewStates.flatMap(state=>{
       const row=reviews.find(r=>r.id===state.request_id);return row&&state.target?[{request_id:row.id,code:row.code,target:state.target,source_current:state.source_current,answered_at:row.answered_at,expires_at:row.expires_at}]:[];
      });
-     for(const match of reviewHistoricalRequestProjection({review:artifact.bundle.document_review,fieldRequests,reviewRequests:genericRequests,nowMs:Date.now()})){
+     for(const match of reviewSharedPersonalRequestProjection({review:artifact.bundle.document_review,requests:genericRequests,nowMs:Date.now()})){
+      notRequired.add(match.request_id);replacementReviews.set(match.request_id,match.replacement_request_id);
+     }
+     for(const match of fieldOverlap?reviewHistoricalRequestProjection({review:artifact.bundle.document_review,fieldRequests,reviewRequests:genericRequests,nowMs:Date.now()}):[]){
       if(match.state==='not_required'){notRequired.add(match.request_id);if('replacement_request_id'in match&&typeof match.replacement_request_id==='string')replacementReviews.set(match.request_id,match.replacement_request_id);}
       else{covered.set(match.request_id,match.field_request_id);alreadyRead.add(match.request_id);}
      }
-     for(const match of reviewRequestsCoveredByFieldReadings({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()})){
+     for(const match of fieldOverlap?reviewRequestsCoveredByFieldReadings({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}):[]){
       const state=reviewStates.find(r=>r.source_current&&r.target?.target_sha256===match.target_sha256);
       if(state&&reviews.some(r=>r.id===state.request_id)){covered.set(state.request_id,match.field_request_id);if(match.reading_state==='unresolved_answer')unresolvedRead.add(state.request_id);}
      }

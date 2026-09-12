@@ -6,6 +6,7 @@ import {generateReviewCompletions,parseReviewCompletionInput,resolveReviewComple
 import {DOCUMENT_REVIEW_POLICY,documentReviewInputSchema,type DocumentReviewResult} from './contracts.ts';
 import {documentReviewCoverageInventory} from './coverage.ts';
 import {convalescenceDeclaredChronologyOperand} from '../entitlement-review/convalescence/resolve.ts';
+import {sharedPersonalAnswerCoversCheck,sharedPersonalAnswerIsCurrent} from '../entitlement-review/shared-product-facts.ts';
 
 /** A supplemental stage of ordinary case analysis. Results are source arithmetic
  * or conditional candidates, never a substitute for catalog admission. */
@@ -52,14 +53,14 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
     if(!answer||answer.receipt.case_id!==input.case_id||answer.request.target.required_evidence_kind!=='customer_declaration'
      ||answer.request.target.target_sha256!==answer.receipt.target_sha256
      ||!completionInput.previous_answers?.some(r=>r.answer_sha256===answer.receipt.answer_sha256)
-     ||!answer.request.dependent_check_ids.includes(check.check_id))throw Error('REVIEW_ANSWER_ADMISSION_REQUIRED');
+     ||!answer.request.dependent_check_ids.includes(check.check_id)&&!sharedPersonalAnswerCoversCheck(input,answer.receipt.answer_sha256,check.check_id))throw Error('REVIEW_ANSWER_ADMISSION_REQUIRED');
     // Re-admit the exact current receipt through the same scoped planner.
     // Retaining history must not make an earlier numeric answer usable again
     // after the customer has replaced it with "unknown" or a correction.
     const receipt=answer.receipt;
     const admitted=resolveReviewCompletion({request:answer.request,current:completionInput,actor:{case_id:input.case_id,identity_id:receipt.identity_id},
      answer:{request_id:receipt.request_id,revision:receipt.answer_revision,answered_at:receipt.answered_at,state:receipt.state,value:receipt.value}});
-    if(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==receipt.answer_sha256)throw Error('REVIEW_ANSWER_ADMISSION_REQUIRED');
+    if(!sharedPersonalAnswerIsCurrent(input,receipt.answer_sha256)&&(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==receipt.answer_sha256))throw Error('REVIEW_ANSWER_ADMISSION_REQUIRED');
     const expectedState=receipt.state==='provided'?(admitted.blocked?'conflict':'declared'):receipt.state==='conflicted'?'conflict':'unknown';
     for(const source of citedSources.filter(s=>s.document_id===pin.document_id))
      if(source.reading_receipt_sha256!==receipt.answer_sha256||source.reading!=='customer_declaration')throw Error('REVIEW_ANSWER_VALUE_MISMATCH');

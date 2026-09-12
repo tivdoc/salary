@@ -11,10 +11,11 @@ import {pensionProductReview} from './pension-product.ts';
 import {workingTimeProductReview} from './working-time-product.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
 import {materializeTypedEntitlementFacts} from './typed-product-facts.ts';
+import {projectSharedPersonalFactNeeds,materializeSharedPersonalFacts,sharedPersonalFactManifest} from './shared-product-facts.ts';
 
-function resolve(input:DocumentReviewInput,e:EntitlementEvidence):EntitlementBranchReview{
+function resolve(input:DocumentReviewInput,e:EntitlementEvidence,original=e):EntitlementBranchReview{
  const parts=[...(e.pension===undefined?[]:[pensionProductReview(input,e.pension)]),...(e.working_time===undefined?[]:[workingTimeProductReview(input,e.working_time)]),...(['travel','minimum_wage','vacation','convalescence'] as const).flatMap(topic=>e[topic]===undefined?[]:[simpleEntitlementProduct(input,topic,e[topic])]),...(e.obligations===undefined?[]:[obligationsProductReview(input,e.obligations)])];
- return {checks:parts.flatMap(p=>p.checks),gaps:parts.flatMap(p=>p.gaps),needs:parts.flatMap(p=>p.needs),answer_targets:parts.flatMap(p=>p.answer_targets),selections:parts.flatMap(p=>p.selections),nonmonetary_outcomes:parts.flatMap(p=>p.nonmonetary_outcomes??[])};
+ return projectSharedPersonalFactNeeds(input,original,{checks:parts.flatMap(p=>p.checks),gaps:parts.flatMap(p=>p.gaps),needs:parts.flatMap(p=>p.needs),answer_targets:parts.flatMap(p=>p.answer_targets),selections:parts.flatMap(p=>p.selections),nonmonetary_outcomes:parts.flatMap(p=>p.nonmonetary_outcomes??[])});
 }
 function factAt(e:EntitlementEvidence,target:EntitlementAnswerTarget):Record<string,unknown>{
  let current:unknown=target.branch==='working_time'?(e.working_time as unknown[])[target.index!]:e[target.branch];
@@ -61,7 +62,7 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  const baseline=resolve(base,packet);
  const documents=[...base.documents];for(const law of laws){const at=documents.findIndex(d=>d.document_id===law.document_id);if(at<0)documents.push(law);else documents[at]=law;}
  let withNeeds=documentReviewInputSchema.parse({...base,documents,completion_input:{...parseReviewCompletionInput(base.completion_input),needs:[...parseReviewCompletionInput(base.completion_input).needs,...baseline.needs]}});
- let effective=answeredEvidence(withNeeds,packet,baseline.answer_targets);
+ let effective=materializeSharedPersonalFacts(withNeeds,packet,answeredEvidence(withNeeds,packet,baseline.answer_targets));
  // Opt-in fact inventories have two stages: an identified count creates only
  // the named empty slots, then their own dated/FTE receipts fill those slots.
  // Rebuild from the original packet every run; old count/cell answers cannot
@@ -70,16 +71,16 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  for(let step=0;step<4;step++){
   const staged=materializeTypedEntitlementFacts(effective,packet,withNeeds);
   if(canonicalSha256(staged)===canonicalSha256(effective)&&step===0)break;
-  const expanded=resolve(base,staged),oldNeeds=parseReviewCompletionInput(withNeeds.completion_input).needs;
+  const expanded=resolve(base,staged,packet),oldNeeds=parseReviewCompletionInput(withNeeds.completion_input).needs;
   const needs=[...oldNeeds];for(const n of expanded.needs)if(!needs.some(old=>old.fact_key===n.fact_key))needs.push(n);
   for(const target of expanded.answer_targets)targets.set(target.fact_key,target);
   withNeeds=documentReviewInputSchema.parse({...withNeeds,completion_input:{...parseReviewCompletionInput(withNeeds.completion_input),needs}});
-  const next=materializeTypedEntitlementFacts(answeredEvidence(withNeeds,staged,[...targets.values()]),packet,withNeeds);
+  const next=materializeTypedEntitlementFacts(materializeSharedPersonalFacts(withNeeds,packet,answeredEvidence(withNeeds,staged,[...targets.values()])),packet,withNeeds);
   if(canonicalSha256(next)===canonicalSha256(effective)){effective=next;break;}effective=next;
   if(step===3)throw Error('ENTITLEMENT_FACT_MATERIALIZATION_DID_NOT_SETTLE');
  }
  assertEntitlementSourcePacket(withNeeds,effective,laws);
- const current=resolve(withNeeds,effective);
+ const current=resolve(withNeeds,effective,packet);
  const bindings=[...base.answer_bindings];
  const checks=current.checks.map(check=>{
   const calc=documentReviewCalculationInputSchema.parse(check.calculation),op=calc.operation;
@@ -103,7 +104,8 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
   const priorGap=baseline.gaps.find(g=>g.check_id===id);if(priorGap)gaps.push(priorGap);else throw Error('ENTITLEMENT_UNRESOLVED_DEPENDENCY');
  }
  const selections=current.selections.map(s=>({...s,generated_check_ids:checks.filter(c=>c.topic===s.topic).map(c=>c.check_id),generated_gap_ids:gaps.filter(g=>g.topic===s.topic).map(g=>g.check_id)}));
- const body={policy_version:ENTITLEMENT_REVIEW_POLICY,source_evidence_sha256:canonicalSha256(packet),evidence:effective,selections,generated_fact_keys:needs.map(n=>n.fact_key),...(current.nonmonetary_outcomes?.length?{nonmonetary_outcomes:current.nonmonetary_outcomes}:{})};
+ const shared=sharedPersonalFactManifest(withNeeds,packet);
+ const body={policy_version:ENTITLEMENT_REVIEW_POLICY,source_evidence_sha256:canonicalSha256(packet),evidence:effective,selections,generated_fact_keys:needs.map(n=>n.fact_key),...(current.nonmonetary_outcomes?.length?{nonmonetary_outcomes:current.nonmonetary_outcomes}:{}),...(shared?{shared_personal_facts:shared}:{})};
  return documentReviewInputSchema.parse({...withNeeds,checks:[...base.checks,...checks],coverage_gaps:[...base.coverage_gaps,...gaps],answer_bindings:bindings,
   completion_input:{...parseReviewCompletionInput(base.completion_input),needs:[...parseReviewCompletionInput(base.completion_input).needs,...needs]},
   entitlement_composition:entitlementCompositionSchema.parse({...body,composition_sha256:canonicalSha256(body)})});

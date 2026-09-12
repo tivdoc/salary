@@ -1,3 +1,15 @@
+## Shared personal facts and CI timing checkpoint
+
+The opt-in `shared-personal-facts-v1` composition now keeps one original, identified answer for birth date, employment relationship and workplace sector across minimum wage and pension. Historical receipt bodies and request targets remain intact; disagreement, unknown and unreadable states are not overwritten by another branch. This is factual reuse, not approval of scope, wage classification or a pension arrangement.
+
+The protected request list projects unanswered historical aliases onto their exact current canonical action using the replayed report manifest. It does not write answers or delete requests. Missing, stale or expired replacements and conflicts remain visible. This closes a presentation gap after the ordinary generator reduced six personal questions to three.
+
+Independent convalescence readiness predicates were added for benefit year, qualifying service, due date and recorded allocation. They are not yet connected to catalog selection at this checkpoint; arrangement and complete allocation source evidence remain separate work.
+
+CI for `1768f17` and `2de16d6` each had one complete successful run and one run that exceeded the same five-second test timeout in the full-family protected pension replay. The single test now has a 15-second limit; all assertions remain. Its focused local run took 4.93 seconds. No protection or test was removed.
+
+DEV schema remains 180. This checkpoint adds no provider calls, costs, messages, authority windows, database changes or deployment. Browser/managed-runtime release acceptance is still pending. Source review revision 2 is private, append-only and distinct from activation.
+
 # Release integration checkpoint — work continues
 
 The single scope and acceptance contract remains [tivdoc-release-candidate-v1](tivdoc-release-candidate-v1.md). Base `0c5d9c0`; preceding pushed engineering checkpoint `54279912fc6e30dd4dd0a16b8407412ddb2570d7`, whose two CI runs passed. This checkpoint is not release acceptance, a deployment or a human attestation.
@@ -91,3 +103,5 @@ Four new case recipes cover the bounded MW population, ordinary-hour scope, one 
 Identified normal answers materialize versioned derived facts after replay. Changed consumed hashes invalidate the corresponding case decision even when a corrected fact still satisfies the predicate. Unknown, unreadable, stale/foreign source, forged binding and unavailable fund/basis evidence remain distinct. A pension product declaration alone is not a verified fund reading. Missing better-arrangement/basis/partial-month decisions remain precise; they are not silently accepted.
 
 Typecheck passed after correcting two widened literal types in the candidate decision maps (one belonged to the separately preserved travel work). Final integration68/68 passed in four suites against the regenerated manifest; prior focused72 and46 groups overlap and are not additional unique totals. These are local synthetic/source-bound tests, not DEV case or browser acceptance. The concrete next product issue is duplicate DOB/employment/sector questions between MW and pension: branch-local answer replay does not yet share these facts. Travel source-context work proceeds separately. No policy/source-review status was renewed by generating the build manifest.
+
+Shared baseline validation:82 tests/6 suites PASS, TypeScript PASS, root14-file ESLint PASS. No DB/browser proof added by this validation.

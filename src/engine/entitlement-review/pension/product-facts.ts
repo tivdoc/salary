@@ -14,7 +14,7 @@ const fact=<T extends z.ZodType>(value:T)=>z.object({state:z.enum(['observed','d
  .refine(f=>!['observed','declared'].includes(f.state)||('value' in f&&f.value!==null&&f.source!==null),'PENSION_PRODUCT_FACT_SOURCE');
 export const PENSION_PRODUCT_FACTS_POLICY='pension-product-facts-v1' as const;
 export const pensionProductFactsSchema=z.object({schema_version:z.literal(PENSION_PRODUCT_FACTS_POLICY),birth_date:fact(z.iso.date()),
- employment_relationship:fact(z.enum(['employee','self_employed','other'])),workplace_sector:fact(z.enum(['private','public','other'])),
+ employment_relationship:fact(z.enum(['employee','self_employed','other'])),workplace_sector:fact(z.enum(['private','public','protected_workshop','other'])),
  pension_product:fact(z.enum(['pension_fund','insurance_policy','provident_fund','other'])),
  other_pension_terms_known:fact(z.boolean()),
 }).strict();
@@ -67,7 +67,7 @@ export function pensionProductFactQuestions(input:PensionEntitlementInput):Pensi
  if(!['known','derived'].includes(input.facts.aged_21_or_more.state)||!['known','derived'].includes(input.facts.under_60.state))out.push({path:'product_facts.birth_date',question:'מהו תאריך הלידה המלא? הוא ישמש לבדיקת הגיל בתקופת התלוש.',fact:p.birth_date,answer_kind:'text',format:'iso_date'});
  const add=(key:keyof Omit<typeof p,'schema_version'>,question:string,choices:PensionProductQuestion['choices'])=>out.push({path:`product_facts.${key}`,question,fact:p[key],answer_kind:'choice',choices});
  add('employment_relationship','מה היה מעמד העבודה בתקופה הנבדקת?',[{label:'שכיר או שכירה',value:'employee'},{label:'עצמאי או עצמאית',value:'self_employed'},{label:'מעמד אחר',value:'other'}]);
- add('workplace_sector','באיזה מגזר היה מקום העבודה בתקופה הנבדקת?',[{label:'המגזר הפרטי',value:'private'},{label:'המגזר הציבורי',value:'public'},{label:'מגזר אחר',value:'other'}]);
+ add('workplace_sector','באיזה מגזר היה מקום העבודה בתקופה הנבדקת?',[{label:'המגזר הפרטי',value:'private'},{label:'המגזר הציבורי',value:'public'},{label:'מפעל מוגן',value:'protected_workshop'},{label:'מגזר אחר',value:'other'}]);
  if(!identifiedFund(input).length)add('pension_product','באיזה מוצר פנסיוני נוהל הביטוח בתקופה הנבדקת?',[{label:'קרן פנסיה',value:'pension_fund'},{label:'פוליסת ביטוח',value:'insurance_policy'},{label:'קופת גמל',value:'provident_fund'},{label:'מוצר אחר',value:'other'}]);
  add('other_pension_terms_known','האם ידוע לך על תנאי פנסיה נוספים בחוזה, בהסכם קיבוצי או בהסדר של מקום העבודה?',[{label:'כן',value:true},{label:'לא ידוע לי על תנאים נוספים',value:false}]);
  return out.filter(q=>!usable(q.fact)).map(q=>({...q,...(q.choices?{choices:[...q.choices,{label:'לא ידוע',value:null}]}:{})}));
