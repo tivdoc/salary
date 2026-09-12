@@ -55,15 +55,21 @@ async function admit(context:PostgresTransactionContext,input:Lease){
  return {job,completed:locked.state==='succeeded'};
 }
 
-async function plan(context:PostgresTransactionContext,input:Lease,documentEvidenceEnabled=false){
- const admitted=await admit(context,input);
- if(admitted.completed)return {...admitted,months:[],versions:[],evidenceVersions:[],intake:null,held:[] as SavedSourceIntakeHold[]};
+/** A named prepared statement has one exact SQL text for the lifetime of a
+ * pooled connection, including across admission and planning transactions. */
+async function readJournal(context:PostgresTransactionContext,job:SourceJob){
  const result=await context.client.query(statement('saved_runner_journal',
   `select input,encode(sha256(convert_to(input::text,'UTF8')),'hex') actual_sha256
    from private.case_input_versions where case_id=$1::uuid and revision=$2 and input_sha256=$3`,
-  [admitted.job.case_id,admitted.job.revision,admitted.job.input_sha256]));
+  [job.case_id,job.revision,job.input_sha256]));
  const row=result.rows[0];
- if(!row||row.actual_sha256!==admitted.job.input_sha256)throw new Error('SAVED_INPUT_HASH_MISMATCH');
+ if(!row||row.actual_sha256!==job.input_sha256)throw new Error('SAVED_INPUT_HASH_MISMATCH');
+ return row;
+}
+async function plan(context:PostgresTransactionContext,input:Lease,documentEvidenceEnabled=false){
+ const admitted=await admit(context,input);
+ if(admitted.completed)return {...admitted,months:[],versions:[],evidenceVersions:[],intake:null,held:[] as SavedSourceIntakeHold[]};
+ const row=await readJournal(context,admitted.job);
  const intake=await prepareSavedSourceIntake(context,admitted.job,row.input);
  const journal=journalSchema.parse(row.input);
  if(!intake)month.parse(journal.month);
@@ -164,10 +170,7 @@ export async function runSavedDraftJob(input:Lease&{
   // source/lease admission. Completed receipts never require new inspection.
   const preliminary=await transactions(context=>admit(context,input));
   if(!preliminary.completed&&preliminary.job.processing_profile==='qualified_ai_v1'){
-   const raw=await transactions(async context=>{const r=await context.client.query(statement('saved_runner_journal',
-    `select input,encode(sha256(convert_to(input::text,'UTF8')),'hex') actual_sha256 from private.case_input_versions where case_id=$1::uuid and revision=$2 and input_sha256=$3`,
-    [preliminary.job.case_id,preliminary.job.revision,preliminary.job.input_sha256]));
-    if(r.rows[0]?.actual_sha256!==preliminary.job.input_sha256)throw Error('SAVED_INPUT_HASH_MISMATCH');return r.rows[0].input;});
+   const raw=await transactions(async context=>(await readJournal(context,preliminary.job)).input);
    if(needsSavedSourceIntake(preliminary.job,raw))await ensureSavedSourcePhysicalPages({...input,transactions,job:preliminary.job});
   }
   healthy();const saved=await transactions(context=>plan(context,input,input.documentEvidence!==undefined));

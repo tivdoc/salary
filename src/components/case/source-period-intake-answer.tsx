@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import type {StoredRequest} from '@/server/product/reports/case-requests';
 import {customerErrorFromResponse,customerErrorMessage} from '@/lib/customer-copy';
-import {buildSourcePeriodIntakeAnswer,initialSourcePeriodIntakeDraft,sourcePeriodIntakeKinds,type SourcePeriodIntakeContext,type SourcePeriodIntakeAction,type SourcePeriodIntakeDraft} from '@/lib/source-period-intake-display';
+import {buildSourcePeriodIntakeAnswer,initialSourcePeriodIntakeDraft,sourcePeriodIntakeKinds,sourcePeriodIntakeCalendarMonth,type SourcePeriodIntakeContext,type SourcePeriodIntakeAction,type SourcePeriodIntakeDraft} from '@/lib/source-period-intake-display';
 
 type Props={request:StoredRequest;context:SourcePeriodIntakeContext;publicId:string;onAnswered:()=>void;correction?:boolean;sourceShared?:boolean};
 export function SourcePeriodIntakeAnswer({request,context,publicId,onAnswered,correction=false,sourceShared=false}:Props){
@@ -10,6 +10,7 @@ export function SourcePeriodIntakeAnswer({request,context,publicId,onAnswered,co
  const [action,setAction]=useState<SourcePeriodIntakeAction|null>(initial.action),[draft,setDraft]=useState(initial.draft);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[conflict,setConflict]=useState(false);
  const disabled=busy||request.source_current!==true,answer=buildSourcePeriodIntakeAnswer(context,action,draft);
+ const calendarPeriod=draft.period_shown==='calendar_month'?sourcePeriodIntakeCalendarMonth(draft.month??''):null;
  function change(key:keyof SourcePeriodIntakeDraft,value:string){setDraft(prior=>({...prior,[key]:value}));}
  async function submit(saveDraft=false,selected=action){
   if(disabled)return;const value=buildSourcePeriodIntakeAnswer(context,selected,draft);if(!value)return;
@@ -31,8 +32,13 @@ export function SourcePeriodIntakeAnswer({request,context,publicId,onAnswered,co
   {action==='correct'?<fieldset disabled={disabled} style={{border:0,padding:0}}><legend>הפרטים שמופיעים במסמך</legend>
    <label className="field"><span>סוג המסמך לפי תוכנו</span><select value={draft.document_kind} onChange={e=>change('document_kind',e.target.value)}><option value="">בחירה לפי המקור</option>
     {Object.entries(sourcePeriodIntakeKinds).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
-   <label className="field"><span>האם מופיעה תקופה במסמך?</span><select value={draft.period_shown} onChange={e=>change('period_shown',e.target.value)}><option value="">בחירה לפי המקור</option>
-    <option value="yes">מופיעים תאריכי התקופה</option><option value="no">לא מופיעה תקופה במסמך</option></select></label>
+   <label className="field"><span>איך התקופה מופיעה במסמך?</span><select value={draft.period_shown} onChange={e=>change('period_shown',e.target.value)}><option value="">בחירה לפי המקור</option>
+    <option value="calendar_month">מופיעים חודש ושנה בלבד</option><option value="yes">מופיעים תאריכי תחילה וסוף</option><option value="no">לא מופיעה תקופה במסמך</option></select></label>
+   {draft.period_shown==='calendar_month'?<>
+    <label className="field"><span>החודש והשנה המודפסים במקור</span><input type="month" min="0001-01" max="9999-12" value={draft.month??''} onChange={e=>change('month',e.target.value)}/></label>
+    {calendarPeriod?<p>גבולות החודש שנגזרו: <bdi>{calendarPeriod.from} – {calendarPeriod.to}</bdi>.</p>:null}
+    <p>גבולות החודש מחושבים מהחודש המודפס. הם אינם תאריכים שהעתקתם מהמקור, ואינם קביעה שעבדתם בכל החודש. אין לבחור חודש לפי תקופת העבודה או הרכישה אם אינו מופיע במסמך.</p>
+   </>:null}
    {draft.period_shown==='yes'?<>
     <label className="field"><span>תחילת התקופה המופיעה במקור</span><input type="date" value={draft.from} onChange={e=>change('from',e.target.value)}/></label>
     <label className="field"><span>סוף התקופה המופיעה במקור</span><input type="date" value={draft.to} onChange={e=>change('to',e.target.value)}/></label>

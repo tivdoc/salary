@@ -42,7 +42,7 @@ function setup(){
    case 'saved_runner_journal':case 'saved_snapshot_journal':rows=[{input:journal,input_sha256:job.input_sha256,actual_sha256:job.input_sha256,created_at:'2026-09-12T12:10:00Z'}];break;
    case 'saved_runner_source_intake_context':case 'saved_legacy_source_intake_context':rows=[{context:input}];break;
    case 'saved_order_entitlements':rows=[{orders:journal.orders,current_orders:journal.orders,legacy_orders:journal.legacy_orders,current_legacy_orders:journal.legacy_orders}];break;
-   case 'saved_runner_source_intake_open':opened.push(JSON.parse(String(q.values[3])));rows=[{id:'99999999-9999-4999-8999-999999999999'}];break;
+   case 'saved_runner_source_intake_field_open':case 'saved_runner_source_intake_document_open':opened.push(JSON.parse(String(q.values[3])));rows=[{id:'99999999-9999-4999-8999-999999999999'}];break;
    case 'saved_runner_source_upload_context':rows=[{contexts:[]}];break;
    case 'saved_runner_heartbeat':rows=[{job_id:'job'}];break;
    case 'source_case_lock':break;

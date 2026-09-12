@@ -78,7 +78,9 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //191 adds22 literal declarations. Source-intake scope/answer/physical metadata
 // and finalizer helpers preserve original paid receipts; see the exact inventory
 // below and the isolated DEV upgrade/ACL evidence. No function is excluded.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 401;
+//193 redeclares only the same scoped request opener to disambiguate a local
+// variable. Both answer validators are private security invoker functions.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 402;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -487,6 +489,18 @@ describe("security definer search_path contract", () => {
   it("counts the definer surface so a new one cannot arrive unnoticed", async () => {
     const definitions = await securityDefinerDefinitions();
     expect(definitions).toHaveLength(EXPECTED_SECURITY_DEFINER_DEFINITIONS);
+  });
+
+  it("retains the request opener boundary in the month-reading migration",async()=>{
+    const file='20260912204417_source_intake_month_reading_and_request_scope.sql';
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>d.file===file).map(d=>d.name)).toEqual(['private.legacy_source_document_request_open']);
+    const sql=await readFile(path.join(MIGRATION_ROOT,file),'utf8');
+    expect([...sql.matchAll(/grant execute on function ([^;]+) to ([^;]+);/gu)].map(m=>[m[1],m[2]])).toEqual([
+      ['private.legacy_source_document_request_open(uuid,integer,text,jsonb,text)','tivdoc_worker_runtime'],
+    ]);
+    expect(sql).toContain('cr.code=request_code');
+    expect(sql).not.toContain('cr.code=code');
   });
 
   it("inventories the source-intake definer declarations and worker boundaries",async()=>{

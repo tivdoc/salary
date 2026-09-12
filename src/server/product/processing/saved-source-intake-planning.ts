@@ -33,6 +33,14 @@ export function needsSavedSourceIntake(job:SourceJob,journal:unknown){
  const j=z.object({documents:z.array(z.unknown()),legacy_orders:z.array(z.object({period_state:z.string()})).optional()}).parse(journal);
  return !!j.legacy_orders?.length&&(j.documents.length===0||j.legacy_orders.some(s=>s.period_state==='missing'));
 }
+// A pg connection retains prepared statement names across worker transactions.
+// Each RPC therefore has one stable name and byte-identical SQL at every caller.
+function sourceIntakeRequestStatement(kind:'document_field'|'document',job:SourceJob,target:unknown,question:string){
+ const values=[job.case_id,job.revision,job.input_sha256,JSON.stringify(target),question];
+ return kind==='document_field'
+  ?statement('saved_runner_source_intake_field_open','select private.document_field_request_open($1::uuid,$2,$3,$4::jsonb,$5) id',values)
+  :statement('saved_runner_source_intake_document_open','select private.legacy_source_document_request_open($1::uuid,$2,$3,$4::jsonb,$5) id',values);
+}
 export async function prepareSavedSourceIntake(context:PostgresTransactionContext,job:SourceJob,journal:unknown){
  if(!needsSavedSourceIntake(job,journal))return null;
  const rows=await context.client.query(statement('saved_runner_source_intake_context','select private.legacy_source_intake_context($1::uuid,$2,$3) context',[job.case_id,job.revision,job.input_sha256]));
@@ -40,9 +48,7 @@ export async function prepareSavedSourceIntake(context:PostgresTransactionContex
  if(rows.row_count!==1||saved.case_id!==job.case_id||saved.revision!==job.revision||saved.head.input_sha256!==job.input_sha256||canonicalSha256(saved.head.input)!==canonicalSha256(journal))throw Error('SOURCE_INTAKE_CURRENT_HASH');
  const openedRequestIds:string[]=[];
  for(const request of legacySourceIntakeRequests(saved)){
-  const name=request.kind==='document_field'?'document_field_request_open':'legacy_source_document_request_open';
-  const rows=await context.client.query(statement('saved_runner_source_intake_open',`select private.${name}($1::uuid,$2,$3,$4::jsonb,$5) id`,
-   [job.case_id,job.revision,job.input_sha256,JSON.stringify(request.target),request.question.question]));
+  const rows=await context.client.query(sourceIntakeRequestStatement(request.kind==='document_field'?'document_field':'document',job,request.target,request.question.question));
   if(rows.row_count!==1)throw Error('SOURCE_INTAKE_REQUEST_ACK');const id=z.uuid().nullable().parse(rows.rows[0]?.id);if(id)openedRequestIds.push(id);
  }
  const held:SavedSourceIntakeHold[]=saved.scopes.flatMap<SavedSourceIntakeHold>(scope=>{
@@ -90,9 +96,7 @@ export async function openSavedSourceFinancialNeeds(context:PostgresTransactionC
   if(h.code!=='source_financial_document_required'||!h.month)continue;
   const scope=saved.scopes.find(s=>s.id===h.orderId);if(!scope)continue;
   const target=legacySourceDocumentNeedTarget({scope,anchor:saved.head,month:h.month});
-  const rows=await context.client.query(statement('saved_runner_source_intake_open',
-   'select private.legacy_source_document_request_open($1::uuid,$2,$3,$4::jsonb,$5) id',
-   [job.case_id,job.revision,job.input_sha256,JSON.stringify(target),`נא לצרף תלוש שכר מלא לחודש ${h.month}. אין כרגע תלוש שכר המשויך לתקופה זו.`]));
+  const rows=await context.client.query(sourceIntakeRequestStatement('document',job,target,`נא לצרף תלוש שכר מלא לחודש ${h.month}. אין כרגע תלוש שכר המשויך לתקופה זו.`));
   if(rows.row_count!==1)throw Error('SOURCE_INTAKE_REQUEST_ACK');const id=z.uuid().nullable().parse(rows.rows[0]?.id);if(id)opened.push(id);
  }
  return opened;

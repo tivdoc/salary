@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {LEGACY_PAID_TOPICS,parseLegacyPaidScope,type LegacyPaidScope} from '../orders/legacy-paid-receipt.ts';
+import {sourcePeriodIntakeCalendarMonth} from '@/lib/source-period-intake-display';
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 export const DOCUMENT_SOURCE_PERIOD_INTAKE_POLICY='legacy-source-intake-v1' as const;
 export const sourceIntakeDocumentSchema=z.object({id:z.uuid(),version_id:z.uuid(),sha256:sha,type:z.string(),page_count:z.number().int().min(1).max(100).nullable()});
@@ -46,11 +47,21 @@ export function legacySourceDocumentNeedTarget(input:{scope:LegacyPaidScope;anch
 }
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict().refine(v=>v.from<=v.to).refine(v=>
  (Number(v.to.slice(0,4))-Number(v.from.slice(0,4)))*12+Number(v.to.slice(5,7))-Number(v.from.slice(5,7))<600,'SOURCE_INTAKE_PERIOD_TOO_WIDE');
-export const documentSourcePeriodIntakeAnswerSchema=z.discriminatedUnion('action',[
+const documentSourcePeriodIntakeAnswerV1Schema=z.discriminatedUnion('action',[
  z.object({v:z.literal(1),action:z.literal('correct'),value:z.object({document_kind:z.enum(['payslip','attendance','contract','other']),period:period.nullable(),
   page:z.number().int().min(1).max(100),source_label:z.string().trim().min(1).max(400)}).strict()}).strict(),
  z.object({v:z.literal(1),action:z.enum(['unknown','unreadable'])}).strict(),
 ]);
+const documentSourcePeriodIntakeAnswerV2Schema=z.object({v:z.literal(2),action:z.literal('correct'),value:z.object({
+ document_kind:z.enum(['payslip','attendance','contract','other']),period,
+ source_period:z.object({kind:z.literal('calendar_month'),month:z.string().regex(/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/u)}).strict(),
+ page:z.number().int().min(1).max(100),source_label:z.string().trim().min(1).max(400),
+}).strict()}).strict().superRefine((answer,ctx)=>{
+ const expected=sourcePeriodIntakeCalendarMonth(answer.value.source_period.month);
+ if(!expected||answer.value.period.from!==expected.from||answer.value.period.to!==expected.to)
+  ctx.addIssue({code:'custom',message:'SOURCE_INTAKE_CALENDAR_MONTH_MISMATCH'});
+});
+export const documentSourcePeriodIntakeAnswerSchema=z.union([documentSourcePeriodIntakeAnswerV1Schema,documentSourcePeriodIntakeAnswerV2Schema]);
 export function parseDocumentSourcePeriodIntakeAnswer(raw:unknown){
  let value=raw;if(typeof value==='string'){if(value.length>2000)throw Error('REQUEST_ANSWER_INVALID');try{value=JSON.parse(value);}catch{throw Error('REQUEST_ANSWER_INVALID');}}
  const result=documentSourcePeriodIntakeAnswerSchema.safeParse(value);if(!result.success)throw Error('REQUEST_ANSWER_INVALID');return result.data;

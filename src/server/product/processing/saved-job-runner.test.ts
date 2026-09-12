@@ -34,8 +34,11 @@ function setup(){
  const base={from:'2025-01-01',topics:['pension'],offer_sha256:'b'.repeat(64)};
  ports.orders.mockResolvedValue([{...base,id:fullId,kind:'full',to:'2025-02-01'},{...base,id:initialId,kind:'initial',to:'2025-01-01'}]);
  const state={depth:0,heartbeats:0,heartbeatFails:false,journalHash:job.input_sha256,receipts:[] as string[],outbox:0};
- const calls:string[]=[];
+ const calls:string[]=[],preparedStatements=new Map<string,string>();
  const context:PostgresTransactionContext={transaction_id:'unit',client:{async query(s){
+  const prior=preparedStatements.get(s.name);
+  if(prior!==undefined&&prior!==s.text)throw Error('PREPARED_STATEMENT_TEXT_CHANGED');
+  preparedStatements.set(s.name,s.text);
   expect(state.depth).toBe(1);calls.push(s.name);
   if(s.name==='saved_runner_read'||s.name==='saved_runner_lock')return {rows:[row],row_count:1};
   if(s.name==='saved_runner_journal')return {rows:[{input:source,actual_sha256:state.journalHash}],row_count:1};
@@ -59,6 +62,13 @@ function setup(){
 }
 
 describe('saved draft job consumer',()=>{
+ it('reuses one prepared journal statement across qualified admission and planning',async()=>{
+  const s=setup();Object.assign(s.row.payload,{processing_profile:'qualified_ai_v1'});
+  s.row.payload_sha256=canonicalSha256(s.row.payload);
+  const result=await runSavedDraftJob(s.input);
+  expect(s.calls.filter(name=>name==='saved_runner_journal')).toHaveLength(2);
+  expect(result).toMatchObject({extractedVersions:2,analyzedMonths:3});
+ });
  it('extracts each purchased file once across overlapping orders and completes all order-months',async()=>{
   const s=setup(),result=await runSavedDraftJob(s.input);
   expect(ports.extract.mock.calls.map(c=>c[0].versionId).sort()).toEqual([s.january,s.february].sort());

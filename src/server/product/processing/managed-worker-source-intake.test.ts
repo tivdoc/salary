@@ -44,7 +44,7 @@ function setup(){
    case 'saved_runtime_audit_time':rows=[{now:'2026-09-12T18:00:00Z'}];break;
    case 'managed_worker_admit_claim':case 'managed_worker_note':break;
    case 'saved_runner_journal':rows=[{input:journal,actual_sha256:job.input_sha256}];break;
-   case 'saved_runner_source_intake_open':opened.push(JSON.parse(String(q.values[3])));rows=[{id:'99999999-9999-4999-8999-999999999999'}];break;
+   case 'saved_runner_source_intake_field_open':case 'saved_runner_source_intake_document_open':opened.push(JSON.parse(String(q.values[3])));rows=[{id:'99999999-9999-4999-8999-999999999999'}];break;
    case 'saved_runner_source_upload_context':rows=[{contexts:[]}];break;
    case 'saved_runner_heartbeat':rows=[{job_id:queue.job_id}];break;
    default:throw Error('UNEXPECTED_SQL:'+q.name);
