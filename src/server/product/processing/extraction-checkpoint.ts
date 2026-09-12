@@ -25,7 +25,7 @@ export async function saveExtractionCheckpoint(context:PostgresTransactionContex
  if(source.row_count!==1){
   if(job.processing_profile!=='qualified_ai_v1')throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
   const fallback=await context.client.query(statement('checkpoint_intake_source',
-   `select d->>'type' document_type,left(d->>'month',7) month,left(v.input->>'month',7) journal_month from private.case_input_versions v
+   `select d->>'type' document_type,left(d->>'month',7) as "month",left(v.input->>'month',7) journal_month from private.case_input_versions v
     cross join lateral jsonb_array_elements(v.input->'documents') d
     where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3 and d->>'id'=$4 and d->>'version_id'=$5
      and d->>'sha256'=$6`,
