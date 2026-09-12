@@ -1,3 +1,11 @@
+## Precise draft availability and verified service-law acquisition — 2026-09-12
+
+Base a2dd5278bfcd9eda03759e61c381472690ae0599 passed both CI34708404357/34708401680 and a full optimized local build against DEV schema189. Its protected draft list exposed an explanation defect: expired calculation authority was described as changed input. The reader now carries the authenticated expired/revoked/unavailable reason, and the list displays the creation date in Israel time. Historical rows retain their shape; blocked links stay blocked. Reader/page29 tests and lint4 passed. This UI correction awaits the next matched application build and browser verification; it is not yet claimed as deployed.
+
+The official full Supreme Court appeal decision was acquired and visually read. The research document records the exact URL/hash, a separately sourced hearing protocol and their limited implications. The full district-court reasoning remains unavailable after the documented acquisition paths. No human approval, positive REAL service decision or customer authority was created. Existing source and calculation authorizations were not extended. The prior worker remains stopped after natural expiry; the provider ledger is unchanged.
+
+Release work continues with fresh source reviews, final-build bound evidence, ordinary retained-receipt processing and case acceptance. CASE04's original live envelope validates in its historical context but cannot be relabeled as a current receipt: its mapping/prompt/document binding differs. A versioned, source- and ownership-verified derivation is being evaluated; unresolved reading conflicts must remain visible.
+
 ## Source-period witnesses, resolved completions and report readability — 2026-09-12
 
 Base b877fb7a69f0279c2df9e114302ebbba25d3f7db passed CI34706822118/34706820264. The protected corrected HTML from the a023d0b scheduled run was opened in the actual local built application: net reconciliation now computes zero, and the other numerical outcomes remain unchanged. This is retained-identity browser access, not a new OTP or browser PDF download. Exact report/source/run IDs and artifact hashes remain private.

@@ -21,6 +21,19 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const privateReviewUnavailableText={
+  expired:'תוקף ההרשאה להצגת הטיוטה פג.',
+  revoked:'ההרשאה להצגת הטיוטה בוטלה.',
+  authority_unavailable:'לא ניתן לאמת כעת את ההרשאה שעליה מבוססת הטיוטה.',
+  source_or_analysis_changed:'המקור או מצב הניתוח אינם עדכניים עבור טיוטה זו.',
+} as const;
+const israelCreatedAt=(value:string)=>{
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?null:new Intl.DateTimeFormat('he-IL',{
+    timeZone:'Asia/Jerusalem',dateStyle:'short',timeStyle:'short',
+  }).format(date);
+};
+
 export default async function CaseReportsPage({ params }: { params: Promise<{ token: string }> }) {
   await guardStableAppEntrypoint("CEP-104");
   const { token } = await params;
@@ -47,9 +60,10 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
       {reviewsUnavailable?<p role="alert">לא ניתן לטעון את הטיוטות הפרטיות כרגע.</p>:null}
       {reviews.map(report=><article key={report.report_id} data-review-run={report.analysis_run_id}>
        <h2>טיוטת סקירת מסמכים פרטית</h2><p><bdi>{report.period.from} – {report.period.to}</bdi> · גרסה {report.report_revision}</p>
+       <p>{israelCreatedAt(report.created_at)?<>נוצרה: <time dateTime={report.created_at}><bdi>{israelCreatedAt(report.created_at)}</bdi></time> (שעון ישראל)</>:'מועד יצירת הטיוטה אינו זמין.'}</p>
        <p>הטיוטה כוללת בדיקות ומידע חסר בהיקף השירות שנרכש. היא אינה דוח שאושר לפרסום או קביעת חוב.</p>
        {report.current?<p><a href={`/api/cases/${token}/reports?report=${report.report_id}&review=1&format=html`}>פתיחת הטיוטה העדכנית</a>{' · '}<a href={`/api/cases/${token}/reports?report=${report.report_id}&review=1`}>הורדת PDF של אותה גרסה</a></p>
-        :<p>הקלט השתנה או שנוצרה גרסה חדשה. הטיוטה נשמרה בהיסטוריה ואינה מוצגת כתוצאה עדכנית.</p>}
+        :<p>{report.unavailable_reason?privateReviewUnavailableText[report.unavailable_reason]:'הטיוטה אינה זמינה להצגה כעת; לא נמסרה סיבה מפורטת.'} הטיוטה נשמרה בהיסטוריה ואינה מוצגת כתוצאה עדכנית.</p>}
       </article>)}
       {engineering.length>0||reviews.length>0 ? null : saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
         : saved.reports.length === 0 ? <div><h1>הדוח עדיין לא מוכן</h1>{saved.checkPeriodMonth ? <p>חודש הבדיקה: <bdi>{saved.checkPeriodMonth}</bdi></p> : null}<p>כשיפורסם דוח לתיק, הוא יופיע כאן. אפשר לראות את המצב והבקשות בעמוד התיק.</p></div>

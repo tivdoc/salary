@@ -55,6 +55,7 @@ function currentAiProfile(context:z.infer<typeof aiContext>|null|undefined):Save
 const summary=z.object({report_id:z.uuid(),analysis_run_id:z.uuid(),period:z.object({from:z.iso.date(),to:z.iso.date()}).strict(),
  report_revision:z.number().int().positive(),current:z.boolean(),created_at:z.string(),purchased_topics:z.array(z.string()).min(1),
  ai_context:aiContext.nullable().optional()}).strict();
+type PrivateReviewUnavailableReason='expired'|'revoked'|'authority_unavailable'|'source_or_analysis_changed';
 /** Protected owner drafts; SQL additionally restricts these to the isolated
  * QA database. No publication projection or customer notification is created. */
 export async function privateDocumentReviewReports(caseId:string,identityId:string,db?:CaseAccessDb){
@@ -62,9 +63,14 @@ export async function privateDocumentReviewReports(caseId:string,identityId:stri
  const store=db??await resolveCaseAccessDb();if(!store)throw Error('PRIVATE_REVIEW_STORE');
  const rows=await store.rpc<{value:unknown}>('case_report_private_review_list',{target_case:caseId,target_identity:identityId});
  if(rows.length!==1)throw Error('PRIVATE_REVIEW_LIST_ACK');
- return z.array(summary).max(100).parse(rows[0].value).map(({ai_context,...item})=>({
-  ...item,current:item.current&&contextAvailable(ai_context),
- }));
+ return z.array(summary).max(100).parse(rows[0].value).map(({ai_context,...item})=>{
+  const available=contextAvailable(ai_context),current=item.current&&available;
+  // Explain only authenticated context. No new reason is attached to legacy
+  // rows; a false SQL result alone cannot prove that an input was edited.
+  const reason:PrivateReviewUnavailableReason|undefined=current||ai_context==null?undefined
+   :ai_context.state==='unavailable'?ai_context.reason:!available?'authority_unavailable':'source_or_analysis_changed';
+  return {...item,current,...(reason?{unavailable_reason:reason}:{})};
+ });
 }
 export async function privateDocumentReviewArtifact(caseId:string,identityId:string,reportId:string,db?:CaseAccessDb){
  [caseId,identityId,reportId].forEach(value=>z.uuid().parse(value));

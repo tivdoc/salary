@@ -87,6 +87,7 @@ describe('protected AI report reader authority',()=>{
   if(reason==='clock')context={...base.context,evaluated_at:'2026-09-13T00:00:00Z'};
   const result=await privateDocumentReviewReports(base.bundle.case_id,identity,db([{...base.summary,ai_context:context}]));
   expect(result[0].current).toBe(false);expect(result[0]).not.toHaveProperty('ai_context');
+  expect(result[0].unavailable_reason).toBe(reason==='expired'||reason==='revoked'?reason:'authority_unavailable');
  });
  it('preserves both missing and null historical context without requiring AI configuration',async()=>{
   expect(await privateDocumentReviewReports(base.bundle.case_id,identity,db([base.summary,{...base.summary,ai_context:null}]))).toEqual([base.summary,base.summary]);
@@ -95,6 +96,14 @@ describe('protected AI report reader authority',()=>{
  it('keeps SQL stale state false even with valid authority',async()=>{
   const result=await privateDocumentReviewReports(base.bundle.case_id,identity,db([{...base.summary,current:false,ai_context:base.context}]));
   expect(result[0].current).toBe(false);
+  expect(result[0].unavailable_reason).toBe('source_or_analysis_changed');
+ });
+ it('retains a false historical row byte shape and prioritizes explicit expiry over SQL stale state',async()=>{
+  const old={...base.summary,current:false};
+  expect(await privateDocumentReviewReports(base.bundle.case_id,identity,db([{...old,ai_context:null}]))).toEqual([old]);
+  const result=await privateDocumentReviewReports(base.bundle.case_id,identity,db([{...old,ai_context:{state:'unavailable',reason:'expired',dependency_sha256:base.context.dependency_sha256}}]));
+  expect(result[0]).toEqual({...old,unavailable_reason:'expired'});
+  expect(JSON.stringify(result)).not.toContain(base.context.dependency_sha256);
  });
  // Includes full-family fixture preparation and protected replay; not a five-second performance contract.
  it('keeps an independent partial pension report current when an unconsumed family source expires',async()=>{
