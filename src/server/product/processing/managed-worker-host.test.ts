@@ -53,7 +53,9 @@ describe('managed scheduler boundary',()=>{
   expect(ports.budget).toHaveBeenCalledWith(expect.objectContaining({TIVDOC_MANAGED_DEV_BUILD_SHA:'a'.repeat(40)}),'a'.repeat(40));
   expect(ports.budgetClose).toHaveBeenCalledOnce();expect(ports.close.mock.invocationCallOrder[0]).toBeLessThan(ports.budgetClose.mock.invocationCallOrder[0]);
  });
- it.each([['SOL_BUDGET_EXHAUSTED','provider_budget_exhausted'],['SOL_MANAGED_PACKAGE_EXPIRED','provider_budget_expired'],['SOL_UNKNOWN_OUTCOME_REQUIRES_REVIEW','provider_outcome_unknown'],['secret filename and credentials','provider_budget_invalid']])('blocks %s before any DB or provider action',async(message,code)=>{
+ it.each([['SOL_BUDGET_EXHAUSTED','provider_budget_exhausted'],['SOL_MANAGED_PACKAGE_EXPIRED','provider_budget_expired'],['SOL_UNKNOWN_OUTCOME_REQUIRES_REVIEW','provider_outcome_unknown'],['secret filename and credentials','provider_budget_invalid'],
+  ['SOL_LIVE_WINDOW_CHANGED_OR_EXPIRED','provider_budget_expired'],['SOL_LIVE_WINDOW_LEDGER_BASELINE','provider_budget_invalid'],
+  ['SOL_LIVE_WINDOW_LEDGER_ROLLBACK','provider_budget_invalid'],['SOL_LIVE_WINDOW_CURRENT_RECEIPT','provider_outcome_requires_review']])('blocks %s before any DB or provider action',async(message,code)=>{
   const s=setup();s.env.OPENAI_EXTRACTION_MODEL='gpt-5.6-sol';s.env.TIVDOC_MANAGED_SOL_PACKAGE_FILE='synthetic-package.json';ports.budget.mockImplementation(()=>{throw Error(message);});
   expect(await s.tick()).toMatchObject({state:'blocked',code,items:[]});expect(ports.driver).not.toHaveBeenCalled();expect(ports.provider).not.toHaveBeenCalled();
  });

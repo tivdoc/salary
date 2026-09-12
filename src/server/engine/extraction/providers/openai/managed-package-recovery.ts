@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {z} from 'zod';
 import type {ExtractionRequest} from '@/engine/extraction/contracts';
+import {readManagedSolLiveWindow} from '@/server/product/processing/managed-sol-live-window';
 
 const hash=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
@@ -12,7 +13,8 @@ const packet=z.object({version:z.literal('sol-scheduled-dev-package-20260911-v1'
  buildSha:z.string().regex(/^[a-f0-9]{40}$/u),expiresAt:z.iso.datetime({offset:true}),ledgerPath:z.string(),artifactDirectory:z.string(),
  allowedCaseIds:z.array(z.uuid()).min(1).max(4),allowedSources:z.array(source).min(1).max(4)}).strict();
 export type ManagedOpenAiRecoveryAuthority=Readonly<{kind:'managed-openai-package-recovery-v1'}>;
-type Grant={apiKeySha256:string;packagePath:string;packageSha256:string;packet:z.infer<typeof packet>};
+type Grant={apiKeySha256:string;packagePath:string;packageSha256:string;packet:Pick<z.infer<typeof packet>,'expiresAt'|'allowedCaseIds'|'allowedSources'>;
+ liveWindow?:ReturnType<typeof readManagedSolLiveWindow>};
 const grants=new WeakMap<ManagedOpenAiRecoveryAuthority,Grant>();
 function fail():never{throw new TypeError('OPENAI_MANAGED_RECOVERY_AUTHORITY');}
 function local(environment:Readonly<Record<string,string|undefined>>){
@@ -20,6 +22,7 @@ function local(environment:Readonly<Record<string,string|undefined>>){
 }
 function current(grant:Grant){
  local(process.env);
+ grant.liveWindow?.assertActive();
  if(Date.now()>=Date.parse(grant.packet.expiresAt)||hash(readFileSync(grant.packagePath))!==grant.packageSha256)fail();
 }
 
@@ -29,6 +32,15 @@ function current(grant:Grant){
 export function authorizeManagedOpenAiRecovery(input:{apiKey:string;buildSha:string;packageSha256:string;environment:Readonly<Record<string,string|undefined>>}):ManagedOpenAiRecoveryAuthority{
  local(input.environment);local(process.env);
  const expected=path.resolve('../release-work/sol-scheduled-package-20260911.private.json');
+ if(input.environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE&&path.resolve(input.environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE)!==expected){
+  const liveWindow=readManagedSolLiveWindow(input.environment,input.buildSha),config=liveWindow.config;
+  if(!input.apiKey||input.environment.OPENAI_API_KEY!==input.apiKey||liveWindow.packageSha256!==sha.parse(input.packageSha256))fail();
+  const authority=Object.freeze({kind:'managed-openai-package-recovery-v1' as const});
+  grants.set(authority,{apiKeySha256:hash(input.apiKey),packagePath:path.resolve(input.environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE),
+   packageSha256:input.packageSha256,liveWindow,packet:{expiresAt:config.expiresAt,
+    allowedCaseIds:[config.source.caseId],allowedSources:[{sha256:config.source.sha256,sizeBytes:config.source.sizeBytes,mimeType:config.source.mimeType}]}});
+  return authority;
+ }
  if(!input.environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE||path.resolve(input.environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE)!==expected
   ||input.environment.TIVDOC_MANAGED_DEV_WORKER_ENABLED!=='true'||input.environment.TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED!=='true'
   ||input.environment.OPENAI_EXTRACTION_MODEL!=='gpt-5.6-sol'||!input.apiKey||input.environment.OPENAI_API_KEY!==input.apiKey
@@ -48,6 +60,7 @@ export function assertManagedOpenAiRecovery(authority:ManagedOpenAiRecoveryAutho
  current(grant);
  if(request){
   const document=request.document;
+  if(grant.liveWindow&&(document.document_id!==grant.liveWindow.config.source.versionId||document.document_type!=='payslip'||request.declared_document_type!=='payslip'))fail();
   if(request.case_id!==document.case_id||!grant.packet.allowedCaseIds.includes(request.case_id)
    ||!grant.packet.allowedSources.some(item=>item.sha256===document.content_sha256&&item.sizeBytes===document.size_bytes&&item.mimeType===document.mime_type))fail();
  }

@@ -32,11 +32,11 @@
     },
     {
       "path": "src/engine/ai-release-decisions/apply.ts",
-      "sha256": "673e1bb287752e46f187a26fd3481798521faf890db2f54b712a1a6b34a5fb11"
+      "sha256": "8348926ae346e33494fb879ec9bd90062517f8568cd6a0645062fe1a2637e128"
     },
     {
       "path": "src/engine/ai-release-decisions/catalog.ts",
-      "sha256": "580507a6f63e2ec5890baef5eff84ef07678c982fe3cdafa0ab9e2765a8390ec"
+      "sha256": "bfd2987a25bc226d3fc61fba454c008b21c3a1ecedc4996e2f1acad28b8c3a3e"
     },
     {
       "path": "src/engine/ai-release-decisions/contracts.ts",
@@ -184,7 +184,7 @@
     },
     {
       "path": "src/engine/entitlement-review/compose.ts",
-      "sha256": "d79f1c8da73ef1c1d5f7eb8e9553d0623314219f35a2cdbe18cdc3ead2bb739e"
+      "sha256": "f36950bfdc21bccf0d440ffa60f2e46be655a62e00f1a4913924ea0a0fc439a5"
     },
     {
       "path": "src/engine/entitlement-review/contracts.ts",
@@ -228,7 +228,7 @@
     },
     {
       "path": "src/engine/entitlement-review/legal-documents.ts",
-      "sha256": "f5ccafa38500dd50875a6a09b6e7e2838541d55868d23941f5ed2e658978e31a"
+      "sha256": "ce7c045ef4fdb3895982c9ded803c59dc95028c48b4c3fda1456463906036c50"
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/contracts.ts",
@@ -420,7 +420,7 @@
     },
     {
       "path": "src/engine/entitlement-review/vacation/product-facts.ts",
-      "sha256": "6a4cc746cfaec0b4836c715f77311d2d0dc24796def498d88e0ba6e344d764c2"
+      "sha256": "02ca75e8b107b8de40d6ab11e54254eb412d2ff8255e816a6e3943ac9595e8c1"
     },
     {
       "path": "src/engine/entitlement-review/vacation/product-source-evidence.ts",
@@ -436,11 +436,11 @@
     },
     {
       "path": "src/engine/entitlement-review/working-time-product.ts",
-      "sha256": "a4b844c39a72568e2d7ad896e91bb03f6ee8d1c589a853fa1f7acf588e201bda"
+      "sha256": "1b28534ef3d6780855251adf3b2b84a9b141cccf1feddcced77ac59f73cb4416"
     },
     {
       "path": "src/engine/entitlement-review/working-time/contracts.ts",
-      "sha256": "40bda4c6b84d174771ef39c48e8a752ab1a67cfb0bdca1fcd22903401181c3a7"
+      "sha256": "bdd0bf7f50e610d468c65f93cb40c01a59c5b49bfd8855012cf89d71bfbb04f7"
     },
     {
       "path": "src/engine/entitlement-review/working-time/index.ts",
@@ -452,7 +452,7 @@
     },
     {
       "path": "src/engine/entitlement-review/working-time/product-decisions.ts",
-      "sha256": "c820d1b5ad461d483201efcefeabc1f3f7985676fae54bc539650f3c8aa48f0e"
+      "sha256": "a581419ac2246567bd15138081a0db0d28dc28c5fbaa714d2897e817f5bcd353"
     },
     {
       "path": "src/engine/entitlement-review/working-time/product-fact-contracts.ts",
@@ -460,11 +460,15 @@
     },
     {
       "path": "src/engine/entitlement-review/working-time/product-facts.ts",
-      "sha256": "9dbd8c0ec7b47257133bad9ccd6a80e51cd1dfae4d933a536141184e9368e00b"
+      "sha256": "3c7dfabdab2280178d471ad016e352e0df98f22bfad2458ee799b99329a408d2"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/protected-breaks.ts",
+      "sha256": "3f7bfce25b448ec9ec4ef7f36dc3504d06999c6842ebba40e4a9fbb25b5fd00e"
     },
     {
       "path": "src/engine/entitlement-review/working-time/resolve.ts",
-      "sha256": "80f834f42ed02f3216ada0216c32705628b08324f6e9a4b7e65270af1b4ed8a4"
+      "sha256": "5632501d690493e81a11785b965c06c23f27c5fcd41abcc8c57f44617254b1d9"
     },
     {
       "path": "src/engine/entitlement-review/working-time/rules.ts",
@@ -827,6 +831,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "bc54cb9b167195273bac59152447964538b0897203b2c515edc96baeabd74be6",
-  "sha256": "0d0a7a03c0d4a523b6077e8798017efcbdab19c78b4289617f814d26a8dcbcad"
+  "source_graph_sha256": "7b32eaa3676c396cfd2ecfe82ce449b7f577eb3ec4c6f7f966097df0269b2fae",
+  "sha256": "8054a3ad954fa0ed8991c4070507813dd77731b044c4acdddf967a36b65ab400"
 }

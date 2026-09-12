@@ -40,6 +40,11 @@ export function managedWorkerError(error:unknown):string{
   SOL_REPLAY_REQUIRES_REVIEW:'provider_outcome_requires_review',SOL_MANAGED_PACKAGE_REQUIRED:'provider_budget_unconfigured',
   SOL_SAVED_SOURCE_NOT_ALLOWED:'provider_source_not_allowed',SOL_SAVED_CASE_NOT_ALLOWED:'provider_case_not_allowed',
   SOL_LEDGER_RECOVERY_ACTIVE:'provider_budget_locked',SOL_LEDGER_LOCK_OWNERSHIP_CHANGED:'provider_budget_locked',
+  SOL_LIVE_WINDOW_CHANGED_OR_EXPIRED:'provider_budget_expired',
+  SOL_LIVE_WINDOW_LEDGER_BASELINE:'provider_budget_invalid',SOL_LIVE_WINDOW_LEDGER_APPEND:'provider_budget_invalid',
+  SOL_LIVE_WINDOW_LEDGER_REWRITE:'provider_budget_invalid',SOL_LIVE_WINDOW_LEDGER_ROLLBACK:'provider_budget_invalid',
+  SOL_LIVE_WINDOW_LEDGER_CHANGED:'provider_budget_invalid',SOL_LIVE_WINDOW_UNKNOWN_COST_ACKNOWLEDGEMENT:'provider_budget_invalid',
+  SOL_LIVE_WINDOW_CURRENT_RECEIPT:'provider_outcome_requires_review',
  };
  return known[message]??'processing_failed';
 }

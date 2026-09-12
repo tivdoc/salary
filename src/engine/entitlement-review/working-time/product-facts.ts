@@ -8,6 +8,7 @@ import {workingTimeEntitlementInputSchema,type WorkingTimeEntitlementInput} from
 import {workingTimeProductFactsV2Schema,WORKING_TIME_PRODUCT_FACTS_POLICY,workingTimeCaseRecipeBindingSchema} from './product-fact-contracts.ts';
 import {evaluateWorkingTimeCaseRecipe} from './product-decisions.ts';
 import {WORKING_TIME_SOURCE_REVIEW_SHA256} from './source-policy.ts';
+import {WORKING_TIME_PROTECTED_BREAK_POLICY,WORKING_TIME_PROTECTED_BREAK_SOURCE_REVIEW_SHA256} from './protected-breaks.ts';
 import {atTime} from './time-source.ts';
 import {attachWorkingTimeSourceFacts,workingTimeProductSourcePins} from './source-facts.ts';
 
@@ -21,6 +22,12 @@ export function workingTimeProductFacts(){const missing={state:'missing',value:n
  birth_date:missing,employment_relationship:missing,workplace_sector:missing,salary_basis:missing,job_duties:missing,occupation_group:missing,company_policy_authority:missing,employer_personal_proxy:missing,hours_trackable:missing,other_hours_terms_known:missing,contract_terms_current:missing,
  rest_start_date:missing,rest_start_time:missing,rest_end_date:missing,rest_end_time:missing,regular_wage_basis:missing,assignment_witnesses:[]});}
 export function enableWorkingTimeProductFacts(candidate:WorkingTimeEntitlementInput){const input=workingTimeEntitlementInputSchema.parse(candidate);return {...input,product_facts:input.product_facts??workingTimeProductFacts()};}
+export function enableWorkingTimeProtectedBreaks(candidate:WorkingTimeEntitlementInput){
+ const input=enableWorkingTimeProductFacts(candidate);
+ return workingTimeEntitlementInputSchema.parse({...input,protected_break_policy:WORKING_TIME_PROTECTED_BREAK_POLICY,
+  workdays:input.workdays.map(day=>({...day,intervals:day.intervals.map(interval=>({...interval,
+   break_type:interval.break_type??{state:'missing',value:null,source:null}}))}))});
+}
 export function workingTimeProductFactQuestions(input:WorkingTimeEntitlementInput,review?:DocumentReviewInput):WorkingTimeProductQuestion[]{
  const p=input.product_facts;if(p?.schema_version!==WORKING_TIME_PRODUCT_FACTS_POLICY)return [];
  const out:WorkingTimeProductQuestion[]=[];
@@ -90,7 +97,8 @@ export function replayWorkingTimeProductFacts(effective:WorkingTimeEntitlementIn
  if(new Set(bindings.map(b=>b.decision_id)).size!==bindings.length)throw Error('WT_CASE_DUPLICATE_BINDING');
  if(original.case_recipe_bindings)result.case_recipe_bindings=structuredClone(original.case_recipe_bindings);
  for(const raw of bindings){const b=workingTimeCaseRecipeBindingSchema.parse(raw),recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===b.method.recipe_id&&r.recipe_id.startsWith('ai-case.wt.'));
-  if(!recipe||recipe.branch!=='working_time'||recipe.recipe_sha256!==b.method.recipe_sha256||recipe.recipe_version!==b.method.recipe_version||b.method.source_policy_sha256!==WORKING_TIME_SOURCE_REVIEW_SHA256||b.method.issued_at>b.evaluated_at||b.method.expires_at<=b.evaluated_at||recipe.legal_sources.some(s=>!b.method.source_receipts.some(r=>r.source_version_id===s.version_id&&r.artifact_sha256===s.file_sha256)))throw Error('WT_CASE_BINDING_SCOPE');
+  const protectedBreaks=b.method.recipe_id.endsWith('.protected-breaks-v1');
+  if(!recipe||recipe.branch!=='working_time'||recipe.recipe_sha256!==b.method.recipe_sha256||recipe.recipe_version!==b.method.recipe_version||b.method.source_policy_sha256!==(protectedBreaks?WORKING_TIME_PROTECTED_BREAK_SOURCE_REVIEW_SHA256:WORKING_TIME_SOURCE_REVIEW_SHA256)||b.method.issued_at>b.evaluated_at||b.method.expires_at<=b.evaluated_at||recipe.legal_sources.some(s=>!b.method.source_receipts.some(r=>r.source_version_id===s.version_id&&r.artifact_sha256===s.file_sha256)))throw Error('WT_CASE_BINDING_SCOPE');
   const expectedId=b.day_id?recipe.decision_id+'.'+b.day_id:recipe.decision_id;
   if(expectedId!==b.decision_id||b.day_id&&!original.workdays.some(d=>d.id===b.day_id))throw Error('WT_CASE_BINDING_DAY');
   const prior=original.applicability.find(d=>d.decision_id===b.decision_id);if(!prior||prior.state!=='accepted')continue;
@@ -98,7 +106,7 @@ export function replayWorkingTimeProductFacts(effective:WorkingTimeEntitlementIn
   // bound decision must carry the exact compiler-produced method basis.
   let basis;try{basis=JSON.parse(prior.explanation);}catch{throw Error('WT_CASE_DECISION_BINDING');}
   if(basis?.schema_version!=='ai-release-method-basis-v1'||basis.recipe_id!==recipe.recipe_id||basis.recipe_sha256!==recipe.recipe_sha256||basis.interpretation_receipt_sha256!==b.method.interpretation_receipt_sha256)throw Error('WT_CASE_DECISION_BINDING');
-  const ready=evaluateWorkingTimeCaseRecipe(b.decision_id,result,{review,day_id:b.day_id??undefined,...(b.method.recipe_id.endsWith('.age-range-v1')?{age_range:true as const}:{})});
+  const ready=evaluateWorkingTimeCaseRecipe(b.decision_id,result,{review,day_id:b.day_id??undefined,...(b.method.recipe_id.endsWith('.age-range-v1')?{age_range:true as const}:{}),...(protectedBreaks?{protected_breaks:true as const}:{})});
   const current=ready.allowed&&basis.consumed_sha256===ready.consumed_sha256?prior:{...prior,state:'stale' as const,explanation:JSON.stringify({schema_version:'working-time-case-stale-v1',prior_explanation_sha256:canonicalSha256(prior.explanation),reason:ready.allowed?'consumed_facts_changed':ready.reason})};
   result.applicability=result.applicability.filter(d=>d.decision_id!==b.decision_id);result.applicability.push(structuredClone(current));
  }
@@ -106,6 +114,6 @@ export function replayWorkingTimeProductFacts(effective:WorkingTimeEntitlementIn
 }
 export function workingTimeCaseDecisionSources(input:WorkingTimeEntitlementInput,decisionId:string){
  const binding=input.case_recipe_bindings?.find(b=>b.decision_id===decisionId);if(!binding)return [];
- const ready=evaluateWorkingTimeCaseRecipe(decisionId,input,binding.method.recipe_id.endsWith('.age-range-v1')?{age_range:true}:{});return ready.allowed?sourcesIn(ready.consumed_paths.map(p=>at(input,p))):[];
+ const ready=evaluateWorkingTimeCaseRecipe(decisionId,input,{...(binding.method.recipe_id.endsWith('.age-range-v1')?{age_range:true as const}:{}),...(binding.method.recipe_id.endsWith('.protected-breaks-v1')?{protected_breaks:true as const}:{})});return ready.allowed?sourcesIn(ready.consumed_paths.map(p=>at(input,p))):[];
 }
 export function workingTimeRestDeclarationSources(input:WorkingTimeEntitlementInput){const p=input.product_facts;return p?.schema_version===WORKING_TIME_PRODUCT_FACTS_POLICY&&isWorkingTimeRestDeclarationSource(input.rest_window.source)?sourcesIn([p.rest_start_date,p.rest_start_time,p.rest_end_date,p.rest_end_time]):[];}

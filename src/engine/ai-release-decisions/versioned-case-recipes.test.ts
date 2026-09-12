@@ -7,6 +7,13 @@ import {PENSION_FLOOR_SOURCE_REVIEW_SHA256} from '../entitlement-review/pension/
 import {AI_RELEASE_DECISION_RECIPES} from './catalog.ts';
 import {applyAiReleaseDecisionRecipes} from './apply.ts';
 import type {AiReleaseDecisionMethod} from './contracts.ts';
+import {canonicalFactSchema} from '../facts/contracts.ts';
+import {sharedPersonalV3Fixture} from '../entitlement-review/shared-product-facts-v3.fixture.ts';
+import {enableQuestionnaireAgeRangeReuse} from '../entitlement-review/age-range-materialization.ts';
+import {vacationEntitlementInputSchema} from '../entitlement-review/vacation/contracts.ts';
+import {assertVacationDerivedFacts,replayVacationProductFacts,vacationProductDecisionSources} from '../entitlement-review/vacation/product-facts.ts';
+import {composeEntitlementReview} from '../entitlement-review/compose.ts';
+import {runDocumentReview,replayDocumentReview} from '../document-review/service.ts';
 
 const at='2026-09-12T10:00:00Z',h=(label:string)=>canonicalSha256({synthetic:label});
 const ageIds=['ai-case.mw.population','ai-case.cv.population','ai-case.vacation.general_section3','ai-case.wt.coverage'];
@@ -27,14 +34,55 @@ function floorSource(){
  packet.pension=pension;
  return source;
 }
+function vacationAgeSource(enabled=true){
+ const input=sharedPersonalV3Fixture(),packet=input.entitlement_evidence!;
+ // This regression exercises one vacation receipt; other independent branches
+ // belong to the existing shared-age suite and add no coverage here.
+ delete packet.minimum_wage;delete packet.pension;delete packet.travel;delete packet.working_time;delete packet.convalescence;delete packet.obligations;
+ const fact=canonicalFactSchema.parse({fact_id:'00000000-0000-4000-8000-000000000001',case_id:input.case_id,path:'person.birth_year',value:1980,status:'confirmed',confidence:1,
+  provenance:[{source_type:'declared',source_reference:{kind:'questionnaire_response',response_id:'44444444-4444-4444-8444-444444444444'}}],conflicting_fact_ids:[],resolution:null,created_at:at});
+ input.entitlement_declarations={schema_version:'entitlement-questionnaire-evidence-v1',snapshot_id:'synthetic.locator.age',snapshot_sha256:canonicalSha256([fact]),period:input.period,facts:[fact]};
+ const v=vacationEntitlementInputSchema.parse(packet.vacation),doc=input.documents.find(d=>v.source_manifest.some(s=>s.kind==='case_document'&&s.document_id===d.document_id))!;
+ const source={document_id:doc.document_id,version_id:doc.version_id,file_sha256:doc.file_sha256,page:1,locator:'Synthetic identified employment facts',label:'Synthetic source',reading:'identified_document_reading' as const,reading_receipt_sha256:doc.reading_sha256};
+ const p=v.product_facts!;p.employment_relationship={state:'observed',value:'employee',source};p.workplace_sector={state:'observed',value:'private',source};p.salary_basis={state:'observed',value:'monthly',source};
+ v.applicability=v.applicability.filter(d=>d.decision_id!=='vacation.general_section3');
+ v.facts.aged_21_or_more={state:'missing',value:null,source:null,basis:'ai_source_assessment'};v.facts.under_60={state:'missing',value:null,source:null,basis:'ai_source_assessment'};
+ packet.vacation=v;input.entitlement_evidence=enabled?enableQuestionnaireAgeRangeReuse(packet):packet;return input;
+}
 
 describe('additive age interval and pension floor case recipes',()=>{
+ it('replays a source-corrected vacation age method through the ordinary composer without inventing a birth date',()=>{
+  const input=vacationAgeSource(),before=canonicalSha256(input),id='ai-case.vacation.general_section3.age-range-v1.source-page-v2';
+  const result=applyAiReleaseDecisionRecipes({source:input,methods:[method(id)],at});
+  expect(result.unresolved).toEqual([]);expect(result.receipts).toHaveLength(1);expect(result.receipts[0].recipe_id).toBe(id);
+  const effective=vacationEntitlementInputSchema.parse(result.source.entitlement_composition!.evidence.vacation);
+  expect(effective.facts.aged_21_or_more.state).toBe('derived');expect(effective.product_facts?.birth_date.state).toBe('missing');
+  expect(effective.product_age_range?.birth_year).toBe(1980);expect(result.receipts[0].consumed.some(c=>c.path.endsWith('product_age_range')&&c.source_sha256s.length===3)).toBe(true);
+  expect(vacationProductDecisionSources(effective,'vacation.general_section3').some(s=>s.reading==='questionnaire_declaration')).toBe(true);
+  expect(()=>assertVacationDerivedFacts(effective)).not.toThrow();expect(composeEntitlementReview(result.source)).toEqual(result.source);
+  const review=runDocumentReview(result.source,'synthetic.locator.age');expect(replayDocumentReview(review)).toEqual(review);expect(canonicalSha256(input)).toBe(before);
+ });
+ it('retains the exact age opt-in guard for both corrected vacation descendants',()=>{
+  const age='ai-case.vacation.general_section3.age-range-v1.source-page-v2',ordinary='ai-case.vacation.general_section3.source-page-v2';
+  for(const [input,id]of [[vacationAgeSource(false),age],[vacationAgeSource(true),ordinary]] as const){
+   const result=applyAiReleaseDecisionRecipes({source:input,methods:[method(id)],at});expect(result.receipts).toEqual([]);expect(result.unresolved[0].reason).toBe('age_recipe_policy_not_selected');
+  }
+ });
+ it('makes a corrected vacation receipt stale after a consumed employment fact changes and rejects tampered pins',()=>{
+  const input=vacationAgeSource(),id='ai-case.vacation.general_section3.age-range-v1.source-page-v2',m=method(id);
+  const result=applyAiReleaseDecisionRecipes({source:input,methods:[m],at}),effective=vacationEntitlementInputSchema.parse(result.source.entitlement_composition!.evidence.vacation),raw=vacationEntitlementInputSchema.parse(result.source.entitlement_evidence!.vacation);
+  raw.product_facts!.employment_relationship={...raw.product_facts!.employment_relationship,state:'unknown',value:null};
+  const replayed=replayVacationProductFacts({...effective,product_facts:raw.product_facts},raw,result.source);
+  expect(replayed.applicability.find(d=>d.decision_id==='vacation.general_section3')?.state).toBe('stale');expect(replayed.facts.aged_21_or_more.state).toBe('missing');
+  expect(applyAiReleaseDecisionRecipes({source:input,methods:[{...m,recipe_sha256:h('tampered locator pin')}],at}).unresolved[0].reason).toBe('method_pin_mismatch');
+ });
  it('adds four travel floor recipes to the 54 existing recipes and retains each age parent separately',()=>{
-  expect(AI_RELEASE_DECISION_RECIPES).toHaveLength(58);
-  expect(new Set(AI_RELEASE_DECISION_RECIPES.map(r=>r.recipe_id)).size).toBe(58);
+  const beforePageCorrections=AI_RELEASE_DECISION_RECIPES.filter(r=>!('source_locator_policy'in r)&&!('protected_break_policy'in r));
+  expect(beforePageCorrections).toHaveLength(58);
+  expect(new Set(beforePageCorrections.map(r=>r.recipe_id)).size).toBe(58);
   const additions=AI_RELEASE_DECISION_RECIPES.filter(r=>r.recipe_id.startsWith('ai-case.travel.')&&r.recipe_id.endsWith('.floor-v2'));
   expect(additions.map(r=>r.decision_id)).toEqual(['travel.general_coverage','travel.fare_basis','travel.ticket_options','travel.general_order_floor']);
-  expect(AI_RELEASE_DECISION_RECIPES.filter(r=>!additions.includes(r))).toHaveLength(54);
+  expect(beforePageCorrections.filter(r=>!additions.includes(r))).toHaveLength(54);
   for(const id of ageIds){
    const parent=recipe(id),next=recipe(id+'.age-range-v1');
    expect(next).toMatchObject({decision_id:parent.decision_id,parent_recipe_sha256:parent.recipe_sha256,

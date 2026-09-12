@@ -96,7 +96,21 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
  const caseOrder=['ai-case.mw.population','ai-case.mw.ordinary_scope','ai-case.mw.eligible_components','ai-case.mw.allocation','ai-case.pension.general_coverage','ai-case.pension.pension_fund','ai-case.travel.general_coverage','ai-case.travel.fare_basis','ai-case.travel.ticket_options','ai-case.cv.population','ai-case.cv.legal_source_chain','ai-case.cv.arrangement_scope','ai-case.cv.benefit_year','ai-case.cv.qualifying_service','ai-case.cv.due_date','ai-case.cv.allocation',...['general_section3','seniority_basis','annual_workdays','pay_calendar_days','pay_quarter_selection','pay_monthly_period','pay_recorded_allocation'].map(id=>'ai-case.vacation.'+id),...['coverage','regular_wage','arrangement','workday_assignment','payroll_allocation','worked_time'].map(id=>'ai-case.wt.'+id)];
  caseOrder.push(...['clause_interpretation','agreement_binding','payment_scope','complete_conditions','rounding'].map(id=>'ai-case.obligation.'+id));
  for(const id of ageParentIds)caseOrder.splice(caseOrder.indexOf(id)+1,0,id+'.age-range-v1');
+ for(const id of ['ai-case.wt.regular_wage','ai-case.wt.payroll_allocation'])caseOrder.splice(caseOrder.indexOf(id)+1,0,id+'.source-page-v2');
+ caseOrder.splice(caseOrder.indexOf('ai-case.cv.due_date')+1,0,'ai-case.cv.due_date.source-provision-v2');
+ for(const recipe of AI_RELEASE_DECISION_RECIPES.filter(r=>'source_locator_policy'in r&&(r.branch==='vacation'||r.branch==='travel'))){
+  if(!('parent_recipe_sha256'in recipe))throw Error('AI_SOURCE_LOCATOR_CASE_ORDER');
+  const parentSha=recipe.parent_recipe_sha256,parent=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_sha256===parentSha);
+  if(!parent||!caseOrder.includes(parent.recipe_id))throw Error('AI_SOURCE_LOCATOR_CASE_ORDER');
+  caseOrder.splice(caseOrder.indexOf(parent.recipe_id)+1,0,recipe.recipe_id);
+ }
  caseOrder.splice(caseOrder.indexOf('ai-case.pension.pension_fund')+1,0,...['general_coverage','pension_fund','pensionable_wage','prior_coverage_evidence','statutory_floor'].map(id=>'ai-case.pension.'+id+'.floor-v2'));
+ for(const recipe of AI_RELEASE_DECISION_RECIPES.filter(r=>'protected_break_policy'in r)){
+  if(!('parent_recipe_sha256'in recipe))throw Error('AI_PROTECTED_BREAK_CASE_ORDER');
+  const parentSha=recipe.parent_recipe_sha256,parent=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_sha256===parentSha);
+  if(!parent||!caseOrder.includes(parent.recipe_id))throw Error('AI_PROTECTED_BREAK_CASE_ORDER');
+  caseOrder.splice(caseOrder.indexOf(parent.recipe_id)+1,0,recipe.recipe_id);
+ }
  caseOrder.splice(caseOrder.indexOf('ai-case.travel.ticket_options')+1,0,...['general_coverage','fare_basis','ticket_options','general_order_floor'].map(id=>'ai-case.travel.'+id+'.floor-v2'));
  const methods=[...input.methods.filter(m=>caseOrder.includes(m.recipe_id)).sort((a,b)=>caseOrder.indexOf(a.recipe_id)-caseOrder.indexOf(b.recipe_id)),...input.methods.filter(m=>!caseOrder.includes(m.recipe_id))];
  for(const method of methods){
@@ -145,9 +159,8 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
   const effectiveEntries=recipe.branch==='working_time'&&Array.isArray(raw)?raw:[raw];
   const originalEntries=recipe.branch==='working_time'&&Array.isArray(original)?original:[original];
   for(const [index,entry] of effectiveEntries.entries()){
-   const ageRecipe=recipe.recipe_id.endsWith('.age-range-v1');
-   const ageParent=ageRecipe?recipe.recipe_id.slice(0,-'.age-range-v1'.length):recipe.recipe_id;
-   if(ageParentIds.includes(ageParent)&&ageRecipe!==(packet.age_range_policy==='questionnaire-age-range-reuse-v1')){
+   const ageRecipe='age_range_policy'in recipe&&recipe.age_range_policy==='questionnaire-age-range-reuse-v1';
+   if(ageParentIds.includes('ai-case.'+recipe.decision_id)&&ageRecipe!==(packet.age_range_policy==='questionnaire-age-range-reuse-v1')){
     unresolved.push({branch:recipe.branch,branch_index:recipe.branch==='working_time'?index:null,decision_id:recipe.decision_id,reason:'age_recipe_policy_not_selected'});continue;
    }
    if(recipe.recipe_id.startsWith('ai-case.pension.')&&recipe.recipe_id.endsWith('.floor-v2')!==(pensionEntitlementInputSchema.parse(entry).calculation_policy===PENSION_STATUTORY_FLOOR_POLICY)){
@@ -202,7 +215,7 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
     :recipe.recipe_id.startsWith('ai-case.travel.')?evaluateTravelCaseRecipe(recipe.decision_id,travelEntitlementInputSchema.parse(b),base)
     :recipe.recipe_id.startsWith('ai-case.cv.')?evaluateConvalescenceCaseRecipe(recipe.decision_id,convalescenceEntitlementInputSchema.parse(b),base,ageOptions)
     :recipe.recipe_id.startsWith('ai-case.vacation.')?evaluateVacationProductRecipe(recipe.decision_id,vacationEntitlementInputSchema.parse(b),base,ageOptions)
-    :workingCase?evaluateWorkingTimeCaseRecipe(actualDecisionId,workingTimeEntitlementInputSchema.parse(b),{review:base,...ageOptions,...(dayId?{day_id:dayId}:{})}):null;
+    :workingCase?evaluateWorkingTimeCaseRecipe(actualDecisionId,workingTimeEntitlementInputSchema.parse(b),{review:base,...ageOptions,...(dayId?{day_id:dayId}:{}),...('protected_break_policy'in recipe?{protected_breaks:true as const}:{})}):null;
    const issue=duplicate?'duplicate_method':matches(method,recipe,input.at)
     ??(current&&current.state!=='missing'?'existing_decision_preserved':null)
     ??(b.period.from<recipe.supported_period.from||b.period.to>recipe.supported_period.to?'period_not_supported':null)

@@ -4,6 +4,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import {readFileSync,writeFileSync,mkdirSync,openSync,closeSync,fsyncSync,renameSync} from 'node:fs';
 import path from 'node:path';
 import {managedWorkerControlConfig} from './managed-worker-config';
+import {readManagedSolLiveWindow,assertManagedSolLiveLedger,type ManagedSolLiveWindow} from './managed-sol-live-window';
 import {acquireSolBudgetLock,recoverStaleSolBudgetLock} from './sol-budget-lock';
 import {z} from 'zod';
 import {PAYSLIP_EXTRACTION_V21_VERSION} from '@/engine/extraction/v21';
@@ -36,7 +37,7 @@ type SolBudgetedInput={apiKey:string;ledgerPath:string;artifactDirectory:string;
  allowedSources:readonly SolBudgetedSource[];maxGenerations:number;retainedDiagnosticPath?:string;
  reviewedRetry?:{sourceSha256:string;priorReceiptSha256:string;reason:'header-observation-classification-r5'|'literal-label-cell-transcription-r7'};
  reviewedPolicyRevalidation?:SolPolicyRevalidation;allowedVersionIds?:readonly string[];assertActive?:()=>void;
- allowedCaseIds?:readonly string[];expiresAt?:string;documentEvidenceScope?:z.infer<typeof solDocumentEvidenceScopeSchema>};
+ allowedCaseIds?:readonly string[];expiresAt?:string;documentEvidenceScope?:z.infer<typeof solDocumentEvidenceScopeSchema>;liveWindow?:ManagedSolLiveWindow};
 export function createSolBudgetedExtractor(input:SolBudgetedInput){
  if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')throw Error('SOL_SAVED_WORKER_SCOPE');
  return createBoundedSolExtractor(input);
@@ -57,7 +58,10 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
  let closed=false,busy=false,entered=0;
  const close=()=>{if(closed)return;if(busy)throw Error('SOL_EXTRACTOR_STILL_RUNNING');closed=true;lock.close();};
  try{
-  let ledger=parseSolComparisonLedger(JSON.parse(readFileSync(input.ledgerPath,'utf8')));
+  const originalLedgerBytes=readFileSync(input.ledgerPath);
+  let persistedLedgerSha256=createHash('sha256').update(originalLedgerBytes).digest('hex');
+  let ledger=parseSolComparisonLedger(JSON.parse(originalLedgerBytes.toString('utf8')));
+  if(input.liveWindow)assertManagedSolLiveLedger(input.liveWindow,ledger,originalLedgerBytes);
   const evidenceScope=input.documentEvidenceScope?solDocumentEvidenceScopeSchema.parse(input.documentEvidenceScope):undefined;
   if(evidenceScope&&(!input.expiresAt||!Number.isFinite(Date.parse(input.expiresAt))||Date.parse(input.expiresAt)>Date.now()+4*60*60*1000||!input.allowedCaseIds?.length||!input.allowedVersionIds?.length
    ||input.reviewedRetry||input.reviewedPolicyRevalidation||new Set(evidenceScope.sources.map(s=>s.versionId)).size!==evidenceScope.sources.length
@@ -85,8 +89,11 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
     throw Error('SOL_REVIEWED_RETRY_RECEIPT_REQUIRED');
   }
   mkdirSync(input.artifactDirectory,{recursive:true});
-  const persist=()=>{const temp=input.ledgerPath+'.'+instanceId+'.tmp',file=openSync(temp,'wx');
-   try{writeFileSync(file,JSON.stringify(ledger,null,2)+'\n');fsyncSync(file);}finally{closeSync(file);}renameSync(temp,input.ledgerPath);};
+  const persist=()=>{if(input.liveWindow){assertManagedSolLiveLedger(input.liveWindow,ledger);
+   if(createHash('sha256').update(readFileSync(input.ledgerPath)).digest('hex')!==persistedLedgerSha256)throw Error('SOL_LIVE_WINDOW_LEDGER_CHANGED');}
+   const temp=input.ledgerPath+'.'+instanceId+'.tmp',file=openSync(temp,'wx');
+   try{writeFileSync(file,JSON.stringify(ledger,null,2)+'\n');fsyncSync(file);}finally{closeSync(file);}renameSync(temp,input.ledgerPath);
+   persistedLedgerSha256=createHash('sha256').update(readFileSync(input.ledgerPath)).digest('hex');};
   const sdk=new OpenAI({apiKey:input.apiKey,baseURL:'https://api.openai.com/v1',timeout:120000,maxRetries:0});
   const extractor=new OpenAiPayslipV2PassExtractor({apiKey:input.apiKey,model:SOL_COMPARISON_POLICY.model,timeoutMs:120000},
    {extractorVersion:PAYSLIP_EXTRACTION_V21_VERSION,executionProfile:OPENAI_SOL_COMPARISON_PROFILE,
@@ -102,6 +109,7 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
    if(request.kind!=='first_pass')throw Error('SOL_AUTOMATIC_RECOVERY_NOT_AUTHORIZED');
    if(entered>=input.maxGenerations&&!policy)throw Error('SOL_SAVED_GENERATION_LIMIT');
    const boundRequest=extractionRequestSchema.parse(request.request),document=boundRequest.document;
+   if(input.liveWindow&&(boundRequest.declared_document_type!=='payslip'||document.document_type!=='payslip'))throw Error('SOL_SAVED_SOURCE_NOT_ALLOWED');
    if(input.allowedCaseIds&&!input.allowedCaseIds.includes(boundRequest.case_id))throw Error('SOL_SAVED_CASE_NOT_ALLOWED');
    if(input.allowedVersionIds&&!input.allowedVersionIds.includes(document.document_id))throw Error('SOL_SAVED_VERSION_NOT_ALLOWED');
    if(document.case_id!==boundRequest.case_id)throw Error('SOL_SAVED_REQUEST_CASE_MISMATCH');
@@ -145,7 +153,10 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
    const directory=path.join(input.artifactDirectory,boundRequest.extraction_id);mkdirSync(directory,{recursive:true});
    const save=(name:string,value:unknown)=>writeFileSync(path.join(directory,name),JSON.stringify(value,null,2)+'\n',policy?{flag:'wx',mode:0o600}:undefined);
     save('source-context.json',{codeRevision:input.codeRevision,request:boundRequest,requestSha256:counted.requestSha256,
-     sourceSha256:source.sha256,model:SOL_COMPARISON_POLICY.model,reasoningEffort:'medium',sourcePageCount:1,...(policy?{policyRevalidation:policy,ledgerSequence:reservation.attempt}:{})});
+     sourceSha256:source.sha256,model:SOL_COMPARISON_POLICY.model,reasoningEffort:'medium',sourcePageCount:1,...(policy?{policyRevalidation:policy,ledgerSequence:reservation.attempt}:{}),
+     ...(input.liveWindow?{managedLiveWindow:{version:input.liveWindow.version,authorizationId:input.liveWindow.authorizationId,
+      configSha256:canonicalSha256(input.liveWindow),baselineLedgerSha256:input.liveWindow.baseline.fileSha256,
+      authorizedAt:input.liveWindow.authorizedAt,expiresAt:input.liveWindow.expiresAt}}:{})});
     if(input.expiresAt&&Date.now()>=Date.parse(input.expiresAt))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
     input.assertActive?.();
     if(managedRecoveryAuthority)assertManagedOpenAiRecovery(managedRecoveryAuthority,input.apiKey,boundRequest);
@@ -214,6 +225,8 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
    }finally{busy=false;}
   }}:undefined;
   return {extractor,...(documentEvidenceExtractor?{documentEvidenceExtractor}:{}),summary:()=>({...summarizeSolBudget(ledger),instanceGenerations:entered,
+   ...(input.liveWindow?{unknownOutcomes:ledger.reservations.filter(row=>row.outcome==='reserved_unknown'||row.kind==='generation'&&row.outcome==='receipt_recorded'
+    &&parseOpenAiProviderReceipt(row.receipt).status==='failed'&&parseOpenAiProviderReceipt(row.receipt).provider_response_id===null&&parseOpenAiProviderReceipt(row.receipt).token_usage===null).length}:{}),
    generationReceiptsWithoutTokenUsage:ledger.reservations.filter(row=>row.kind==='generation'&&row.outcome==='receipt_recorded'
     &&parseOpenAiProviderReceipt(row.receipt).token_usage===null).length}),close};
  }catch(error){close();throw error;}
@@ -227,6 +240,15 @@ export function createManagedSolBudgetedExtractor(environment:Readonly<Record<st
  const control=managedWorkerControlConfig({...environment,TIVDOC_MANAGED_DEV_BUILD_SHA:buildSha});
  if(!control.enabled||environment.VERCEL||environment.OPENAI_EXTRACTION_MODEL!=='gpt-5.6-sol')throw Error('SOL_MANAGED_PACKAGE_SCOPE');
  const expected=path.resolve('../release-work/sol-scheduled-package-20260911.private.json');
+ if(environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE&&path.resolve(environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE)!==expected){
+  const window=readManagedSolLiveWindow(environment,buildSha),config=window.config;
+  if(!environment.OPENAI_API_KEY)throw Error('SOL_MANAGED_PACKAGE_PATH');
+  const authority=authorizeManagedOpenAiRecovery({apiKey:environment.OPENAI_API_KEY,buildSha,environment,packageSha256:window.packageSha256});
+  return createBoundedSolExtractor({apiKey:environment.OPENAI_API_KEY,ledgerPath:config.ledgerPath,artifactDirectory:config.artifactDirectory,
+   codeRevision:buildSha,allowedSources:[{sha256:config.source.sha256,sizeBytes:config.source.sizeBytes,mimeType:config.source.mimeType}],
+   allowedCaseIds:[config.source.caseId],allowedVersionIds:[config.source.versionId],expiresAt:config.expiresAt,maxGenerations:1,
+   reviewedPolicyRevalidation:config.policyRevalidation,assertActive:window.assertActive,liveWindow:config},authority);
+ }
  if(!environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE||path.resolve(environment.TIVDOC_MANAGED_SOL_PACKAGE_FILE)!==expected)throw Error('SOL_MANAGED_PACKAGE_REQUIRED');
  const packageBytes=readFileSync(expected);
  const config=z.object({version:z.literal('sol-scheduled-dev-package-20260911-v1'),enabled:z.literal(true),

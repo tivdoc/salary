@@ -13,6 +13,8 @@ import {travelEntitlementInputSchema} from './travel/contracts.ts';
 import {materializeQuestionnaireAgeRanges} from './age-range-materialization.ts';
 import {pensionProductReview} from './pension-product.ts';
 import {workingTimeProductReview} from './working-time-product.ts';
+import {workingTimeEntitlementInputSchema} from './working-time/contracts.ts';
+import {WORKING_TIME_PROTECTED_BREAK_POLICY} from './working-time/protected-breaks.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
 import {materializeTypedEntitlementFacts} from './typed-product-facts.ts';
 import {projectSharedPersonalFactNeeds,materializeSharedPersonalFacts,sharedPersonalFactManifest} from './shared-product-facts.ts';
@@ -67,7 +69,9 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  const topics=['working_time','pension','travel','minimum_wage','vacation','convalescence'].filter(t=>base.entitlement_evidence?.[t as keyof EntitlementEvidence]!==undefined);
  if(obligationPolicy===OBLIGATIONS_CASE_POLICY)topics.push(...base.purchased_scope.topics.filter(t=>t==='contract'||t==='bonuses'));
  const travelPolicy=base.entitlement_evidence?.travel?travelEntitlementInputSchema.parse(base.entitlement_evidence.travel).calculation_policy:undefined;
- const laws=entitlementLegalDocuments(base.case_id,topics,{...(obligationPolicy===OBLIGATIONS_CASE_POLICY?{obligations_policy:obligationPolicy}:{}),...(travelPolicy?{travel_policy:travelPolicy}:{})}),packet=assertEntitlementSourcePacket(base,base.entitlement_evidence,laws);
+ const work=base.entitlement_evidence?.working_time;
+ const protectedBreaks=work!==undefined&&(Array.isArray(work)?work:[work]).some(w=>workingTimeEntitlementInputSchema.parse(w).protected_break_policy===WORKING_TIME_PROTECTED_BREAK_POLICY);
+ const laws=entitlementLegalDocuments(base.case_id,topics,{...(obligationPolicy===OBLIGATIONS_CASE_POLICY?{obligations_policy:obligationPolicy}:{}),...(travelPolicy?{travel_policy:travelPolicy}:{}),...(protectedBreaks?{working_time_policy:WORKING_TIME_PROTECTED_BREAK_POLICY}:{})}),packet=assertEntitlementSourcePacket(base,base.entitlement_evidence,laws);
  const baseline=resolve(base,materializeQuestionnaireAgeRanges(packet,packet,base));
  const documents=[...base.documents];for(const law of laws){const at=documents.findIndex(d=>d.document_id===law.document_id);if(at<0)documents.push(law);else documents[at]=law;}
  let withNeeds=documentReviewInputSchema.parse({...base,documents,completion_input:{...parseReviewCompletionInput(base.completion_input),needs:[...parseReviewCompletionInput(base.completion_input).needs,...baseline.needs]}});

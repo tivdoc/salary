@@ -7,6 +7,8 @@ import {parseReviewCompletionInput} from '@/engine/document-review/completions';
 import {runDocumentReview} from '@/engine/document-review/service';
 import {travelJourneyFactKey} from '@/engine/entitlement-review/travel/journey-facts';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {productFlowFixture} from '@/engine/entitlement-review/working-time/product-flow.fixture';
+import {workingTimeEntitlementInputSchema} from '@/engine/entitlement-review/working-time/contracts';
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import type {SourceJob} from './source-dispatch';
@@ -44,6 +46,22 @@ function setup(hasDocumentReviewAnswers=false){
  return {travel,snapshot,job,context,load:(automaticOnly=false)=>savedDocumentReviewInput(context,job,order,'2026-06',snapshot,automaticOnly)};
 }
 describe('explicit ordinary automatic travel profile without a tariff purpose',()=>{
+ it.each([false,true])('selects protected breaks only in the automatic saved profile: %s',async automatic=>{
+  const f=setup(),working=productFlowFixture(),original=canonicalSha256(working.input);
+  ports.source.mockImplementation((argument:{purchased_scope:{order_id:string;receipt_sha256:string}})=>{
+   const source=working.review();
+   source.purchased_scope={...source.purchased_scope,...argument.purchased_scope};
+   source.entitlement_evidence={schema_version:'entitlement-source-evidence-v1',case_id:source.case_id,
+    order_id:source.purchased_scope.order_id,receipt_sha256:source.purchased_scope.receipt_sha256,
+    period:source.period,working_time:[working.input]};
+   return source;
+  });
+  const order:SavedExecutionOrder={id:'99999999-9999-4999-8999-999999999999',kind:'full',from:'2026-06-01',to:'2026-06-01',topics:['working_time'],offer_sha256:'d'.repeat(64)};
+  const output=await savedDocumentReviewInput(f.context,{...f.job,case_id:working.input.case_id},order,'2026-06',f.snapshot,automatic);
+  const weeks=output.entitlement_evidence!.working_time as unknown[];
+  expect(workingTimeEntitlementInputSchema.parse(weeks[0]).protected_break_policy).toBe(automatic?'working-time-protected-breaks-v1':undefined);
+  expect(canonicalSha256(working.input)).toBe(original);
+ });
  it('selects floor v2 for source-supported zero, preserving facts and independent method evidence',async()=>{
   const f=setup(),before=canonicalSha256(f.travel),out=await f.load(true);
   expect(ports.source).toHaveBeenCalledWith(expect.objectContaining({identified_period_structure_policy:'identified-period-structures-v2'}));

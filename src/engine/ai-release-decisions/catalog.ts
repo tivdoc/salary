@@ -8,6 +8,7 @@ import {minimumWageLegalSource,MINIMUM_WAGE_SOURCE_REVIEW_SHA256} from '../entit
 import {workingTimeLegalSource,WORKING_TIME_SOURCE_REVIEW,WORKING_TIME_SOURCE_REVIEW_SHA256} from '../entitlement-review/working-time/source-policy.ts';
 import {convalescenceLegalSource,CONVALESCENCE_SOURCE_REVIEW_SHA256} from '../entitlement-review/convalescence/source-policy.ts';
 import {obligationLegalSource,OBLIGATIONS_SOURCE_REVIEW_SHA256} from '../entitlement-review/obligations/source-policy.ts';
+import {WORKING_TIME_PROTECTED_BREAK_POLICY,WORKING_TIME_PROTECTED_BREAK_SOURCE_REVIEW_SHA256,WORKING_TIME_PROTECTED_BREAK_AMENDMENT} from '../entitlement-review/working-time/protected-breaks.ts';
 
 export type DecisionBranch='pension'|'travel'|'vacation'|'minimum_wage'|'working_time'|'convalescence'|'obligations';
 function weeklyInterpretationSource():DocumentReviewSource{
@@ -145,6 +146,52 @@ function pensionFloorRecipe(decision_id:string,method:string,paths:string[],page
   complete_arrangement_compliance_assessed:false,zero_difference_establishes_compliance:false};
  return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
 }
+/** Correct a source locator additively. The six-page original publication puts
+ * sections 16–18 on PDF page 4 (printed 207). Historical page-3 recipes remain
+ * replayable; a newly reviewed method must explicitly select this descendant. */
+function workingTimePageRecipe(parentId:string){
+ const parent=historicalRecipes.find(r=>r.recipe_id===parentId);
+ if(!parent)throw Error('AI_WT_PAGE_RECIPE_PARENT_REQUIRED');
+ const law=WORKING_TIME_SOURCE_REVIEW.sources.find(s=>s.key==='law');
+ if(!law)throw Error('AI_WT_PAGE_SOURCE_REQUIRED');
+ const {recipe_sha256,...body}=parent;void recipe_sha256;
+ const candidate={...body,recipe_id:parent.recipe_id+'.source-page-v2',
+  parent_recipe_sha256:parent.recipe_sha256,source_locator_policy:'hours-law-original-page4-v2' as const,
+  legal_sources:parent.legal_sources.map(source=>source.version_id===law.version_id?{...source,page:4}:source)};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+function convalescenceDueLocatorRecipe(){
+ const parent=historicalRecipes.find(r=>r.recipe_id==='ai-case.cv.due_date');
+ if(!parent)throw Error('AI_CV_LOCATOR_PARENT_REQUIRED');
+ const {recipe_sha256,...body}=parent;void recipe_sha256;
+ const candidate={...body,recipe_id:parent.recipe_id+'.source-provision-v2',
+  parent_recipe_sha256:parent.recipe_sha256,source_locator_policy:'convalescence-payment-section5d-v2' as const,
+  legal_sources:[convalescenceLegalSource(0,'סעיף 5(ד) — מועד מפורש ומזוהה; אין בחירת חודש אוטומטית בטווח הקיץ')]};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+/** These descendants correct only source locators. Amendment 15's first PDF
+ * page is its cover; the operative quota and commencement are on page 2.
+ * The age descendant retains the original age method and its consumed inputs. */
+function vacationPageRecipe(parentId:string,age=false){
+ const parent=age?ageRangeRecipe(parentId):historicalRecipes.find(r=>r.recipe_id===parentId);
+ if(!parent||parent.branch!=='vacation')throw Error('AI_VACATION_PAGE_PARENT_REQUIRED');
+ const {recipe_sha256,...body}=parent;void recipe_sha256;
+ const candidate={...body,recipe_id:parent.recipe_id+'.source-page-v2',parent_recipe_sha256:parent.recipe_sha256,
+  source_locator_policy:'vacation-amendment15-page2-and-section10a-page2-v2' as const,
+  legal_sources:parent.legal_sources.map(source=>source.document_id==='il.annual-vacation.amendment15'
+   ?{...source,page:2}:parent.decision_id==='vacation.pay_recorded_allocation'&&source.document_id==='il.annual-vacation.law'
+    ?{...source,page:2}:source)};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+function travelPageRecipe(parentId:string){
+ const parent=historicalRecipes.find(r=>r.recipe_id===parentId);
+ if(!parent||parent.branch!=='travel')throw Error('AI_TRAVEL_PAGE_PARENT_REQUIRED');
+ const {recipe_sha256,...body}=parent;void recipe_sha256;
+ const candidate={...body,recipe_id:parent.recipe_id+'.source-page-v2',parent_recipe_sha256:parent.recipe_sha256,
+  source_locator_policy:'travel-discount-fare-section4-page1-v2' as const,
+  legal_sources:parent.legal_sources.map(source=>({...source,page:1}))};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
 function travelFloorRecipe(decision_id:string,method:string,paths:string[],locator:string){
  const ordinary=recipe('travel',decision_id,method,paths,TRAVEL_FLOOR_SOURCE_REVIEW_SHA256,[travelLegalSource(1,locator),travelFloorLegalSource('סעיף 30(א)–(ב) — הנוסח המקורי; קבלה נפרדת נדרשת לעדכניות ולפרשנות')]);
  const {recipe_sha256,...body}=ordinary;void recipe_sha256;
@@ -152,9 +199,30 @@ function travelFloorRecipe(decision_id:string,method:string,paths:string[],locat
   complete_arrangement_compliance_assessed:false,zero_difference_establishes_compliance:false,current_source_and_interpretation_admission_required:true};
  return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
 }
+function workingTimeProtectedBreakRecipe(id:'worked_time'|'arrangement'|'payroll_allocation'){
+ const parentId='ai-case.wt.'+id,parent=id==='payroll_allocation'?workingTimePageRecipe(parentId):historicalRecipes.find(r=>r.recipe_id===parentId);
+ if(!parent)throw Error('AI_WT_PROTECTED_BREAK_PARENT_REQUIRED');
+ const {recipe_sha256,...body}=parent;void recipe_sha256;
+ const amendment=WORKING_TIME_PROTECTED_BREAK_AMENDMENT;
+ const source:DocumentReviewSource={document_id:amendment.document_id,version_id:amendment.version_id,file_sha256:amendment.file_sha256,page:1,
+  locator:'תיקון 13, סעיפים 1–2 — שימוש בשירותים נכלל בשעות העבודה; תחילה בסעיף 5 בעמוד 3',label:amendment.label,
+  reading:'source_research',reading_receipt_sha256:WORKING_TIME_PROTECTED_BREAK_SOURCE_REVIEW_SHA256};
+ const candidate={...body,recipe_id:parentId+'.protected-breaks-v1',parent_recipe_sha256:parent.recipe_sha256,
+  protected_break_policy:WORKING_TIME_PROTECTED_BREAK_POLICY,source_policy_sha256:WORKING_TIME_PROTECTED_BREAK_SOURCE_REVIEW_SHA256,
+  method:parent.method+'_with_source_classified_protected_breaks',consumed_paths:[...parent.consumed_paths,'protected_break_policy'],
+  legal_sources:[...parent.legal_sources,source]};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
 export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  ...historicalRecipes,
+ convalescenceDueLocatorRecipe(),
+ ...['ai-method.wt.rounding','ai-method.wt.weekly_aggregation','ai-method.wt.rest_additive',
+  'ai-case.wt.regular_wage','ai-case.wt.payroll_allocation'].map(workingTimePageRecipe),
  ...['ai-case.mw.population','ai-case.cv.population','ai-case.vacation.general_section3','ai-case.wt.coverage'].map(ageRangeRecipe),
+ ...['general_section3','seniority_basis','annual_workdays','pay_calendar_days','pay_quarter_selection','pay_monthly_period','pay_recorded_allocation'].map(id=>vacationPageRecipe('ai-case.vacation.'+id)),
+ vacationPageRecipe('ai-case.vacation.general_section3',true),
+ ...['ai-case.travel.fare_basis','ai-case.travel.ticket_options'].map(travelPageRecipe),
+ ...(['worked_time','arrangement','payroll_allocation'] as const).map(workingTimeProtectedBreakRecipe),
  pensionFloorRecipe('pension.general_coverage','explicit_employee_private_product_age21_59_for_floor_only',['period','product_facts','facts.aged_21_or_more','facts.under_60'],3,'סעיפים 2–4 — אוכלוסייה; גיל 21–59 הוא גבול המוצר ואינו אישור לבסיס או להסדר מיטיב'),
  pensionFloorRecipe('pension.pension_fund','identified_pension_product_from_exact_current_relation_or_source_clause',['period','product_facts.pension_product','recorded','source_facts.arrangement'],4,'סעיף 6 — סוג המוצר לפי מקור מזוהה, לא סיווג לקוח'),
  pensionFloorRecipe('pension.pensionable_wage','identified_complete_component_basis_exact_period_and_operand',['period','pensionable_wage','eligible_interval_wage','source_facts'],4,'סעיף 6(ב)–(ג) — בסיס מזוהה לתקופה; אין אישור לתקרה חלקית או להסדר גבוה יותר'),

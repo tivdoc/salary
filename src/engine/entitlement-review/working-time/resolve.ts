@@ -7,6 +7,7 @@ import {atTime,sourceInterval,sourceNumber,sourcePin,usable,validateAllSources,t
 import {buildWorkingTimeRule,type WorkingDayReading} from './rules.ts';
 import {WORKING_TIME_PRODUCT_FACTS_POLICY} from './product-fact-contracts.ts';
 import {workingTimeCaseDecisionSources,workingTimeRestDeclarationSources,replayWorkingTimeProductFacts} from './product-facts.ts';
+import {WORKING_TIME_PROTECTED_BREAK_POLICY,WORKING_TIME_BREAK_TYPE_OPTIONS,WORKING_TIME_BREAK_TYPE_QUESTION,workingTimeIntervalTreatment} from './protected-breaks.ts';
 
 export const WORKING_TIME_APPLICABILITY=deepFreeze({
  'wt.coverage':'יש לזהות את התפקיד וההסדר החל, לרבות חריגים לחוק והסדר ענפי או מיטיב. הצהרת הלקוח אינה הכרעת תחולה.',
@@ -49,7 +50,7 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  const targetIds=input.workdays.filter(d=>d.inventory.value!=='no_work').flatMap(d=>dayCheckIds(d.id));
  const add=(fact_key:string,input_path:string,state:WorkingTimeMissing['state'],question:string,kind:WorkingTimeMissing['kind']='fact',sources:DocumentReviewSource[]=[],ids=targetIds,answer_kind:WorkingTimeMissing['answer_kind']='text',options?:string[])=>{
   const pins=[...new Map(sources.filter(s=>s.reading!=='source_research').map(s=>{const p=sourcePin(input,s);return [canonicalSha256(p),p];})).values()];
-  const m:WorkingTimeMissing={fact_key,input_path,state,question,kind,answer_kind,customer_declaration_allowed:kind==='fact'&&/\.(?:classification|kind|inventory|no_work_credit)$/u.test(input_path),source_pins:pins,dependent_check_ids:ids,...(options?{options}:{})};
+  const m:WorkingTimeMissing={fact_key,input_path,state,question,kind,answer_kind,customer_declaration_allowed:kind==='fact'&&/\.(?:classification|break_type|kind|inventory|no_work_credit)$/u.test(input_path),source_pins:pins,dependent_check_ids:ids,...(options?{options}:{})};
   if(!missing.some(x=>x.fact_key===fact_key&&canonicalSha256(x.dependent_check_ids)===canonicalSha256(ids)))missing.push(m);
  };
  const factGap=<T>(key:string,path:string,f:WorkingTimeSourceFact<T>,question:string,ids=targetIds,options?:string[])=>add(key,path,absentState(f),question,'fact',f.source?[f.source]:[],ids,options?'choice':'text',options);
@@ -94,15 +95,23 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
   for(const [i,interval]of day.intervals.entries()){
    const r=sourceInterval(input,day,interval,rest);if(!r){add(`wt.duration.${interval.id}`,`${path}.intervals.${i}.printed_duration`,absentState(interval.printed_duration),'יש לאמת את התאריכים, הכניסה, היציאה והמשך המקורי של המקטע.','source',[interval.clock_source],ids,'document');hard=true;continue;}
    traces.push(r);const c=interval.classification;
+   const treatment=workingTimeIntervalTreatment(input,interval);
+   if(input.protected_break_policy===WORKING_TIME_PROTECTED_BREAK_POLICY&&treatment.state==='unresolved'&&treatment.fact==='break_type'){
+    const b=interval.break_type;
+    add(`wt.break_type.${interval.id}`,`${path}.intervals.${i}.break_type`,treatment.reason,
+     treatment.reason==='unsupported'?'המקור מתאר הפסקת אוכל או מנוחה רגילה קצרה מחצי שעה. נדרשת בדיקה נפרדת של אופי ההפסקה וההסדר; היא לא נוכתה אוטומטית.':WORKING_TIME_BREAK_TYPE_QUESTION,
+     treatment.reason==='unsupported'?'applicability':'fact',b?.source?[b.source]:[interval.clock_source],ids,'choice',[...WORKING_TIME_BREAK_TYPE_OPTIONS]);
+    hard=true;continue;
+   }
    const classified=usable(c)&&c.value!=='unknown';
    if(!classified){
     factGap(`wt.classification.${interval.id}`,`${path}.intervals.${i}.classification`,c,'במקטע ההפסקה המזוהה, האם הייתם פנויים לצאת וללא חובת זמינות, או שנדרשתם להישאר לרשות העבודה? יש לציין את השעות המדויקות.',ids,['worked','free_break','required_presence','unknown']);
     const decisionId='wt.worked_time.'+day.id;
     if(input.applicability.some(d=>d.decision_id===decisionId&&d.state==='accepted'))throw Error('WORKING_TIME_UNRESOLVED_CLASSIFICATION_ACCEPTED');
     const assumable=['missing','unknown','observed','declared'].includes(c.state);
-    if(input.mode!=='explicit_presence_scenario'||!assumable||!input.conditional_assumptions?.some(a=>a.decision_id===decisionId)){hard=true;continue;}
+    if(input.protected_break_policy||input.mode!=='explicit_presence_scenario'||!assumable||!input.conditional_assumptions?.some(a=>a.decision_id===decisionId)){hard=true;continue;}
    }
-   if(!classified||c.value!=='free_break')eligible.push(r);
+   if(!classified||treatment.state==='included')eligible.push(r);
   }
   if(hard)continue;
   if(!eligible.length){add(`wt.actual_work.${day.id}`,path+'.intervals','missing','המקטעים המזוהים אינם שעות עבודה. אין להשוות שכר יומי בלי הקצאה מדויקת לזמן עבודה.','fact',day.intervals.map(i=>i.clock_source),ids);continue;}
@@ -178,11 +187,13 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
   const hourEvidence=consumedDays.map(v=>({id:v.day.id,date:v.day.date,kind:v.day.kind,inventory:v.day.inventory,intervals:v.day.intervals,
    ordinary_limit:v.day.ordinary_limit,...(v.noWork?{no_work_credit:v.day.no_work_credit??null}:{})}));
   const checkEvidence={schema_version:'working-time-check-evidence-v1',case_id:input.case_id,workdays:hourEvidence,
+   ...(input.protected_break_policy?{protected_break_policy:input.protected_break_policy}:{}),
    arrangement:input.arrangement,rest_window:input.rest_window,regular_hourly_wage:input.regular_hourly_wage,
    ...(compared?{payment:{recorded_pay:view.day.recorded_pay,payroll_allocations:view.day.payroll_allocations??[],allocation:view.day.payment_allocation}}:{}),
    weekly:complete?{week_start:input.week_start,inventory:input.week_inventory,scheduled_weekdays:input.scheduled_weekdays}:null,mode:input.mode};
   const factualSources:DocumentReviewSource[]=[];
-  for(const v of consumedDays){const sources=[v.day.kind.source,v.day.inventory.source,...v.day.intervals.map(r=>r.classification.source),...(v.noWork?[v.day.no_work_credit?.source??null]:[])];
+  for(const v of consumedDays){const sources=[v.day.kind.source,v.day.inventory.source,...v.day.intervals.map(r=>r.classification.source),
+    ...(input.protected_break_policy?v.day.intervals.flatMap(r=>r.break_type?.source?[r.break_type.source]:[]):[]),...(v.noWork?[v.day.no_work_credit?.source??null]:[])];
    for(const s of sources)if(s&&!factualSources.some(existing=>canonicalSha256(existing)===canonicalSha256(s)))factualSources.push(s);}
   for(const s of [input.arrangement.source,input.rest_window.source,...(compared?[view.day.payment_allocation.source]:[]),...(complete?[input.week_inventory.source,input.scheduled_weekdays.source]:[])])
    if(s&&!factualSources.some(existing=>canonicalSha256(existing)===canonicalSha256(s)))factualSources.push(s);

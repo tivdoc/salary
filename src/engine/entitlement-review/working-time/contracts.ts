@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {questionnaireAgeRangeProofSchema} from '../questionnaire-age-range.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput} from '../../document-review/calculations.ts';
 import {workingTimeProductFactsSchema,workingTimeCaseRecipeBindingSchema} from './product-fact-contracts.ts';
+import {WORKING_TIME_PROTECTED_BREAK_POLICY,WORKING_TIME_BREAK_TYPE_OPTIONS} from './protected-breaks.ts';
 
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
 const source=operand.shape.source;
@@ -11,7 +12,8 @@ const evidenceState=z.enum(['observed','declared','missing','unknown','conflict'
 export const workingTimeSourceFactSchema=<T extends z.ZodType>(value:T)=>z.object({state:evidenceState,value:value.nullable(),source:source.nullable()}).strict();
 const classification=z.enum(['worked','free_break','required_presence','unknown']);
 const interval=z.object({id,start_at:z.string().max(40),end_at:z.string().max(40),
- printed_duration:operand,clock_source:source,classification:workingTimeSourceFactSchema(classification)}).strict();
+ printed_duration:operand,clock_source:source,classification:workingTimeSourceFactSchema(classification),
+ break_type:workingTimeSourceFactSchema(z.enum(WORKING_TIME_BREAK_TYPE_OPTIONS)).optional()}).strict();
 const workday=z.object({id,date,kind:workingTimeSourceFactSchema(z.enum(['ordinary','pre_rest','holiday','unsupported'])),
  inventory:workingTimeSourceFactSchema(z.enum(['complete_work','no_work','incomplete'])),intervals:z.array(interval).max(8),
  no_work_credit:workingTimeSourceFactSchema(z.enum(['no_credit','paid_absence','unknown'])).optional(),
@@ -24,6 +26,7 @@ const decision=z.object({decision_id:id,state:z.enum(['accepted','missing','unkn
 export const workingTimeEntitlementInputSchema=z.object({
  schema_version:z.literal('working-time-entitlement-input-v1'),catalog_version:z.literal('1.0.0'),
  calculation_policy:z.literal('working-time-separated-expected-v2').optional(),
+ protected_break_policy:z.literal(WORKING_TIME_PROTECTED_BREAK_POLICY).optional(),
  case_id:z.string().min(1).max(160),run_id:z.string().min(1).max(160),check_id_prefix:id,
  period:z.object({from:date,to:date}).strict(),evaluated_at:z.iso.datetime(),
  source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,
@@ -39,7 +42,8 @@ export const workingTimeEntitlementInputSchema=z.object({
  applicability:z.array(decision).max(64),
  mode:z.enum(['source_classified','explicit_presence_scenario']),
  conditional_assumptions:z.array(z.object({decision_id:id,explanation:z.string().min(1).max(1000)}).strict()).min(1).max(32).optional(),
-}).strict().superRefine((v,ctx)=>{if(v.product_facts?.schema_version!=='working-time-product-facts-v2'&&v.applicability.length>32)ctx.addIssue({code:'custom',message:'WORKING_TIME_LEGACY_DECISION_LIMIT'});});
+}).strict().superRefine((v,ctx)=>{if(v.product_facts?.schema_version!=='working-time-product-facts-v2'&&v.applicability.length>32)ctx.addIssue({code:'custom',message:'WORKING_TIME_LEGACY_DECISION_LIMIT'});
+ if(!v.protected_break_policy&&v.workdays.some(d=>d.intervals.some(i=>i.break_type!==undefined)))ctx.addIssue({code:'custom',message:'WORKING_TIME_BREAK_POLICY_REQUIRED'});});
 export type WorkingTimeEntitlementInput=z.infer<typeof workingTimeEntitlementInputSchema>;
 export type WorkingTimeWorkday=WorkingTimeEntitlementInput['workdays'][number];
 export type WorkingTimeSourceFact<T>={state:z.infer<typeof evidenceState>;value:T|null;source:z.infer<typeof source>|null};

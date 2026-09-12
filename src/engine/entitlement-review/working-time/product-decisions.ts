@@ -5,9 +5,10 @@ import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {workingTimeEntitlementInputSchema,type WorkingTimeEntitlementInput,type WorkingTimeMissing,type WorkingTimeWorkday} from './contracts.ts';
 import {assertSource,sourceInterval,sourceNumber,type TimeReading} from './time-source.ts';
 import {WORKING_TIME_SOURCE_REVIEW_SHA256} from './source-policy.ts';
+import {WORKING_TIME_PROTECTED_BREAK_POLICY,WORKING_TIME_PROTECTED_BREAK_SOURCE_REVIEW_SHA256,WORKING_TIME_BREAK_TYPE_OPTIONS,WORKING_TIME_BREAK_TYPE_QUESTION,workingTimeIntervalTreatment,assertWorkingTimeBreakAnswer} from './protected-breaks.ts';
 import {workingTimeProductFactsSchema,type WorkingTimeProductFacts,WORKING_TIME_PRODUCT_FACTS_POLICY} from './product-fact-contracts.ts';
 export {workingTimeProductFactsSchema,workingTimeRegularWageBasisSchema,workingTimeAssignmentWitnessSchema,type WorkingTimeProductFacts} from './product-fact-contracts.ts';
-export type WorkingTimeCaseOptions={review?:DocumentReviewInput;product_facts?:WorkingTimeProductFacts;day_id?:string;age_range?:true};
+export type WorkingTimeCaseOptions={review?:DocumentReviewInput;product_facts?:WorkingTimeProductFacts;day_id?:string;age_range?:true;protected_breaks?:true};
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
 const sourceSchema=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const same=(a:unknown,b:unknown)=>canonicalSha256(a)===canonicalSha256(b);
@@ -74,7 +75,7 @@ export function evaluateWorkingTimeCaseRecipe(requestedDecisionId:string,candida
    if(!current||factReason(current)||current.state!=='declared'||current.value!==true||canonicalSha256(current)!==locator.temporal_assertion_sha256)reason='contract_temporal_association_changed';
   }
   for(const path of paths)for(const s of sourcesIn(at(input,facts,path)))sourceValid(s,input,options.review);
-  const consumed=workingTimeCaseConsumed(input,paths,facts);return {allowed:reason===null,reason,missing,producer_gaps,consumed_paths:paths,consumed_sha256:canonicalSha256(consumed),source_sha256s:[...new Set(consumed.flatMap(c=>c.source_sha256s))],source_policy_sha256:WORKING_TIME_SOURCE_REVIEW_SHA256,dependent_check_ids:ids,publication_authority:false};
+  const consumed=workingTimeCaseConsumed(input,paths,facts);return {allowed:reason===null,reason,missing,producer_gaps,consumed_paths:paths,consumed_sha256:canonicalSha256(consumed),source_sha256s:[...new Set(consumed.flatMap(c=>c.source_sha256s))],source_policy_sha256:options.protected_breaks?WORKING_TIME_PROTECTED_BREAK_SOURCE_REVIEW_SHA256:WORKING_TIME_SOURCE_REVIEW_SHA256,dependent_check_ids:ids,publication_authority:false};
  };
  const block=(path:string,reason:string,question:string,kind:WorkingTimeMissing['kind']='source',declaration=false,choices?:readonly string[],producer?:string)=>{
   const state:WorkingTimeMissing['state']=['conflict','stale','expired','unreadable','unknown'].includes(reason)?reason as WorkingTimeMissing['state']:['missing','identified_source_required'].includes(reason)?'missing':['incomplete','incomplete_composition','partial','incomplete_or_excess_hours'].includes(reason)?'unknown':'unsupported';
@@ -82,6 +83,9 @@ export function evaluateWorkingTimeCaseRecipe(requestedDecisionId:string,candida
   return finish(path+':'+reason,[{fact_key:'wt.case.'+path,input_path:path,state,kind,question,answer_kind:choices?'choice':declaration?'text':kind==='applicability'?'text':'document',...(choices?{options:choices}:{}),customer_declaration_allowed:declaration,source_pins:sources.map(s=>({case_id:input.case_id,document_id:s.document_id,version_id:s.version_id,source_sha256:s.file_sha256})),dependent_check_ids:ids}],producer?[producer]:[]);
  };
  if(options.review&&(options.review.case_id!==input.case_id||!same(options.review.period,input.period)))throw Error('WT_CASE_SCOPE');
+ const breakConsumer=dynamicDay!==null||['wt.arrangement','wt.payroll_allocation'].includes(decisionId);
+ if(options.protected_breaks){consume('protected_break_policy');if(!breakConsumer||input.protected_break_policy!==WORKING_TIME_PROTECTED_BREAK_POLICY)return finish('protected_break_policy_not_selected');}
+ else if(breakConsumer&&input.protected_break_policy===WORKING_TIME_PROTECTED_BREAK_POLICY)return finish('protected_break_recipe_required');
  if(input.period.from<'2026-05-01'||input.period.to>'2026-07-31'||input.period.from>input.period.to)return finish('unsupported_source_period');
  if(decisionId==='wt.coverage'){
   if(facts?.schema_version!==WORKING_TIME_PRODUCT_FACTS_POLICY)return finish('coverage_requires_separate_factual_packet_and_assessment',[],['working_time_coverage_facts_and_assessment']);
@@ -136,11 +140,18 @@ export function evaluateWorkingTimeCaseRecipe(requestedDecisionId:string,candida
    if(interval.clock_source.reading!=='identified_document_reading')return {path:q+'.clock_source',reason:'identified_source_required'};
    const reading=sourceInterval(input,day,interval,null)!;times.push(reading);
    const classification=factReason(interval.classification);if(classification||interval.classification.value==='unknown')return {path:q+'.classification',reason:classification??'unknown'};
+   if(options.protected_breaks){
+    if(options.review)assertWorkingTimeBreakAnswer(options.review,input,q+'.break_type',interval);
+    const treatment=workingTimeIntervalTreatment(input,interval);
+    if(treatment.state==='unresolved')return {path:q+'.'+treatment.fact,reason:treatment.reason};
+    if(interval.classification.value==='free_break'){const reason=factReason(interval.break_type);if(reason)return {path:q+'.break_type',reason};}
+   }
   }
   times.sort((a,b)=>a.start-b.start);if(times.some((t,j)=>j>0&&t.start<times[j-1].end))return {path:p+'.intervals',reason:'conflict'};
-  return day.intervals.every(x=>x.classification.value==='free_break')?{path:p+'.intervals',reason:'no_work_not_paid_time'}:null;
+  return day.intervals.every(x=>workingTimeIntervalTreatment(input,x).state==='excluded')?{path:p+'.intervals',reason:'no_work_not_paid_time'}:null;
  };
  if(dynamicDay){const {day,i}=selected[0],r=classified(day,i);if(!r)return finish(null);
+  if(r.path.endsWith('.break_type'))return block(r.path,r.reason,WORKING_TIME_BREAK_TYPE_QUESTION,'fact',true,WORKING_TIME_BREAK_TYPE_OPTIONS);
   if(r.path.endsWith('.classification'))return block(r.path,r.reason,'מה היה אופי המקטע: עבודה, הפסקה שבה היית חופשי/ה לצאת, או זמן שבו נדרשת להישאר לרשות המעסיק?','fact',true,['worked','free_break','required_presence','unknown']);
   if(r.path.endsWith('.inventory'))return block(r.path,r.reason,'האם הרישום כולל את כל מקטעי הנוכחות וההפסקות ביום הזה, או שלא הייתה נוכחות כלל?','fact',true,['complete_work','no_work','incomplete']);
   return block(r.path,r.reason,'יש להשלים או ליישב את רישום מקטעי היום; היעדר זמן עבודה אינו תשלום אפס.');
@@ -186,7 +197,8 @@ export function evaluateWorkingTimeCaseRecipe(requestedDecisionId:string,candida
    const kind=factReason(day.kind);if(kind||['holiday','unsupported'].includes(day.kind.value!))return block(p+'.kind',kind??'unsupported','יש לזהות את סוג היום ביחס ללוח העבודה ולמנוחה השבועית.');
    if(['conflict','stale','expired','unreadable'].includes(day.ordinary_limit.state))return block(p+'.ordinary_limit',day.ordinary_limit.state,'יש ליישב את מקור הסף היומי; סף לילה אינו מוחק מקור סותר.');
    const limit=operandReason(day.ordinary_limit,'hours');
-   if(limit){let seven=day.kind.value==='pre_rest';if(!seven){const classifiedReason=classified(day,i);if(!classifiedReason)seven=day.intervals.filter(x=>x.classification.value!=='free_break').reduce((n,x)=>n+sourceInterval(input,day,x,null)!.night_minutes,0)>=120;}
+   if(options.protected_breaks){const reason=classified(day,i);if(reason)return block(reason.path,reason.reason,reason.path.endsWith('.break_type')?WORKING_TIME_BREAK_TYPE_QUESTION:'יש להשלים את סיווג המקטעים המזוהים.',reason.path.endsWith('.break_type')?'fact':'source',reason.path.endsWith('.break_type'),reason.path.endsWith('.break_type')?WORKING_TIME_BREAK_TYPE_OPTIONS:undefined);}
+   if(limit){let seven=day.kind.value==='pre_rest';if(!seven){const classifiedReason=classified(day,i);if(!classifiedReason)seven=day.intervals.filter(x=>workingTimeIntervalTreatment(input,x).state==='included').reduce((n,x)=>n+sourceInterval(input,day,x,null)!.night_minutes,0)>=120;}
     if(!seven||!['missing','unknown'].includes(day.ordinary_limit.state))return block(p+'.ordinary_limit',limit,'יש לזהות את שעות התקן ואת היום המקוצר במקור; אין לחלק 42 במספר ימי השבוע.');
    }else {const minutes=sourceNumber(day.ordinary_limit,'hours')!;if(minutes<=0||minutes>(count===5?540:480))return block(p+'.ordinary_limit','unsupported','הסף היומי שנקרא אינו מתאים לענף המצומצם ומצריך בחינת הסדר נפרד.');}
   }
@@ -211,7 +223,7 @@ export function evaluateWorkingTimeCaseRecipe(requestedDecisionId:string,candida
    const key=canonicalSha256({observation_id:band.hours.observation_id,source:band.hours.source});if(observations.has(key))return block(p+'.payroll_allocations','conflict','אותה כמות שעות מופיעה פעמיים בהקצאה.');observations.add(key);
    if(sourceNumber(band.hourly_rate,'money')!<=0||band.percentage&&sourceNumber(band.percentage,'percent')!<100)return block(p+'.payroll_allocations','premium_only_or_zero_rate','תוספת בלבד אינה מלוא תשלום השעות. יש לזהות את רכיב שכר הבסיס.');paidMinutes+=sourceNumber(band.hours,'hours')!;
   }
-  const workedMinutes=day.intervals.filter(x=>x.classification.value!=='free_break').reduce((n,x)=>n+sourceInterval(input,day,x,null)!.minutes,0);
+  const workedMinutes=day.intervals.filter(x=>workingTimeIntervalTreatment(input,x).state==='included').reduce((n,x)=>n+sourceInterval(input,day,x,null)!.minutes,0);
   if(paidMinutes>workedMinutes)return block(p+'.payroll_allocations','conflict','כמות השעות ברכיבי התשלום גדולה מזמן העבודה המזוהה. יש ליישב את השיוך לפני השוואה.');
  }
  // A shared numeric observation cannot constitute full payment of two days.

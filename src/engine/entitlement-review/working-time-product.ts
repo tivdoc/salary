@@ -8,6 +8,7 @@ import {workingTimeProductFactQuestions,workingTimeProductFactKey} from './worki
 import {WORKING_TIME_PRODUCT_FACTS_POLICY} from './working-time/product-fact-contracts.ts';
 import {workingTimeProductSourcePins} from './working-time/source-facts.ts';
 import {evaluateWorkingTimeCaseRecipe} from './working-time/product-decisions.ts';
+import {workingTimeBreakTarget} from './working-time/protected-breaks.ts';
 
 export function workingTimeProductReview(input:DocumentReviewInput,candidates:unknown):EntitlementBranchReview{
  if(!Array.isArray(candidates)||!candidates.length||candidates.length>6)throw Error('ENTITLEMENT_WORKING_WEEK_SET');
@@ -33,10 +34,10 @@ export function workingTimeProductReview(input:DocumentReviewInput,candidates:un
    const ids=missing.dependent_check_ids.filter(id=>!resolved.checks.some(c=>c.check_id===id&&!purchased.includes(c.topic)));
    if(!ids.length)continue;
    for(const id of ids)if(!checks.some(c=>c.check_id===id)&&!gaps.some(g=>g.check_id===id))gaps.push({check_id:id,topic,kind:'missing_fact',detail:missing.question,next_step:missing.question});
-   const scalar=missing.customer_declaration_allowed&&missing.kind==='fact'&&/^workdays\.\d+\.(kind|inventory|no_work_credit|intervals\.\d+\.classification)$/u.test(missing.input_path);
+   const scalar=missing.customer_declaration_allowed&&missing.kind==='fact'&&/^workdays\.\d+\.(kind|inventory|no_work_credit|intervals\.\d+\.(?:classification|break_type))$/u.test(missing.input_path);
    let questionPins=[...missing.source_pins];
    if(scalar&&e.product_facts?.schema_version===WORKING_TIME_PRODUCT_FACTS_POLICY){
-    const path=/^workdays\.(\d+)\.(?:intervals\.(\d+)\.classification|kind|inventory|no_work_credit)$/u.exec(missing.input_path)!;
+    const path=/^workdays\.(\d+)\.(?:intervals\.(\d+)\.(?:classification|break_type)|kind|inventory|no_work_credit)$/u.exec(missing.input_path)!;
     const day=e.workdays[Number(path[1])],clocks=path[2]===undefined?day.intervals.map(i=>i.clock_source):[day.intervals[Number(path[2])].clock_source];
     // The question is about preserved source time, even after its factual
     // answer is unknown. An answer receipt is not a replacement source file.
@@ -44,12 +45,17 @@ export function workingTimeProductReview(input:DocumentReviewInput,candidates:un
      .map(s=>({case_id:input.case_id,document_id:s.document_id,version_id:s.version_id,source_sha256:s.file_sha256}));
     questionPins=pins.length?[...new Map(pins.map(p=>[canonicalSha256(p),p])).values()].sort((a,b)=>canonicalSha256(a).localeCompare(canonicalSha256(b))):workingTimeProductSourcePins(input,e);
    }
-   const fact_key=`entitlement.work.${canonicalSha256({period:input.period,pins:questionPins,prefix:e.check_id_prefix,path:missing.input_path}).slice(0,32)}`;
+   const breakTarget=scalar&&missing.input_path.endsWith('.break_type')?workingTimeBreakTarget(input,e,missing.input_path):null;
+   if(breakTarget)questionPins=breakTarget.pins;
+   const fact_key=breakTarget?.fact_key??`entitlement.work.${canonicalSha256({period:input.period,pins:questionPins,prefix:e.check_id_prefix,path:missing.input_path}).slice(0,32)}`;
+   const breakChoices=breakTarget?[{label:'הפסקת אוכל או מנוחה רגילה',value:'ordinary_meal_or_rest'},{label:'שימוש בשירותים',value:'toilet'},
+    {label:'התרעננות קצרה בהסכמת המעסיק',value:'short_refreshment'},{label:'לא ידוע',value:null}]:null;
    const legal=missing.kind==='applicability';
    if(e.product_facts?.schema_version===WORKING_TIME_PRODUCT_FACTS_POLICY&&missing.fact_key==='wt.rest_window'&&e.rest_window.state!=='conflict')continue;
    const need:ReviewCompletionNeed={fact_key,kind:legal?'legal':'factual',reason:missing.state==='conflict'?'conflicted':missing.state==='unreadable'?'unreadable':missing.state==='missing'?'missing':'unknown',
     required_evidence_kind:scalar?'customer_declaration':'observed_reading',question:missing.question,
     answer_kind:scalar&&missing.options?.length?'choice':'text',...(scalar&&missing.options?.length?{options:[...missing.options]}:{}),
+    ...(breakChoices?{options:breakChoices.map(c=>c.label),value_mapping:{schema_version:'document-review-choice-values-v1' as const,entries:breakChoices}}:{}),
     source_pins:questionPins,dependent_check_ids:[...ids],general_question:false};
    const prior=needs.find(n=>n.fact_key===fact_key);
    if(!prior){needs.push(need);if(scalar)answer_targets.push({fact_key,input_path:missing.input_path,branch:'working_time',index,value_kind:'text'});}

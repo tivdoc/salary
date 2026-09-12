@@ -94,15 +94,24 @@ describe('working-time ordinary factual answers and materialization',()=>{
   const old=singleDay(),one=old.applicability[0];old.applicability=Array.from({length:33},(_,i)=>({...one,decision_id:'synthetic.decision.'+i}));expect(()=>workingTimeEntitlementInputSchema.parse(old)).toThrow('WORKING_TIME_LEGACY_DECISION_LIMIT');
   const f=productFlowFixture();f.input.applicability=old.applicability;expect(workingTimeEntitlementInputSchema.parse(f.input).applicability).toHaveLength(33);
  });
- it('takes actual factual answers through catalog decisions and the existing expected and comparison RuleSpecs',()=>{
+ it.each([false,true])('takes actual factual answers through catalog decisions and RuleSpecs (corrected source page: %s)',correctedPage=>{
   const f=productFlowFixture();f.identify();const w=attachWorkingTimeSourceFacts(f.input,f.review()).input;
   let source=composeEntitlementReview(sourcePacket(f.review(),[w]));
   for(const [path,value]of Object.entries({birth_date:'1990-01-01',employment_relationship:'employee',workplace_sector:'private',salary_basis:'hourly',job_duties:'Synthetic packing work with no authority to bind the employer',occupation_group:'ordinary',company_policy_authority:false,employer_personal_proxy:false,hours_trackable:true,other_hours_terms_known:false}))source=answerFact(source,'product_facts.'+path,value);
-  const history=canonicalSha256(source.answer_history),applied=applyMethods(source),result=runDocumentReview(applied.source,'synthetic.working.rules'),e=effective(result.input);
+  const methods=[...caseIds,'wt.rounding'].map(id=>{
+   const old=method(id),next=correctedPage?AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===old.recipe_id+'.source-page-v2'):undefined;
+   return next?{...old,recipe_id:next.recipe_id,recipe_sha256:next.recipe_sha256}:old;
+  });
+  const history=canonicalSha256(source.answer_history),applied=applyAiReleaseDecisionRecipes({source,methods,at:'2026-09-12T12:00:00Z'}),result=runDocumentReview(applied.source,'synthetic.working.rules'),e=effective(result.input);
   expect(applied.unresolved).toEqual([]);expect(applied.receipts).toHaveLength(7);expect(result.checks).toHaveLength(2);
   expect(result.checks.find(c=>c.check_id.endsWith('.expected'))?.calculation.expected).toMatchObject({minor_units:42000});
   expect(result.checks.find(c=>!c.check_id.endsWith('.expected'))?.calculation.difference).toMatchObject({minor_units:2000});
   expect(e.product_facts).toMatchObject({birth_date:{state:'declared',value:'1990-01-01'}});expect(canonicalSha256(applied.source.answer_history)).toBe(history);expect(replayDocumentReview(result)).toEqual(result);
+  if(correctedPage){
+   const corrected=applied.receipts.filter(r=>r.recipe_id.endsWith('.source-page-v2'));
+   expect(corrected).toHaveLength(3);
+   expect(corrected.every(r=>r.decision.sources[0].page===4)).toBe(true);
+  }
   for(const receipt of applied.receipts.filter(r=>r.recipe_id.startsWith('ai-case.wt.')))expect(receipt.consumed).toEqual(workingTimeCaseConsumed(e,evaluateWorkingTimeCaseRecipe(receipt.decision_id,e).consumed_paths));
  },20000);
  it.each([['360.00',6000],['420.00',0],['450.00',-3000]] as const)('preserves independent expected 420 versus identified full payment inventory %s',(paid,difference)=>{

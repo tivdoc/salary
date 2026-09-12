@@ -103,7 +103,7 @@ function replayVacationProductFactsInternal(effective:VacationEntitlementInput,o
   const binding=vacationCaseRecipeBindingSchema.parse(b),m=binding.method,r=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===m.recipe_id&&r.recipe_id.startsWith('ai-case.vacation.'));
   if(!r||r.branch!=='vacation'||r.recipe_sha256!==m.recipe_sha256||r.recipe_version!==m.recipe_version||m.source_policy_sha256!==VACATION_SOURCE_REVIEW_SHA256||m.issued_at>binding.evaluated_at||m.expires_at<=binding.evaluated_at||r.legal_sources.some(s=>!m.source_receipts.some(p=>p.source_version_id===s.version_id&&p.artifact_sha256===s.file_sha256)))throw Error('VACATION_RECIPE_BINDING');
   const prior=original.applicability.find(d=>d.decision_id===r.decision_id);if(prior){out.applicability=out.applicability.filter(d=>d.decision_id!==r.decision_id);out.applicability.push(structuredClone(prior));}
-  const ready=evaluateVacationProductRecipeInternal(r.decision_id,out,review,r.recipe_id.endsWith('.age-range-v1')?{age_range:true}:undefined,ageReview),inputsSha=canonicalSha256(vacationProductCaseConsumed(out,ready.consumed_paths,review));
+  const ready=evaluateVacationProductRecipeInternal(r.decision_id,out,review,'age_range_policy'in r&&r.age_range_policy==='questionnaire-age-range-reuse-v1'?{age_range:true}:undefined,ageReview),inputsSha=canonicalSha256(vacationProductCaseConsumed(out,ready.consumed_paths,review));
   out.applicability=out.applicability.map(d=>{if(d.decision_id!==r.decision_id||d.state!=='accepted')return d;let parsed;try{parsed=JSON.parse(d.explanation);}catch{return d;}
    return parsed?.schema_version==='ai-release-method-basis-v1'&&parsed.recipe_id===r.recipe_id&&parsed.recipe_sha256===r.recipe_sha256&&parsed.interpretation_receipt_sha256===m.interpretation_receipt_sha256&&(!ready.allowed||parsed.consumed_sha256!==inputsSha)?{...d,state:'stale',explanation:JSON.stringify({schema_version:'vacation-case-stale-v1',prior_sha256:canonicalSha256(d.explanation),reason:ready.reason??'consumed_facts_changed'})}:d;});
   const current=out.applicability.find(d=>d.decision_id===r.decision_id);let currentBasis;try{currentBasis=current?JSON.parse(current.explanation):null;}catch{currentBasis=null;}
@@ -131,10 +131,11 @@ export function vacationProductFactQuestions(input:VacationEntitlementInput){
 }
 export function vacationProductDecisionSources(input:VacationEntitlementInput,id:string){
  if(id==='vacation.no_better_arrangement'&&input.product_scenario_policy&&input.conditional_assumptions?.some(a=>a.decision_id===id)&&input.product_facts?.other_vacation_terms_known.source)return [input.product_facts.other_vacation_terms_known.source];
- const binding=input.case_recipe_bindings?.find(b=>b.method.recipe_id==='ai-case.'+id||b.method.recipe_id==='ai-case.'+id+'.age-range-v1');if(!binding)return [];
+ const binding=input.case_recipe_bindings?.find(b=>AI_RELEASE_DECISION_RECIPES.some(r=>r.branch==='vacation'&&r.recipe_id.startsWith('ai-case.vacation.')&&r.decision_id===id&&r.recipe_id===b.method.recipe_id&&r.recipe_sha256===b.method.recipe_sha256));if(!binding)return [];
+ const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===binding.method.recipe_id)!;
  const f=input.product_facts;if(!f)return [];
  const facts=id==='vacation.general_section3'?[f.birth_date,f.employment_relationship,f.workplace_sector,f.salary_basis,...(f.salary_basis.value==='hourly'?[f.continuous_employment,input.annual_basis?.employment_start]:[])]:id==='vacation.seniority_basis'?[f.same_employer_or_workplace,input.annual_basis?.employment_start]:[];
- return [...new Map([...facts.flatMap(f=>f?.source?[f.source]:[]),...(binding.method.recipe_id.endsWith('.age-range-v1')?productAgeRangeSources(input):[])].map(s=>[canonicalSha256(s),s])).values()];
+ return [...new Map([...facts.flatMap(f=>f?.source?[f.source]:[]),...('age_range_policy'in recipe&&recipe.age_range_policy==='questionnaire-age-range-reuse-v1'?productAgeRangeSources(input):[])].map(s=>[canonicalSha256(s),s])).values()];
 }
 /** Arithmetic-layer defense. Authentication/currentness is independently
  * replayed by source-admission against the original saved source packet. */

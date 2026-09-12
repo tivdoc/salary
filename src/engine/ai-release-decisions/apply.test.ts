@@ -46,7 +46,7 @@ describe('pinned deterministic method decisions, not blanket legal acceptance',(
   const s=source(),before=canonicalSha256(s),r=apply([],s);expect(r.source).toBe(s);expect(canonicalSha256(s)).toBe(before);expect(r.receipts).toEqual([]);
  });
  it('issues only explicit method decisions while all independent case applicability remains blocked',()=>{
-  const s=source(),before=canonicalSha256(s),r=apply(AI_RELEASE_DECISION_RECIPES.map(c=>method(c.decision_id)),s);
+  const s=source(),before=canonicalSha256(s),r=apply(AI_RELEASE_DECISION_RECIPES.filter(c=>!('source_locator_policy'in c)&&!('protected_break_policy'in c)).map(c=>method(c.decision_id)),s);
   expect(r.receipts.length).toBeGreaterThanOrEqual(9);expect(r.receipts.every(p=>p.decision.state==='accepted'&&p.decision.basis==='ai_source_assessment'&&p.human_attestation===null)).toBe(true);
   expect(r.receipts.some(p=>p.decision_id==='pension.general_coverage'||p.decision_id==='pension.pensionable_wage'||p.decision_id==='wt.worked_time.day.0')).toBe(false);
   const review=runDocumentReview(r.source,'synthetic-method-run');

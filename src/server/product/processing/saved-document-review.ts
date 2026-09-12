@@ -12,6 +12,8 @@ import {attachAutomaticBenefitsEvidence} from '@/engine/entitlement-review/autom
 import {attachAutomaticPensionEvidence} from '@/engine/entitlement-review/automatic-pension';
 import {composeEntitlementReview} from '@/engine/entitlement-review/compose';
 import {enableTypedEntitlementPersonalFacts} from '@/engine/entitlement-review/typed-product-facts';
+import {enableWorkingTimeProtectedBreaks} from '@/engine/entitlement-review/working-time/product-facts';
+import {workingTimeEntitlementInputSchema} from '@/engine/entitlement-review/working-time/contracts';
 import {IDENTIFIED_PERIOD_STRUCTURE_POLICY} from '@/engine/extraction/source-structure-period';
 import {entitlementSourceReadingDependencies} from '@/engine/entitlement-review/product-source-dependencies';
 import {enableSharedPersonalFacts,SHARED_PERSONAL_FACTS_EXPANDED_POLICY} from '@/engine/entitlement-review/shared-product-facts';
@@ -207,6 +209,10 @@ async function automaticDocumentReview(context:PostgresTransactionContext,job:So
  // generated answer targets retain their original shape and reading rules.
  if(automaticOnly&&prepared.input.entitlement_evidence){
   const evidence=enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence,{travel:true,travel_journey:true,vacation:true,convalescence:true,working_time:true,age_range:true,resolved_minimum_wage_needs:true});
+  if(evidence.working_time){
+   const enable=(week:unknown)=>enableWorkingTimeProtectedBreaks(workingTimeEntitlementInputSchema.parse(week));
+   evidence.working_time=Array.isArray(evidence.working_time)?evidence.working_time.map(enable):enable(evidence.working_time);
+  }
   if(evidence.obligations)evidence.obligations=enableObligationCasePolicy(obligationsEntitlementInputSchema.parse(evidence.obligations));
   return {...prepared,input:documentReviewInputSchema.parse({...prepared.input,entitlement_evidence:enableSharedPersonalFacts(evidence,SHARED_PERSONAL_FACTS_EXPANDED_POLICY)})};
  }

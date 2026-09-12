@@ -39,6 +39,20 @@ const apply=(source:DocumentReviewInput,ids=[...caseIds,...methodIds])=>applyAiR
 function personalAnswered(i=raw(true)){let s=composeEntitlementReview(i);for(const [n,[path,value]]of [['birth_date','1990-06-15'],['employment_relationship','כשכיר/ה'],['workplace_sector','מעסיק פרטי'],['public_wage_linked','לא']].entries())s=answer(s,question(s,'product_facts.'+path),value,100+n);return s;}
 
 describe('convalescence case recipes through ordinary typed completions and replay',()=>{
+ it('uses the corrected due-date provision through ordinary composition and replay',()=>{
+  const next=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id==='ai-case.cv.due_date.source-provision-v2')!;
+  const methods=[...caseIds,...methodIds].map(id=>{
+   const old=method(id);return id==='cv.due_date'?{...old,recipe_id:next.recipe_id,recipe_sha256:next.recipe_sha256}:old;
+  });
+  const old=runDocumentReview(apply(raw()).source,'synthetic.cv.old-locator');
+  const applied=applyAiReleaseDecisionRecipes({source:raw(),methods,at});
+  expect(applied.unresolved).toEqual([]);
+  expect(applied.receipts.find(r=>r.recipe_id===next.recipe_id)?.decision.sources[0].locator).toContain('5(ד)');
+  const result=runDocumentReview(applied.source,'synthetic.cv.correct-locator');
+  expect(result.checks.map(c=>({id:c.check_id,expected:c.calculation.expected,recorded:c.calculation.recorded,difference:c.calculation.difference})))
+   .toEqual(old.checks.map(c=>({id:c.check_id,expected:c.calculation.expected,recorded:c.calculation.recorded,difference:c.calculation.difference})));
+  expect(replayDocumentReview(result)).toEqual(result);
+ });
  it('bounds the nine-topic method inventory at 64 and preserves historical descriptor bytes',()=>{
   const m=method('cv.benefit_year'),source=raw();expect(aiReleaseDecisionMethodSchema.parse(m)).toEqual(m);
   expect(aiReleaseDecisionInputSchema.safeParse({source,methods:Array.from({length:64},()=>m),at}).success).toBe(true);
