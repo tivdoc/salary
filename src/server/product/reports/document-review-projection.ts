@@ -4,7 +4,10 @@ import {DOCUMENT_REVIEW_RENDER_POLICY,type DocumentReviewRenderPolicy} from './d
 const TOPICS={minimum_wage:'שכר ושעות',working_time:'זמני עבודה ונוכחות',pension:'רישומי פנסיה',travel:'נסיעות',convalescence:'הבראה',vacation:'חופשה',sick_leave:'מחלה',rest_day:'מנוחה שבועית',bonuses:'רכיבים נוספים',contract:'תנאי ההעסקה'} as const;
 const customerTitle=(title:string)=>title.replace(/(?<=\p{Script=Hebrew})(?=\d)|(?<=\d)(?=\p{Script=Hebrew})/gu,' ');
 export const GROUPED_REVIEW_GAP_PRESENTATION=DOCUMENT_REVIEW_RENDER_POLICY;
-export type ReviewProjectionOptions={gapPresentation?:DocumentReviewRenderPolicy};
+export type ReviewProjectionOptions={gapPresentation?:DocumentReviewRenderPolicy;
+ /** Internal renderer composition only; no request-supplied callback. */
+ transformPresentation?:(input:DocumentReviewPresentationInput)=>DocumentReviewPresentationInput;
+ privateReportEvidence?:Readonly<Record<string,unknown>>};
 
 /** Explicit projection: arithmetic differences are not a collectible debt and
  * provider/source/debug metadata belongs in the private evidence appendix. */
@@ -14,7 +17,7 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,o
  const sources=review.documents.flatMap(d=>Array.from({length:d.page_count??1},(_,i)=>({
   id:sourceId(d.document_id,d.version_id,i+1),title:d.label,document_label:d.label,...(d.page_count?{page:i+1}:{}),
  })));
- const findings:DocumentReviewPresentationInput['findings']=review.checks.map(check=>{
+ const monetaryFindings:DocumentReviewPresentationInput['findings']=review.checks.map(check=>{
   const c=check.calculation;
   const refs=[...new Set(c.input.operands.map(o=>sourceId(o.source.document_id,o.source.version_id,o.source.page)))].filter(id=>sources.some(s=>s.id===id));
   // Display spacing does not change the preserved source label or reading.
@@ -43,6 +46,10 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,o
    conditions:[...(c.unresolved_conditions??[]).map(condition=>condition.assumption),'החישוב מותנה בתחולה ובפרשנות המפורטות; הוא אינו אישור הפעלה או חוב שנקבע.']};
   return {...common,status:'derived_arithmetic' as const,summary:detail,amounts};
  });
+ const findings:DocumentReviewPresentationInput['findings']=[...monetaryFindings,...(review.input.entitlement_composition?.nonmonetary_outcomes??[]).map(o=>({
+  id:o.check_ids[0]+'.condition',title:customerTitle(o.title),status:'condition_not_fulfilled' as const,summary:o.explanation+(o.input_basis==='customer_declaration'?' הבסיס הוא הצהרה מזוהה של המשתמש; אין זו קריאה מאומתת של תא במסמך.':''),amounts:[] as const,
+  source_ids:[...new Set(o.source_pins.flatMap(p=>sources.filter(s=>s.id.startsWith(`${p.document_id}:${p.version_id}:`)).map(s=>s.id)))],
+ }))];
  const missing=review.checks.filter(c=>c.calculation.state==='blocked').map(c=>({title:c.title,detail:c.explanation||'אין עדיין בסיס מספיק לתוצאה.',next_step:'יש לעיין בהשלמות הממוקדות להלן.'}));
  // Ownership is an internal delivery/admission task. It stays in the private
  // review appendix and must not expose account matching to a customer.
@@ -108,7 +115,8 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,o
   overview_finding_ids:highlights,
   documents_checked:review.documents.map(d=>({label:d.label,source_ids:Array.from({length:d.page_count??1},(_,i)=>sourceId(d.document_id,d.version_id,i+1))})),
   sources,findings,missing_inputs:missing};
- return renderDocumentReviewArtifacts(input,{document_review:review,analysis_run_id:bundle.analysis_run_id,
+ return renderDocumentReviewArtifacts(options.transformPresentation?options.transformPresentation(input):input,{document_review:review,analysis_run_id:bundle.analysis_run_id,
   analysis_result_sha256:bundle.result_sha256,legal_topic_results:bundle.topic_results,
+  ...(options.privateReportEvidence?{report_qualification:options.privateReportEvidence}:{}),
   ...(options.gapPresentation===GROUPED_REVIEW_GAP_PRESENTATION?{render_policy:GROUPED_REVIEW_GAP_PRESENTATION}:{})});
 }

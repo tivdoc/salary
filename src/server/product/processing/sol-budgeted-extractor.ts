@@ -16,12 +16,17 @@ import {parseOpenAiProviderReceipt} from '@/server/engine/extraction/providers/o
 import {authorizeManagedOpenAiRecovery,assertManagedOpenAiRecovery,type ManagedOpenAiRecoveryAuthority} from '@/server/engine/extraction/providers/openai/managed-package-recovery';
 import {buildOpenAiV2ResponsesRequest,OPENAI_SOL_COMPARISON_PROFILE,OPENAI_SOURCE_FILE_PAGE_POLICY} from '@/server/engine/extraction/providers/openai/v2-request';
 import {inspectExtractionBytes} from '@/server/engine/extraction/verified-upload-source';
+import {createOpenAiDocumentEvidenceExtractorFromEnv,type DocumentEvidenceExtractor} from '@/server/engine/extraction/providers/openai/document-evidence-adapter';
+import {buildOpenAiDocumentEvidenceRequest} from '@/server/engine/extraction/providers/openai/document-evidence-request';
 import {parseSolComparisonLedger,reserveSolRequest,recordSolCount,recordSolReceipt,solInputCountRequest,
  SOL_COMPARISON_POLICY,SOL_RETAINED_DRIVER_FAILURE,summarizeSolBudget,solPolicyRevalidationSchema,type SolPolicyRevalidation} from './live-extraction-sol-comparison-budget';
 
 const sourceSchema=z.object({sha256:z.string().regex(/^[a-f0-9]{64}$/u),sizeBytes:z.number().int().positive().max(1024*1024),
  mimeType:z.enum(['application/pdf','image/png','image/jpeg'])}).strict();
 export type SolBudgetedSource=z.infer<typeof sourceSchema>;
+export const solDocumentEvidenceScopeSchema=z.object({schema_version:z.literal('sol-document-evidence-scope-v1'),sources:z.array(z.object({
+ caseId:z.uuid(),versionId:z.uuid(),sourceSha256:z.string().regex(/^[a-f0-9]{64}$/u),kind:z.enum(['attendance','contract']),maxPages:z.number().int().min(1).max(12),
+}).strict()).min(1).max(4)}).strict();
 
 /** DEV proof integration only. Wraps the genuine existing extractor, preserving
  * actual worker request identity and provider origin. No transport injection,
@@ -31,7 +36,7 @@ type SolBudgetedInput={apiKey:string;ledgerPath:string;artifactDirectory:string;
  allowedSources:readonly SolBudgetedSource[];maxGenerations:number;retainedDiagnosticPath?:string;
  reviewedRetry?:{sourceSha256:string;priorReceiptSha256:string;reason:'header-observation-classification-r5'|'literal-label-cell-transcription-r7'};
  reviewedPolicyRevalidation?:SolPolicyRevalidation;allowedVersionIds?:readonly string[];assertActive?:()=>void;
- allowedCaseIds?:readonly string[];expiresAt?:string};
+ allowedCaseIds?:readonly string[];expiresAt?:string;documentEvidenceScope?:z.infer<typeof solDocumentEvidenceScopeSchema>};
 export function createSolBudgetedExtractor(input:SolBudgetedInput){
  if(process.env.VERCEL||process.env.NODE_ENV!=='test'||process.env.TIVDOC_SOL_SAVED_WORKER_PROOF!=='1')throw Error('SOL_SAVED_WORKER_SCOPE');
  return createBoundedSolExtractor(input);
@@ -53,6 +58,10 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
  const close=()=>{if(closed)return;if(busy)throw Error('SOL_EXTRACTOR_STILL_RUNNING');closed=true;lock.close();};
  try{
   let ledger=parseSolComparisonLedger(JSON.parse(readFileSync(input.ledgerPath,'utf8')));
+  const evidenceScope=input.documentEvidenceScope?solDocumentEvidenceScopeSchema.parse(input.documentEvidenceScope):undefined;
+  if(evidenceScope&&(!input.expiresAt||!Number.isFinite(Date.parse(input.expiresAt))||Date.parse(input.expiresAt)>Date.now()+4*60*60*1000||!input.allowedCaseIds?.length||!input.allowedVersionIds?.length
+   ||input.reviewedRetry||input.reviewedPolicyRevalidation||new Set(evidenceScope.sources.map(s=>s.versionId)).size!==evidenceScope.sources.length
+   ||evidenceScope.sources.some(s=>!sources.some(allowed=>allowed.sha256===s.sourceSha256)||!input.allowedCaseIds?.includes(s.caseId)||!input.allowedVersionIds?.includes(s.versionId))))throw Error('SOL_DOCUMENT_EVIDENCE_SCOPE');
   const reviewed=input.reviewedRetry;
   const policy=input.reviewedPolicyRevalidation?solPolicyRevalidationSchema.parse(input.reviewedPolicyRevalidation):undefined;
   const policyPrior=policy?ledger.reservations.find(r=>r.sourceSha256===sources[0].sha256&&r.kind==='generation'&&r.outcome==='receipt_recorded'
@@ -158,7 +167,53 @@ function createBoundedSolExtractor(input:SolBudgetedInput,managedRecoveryAuthori
     save('budget-after.json',summarizeSolBudget(ledger));return result;
    }finally{busy=false;}
   };
-  return {extractor,summary:()=>({...summarizeSolBudget(ledger),instanceGenerations:entered,
+  const documentEvidenceExtractor:DocumentEvidenceExtractor|undefined=evidenceScope?{async extract(request){
+   if(closed||busy)throw Error('SOL_EXTRACTOR_CLOSED_OR_BUSY');
+   busy=true;
+   try{
+    const active=()=>{input.assertActive?.();if(!input.expiresAt||Date.now()>=Date.parse(input.expiresAt))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');};
+    active();
+    const document=request.document;
+    const allowed=evidenceScope.sources.find(s=>s.caseId===document.case_id&&s.versionId===document.document_id&&s.sourceSha256===document.content_sha256&&s.kind===document.document_type);
+    const source=sources.find(s=>s.sha256===document.content_sha256);
+    if(!allowed||!source||source.sizeBytes!==document.size_bytes||source.mimeType!==document.mime_type)throw Error('SOL_DOCUMENT_EVIDENCE_SOURCE_NOT_ALLOWED');
+    if(entered>=input.maxGenerations)throw Error('SOL_SAVED_GENERATION_LIMIT');
+    // Existing history is never repurposed as a new policy/attempt. A retained
+    // success/failure requires explicit future authorization, not auto retry.
+    if(ledger.reservations.some(r=>r.sourceSha256===source.sha256))throw Error('SOL_REPLAY_REQUIRES_REVIEW');
+    const bytes=await request.source.read(document);
+    if(bytes.length!==source.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==source.sha256)throw Error('SOL_SAVED_SOURCE_NOT_ALLOWED');
+    const inspected=await inspectExtractionBytes(bytes,source.mimeType);if(inspected.pages>allowed.maxPages)throw Error('SOL_DOCUMENT_EVIDENCE_PAGE_BOUND');
+    const providerRequest=buildOpenAiDocumentEvidenceRequest({model:SOL_COMPARISON_POLICY.model,bytes,mimeType:source.mimeType,kind:allowed.kind});
+    const counted=solInputCountRequest(providerRequest);
+    if(ledger.reservations.length+2>SOL_COMPARISON_POLICY.maxRequests||ledger.reservations.reduce((sum,r)=>sum+r.reservedMicroUsd,0)
+     +SOL_COMPARISON_POLICY.countReservedMicroUsd+SOL_COMPARISON_POLICY.generationReservedMicroUsd>SOL_COMPARISON_POLICY.maxReservedMicroUsd)throw Error('SOL_DOCUMENT_EVIDENCE_BUDGET_CAPACITY');
+    const directory=path.join(input.artifactDirectory,request.extractionId);mkdirSync(directory,{recursive:true});
+    const save=(name:string,value:unknown)=>writeFileSync(path.join(directory,name),JSON.stringify(value,null,2)+'\n',{flag:'wx',mode:0o600});
+    save('document-evidence-source-context.json',{schema_version:'sol-document-evidence-dispatch-v1',codeRevision:input.codeRevision,
+     caseId:document.case_id,versionId:document.document_id,sourceSha256:source.sha256,analysisRunId:request.analysisRunId,
+     extractionId:request.extractionId,requestSha256:counted.requestSha256,scope:allowed,physicalPages:inspected.pages});
+    const reservation={sourceSha256:source.sha256,requestSha256:counted.requestSha256,codeRevision:input.codeRevision,attempt:1,priorUnknownAcknowledgment};
+    const bounded=createOpenAiDocumentEvidenceExtractorFromEnv({OPENAI_API_KEY:input.apiKey,OPENAI_EXTRACTION_MODEL:SOL_COMPARISON_POLICY.model},async authorization=>{
+     if(authorization.caseId!==document.case_id||authorization.versionId!==document.document_id||authorization.sourceSha256!==source.sha256
+      ||authorization.requestSha256!==counted.requestSha256||authorization.maxOutputTokens!==SOL_COMPARISON_POLICY.outputTokenCeiling)throw Error('SOL_DOCUMENT_EVIDENCE_REQUEST_BINDING');
+     active();ledger=reserveSolRequest({ledger,...reservation,kind:'input_tokens',now:new Date().toISOString()});persist();
+     const count=await sdk.responses.inputTokens.count(counted.request);save('document-evidence-input-count.json',count);
+     if(count.object!=='response.input_tokens')throw Error('SOL_COUNT_RESPONSE_INVALID');
+     ledger=recordSolCount(ledger,counted.requestSha256,count.input_tokens);persist();active();
+     ledger=reserveSolRequest({ledger,...reservation,kind:'generation',now:new Date().toISOString()});persist();entered++;
+    });
+    const result=await bounded.extract({...request,source:{async read(asked){
+     if(canonicalSha256(asked)!==canonicalSha256(document))throw Error('SOL_DOCUMENT_EVIDENCE_SOURCE_CHANGED');return bytes;
+    }}});
+    const receipt=parseOpenAiProviderReceipt(result.provider_receipt);
+    if(receipt.case_id!==document.case_id||receipt.document_id!==document.document_id||receipt.analysis_run_id!==request.analysisRunId
+     ||receipt.extraction_id!==request.extractionId||receipt.request_sha256!==counted.requestSha256)throw Error('SOL_DOCUMENT_EVIDENCE_RECEIPT_BINDING');
+    save('document-evidence-result.json',result);ledger=recordSolReceipt(ledger,receipt);persist();
+    save('document-evidence-budget-after.json',summarizeSolBudget(ledger));return result;
+   }finally{busy=false;}
+  }}:undefined;
+  return {extractor,...(documentEvidenceExtractor?{documentEvidenceExtractor}:{}),summary:()=>({...summarizeSolBudget(ledger),instanceGenerations:entered,
    generationReceiptsWithoutTokenUsage:ledger.reservations.filter(row=>row.kind==='generation'&&row.outcome==='receipt_recorded'
     &&parseOpenAiProviderReceipt(row.receipt).token_usage===null).length}),close};
  }catch(error){close();throw error;}
@@ -177,7 +232,7 @@ export function createManagedSolBudgetedExtractor(environment:Readonly<Record<st
  const config=z.object({version:z.literal('sol-scheduled-dev-package-20260911-v1'),enabled:z.literal(true),
   buildSha:z.literal(buildSha),expiresAt:z.iso.datetime({offset:true}),
   ledgerPath:z.string(),artifactDirectory:z.string(),allowedCaseIds:z.array(z.uuid()).min(1).max(4),
-  allowedSources:z.array(sourceSchema).min(1).max(4)}).strict().parse(JSON.parse(packageBytes.toString('utf8')));
+  allowedSources:z.array(sourceSchema).min(1).max(4),allowedVersionIds:z.array(z.uuid()).min(1).max(4).optional(),documentEvidenceScope:solDocumentEvidenceScopeSchema.optional()}).strict().parse(JSON.parse(packageBytes.toString('utf8')));
  const expiry=Date.parse(config.expiresAt);
  if(expiry<=Date.now()||expiry>Date.parse('2026-09-11T04:19:48Z'))throw Error('SOL_MANAGED_PACKAGE_EXPIRED');
  const ledger=path.resolve('output/release-completion/sol-scheduled-20260911/package-budget-ledger.json');
@@ -185,7 +240,10 @@ export function createManagedSolBudgetedExtractor(environment:Readonly<Record<st
  if(path.resolve(config.ledgerPath)!==ledger||path.resolve(config.artifactDirectory)!==artifacts||!environment.OPENAI_API_KEY)throw Error('SOL_MANAGED_PACKAGE_PATH');
  const authority=authorizeManagedOpenAiRecovery({apiKey:environment.OPENAI_API_KEY,buildSha,environment,packageSha256:createHash('sha256').update(packageBytes).digest('hex')});
  return createBoundedSolExtractor({apiKey:environment.OPENAI_API_KEY,ledgerPath:ledger,artifactDirectory:artifacts,codeRevision:buildSha,
-  allowedSources:config.allowedSources,allowedCaseIds:config.allowedCaseIds,expiresAt:config.expiresAt,maxGenerations:2},authority);
+  allowedSources:config.allowedSources,allowedCaseIds:config.allowedCaseIds,allowedVersionIds:config.allowedVersionIds,
+  ...(config.documentEvidenceScope?{documentEvidenceScope:config.documentEvidenceScope,assertActive(){
+   if(createHash('sha256').update(readFileSync(expected)).digest('hex')!==createHash('sha256').update(packageBytes).digest('hex'))throw Error('SOL_MANAGED_PACKAGE_CHANGED');
+  }}:{}),expiresAt:config.expiresAt,maxGenerations:2},authority);
 }
 
 export function recoverManagedSolBudgetLock(input:{expectedLockSha256:string;expectedLedgerSha256:string},environment:Readonly<Record<string,string|undefined>>=process.env){

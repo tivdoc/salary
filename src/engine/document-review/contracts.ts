@@ -1,3 +1,5 @@
+import {entitlementDeclarationsSchema} from '../entitlement-review/declarations.ts';
+import {savedNonPayslipEvidenceSchema} from '../extraction/document-evidence/snapshot.ts';
 import {z} from 'zod';
 import type {generateReviewCompletions} from './completions.ts';
 import type {calculateDocumentReview} from './calculations.ts';
@@ -57,6 +59,8 @@ export const documentReviewInputSchema=z.object({
   origin:z.enum(['saved_order','legacy_paid_receipt']),purchase_period_evidence:reviewPurchasePeriodEvidenceSchema.optional()}).strict(),
  coverage_policy:z.literal(DOCUMENT_REVIEW_COVERAGE_POLICY).optional(),
  entitlement_evidence:entitlementEvidenceSchema.optional(),
+ entitlement_declarations:entitlementDeclarationsSchema.optional(),
+ non_payslip_evidence:z.array(savedNonPayslipEvidenceSchema).max(32).optional(),
  entitlement_composition:entitlementCompositionSchema.optional(),
  period_projection:reviewPeriodProjectionSchema.optional(),
  source_observation_inventory:z.array(reviewSourceObservationInventorySchema).max(64).optional(),
@@ -69,6 +73,8 @@ export const documentReviewInputSchema=z.object({
  answer_history:z.array(z.object({request:reviewCompletionSchema,receipt:reviewCompletionAnswerReceiptSchema,
   original_checks:z.array(documentReviewCalculationInputSchema).max(100)}).strict()).max(100).default([]),
 }).strict().superRefine((input,ctx)=>{
+ for(const e of input.non_payslip_evidence??[])if(e.document.case_id!==input.case_id||!input.documents.some(d=>d.document_id===e.document.document_id&&d.version_id===e.document.document_id&&d.file_sha256===e.document.content_sha256))ctx.addIssue({code:'custom',message:'NON_PAYSLIP_REVIEW_BINDING'});
+ if(input.entitlement_declarations&&(input.entitlement_declarations.facts.some(f=>f.case_id!==input.case_id)||canonicalSha256(input.entitlement_declarations.period)!==canonicalSha256(input.period)))ctx.addIssue({code:'custom',message:'ENTITLEMENT_DECLARATION_SCOPE'});
  if(input.entitlement_evidence&&(input.entitlement_evidence.case_id!==input.case_id
   ||input.entitlement_evidence.order_id!==input.purchased_scope.order_id
   ||input.entitlement_evidence.receipt_sha256!==input.purchased_scope.receipt_sha256

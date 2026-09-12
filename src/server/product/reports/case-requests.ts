@@ -106,6 +106,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
      version_id:target.version_id,source_sha256:target.source_sha256,month:target.month,policy_version:target.policy_version,
       extraction_result_sha256:target.extraction_result_sha256,original_component:target.original_component}),label:target.original_component.source_label,cell:target.cell}}:{}),
     ...(target.schema_version==='document-source-transcription-v1'?{transcription_context:{kind:target.subject.kind}}:{}),
+    ...('evidence_context'in display?{evidence_context:display.evidence_context}:{}),
     ...('structure_context'in display?{structure_context:display.structure_context}:{})});
   }
   const juneStates=identityId&&june.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_june_states',{target_case:caseId,target_identity:identityId}):[];

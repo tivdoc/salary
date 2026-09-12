@@ -8,7 +8,18 @@ import {admitSavedSource} from './saved-admission';
 import {purchasedMonths,savedMonthIdempotencyKey,readSavedOrders,type SavedOrderScope} from './saved-order-scope';
 import {june2026RegularReviewIdempotencyKey} from './saved-june2026-regular-authority';
 import {SOURCE_JOB_KIND,type SourceJob} from './source-dispatch';
-import {documentReviewIdempotencyKey} from './document-review-key';
+import {documentReviewIdempotencyKey,savedAiReleaseBaseKey} from './document-review-key';
+import {loadSavedAiReleaseConfiguration,type SavedAiReleaseConfiguration} from './saved-ai-release-configuration';
+import {aiReleaseConfigurationSchema} from './ai-release-configuration';
+import {createCaseAnalysisAiRelease,CASE_ANALYSIS_AI_RELEASE_CODE_VERSION} from '@/engine/case-analysis/contracts';
+import {runtimeFixture} from '@/engine/ai-release-runtime/runtime.fixture';
+import {AI_RELEASE_RUNTIME_FAMILIES} from '@/engine/ai-release-runtime/contracts';
+import {fixture as pensionSourceFixture} from '@/engine/entitlement-review/compose.fixture';
+import {documentReviewInputSchema} from '@/engine/document-review/contracts';
+import {FixtureReportBuilder} from '@/engine/case-analysis/fixture-ports';
+import {bytesSha256,encodeReport} from '@/server/platform/persistence/postgres/analysis/validation';
+import {AI_RELEASE_REPORT_TEMPLATE} from '../reports/ai-release-report';
+import type {AnalysisResultBundle} from '@/engine/wave3/contracts';
 
 const reviewPorts=vi.hoisted(()=>({sha256:'e'.repeat(64)}));
 vi.mock('./document-review-key',async importOriginal=>{
@@ -17,7 +28,8 @@ vi.mock('./document-review-key',async importOriginal=>{
   key:original.documentReviewIdempotencyKey(baseKey,reviewPorts.sha256),reviewSha256:reviewPorts.sha256,
  }))};
 });
-beforeEach(()=>{reviewPorts.sha256='e'.repeat(64);});
+vi.mock('./saved-ai-release-configuration',()=>({loadSavedAiReleaseConfiguration:vi.fn(async()=>null)}));
+beforeEach(()=>{reviewPorts.sha256='e'.repeat(64);vi.mocked(loadSavedAiReleaseConfiguration).mockReset().mockResolvedValue(null);});
 
 // Authority/case locking is independently exercised with the actual worker DB
 // role. These tests isolate receipt completeness and terminal write behavior.
@@ -140,6 +152,80 @@ describe('saved draft job exact purchased completion',()=>{
   const s=setup();expect(purchasedMonths({...s.order,from:'2024-12-01',to:'2025-02-01'})).toEqual(['2024-12','2025-01','2025-02']);
   expect(purchasedMonths({...s.order,from:'1976-01-01',to:'2025-12-01'})).toHaveLength(600);
   expect(()=>purchasedMonths({...s.order,from:'1975-12-01',to:'2025-12-01'})).toThrow('ORDER_PERIOD_REQUIRES_OPERATIONS');
+ });
+});
+
+describe('saved AI release completion and present-use replay',()=>{
+ async function aiSetup(){
+  const s=setup(),raw=pensionSourceFixture().input;
+  const source=documentReviewInputSchema.parse(JSON.parse(JSON.stringify(raw).replaceAll(raw.case_id,s.job.case_id)));
+  source.purchased_scope={...source.purchased_scope,order_id:s.order.id,origin:'saved_order',receipt_sha256:s.order.offer_sha256,topics:['pension']};
+  if(source.entitlement_evidence){source.entitlement_evidence.order_id=s.order.id;source.entitlement_evidence.receipt_sha256=s.order.offer_sha256;}
+  s.order.from='2026-06-01';s.order.to='2026-06-01';s.order.topics=['pension'];
+  s.job.processing_profile='qualified_ai_v1';s.job.authority_dependency_sha256='1'.repeat(64);s.row.payload_sha256=canonicalSha256(s.job);
+  const runtime=runtimeFixture(source);runtime.analysis_run_id='ai-finalizer-run';
+  const scope={...runtime.assessment_input.current.scope,input_revision:s.job.revision,input_sha256:s.job.input_sha256,authority_dependency_sha256:s.job.authority_dependency_sha256};
+  runtime.assessment_input.current.scope=scope;runtime.assessment_input.assessment.scope=scope;
+  const {sha256:oldSha,...assessmentBody}=runtime.assessment_input.assessment;void oldSha;
+  runtime.assessment_input.assessment.sha256=canonicalSha256(assessmentBody);runtime.assessment_input.current.assessment_sha256=runtime.assessment_input.assessment.sha256;
+  const {policy,registry,source_receipts,interpretation_receipts,test_receipts}=runtime.assessment_input;
+  const configBody={schema_version:'tivdoc-ai-release-configuration-v1',configuration_id:'33333333-3333-4333-8333-333333333333',revision:1,population:scope.population,
+   build_manifest_sha256:'4'.repeat(64),policy,registry,source_receipts,interpretation_receipts,test_receipts};
+  const trusted_generator_pins=AI_RELEASE_RUNTIME_FAMILIES.map(f=>{
+   const pin=runtime.trusted_generator_pins.find(p=>p.family_id===f.family_id);
+   if(!pin||pin.generator.id!==f.generator_id||pin.generator.version!==f.generator_version)throw Error('SYNTHETIC_GENERATOR_PIN_MISMATCH');
+   return {family_id:f.family_id,generator:{id:f.generator_id,version:f.generator_version,code_sha256:pin.generator.code_sha256}};
+  });
+  const profile:SavedAiReleaseConfiguration={configuration:aiReleaseConfigurationSchema.parse({...configBody,sha256:canonicalSha256(configBody)}),trusted_generator_pins,
+   enrollment_id:'55555555-5555-4555-8555-555555555555',dependency_sha256:s.job.authority_dependency_sha256,profile_sha256:'6'.repeat(64),
+   evaluated_at:runtime.assessment_input.current.evaluated_at,live_evaluated_at:runtime.assessment_input.current.evaluated_at,expires_at:policy.expires_at,environment:'development',is_qa:true};
+  vi.mocked(loadSavedAiReleaseConfiguration).mockResolvedValue(profile);
+  reviewPorts.sha256=canonicalSha256(source);
+  const key=documentReviewIdempotencyKey(savedAiReleaseBaseKey(s.job,s.order.id,'2026-06',profile),reviewPorts.sha256);
+  const command={...s.receipts[0].command,case_id:s.job.case_id,idempotency_key:key,document_review_sha256:reviewPorts.sha256,population:scope.population,
+   requested_topics:['pension'] as const,period:{start_date:'2026-06-01',end_date:'2026-06-30'}};
+  const envelope=createCaseAnalysisAiRelease(runtime,{engine_case_revision:command.case_revision,source_journal:{case_id:s.job.case_id,input_revision:s.job.revision,input_sha256:s.job.input_sha256}});
+  const body:Omit<AnalysisResultBundle,'result_sha256'>={schema_version:'tivdoc-analysis-result-bundle-v0.6.0',analysis_run_id:runtime.analysis_run_id,case_id:s.job.case_id,
+   case_revision:command.case_revision,period:command.period,as_of:command.as_of,document_snapshot_sha256:command.document_snapshot_sha256,
+   extraction_snapshot_sha256:command.extraction_snapshot_sha256,declared_fact_snapshot_sha256:command.declared_fact_snapshot_sha256,facts_snapshot_sha256:scope.facts_sha256,
+   facts:[],rule_inputs:[],catalog_sha256:'7'.repeat(64),topic_results:[{topic:'pension',status:'blocked_legal_readiness',blockers:['synthetic outer catalog'],rule_input_sha256:null,amount:null,trace:null,legal_readiness:null}],
+   known_subtotal:null,coverage_complete:false,document_review:envelope.result.review,ai_release:envelope};
+  const bundle={...body,result_sha256:canonicalSha256(body)};
+  const report=await new FixtureReportBuilder({hashCanonical:canonicalSha256,hashBytes:bytesSha256},{derive:(_kind,hash)=>`report-${hash}`}).build(bundle);
+  const completion={bundle,report:encodeReport(report),dependencies:{code_version:CASE_ANALYSIS_AI_RELEASE_CODE_VERSION,template_version:AI_RELEASE_REPORT_TEMPLATE}};
+  const receipt={idempotency_key:key,analysis_run_id:runtime.analysis_run_id,command,command_sha256:canonicalSha256(command),result_sha256:bundle.result_sha256,
+   report_id:report.report_id,report_revision:report.report_revision,report_sha256:report.report_sha256,completion};
+  s.responses.saved_job_month_receipts=[receipt];s.responses.saved_job_replay_month_receipts=[receipt];
+  return {...s,profile,receipt,envelope};
+ }
+ it('finishes a source-bound AI result using the same profile key and never selects June authority',async()=>{
+  const s=await aiSetup(),first=await completeSavedDraftJob(s.input);
+  expect(first.manifest.months).toHaveLength(1);expect(first.manifest.months[0].analysis_run_id).toBe(s.receipt.analysis_run_id);
+  expect(s.calls.some(c=>c.name.startsWith('june_'))).toBe(false);expect(vi.mocked(loadSavedAiReleaseConfiguration)).toHaveBeenCalledTimes(2);
+  s.row.state='succeeded';s.row.terminal_effect_sha256=first.sha256;s.responses.saved_job_manifest_replay=[{payload:first.manifest,payload_sha256:first.sha256}];s.calls.length=0;
+  const replay=await completeSavedDraftJob(s.input);expect(replay).toEqual({...first,replayed:true});
+  expect(s.calls.some(c=>c.name==='saved_job_complete_atomic'||c.name==='saved_job_month_receipts')).toBe(false);
+ });
+ it('never acknowledges a cached AI receipt with a different current profile',async()=>{
+  const s=await aiSetup();vi.mocked(loadSavedAiReleaseConfiguration).mockResolvedValueOnce(s.profile).mockResolvedValueOnce({...s.profile,profile_sha256:'9'.repeat(64)});
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow('AI_RELEASE_CONFIGURATION_CHANGED');expect(s.calls.some(c=>c.name==='saved_job_complete_atomic')).toBe(false);
+ });
+ it.each(['expired','revoked','absent','disabled'] as const)('does not replay a terminal AI result whose profile is %s',async(kind)=>{
+  const s=await aiSetup(),first=await completeSavedDraftJob(s.input);s.row.state='succeeded';s.row.terminal_effect_sha256=first.sha256;
+  s.responses.saved_job_manifest_replay=[{payload:first.manifest,payload_sha256:first.sha256}];s.calls.length=0;
+  if(kind==='expired')vi.mocked(loadSavedAiReleaseConfiguration).mockResolvedValue({...s.profile,live_evaluated_at:'2026-09-14T00:00:00Z'});
+  if(kind==='absent')vi.mocked(loadSavedAiReleaseConfiguration).mockResolvedValue(null);
+  if(kind==='revoked'||kind==='disabled')vi.mocked(loadSavedAiReleaseConfiguration).mockRejectedValue(Error(`AI_RELEASE_${kind.toUpperCase()}`));
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow(/AI_RELEASE|SAVED_JOB_AI/);
+  expect(s.calls.some(c=>c.name==='saved_job_complete_atomic'||c.name==='saved_job_month_receipts')).toBe(false);
+ });
+ it.each(['envelope absent','wrong order','wrong source','wrong report bytes'] as const)('rejects AI %s before terminal mutation',async(kind)=>{
+  const s=await aiSetup();
+  if(kind==='envelope absent')Reflect.deleteProperty(s.receipt.completion.bundle,'ai_release');
+  if(kind==='wrong order')s.order.offer_sha256='9'.repeat(64);
+  if(kind==='wrong source')s.job.input_sha256='9'.repeat(64);
+  if(kind==='wrong report bytes')s.receipt.completion.report={...s.receipt.completion.report,pdf_base64:Buffer.from('changed').toString('base64')};
+  await expect(completeSavedDraftJob(s.input)).rejects.toThrow();expect(s.calls.some(c=>c.name==='saved_job_complete_atomic')).toBe(false);
  });
 });
 

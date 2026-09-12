@@ -24,7 +24,7 @@ export function workingTimeProductReview(input:DocumentReviewInput,candidates:un
    if(!ids.length)continue;
    for(const id of ids)if(!checks.some(c=>c.check_id===id)&&!gaps.some(g=>g.check_id===id))gaps.push({check_id:id,topic,kind:'missing_fact',detail:missing.question,next_step:missing.question});
    const fact_key=`entitlement.work.${canonicalSha256({period:input.period,pins:missing.source_pins,prefix:e.check_id_prefix,path:missing.input_path}).slice(0,32)}`;
-   const scalar=missing.customer_declaration_allowed&&missing.kind==='fact'&&/^workdays\.\d+\.(kind|no_work_credit|intervals\.\d+\.classification)$/u.test(missing.input_path);
+   const scalar=missing.customer_declaration_allowed&&missing.kind==='fact'&&/^workdays\.\d+\.(kind|inventory|no_work_credit|intervals\.\d+\.classification)$/u.test(missing.input_path);
    const legal=missing.kind==='applicability';
    const need:ReviewCompletionNeed={fact_key,kind:legal?'legal':'factual',reason:missing.state==='conflict'?'conflicted':missing.state==='unreadable'?'unreadable':missing.state==='missing'?'missing':'unknown',
     required_evidence_kind:scalar?'customer_declaration':'observed_reading',question:missing.question,
@@ -32,7 +32,11 @@ export function workingTimeProductReview(input:DocumentReviewInput,candidates:un
     source_pins:[...missing.source_pins],dependent_check_ids:[...ids],general_question:false};
    const prior=needs.find(n=>n.fact_key===fact_key);
    if(!prior){needs.push(need);if(scalar)answer_targets.push({fact_key,input_path:missing.input_path,branch:'working_time',index,value_kind:'text'});}
-   else if(canonicalSha256(prior)!==canonicalSha256(need))throw Error('ENTITLEMENT_WORKING_QUESTION_COLLISION');
+   else {
+    const {dependent_check_ids:priorIds,...priorCore}=prior,{dependent_check_ids:nextIds,...nextCore}=need;
+    if(canonicalSha256(priorCore)!==canonicalSha256(nextCore))throw Error('ENTITLEMENT_WORKING_QUESTION_COLLISION');
+    needs[needs.indexOf(prior)]={...prior,dependent_check_ids:[...new Set([...priorIds,...nextIds])].sort()};
+   }
   }
  });
  if(new Set(checks.map(c=>c.check_id)).size!==checks.length)throw Error('ENTITLEMENT_WORKING_CHECK_COLLISION');

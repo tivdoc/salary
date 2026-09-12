@@ -7,6 +7,17 @@ import type {SourceJob} from './source-dispatch';
 import type {SavedExecutionOrder} from './saved-order-scope';
 import {SavedCaseSnapshot} from './saved-snapshot';
 import {savedDocumentReviewInput,savedDocumentReviewSourceScope} from './saved-document-review';
+import {savedMonthIdempotencyKey} from './saved-order-scope';
+import {prepareSavedAiReleaseReview} from './saved-ai-release';
+import type {SavedAiReleaseConfiguration} from './saved-ai-release-configuration';
+import {AI_RELEASE_REPORT_TEMPLATE} from '../reports/ai-release-report';
+
+/** Configuration and report policy are execution dependencies, independent of
+ * the source revision. Never derive this identity from caller-supplied facts. */
+export function savedAiReleaseBaseKey(job:SourceJob,orderId:string,month:string,profile:SavedAiReleaseConfiguration){
+ z.string().regex(/^[a-f0-9]{64}$/u).parse(profile.profile_sha256);
+ return canonicalSha256({base:savedMonthIdempotencyKey(job,orderId,month),ai_profile:profile.profile_sha256,template:AI_RELEASE_REPORT_TEMPLATE});
+}
 
 /** A source review can be appended after a normalized extraction. Its immutable
  * input hash is therefore an execution dependency in addition to the source job.
@@ -20,10 +31,13 @@ export function documentReviewIdempotencyKey(baseKey:string,reviewSha256:string,
 
 /** Use the same authenticated snapshot/receipt adapters as saved analysis.
  * This only resolves current inputs; it neither calculates nor publishes. */
-export async function resolveSavedDocumentReviewKey(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,baseKey:string){
- const sourceScope=await savedDocumentReviewSourceScope(context,job,order,month);
+export async function resolveSavedDocumentReviewKey(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,baseKey:string,options?:{aiProfile?:SavedAiReleaseConfiguration}){
+ const profile=options?.aiProfile;
+ if(profile&&baseKey!==savedAiReleaseBaseKey(job,order.id,month,profile))throw Error('AI_RELEASE_BASE_KEY_MISMATCH');
+ const sourceScope=profile?undefined:await savedDocumentReviewSourceScope(context,job,order,month);
  const snapshot=await new SavedCaseSnapshot(context,job,month,undefined,undefined,true,sourceScope).read();
- const review=await savedDocumentReviewInput(context,job,order,month,snapshot);
+ const source=await savedDocumentReviewInput(context,job,order,month,snapshot,!!profile);
+ const review=profile?prepareSavedAiReleaseReview(source,profile):source;
  const reviewSha256=canonicalSha256(review);
  return {key:documentReviewIdempotencyKey(baseKey,reviewSha256),review,reviewSha256,snapshot};
 }

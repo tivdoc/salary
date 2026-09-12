@@ -1,3 +1,4 @@
+import {assertQuestionnaireSource} from '../entitlement-review/declarations.ts';
 import {assertEntitlementComposition,composeEntitlementReview} from '../entitlement-review/compose.ts';
 import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import {calculateDocumentReview,documentReviewCalculationInputSchema} from './calculations.ts';
@@ -38,6 +39,13 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
    // Identified answers are admitted through the planner, not arbitrary source
    // objects embedded in a caller's calculation. The answer adapter installs
    // their immutable evidence separately before re-evaluation.
+   if(pin.kind==='questionnaire'){
+    const citations=citedSources.filter(s=>s.document_id===pin.document_id&&s.version_id===pin.version_id);
+    if(!citations.length||pin.case_id!==input.case_id||pin.page_count!==1)throw Error('REVIEW_QUESTIONNAIRE_SOURCE_REQUIRED');
+    for(const citation of citations){if(citation.file_sha256!==pin.file_sha256)throw Error('REVIEW_QUESTIONNAIRE_SOURCE_REQUIRED');assertQuestionnaireSource(input,citation);}
+    for(const operand of calculation.operands.filter(o=>o.source.document_id===pin.document_id))assertQuestionnaireSource(input,operand.source,operand.representation==='boolean'?operand.printed_value==='true':operand.printed_value);
+    continue;
+   }
    if(pin.kind==='customer_answer'){
     const answer=input.answer_history.find(a=>a.receipt.request_id===pin.document_id&&`${a.receipt.request_id}:${a.receipt.answer_revision}`===pin.version_id&&a.receipt.answer_sha256===pin.file_sha256);
     if(!answer||answer.receipt.case_id!==input.case_id||answer.request.target.required_evidence_kind!=='customer_declaration'
@@ -78,7 +86,7 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
  for(const d of completionInput.documents){
   if(!input.documents.some(source=>source.document_id===d.pin.document_id&&source.version_id===d.pin.version_id&&source.file_sha256===d.pin.source_sha256))throw Error('REVIEW_COMPLETION_SOURCE_MISMATCH');
  }
- const checkIds=new Set([...checks.map(c=>c.check_id),...input.coverage_gaps.map(g=>g.check_id)]);
+ const checkIds=new Set([...checks.map(c=>c.check_id),...input.coverage_gaps.map(g=>g.check_id),...(input.entitlement_composition?.nonmonetary_outcomes??[]).flatMap(o=>o.check_ids)]);
  if(input.coverage_gaps.some(g=>!input.purchased_scope.topics.includes(g.topic)))throw Error('REVIEW_UNPURCHASED_GAP');
  for(const need of completionInput.needs)if(need.dependent_check_ids.some(id=>!checkIds.has(id)))throw Error('REVIEW_UNKNOWN_COMPLETION_DEPENDENCY');
  const completions=generateReviewCompletions(completionInput);

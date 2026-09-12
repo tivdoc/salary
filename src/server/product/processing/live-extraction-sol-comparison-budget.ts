@@ -118,7 +118,9 @@ export function summarizeSolBudget(ledger:SolComparisonLedger){
 }
 /** Count exactly the model-visible request, including PDF/image/schema tokens.
  * No conversation, tool or remote URL is accepted. SDK retries stay zero. */
-export function solInputCountRequest(request:OpenAiV2ResponsesRequest){
+export type SolCountableRequest=Omit<OpenAiV2ResponsesRequest,'text'>&{text:{format:{type:'json_schema';name:string;
+ schema:Record<string,unknown>;strict?:boolean|null;description?:string}}};
+export function solInputCountRequest(request:SolCountableRequest){
  if(request.model!==SOL_COMPARISON_POLICY.model||request.reasoning?.effort!=='medium'||request.service_tier!=='default'
   ||request.max_output_tokens!==SOL_COMPARISON_POLICY.outputTokenCeiling||request.store!==false
   ||Object.keys(request).some(key=>!['model','instructions','input','text','max_output_tokens','store','reasoning','service_tier'].includes(key)))throw Error('SOL_REQUEST_PROFILE_INVALID');

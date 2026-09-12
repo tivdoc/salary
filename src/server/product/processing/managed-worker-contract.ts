@@ -21,10 +21,15 @@ export function managedWorkerError(error:unknown):string{
  const message=error instanceof Error?error.message:'';
  const known:Readonly<Record<string,string>>={
   SAVED_EXTRACTION_RECEIPT_REQUIRED:'provider_receipt_required',SAVED_EXTRACTION_OUTCOME_PENDING:'provider_outcome_unknown',SAVED_EXTRACTION_PROVIDER_DISABLED:'provider_disabled',
-  SAVED_EXTRACTION_PROVIDER_UNCONFIGURED:'provider_unconfigured',SAVED_EXTRACTION_PERIOD_MISMATCH:'period_confirmation_required',
+  SAVED_EXTRACTION_PROVIDER_UNCONFIGURED:'provider_unconfigured',DOCUMENT_EVIDENCE_PROVIDER_UNCONFIGURED:'document_evidence_provider_unconfigured',SAVED_EXTRACTION_PERIOD_MISMATCH:'period_confirmation_required',
   SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED:'purchased_document_missing',SAVED_ORDER_ENTITLEMENT_REQUIRED:'entitlement_unavailable',
   SAVED_PAID_SOURCE_REQUIRED:'payment_unavailable',ANALYSIS_INPUT_SUPERSEDED:'source_superseded',
   ANALYSIS_AUTHORITY_SUPERSEDED:'authority_superseded',
+  AI_RELEASE_DISABLED:'ai_release_paused',AI_RELEASE_ENROLLMENT_EXPIRED:'ai_release_enrollment_expired',
+  AI_RELEASE_ENROLLMENT_REVOKED:'ai_release_enrollment_revoked',AI_RELEASE_CONFIGURATION_EXPIRED:'ai_release_configuration_expired',
+  AI_RELEASE_ADMISSION_EXPIRED:'ai_release_evidence_expired',AI_RELEASE_CASE_DECISION_EXPIRED:'ai_release_decision_expired',
+  AI_RELEASE_CONFIGURATION_CHANGED:'ai_release_configuration_changed',AI_RELEASE_REVIEWER_UNAVAILABLE:'ai_release_reviewer_unavailable',
+  AI_RELEASE_CONFIGURATION_BUILD_MISMATCH:'ai_release_build_review_required',AI_CONFIGURATION_BUILD_MISMATCH:'ai_release_build_review_required',
   SAVED_JOB_INTERRUPTED:'worker_interrupted',SAVED_JOB_FENCE:'worker_lease_lost',
   SAVED_WORKER_SCOPE_FORBIDDEN:'worker_scope_forbidden',MANAGED_DEV_SCOPE_UNSUPPORTED:'scope_unsupported',
   DEV_FINANCIAL_SCENARIO_UNSUPPORTED:'scenario_unsupported',DEV_FINANCIAL_CANONICAL_SCENARIO:'canonical_confirmation_required',

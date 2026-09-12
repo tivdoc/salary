@@ -22,11 +22,11 @@ type Extraction=Awaited<ReturnType<typeof extractSavedPayslip>>;
 export type SavedExtractionLease={jobId:string;workerId:string;fencingToken:number;versionId:string};
 export type SavedWorkerTransactions=<T>(operation:(context:PostgresTransactionContext)=>Promise<T>)=>Promise<T>;
 type Invocation={invocation_id:string;case_id:string;version_id:string;expected_month:string;input_sha256:string;source_revision:number;dispatched_at:string;result:Extraction|null};
-type Admission={job:SourceJob;document:Record<string,unknown>;month:string};
+type Admission={job:SourceJob;document:Record<string,unknown>;month:string;requestedMonths:string[]};
 
 /** The caller installs its actual machine session for EVERY short transaction.
  * A case/source lock is acquired before the job lock, matching finalization. */
-async function admit(context:PostgresTransactionContext,input:SavedExtractionLease):Promise<Admission>{
+export async function admitSavedExtractionLease(context:PostgresTransactionContext,input:SavedExtractionLease,kinds:readonly ('payslip'|'attendance'|'contract')[]=['payslip']):Promise<Admission>{
  z.string().min(1).parse(input.jobId);z.string().min(1).parse(input.workerId);
  z.number().int().positive().parse(input.fencingToken);z.uuid().parse(input.versionId);
  const read=async(lock:boolean)=>(await context.client.query(statement(lock?'extraction_job_lock':'extraction_job_read',
@@ -48,13 +48,15 @@ async function admit(context:PostgresTransactionContext,input:SavedExtractionLea
    from private.case_input_versions v cross join lateral jsonb_array_elements(v.input->'documents') p
    join public.documents d on d.id=(p->>'id')::uuid and d.version_id=(p->>'version_id')::uuid and d.case_id=v.case_id
    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3 and d.version_id=$4::uuid
-    and p->>'type'='payslip' and d.document_type='payslip' and d.content_sha256=p->>'sha256'`,
-  [job.case_id,job.revision,job.input_sha256,input.versionId]));
+    and p->>'type'=d.document_type::text and d.document_type::text in(select jsonb_array_elements_text($5::jsonb)) and d.content_sha256=p->>'sha256'`,
+  [job.case_id,job.revision,job.input_sha256,input.versionId,JSON.stringify(kinds)]));
  if(rows.row_count!==1)throw new Error('SAVED_EXTRACTION_SOURCE_SCOPE');
- const document=rows.rows[0],month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).parse(document.expected_month);
+ const requestedMonths=[...new Set(orders.flatMap(purchasedMonths))].sort();
+ const document=rows.rows[0],month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).parse(document.document_type==='payslip'||kinds.length===1&&kinds[0]==='payslip'?document.expected_month:requestedMonths[0]);
  if(!orders.some(order=>purchasedMonths(order).includes(month)))throw new Error('SAVED_EXTRACTION_UNPURCHASED_MONTH');
- return {job,document,month};
+ return {job,document,month,requestedMonths};
 }
+const admit=admitSavedExtractionLease;
 
 function validateResult(invocation:Pick<Invocation,'case_id'|'version_id'|'expected_month'|'input_sha256'>,result:Extraction){
  if(result.schema_version!=='tivdoc-saved-extraction-v1'||result.case_id!==invocation.case_id||result.version_id!==invocation.version_id

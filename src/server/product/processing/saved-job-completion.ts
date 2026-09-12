@@ -2,25 +2,56 @@ import {loadJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june
 import {loadSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,june2026RegularReviewIdempotencyKey} from './saved-june2026-regular-authority';
 import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
-import {decodeCommand} from '@/server/platform/persistence/postgres/analysis/validation';
+import {decodeBundle,decodeCommand,decodeReport} from '@/server/platform/persistence/postgres/analysis/validation';
+import {CASE_ANALYSIS_AI_RELEASE_CODE_VERSION,assertCaseAnalysisAiReleaseScope} from '@/engine/case-analysis/contracts';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {admitSavedSource,savedCaseTenant} from './saved-admission';
 import {purchasedMonths,readSavedOrders,savedMonthIdempotencyKey,savedOrderReceiptSha256,savedOrderLegalTopics,type SavedExecutionOrder} from './saved-order-scope';
 import {SOURCE_JOB_KIND,sourceJobSchema,type SourceJob} from './source-dispatch';
-import {resolveSavedDocumentReviewKey} from './document-review-key';
+import {resolveSavedDocumentReviewKey,savedAiReleaseBaseKey} from './document-review-key';
+import {loadSavedAiReleaseConfiguration,type SavedAiReleaseConfiguration} from './saved-ai-release-configuration';
+import {assertSavedAiReleaseCurrent} from './saved-ai-release';
+import {AI_RELEASE_REPORT_TEMPLATE} from '../reports/ai-release-report';
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/);
 const jobRow=z.object({job_id:z.string(),tenant_id:z.string(),canonical_case_id:z.uuid(),job_kind:z.literal(SOURCE_JOB_KIND),
  payload:sourceJobSchema,payload_sha256:sha,state:z.string(),fencing_token:z.coerce.number().int().nonnegative(),
  lease_owner:z.string().nullable(),lease_valid:z.boolean(),cancellation_requested:z.boolean(),terminal_effect_sha256:sha.nullable()});
 const receiptSchema=z.object({idempotency_key:z.string(),analysis_run_id:z.string(),command:z.unknown(),command_sha256:sha,
- result_sha256:sha,report_id:z.string(),report_revision:z.coerce.number().int().positive(),report_sha256:sha});
+ result_sha256:sha,report_id:z.string(),report_revision:z.coerce.number().int().positive(),report_sha256:sha,completion:z.unknown().optional()});
 const EFFECT_KIND='saved_analysis_draft_ready_v1';
 const manifestMonthSchema=z.object({order_id:z.uuid(),offer_sha256:sha.optional(),order_origin:z.literal('legacy_paid_receipt').optional(),receipt_sha256:sha.optional(),month:z.string().regex(/^\d{4}-\d{2}$/),
  analysis_run_id:z.string().min(1),result_sha256:sha,report_id:z.string().min(1),
  report_revision:z.number().int().positive(),report_sha256:sha}).strict().refine(value=>value.order_origin==='legacy_paid_receipt'?value.receipt_sha256!==undefined&&value.offer_sha256===undefined:value.offer_sha256!==undefined&&value.receipt_sha256===undefined);
 const manifestSchema=z.object({schema_version:z.literal(EFFECT_KIND),job_id:z.string().min(1),source:sourceJobSchema,
  publication:z.literal('draft'),months:z.array(manifestMonthSchema).min(1)}).strict();
+
+const completionKind=z.object({dependencies:z.object({code_version:z.string(),template_version:z.string()}).passthrough(),
+ bundle:z.object({ai_release:z.unknown().optional()}).passthrough()}).passthrough();
+function isAiReceipt(receipt:z.infer<typeof receiptSchema>){
+ if(receipt.completion===undefined)return false;
+ const completion=completionKind.parse(receipt.completion);
+ return completion.dependencies.code_version===CASE_ANALYSIS_AI_RELEASE_CODE_VERSION
+  ||completion.dependencies.template_version===AI_RELEASE_REPORT_TEMPLATE||completion.bundle.ai_release!==undefined;
+}
+/** AI terminal reads are still current qualified-result reads. Historical
+ * non-AI receipts retain their original immutable replay contract. */
+function assertAiReceipt(receipt:z.infer<typeof receiptSchema>,profile:SavedAiReleaseConfiguration,job:SourceJob,order:SavedExecutionOrder){
+ const completion=z.object({bundle:z.unknown(),report:z.unknown(),dependencies:z.object({code_version:z.literal(CASE_ANALYSIS_AI_RELEASE_CODE_VERSION),
+  template_version:z.literal(AI_RELEASE_REPORT_TEMPLATE)}).passthrough()}).passthrough().parse(receipt.completion);
+ const bundle=decodeBundle(completion.bundle,savedOrderLegalTopics(order)),report=decodeReport(completion.report),command=decodeCommand(receipt.command);
+ if(!bundle.ai_release)throw Error('SAVED_JOB_AI_ENVELOPE_REQUIRED');
+ const envelope=assertSavedAiReleaseCurrent(bundle.ai_release,profile),scope=envelope.input.assessment_input.current.scope;
+ assertCaseAnalysisAiReleaseScope(envelope,bundle);
+ if(bundle.case_id!==job.case_id||bundle.analysis_run_id!==receipt.analysis_run_id||bundle.result_sha256!==receipt.result_sha256
+  ||report.report_id!==receipt.report_id||report.report_revision!==receipt.report_revision||report.report_sha256!==receipt.report_sha256
+  ||report.analysis_result_sha256!==bundle.result_sha256||bundle.case_revision!==command.case_revision
+  ||canonicalSha256(envelope.input.source)!==command.document_review_sha256||scope.input_revision!==job.revision||scope.input_sha256!==job.input_sha256
+  ||scope.authority_dependency_sha256!==job.authority_dependency_sha256||scope.order_id!==order.id
+  ||scope.order_origin!==(order.kind==='legacy_initial'?'legacy_paid_receipt':'saved_order')||scope.order_receipt_sha256!==savedOrderReceiptSha256(order)
+  ||canonicalSha256([...envelope.input.source.purchased_scope.topics].sort())!==canonicalSha256([...order.topics].sort())
+  ||scope.population!==command.population||command.mode!=='real')throw Error('SAVED_JOB_AI_RECEIPT_SCOPE');
+}
 
 /** Historical success is only a read of an immutable receipt. It still requires
  * a real machine session, the same current source and paid scopes. Unlike new
@@ -60,7 +91,7 @@ async function replayTerminalManifest(context:PostgresTransactionContext,jobId:s
  // The joins bind each report to its immutable completed analysis bundle.
  const selected=await context.client.query(statement('saved_job_replay_month_receipts',
   `select ar.idempotency_key,ar.canonical_analysis_run_id analysis_run_id,ar.command_payload command,ar.command_sha256,
-   r.analysis_result_sha256 result_sha256,r.report_id,r.revision report_revision,r.report_sha256
+   r.analysis_result_sha256 result_sha256,r.report_id,r.revision report_revision,r.report_sha256,ar.completion_payload completion
    from public.analysis_runs ar join public.engine_report_versions r on r.analysis_run_id=ar.id
     and r.tenant_id=ar.tenant_id and r.canonical_case_id=ar.canonical_case_id
     and r.canonical_analysis_run_id=ar.canonical_analysis_run_id
@@ -75,6 +106,9 @@ async function replayTerminalManifest(context:PostgresTransactionContext,jobId:s
  if(receipts.length!==expected.length||new Set(receipts.map(row=>row.analysis_run_id)).size!==expected.length
   ||new Set(receipts.map(row=>row.idempotency_key)).size!==expected.length)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
  const byRun=new Map(receipts.map(row=>[row.analysis_run_id,row]));
+ const requiresAi=job.processing_profile==='qualified_ai_v1'||receipts.some(isAiReceipt);
+ const aiProfile=requiresAi?await loadSavedAiReleaseConfiguration(context,job):null;
+ if(requiresAi&&!aiProfile)throw Error('SAVED_JOB_AI_CONFIGURATION_REQUIRED');
  for(const [index,{order,month}] of expected.entries()){
   const saved=manifest.months[index],receipt=byRun.get(saved.analysis_run_id);
   if(!receipt)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
@@ -85,6 +119,7 @@ async function replayTerminalManifest(context:PostgresTransactionContext,jobId:s
    ||canonicalSha256(command.requested_topics)!==canonicalSha256(savedOrderLegalTopics(order))
    ||receipt.result_sha256!==saved.result_sha256||receipt.report_id!==saved.report_id
    ||receipt.report_revision!==saved.report_revision||receipt.report_sha256!==saved.report_sha256)throw new Error('SAVED_JOB_RECEIPT_SCOPE');
+  if(aiProfile)assertAiReceipt(receipt,aiProfile,job,order);
  }
  return {manifest,sha256:terminalHash,replayed:true};
 }
@@ -113,23 +148,24 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
  if(locked.state!=='succeeded'&&(locked.state!=='running'||locked.lease_owner!==input.workerId||!locked.lease_valid))throw new Error('SAVED_JOB_FENCE');
  const orders=await readSavedOrders(context,job);
  if(locked.state==='succeeded')return replayTerminalManifest(context,input.jobId,job,tenant,locked.terminal_effect_sha256,orders);
+ const aiProfile=await loadSavedAiReleaseConfiguration(context,job);
  const expected=[];
  for(const order of orders)for(const month of purchasedMonths(order)){
   const june=month==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage';
-  const authority=june?await loadJune2026TestAuthority(context,job,order.id):null;
+  const authority=!aiProfile&&june?await loadJune2026TestAuthority(context,job,order.id):null;
   // Match the analysis composition exactly. A revoked/expired regular authority
   // selects its blocked review key, never a formerly authorized result.
-  const regular=!authority&&june?await loadSavedJune2026RegularAuthority(context,job,order.id):null;
+  const regular=!aiProfile&&!authority&&june?await loadSavedJune2026RegularAuthority(context,job,order.id):null;
   const ready=regular?.state==='ready'?regular:null;
-  const baseKey=authority?june2026TestIdempotencyKey(job,order.id,authority):ready?june2026RegularIdempotencyKey(job,order.id,ready)
+  const baseKey=aiProfile?savedAiReleaseBaseKey(job,order.id,month,aiProfile):authority?june2026TestIdempotencyKey(job,order.id,authority):ready?june2026RegularIdempotencyKey(job,order.id,ready)
    :june?june2026RegularReviewIdempotencyKey(job,order.id):savedMonthIdempotencyKey(job,order.id,month);
-  const review=authority||ready?null:await resolveSavedDocumentReviewKey(context,job,order,month,baseKey);
+  const review=authority||ready?null:await resolveSavedDocumentReviewKey(context,job,order,month,baseKey,aiProfile?{aiProfile}:undefined);
   expected.push({order,month,key:review?.key??baseKey,reviewSha256:review?.reviewSha256,
    mode:authority?'synthetic_test':ready?.mode??'real'});
  }
  const selected=await context.client.query(statement('saved_job_month_receipts',
   `select ar.idempotency_key,ar.canonical_analysis_run_id analysis_run_id,ar.command_payload command,ar.command_sha256,
-   r.analysis_result_sha256 result_sha256,r.report_id,r.revision report_revision,r.report_sha256
+   r.analysis_result_sha256 result_sha256,r.report_id,r.revision report_revision,r.report_sha256,ar.completion_payload completion
    from public.analysis_runs ar join public.engine_report_versions r on r.analysis_run_id=ar.id
     and r.tenant_id=ar.tenant_id and r.canonical_case_id=ar.canonical_case_id
     and r.canonical_analysis_run_id=ar.canonical_analysis_run_id
@@ -143,6 +179,8 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
  const receipts=selected.rows.map(row=>receiptSchema.parse(row));
  if(receipts.length!==expected.length||new Set(receipts.map(r=>r.idempotency_key)).size!==expected.length)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
  const byKey=new Map(receipts.map(r=>[r.idempotency_key,r]));
+ const currentProfile=aiProfile?await loadSavedAiReleaseConfiguration(context,job):null;
+ if(aiProfile&&currentProfile?.profile_sha256!==aiProfile.profile_sha256)throw Error('AI_RELEASE_CONFIGURATION_CHANGED');
  const months:z.infer<typeof manifestMonthSchema>[]=expected.map(({order,month,key,mode,reviewSha256})=>{
   const receipt=byKey.get(key);if(!receipt)throw new Error('SAVED_JOB_MONTHS_INCOMPLETE');
   const command=decodeCommand(receipt.command);
@@ -151,6 +189,8 @@ export async function completeSavedDraftJob(input:{context:PostgresTransactionCo
    ||command.period.start_date!==`${month}-01`||command.period.end_date!==end
    ||canonicalSha256(command.requested_topics)!==canonicalSha256(savedOrderLegalTopics(order))||command.mode!==mode
    ||command.document_review_sha256!==reviewSha256)throw new Error('SAVED_JOB_RECEIPT_SCOPE');
+  if(currentProfile)assertAiReceipt(receipt,currentProfile,job,order);
+  else if(isAiReceipt(receipt))throw Error('SAVED_JOB_AI_CONFIGURATION_REQUIRED');
   return {order_id:order.id,...(order.kind==='legacy_initial'?{order_origin:'legacy_paid_receipt' as const,receipt_sha256:order.receipt_sha256}:{offer_sha256:order.offer_sha256}),month,analysis_run_id:receipt.analysis_run_id,
    result_sha256:receipt.result_sha256,report_id:receipt.report_id,report_revision:receipt.report_revision,report_sha256:receipt.report_sha256};
  });

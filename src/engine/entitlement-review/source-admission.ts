@@ -1,7 +1,8 @@
+import {assertQuestionnaireSource} from './declarations.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import type {DocumentReviewInput,ReviewDocument} from '../document-review/contracts.ts';
 import type {DocumentReviewSource} from '../document-review/calculations.ts';
-import {parseReviewCompletionInput,resolveReviewCompletion} from '../document-review/completions.ts';
+import {parseReviewCompletionInput,resolveReviewCompletion,reviewDeclaredAnswerValue} from '../document-review/completions.ts';
 import {entitlementEvidenceSchema,type EntitlementEvidence} from './contracts.ts';
 
 /** Inspect source citations rather than treating a caller's 'known' or
@@ -20,6 +21,7 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
  }
  const completion=parseReviewCompletionInput(input.completion_input);
  function citation(value:DocumentReviewSource){
+  if(value.reading==='questionnaire_declaration'){assertQuestionnaireSource(input,value);return;}
   if(value.reading==='customer_declaration'){
    const history=input.answer_history.find(h=>h.receipt.request_id===value.document_id
     &&`${h.receipt.request_id}:${h.receipt.answer_revision}`===value.version_id
@@ -47,17 +49,18 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
   const object=value as Record<string,unknown>;
   // A source pointer is not permission to replace the receipt's answer value.
   const boundSource=object.source as DocumentReviewSource|undefined;
+  if(boundSource?.reading==='questionnaire_declaration')assertQuestionnaireSource(input,boundSource,object.value);
   if(boundSource?.reading==='customer_declaration'&&('value' in object||'printed_value' in object)){
    const h=input.answer_history.find(h=>h.receipt.answer_sha256===boundSource.reading_receipt_sha256);
    const supplied='printed_value' in object?object.printed_value:object.value;
-   if(!h||(h.receipt.state==='provided'?String(supplied)!==String(h.receipt.value)&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');
+   if(!h||(h.receipt.state==='provided'?String(supplied)!==String(reviewDeclaredAnswerValue(h.request.target,h.receipt.value))&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');
   }
   if('reading_receipt_sha256'in object&&'document_id'in object&&'file_sha256'in object) citation(object as DocumentReviewSource);
   if('source_manifest'in object){
    if(!Array.isArray(object.source_manifest))throw Error('ENTITLEMENT_MANIFEST_REQUIRED');
    for(const item of object.source_manifest){
     const pin=item as Record<string,unknown>,document=documents.find(d=>d.document_id===pin.document_id&&d.version_id===pin.version_id);
-    if(pin.kind==='customer_answer')continue; // Each answer citation is admitted above and rechecked by the calculation executor.
+    if(pin.kind==='customer_answer'||pin.kind==='questionnaire')continue; // Each answer citation is admitted above and rechecked by the calculation executor.
     if(!document||document.file_sha256!==pin.file_sha256||document.page_count!==pin.page_count
      ||(pin.kind==='legal_source'?pin.case_id!==null:pin.case_id!==input.case_id))throw Error('ENTITLEMENT_MANIFEST_BINDING');
    }

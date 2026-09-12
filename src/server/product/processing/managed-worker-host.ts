@@ -102,7 +102,7 @@ export async function runManagedDevTick(env:Environment,buildSha:string,onMonth:
    if(signal?.aborted)break;
    try{
     const transactions=await createSavedWorkerHost({caseId:candidate.case_id,identity:candidate.identity,buildSha,target:driver.target},driver);
-    items.push(await runManagedDevCase({caseId:candidate.case_id,workerId:candidate.identity.actor_id,transactions,storage,extractor,providerEnabled:!receiptOnly,receiptOnly,onMonth,signal}));
+    items.push(await runManagedDevCase({caseId:candidate.case_id,workerId:candidate.identity.actor_id,transactions,storage,extractor,...(env.TIVDOC_MANAGED_DOCUMENT_EVIDENCE==='1'?{documentEvidence:{extractor:bounded?.documentEvidenceExtractor}}:{}),providerEnabled:!receiptOnly,receiptOnly,onMonth,signal}));
    }catch(error){items.push({caseId:candidate.case_id,state:'unconfirmed',jobId:'unclaimed',lastError:managedWorkerError(error)});}
   }
   return {worker:'managed_dev',state:signal?.aborted?'interrupted' as const:'finished' as const,buildSha,items,...(bounded?{budget:bounded.summary()}: {})};

@@ -6,11 +6,12 @@ import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {SOURCE_JOB_KIND} from './source-dispatch';
 import {runSavedDraftJob,type SavedMonthCompletion} from './saved-job-runner';
 
-const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn(),extract:vi.fn(),month:vi.fn(),complete:vi.fn(),reviewScope:vi.fn(),testAuthority:vi.fn(),regularAuthority:vi.fn()}));
+const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn(),extract:vi.fn(),evidence:vi.fn(),month:vi.fn(),complete:vi.fn(),reviewScope:vi.fn(),testAuthority:vi.fn(),regularAuthority:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./saved-admission',()=>({savedCaseTenant:(id:string)=>`saved-case:${id}`,admitSavedSource:ports.admit}));
 vi.mock('./saved-order-scope',async importOriginal=>({...await importOriginal<typeof import('./saved-order-scope')>(),readSavedOrders:ports.orders}));
 vi.mock('./saved-extraction-worker',()=>({runSavedWorkerExtraction:ports.extract}));
+vi.mock('./saved-document-evidence-worker',()=>({runSavedWorkerDocumentEvidence:ports.evidence}));
 vi.mock('./saved-worker',()=>({runSavedWorkerMonth:ports.month}));
 vi.mock('./saved-document-review',()=>({savedDocumentReviewSourceScope:ports.reviewScope}));
 vi.mock('./saved-june2026-test-authority',()=>({loadJune2026TestAuthority:ports.testAuthority}));
@@ -220,4 +221,17 @@ describe('saved draft job consumer',()=>{
   const s=setup();await expect(runSavedDraftJob({...s.input,heartbeat:{intervalMs:5000,leaseMs:10000}})).rejects.toThrow('SAVED_HEARTBEAT_INTERVAL');
   expect(ports.admit).not.toHaveBeenCalled();
  });
+});
+
+it.each(['SAVED_EXTRACTION_OUTCOME_PENDING','DOCUMENT_EVIDENCE_PROVIDER_UNCONFIGURED','SAVED_EXTRACTION_RECEIPT_REQUIRED'])('assesses independent purchased months while preserving nonpay hold %s',async code=>{
+ const s=setup();ports.evidence.mockRejectedValue(new Error(code));
+ const result=await runSavedDraftJob({...s.input,documentEvidence:{}});
+ expect(ports.evidence).toHaveBeenCalledTimes(1);expect(ports.month).toHaveBeenCalledTimes(3);
+ expect(result).toMatchObject({analyzedMonths:3,deferredEvidence:[{versionId:s.source.documents[3].version_id,code}]});
+ expect(s.state.outbox).toBe(1);
+});
+it.each(['ANALYSIS_INPUT_SUPERSEDED','SAVED_WORKER_SCOPE_FORBIDDEN','SAVED_JOB_FENCE'])('cannot defer nonpay authority failure %s',async code=>{
+ const s=setup();ports.evidence.mockRejectedValue(new Error(code));
+ await expect(runSavedDraftJob({...s.input,documentEvidence:{}})).rejects.toThrow(code);
+ expect(ports.month).not.toHaveBeenCalled();expect(s.state.outbox).toBe(0);
 });

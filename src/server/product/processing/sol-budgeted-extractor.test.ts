@@ -9,6 +9,7 @@ import {preprocessPayslipDocument} from '@/server/engine/extraction/preprocessin
 import {createSolBudgetedExtractor} from './sol-budgeted-extractor';
 import {newSolComparisonLedger,reserveSolRequest,recordSolCount,recordSolReceipt} from './live-extraction-sol-comparison-budget';
 import {createOpenAiProviderReceipt} from '@/server/engine/extraction/providers/openai/provider-receipt';
+import type {DocumentEvidenceExtractorInput} from '@/server/engine/extraction/providers/openai/document-evidence-adapter';
 const sdk=vi.hoisted(()=>({count:vi.fn(),parse:vi.fn(),construct:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('openai',()=>({default:class{responses={inputTokens:{count:sdk.count},parse:sdk.parse};constructor(options:unknown){sdk.construct(options);}}}));
@@ -32,6 +33,86 @@ async function setup(){
  const pass={request:actualRequest,prepared,kind:'first_pass' as const,requestedFields:[],sourcePageCount:1};
  return {input,pass};
 }
+async function evidenceSetup(){
+ const prepared=await setup(),document={...prepared.pass.request.document,document_type:'attendance'};
+ const input={...prepared.input,allowedCaseIds:[document.case_id],allowedVersionIds:[document.document_id],expiresAt:new Date(Date.now()+120000).toISOString(),
+  documentEvidenceScope:{schema_version:'sol-document-evidence-scope-v1' as const,sources:[{caseId:document.case_id,versionId:document.document_id,
+   sourceSha256:document.content_sha256,kind:'attendance' as const,maxPages:1}]}};
+ const request:DocumentEvidenceExtractorInput={document,source:{read:async()=>prepared.pass.prepared.original.bytes},
+  analysisRunId:randomUUID(),extractionId:randomUUID(),createdAt:new Date().toISOString()};
+ return {...prepared,input,request};
+}
+it('keeps non-payroll extraction opt-in, with exact source/case/version/window scope',async()=>{
+ const f=await evidenceSetup(),legacy=createSolBudgetedExtractor(f.input.documentEvidenceScope?{...f.input,documentEvidenceScope:undefined}:f.input);
+ expect(legacy.documentEvidenceExtractor).toBeUndefined();legacy.close();
+ expect(()=>createSolBudgetedExtractor({...f.input,allowedVersionIds:[randomUUID()]})).toThrow('SOL_DOCUMENT_EVIDENCE_SCOPE');
+ const runtime=createSolBudgetedExtractor(f.input);
+ try{
+  expect(runtime.documentEvidenceExtractor).toBeDefined();
+  await expect(runtime.documentEvidenceExtractor!.extract({...f.request,document:{...f.request.document,document_id:randomUUID()}})).rejects.toThrow('SOURCE_NOT_ALLOWED');
+  expect(sdk.count).not.toHaveBeenCalled();
+ }finally{runtime.close();}
+});
+it('records non-payroll failure in the same count/generation ledger and blocks implicit retry',async()=>{
+ const f=await evidenceSetup(),runtime=createSolBudgetedExtractor(f.input);
+ try{
+  const result=await runtime.documentEvidenceExtractor!.extract(f.request);
+  expect(result.status).toBe('failed');expect(runtime.summary()).toMatchObject({contentRequests:2,generations:1,unknownOutcomes:0,reservedUpperBoundUsd:.712});
+  const ledger=JSON.parse(readFileSync(f.input.ledgerPath,'utf8'));
+  expect(ledger.reservations[1].receipt.prompt_version).toBe('document-evidence-v1-fp1');
+  expect(ledger.reservations[1].receipt.document_id).toBe(f.request.document.document_id);
+  await expect(runtime.documentEvidenceExtractor!.extract(f.request)).rejects.toThrow('GENERATION_LIMIT');
+  expect(sdk.parse).toHaveBeenCalledOnce();expect(sdk.count).toHaveBeenCalledOnce();
+ }finally{runtime.close();}
+});
+it('shares the busy fence between payroll and non-payroll provider paths',async()=>{
+ const f=await evidenceSetup(),runtime=createSolBudgetedExtractor(f.input);
+ try{
+  const pending=runtime.documentEvidenceExtractor!.extract(f.request);
+  await expect(runtime.extractor.extractPreparedPass(f.pass)).rejects.toThrow('BUSY');
+  expect(()=>runtime.close()).toThrow('STILL_RUNNING');await pending;
+ }finally{runtime.close();}
+});
+it('preserves count charges and prevents non-payroll generation after operator pause',async()=>{
+ const f=await evidenceSetup();let active=true;
+ const runtime=createSolBudgetedExtractor({...f.input,assertActive(){if(!active)throw Error('OPERATOR_PAUSED');}});
+ sdk.count.mockImplementation(async()=>{active=false;return {object:'response.input_tokens',input_tokens:2000};});
+ try{
+  await expect(runtime.documentEvidenceExtractor!.extract(f.request)).rejects.toThrow('OPERATOR_PAUSED');
+  expect(runtime.summary()).toMatchObject({contentRequests:1,countRequests:1,generations:0});expect(sdk.parse).not.toHaveBeenCalled();
+ }finally{runtime.close();}
+});
+it('retains an unknown non-payroll count outcome without resetting or recalling it',async()=>{
+ const f=await evidenceSetup(),runtime=createSolBudgetedExtractor(f.input);
+ sdk.count.mockRejectedValue(Error('synthetic count disconnect'));
+ try{await expect(runtime.documentEvidenceExtractor!.extract(f.request)).rejects.toThrow('synthetic count disconnect');
+  expect(runtime.summary()).toMatchObject({contentRequests:1,unknownOutcomes:1});}finally{runtime.close();}
+ const retained=readFileSync(f.input.ledgerPath,'utf8'),next=createSolBudgetedExtractor(f.input);
+ try{await expect(next.documentEvidenceExtractor!.extract(f.request)).rejects.toThrow('REPLAY_REQUIRES_REVIEW');
+  expect(readFileSync(f.input.ledgerPath,'utf8')).toBe(retained);expect(sdk.count).toHaveBeenCalledOnce();expect(sdk.parse).not.toHaveBeenCalled();}finally{next.close();}
+});
+it('reserves capacity for both non-payroll calls and preserves prior counters',async()=>{
+ const f=await evidenceSetup();let ledger=newSolComparisonLedger();
+ for(let i=1;i<=11;i++){
+  const requestSha256=i.toString(16).padStart(64,'0');
+  ledger=reserveSolRequest({ledger,sourceSha256:(i+100).toString(16).padStart(64,'0'),requestSha256,codeRevision:f.input.codeRevision,
+   attempt:1,kind:'input_tokens',now:new Date().toISOString()});ledger=recordSolCount(ledger,requestSha256,100);
+ }
+ writeFileSync(f.input.ledgerPath,JSON.stringify(ledger));const before=readFileSync(f.input.ledgerPath,'utf8'),runtime=createSolBudgetedExtractor(f.input);
+ try{await expect(runtime.documentEvidenceExtractor!.extract(f.request)).rejects.toThrow('BUDGET_CAPACITY');
+  expect(sdk.count).not.toHaveBeenCalled();expect(sdk.parse).not.toHaveBeenCalled();expect(readFileSync(f.input.ledgerPath,'utf8')).toBe(before);
+ }finally{runtime.close();}
+});
+it('records the actual completed non-payroll provider output with the exact authorized request hash',async()=>{
+ const f=await evidenceSetup(),runtime=createSolBudgetedExtractor(f.input);
+ sdk.parse.mockResolvedValue({id:'resp_synthetic_document_success',status:'completed',output_parsed:{schema_version:'document-evidence-provider-v1',
+  detected_document_type:'attendance',page_count:1,pages:[{page:1,coverage:'partial',missing_regions:['synthetic empty page']}],observations:[],warnings:[]},
+  model:'gpt-5.6-sol',_request_id:'req_synthetic_document_success',usage:{input_tokens:2000,output_tokens:300,total_tokens:2300}});
+ try{const result=await runtime.documentEvidenceExtractor!.extract(f.request);expect(result.status).toBe('completed');
+  const ledger=JSON.parse(readFileSync(f.input.ledgerPath,'utf8'));expect(ledger.reservations[1].receipt.request_sha256).toBe(ledger.reservations[0].requestSha256);
+  expect(ledger.reservations[1].receipt.status).toBe('completed');expect(sdk.parse.mock.calls[0][0].max_output_tokens).toBe(10000);
+ }finally{runtime.close();}
+});
 it('simulates the SDK boundary with actual source bytes and reserves count then generation, without modifying worker document identity',async()=>{
  const {input,pass}=await setup(),runtime=createSolBudgetedExtractor(input);
  try{

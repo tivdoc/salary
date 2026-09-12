@@ -4,7 +4,7 @@ import { canonicalJson } from '@/engine/case-operations/canonical';
 import { canonicalSha256 } from '@/engine/rule-runtime/canonical';
 import { renderDeterministicRtlDocument, type RtlBlock } from '@/server/reports/deterministic-hebrew-pdf';
 
-export type DocumentReviewFindingStatus = 'observed' | 'derived_arithmetic' | 'conditional' | 'supported' | 'unknown';
+export type DocumentReviewFindingStatus = 'observed' | 'derived_arithmetic' | 'conditional' | 'supported' | 'unknown' | 'condition_not_fulfilled';
 export type DocumentReviewDisplayAmount = Readonly<{ label: string; currency: 'ILS'; minor_units: number }>;
 export type DocumentReviewSource = Readonly<{
   id: string; title: string; url?: string; document_label?: string; page?: number;
@@ -12,6 +12,7 @@ export type DocumentReviewSource = Readonly<{
 type FindingBase = Readonly<{ id: string; title: string; summary: string; source_ids: readonly string[] }>;
 export type DocumentReviewPresentationFinding = FindingBase & (
   | Readonly<{ status: 'observed' | 'derived_arithmetic' | 'supported'; amounts: readonly DocumentReviewDisplayAmount[] }>
+  | Readonly<{ status: 'condition_not_fulfilled'; amounts: readonly [] }>
   | Readonly<{ status: 'conditional'; amounts: readonly DocumentReviewDisplayAmount[]; conditions: readonly string[] }>
   | Readonly<{ status: 'unknown'; amounts: readonly [] }>
 );
@@ -42,6 +43,7 @@ const STATUS: Readonly<Record<DocumentReviewFindingStatus, string>> = Object.fre
   conditional: 'תוצאה מותנית',
   supported: 'ממצא מבוסס במקורות שנבדקו',
   unknown: 'לא ניתן לקבוע מהנתונים הקיימים',
+  condition_not_fulfilled: 'תנאי שלא התקיים לפי המידע המזוהה',
 });
 const DISCLOSURE = 'הדוח נערך באמצעות AI על סמך המסמכים והמידע הרשומים בו. קריאת נתון וחישוב אריתמטי אינם כשלעצמם קביעת זכאות או חוב. התנאים והמידע החסר מפורטים ליד כל ממצא.';
 const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');

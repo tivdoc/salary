@@ -19,11 +19,41 @@ import {JUNE_REGULAR_REPORT_TEMPLATE} from '../reports/june2026-regular-service'
 import {SAVED_DRAFT_TEMPLATE} from './saved-draft-report';
 import {SAVED_JUNE_REVIEW_VERSION} from './saved-minimum-wage-review';
 import {readSavedOrders,savedMonthIdempotencyKey,purchasedMonths,savedOrderLegalTopics} from './saved-order-scope';
-import {resolveSavedDocumentReviewKey} from './document-review-key';
+import {resolveSavedDocumentReviewKey,savedAiReleaseBaseKey} from './document-review-key';
+import {loadSavedAiReleaseConfiguration} from './saved-ai-release-configuration';
+import {assertSavedAiReleaseCurrent} from './saved-ai-release';
+import {renderAiReleaseBundle,AI_RELEASE_REPORT_TEMPLATE} from '../reports/ai-release-report';
 import {renderReviewBundle} from '../reports/document-review-projection';
 import {DOCUMENT_REVIEW_RENDER_POLICY} from '../reports/document-review-render-policy';
 
 type Input=Parameters<SavedMonthCompletion>[0];
+
+/** Same ordinary analysis, finding and report versions. No second calculator
+ * or developer-prepared scenario is used for this explicit DEV profile. */
+async function completeQualifiedAiMonth(input:Input){
+ const {context,job,orderId,month,parent}=input;
+ const profile=await loadSavedAiReleaseConfiguration(context,job);
+ if(!profile||!parent.completed||!parent.bundle?.ai_release||!parent.report)throw Error('AI_RELEASE_MANAGED_PROFILE_REQUIRED');
+ const [order]=await readSavedOrders(context,job,orderId);
+ if(!purchasedMonths(order).includes(month))throw Error('AI_RELEASE_MANAGED_ORDER_SCOPE');
+ const current=await resolveSavedDocumentReviewKey(context,job,order,month,savedAiReleaseBaseKey(job,order.id,month,profile),{aiProfile:profile});
+ const command=parent.command,bundle=decodeBundle(parent.bundle,savedOrderLegalTopics(order));validateReport(parent.report);
+ if(!bundle.ai_release||!parent.dependencies||parent.dependencies.template_version!==AI_RELEASE_REPORT_TEMPLATE
+  ||command.idempotency_key!==current.key||parent.idempotency_key!==current.key||canonicalSha256(command)!==parent.command_sha256
+  ||command.case_id!==job.case_id||command.population!==profile.configuration.population||command.document_review_sha256!==current.reviewSha256
+  ||canonicalSha256(bundle.ai_release.input.source)!==current.reviewSha256||bundle.case_id!==job.case_id||bundle.analysis_run_id!==parent.analysis_run_id
+  ||bundle.ai_release.binding.source_journal.input_revision!==job.revision||bundle.ai_release.binding.source_journal.input_sha256!==job.input_sha256
+  ||parent.analysis_run_id!==savedAnalysisId('case-analysis-run',parent.command_sha256)
+  ||canonicalSha256(command.requested_topics)!==canonicalSha256(savedOrderLegalTopics(order)))throw Error('AI_RELEASE_MANAGED_RESULT_BINDING');
+ assertSavedAiReleaseCurrent(bundle.ai_release,profile);
+ const expected=renderAiReleaseBundle(bundle,savedAnalysisId('saved-report',bundle.result_sha256));
+ if(parent.report.report_sha256!==expected.report_sha256||parent.report.report_id!==expected.report_id)throw Error('AI_RELEASE_MANAGED_ARTIFACT');
+ const stage=parent.stages.filter(s=>s.stage==='review_pending');
+ if(stage.length!==1||stage[0].payload_sha256!==canonicalSha256(stage[0].payload)
+  ||z.object({report_sha256:z.string()}).parse(stage[0].payload).report_sha256!==expected.report_sha256)throw Error('AI_RELEASE_MANAGED_STAGE');
+ // A separate narrow SQL publication boundary will authorize present access
+ // and outbox delivery. Calculation completion alone grants neither.
+}
 const HISTORICAL_REVIEW_CODE_VERSIONS=new Set(['case-analysis@0.6.0','case-analysis@0.6.1','case-analysis@0.6.2',
  'case-analysis@0.6.3','case-analysis@0.6.4','case-analysis@0.6.5','case-analysis@0.6.6']);
 
@@ -193,6 +223,9 @@ export async function saveAutomaticDevCanonicalDraft(input:Input){
  * Answers create a new source revision and therefore a new canonical run;
  * retries reuse both run and artifact rather than appending duplicates. */
 export const runAutomaticDevMonth:SavedMonthCompletion=async input=>{
+ if(input.job.processing_profile==='qualified_ai_v1'||input.parent.bundle?.ai_release){
+  await completeQualifiedAiMonth(input);return;
+ }
  if(input.parent.command.document_review_sha256||input.parent.bundle?.document_review||input.parent.command.idempotency_key?.startsWith('review:')){
   await completeDocumentReview(input);return;
  }

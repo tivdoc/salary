@@ -51,7 +51,7 @@ async function scope(context:PostgresTransactionContext,caseId:string){
 }
 
 export async function runManagedDevCase(input:{caseId:string;workerId:string;transactions:SavedWorkerTransactions;
- storage:Runner['storage'];extractor:Runner['extractor'];providerEnabled:boolean;receiptOnly?:boolean;onMonth:SavedMonthCompletion;signal?:AbortSignal}){
+ storage:Runner['storage'];extractor:Runner['extractor'];documentEvidence?:Runner['documentEvidence'];providerEnabled:boolean;receiptOnly?:boolean;onMonth:SavedMonthCompletion;signal?:AbortSignal}){
  if(input.signal?.aborted)return {caseId:input.caseId,state:'interrupted' as const};
  const claim=await input.transactions(async context=>{
   await scope(context,input.caseId);
@@ -69,8 +69,9 @@ export async function runManagedDevCase(input:{caseId:string;workerId:string;tra
  try{
   // No timer outlives the existing runner, no external I/O in a transaction.
   const result=await runSavedDraftJob({...input,...lease,heartbeat:{intervalMs:10000,leaseMs:180000}});
-  await input.transactions(context=>note(context,null));
-  return {caseId:input.caseId,state:'succeeded' as const,jobId:claim.jobId,manifestSha256:result.completion.sha256};
+  const deferred=result.deferredEvidence?.[0],lastError=deferred?managedWorkerError(new Error(deferred.code)):null;
+  await input.transactions(context=>note(context,lastError));
+  return {...(deferred?{deferredEvidence:result.deferredEvidence,lastError}:{}),caseId:input.caseId,state:'succeeded' as const,jobId:claim.jobId,manifestSha256:result.completion.sha256};
  }catch(error){
   const safe=managedWorkerError(error);
   // If the lease was already reclaimed, this transition is refused. Its new

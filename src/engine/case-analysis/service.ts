@@ -27,6 +27,11 @@ import {
   CaseAnalysisError,
   CASE_ANALYSIS_CODE_VERSION,
   CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION,
+  CASE_ANALYSIS_AI_RELEASE_CODE_VERSION,
+  createCaseAnalysisAiRelease,
+  replayCaseAnalysisAiRelease,
+  assertCaseAnalysisAiReleaseScope,
+  type CaseAnalysisAiRelease,
   CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION,
   type CaseAnalysisLogPort,
   type CaseAnalysisRepositoryPort,
@@ -69,6 +74,16 @@ export type PersistedCanonicalInputContext = Readonly<{
   rule_inputs: readonly RuleInputSnapshot[];
 }>;
 
+export type CaseAnalysisAiReleaseContext=PersistedCanonicalInputContext & Readonly<{
+  command:CaseAnalysisCommand;
+  facts:EmploymentSnapshot;
+  document_review_input:import('../document-review/contracts.ts').DocumentReviewInput;
+  source_journal:StoredCaseInputSnapshot['source_journal']|null;
+  previous_ai_release:CaseAnalysisAiRelease|null;
+}>;
+export type CaseAnalysisAiReleasePreparation=Pick<import('../ai-release-runtime/contracts.ts').AiReleaseRuntimeInput,
+  'assessment_input'|'trusted_generator_pins'>;
+
 export type CaseAnalysisServiceDependencies = Readonly<{
   clock: DeterministicClockPort;
   ids: DeterministicIdPort;
@@ -88,6 +103,9 @@ export type CaseAnalysisServiceDependencies = Readonly<{
   authorizeIsolatedTest?: (command: CaseAnalysisCommand, selection: LegalCatalogSelection) => Promise<void>;
   executionBlockers?: (topic: Wave3Topic) => Readonly<{status: "blocked_missing_facts" | "blocked_conflict" | "blocked_legal_readiness"; blockers: readonly string[]}> | null;
   prepareExecutionContext?: (input: PersistedCanonicalInputContext) => Promise<void>;
+  /** Server-owned authority loader only. The calculator is fixed in this
+   * service. Null preserves the old path; errors stop before any executor. */
+  prepareAiRelease?: (input:CaseAnalysisAiReleaseContext)=>Promise<CaseAnalysisAiReleasePreparation|null>;
   /** Optional review-only observations from the already verified snapshot.
    * Persisted with the original immutable review stage; never activation,
    * customer answers, findings or report publication authority. */
@@ -427,6 +445,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       created_at: createdAt,
       selections,
       provider_independent: true,
+      ...(stored.source_journal?{source_journal:stored.source_journal}:{}),
       ...(stored.document_review_input ? {document_review_input:stored.document_review_input,document_review_sha256:command.document_review_sha256} : {}),
     });
 
@@ -450,6 +469,31 @@ export class CaseAnalysisService implements CaseAnalysisPort {
     const catalogHashes = new Set(selections.map((selection) => selection.catalog_sha256));
     if (catalogHashes.size !== 1) throw new CaseAnalysisError("CATALOG_HASH_DIVERGENCE");
     const catalogSha256 = selections[0]!.catalog_sha256;
+    let aiRelease:CaseAnalysisAiRelease|undefined;
+    if(this.dependencies.prepareAiRelease){
+      if(!stored.document_review_input)throw new CaseAnalysisError('AI_RELEASE_REVIEW_INPUT_REQUIRED');
+      const priorStage=existing.stages.find(stage=>stage.stage==='topic_results')?.payload;
+      const priorValue=typeof priorStage==='object'&&priorStage!==null&&'bundle' in priorStage
+        &&typeof priorStage.bundle==='object'&&priorStage.bundle!==null&&'ai_release' in priorStage.bundle
+        ?priorStage.bundle.ai_release:undefined;
+      const previous=priorValue===undefined?null:replayCaseAnalysisAiRelease(priorValue);
+      const prepared=await this.dependencies.prepareAiRelease(deepFreeze({command,analysis_run_id:analysisRunId,
+        case_id:command.case_id,command_sha256:commandSha256,facts_snapshot_sha256:factsSnapshotSha256,
+        facts,rule_inputs:ruleInputs,document_review_input:stored.document_review_input,source_journal:stored.source_journal??null,previous_ai_release:previous}));
+      if(!prepared&&previous)throw new CaseAnalysisError('AI_RELEASE_RESUME_AUTHORITY_REQUIRED');
+      if(prepared){
+        const current=prepared.assessment_input.current.scope,purchase=stored.document_review_input.purchased_scope,journal=stored.source_journal;
+        if(!journal)throw new CaseAnalysisError('AI_RELEASE_SOURCE_JOURNAL_REQUIRED');
+        if(journal.case_id!==command.case_id||current.case_id!==command.case_id||current.input_revision!==journal.input_revision||current.input_sha256!==journal.input_sha256
+          ||current.period.from!==command.period.start_date||current.period.to!==command.period.end_date
+          ||current.facts_sha256!==factsSnapshotSha256||current.population!==command.population
+          ||current.order_id!==purchase.order_id||current.order_origin!==purchase.origin
+          ||current.order_receipt_sha256!==purchase.receipt_sha256)throw new CaseAnalysisError('AI_RELEASE_CANONICAL_SCOPE_MISMATCH');
+        aiRelease=createCaseAnalysisAiRelease({...prepared,source:stored.document_review_input,analysis_run_id:analysisRunId},
+          {engine_case_revision:command.case_revision,source_journal:journal});
+        if(previous&&canonicalSha256(aiRelease)!==canonicalSha256(previous))throw new CaseAnalysisError('AI_RELEASE_RESUME_INPUT_MISMATCH');
+      }
+    }
     const dependencies: PinnedAnalysisDependencies = deepFreeze({
       extraction_snapshot_sha256: stored.extraction_snapshot_sha256,
       facts_snapshot_sha256: factsSnapshotSha256,
@@ -459,7 +503,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       rule_spec_versions: sortStrings([...new Set(selections.flatMap((selection) => selection.rule_spec_id && selection.rule_spec_version
         ? [`${selection.rule_spec_id}@${selection.rule_spec_version}`]
         : []))]),
-      code_version: stored.document_review_input?CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION:this.dependencies.readingPolicy===IDENTIFIED_AGREEING_CANDIDATES_POLICY?CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION:CASE_ANALYSIS_CODE_VERSION,
+      code_version: aiRelease?CASE_ANALYSIS_AI_RELEASE_CODE_VERSION:stored.document_review_input?CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION:this.dependencies.readingPolicy===IDENTIFIED_AGREEING_CANDIDATES_POLICY?CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION:CASE_ANALYSIS_CODE_VERSION,
       template_version: this.dependencies.templateVersion,
     });
     await this.stage(analysisRunId, "analysis_run", { selections, dependencies });
@@ -510,9 +554,10 @@ export class CaseAnalysisService implements CaseAnalysisPort {
     }
     const subtotal = knownSubtotal(topicResults);
     const coverageComplete = topicResults.every((result) => result.status === "calculated" || result.status === "not_applicable");
-    const documentReview=stored.document_review_input ? runDocumentReview(stored.document_review_input,analysisRunId) : undefined;
+    const documentReview=aiRelease?.result.review??(stored.document_review_input ? runDocumentReview(stored.document_review_input,analysisRunId) : undefined);
     const bundleSeed = {
       ...(documentReview ? {document_review:documentReview} : {}),
+      ...(aiRelease?{ai_release:aiRelease}:{}),
       schema_version: "tivdoc-analysis-result-bundle-v0.6.0" as const,
       analysis_run_id: analysisRunId,
       case_id: command.case_id,
@@ -534,6 +579,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       ...bundleSeed,
       result_sha256: this.dependencies.hashes.hashCanonical(bundleSeed),
     });
+    if(aiRelease)assertCaseAnalysisAiReleaseScope(aiRelease,bundle);
     await this.stage(analysisRunId, "topic_results", { bundle });
 
     const report = await this.dependencies.reportBuilder.build(bundle);
@@ -574,6 +620,16 @@ export class CaseAnalysisService implements CaseAnalysisPort {
     await this.dependencies.repository.assertPinnedDependenciesAvailable(run.dependencies);
     const seed = Object.fromEntries(Object.entries(run.bundle).filter(([key]) => key !== "result_sha256"));
     if (this.dependencies.hashes.hashCanonical(seed) !== run.bundle.result_sha256) throw new CaseAnalysisError("PINNED_RESULT_HASH_MISMATCH");
+    if(run.bundle.ai_release){
+      const envelope=replayCaseAnalysisAiRelease(run.bundle.ai_release);
+      assertCaseAnalysisAiReleaseScope(envelope,run.bundle);
+      const savedInput=run.stages.find(stage=>stage.stage==='input_snapshot')?.payload;
+      if(typeof savedInput!=='object'||savedInput===null||!('source_journal' in savedInput)
+        ||canonicalSha256(savedInput.source_journal)!==canonicalSha256(envelope.binding.source_journal))throw new CaseAnalysisError('AI_RELEASE_REPLAY_JOURNAL_MISMATCH');
+      if(envelope.input.source.case_id!==run.command.case_id
+        ||canonicalSha256(envelope.input.source)!==run.command.document_review_sha256
+        ||envelope.input.assessment_input.current.scope.population!==run.command.population)throw new CaseAnalysisError('AI_RELEASE_REPLAY_COMMAND_MISMATCH');
+    }
     this.dependencies.logs.write({
       event: "replay_completed", case_id: run.bundle.case_id, analysis_run_id: analysisRunId,
       topic: null, status: "byte_identical", sha256: run.bundle.result_sha256,

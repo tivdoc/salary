@@ -56,6 +56,6 @@ export function documentReviewCoverageInventory(input:DocumentReviewInput,checks
    return {topic,calculated_check_ids:selected.filter(c=>c.calculation.state==='calculated').map(c=>c.check_id),
     blocked_check_ids:selected.filter(c=>c.calculation.state!=='calculated').map(c=>c.check_id),
     excluded_check_ids:projection?.excluded_checks.filter(c=>c.topic===topic).map(c=>c.check_id)??[],gap_ids:gaps.map(g=>g.check_id),
-    coverage:selected.length?'partial' as const:'not_evaluated' as const};
+    coverage:selected.length||input.entitlement_composition?.nonmonetary_outcomes?.some(o=>o.topic===topic)?'partial' as const:'not_evaluated' as const};
   }),legal_coverage_complete:false};
 }

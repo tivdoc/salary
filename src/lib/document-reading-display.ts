@@ -9,6 +9,8 @@ export type DocumentReadingDisplay=Readonly<{
  row_context?:Readonly<{group_id:string;label:string;cell:'quantity'|'rate'|'amount'|'percentage'}>;
  /** Missing source information has no existing value that can be confirmed. */
  transcription_context?:Readonly<{kind:'reported_work_hours'|'balance_unit'}>;
+ evidence_context?:Readonly<{value_kind:'iso_date'|'clock_time'|'duration_hhmm'|'decimal'|'money'|'percentage'|'text';can_confirm:boolean;
+  reading_state:'candidate'|'missing'|'unreadable'|'conflict'|'invalid';basis_origin:'system_action_context'}>;
  structure_context?:SourceStructureContext;
  dependent_checks?:readonly string[];
 }>;

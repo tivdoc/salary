@@ -38,7 +38,7 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  const targetIds=input.workdays.filter(d=>d.inventory.value!=='no_work').map(d=>`${input.check_id_prefix}.${d.id}`);
  const add=(fact_key:string,input_path:string,state:WorkingTimeMissing['state'],question:string,kind:WorkingTimeMissing['kind']='fact',sources:DocumentReviewSource[]=[],ids=targetIds,answer_kind:WorkingTimeMissing['answer_kind']='text',options?:string[])=>{
   const pins=[...new Map(sources.filter(s=>s.reading!=='source_research').map(s=>{const p=sourcePin(input,s);return [canonicalSha256(p),p];})).values()];
-  const m:WorkingTimeMissing={fact_key,input_path,state,question,kind,answer_kind,customer_declaration_allowed:kind==='fact'&&/\.(?:classification|kind|no_work_credit)$/u.test(input_path),source_pins:pins,dependent_check_ids:ids,...(options?{options}:{})};
+  const m:WorkingTimeMissing={fact_key,input_path,state,question,kind,answer_kind,customer_declaration_allowed:kind==='fact'&&/\.(?:classification|kind|inventory|no_work_credit)$/u.test(input_path),source_pins:pins,dependent_check_ids:ids,...(options?{options}:{})};
   if(!missing.some(x=>x.fact_key===fact_key&&canonicalSha256(x.dependent_check_ids)===canonicalSha256(ids)))missing.push(m);
  };
  const factGap=<T>(key:string,path:string,f:WorkingTimeSourceFact<T>,question:string,ids=targetIds,options?:string[])=>add(key,path,absentState(f),question,'fact',f.source?[f.source]:[],ids,options?'choice':'text',options);
@@ -61,9 +61,12 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  const views:WorkingDayReading[]=[],traces:TimeReading[]=[],paymentReadyDays=new Set<string>();
  for(const day of sorted){
   const inputIndex=input.workdays.findIndex(d=>d.id===day.id),path=`workdays.${inputIndex}`,ids=[`${input.check_id_prefix}.${day.id}`];
-  if(!usable(day.inventory)||day.inventory.value==='incomplete'){factGap(`wt.inventory.${day.id}`,path+'.inventory',day.inventory,'יש להשלים את כל מקטעי היום הזה, לרבות הפסקות ועבודה נוספת, או לזהות במקור שלא הייתה עבודה.',ids);continue;}
+  if(!usable(day.inventory)||day.inventory.value==='incomplete'){factGap(`wt.inventory.${day.id}`,path+'.inventory',day.inventory,'האם הרישום כולל את כל מקטעי הנוכחות של היום, לרבות הפסקות ועבודה נוספת, או שלא הייתה נוכחות כלל? שלמות הרישום אינה קובעת שכל הנוכחות היא זמן עבודה.',ids,['complete_work','no_work','incomplete']);continue;}
   if(day.inventory.value==='no_work'){
-   if(day.intervals.length)throw Error('WORKING_TIME_NO_WORK_HAS_INTERVALS');
+   if(day.intervals.length){
+    if(day.inventory.state!=='declared')throw Error('WORKING_TIME_NO_WORK_HAS_INTERVALS');
+    add(`wt.inventory_conflict.${day.id}`,path+'.inventory','conflict','התשובה שלא הייתה נוכחות סותרת מקטעי נוכחות שנשמרו במקור. יש ליישב את השיוך ליום לפני חישוב; המקטעים לא נמחקו.','fact',day.intervals.map(i=>i.clock_source),ids,'choice',['complete_work','no_work','incomplete']);continue;
+   }
    if(schedule?.includes(new Date(day.date+'T00:00:00Z').getUTCDay())){
     const credit=day.no_work_credit;
     if(!credit||!usable(credit))factGap(`wt.no_work_credit.${day.id}`,path+'.no_work_credit',credit??{state:'missing',value:null,source:day.inventory.source},'ביום המזוהה ללא עבודה, האם שולם שכר עבור חופשה, מחלה או חג? יש לזהות את סוג ההיעדרות; הוא עשוי להשפיע על המניין השבועי.',targetIds,['no_credit','paid_absence','unknown']);

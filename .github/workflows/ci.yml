@@ -43,6 +43,9 @@ jobs:
       - name: Install from the lockfile
         run: npm ci
 
+      - name: Verify pinned AI generator source build
+        run: node scripts/ai-release-build-manifest.mjs --check
+
       - name: Type check
         run: npx tsc --noEmit -p tsconfig.json
 

@@ -20,11 +20,12 @@ function ScalarDocumentFieldAnswer({request,publicId,onAnswered,correction=false
  const [action,setAction]=useState<Action|null>(initial.action),[raw,setRaw]=useState(initial.raw),[busy,setBusy]=useState(false),[error,setError]=useState(''),[conflict,setConflict]=useState(false);
  const display=request.reading_display;
  const transcription=display?.transcription_context,unitOnly=transcription?.kind==='balance_unit';
- const direct=!!display?.row_context||!!transcription;
- const allowedActions:Action[]=transcription?['correct','unreadable','unknown']:['confirm','correct','unreadable','unknown'];
+ const evidence=display?.evidence_context;
+ const direct=!!display?.row_context||!!transcription||!!evidence;
+ const allowedActions:Action[]=transcription||evidence&&!evidence.can_confirm?['correct','unreadable','unknown']:['confirm','correct','unreadable','unknown'];
  const validAction=action!==null&&allowedActions.includes(action);
  async function submit(draft=false,selected=action){
-  if(!selected||!allowedActions.includes(selected)||selected==='correct'&&(!raw.trim()||unitOnly&&!['days','hours','ימים','שעות'].includes(raw.trim())))return;
+  if(request.source_current===false||!selected||!allowedActions.includes(selected)||selected==='correct'&&(!raw.trim()||unitOnly&&!['days','hours','ימים','שעות'].includes(raw.trim())))return;
   setBusy(true);setError('');setConflict(false);
   const answer={schema_version:'document-field-answer-v2',action:selected,...(selected==='correct'?{corrected_raw_value:raw.trim()}:{})};
   try{
@@ -45,8 +46,9 @@ function ScalarDocumentFieldAnswer({request,publicId,onAnswered,correction=false
    {display.dependent_checks?.length?<p>הקריאה משמשת לבדיקה: {display.dependent_checks.join(' · ')}. הבדיקה תוכל להתעדכן לאחר אימות יתר הנתונים הנדרשים.</p>:null}
   </div>:null}
   {direct?<p>{transcription?'אם המידע אינו מופיע במסמך, בחרו לא יודע. אין להשלים אותו לפי חישוב או הערכה.':'כל פעולה נשמרת לתא הזה בלבד. לתיקון ערך יש להעתיק את התא ולשמור.'}</p>:null}
+  {evidence?<p>{evidence.reading_state==='conflict'?'נשמרו קריאות סותרות; יש להעתיק את הערך מהמקור או להשאיר את הקריאה לא ידועה. ':''}תיקון יישמר כקריאת מקור מזוהה, עם סימון מערכת של פעולת ההעתקה. זה אינו נימוק שהקלדתם ואינו אישור לתנאי הסכם או לזכאות.</p>:null}
   <div role="group" aria-label="תוצאת בדיקת התא" className="option-row">{allowedActions.map(value=><button key={value} type="button" className={action===value?'option-button is-selected':'option-button'} aria-pressed={action===value} disabled={busy||request.source_current===false} onClick={()=>{setAction(value);if(direct&&value!=='correct')void submit(false,value);}}>{transcription&&value==='correct'?(unitOnly?'השלמת היחידה מהמסמך':'העתקת סך השעות מהמסמך'):direct&&value==='confirm'?'אישור הערך בתא ושמירה':labels[value]}</button>)}</div>
-  {action==='correct'?<label className="field"><span>{unitOnly?'היחידה שמופיעה לצד היתרה':transcription?'סך השעות המדווחות שמופיע במסמך':'הערך שמופיע בתא המקור'}</span>{unitOnly?<select value={raw==='ימים'?'days':raw==='שעות'?'hours':raw} disabled={busy||request.source_current===false} onChange={event=>setRaw(event.target.value)} aria-invalid={!!error}><option value="">בחירת היחידה המודפסת</option><option value="days">ימים</option><option value="hours">שעות</option></select>:<input value={raw} maxLength={500} disabled={busy||request.source_current===false} inputMode={transcription?'decimal':undefined} onChange={event=>setRaw(event.target.value)} aria-invalid={!!error}/>}<span>{unitOnly?'משלימים את היחידה בלבד. המספר המקורי אינו משתנה.':transcription?'יש להעתיק את הסך המודפס. שעות מדווחות אינן בהכרח שעות רגילות או שעות בתשלום.':'יש להעתיק את התא עצמו. סכום שחושב בנפרד או הערכה אינם תיקון קריאה.'}</span></label>:null}
+  {action==='correct'?<label className="field"><span>{unitOnly?'היחידה שמופיעה לצד היתרה':transcription?'סך השעות המדווחות שמופיע במסמך':'הערך שמופיע בתא המקור'}</span>{unitOnly?<select value={raw==='ימים'?'days':raw==='שעות'?'hours':raw} disabled={busy||request.source_current===false} onChange={event=>setRaw(event.target.value)} aria-invalid={!!error}><option value="">בחירת היחידה המודפסת</option><option value="days">ימים</option><option value="hours">שעות</option></select>:evidence?.value_kind==='text'?<textarea value={raw} maxLength={500} rows={5} disabled={busy||request.source_current===false} onChange={event=>setRaw(event.target.value)} aria-invalid={!!error}/>:<input value={raw} maxLength={500} disabled={busy||request.source_current===false} inputMode={transcription?'decimal':undefined} onChange={event=>setRaw(event.target.value)} aria-invalid={!!error}/>}<span>{unitOnly?'משלימים את היחידה בלבד. המספר המקורי אינו משתנה.':transcription?'יש להעתיק את הסך המודפס. שעות מדווחות אינן בהכרח שעות רגילות או שעות בתשלום.':'יש להעתיק את התא עצמו. סכום שחושב בנפרד או הערכה אינם תיקון קריאה.'}</span></label>:null}
   {action==='unknown'||action==='unreadable'?<p>המקור והסתירות יישמרו. בדיקות שתלויות בתא הזה יישארו פתוחות; בדיקות עצמאיות יוכלו להמשיך.</p>:null}
   {error?<p role="alert" className="form-error">{error}</p>:null}
   {conflict?<button type="button" onClick={onAnswered}>טעינת המצב שנשמר</button>:null}

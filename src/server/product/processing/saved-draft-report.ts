@@ -1,4 +1,5 @@
 import {renderReviewBundle} from '../reports/document-review-projection';
+import {renderAiReleaseBundle} from '../reports/ai-release-report';
 import {DOCUMENT_REVIEW_RENDER_POLICY} from '../reports/document-review-render-policy';
 import {createHash} from 'node:crypto';
 import {canonicalSha256,canonicalStringify} from '@/engine/rule-runtime/canonical';
@@ -19,6 +20,7 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export class SavedAnalysisDraftBuilder implements ReportBuilderPort {
  async build(bundle:AnalysisResultBundle):Promise<DeterministicReportArtifacts>{
   const reportId=savedAnalysisId('saved-report',bundle.result_sha256);
+  if(bundle.ai_release)return renderAiReleaseBundle(bundle,reportId);
   if(bundle.document_review)return renderReviewBundle(bundle,reportId,{gapPresentation:DOCUMENT_REVIEW_RENDER_POLICY});
   const report=buildCanonicalReport(bundle,reportId);
   const json=Buffer.from(canonicalStringify({schema_version:SAVED_DRAFT_TEMPLATE,publication:'draft',canonical_report:report}));

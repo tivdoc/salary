@@ -29,6 +29,7 @@ function sourceBound(source:DocumentReviewSource,input:PensionEntitlementInput){
  const pins=input.source_manifest.filter(p=>p.document_id===source.document_id&&p.version_id===source.version_id);
  if(pins.length!==1||pins[0].file_sha256!==source.file_sha256||source.page>pins[0].page_count||pins[0].case_id!==input.case_id)throw Error('PENSION_CASE_SOURCE_BINDING');
  if(source.reading==='customer_declaration'&&pins[0].kind!=='customer_answer')throw Error('PENSION_DECLARATION_SOURCE');
+ if(source.reading==='questionnaire_declaration'&&pins[0].kind!=='questionnaire')throw Error('PENSION_DECLARATION_SOURCE');
 }
 function gap(_input:PensionEntitlementInput,key:string,state:string,question:string,ids:readonly string[],path:string,kind:PensionGap['kind']='missing_fact'):PensionGap{
  void _input;
@@ -101,7 +102,7 @@ export function resolvePensionEntitlement(candidate:unknown){
  const lastDay=new Date(Date.UTC(Number(input.period.from.slice(0,4)),Number(input.period.from.slice(5,7)),0)).toISOString().slice(0,10);
  if(input.period.from<PENSION_SOURCE_REVIEW.supported_period.from||input.period.to>PENSION_SOURCE_REVIEW.supported_period.to||input.period.from.slice(8)!=='01'||input.period.to!==lastDay)throw Error('PENSION_SUPPORTED_MONTH_REQUIRED');
  if(new Set(input.recorded.map(r=>r.share)).size!==input.recorded.length)throw Error('PENSION_DUPLICATE_RECORDED_SHARE');
- for(const f of Object.values(input.facts))if(f.source){sourceBound(f.source,input);if(f.basis==='customer_declaration'&&f.source.reading!=='customer_declaration')throw Error('PENSION_FACT_BASIS');}
+ for(const f of Object.values(input.facts))if(f.source){sourceBound(f.source,input);if(f.basis==='customer_declaration'&&!['customer_declaration','questionnaire_declaration'].includes(f.source.reading))throw Error('PENSION_FACT_BASIS');}
  if(input.pensionable_wage){sourceBound(input.pensionable_wage.source,input);money(input.pensionable_wage);}
  if(input.eligible_interval_wage){sourceBound(input.eligible_interval_wage.operand.source,input);money(input.eligible_interval_wage.operand);}
  const resolved=resolvePensionEligibility(input),gaps=[...resolved.gaps],decisions=decisionSet(input);

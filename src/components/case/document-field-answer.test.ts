@@ -12,6 +12,22 @@ const rows:StoredRequest[]=fields.map((cell,i)=>({id:`11111111-1111-4111-8111-11
  reading_display:{question:`תא ${cell}`,field:'row_cell.'+cell,raw_value:i===0?'96.1':i===1?'10.00':'961.00',page:1,text_fragment:'בונוס סינתטי',bounding_box:null,
  row_context:{group_id:'a'.repeat(64),label:'בונוס',cell},dependent_checks:['כמות כפול תעריף מול הסכום בשורה']}}));
 const render=(requests:readonly StoredRequest[])=>renderToStaticMarkup(createElement(ThreadView,{publicId:'TV-SYNTH001',requests,renderedAt:Date.parse('2026-09-11T12:00:00Z')}));
+it.each([true,false])('offers non-payroll cell actions only when the original supports confirmation: %s',canConfirm=>{
+ const {row_context:ignored,...display}=rows[0].reading_display!;void ignored;
+ const request:StoredRequest={...rows[0],reading_display:{...display,field:'document_evidence.entry_time',evidence_context:{value_kind:'clock_time',can_confirm:canConfirm,
+  reading_state:canConfirm?'candidate':'conflict',basis_origin:'system_action_context'}}};
+ const html=render([request]);expect(html.match(/option-button/g)).toHaveLength(canConfirm?4:3);
+ expect(html.includes('אישור הערך בתא ושמירה')).toBe(canConfirm);expect(html).toContain('view=marked');
+ const stale=renderToStaticMarkup(createElement(DocumentFieldAnswer,{request:{...request,source_current:false},publicId:'TV-SYNTH001',onAnswered:()=>{}}));
+ expect(stale.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(canConfirm?4:3);
+});
+it('provides a paragraph correction control while distinguishing system context from user testimony',()=>{
+ const {row_context:ignored,...display}=rows[0].reading_display!;void ignored;
+ const request:StoredRequest={...rows[0],draft_text:JSON.stringify({schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:'סעיף סינתטי מועתק'}),
+  reading_display:{...display,field:'document_evidence.clause_text',evidence_context:{value_kind:'text',can_confirm:true,reading_state:'candidate',basis_origin:'system_action_context'}}};
+ const html=render([request]);expect(html).toContain('<textarea');expect(html).toContain('סעיף סינתטי מועתק');expect(html).not.toContain('confidence');
+ expect(html).toContain('סימון מערכת של פעולת ההעתקה');
+});
 it('opens one protected source for one exact row while retaining three independent cell actions and anchors',()=>{
  const html=render(rows);expect(html.match(/view=marked/g)).toHaveLength(1);
  expect(html.match(/אישור הערך בתא ושמירה/g)).toHaveLength(3);expect(html.match(/הערך בתא שונה/g)).toHaveLength(3);

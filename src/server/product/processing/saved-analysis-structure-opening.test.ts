@@ -78,7 +78,7 @@ it('opens exact source targets after a real saved analysis even when generic com
  expect(opened.filter(t=>t.schema_version==='document-source-relationship-v1')).toHaveLength(2);
  expect(opened.filter(t=>t.schema_version==='document-source-deduction-group-v1')).toHaveLength(1);
  expect(opened.filter(t=>t.schema_version==='document-source-balance-movement-v1')).toHaveLength(5);
- expect(opened.every(t=>t.extraction_result_sha256===f.checkpoint.result_sha256)).toBe(true);
+ expect(opened.every(t=>'extraction_result_sha256' in t&&t.extraction_result_sha256===f.checkpoint.result_sha256)).toBe(true);
  expect(events).not.toContain('review_request_open');
  const retry=await runSavedMonthAnalysis(input);expect(retry.report?.report_sha256).toBe(completed.report?.report_sha256);expect(opened).toHaveLength(8);
 });

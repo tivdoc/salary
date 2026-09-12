@@ -1,0 +1,14 @@
+import {canonicalSha256,deepFreeze} from '../../rule-runtime/canonical.ts';
+import type {DocumentReviewSource} from '../../document-review/calculations.ts';
+export const TRAVEL_SOURCE=deepFreeze({document_id:'il.travel.general.2016',version_id:'IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016@review-20260912',file_sha256:'a38a52224c50e92fef9dcf920b53d697aca42bd923639ded8cc592d5e0c43142',page_count:3,url:'https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-travel-expenses-2016/he/extention-order-travel-expenses-2016.pdf'});
+export const TRAVEL_SOURCE_REVIEW=deepFreeze({schema_version:'travel-general-source-review-v1',reviewed_at:'2026-09-12',reviewer_kind:'ai_source_research',human_attestation:null,real_activation_allowed:false,source:TRAVEL_SOURCE,supported_period:{from:'2026-05-01',to:'2026-07-31'},
+ daily_cap_ils:'22.60',effective_from:'2016-02-01',rounding_candidate:'half_up_per_month',formula:'min(actual_commute_days * min(discounted_relevant_daily_fare, cap), appropriate_discounted_monthly_pass)',
+ one_direction_candidate:'remaining_route_with_half_daily_cap_v1',one_direction_interpretation_requires_explicit_assessment:true,
+ fare_receipt_required:false,actual_commuting_days_required:true,missing_pass_is_not_unavailable:true,exclusions:['sheltered_workplaces','unassessed_better_arrangement','mixed_direction_or_route_regime_without_dated_breakdown']});
+export const TRAVEL_SOURCE_REVIEW_SHA256=canonicalSha256(TRAVEL_SOURCE_REVIEW);
+export const TRAVEL_LEGAL_MANIFEST=deepFreeze([{document_id:TRAVEL_SOURCE.document_id,version_id:TRAVEL_SOURCE.version_id,file_sha256:TRAVEL_SOURCE.file_sha256,page_count:TRAVEL_SOURCE.page_count,kind:'legal_source' as const,case_id:null}]);
+export const TRAVEL_CATALOG=deepFreeze({catalog_id:'il.review.travel.general.2026',catalog_version:'1.0.0',topic:'travel',rule_version:'1.0.0',catalog_boundary:'real_inactive',readiness:'conditional_review_only',interpreter:'executeRuleSpec',supported_period:TRAVEL_SOURCE_REVIEW.supported_period,source_review_sha256:TRAVEL_SOURCE_REVIEW_SHA256,human_attestation:null,real_activation_allowed:false});
+export function travelLegalSource(page:number,locator:string):DocumentReviewSource{
+ if(page<1||page>TRAVEL_SOURCE.page_count)throw Error('TRAVEL_LEGAL_PAGE');return {document_id:TRAVEL_SOURCE.document_id,version_id:TRAVEL_SOURCE.version_id,file_sha256:TRAVEL_SOURCE.file_sha256,page,locator,label:'צו השתתפות בהוצאות נסיעה 2016',reading:'source_research',reading_receipt_sha256:TRAVEL_SOURCE_REVIEW_SHA256};
+}
+export function isPinnedTravelLegalSource(s:DocumentReviewSource){return s.document_id===TRAVEL_SOURCE.document_id&&s.version_id===TRAVEL_SOURCE.version_id&&s.file_sha256===TRAVEL_SOURCE.file_sha256&&s.page>=1&&s.page<=3&&s.reading==='source_research'&&s.reading_receipt_sha256===TRAVEL_SOURCE_REVIEW_SHA256;}

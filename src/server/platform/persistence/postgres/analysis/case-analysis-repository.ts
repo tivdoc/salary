@@ -196,7 +196,8 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
       expected_topics: existing.command.requested_topics,
       source_scope: bundle,
     });
-    await this.repositories.traceFindings.assertFindingsDisabled({
+    if(bundle.ai_release)await this.repositories.traceFindings.persistAiReleaseFindings({bundle});
+    else await this.repositories.traceFindings.assertFindingsDisabled({
       case_id: bundle.case_id,
       analysis_run_id: input.analysis_run_id,
     });

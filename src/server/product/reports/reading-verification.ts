@@ -1,4 +1,6 @@
 import {documentSourceStructureTargetSchema,documentSourceStructureQuestion,validateDocumentSourceStructureAnswer,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from './document-source-structure';
+import {documentEvidenceReadingDisplay,validateDocumentEvidenceAnswer,resolveDocumentEvidenceAnswer} from './document-evidence-reading';
+import type {ImmutableDocument} from '@/engine/domain/documents';
 export {documentFieldAnswerV3Schema,parseDocumentFieldAnswerV3,serializeDocumentFieldAnswerV3,type DocumentFieldAnswerV3} from './document-source-structure';
 import {z} from 'zod';
 import {rawCandidateFieldSchema} from '@/engine/extraction/contracts';
@@ -88,6 +90,10 @@ function transcriptionAnswerValue(target:z.infer<typeof documentSourceTranscript
  * enforce request authorization/currentness, and the worker replays all pins. */
 export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answerInput:unknown) {
  const target=documentReadingTargetSchema.parse(targetInput);
+ if(target.schema_version==='document-evidence-reading-v1'){
+  try{validateDocumentEvidenceAnswer(target,answerInput);return parseDocumentFieldAnswer(answerInput);}
+  catch{throw Error('REQUEST_ANSWER_INVALID');}
+ }
  if('proposed_value' in target)return validateDocumentSourceStructureAnswer(target,answerInput);
  const answer=parseDocumentFieldAnswer(answerInput);
  if(answer.action==='unknown'||answer.action==='unreadable')return answer;
@@ -100,7 +106,7 @@ export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answe
  return answer;
 }
 
-type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown};
+type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string};
 export function resolveDocumentFieldVerification(input:ResolveInput){
  const answer=parseDocumentFieldAnswer(input.answer),target=documentFieldTargetSchema.parse(input.target);
  // Reuse the existing exact checkpoint/case/version/hash/month/policy fences.
@@ -140,6 +146,15 @@ export function materializeDocumentFieldVerification(verification:DocumentFieldV
 
 export function documentFieldVerificationDisplay(input:unknown){
  const parsed=documentReadingTargetSchema.parse(input);
+ if(parsed.schema_version==='document-evidence-reading-v1'){
+  const display=documentEvidenceReadingDisplay(parsed),original=parsed.observation.original;
+  return {question:display.question,field:display.field,raw_value:display.raw_value,
+   source:{version_id:parsed.version_id,source_sha256:parsed.source_sha256,page:display.page,text_fragment:display.text_fragment,
+    region:original.locator,source_scope:null,bounding_box:null},target_sha256:parsed.target_sha256,
+   actions:display.can_confirm?['confirm','correct','unreadable','unknown'] as const:['correct','unreadable','unknown'] as const,
+   scope:'source_cell_reading_only' as const,evidence_context:{value_kind:original.value_kind,can_confirm:display.can_confirm,
+    reading_state:parsed.observation.state,basis_origin:'system_action_context' as const}};
+ }
  if('proposed_value' in parsed)return documentSourceStructureDisplay(parsed);
  if(parsed.schema_version==='document-row-cell-confirmation-v1'){
   const row=parsed.original_component,question=documentRowCellQuestion(parsed);
@@ -217,6 +232,11 @@ function resolveDocumentSourceTranscriptionVerification(input:ResolveInput){
 }
 export function resolveDocumentReadingVerification(input:ResolveInput){
  const target=documentReadingTargetSchema.parse(input.target);
+ if(target.schema_version==='document-evidence-reading-v1'){
+  if(!input.nonPayslipDocument||!input.nonPayslipProductDocumentId)throw Error('DOCUMENT_EVIDENCE_DOCUMENT_CONTEXT_REQUIRED');
+  if(input.policyVersion!==target.policy_version)return {state:'stale' as const};
+  return resolveDocumentEvidenceAnswer({...input,target,checkpoint:input.currentCheckpoint,document:input.nonPayslipDocument,productDocumentId:input.nonPayslipProductDocumentId});
+ }
  if('proposed_value' in target)return resolveDocumentSourceStructureVerification({...input,target});
  if(target.schema_version==='document-field-confirmation-v1')return resolveDocumentFieldVerification({...input,target});
  if(target.schema_version==='document-row-cell-confirmation-v1')return resolveDocumentRowCellVerification({...input,target});
@@ -224,6 +244,10 @@ export function resolveDocumentReadingVerification(input:ResolveInput){
 }
 export type DocumentReadingVerification=ReturnType<typeof resolveDocumentReadingVerification>;
 export function materializeDocumentVerification(verification:DocumentReadingVerification,normalizedExtractionSha256:string){
+ if(verification.state==='current'){
+  if(verification.reading.target.normalized_sha256!==normalizedExtractionSha256)throw Error('DOCUMENT_EVIDENCE_NORMALIZED_SCOPE');
+  return {kind:'document_evidence' as const,reading:verification.reading};
+ }
  if(verification.state!=='confirmed_reading'&&verification.state!=='corrected_reading')return null;
  if('source_structure_subject' in verification)return materializeDocumentSourceStructureVerification(verification,normalizedExtractionSha256);
  if('original_candidate' in verification){

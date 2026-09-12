@@ -100,10 +100,10 @@ function rangeAt<T extends Readonly<{ from_inclusive: number; to_exclusive: numb
 }
 
 const ruleSpecDraftObjectSchema = z.object({
-  schema_version: z.literal("tivdoc-rulespec-v0.6.0"),
+  schema_version: z.enum(["tivdoc-rulespec-v0.6.0","tivdoc-rulespec-v0.6.1"]),
   rule_spec_id: legalOperationsIdSchema,
   rule_spec_version: z.string().regex(/^[1-9]\d*(?:\.\d+){0,2}$/),
-  topic: z.enum(WAVE3_TOPICS),
+  topic: z.enum([...WAVE3_TOPICS,"contract","bonuses"]),
   catalog_boundary: z.enum(["synthetic_test_only", "real_inactive"]),
   source_version_ids: z.array(legalOperationsIdSchema).min(1).readonly(),
   effective_period: z.object({ from: z.iso.date(), to: z.iso.date().nullable() }).strict(),
@@ -118,9 +118,12 @@ const ruleSpecDraftObjectSchema = z.object({
 }).strict().superRefine((value, context) => {
   if (value.effective_period.to !== null && value.effective_period.to < value.effective_period.from) context.addIssue({ code: "custom", message: "rulespec_interval_inverted" });
 });
-const ruleSpecDraftSchema = ruleSpecDraftObjectSchema.readonly();
+const topicVersionFence=(v:{schema_version:string;topic:string},ctx:z.RefinementCtx)=>{
+  if(v.schema_version==='tivdoc-rulespec-v0.6.0'&&(v.topic==='contract'||v.topic==='bonuses'))ctx.addIssue({code:'custom',message:'RULESPEC_TOPIC_REQUIRES_V061'});
+};
+const ruleSpecDraftSchema = ruleSpecDraftObjectSchema.superRefine(topicVersionFence).readonly();
 
-export const ruleSpecPackageSchema = ruleSpecDraftObjectSchema.extend({ content_sha256: legalOperationsSha256Schema }).strict().readonly();
+export const ruleSpecPackageSchema = ruleSpecDraftObjectSchema.extend({ content_sha256: legalOperationsSha256Schema }).strict().superRefine(topicVersionFence).readonly();
 
 export const ruleSpecValueSchema = z.discriminatedUnion("kind", [
   exactRationalSchema,

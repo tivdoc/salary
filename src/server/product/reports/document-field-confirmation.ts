@@ -1,4 +1,7 @@
 import {documentSourceStructureTargetSchema,documentSourceStructureTarget} from './document-source-structure';
+import {documentEvidenceReadingTargetSchema} from '@/engine/extraction/document-evidence/reading';
+import {documentEvidenceTarget} from './document-evidence-reading';
+import type {ImmutableDocument} from '@/engine/domain/documents';
 import {sourceStructureSelector} from '@/engine/extraction/source-structure-resolution';
 import {hasPayslipReadingAnnotations} from '@/engine/extraction/reading-resolution';
 import {documentSourceTranscriptionTargetSchema,documentSourceTranscriptionTarget} from './document-source-transcription';
@@ -90,13 +93,18 @@ export function resolveDocumentFieldReading(input:{target:unknown;currentCheckpo
 }
 
 /** Versioned union for new consumers; scalar v1 constructors and bytes stay intact. */
-export const documentReadingTargetSchema=z.union([documentFieldTargetSchema,documentRowCellTargetSchema,documentSourceScopeTargetSchema,documentSourceTranscriptionTargetSchema,documentSourceStructureTargetSchema]);
+export const documentReadingTargetSchema=z.union([documentFieldTargetSchema,documentRowCellTargetSchema,documentSourceScopeTargetSchema,documentSourceTranscriptionTargetSchema,documentSourceStructureTargetSchema,documentEvidenceReadingTargetSchema]);
 export type DocumentReadingTarget=Readonly<z.infer<typeof documentReadingTargetSchema>>;
 
 /** Reconstruct, do not mutate, from the exact saved checkpoint. Callers compare
  * the returned hash with the original target and retain their source fence. */
-export function documentReadingTargetForCheckpoint(input:{target:unknown;currentCheckpoint:unknown}):DocumentReadingTarget {
+export function documentReadingTargetForCheckpoint(input:{target:unknown;currentCheckpoint:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string}):DocumentReadingTarget {
  const target=documentReadingTargetSchema.parse(input.target),base={checkpoint:input.currentCheckpoint,policyVersion:target.policy_version};
+ if(target.schema_version==='document-evidence-reading-v1'){
+  if(!input.nonPayslipDocument||!input.nonPayslipProductDocumentId)throw Error('DOCUMENT_EVIDENCE_DOCUMENT_CONTEXT_REQUIRED');
+  return documentEvidenceTarget({checkpoint:input.currentCheckpoint,document:input.nonPayslipDocument,productDocumentId:input.nonPayslipProductDocumentId,month:target.month,
+   observationId:target.observation.observation_id});
+ }
  if('proposed_value' in target)return documentSourceStructureTarget({...base,selector:sourceStructureSelector(target.subject)});
  if(target.schema_version==='document-field-confirmation-v1')return documentFieldTarget({...base,candidateId:target.candidate.candidate_id});
  if(target.schema_version==='document-row-cell-confirmation-v1')return documentRowCellTarget({...base,componentId:target.original_component.component_id,cell:target.cell});

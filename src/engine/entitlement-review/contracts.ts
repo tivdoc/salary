@@ -4,7 +4,7 @@ import {canonicalSha256} from '../rule-runtime/canonical.ts';
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict().refine(p=>p.from<=p.to,'ENTITLEMENT_PERIOD');
 export const ENTITLEMENT_REVIEW_POLICY='source-bound-entitlement-review-v1' as const;
-export const entitlementReviewTopicSchema=z.enum(['working_time','rest_day','pension']);
+export const entitlementReviewTopicSchema=z.enum(['minimum_wage','working_time','rest_day','pension','travel','convalescence','vacation','bonuses','contract']);
 
 /** A source packet, not an executable rule or an authorization. Branch-specific
  * parsers validate the two payloads before selection; the saved source journal
@@ -12,9 +12,18 @@ export const entitlementReviewTopicSchema=z.enum(['working_time','rest_day','pen
 export const entitlementEvidenceSchema=z.object({
  schema_version:z.literal('entitlement-source-evidence-v1'),case_id:z.string().min(1),
  order_id:z.string().min(1),receipt_sha256:hash,period,
- working_time:z.unknown().optional(),pension:z.unknown().optional(),
+ working_time:z.unknown().optional(),pension:z.unknown().optional(),travel:z.unknown().optional(),minimum_wage:z.unknown().optional(),vacation:z.unknown().optional(),convalescence:z.unknown().optional(),obligations:z.unknown().optional(),
 }).strict();
 export type EntitlementEvidence=z.infer<typeof entitlementEvidenceSchema>;
+
+export const entitlementNonmonetaryOutcomeSchema=z.object({
+ schema_version:z.literal('entitlement-nonmonetary-outcome-v1'),topic:z.enum(['contract','bonuses']),
+ obligation_id:z.string().min(1),check_ids:z.array(z.string().min(1)).min(1).max(2),
+ state:z.literal('condition_not_fulfilled'),title:z.string().min(1),explanation:z.string().min(1),
+ input_basis:z.enum(['document_reading','customer_declaration']),
+ evidence_sha256:hash,consumed_condition_ids:z.array(z.string().min(1)).min(1),
+ source_pins:z.array(z.object({case_id:z.string().min(1),document_id:z.string().min(1),version_id:z.string().min(1),source_sha256:hash}).strict()).min(1),
+}).strict();
 
 export const entitlementSelectionSchema=z.object({
  topic:entitlementReviewTopicSchema,catalog_id:z.string().min(1),catalog_version:z.string().min(1),
@@ -26,8 +35,9 @@ export const entitlementSelectionSchema=z.object({
 }).strict();
 export const entitlementCompositionSchema=z.object({
  policy_version:z.literal(ENTITLEMENT_REVIEW_POLICY),source_evidence_sha256:hash,evidence:entitlementEvidenceSchema,
- selections:z.array(entitlementSelectionSchema).max(3),
+ selections:z.array(entitlementSelectionSchema).max(9),
  generated_fact_keys:z.array(z.string().min(1)).max(128),
+ nonmonetary_outcomes:z.array(entitlementNonmonetaryOutcomeSchema).max(32).optional(),
  composition_sha256:hash,
 }).strict().superRefine((value,ctx)=>{
  const {composition_sha256,...body}=value;

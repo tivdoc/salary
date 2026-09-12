@@ -1,5 +1,7 @@
 import type { CaseConfirmation } from "../../../../engine/persistence-contracts";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
+import {assertCaseAnalysisAiReleaseScope,replayCaseAnalysisAiRelease} from '../../../../../engine/case-analysis/contracts';
+import type {AnalysisResultBundle} from '../../../../../engine/wave3/contracts';
 import type { SourceCalculationTrace } from "../../../../../engine/calculations/source-trace";
 import {assertJune2026RegularSourceAdmission} from '../../../../../engine/minimum-wage-june2026/regular-service/source-admission';
 import {employmentSnapshotSchema} from '../../../../../engine/facts/snapshot';
@@ -7,7 +9,7 @@ import {ruleInputSnapshotSchema} from '../../../../../engine/wave1/contracts';
 import {WAVE3_TOPICS, type Wave3Topic, type TopicAnalysisResult } from "../../../../../engine/wave3/contracts";
 import { statement, type PostgresTransactionContext } from "../contracts";
 import { mapPostgresAnalysisError, PostgresAnalysisError } from "./errors";
-import { assertSafeIdentifier, assertRequestedTopics, assertSourceTraceScope, validateTopicResult, type SourceTraceScope } from "./validation";
+import { assertSafeIdentifier, assertRequestedTopics, assertSourceTraceScope, decodeBundle, decodeCommand, object, validateTopicResult, type SourceTraceScope } from "./validation";
 
 export class PostgresTraceFindingRepository {
   constructor(
@@ -132,6 +134,72 @@ export class PostgresTraceFindingRepository {
   persistFindingDisabled(input: unknown): never {
     void input;
     throw new PostgresAnalysisError("FINDINGS_DISABLED");
+  }
+
+  /** Records the independently replayed qualified findings from immutable
+   * stages. The RPC reads those stages itself; no caller-supplied finding,
+   * amount, synthetic fact UUID or invented confidence is sent to SQL.
+   * Live enrollment/source/expiry checks remain the RPC's responsibility. */
+  async persistAiReleaseFindings(input: Readonly<{bundle:AnalysisResultBundle}>): Promise<void> {
+    const bundle=decodeBundle(input.bundle,input.bundle.topic_results.map(result=>result.topic));
+    if(!bundle.ai_release)throw new PostgresAnalysisError('FINDINGS_DISABLED');
+    const envelope=replayCaseAnalysisAiRelease(bundle.ai_release);
+    assertCaseAnalysisAiReleaseScope(envelope,bundle);
+    const manifestSha256=canonicalSha256(envelope.result.findings);
+    try {
+      const saved=await this.context.client.query(statement('analysis_ai_finding_stages',
+        `select s.stage, s.payload, s.payload_sha256, ar.command_payload, ar.command_sha256, ar.case_revision::text as case_revision
+           from public.engine_analysis_stage_versions s
+           join public.analysis_runs ar on ar.id=s.analysis_run_id and ar.case_id=s.case_id
+           join public.engine_case_state ecs on ecs.case_id=ar.case_id
+          where s.tenant_id=$1 and ar.tenant_id=$1 and ecs.tenant_id=$1
+            and ar.canonical_analysis_run_id=$2 and ar.canonical_case_id=$3
+            and s.stage in ('input_snapshot','canonical_facts','analysis_run','topic_results')`,
+        [this.tenantId,bundle.analysis_run_id,bundle.case_id]));
+      if(saved.row_count!==4||new Set(saved.rows.map(row=>row.stage)).size!==4
+        ||saved.rows.some(row=>canonicalSha256(row.payload??null)!==row.payload_sha256))
+        throw new PostgresAnalysisError('STAGE_HASH_MISMATCH');
+      const payload=(stage:string)=>{
+        const value=saved.rows.find(row=>row.stage===stage)?.payload;
+        if(typeof value!=='object'||value===null||Array.isArray(value))throw new PostgresAnalysisError('STAGE_HASH_MISMATCH');
+        return value as Record<string,unknown>;
+      };
+      const first=saved.rows[0],command=decodeCommand(first.command_payload);
+      assertRequestedTopics(bundle.topic_results,command.requested_topics);
+      if(saved.rows.some(row=>row.command_sha256!==canonicalSha256(command)
+        ||canonicalSha256(row.command_payload)!==row.command_sha256||row.case_revision!==String(bundle.case_revision))
+        ||command.case_id!==bundle.case_id||command.case_revision!==bundle.case_revision
+        ||command.population!==envelope.input.assessment_input.current.scope.population
+        ||canonicalSha256(command.period)!==canonicalSha256(bundle.period)
+        ||command.document_review_sha256!==canonicalSha256(envelope.input.source))
+        throw new PostgresAnalysisError('STAGE_HASH_MISMATCH');
+      const original=payload('input_snapshot'),facts=payload('canonical_facts'),run=payload('analysis_run');
+      const parsedSnapshot=employmentSnapshotSchema.safeParse(facts.facts);
+      if(!parsedSnapshot.success)throw new PostgresAnalysisError('STAGE_HASH_MISMATCH');
+      const snapshot=parsedSnapshot.data;
+      const dependencies=run.dependencies;
+      if(typeof dependencies!=='object'||dependencies===null||!('facts_snapshot_sha256' in dependencies)
+        ||!('catalog_sha256' in dependencies)||!('code_version' in dependencies)
+        ||dependencies.code_version!=='case-analysis@0.6.8'
+        ||dependencies.facts_snapshot_sha256!==bundle.facts_snapshot_sha256||dependencies.catalog_sha256!==bundle.catalog_sha256
+        ||original.command_sha256!==canonicalSha256(command)
+        ||original.document_review_sha256!==command.document_review_sha256
+        ||canonicalSha256(original.document_review_input)!==command.document_review_sha256
+        ||canonicalSha256(original.source_journal)!==canonicalSha256(envelope.binding.source_journal)
+        ||facts.facts_snapshot_sha256!==bundle.facts_snapshot_sha256
+        ||canonicalSha256(facts.facts)!==bundle.facts_snapshot_sha256
+        ||snapshot.case_id!==bundle.case_id||snapshot.analysis_run_id!==bundle.analysis_run_id
+        ||canonicalSha256(snapshot.facts)!==canonicalSha256(bundle.facts)
+        ||canonicalSha256(payload('topic_results').bundle)!==canonicalSha256(bundle))
+        throw new PostgresAnalysisError('STAGE_HASH_MISMATCH');
+      const response=await this.context.client.query(statement('analysis_ai_findings_record',
+        `select private.ai_release_findings_record($1,$2,$3) as result`,
+        [bundle.analysis_run_id,bundle.result_sha256,envelope.sha256]));
+      if(response.row_count!==1)throw new PostgresAnalysisError('IMMUTABLE_COMPLETED_RUN_MISMATCH');
+      const receipt=object(response.rows[0]?.result,['finding_count','manifest_sha256']);
+      if(receipt.finding_count!==envelope.result.findings.length||receipt.manifest_sha256!==manifestSha256)
+        throw new PostgresAnalysisError('IMMUTABLE_COMPLETED_RUN_MISMATCH');
+    }catch(error){mapPostgresAnalysisError(error,'IMMUTABLE_COMPLETED_RUN_MISMATCH');}
   }
 
   async assertFindingsDisabled(input: Readonly<{ case_id: string; analysis_run_id: string }>): Promise<void> {

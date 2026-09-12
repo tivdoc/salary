@@ -11,6 +11,7 @@ export const sourceJobSchema = z.object({
  // Absent on historical jobs. A server-owned dependency changes the queue
  // identity without modifying the immutable source revision or an older job.
  authority_dependency_sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+ processing_profile:z.literal('qualified_ai_v1').optional(),
 }).strict();
 export type SourceJob = z.infer<typeof sourceJobSchema>;
 /** Must share the caller's canonical transaction, including tenant/session RLS
@@ -20,7 +21,7 @@ export async function dispatchCaseInput(context:PostgresTransactionContext, inpu
  z.uuid().parse(input.caseId);
  if(input.mode==='live'&&!input.liveEnabled)throw new Error('LIVE_PROCESSING_DISABLED');
  const selected=await context.client.query(statement('source_dispatch_select',
-  `select d.revision,v.input_sha256,d.authority_dependency_sha256 from private.case_analysis_dispatch d
+  `select d.revision,v.input_sha256,d.authority_dependency_sha256,d.processing_profile from private.case_analysis_dispatch d
    join private.case_input_versions v using(case_id,revision)
    join private.case_input_heads h on h.case_id=d.case_id and h.revision=d.revision
    where d.case_id=$1::uuid and d.mode=$2 and d.job_id is null
@@ -28,7 +29,8 @@ export async function dispatchCaseInput(context:PostgresTransactionContext, inpu
  if(selected.rows.length===0)return null;
  const row=selected.rows[0];
  const payload=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:input.caseId,revision:row.revision,input_sha256:row.input_sha256,mode:input.mode,
-  ...(row.authority_dependency_sha256==null?{}:{authority_dependency_sha256:row.authority_dependency_sha256})});
+  ...(row.authority_dependency_sha256==null?{}:{authority_dependency_sha256:row.authority_dependency_sha256}),
+  ...(row.processing_profile==null?{}:{processing_profile:row.processing_profile})});
  const hash=canonicalSha256(payload);
  const queue=new PostgresJobsOutboxAuditRepository(context,input.tenantId,input.caseId);
  const job=await queue.enqueue({job_id:`saved_${hash}`,tenant_id:input.tenantId,case_id:input.caseId,
@@ -46,10 +48,10 @@ export async function lockCurrentSource(context:PostgresTransactionContext, cand
  const job=sourceJobSchema.parse(candidate);
  await context.client.query(statement('source_case_lock','select id from public.cases where id=$1::uuid for update',[job.case_id]));
  const selected=await context.client.query(statement('source_revision_check',
-  `select h.revision,h.input_sha256,d.authority_dependency_sha256 from private.case_input_heads h
+  `select h.revision,h.input_sha256,d.authority_dependency_sha256,d.processing_profile from private.case_input_heads h
    left join private.case_analysis_dispatch d on d.case_id=h.case_id and d.revision=h.revision and d.mode=$2
    where h.case_id=$1::uuid`,[job.case_id,job.mode]));
  const row=selected.rows[0];
  if(!row||row.revision!==job.revision||row.input_sha256!==job.input_sha256)throw new Error('ANALYSIS_INPUT_SUPERSEDED');
- if((row.authority_dependency_sha256??null)!==(job.authority_dependency_sha256??null))throw new Error('ANALYSIS_AUTHORITY_SUPERSEDED');
+ if((row.authority_dependency_sha256??null)!==(job.authority_dependency_sha256??null)||(row.processing_profile??null)!==(job.processing_profile??null))throw new Error('ANALYSIS_AUTHORITY_SUPERSEDED');
 }

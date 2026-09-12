@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 
 import {
   CASE_ANALYSIS_STAGES,
+  replayCaseAnalysisAiRelease,
+  assertCaseAnalysisAiReleaseScope,
   type CaseAnalysisStage,
   type PinnedAnalysisDependencies,
 } from "../../../../../engine/case-analysis/contracts";
@@ -336,7 +338,7 @@ export function decodeDependencies(value: unknown): PinnedAnalysisDependencies {
     "parameter_version_ids", "rule_spec_versions", "code_version", "template_version",
   ]);
   for (const hash of [row.extraction_snapshot_sha256, row.facts_snapshot_sha256, row.catalog_sha256]) assertSha256(hash);
-  if (row.code_version !== "case-analysis@0.6.0" && row.code_version !== "case-analysis@0.6.1" && row.code_version !== "case-analysis@0.6.2" && row.code_version !== "case-analysis@0.6.3" && row.code_version !== "case-analysis@0.6.4" && row.code_version !== "case-analysis@0.6.5" && row.code_version !== "case-analysis@0.6.6" && row.code_version !== "case-analysis@0.6.7") throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
+  if (row.code_version !== "case-analysis@0.6.0" && row.code_version !== "case-analysis@0.6.1" && row.code_version !== "case-analysis@0.6.2" && row.code_version !== "case-analysis@0.6.3" && row.code_version !== "case-analysis@0.6.4" && row.code_version !== "case-analysis@0.6.5" && row.code_version !== "case-analysis@0.6.6" && row.code_version !== "case-analysis@0.6.7" && row.code_version !== "case-analysis@0.6.8") throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
   return Object.freeze({
     extraction_snapshot_sha256: sha256(row.extraction_snapshot_sha256),
     facts_snapshot_sha256: sha256(row.facts_snapshot_sha256),
@@ -397,11 +399,12 @@ export function validateTopicResult(value: unknown): TopicAnalysisResult {
 
 export function decodeBundle(value: unknown, expectedTopics: readonly Wave3Topic[] = WAVE3_TOPICS): AnalysisResultBundle {
   const parsed=parseJson(value),hasReview=typeof parsed==='object'&&parsed!==null&&Object.prototype.hasOwnProperty.call(parsed,'document_review');
+  const hasAi=typeof parsed==='object'&&parsed!==null&&Object.prototype.hasOwnProperty.call(parsed,'ai_release');
   const row = object(parsed, [
     "schema_version", "analysis_run_id", "case_id", "case_revision", "period", "as_of",
     "document_snapshot_sha256", "extraction_snapshot_sha256", "declared_fact_snapshot_sha256",
     "facts_snapshot_sha256", "facts", "rule_inputs", "catalog_sha256", "topic_results",
-    "known_subtotal", "coverage_complete", "result_sha256",...(hasReview?["document_review"]:[]),
+    "known_subtotal", "coverage_complete", "result_sha256",...(hasReview?["document_review"]:[]),...(hasAi?['ai_release']:[]),
   ]);
   if (row.schema_version !== "tivdoc-analysis-result-bundle-v0.6.0") {
     throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
@@ -420,6 +423,7 @@ export function decodeBundle(value: unknown, expectedTopics: readonly Wave3Topic
   const review=hasReview?replayDocumentReview(row.document_review):undefined;
   if(review&&(review.case_id!==row.case_id||review.analysis_run_id!==row.analysis_run_id||review.period.from!==period.start_date||review.period.to!==period.end_date))throw new PostgresAnalysisError('ANALYSIS_ROW_MALFORMED');
   const decoded = {
+    ...(hasAi?{ai_release:decodeAiRelease(row.ai_release)}:{}),
     ...(review?{document_review:review}:{}),
     schema_version: row.schema_version,
     analysis_run_id: string(row.analysis_run_id),
@@ -450,9 +454,18 @@ export function decodeBundle(value: unknown, expectedTopics: readonly Wave3Topic
     result_sha256: sha256(row.result_sha256),
   } satisfies AnalysisResultBundle;
   for (const result of decoded.topic_results) assertSourceTraceScope(result, decoded);
+  if(decoded.ai_release){
+    try{assertCaseAnalysisAiReleaseScope(decoded.ai_release,decoded);}
+    catch{throw new PostgresAnalysisError('ANALYSIS_ROW_MALFORMED');}
+  }
   const seed = Object.fromEntries(Object.entries(decoded).filter(([key]) => key !== "result_sha256"));
   if (canonicalSha256(seed) !== decoded.result_sha256) throw new PostgresAnalysisError("ANALYSIS_ROW_MALFORMED");
   return Object.freeze(decoded);
+}
+
+function decodeAiRelease(value:unknown){
+  try{return replayCaseAnalysisAiRelease(value);}
+  catch{throw new PostgresAnalysisError('ANALYSIS_ROW_MALFORMED');}
 }
 
 export type SourceTraceScope = Pick<AnalysisResultBundle,

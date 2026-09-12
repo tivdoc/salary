@@ -1,3 +1,4 @@
+import {runSavedWorkerDocumentEvidence} from './saved-document-evidence-worker';
 import {savedDocumentReviewSourceScope} from './saved-document-review';
 import {loadJune2026TestAuthority} from './saved-june2026-test-authority';
 import {loadSavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
@@ -50,9 +51,9 @@ async function admit(context:PostgresTransactionContext,input:Lease){
  return {job,completed:locked.state==='succeeded'};
 }
 
-async function plan(context:PostgresTransactionContext,input:Lease){
+async function plan(context:PostgresTransactionContext,input:Lease,documentEvidenceEnabled=false){
  const admitted=await admit(context,input);
- if(admitted.completed)return {...admitted,months:[],versions:[]};
+ if(admitted.completed)return {...admitted,months:[],versions:[],evidenceVersions:[]};
  const orders=await readSavedOrders(context,admitted.job);
  const months=orders.flatMap(order=>purchasedMonths(order).map(month=>({orderId:order.id,month})));
  const result=await context.client.query(statement('saved_runner_journal',
@@ -83,7 +84,7 @@ async function plan(context:PostgresTransactionContext,input:Lease){
  // A missing financial source is an input to the normal document review, not
  // permission to drop a purchased month. Only existing payslips enter OCR; the
  // monthly service persists source requests and a partial review for the rest.
- return {...admitted,months,versions:extractionDocuments.map(d=>d.version_id).sort()};
+ return {...admitted,months,versions:extractionDocuments.map(d=>d.version_id).sort(),evidenceVersions:documentEvidenceEnabled?journal.documents.filter(d=>d.type==='attendance'||d.type==='contract').map(d=>d.version_id).sort():[]};
 }
 
 /** Database time is the authority. A delayed pulse cannot resurrect an expired,
@@ -113,6 +114,7 @@ async function renew(context:PostgresTransactionContext,input:Lease,leaseMs:numb
 export async function runSavedDraftJob(input:Lease&{
  transactions:SavedWorkerTransactions;storage:ExtractionInput['storage'];
  providerEnabled:boolean;receiptOnly?:boolean;extractor?:ExtractionInput['extractor'];signal?:AbortSignal;
+ documentEvidence?:{extractor?:Parameters<typeof runSavedWorkerDocumentEvidence>[0]['extractor']};
  promptDerivationAudit?:ExtractionInput['promptDerivationAudit'];
  heartbeat?:{intervalMs:number;leaseMs:number};
  onMonth?:SavedMonthCompletion;
@@ -134,11 +136,23 @@ export async function runSavedDraftJob(input:Lease&{
  },timing.intervalMs);};
  const stop=async()=>{stopped=true;if(timer)clearTimeout(timer);await pulse;};
  try{
-  healthy();const saved=await transactions(context=>plan(context,input));
+  healthy();const saved=await transactions(context=>plan(context,input,input.documentEvidence!==undefined));
   if(saved.completed)return {completion:await transactions(context=>completeSavedDraftJob({...input,context})),extractedVersions:0,analyzedMonths:0};
   await transactions(context=>renew(context,input,timing.leaseMs));schedule();
   for(const versionId of saved.versions){
    healthy();await runSavedWorkerExtraction({...input,transactions,versionId});healthy();
+  }
+  const deferredEvidence:{versionId:string;code:string}[]=[];
+  for(const versionId of saved.evidenceVersions){
+   healthy();
+   try{await runSavedWorkerDocumentEvidence({...input,transactions,versionId,extractor:input.documentEvidence?.extractor});}
+   catch(error){
+    // Preserve an uncertain dispatch/spend hold, but still assess independent
+    // payslip branches. Source/lease/auth failures always abort the transaction.
+    if(!(error instanceof Error)||!['SAVED_EXTRACTION_OUTCOME_PENDING','DOCUMENT_EVIDENCE_PROVIDER_UNCONFIGURED','SAVED_EXTRACTION_RECEIPT_REQUIRED'].includes(error.message))throw error;
+    deferredEvidence.push({versionId,code:error.message});
+   }
+   healthy();
   }
   for(const scope of saved.months){
    healthy();await transactions(async context=>{
@@ -162,6 +176,6 @@ export async function runSavedDraftJob(input:Lease&{
   // facts or any financial entitlement. No receipt is synthesized by this runner.
   await transactions(context=>renew(context,input,timing.leaseMs));
   const completion=await transactions(context=>completeSavedDraftJob({...input,context}));
-  return {completion,extractedVersions:saved.versions.length,analyzedMonths:saved.months.length};
+  return {completion,extractedVersions:saved.versions.length,analyzedMonths:saved.months.length,...(deferredEvidence.length?{deferredEvidence}:{})};
  }finally{await stop();}
 }

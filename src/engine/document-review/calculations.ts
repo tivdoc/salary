@@ -10,7 +10,7 @@ const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict();
 const state=z.enum(['observed','declared','missing','unknown','conflict','unreadable','stale','expired']);
 const sourceSchema=z.object({document_id:contextId,version_id:contextId,file_sha256:hash,page:z.number().int().positive(),
  locator:z.string().min(1).max(500),label:z.string().min(1).max(300),
- reading:z.enum(['ai_document_review','provider_extraction','identified_document_reading','customer_declaration','source_research']),reading_receipt_sha256:hash,
+ reading:z.enum(['ai_document_review','provider_extraction','identified_document_reading','customer_declaration','questionnaire_declaration','source_research']),reading_receipt_sha256:hash,
 }).strict();
 const operandSchema=z.object({id,observation_id:contextId,state,printed_value:z.string().max(100).nullable(),
  representation:z.enum(['money_ils','decimal_quantity','hours_minutes','percent','integer','boolean']),
@@ -57,10 +57,11 @@ export const documentReviewCalculationInputSchema=z.object({
  schema_version:z.literal('document-review-calculation-input-v1'),case_id:contextId,run_id:contextId,check_id:id,period,
  evaluated_at:z.iso.datetime(),
  source_manifest:z.array(z.object({document_id:contextId,version_id:contextId,file_sha256:hash,page_count:z.number().int().positive(),
-   kind:z.enum(['case_document','customer_answer','legal_source']),case_id:contextId.nullable(),
+   kind:z.enum(['case_document','customer_answer','questionnaire','legal_source']),case_id:contextId.nullable(),
  }).strict()).min(1).max(64),
  operands:z.array(operandSchema).min(1).max(64),
  source_structure:documentReviewSourceStructureSchema.optional(),
+ input_basis_policy:z.literal('all-consumed-citations-v2').optional(),
  operation:z.discriminatedUnion('kind',[productSchema,reconciliationSchema,observedRatioSchema,comparisonSchema,candidateSchema]),
  remittance_status:z.enum(['not_assessed','missing','unverified','confirmed']).default('not_assessed'),
 }).strict();
@@ -126,7 +127,7 @@ function assertSource(source:DocumentReviewSource,input:DocumentReviewCalculatio
  if(manifest.length!==1||manifest[0].file_sha256!==source.file_sha256||source.page>manifest[0].page_count)throw Error('DOCUMENT_REVIEW_SOURCE_BINDING');
  const document=manifest[0];
  if(document.kind==='legal_source'?document.case_id!==null:document.case_id!==input.case_id)throw Error('DOCUMENT_REVIEW_FOREIGN_CASE');
- if(source.reading==='customer_declaration'&&document.kind!=='customer_answer')throw Error('DOCUMENT_REVIEW_DECLARATION_SOURCE');
+ if(source.reading==='customer_declaration'&&document.kind!=='customer_answer'||source.reading==='questionnaire_declaration'&&document.kind!=='questionnaire')throw Error('DOCUMENT_REVIEW_DECLARATION_SOURCE');
 }
 function validate(input:DocumentReviewCalculationInput){
  validateReviewSourceStructure(input);
@@ -140,8 +141,8 @@ function validate(input:DocumentReviewCalculationInput){
   assertSource(operand.source,input);
   if(['observed','declared'].includes(operand.state)&&operand.printed_value===null)throw Error('DOCUMENT_REVIEW_OBSERVATION_REQUIRED');
   const manifest=input.source_manifest.find(d=>d.document_id===operand.source.document_id&&d.version_id===operand.source.version_id)!;
-  if(operand.state==='declared'&&(operand.source.reading!=='customer_declaration'||manifest.kind!=='customer_answer'))throw Error('DOCUMENT_REVIEW_DECLARED_SOURCE');
-  if(operand.state==='observed'&&(operand.source.reading==='customer_declaration'||manifest.kind==='customer_answer'))throw Error('DOCUMENT_REVIEW_DECLARATION_NOT_DOCUMENT');
+  if(operand.state==='declared'&&!(operand.source.reading==='customer_declaration'&&manifest.kind==='customer_answer'||operand.source.reading==='questionnaire_declaration'&&manifest.kind==='questionnaire'))throw Error('DOCUMENT_REVIEW_DECLARED_SOURCE');
+  if(operand.state==='observed'&&(['customer_declaration','questionnaire_declaration'].includes(operand.source.reading)||['customer_answer','questionnaire'].includes(manifest.kind)))throw Error('DOCUMENT_REVIEW_DECLARATION_NOT_DOCUMENT');
  }
  if(input.operation.kind==='candidate_rule'){
   const op=input.operation;
@@ -224,7 +225,7 @@ export function calculateDocumentReview(candidate:unknown){
  const dependency_fingerprint=canonicalSha256({policy:DOCUMENT_REVIEW_CALCULATION_POLICY,dependencies,gate_outcomes:blocked});
  const common={schema_version:'document-review-calculation-receipt-v1' as const,policy:DOCUMENT_REVIEW_CALCULATION_POLICY,input,
   dependency_fingerprint,claim:op.kind==='candidate_rule'?'conditional_entitlement_candidate':op.kind==='observed_ratio'?'observed_ratio':'document_arithmetic',
-  remittance_status:input.remittance_status,input_basis:input.operands.some(o=>o.source.reading==='customer_declaration')?'includes_customer_declaration':'document_only',legal_requirement_status:op.kind==='candidate_rule'?'conditional_not_real_approval':'not_determined',
+  remittance_status:input.remittance_status,input_basis:(input.input_basis_policy==='all-consumed-citations-v2'?usedSources.some(s=>['customer_declaration','questionnaire_declaration'].includes(s.reading)):input.operands.some(o=>o.source.reading==='customer_declaration'))?'includes_customer_declaration':'document_only',legal_requirement_status:op.kind==='candidate_rule'?'conditional_not_real_approval':'not_determined',
   human_attestation:null,real_activation_allowed:false,
   ...(input.source_structure?{source_structure_qualification:{kind:input.source_structure.kind,legal_entitlement_assessed:false as const,
    ...(input.source_structure.kind==='balance_movement'?{unit:input.operands.find(o=>o.state==='observed')?.quantity_unit??null,group_sha256:balanceStructureGroupSha256(input.source_structure)}:{})}}:{}),
