@@ -5,6 +5,7 @@ import path from 'node:path';
 import pg from 'pg';
 import {z} from 'zod';
 import {lifecyclePreview} from './dev-preview-receipt.mjs';
+import {ensureBackgroundLauncher} from './windows-background-launcher.mjs';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca';
 import {canonicalSha256} from '../../src/engine/rule-runtime/canonical';
 import {createRegularServiceTrustFixture} from '../../src/engine/minimum-wage-june2026/regular-service/regular-service.test-fixtures';
@@ -166,7 +167,8 @@ function currentLiveEpoch(c:z.infer<typeof configV2Schema>,raw:unknown,environme
 }
 function task(command:'start'|'disable'|'status'|'prepare',c:Config,launcher:string){
  const escaped=(v:string)=>"'"+v.replaceAll("'","''")+"'";
- const script=command==='prepare'?`$action=New-ScheduledTaskAction -Execute 'powershell.exe' -Argument ${escaped('-NoProfile -NonInteractive -WindowStyle Hidden -File "'+launcher+'"')}; $trigger=New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(15) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Seconds ${Math.max(1,Math.floor((Date.parse(c.expiresAt)-Date.now())/1000))}); $settings=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 10); Register-ScheduledTask -TaskName ${escaped(c.taskName)} -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null; Disable-ScheduledTask -TaskName ${escaped(c.taskName)} | Out-Null`:
+ const guiLauncher=command==='prepare'?ensureBackgroundLauncher(launcher):null;
+ const script=command==='prepare'?`$action=New-ScheduledTaskAction -Execute (Join-Path $env:SystemRoot 'System32\\wscript.exe') -Argument ${escaped('//B //NoLogo "'+guiLauncher+'"')}; $trigger=New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(15) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Seconds ${Math.max(1,Math.floor((Date.parse(c.expiresAt)-Date.now())/1000))}); $settings=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 10); Register-ScheduledTask -TaskName ${escaped(c.taskName)} -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null; Disable-ScheduledTask -TaskName ${escaped(c.taskName)} | Out-Null`:
  command==='start'?`Enable-ScheduledTask -TaskName ${escaped(c.taskName)} | Out-Null; Start-ScheduledTask -TaskName ${escaped(c.taskName)}`:
  command==='disable'?`Disable-ScheduledTask -TaskName ${escaped(c.taskName)} | Out-Null`:
  `$t=Get-ScheduledTask -TaskName ${escaped(c.taskName)} -ErrorAction SilentlyContinue; if($t){$i=Get-ScheduledTaskInfo -TaskName ${escaped(c.taskName)}; @{state=[string]$t.State;lastResult=$i.LastTaskResult;lastRun=$i.LastRunTime.ToUniversalTime().ToString('o')} | ConvertTo-Json -Compress}else{'{"state":"absent"}'}`;
