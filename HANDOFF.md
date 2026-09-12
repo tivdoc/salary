@@ -1,3 +1,9 @@
+## CI environment preparation repair — 2026-09-12
+
+Both c7e8643 CI runs failed three assertions in two suites: the migration inventory still expected189 after schema190 was added, and two lifecycle tests assumed a local private-parent directory existed on the clean Linux runner. This checkpoint updates the exact migration inventory and creates each synthetic fixture parent recursively. It does not change runtime guards, provider limits, source reviews or schema190. Local focused checks passed; required CI for this commit follows.
+
+The separate source-intake integration remains uncommitted work in progress. It is not part of this narrow CI checkpoint or a release-ready claim. The frozen c7 built application and scheduled DEV receipts retain their original build identity. Production and the parallel UI remain untouched.
+
 ## Bounded live lifecycle, safe shutdown and source-correct calculation — 2026-09-12
 
 Integration from e6fe213 preserves all existing work. Source locator corrections are additive descendants, including the explicit working-time protected-break policy. The automatic saved profile creates missing break-kind slots and consumes identified answers through ordinary replay. Ordinary meal/rest breaks are distinguished from toilet and agreed brief refreshment breaks; unsupported or ambiguous facts remain blocked only where consumed. Historical defaults and recipe bytes remain unchanged. Fresh source/interpretation review is AI-authored and separately disclosed; it is not a human signature or REAL service activation.

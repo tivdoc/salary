@@ -75,7 +75,7 @@ describe('versioned lifecycle live permit',()=>{
  });
  it.each(['authority','notifications-resume'])('refuses %s in the actual command before any DB connection',async command=>{
   vi.stubEnv('VERCEL','');vi.stubEnv('VERCEL_ENV','');vi.stubEnv('NODE_ENV','development');
-  const c=config(),directory=path.join(root,'synthetic-lifecycle-live-'+randomUUID());mkdirSync(directory);cleanup.push(directory);
+  const c=config(),directory=path.join(root,'synthetic-lifecycle-live-'+randomUUID());mkdirSync(directory,{recursive:true});cleanup.push(directory);
   const file=path.join(directory,'config.json');writeFileSync(file,JSON.stringify(c));
   await expect(main([command,file,randomUUID()])).rejects.toThrow('DEV_LIVE_COMMAND_FORBIDDEN');expect(db.construct).not.toHaveBeenCalled();
  });
