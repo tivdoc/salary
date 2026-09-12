@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
-import {SHARED_PERSONAL_FACTS_POLICY,sharedPersonalFactsManifestSchema} from './shared-product-fact-contracts.ts';
+import {sharedPersonalFactsPolicySchema,sharedPersonalFactsManifestSchema} from './shared-product-fact-contracts.ts';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict().refine(p=>p.from<=p.to,'ENTITLEMENT_PERIOD');
@@ -13,7 +13,7 @@ export const entitlementReviewTopicSchema=z.enum(['minimum_wage','working_time',
 export const entitlementEvidenceSchema=z.object({
  schema_version:z.literal('entitlement-source-evidence-v1'),case_id:z.string().min(1),
  order_id:z.string().min(1),receipt_sha256:hash,period,
- shared_personal_facts_policy:z.literal(SHARED_PERSONAL_FACTS_POLICY).optional(),
+ shared_personal_facts_policy:sharedPersonalFactsPolicySchema.optional(),
  working_time:z.unknown().optional(),pension:z.unknown().optional(),travel:z.unknown().optional(),minimum_wage:z.unknown().optional(),vacation:z.unknown().optional(),convalescence:z.unknown().optional(),obligations:z.unknown().optional(),
 }).strict();
 export type EntitlementEvidence=z.infer<typeof entitlementEvidenceSchema>;

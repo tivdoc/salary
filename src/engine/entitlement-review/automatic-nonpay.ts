@@ -8,6 +8,7 @@ import type {NormalizedDocumentEvidence,DocumentEvidenceValue} from '../extracti
 import {workingTimeEntitlementInputSchema,type WorkingTimeEntitlementInput,type WorkingTimeWorkday} from './working-time/index.ts';
 import {obligationsEntitlementInputSchema,obligationTextSha256,type ExplicitObligation} from './obligations/index.ts';
 import {normalizeMoney} from '../extraction/normalization.ts';
+import {workingTimePayrollRate} from './working-time/payroll-rate.ts';
 
 export const AUTOMATIC_NONPAY_EVIDENCE_POLICY='automatic-nonpay-source-evidence-v1' as const;
 type Observation=NormalizedDocumentEvidence['observations'][number];
@@ -193,12 +194,18 @@ export function attachAutomaticNonPayslipEvidence(candidate:DocumentReviewInput,
  const weeks=new Map<string,WorkingTimeWorkday[]>();
  for(const day of [...days.values()].sort((a,b)=>a.date.localeCompare(b.date))){const key=sunday(day.date);weeks.set(key,[...(weeks.get(key)??[]),day]);}
  const payloads:WorkingTimeEntitlementInput[]=[];
+ const payrollRate=weeks.size?workingTimePayrollRate(input,snapshot):null;
+ if(payrollRate&&!manifest.some(m=>m.document_id===payrollRate.source.document_id&&m.version_id===payrollRate.source.version_id)){
+  const document=input.documents.find(d=>d.document_id===payrollRate.source.document_id&&d.version_id===payrollRate.source.version_id)!;
+  if(document.page_count===null)throw Error('WORKING_RATE_PAGE_COUNT');
+  manifest.push({document_id:document.document_id,version_id:document.version_id,file_sha256:document.file_sha256,page_count:document.page_count,kind:'case_document',case_id:input.case_id});
+ }
  for(const [week,workdays]of weeks){
   if(workdays.reduce((n,d)=>n+d.intervals.length,0)>14)throw Error('AUTOMATIC_NONPAY_WEEK_INTERVAL_BOUND');
   const anchor=workdays[0].inventory.source!;
-  payloads.push(workingTimeEntitlementInputSchema.parse({schema_version:'working-time-entitlement-input-v1',catalog_version:'1.0.0',case_id:input.case_id,run_id:'automatic.source.selection',check_id_prefix:'entitlement.working.'+week.replaceAll('-',''),period:input.period,
+  payloads.push(workingTimeEntitlementInputSchema.parse({schema_version:'working-time-entitlement-input-v1',catalog_version:'1.0.0',calculation_policy:'working-time-separated-expected-v2',case_id:input.case_id,run_id:'automatic.source.selection',check_id_prefix:'entitlement.working.'+week.replaceAll('-',''),period:input.period,
    evaluated_at:new Date([...timestamps].sort().at(-1)!).toISOString(),source_manifest:manifest,week_start:week,week_inventory:missing,workdays,arrangement:missing,scheduled_weekdays:missing,rest_window:missing,
-   regular_hourly_wage:{id:'regular.wage',observation_id:'unassigned.regular.wage',state:'missing',printed_value:null,representation:'money_ils',quantity_unit:null,precision:'source_exact',source:anchor},applicability:[],mode:'source_classified'}));
+   regular_hourly_wage:payrollRate??{id:'regular.wage',observation_id:'unassigned.regular.wage',state:'missing',printed_value:null,representation:'money_ils',quantity_unit:null,precision:'source_exact',source:anchor},applicability:[],mode:'source_classified'}));
  }
  if(payloads.length>6)throw Error('AUTOMATIC_NONPAY_WEEK_BOUND');
  const packet=input.entitlement_evidence??{schema_version:'entitlement-source-evidence-v1' as const,case_id:input.case_id,order_id:input.purchased_scope.order_id,receipt_sha256:input.purchased_scope.receipt_sha256,period:input.period};

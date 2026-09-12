@@ -36,7 +36,7 @@ function answeredEvidence(input:DocumentReviewInput,original:EntitlementEvidence
   if(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==r.answer_sha256)continue;
   const decoded=r.state==='provided'?reviewDeclaredAnswerValue(h.request.target,r.value):null;
   const fact=factAt(packet,target),known=r.state==='provided'&&!admitted.blocked&&decoded!==null;
-  const personalPension=target.branch==='pension'&&target.input_path.startsWith('product_facts.');
+  const personalPension=['pension','travel'].includes(target.branch)&&target.input_path.startsWith('product_facts.');
   fact.state=known?(['working_time','minimum_wage','convalescence'].includes(target.branch)||personalPension?'declared':'known'):r.state==='conflicted'||admitted.state==='provided'&&admitted.blocked?'conflict':'unknown';
   fact.value=known?(target.value_kind==='date_or_ongoing'&&decoded==='העבודה נמשכת'?'ongoing':decoded):null;
   fact.source={document_id:r.request_id,version_id:`${r.request_id}:${r.answer_revision}`,file_sha256:r.answer_sha256,page:1,locator:target.fact_key,label:h.request.target.question,reading:'customer_declaration',reading_receipt_sha256:r.answer_sha256};

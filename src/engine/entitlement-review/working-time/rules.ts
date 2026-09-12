@@ -7,7 +7,7 @@ import {WORKING_TIME_CATALOG,WORKING_TIME_PINNED_LEGAL_DOCUMENTS,workingTimeLega
 
 export type WorkingDayReading={day:WorkingTimeWorkday;readings:TimeReading[];sevenHourDay:boolean;noWork:boolean};
 type Candidate=Extract<DocumentReviewCalculationInput['operation'],{kind:'candidate_rule'}>;
-export function buildWorkingTimeRule(input:WorkingTimeEntitlementInput,current:WorkingDayReading,prior:WorkingDayReading[],weekly:boolean,restKnown:boolean,decisions:WorkingTimeDecision[]){
+export function buildWorkingTimeRule(input:WorkingTimeEntitlementInput,current:WorkingDayReading,prior:WorkingDayReading[],weekly:boolean,restKnown:boolean,decisions:WorkingTimeDecision[],comparison=true){
  const operands:DocumentReviewOperand[]=[],facts:RuleSpecDraft['facts'][number][]=[],nodes:RuleSpecDraft['nodes'][number][]=[],bindings:Candidate['fact_bindings']=[];
  const known=new Map<string,string>();
  const preconditions:string[]=[];
@@ -48,7 +48,8 @@ export function buildWorkingTimeRule(input:WorkingTimeEntitlementInput,current:W
   {node_id:'wt.weighted',operation:'add',refs:[currentRefs.hours,'wt.first.extra','wt.later.extra','wt.rest.extra']},
   {node_id:'wt.factor',operation:'divide',left_ref:'wt.weighted',right_ref:'wt.hour'},
   {node_id:'wt.required',operation:'money.scale',money_ref:wage,rational_ref:'wt.factor',rounding:'half_up'});
- let recorded:string;
+ let recorded:string|null=null;
+ if(comparison){
  if(current.day.recorded_pay)recorded=fact(current.day.recorded_pay);
  else {
   const groups=new Map<string,string[]>();
@@ -67,6 +68,7 @@ export function buildWorkingTimeRule(input:WorkingTimeEntitlementInput,current:W
   nodes.push({node_id:'wt.recorded',operation:'aggregate.bounded',refs:pays});recorded='wt.recorded';
  }
  nodes.push({node_id:'wt.difference',operation:'subtract',left_ref:'wt.required',right_ref:recorded});
+ }
  const defs=[['night.minimum','2','hours','law',1,'1: at least two actual working hours at night'],['daily.seven','7','hours','law',1,'2(b): night/pre-rest day'],['week.limit','42','hours','week',1,'2.1: weekly ordinary hours'],
   ['first.hours','2','hours','law',4,'16(a): first two overtime hours'],['first.extra','25','ratio','law',4,'16(a): addition above ordinary wage'],
   ['later.extra','50','ratio','law',4,'16(a): later addition above ordinary wage'],['rest.extra','50','ratio','rest',33,'50: additive statutory weekly-rest premium']] as const;
@@ -74,9 +76,9 @@ export function buildWorkingTimeRule(input:WorkingTimeEntitlementInput,current:W
  for(const [key,value,unit,source,page,locator]of defs){const id='legal.'+key;operands.push({id,observation_id:'wt.law.'+key,state:'observed',printed_value:value,
   representation:unit==='ratio'?'percent':'decimal_quantity',quantity_unit:unit,precision:'source_exact',source:workingTimeLegalSource(source,page,locator)});
   parameters.push({ref_id:'parameter.'+key,parameter_id:'il.review.wt.'+key,parameter_version:'1.0.0',value_kind:'rational',unit});parameterBindings.push({ref_id:'parameter.'+key,operand_id:id});}
- const rule=createRuleSpecPackage({schema_version:'tivdoc-rulespec-v0.6.0',rule_spec_id:WORKING_TIME_CATALOG.rule_spec_id,rule_spec_version:'1.0.0',topic:'working_time',
+ const rule=createRuleSpecPackage({schema_version:'tivdoc-rulespec-v0.6.0',rule_spec_id:WORKING_TIME_CATALOG.rule_spec_id,rule_spec_version:comparison?'1.0.0':'1.1.0',topic:'working_time',
   catalog_boundary:'real_inactive',source_version_ids:WORKING_TIME_PINNED_LEGAL_DOCUMENTS.map(d=>d.version_id),effective_period:WORKING_TIME_CATALOG.supported_work_period,
-  sectors:['ordinary_explicitly_assessed'],populations:['adult_hourly_explicitly_assessed'],facts,parameters,nodes,output_ref:'wt.difference',
+  sectors:['ordinary_explicitly_assessed'],populations:['adult_hourly_explicitly_assessed'],facts,parameters,nodes,output_ref:comparison?'wt.difference':'wt.required',
   golden_case_set_sha256:canonicalSha256({vectors:[{daily_hours:10,limit:8,wage:40,required:420},{night_hours:10,limit:7,wage:40,required:440},
    {rest_night_hours:10,wage:40,required:640},{week:[10,10,10,10,10,8,0],limits:[8,8,8,8,8,7,0],wage:40,required:2520}]}),
   resource_policy:{max_steps:128,max_depth:32,max_aggregate_items:32,max_integer_digits:64}});
@@ -85,10 +87,10 @@ export function buildWorkingTimeRule(input:WorkingTimeEntitlementInput,current:W
  for(const d of WORKING_TIME_PINNED_LEGAL_DOCUMENTS){const existing=manifest.find(m=>m.document_id===d.document_id);
   if(existing&&canonicalSha256(existing)!==canonicalSha256(d))throw Error('WORKING_TIME_LEGAL_PIN');if(!existing)manifest.push(d);}
  return documentReviewCalculationInputSchema.parse({schema_version:'document-review-calculation-input-v1',case_id:input.case_id,run_id:input.run_id,
-  check_id:`${input.check_id_prefix}.${current.day.id}`,period:{from:current.day.date,to:current.readings.map(r=>r.interval.end_at.slice(0,10)).sort().at(-1)??current.day.date},
+  check_id:`${input.check_id_prefix}.${current.day.id}${comparison?'':'.expected'}`,period:{from:current.day.date,to:current.readings.map(r=>r.interval.end_at.slice(0,10)).sort().at(-1)??current.day.date},
   evaluated_at:input.evaluated_at,source_manifest:manifest,operands,remittance_status:'not_assessed',operation:{kind:'candidate_rule',rule,fact_bindings:bindings,parameter_bindings:parameterBindings,
    required_decision_ids:decisions.map(d=>d.decision_id),decisions,expected_output_ref:'wt.required',recorded_ref:null,
    ...(preconditions.length?{execution_preconditions:preconditions}:{}),
-   comparison:{schema_version:'candidate-comparison-v1',expected_ref:'wt.required',recorded_ref:recorded,difference_ref:'wt.difference',recorded_basis:current.day.recorded_pay?'document_amount':'document_allocation'},
+   ...(comparison?{comparison:{schema_version:'candidate-comparison-v1',expected_ref:'wt.required',recorded_ref:recorded!,difference_ref:'wt.difference',recorded_basis:current.day.recorded_pay?'document_amount':'document_allocation'}}:{}),
    ...(input.conditional_assumptions?.filter(a=>decisions.some(d=>d.decision_id===a.decision_id)).length?{conditional_assumptions:input.conditional_assumptions.filter(a=>decisions.some(d=>d.decision_id===a.decision_id))}:{})}});
 }

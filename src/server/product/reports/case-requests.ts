@@ -130,7 +130,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   // Two bounded protected lookups per case, only when both question families
   // can overlap. No artifact, stale artifact or no exact match means no hiding.
   const sharedPersonalCandidates=reviewStates.filter(r=>r.source_current&&r.target?.kind==='factual'
-   &&r.target.required_evidence_kind==='customer_declaration'&&/^entitlement\.(minimum_wage|pension)\./u.test(r.target.fact_key));
+   &&r.target.required_evidence_kind==='customer_declaration'&&/^entitlement\.(minimum_wage|pension|travel)\./u.test(r.target.fact_key));
   const fieldOverlap=(reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
    ||[...displays.values()].some(display=>display.row_context||display.transcription_context||display.structure_context||display.field.startsWith('source_scope.')||REVIEW_DEFERRABLE_SCALAR_FIELDS.some(field=>field===display.field)))
    &&fieldTargets.some(t=>bound.some(r=>r.id===t.request_id&&(r.answered_at===null||reviewStates.some(s=>s.source_current)))&&fields.some(f=>f.request_id===t.request_id&&f.source_current));

@@ -6,7 +6,9 @@ import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {travelEntitlementInputSchema,type TravelEntitlementInput,type TravelGap} from './contracts.ts';
 import {TRAVEL_SOURCE_REVIEW,TRAVEL_SOURCE_REVIEW_SHA256,TRAVEL_LEGAL_MANIFEST,TRAVEL_CATALOG,travelLegalSource,isPinnedTravelLegalSource} from './sources.ts';
 import {travelProductAnswerField} from './product-labels.ts';
+import {travelCaseDecisionSources} from './product-facts.ts';
 export * from './contracts.ts';export * from './sources.ts';export * from './product-labels.ts';
+export * from './product-facts.ts';
 type Decision=Extract<DocumentReviewCalculationInput['operation'],{kind:'candidate_rule'}>['decisions'][number];
 export const TRAVEL_APPLICABILITY=deepFreeze({
  'travel.general_coverage':'יש לוודא שהצו הכללי חל על העבודה והתקופה, לרבות החרגת מקום עבודה מוגן.',
@@ -58,7 +60,7 @@ export function resolveTravelEntitlement(candidate:unknown){
  }
  const half=!zero&&['outbound','return'].includes(input.facts.employer_transport.value??'');
  const decisionIds=Object.keys(TRAVEL_APPLICABILITY).filter(id=>zero?['travel.general_coverage','travel.no_better_arrangement'].includes(id):id!=='travel.one_direction_treatment'||half);
- const decisions:Decision[]=decisionIds.map(decision_id=>input.applicability.find(d=>d.decision_id===decision_id)??{decision_id,state:'missing',basis:'ai_source_assessment',explanation:TRAVEL_APPLICABILITY[decision_id as keyof typeof TRAVEL_APPLICABILITY],sources:[travelLegalSource(decision_id==='travel.one_direction_treatment'?2:1,decision_id)],valid_until:null});
+ const decisions:Decision[]=decisionIds.map<Decision>(decision_id=>input.applicability.find(d=>d.decision_id===decision_id)??{decision_id,state:'missing',basis:'ai_source_assessment',explanation:TRAVEL_APPLICABILITY[decision_id as keyof typeof TRAVEL_APPLICABILITY],sources:[travelLegalSource(decision_id==='travel.one_direction_treatment'?2:1,decision_id)],valid_until:null}).map(d=>{const sources=d.state==='accepted'?travelCaseDecisionSources(input,d.decision_id):[];return sources.length?{...d,sources:[...new Map([...d.sources,...sources].map(s=>[canonicalSha256(s),s])).values()]}:d;});
  for(const d of decisions)if(d.state!=='accepted'||!d.sources.length||d.basis==='customer_declaration'||d.valid_until!==null&&d.valid_until<=input.evaluated_at)add(d.decision_id,d.state==='accepted'?'unknown':d.state,`applicability.${d.decision_id}`,d.explanation,'missing_applicability');
  const sourceFacts:{key:string;fact:TravelEntitlementInput['facts'][keyof TravelEntitlementInput['facts']]|TravelEntitlementInput['monthly_pass']}[]=consumed.map(key=>({key,fact:input.facts[key as keyof typeof input.facts]}));if(!zero)sourceFacts.push({key:'monthly_pass',fact:input.monthly_pass});
  const evidenceSources=[...new Map(sourceFacts.flatMap(({fact})=>fact.source?[[canonicalSha256(fact.source),fact.source] as const]:[])).values()];

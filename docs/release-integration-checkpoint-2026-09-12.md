@@ -1,3 +1,15 @@
+## Travel and independent expected wages checkpoint — 2026-09-12
+
+Saved base1db4848c0553534cac84a9d2e9ce45cc938a8631 passed both full CI34690620805/34690618980. This checkpoint adds three ordinary travel case recipes with exact method/consumed-source replay, typed factual answers and shared-personal-facts-v2. V1 receipts and17 earlier recipe hashes remain unchanged. The shared protected request projection now recognizes travel aliases. No customer declaration certifies a fare, special arrangement or legal classification.
+
+Working-time automatic source selection now links a single accepted current payroll base-rate cell from the saved snapshot. This is an observed rate, not acceptance of its complete legal wage basis. The opt-in working-time-separated-expected-v2 path produces an expected-only result separately from the historical comparison ID. Missing, duplicate, alternative, premium-only or overallocated recorded payments block comparison while valid independent expected calculation continues. Foreign/malformed source authentication remains a hard rejection. Legacy v1 outputs/refusals are preserved.
+
+Final integrated validation:212 tests/12 suites PASS against the regenerated compiled manifest; TypeScript PASS; root targeted lint and agents' targeted lint PASS. New tests include ordinary composer/AI-runtime synthetic authority/Finding output, signed gaps, independent expected bytes after payment changes, source replacement/foreign denial, factual history and shared v2 aliases. Some initial failures were fixture formatting/readonly/union types or retained old composition; they were corrected without weakening guards. These are local engineering proofs, not new live extraction, DB/scheduler/browser acceptance or service activation.
+
+Working-time source-readiness48 and vacation source-producer/readiness35 tests are included in212. Those new modules still need their ordinary source producer/admission/catalog integration; convalescence4 hooks remain pending too. Partial source inventories and human-by-law/service boundary remain separately classified. See docs/ai-release-remaining-case-decisions-2026-09-12.md.
+
+Compiled graph17db2ba19733de7945e0a7efb975942b2cfd7940f4c382064cc30030dabb2937; manifestef30cf23b146d2bd6ef6c12ea4d9903fe0f9836d8c35ff571c37974a80739949,169 reachable source files. DEV schema180 unchanged. No provider request, expense reset, machine/authority window, message, deployment or Production change. Remaining feature integration and actual same-case DEV report acceptance continue immediately after this checkpoint.
+
 ## Shared personal facts and CI timing checkpoint
 
 The opt-in `shared-personal-facts-v1` composition now keeps one original, identified answer for birth date, employment relationship and workplace sector across minimum wage and pension. Historical receipt bodies and request targets remain intact; disagreement, unknown and unreadable states are not overwritten by another branch. This is factual reuse, not approval of scope, wage classification or a pension arrangement.

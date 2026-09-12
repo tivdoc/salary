@@ -13,13 +13,14 @@ import {aiReleaseDecisionInputSchema,type AiReleaseDecisionInput,type AiReleaseD
 import {AI_RELEASE_DECISION_RECIPES,type AiReleaseDecisionRecipe,type DecisionBranch} from './catalog.ts';
 import {evaluateMinimumWageCaseRecipe,materializeMinimumWageCaseFacts,minimumWageCaseBinding,minimumWageCaseConsumed} from './minimum-wage-case.ts';
 import {evaluatePensionCaseRecipe,replayPensionProductFacts,pensionCaseBinding} from '../entitlement-review/pension/product-facts.ts';
+import {evaluateTravelCaseRecipe,replayTravelProductFacts,travelCaseBinding} from '../entitlement-review/travel/product-facts.ts';
 
 const schemas={pension:pensionEntitlementInputSchema,travel:travelEntitlementInputSchema,vacation:vacationEntitlementInputSchema,
  minimum_wage:minimumWageEntitlementInputSchema,working_time:workingTimeEntitlementInputSchema,convalescence:convalescenceEntitlementInputSchema};
 const sourceSchema=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const record=(v:unknown):v is Record<string,unknown>=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 function atPath(value:unknown,path:string):unknown{
- let current=value;for(const key of path.split('.')){if(!record(current)||!Object.hasOwn(current,key))return null;current=current[key];}return current;
+ let current=value;for(const key of path.split('.')){if(!current||typeof current!=='object'||!Object.hasOwn(current,key))return null;current=Reflect.get(current,key);}return current;
 }
 function usable(value:unknown){return record(value)&&['known','observed','declared','derived'].includes(String(value.state))
  &&sourceSchema.safeParse(value.source).success&&('value'in value?value.value!==null:'printed_value'in value&&value.printed_value!==null);}
@@ -82,7 +83,7 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
  // New case recipes establish only their narrowly derived facts. Run them in
  // compiled order before the historical method-only recipes; caller ordering
  // must not select a different arithmetic policy or result.
- const caseOrder=['ai-case.mw.population','ai-case.mw.ordinary_scope','ai-case.mw.eligible_components','ai-case.mw.allocation','ai-case.pension.general_coverage','ai-case.pension.pension_fund'];
+ const caseOrder=['ai-case.mw.population','ai-case.mw.ordinary_scope','ai-case.mw.eligible_components','ai-case.mw.allocation','ai-case.pension.general_coverage','ai-case.pension.pension_fund','ai-case.travel.general_coverage','ai-case.travel.fare_basis','ai-case.travel.ticket_options'];
  const methods=[...input.methods.filter(m=>caseOrder.includes(m.recipe_id)).sort((a,b)=>caseOrder.indexOf(a.recipe_id)-caseOrder.indexOf(b.recipe_id)),...input.methods.filter(m=>!caseOrder.includes(m.recipe_id))];
  for(const method of methods){
   const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===method.recipe_id);
@@ -102,6 +103,10 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
     const original=pensionEntitlementInputSchema.parse(output);
     if(original.case_recipe_bindings?.length)b=replayPensionProductFacts({...pensionEntitlementInputSchema.parse(entry),applicability:original.applicability,case_recipe_bindings:original.case_recipe_bindings},original,base);
    }
+   if(recipe.branch==='travel'){
+    const original=travelEntitlementInputSchema.parse(output);
+    if(original.case_recipe_bindings?.length)b=replayTravelProductFacts({...travelEntitlementInputSchema.parse(entry),applicability:original.applicability,case_recipe_bindings:original.case_recipe_bindings},original,base);
+   }
    const target={branch:recipe.branch,branch_index:recipe.branch==='working_time'?index:null,decision_id:recipe.decision_id};
    const current=b.applicability.find(d=>d.decision_id===recipe.decision_id);
    // Reusing our output could retain an earlier fact-bound decision after a
@@ -112,7 +117,8 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
    }
    const mwCase=recipe.recipe_id.startsWith('ai-case.mw.');
    const caseReady=mwCase?evaluateMinimumWageCaseRecipe(recipe.decision_id,minimumWageEntitlementInputSchema.parse(b),base)
-    :recipe.recipe_id.startsWith('ai-case.pension.')?evaluatePensionCaseRecipe(recipe.decision_id,pensionEntitlementInputSchema.parse(b),base):null;
+    :recipe.recipe_id.startsWith('ai-case.pension.')?evaluatePensionCaseRecipe(recipe.decision_id,pensionEntitlementInputSchema.parse(b),base)
+    :recipe.recipe_id.startsWith('ai-case.travel.')?evaluateTravelCaseRecipe(recipe.decision_id,travelEntitlementInputSchema.parse(b),base):null;
    const issue=duplicate?'duplicate_method':matches(method,recipe,input.at)
     ??(current&&current.state!=='missing'?'existing_decision_preserved':null)
     ??(b.period.from<recipe.supported_period.from||b.period.to>recipe.supported_period.to?'period_not_supported':null)
@@ -138,7 +144,8 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
    }
    output.applicability=output.applicability.filter(d=>d.decision_id!==recipe.decision_id);output.applicability.push(decision);
    if(caseReady&&mwCase){const m=minimumWageEntitlementInputSchema.parse(output);m.case_recipe_bindings=[...(m.case_recipe_bindings??[]),minimumWageCaseBinding(method,input.at)];packet.minimum_wage=m;}
-   else if(caseReady){const p=pensionEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),pensionCaseBinding(method,input.at)];packet.pension=p;}
+   else if(caseReady&&recipe.branch==='pension'){const p=pensionEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),pensionCaseBinding(method,input.at)];packet.pension=p;}
+   else if(caseReady&&recipe.branch==='travel'){const p=travelEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),travelCaseBinding(method,input.at)];packet.travel=p;}
    else if(recipe.branch==='working_time'){originalEntries[index]=output;packet.working_time=originalEntries;}else packet[recipe.branch]=output;
    receipts.push(makeReceipt({case_id:base.case_id,period:b.period,...target,method,recipe,consumed,decision,at:input.at}));
   }

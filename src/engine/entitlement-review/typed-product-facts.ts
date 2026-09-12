@@ -10,6 +10,8 @@ import {convalescencePersonalFacts,scaffoldConvalescenceSegments,periodFromDecla
 import type {EntitlementEvidence} from './contracts.ts';
 import {pensionEntitlementInputSchema} from './pension/contracts.ts';
 import {pensionProductFacts,replayPensionProductFacts} from './pension/product-facts.ts';
+import {travelEntitlementInputSchema} from './travel/contracts.ts';
+import {travelProductFacts,travelProductFactQuestions,replayTravelProductFacts} from './travel/product-facts.ts';
 
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
 type Choice=Readonly<{label:string;value:string|number|boolean|null}>;
@@ -20,15 +22,17 @@ const unknown={label:'לא ידוע',value:null};
 const choices=(entries:Record<string,string|number|boolean>):Choice[]=>[...Object.entries(entries).map(([label,value])=>({label,value})),unknown];
 
 /** Explicit opt-in for new saved source packets. Existing packets are untouched. */
-export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence):EntitlementEvidence{
+export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence,options?:{travel:true}):EntitlementEvidence{
  const e=structuredClone(candidate);
  if(e.pension){const p=pensionEntitlementInputSchema.parse(e.pension);e.pension={...p,product_facts:p.product_facts??pensionProductFacts()};}
  if(e.minimum_wage){const p=minimumWageEntitlementInputSchema.parse(e.minimum_wage);e.minimum_wage={...p,product_facts:p.product_facts??minimumWagePersonalFacts()};}
  if(e.convalescence){const p=convalescenceEntitlementInputSchema.parse(e.convalescence);e.convalescence={...p,product_facts:p.product_facts??convalescencePersonalFacts()};}
+ if(options?.travel&&e.travel){const p=travelEntitlementInputSchema.parse(e.travel);e.travel={...p,product_facts:p.product_facts??travelProductFacts()};}
  return e;
 }
 
-export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence',raw:unknown):TypedEntitlementQuestion[]{
+export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'travel',raw:unknown):TypedEntitlementQuestion[]{
+ if(topic==='travel')return travelProductFactQuestions(travelEntitlementInputSchema.parse(raw));
  const result:TypedEntitlementQuestion[]=[];
  const add=(path:string,fact:Fact,question:string,options?:readonly Choice[],format?:TypedEntitlementQuestion['format'])=>{
   if(!usable(fact))result.push({path,fact,question,answer_kind:options?'choice':'text',...(options?{choices:options}:{}),...(format?{format}:{})});
@@ -82,6 +86,8 @@ export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence',r
 }
 
 export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence,original?:EntitlementEvidence,source?:DocumentReviewInput):EntitlementEvidence{
+ if(candidate.travel&&original?.travel&&source){const p=travelEntitlementInputSchema.parse(candidate.travel),raw=travelEntitlementInputSchema.parse(original.travel);
+  if(raw.case_recipe_bindings?.length)candidate={...candidate,travel:replayTravelProductFacts(p,raw,source)};}
  if(candidate.pension&&original?.pension&&source){const p=pensionEntitlementInputSchema.parse(candidate.pension),raw=pensionEntitlementInputSchema.parse(original.pension);
   if(raw.case_recipe_bindings?.length)candidate={...candidate,pension:replayPensionProductFacts(p,raw,source)};}
  if(candidate.minimum_wage&&original?.minimum_wage&&source){const p=minimumWageEntitlementInputSchema.parse(candidate.minimum_wage),raw=minimumWageEntitlementInputSchema.parse(original.minimum_wage);

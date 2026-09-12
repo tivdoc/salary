@@ -11,6 +11,7 @@ import {documentReviewCalculationInputSchema} from '../document-review/calculati
 import {documentReviewInputSchema,type DocumentReviewInput} from '../document-review/contracts.ts';
 import {runDocumentReview} from '../document-review/service.ts';
 import {attachAutomaticPayrollEvidence} from './automatic-payroll.ts';
+import {workingTimePayrollRate} from './working-time/payroll-rate.ts';
 import {minimumWageEntitlementInputSchema,resolveMinimumWageEntitlement} from './minimum-wage/index.ts';
 import {travelEntitlementInputSchema,resolveTravelEntitlement} from './travel/index.ts';
 import {composeEntitlementReview} from './compose.ts';
@@ -118,5 +119,22 @@ describe('automatic payroll source evidence',()=>{
   const extraction={...f.extraction,document_id:otherId,extraction_id:uuid('second.extraction'),fields:f.extraction.fields.map(c=>({...c,candidate_id:uuid(['second',c.candidate_id]),source:{...c.source,document_id:otherId}})),additional_components:f.extraction.additional_components.map(r=>({...r,component_id:uuid(['second',r.component_id]),source:{...r.source,document_id:otherId}}))};
   const snapshot={...f.snapshot,documents:[f.document,other],extractions:[f.extraction,extraction]},input=reviewInputFromPayslips({case_id:f.document.case_id,period:{from:'2026-06-01',to:'2026-06-30'},purchased_scope:f.input().purchased_scope,snapshot,review_policy:PAYSLIP_REVIEW_POLICY});
   const {mw,travel}=branches(input,snapshot);expect(mw.ordinary_hours).toBeNull();expect(travel.recorded).toBeNull();expect(mw.components).toHaveLength(4);expect(mw.eligible_pay_inventory.state).toBe('unknown');
+ });
+});
+
+describe('ordinary working-time base-rate source link',()=>{
+ it('reads50 from the existing accepted payroll row without legal classification or prepared check operands',()=>{
+  const f=fixture(),input=f.input(),before=canonicalSha256(f.snapshot),rate=workingTimePayrollRate(input,f.snapshot);
+  expect(rate).toMatchObject({state:'observed',printed_value:'50.00',source:{document_id:f.document.document_id,reading:'provider_extraction'}});
+  input.checks=[];expect(workingTimePayrollRate(input,f.snapshot)).toEqual(rate);expect(canonicalSha256(f.snapshot)).toBe(before);
+ });
+ it('does not choose a different source, ambiguous base row or unaccepted cell',()=>{
+  const f=fixture();f.baseRow.confidence=.2;expect(workingTimePayrollRate(f.input(),f.snapshot)).toBeNull();
+  const ambiguous=fixture();ambiguous.row('hourly_base','80','50.00','4000.00');expect(workingTimePayrollRate(ambiguous.input(),ambiguous.snapshot)).toBeNull();
+  const replaced=fixture(),input=replaced.input();input.documents[0].file_sha256='0'.repeat(64);expect(workingTimePayrollRate(input,replaced.snapshot)).toBeNull();
+ });
+ it('rejects a foreign case and retains an identified rate through the ordinary reading resolver',()=>{
+  const f=fixture();f.identify();expect(workingTimePayrollRate(f.input(),f.snapshot)?.source.reading).toBe('identified_document_reading');
+  const input=f.input();input.case_id=uuid('different-case');expect(()=>workingTimePayrollRate(input,f.snapshot)).toThrow('WORKING_RATE_FOREIGN_SOURCE');
  });
 });

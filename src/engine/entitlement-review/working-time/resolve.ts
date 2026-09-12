@@ -25,6 +25,8 @@ const dateAt=(date:string,offset:number)=>new Date(Date.parse(date+'T00:00:00Z')
  * This function neither grants legal authority nor creates Findings/reports. */
 export function resolveWorkingTimeEntitlement(raw:unknown){
  const input=workingTimeEntitlementInputSchema.parse(raw),missing:WorkingTimeMissing[]=[],checks:DocumentReviewInput['checks']=[];
+ const separated=input.calculation_policy==='working-time-separated-expected-v2';
+ const dayCheckIds=(id:string)=>[`${input.check_id_prefix}.${id}`,...(separated?[`${input.check_id_prefix}.${id}.expected`]:[])];
  if(input.period.from<WORKING_TIME_CATALOG.supported_work_period.from||input.period.to>WORKING_TIME_CATALOG.supported_work_period.to||input.period.from>input.period.to)throw Error('WORKING_TIME_RESEARCH_PERIOD');
  validateAllSources(input);
  if(new Date(input.week_start+'T00:00:00Z').getUTCDay()!==0)throw Error('WORKING_TIME_WEEK_START');
@@ -35,7 +37,7 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  const permitted=new Set([...Object.keys(WORKING_TIME_APPLICABILITY),...input.workdays.map(d=>'wt.worked_time.'+d.id)]);
  if(input.applicability.some(d=>!permitted.has(d.decision_id))||input.conditional_assumptions?.some(a=>!permitted.has(a.decision_id)))throw Error('WORKING_TIME_DECISION_ID');
  if(input.applicability.some(d=>d.state==='accepted'&&(d.basis==='customer_declaration'||!d.sources.length)))throw Error('WORKING_TIME_DECLARATION_NOT_APPLICABILITY');
- const targetIds=input.workdays.filter(d=>d.inventory.value!=='no_work').map(d=>`${input.check_id_prefix}.${d.id}`);
+ const targetIds=input.workdays.filter(d=>d.inventory.value!=='no_work').flatMap(d=>dayCheckIds(d.id));
  const add=(fact_key:string,input_path:string,state:WorkingTimeMissing['state'],question:string,kind:WorkingTimeMissing['kind']='fact',sources:DocumentReviewSource[]=[],ids=targetIds,answer_kind:WorkingTimeMissing['answer_kind']='text',options?:string[])=>{
   const pins=[...new Map(sources.filter(s=>s.reading!=='source_research').map(s=>{const p=sourcePin(input,s);return [canonicalSha256(p),p];})).values()];
   const m:WorkingTimeMissing={fact_key,input_path,state,question,kind,answer_kind,customer_declaration_allowed:kind==='fact'&&/\.(?:classification|kind|inventory|no_work_credit)$/u.test(input_path),source_pins:pins,dependent_check_ids:ids,...(options?{options}:{})};
@@ -46,7 +48,9 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  const allIntervals=sorted.flatMap(d=>d.intervals),intervalIds=allIntervals.map(i=>i.id);
  if(new Set(intervalIds).size!==intervalIds.length||new Set(allIntervals.map(i=>canonicalSha256({observation_id:i.printed_duration.observation_id,source:i.printed_duration.source}))).size!==allIntervals.length)throw Error('WORKING_TIME_DUPLICATE_INTERVAL_SOURCE');
  const allocations=sorted.flatMap(d=>d.recorded_pay?[d.recorded_pay]:(d.payroll_allocations??[]).map(a=>a.hours));
- if(new Set(allocations.map(a=>canonicalSha256({observation_id:a.observation_id,source:a.source}))).size!==allocations.length)throw Error('WORKING_TIME_DUPLICATE_PAYMENT_SOURCE');
+ const paymentKey=(a:typeof allocations[number])=>canonicalSha256({observation_id:a.observation_id,source:a.source});
+ const duplicatePayments=new Set(allocations.filter((a,i)=>allocations.some((other,j)=>i!==j&&paymentKey(other)===paymentKey(a))).map(paymentKey));
+ if(duplicatePayments.size&&!separated)throw Error('WORKING_TIME_DUPLICATE_PAYMENT_SOURCE');
  let rest:{start:number;end:number}|null=null;
  if(usable(input.rest_window)){
   const window=input.rest_window.value!;rest={start:atTime(window.start_at),end:atTime(window.end_at)};
@@ -58,9 +62,9 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  if(!arrangementsValid)factGap('wt.arrangement_fact','arrangement',input.arrangement,'מהי מתכונת שבוע העבודה במקום העבודה, ומהו היום המקוצר? יש לצרף חוזה או הסדר משמרות קיים; אין צורך לבחור נוסחה משפטית.',targetIds,['adult_hourly_five_day_42','adult_hourly_six_day_42','unsupported']);
  const schedule=usable(input.scheduled_weekdays)?input.scheduled_weekdays.value:null;
  if(schedule&&(new Set(schedule).size!==schedule.length||schedule.length!==(input.arrangement.value==='adult_hourly_five_day_42'?5:6)))throw Error('WORKING_TIME_SCHEDULE_ARRANGEMENT');
- const views:WorkingDayReading[]=[],traces:TimeReading[]=[],paymentReadyDays=new Set<string>();
+ const views:WorkingDayReading[]=[],traces:TimeReading[]=[],paymentReadyDays=new Set<string>(),expectedReadyDays=new Set<string>();
  for(const day of sorted){
-  const inputIndex=input.workdays.findIndex(d=>d.id===day.id),path=`workdays.${inputIndex}`,ids=[`${input.check_id_prefix}.${day.id}`];
+  const inputIndex=input.workdays.findIndex(d=>d.id===day.id),path=`workdays.${inputIndex}`,ids=dayCheckIds(day.id);
   if(!usable(day.inventory)||day.inventory.value==='incomplete'){factGap(`wt.inventory.${day.id}`,path+'.inventory',day.inventory,'האם הרישום כולל את כל מקטעי הנוכחות של היום, לרבות הפסקות ועבודה נוספת, או שלא הייתה נוכחות כלל? שלמות הרישום אינה קובעת שכל הנוכחות היא זמן עבודה.',ids,['complete_work','no_work','incomplete']);continue;}
   if(day.inventory.value==='no_work'){
    if(day.intervals.length){
@@ -104,18 +108,35 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
   }
   if(!arrangementsValid&&['conflict','stale','expired'].includes(input.arrangement.state)||input.arrangement.value==='unsupported')continue;
   views.push({day,readings:eligible,sevenHourDay:seven,noWork:false});
-  if(day.recorded_pay&&(day.payroll_allocations?.length??0)>0)throw Error('WORKING_TIME_PAYMENT_ALTERNATIVES');
+  const wageReady=separated&&sourceNumber(input.regular_hourly_wage,'money')!==null;
+  if(separated&&wageReady)expectedReadyDays.add(day.id);
+  const paymentConflict=(reason:string)=>{
+   add(`wt.payment.${day.id}`,path+'.payment_allocation','conflict',reason,'source',day.payment_allocation.source?[day.payment_allocation.source]:[],[`${input.check_id_prefix}.${day.id}`],'document');
+   if(!wageReady)add('wt.regular_hourly_wage','regular_hourly_wage',absentState(input.regular_hourly_wage),'יש לזהות תעריף שעתי ורכיבי שכר רגיל באותו מקור ותקופה.','source',[input.regular_hourly_wage.source],ids,'document');
+  };
+  if(day.recorded_pay&&(day.payroll_allocations?.length??0)>0){
+   if(!separated)throw Error('WORKING_TIME_PAYMENT_ALTERNATIVES');
+   paymentConflict('נשמרו שתי הקצאות חלופיות לתשלום אותו יום: סכום ישיר ורכיבי שעות. יש ליישב את השיוך לפני השוואה; הסכום הצפוי אינו מחבר אותן.');continue;
+  }
+  if(separated&&(day.recorded_pay?[day.recorded_pay]:(day.payroll_allocations??[]).map(a=>a.hours)).some(a=>duplicatePayments.has(paymentKey(a)))){
+   paymentConflict('אותו מקור תשלום שויך ליותר מיום או רכיב אחד. יש לתקן את ההקצאה לפני השוואה; התשלום לא נספר פעמיים.');continue;
+  }
   const direct=day.recorded_pay?sourceNumber(day.recorded_pay,'money'):null,bands=day.payroll_allocations??[];
   let paymentReady=direct!==null||bands.length>0;
-  let allocatedMinutes=0;
+  let allocatedMinutes=0,premiumOnly=false;
   for(const a of bands){const h=sourceNumber(a.hours,'hours'),rate=sourceNumber(a.hourly_rate,'money'),percentage=a.percentage?sourceNumber(a.percentage,'percent'):100;
    if(h===null||rate===null||percentage===null)paymentReady=false;
-   if(percentage!==null&&percentage<100)throw Error('WORKING_TIME_PREMIUM_ONLY_ALLOCATION');
+   if(percentage!==null&&percentage<100){if(!separated)throw Error('WORKING_TIME_PREMIUM_ONLY_ALLOCATION');premiumOnly=true;}
    if(h!==null)allocatedMinutes+=h;
   }
-  if(allocatedMinutes>eligible.reduce((n,r)=>n+r.minutes,0))throw Error('WORKING_TIME_ALLOCATED_HOURS_OVERLAP');
+  if(premiumOnly||allocatedMinutes>eligible.reduce((n,r)=>n+r.minutes,0)){
+   if(!separated)throw Error('WORKING_TIME_ALLOCATED_HOURS_OVERLAP');
+   paymentConflict(premiumOnly?'המקור מתאר תוספת בלבד, ולא את מלוא התשלום עבור השעות. יש לזהות את רכיב הבסיס לפני השוואה.':'כמות השעות שהוקצתה לתשלום גדולה מזמן העבודה המזוהה. יש ליישב את ההקצאה; הסכום הצפוי נשמר בנפרד.');continue;
+  }
   if(!paymentReady||!usable(day.payment_allocation)||day.payment_allocation.value!=='full_pay_for_workday'){
-   add(`wt.payment.${day.id}`,path+'.payment_allocation',absentState(day.payment_allocation),'יש לזהות תשלום מלא המשויך בדיוק לשעות היום הזה, באמצעות סכום או כמויות ותעריפים נפרדים. ברוטו חודשי אינו תחליף ולא נרשם תשלום אפס.','source',day.payment_allocation.source?[day.payment_allocation.source]:[],ids,'document');continue;}
+   add(`wt.payment.${day.id}`,path+'.payment_allocation',absentState(day.payment_allocation),'יש לזהות תשלום מלא המשויך בדיוק לשעות היום הזה, באמצעות סכום או כמויות ותעריפים נפרדים. ברוטו חודשי אינו תחליף ולא נרשם תשלום אפס.','source',day.payment_allocation.source?[day.payment_allocation.source]:[],separated?[`${input.check_id_prefix}.${day.id}`]:ids,'document');
+   if(separated&&!wageReady)add('wt.regular_hourly_wage','regular_hourly_wage',absentState(input.regular_hourly_wage),'יש לזהות תעריף שעתי ורכיבי שכר רגיל באותו מקור ותקופה.','source',[input.regular_hourly_wage.source],ids,'document');
+   continue;}
   if(sourceNumber(input.regular_hourly_wage,'money')===null){add('wt.regular_hourly_wage','regular_hourly_wage',absentState(input.regular_hourly_wage),'יש לזהות תעריף שעתי ורכיבי שכר רגיל באותו מקור ותקופה.','source',[input.regular_hourly_wage.source],ids,'document');continue;}
   paymentReadyDays.add(day.id);
  }
@@ -128,8 +149,9 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  if(!schedule)factGap('wt.scheduled_weekdays','scheduled_weekdays',input.scheduled_weekdays,'מהם ימי העבודה שנקבעו במקום העבודה והיום המקוצר? ההיקף האישי עשוי להיות חלקי ואינו משנה לבדו את ההסדר המפעלי.');
  const evidenceSha=canonicalSha256(input);
  for(const [i,view]of views.entries()){
-  if(view.noWork||!paymentReadyDays.has(view.day.id))continue;
-  const ids=[`${input.check_id_prefix}.${view.day.id}`],required:string[]=[...baseDecisions,'wt.worked_time.'+view.day.id];
+  if(view.noWork||!paymentReadyDays.has(view.day.id)&&!(separated&&expectedReadyDays.has(view.day.id)))continue;
+  for(const compared of separated?[false,...(paymentReadyDays.has(view.day.id)?[true]:[])]:[true]){
+  const ids=[`${input.check_id_prefix}.${view.day.id}${compared?'':'.expected'}`],required:string[]=[...baseDecisions.filter(id=>compared||id!=='wt.payroll_allocation'),'wt.worked_time.'+view.day.id];
   if(complete)required.push('wt.weekly_aggregation');
   if(!rest)required.push('wt.non_rest_scope');else if(view.readings.some(r=>(r.rest_minutes??0)>0))required.push('wt.rest_additive');
   const decisions:WorkingTimeDecision[]=required.map(decision_id=>{
@@ -147,30 +169,31 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
    ordinary_limit:v.day.ordinary_limit,...(v.noWork?{no_work_credit:v.day.no_work_credit??null}:{})}));
   const checkEvidence={schema_version:'working-time-check-evidence-v1',case_id:input.case_id,workdays:hourEvidence,
    arrangement:input.arrangement,rest_window:input.rest_window,regular_hourly_wage:input.regular_hourly_wage,
-   payment:{recorded_pay:view.day.recorded_pay,payroll_allocations:view.day.payroll_allocations??[],allocation:view.day.payment_allocation},
+   ...(compared?{payment:{recorded_pay:view.day.recorded_pay,payroll_allocations:view.day.payroll_allocations??[],allocation:view.day.payment_allocation}}:{}),
    weekly:complete?{week_start:input.week_start,inventory:input.week_inventory,scheduled_weekdays:input.scheduled_weekdays}:null,mode:input.mode};
   const factualSources:DocumentReviewSource[]=[];
   for(const v of consumedDays){const sources=[v.day.kind.source,v.day.inventory.source,...v.day.intervals.map(r=>r.classification.source),...(v.noWork?[v.day.no_work_credit?.source??null]:[])];
    for(const s of sources)if(s&&!factualSources.some(existing=>canonicalSha256(existing)===canonicalSha256(s)))factualSources.push(s);}
-  for(const s of [input.arrangement.source,input.rest_window.source,view.day.payment_allocation.source,...(complete?[input.week_inventory.source,input.scheduled_weekdays.source]:[])])
+  for(const s of [input.arrangement.source,input.rest_window.source,...(compared?[view.day.payment_allocation.source]:[]),...(complete?[input.week_inventory.source,input.scheduled_weekdays.source]:[])])
    if(s&&!factualSources.some(existing=>canonicalSha256(existing)===canonicalSha256(s)))factualSources.push(s);
   // Decision source arrays are bounded. Split factual witnesses rather than
   // dropping a customer-answer citation from the normal calculation manifest.
   for(let start=0;start<Math.max(1,factualSources.length);start+=16)decisions.push({decision_id:'wt.evidence_binding.'+start,state:'accepted',basis:'ai_source_assessment',
    explanation:`Source-time representation and consumed facts only; no cryptographic authority verification: ${canonicalSha256(checkEvidence)}`,
    sources:factualSources.slice(start,start+16),valid_until:null});
-  const calculation=buildWorkingTimeRule(input,view,complete?views.slice(0,i):[],complete,rest!==null,decisions);
+  const calculation=buildWorkingTimeRule(input,view,complete?views.slice(0,i):[],complete,rest!==null,decisions,compared);
   const scenario=input.mode==='explicit_presence_scenario',restIncluded=rest!==null&&view.readings.some(r=>(r.rest_minutes??0)>0);
-  checks.push({check_id:calculation.check_id,topic:restIncluded?'rest_day':'working_time',title:`${scenario?'תרחיש מותנה: ':''}גמול עבודה ${view.day.date}${view.sevenHourDay?' — סף שבע שעות':''}`,
+  checks.push({check_id:calculation.check_id,topic:restIncluded?'rest_day':'working_time',title:`${scenario?'תרחיש מותנה: ':''}${!compared?'גמול צפוי — ':''}גמול עבודה ${view.day.date}${view.sevenHourDay?' — סף שבע שעות':''}`,
    explanation:(scenario?'מקטעים שסיווגם חסר נספרים רק בתרחיש אם כל המקטע נחשב עבודה. ':'')+
     (complete?'הסף היומי והשבועי משולבים ללא ספירה כפולה; שתי השעות הראשונות נבחנות לכל יום. ':'חישוב יומי בלבד; התוספת השבועית טרם נבדקה, ואין לסכום אותו עם חישוב חלופי של אותו יום. ')+
     (restIncluded?'נוספת תוספת מנוחה שבועית לאותן שעות: 150%, ובחפיפת שעות נוספות 175% או 200%. ':!rest?'חלון מנוחה חסר: אין כאן קביעה שהיום רגיל ואין חישוב תוספת מנוחה. ':'חלון המנוחה המזוהה אינו חופף את שעות היום. ')+
-    'ההפרש מול הקצאת השכר במסמך אינו מוכיח העברה בפועל או חוב משפטי מאושר.',calculation});
+    (compared?'ההפרש מול הקצאת השכר במסמך אינו מוכיח העברה בפועל או חוב משפטי מאושר.':'זהו סכום צפוי בלבד; אין בו קביעה על סכום ששולם או על הפרש לתשלום. אין לחברו שוב לתוצאת ההשוואה לאותן שעות.'),calculation});
+  }
  }
  const coverage_gaps:DocumentReviewInput['coverage_gaps']=missing.map(m=>({check_id:`${input.check_id_prefix}.gap.${m.fact_key}`,topic:m.fact_key==='wt.rest_window'?'rest_day':'working_time',
   kind:m.kind==='source'?'missing_source':m.kind==='applicability'?'missing_applicability':'missing_fact',detail:m.question,next_step:m.question,...(m.source_pins.length?{source_pins:[...m.source_pins]}:{})}));
  const allocation_receipt={schema_version:'working-time-allocation-v1',input_sha256:evidenceSha,weekly_inventory_complete:complete,
   weekly_strategy:complete?'exclude_daily_overtime_then_chronological_weekly_prefix':'not_evaluated',rest_window_known:rest!==null,
-  transformations:traces,check_ids:checks.map(c=>c.check_id),check_sha256:checks.map(c=>canonicalSha256(c)),no_double_count_scope:'one_alternative_per_workday'};
+  transformations:traces,check_ids:checks.map(c=>c.check_id),check_sha256:checks.map(c=>canonicalSha256(c)),no_double_count_scope:separated?'expected_and_comparison_are_distinct_non_additive_views':'one_alternative_per_workday'};
  return deepFreeze({catalog_descriptor:WORKING_TIME_CATALOG,checks,coverage_gaps,missing,allocation_receipt:{...allocation_receipt,sha256:canonicalSha256(allocation_receipt)}});
 }

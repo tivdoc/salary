@@ -34,6 +34,12 @@ function pensionCaseRecipe(decision_id:string,method:string,paths:string[],locat
  const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'pension-case-facts-v1' as const};
  return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
 }
+function travelCaseRecipe(decision_id:string,method:string,paths:string[],page:number,locator:string){
+ const ordinary=recipe('travel',decision_id,method,paths,TRAVEL_SOURCE_REVIEW_SHA256,[travelLegalSource(page,locator)]);
+ const {recipe_sha256:prior,...body}=ordinary;void prior;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'travel-case-facts-v1' as const};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
 export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  recipe('pension','pension.rounding','half_up_per_component_per_month',['period','facts.aged_21_or_more','facts.under_60','pensionable_wage'],PENSION_SOURCE_REVIEW_SHA256,[pensionLegalSource('order2011',4,'סעיף 6; שיטת העיגול היא בחירת פרשנות נפרדת')]),
  recipe('travel','travel.rounding','half_up_final_period_agora',['period','commute_days','discounted_daily_fare'],TRAVEL_SOURCE_REVIEW_SHA256,[travelLegalSource(1,'סעיפים 2–3; שיטת העיגול אינה הוראה מפורשת בצו')]),
@@ -52,5 +58,8 @@ export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  minimumCaseRecipe('mw.allocation','single_component_exact_payslip_period_without_reused_payment',['period','components','ordinary_hours','ordinary_hours_period','eligible_pay_inventory'],1,'סעיף 3 — שיוך רכיב ושעות לאותה תקופה; אין צירוף תשלום ממקור אחר'),
  pensionCaseRecipe('pension.general_coverage','explicit_employee_private_age21_59',['period','product_facts','facts.aged_21_or_more','facts.under_60'],'סעיפים 2–4; גיל 21–59 ומגזר פרטי הם גבול ענף המוצר, לא אישור להסדר מיטיב או לבסיס השכר'),
  pensionCaseRecipe('pension.pension_fund','identified_source_pension_product_not_customer_classification',['period','product_facts.pension_product','recorded'],'סוג המוצר הפנסיוני מזוהה במקור; אין סיווג קרן מתוך הצהרה בלבד'),
+ travelCaseRecipe('travel.general_coverage','explicit_private_employee_and_source_selected_uniform_route',['period','product_facts.employment_relationship','product_facts.workplace_sector','facts','commute_days'],1,'רישת הצו וסעיף 3 — עובד שכיר במגזר הפרטי וצורך/הגעה מזוהים; אין אישור להסדר מיטיב'),
+ travelCaseRecipe('travel.fare_basis','identified_standard_adult_route_tariff_group_exact_daily_cell',['period','product_facts','facts','commute_days','fare_source_context','discounted_daily_fare'],2,'סעיף 4 — תעריף מוזל מזוהה למסלול ולתקופה; פרופיל הנחה, כיוונים ושיוך מקור נבדקים בנפרד'),
+ travelCaseRecipe('travel.ticket_options','identified_complete_same_route_ticket_inventory_and_monthly_availability',['period','product_facts','facts','commute_days','fare_source_context','discounted_daily_fare','monthly_pass','monthly_pass_cost'],2,'סעיף 4 — מלאי כרטיסים שלם וזמינות מנוי מתאימים במקור; מחיר חסר אינו היעדר מנוי'),
 ]);
 export type AiReleaseDecisionRecipe=(typeof AI_RELEASE_DECISION_RECIPES)[number];

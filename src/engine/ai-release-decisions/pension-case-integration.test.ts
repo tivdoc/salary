@@ -2,7 +2,9 @@ import {describe,it,expect} from 'vitest';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {fixture,actor} from '../entitlement-review/compose.fixture.ts';
 import {pensionEntitlementInputSchema} from '../entitlement-review/pension/contracts.ts';
-import {pensionProductFacts} from '../entitlement-review/pension/product-facts.ts';
+import {pensionProductFacts,pensionCaseConsumed,evaluatePensionCaseRecipe} from '../entitlement-review/pension/product-facts.ts';
+import {pensionRecordedFixture} from '../entitlement-review/pension/recorded-fixture.ts';
+import {documentReviewCalculationInputSchema} from '../document-review/calculations.ts';
 import {composeEntitlementReview} from '../entitlement-review/compose.ts';
 import {applyDocumentReviewAnswer,runDocumentReview,replayDocumentReview} from '../document-review/service.ts';
 import {AI_RELEASE_DECISION_RECIPES} from './catalog.ts';
@@ -45,5 +47,21 @@ describe('pension case recipes through normal factual questions and source admis
   const s=answered(true),r=request(s,'pension_product');expect(r).toBeDefined();const changed=applyDocumentReviewAnswer(s,{request:r,actor,answer:{request_id:'55555555-5555-4555-8555-000000000004',revision:1,answered_at:at,state:'provided',value:'קרן פנסיה'}}).input;
   const result=applyAiReleaseDecisionRecipes({source:changed,methods:[method('pension.pension_fund')],at});
   expect(result.receipts).toEqual([]);expect(result.unresolved[0].reason).toBe('identified_fund_source_missing');
+ });
+ it('pins the exact nested recorded relationship, not a null hash for an array path',()=>{
+  const f=fixture(),r=pensionRecordedFixture('300.00'),caseId=r.case_id,citation=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
+  f.input.case_id=caseId;f.input.documents=f.input.documents.map(d=>({...d,case_id:caseId}));
+  f.input.completion_input={case_id:caseId,period:f.input.period,documents:[],needs:[],evidence:[]};
+  f.pension.case_id=caseId;f.pension.source_manifest=f.pension.source_manifest.map(m=>({...m,case_id:m.kind==='case_document'?caseId:m.case_id}));
+  f.pension.source_manifest.push(...r.source_manifest);f.pension.recorded=[{share:'employee',relationship_check:r}];f.pension.applicability=f.pension.applicability.filter(d=>d.decision_id!=='pension.pension_fund');
+  const readings:ReturnType<typeof citation.parse>[]=[];function visit(v:unknown):void{const found=citation.safeParse(v);if(found.success){readings.push(found.data);return;}if(v&&typeof v==='object')Object.values(v).forEach(visit);}visit(r);
+  for(const m of r.source_manifest){if(m.kind!=='case_document')continue;const receiptShas=[...new Set(readings.filter(s=>s.document_id===m.document_id).map(s=>s.reading_receipt_sha256))];
+   f.input.documents.push({case_id:caseId,document_id:m.document_id,version_id:m.version_id,file_sha256:m.file_sha256,page_count:m.page_count,kind:'payslip',label:'Synthetic identified pension relationship',period:f.input.period,reading_origin:'ai_document_review',reading_sha256:r.source_structure?.reading_sha256??receiptShas[0],accepted_reading_sha256:receiptShas});
+  }
+  f.input.entitlement_evidence={...f.input.entitlement_evidence!,case_id:caseId,pension:f.pension};
+  const a=applyAiReleaseDecisionRecipes({source:f.input,methods:[method('pension.pension_fund')],at}),effective=pensionEntitlementInputSchema.parse(a.source.entitlement_composition!.evidence.pension);
+  expect(a.receipts).toHaveLength(1);expect(a.receipts[0].consumed).toEqual(pensionCaseConsumed(effective,evaluatePensionCaseRecipe('pension.pension_fund',effective,a.source).consumed_paths));
+  expect(a.receipts[0].consumed.find(c=>c.path.endsWith('recorded.0.relationship_check'))?.value_sha256).toBe(canonicalSha256(r));
+  expect(effective.applicability.find(d=>d.decision_id==='pension.pension_fund')?.state).toBe('accepted');
  });
 });

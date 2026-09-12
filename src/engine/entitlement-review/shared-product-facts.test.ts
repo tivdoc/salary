@@ -11,7 +11,9 @@ import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
 import {minimumWagePersonalFacts,minimumWageCaseFactsSchema} from './minimum-wage/product-facts.ts';
 import {pensionEntitlementInputSchema} from './pension/contracts.ts';
 import {pensionProductFacts} from './pension/product-facts.ts';
-import {enableSharedPersonalFacts,sharedPersonalAnswerCoversCheck} from './shared-product-facts.ts';
+import {enableSharedPersonalFacts,sharedPersonalAnswerCoversCheck,SHARED_PERSONAL_FACTS_TRAVEL_POLICY} from './shared-product-facts.ts';
+import {travelEntitlementInputSchema} from './travel/contracts.ts';
+import {travelProductFacts} from './travel/product-facts.ts';
 import {applyAiReleaseDecisionRecipes} from '../ai-release-decisions/apply.ts';
 import {AI_RELEASE_DECISION_RECIPES} from '../ai-release-decisions/catalog.ts';
 import type {AiReleaseDecisionMethod} from '../ai-release-decisions/contracts.ts';
@@ -26,8 +28,8 @@ function raw(shared=true){const input=nineTopicRuntimeSource(),e=input.entitleme
  const packet={schema_version:'entitlement-source-evidence-v1' as const,case_id:input.case_id,order_id:input.purchased_scope.order_id,receipt_sha256:input.purchased_scope.receipt_sha256,period:input.period,minimum_wage:m,pension:p};
  input.entitlement_evidence=shared?enableSharedPersonalFacts(packet):packet;return input;
 }
-function enable(input:DocumentReviewInput){const prior=input.entitlement_composition,checks=new Set(prior?.selections.flatMap(s=>s.generated_check_ids)),gaps=new Set(prior?.selections.flatMap(s=>s.generated_gap_ids)),facts=new Set(prior?.generated_fact_keys);
- return composeEntitlementReview({...input,entitlement_evidence:enableSharedPersonalFacts(input.entitlement_evidence!),entitlement_composition:undefined,
+function enable(input:DocumentReviewInput,policy?:Parameters<typeof enableSharedPersonalFacts>[1]){const prior=input.entitlement_composition,checks=new Set(prior?.selections.flatMap(s=>s.generated_check_ids)),gaps=new Set(prior?.selections.flatMap(s=>s.generated_gap_ids)),facts=new Set(prior?.generated_fact_keys);
+ return composeEntitlementReview({...input,entitlement_evidence:enableSharedPersonalFacts(input.entitlement_evidence!,policy),entitlement_composition:undefined,
   checks:input.checks.filter(c=>!checks.has(c.check_id)),coverage_gaps:input.coverage_gaps.filter(g=>!gaps.has(g.check_id)),answer_bindings:input.answer_bindings.filter(b=>!checks.has(b.check_id)),
   completion_input:{...parseReviewCompletionInput(input.completion_input),needs:parseReviewCompletionInput(input.completion_input).needs.filter(n=>!facts.has(n.fact_key))}});}
 function lookup(input:DocumentReviewInput,key:string,branch?:'minimum_wage'|'pension'){
@@ -46,7 +48,12 @@ function answer(input:DocumentReviewInput,request:ReviewCompletion,value:string|
  request_id:`55555555-5555-4555-8555-${String(number).padStart(12,'0')}`,revision,answered_at:at,state:value===null?'unknown':'provided',value}});}
 function method():AiReleaseDecisionMethod{const r=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id==='ai-case.pension.general_coverage')!;return {recipe_id:r.recipe_id,recipe_version:'1',recipe_sha256:r.recipe_sha256,source_policy_sha256:r.source_policy_sha256,
  interpretation_receipt_sha256:canonicalSha256('synthetic method'),source_receipts:r.legal_sources.map(s=>({source_version_id:s.version_id,artifact_sha256:s.file_sha256,receipt_sha256:canonicalSha256(s.version_id)})),issued_at:'2026-09-12T00:00:00Z',expires_at:'2026-09-13T00:00:00Z'};}
-function personal(input:DocumentReviewInput){const e=input.entitlement_composition!.evidence;return {mw:minimumWageEntitlementInputSchema.parse(e.minimum_wage).product_facts!,pension:pensionEntitlementInputSchema.parse(e.pension).product_facts!};}
+function personal(input:DocumentReviewInput){const e=input.entitlement_composition!.evidence;return {mw:minimumWageCaseFactsSchema.parse(minimumWageEntitlementInputSchema.parse(e.minimum_wage).product_facts),pension:pensionEntitlementInputSchema.parse(e.pension).product_facts!};}
+function withTravel(v2=true){const input=raw(),source=nineTopicRuntimeSource(),t=travelEntitlementInputSchema.parse(source.entitlement_evidence!.travel);t.product_facts=travelProductFacts();t.applicability=t.applicability.filter(d=>d.decision_id!=='travel.general_coverage');
+ input.entitlement_evidence!.travel=t;if(v2)input.entitlement_evidence=enableSharedPersonalFacts(input.entitlement_evidence!,SHARED_PERSONAL_FACTS_TRAVEL_POLICY);
+ const ids=new Set(t.source_manifest.map(s=>s.document_id));input.documents.push(...source.documents.filter(d=>ids.has(d.document_id)));
+ const c=parseReviewCompletionInput(input.completion_input);input.completion_input={...c,documents:[...c.documents,...parseReviewCompletionInput(source.completion_input).documents.filter(d=>ids.has(d.pin.document_id))]};return input;
+}
 
 describe('shared personal facts use original scoped receipts, not copied answer values',()=>{
  it('offers three common questions for two branches and keeps distinct legal/source questions',()=>{
@@ -118,5 +125,24 @@ describe('shared personal facts use original scoped receipts, not copied answer 
  it('preserves unmarked historical bytes and separate branch questions',()=>{
   const input=raw(false),first=composeEntitlementReview(input);expect(first.entitlement_composition?.shared_personal_facts).toBeUndefined();expect(composeEntitlementReview(first)).toEqual(first);
   const requests=runDocumentReview(first,'legacy').completions.customer_requests;expect(requests.filter(r=>r.target.value_validation?.format==='iso_date')).toHaveLength(2);
+ });
+ it('extends only v2 employment and sector aliases to travel; v1 remains unchanged with travel data present',()=>{
+  const v1=composeEntitlementReview(withTravel(false));expect(v1.entitlement_composition!.shared_personal_facts!.groups.every(g=>g.aliases.every(a=>a.branch!=='travel'))).toBe(true);
+  expect(composeEntitlementReview(v1)).toEqual(v1);
+  let v2=composeEntitlementReview(withTravel());const groups=v2.entitlement_composition!.shared_personal_facts!.groups;
+  expect(groups.find(g=>g.fact==='birth_date')!.aliases).toHaveLength(2);expect(groups.find(g=>g.fact==='workplace_sector')!.aliases).toHaveLength(3);
+  v2=answer(v2,lookup(v2,'employment_relationship'),'כשכיר/ה',1).input;v2=answer(v2,lookup(v2,'workplace_sector'),'מעסיק פרטי',2).input;
+  const travel=travelEntitlementInputSchema.parse(v2.entitlement_composition!.evidence.travel);
+  expect(travel.product_facts!.employment_relationship).toEqual(personal(v2).mw.employment_relationship);expect(travel.product_facts!.workplace_sector).toEqual(personal(v2).pension.workplace_sector);
+  const requests=runDocumentReview(v2,'three.branches').completions.customer_requests;expect(requests.some(q=>groups.filter(g=>g.fact!=='birth_date').some(g=>g.aliases.some(a=>a.fact_key===q.target.fact_key)))).toBe(false);
+ });
+ it('reuses an original travel answer when another branch later needs the same personal fact',()=>{
+  const full=withTravel(),single=structuredClone(full);delete single.entitlement_evidence!.minimum_wage;delete single.entitlement_evidence!.pension;
+  let answered=composeEntitlementReview(single);const original=lookup(answered,'employment_relationship');answered=answer(answered,original,'שכיר או שכירה',1).input;
+  const current=enable({...answered,entitlement_evidence:full.entitlement_evidence},SHARED_PERSONAL_FACTS_TRAVEL_POLICY),g=current.entitlement_composition!.shared_personal_facts!.groups.find(g=>g.fact==='employment_relationship')!;
+  expect(g.canonical_target_sha256).toBe(original.target.target_sha256);expect(current.answer_history).toEqual(answered.answer_history);
+  expect(personal(current).mw.employment_relationship).toEqual(travelEntitlementInputSchema.parse(current.entitlement_composition!.evidence.travel).product_facts!.employment_relationship);
+  const corrected=answer(current,original,null,1,2).input;expect(personal(corrected).mw.employment_relationship.state).toBe('unknown');expect(personal(corrected).pension.employment_relationship.state).toBe('unknown');
+  expect(travelEntitlementInputSchema.parse(corrected.entitlement_composition!.evidence.travel).product_facts!.employment_relationship.state).toBe('unknown');
  });
 });

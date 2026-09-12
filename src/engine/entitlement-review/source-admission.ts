@@ -10,6 +10,7 @@ import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
 import {materializeMinimumWageCaseFacts} from '../ai-release-decisions/minimum-wage-case.ts';
 import {pensionEntitlementInputSchema} from './pension/contracts.ts';
 import {replayPensionProductFacts} from './pension/product-facts.ts';
+import {travelEntitlementInputSchema} from './travel/contracts.ts';
 import {sharedPersonalAliasFact,sharedPersonalAnswerIsCurrent,assertSharedPersonalMaterialization} from './shared-product-facts.ts';
 
 /** Inspect source citations rather than treating a caller's 'known' or
@@ -78,12 +79,12 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
    const h=input.answer_history.find(h=>h.receipt.answer_sha256===boundSource.reading_receipt_sha256);
    const supplied='printed_value' in object?object.printed_value:object.value;
    const shared=sharedPersonalAliasFact(input,packet,path,object);
-   const personal=/^(minimum_wage|pension)\.(product_facts\.[a-z_]+)$/u.exec(path);
+   const personal=/^(minimum_wage|pension|travel)\.(product_facts\.[a-z_]+)$/u.exec(path);
    if(personal&&!shared){
-    const branch=personal[1]==='pension'?pensionEntitlementInputSchema.parse(packet.pension):minimumWageEntitlementInputSchema.parse(packet.minimum_wage);
+    const branch=personal[1]==='pension'?pensionEntitlementInputSchema.parse(packet.pension):personal[1]==='travel'?travelEntitlementInputSchema.parse(packet.travel):minimumWageEntitlementInputSchema.parse(packet.minimum_wage);
     const pins=input.documents.filter(d=>branch.source_manifest.some(m=>m.kind==='case_document'&&m.document_id===d.document_id)).map(d=>({case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256}));
     const key=personal[1]==='pension'?`entitlement.pension.${canonicalSha256({period:input.period,pins,path:personal[2]}).slice(0,32)}`
-     :`entitlement.minimum_wage.${canonicalSha256({period:input.period,pins,path:personal[2],key:'personal.'+personal[2]}).slice(0,28)}`;
+     :`entitlement.${personal[1]}.${canonicalSha256({period:input.period,pins,path:personal[2],key:'personal.'+personal[2]}).slice(0,28)}`;
     if(!h||h.request.target.fact_key!==key)throw Error('ENTITLEMENT_PERSONAL_ANSWER_TARGET');
    }
    if(isDeclaredPeriodSource(boundSource)){

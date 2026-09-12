@@ -21,6 +21,7 @@ const decision=z.object({decision_id:id,state:z.enum(['accepted','missing','unkn
  basis:z.enum(['ai_source_assessment','customer_declaration','verified_rule_source']),explanation:z.string().min(1).max(1000),sources:z.array(source).max(16),valid_until:z.iso.datetime({offset:true}).nullable()}).strict();
 export const workingTimeEntitlementInputSchema=z.object({
  schema_version:z.literal('working-time-entitlement-input-v1'),catalog_version:z.literal('1.0.0'),
+ calculation_policy:z.literal('working-time-separated-expected-v2').optional(),
  case_id:z.string().min(1).max(160),run_id:z.string().min(1).max(160),check_id_prefix:id,
  period:z.object({from:date,to:date}).strict(),evaluated_at:z.iso.datetime(),
  source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,

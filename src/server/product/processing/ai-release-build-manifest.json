@@ -32,11 +32,11 @@
     },
     {
       "path": "src/engine/ai-release-decisions/apply.ts",
-      "sha256": "3a6eaf4dbfbe5487d132c11716907b4665e19ca77dfab314786262895d9e96fc"
+      "sha256": "71a245e18793284d4d3fc2fa03af0814c5a8605f678023a47567724f75516cf0"
     },
     {
       "path": "src/engine/ai-release-decisions/catalog.ts",
-      "sha256": "4fa11aed308d345e8a6226804c5128ed11932dfcc6faf38c5357b144dc52d820"
+      "sha256": "896ed2960ebc11404d6f0821cf1187ec2d08d9d33a171b52209669d282efb81a"
     },
     {
       "path": "src/engine/ai-release-decisions/contracts.ts",
@@ -160,7 +160,7 @@
     },
     {
       "path": "src/engine/entitlement-review/automatic-nonpay.ts",
-      "sha256": "9bf6ca96021126c0d64814565d7493717a2cdc551fdb227c249febd109c955df"
+      "sha256": "8ca88b547dfe295131e207d82e2a948d52c4fe18b715f5b5b20bbb615fcd5211"
     },
     {
       "path": "src/engine/entitlement-review/automatic-payroll.ts",
@@ -176,11 +176,11 @@
     },
     {
       "path": "src/engine/entitlement-review/compose.ts",
-      "sha256": "014d901a9771f4532f5c375160eabdb866f7bdbc7ef345c272307c72e8844335"
+      "sha256": "3ac1d2dc38f5c805092b4b973a063dccedd9d02aef845161c8757ab67bd6c219"
     },
     {
       "path": "src/engine/entitlement-review/contracts.ts",
-      "sha256": "cd0a669af3b8e1998203765dfbb0ae4f7a3a85c2af85276fb25fd5a6efc0dfbe"
+      "sha256": "b5ebef372d379dd312cc729b8ad59854ae932cd2b08fcd4f6e9d90548f2fda4c"
     },
     {
       "path": "src/engine/entitlement-review/convalescence/contracts.ts",
@@ -276,31 +276,35 @@
     },
     {
       "path": "src/engine/entitlement-review/shared-product-fact-contracts.ts",
-      "sha256": "96aff0dbfd78fe80865b8d422a23c0274a9d9363a09d7fe463721af12c7bf2ea"
+      "sha256": "614c827182956ad3bcbb172fefae8f25858a2f57eedc1d28d8ed5b0422665f67"
     },
     {
       "path": "src/engine/entitlement-review/shared-product-facts.ts",
-      "sha256": "7bb6c399c801ba1e7739bf90f8e0db18cac7918739eea8858e8e08263e636dab"
+      "sha256": "ce3ce1cb57a682e4100db382e3b12210a63792686a806c9b66d4f48d5b99c193"
     },
     {
       "path": "src/engine/entitlement-review/simple-product.ts",
-      "sha256": "30f9463ac7314066cc44a3e7ee90945be41d68a93fb2311c18f051217c469ba6"
+      "sha256": "23ccfd95d25622b3ab993bff88bd545f7ac904016cf550326e06ab5c2f5c7b15"
     },
     {
       "path": "src/engine/entitlement-review/source-admission.ts",
-      "sha256": "350b62300654dff77bc13e0137357678adcb596ee34675320c7fb4e0c1224401"
+      "sha256": "d6e21b1e825576cfd4f5bf35f1d38f277db800c9ae45e2fa6c127ad6a2fdf818"
     },
     {
       "path": "src/engine/entitlement-review/travel/contracts.ts",
-      "sha256": "e40177c42fff7df330ea3a405bb95f4e69637d994a1e6fa367ea8817ff09a410"
+      "sha256": "a73ddccfea46b4a967a1d1830a058c0ab79469b91ca874894091ec510a184bf1"
     },
     {
       "path": "src/engine/entitlement-review/travel/index.ts",
-      "sha256": "bcea5161884e0c236989616dc8b7f3defc89bb7a59701a9ca3cfd389e997a001"
+      "sha256": "e85dd03f309c1b4764a0557c5aac1f81411e4f1bd397381bb496f25762c6614d"
     },
     {
       "path": "src/engine/entitlement-review/travel/legacy-formula-provenance.ts",
       "sha256": "476c7e9bf7f5f8d16759b0cd2011d5cf1521dc42aac672dde1c0e437e544dcb8"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/product-facts.ts",
+      "sha256": "09b698ab462673896e0edc7513d524c94786a2ff24a5030a52902cd544e99347"
     },
     {
       "path": "src/engine/entitlement-review/travel/product-labels.ts",
@@ -312,7 +316,7 @@
     },
     {
       "path": "src/engine/entitlement-review/typed-product-facts.ts",
-      "sha256": "574837b269cced0d97e34cd44be530323bb27ef19d879231c0d66be09fe7ce09"
+      "sha256": "d89608195978d3110ba8096b6d2825de7b5e2f419c24d5c7303c21640756c163"
     },
     {
       "path": "src/engine/entitlement-review/vacation/contracts.ts",
@@ -336,19 +340,23 @@
     },
     {
       "path": "src/engine/entitlement-review/working-time/contracts.ts",
-      "sha256": "0f51b0526ac9561c83e54de0d25897de9c10694a57ef8f697b18b8fb3fe1887d"
+      "sha256": "8159af765b9d775391f937a1361d9ca0b65053f872c0c4532c911e69c2a591a7"
     },
     {
       "path": "src/engine/entitlement-review/working-time/index.ts",
       "sha256": "01b3d8a50fc2a6444bc3af56fdbea5fde8ad57f81b57da8cd7ed56ffdb72ab81"
     },
     {
+      "path": "src/engine/entitlement-review/working-time/payroll-rate.ts",
+      "sha256": "5a747f5421006445a3f50bf03ae5af17d6eeb5cbac61f682ef6063d5fe9a4443"
+    },
+    {
       "path": "src/engine/entitlement-review/working-time/resolve.ts",
-      "sha256": "83c2f4af698c6f68e8d58eb89a65d1efc73bc8d5f5b43513d02618aa38f76d90"
+      "sha256": "340ae0cf678c17d0bc3df1f20d1e5d909a2c2e7f5684bccd26a99b8651280da5"
     },
     {
       "path": "src/engine/entitlement-review/working-time/rules.ts",
-      "sha256": "0ca7b5ac8a0877702334adcf30a84e0a466b4e28e1b3e53374b6ca16eeea0f51"
+      "sha256": "81a927ba1db3631f827a7c95601d5ac457900a920cef5249451f964c2d4efaa4"
     },
     {
       "path": "src/engine/entitlement-review/working-time/source-policy.ts",
@@ -691,6 +699,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "1692036e44844ad8ea1bc7a15b70df17d8755ac21117206f7b8974b4b1543094",
-  "sha256": "40bcce7bec6eb347496cc85120c45419f1142da2059a5d9e632408f768b3c869"
+  "source_graph_sha256": "17db2ba19733de7945e0a7efb975942b2cfd7940f4c382064cc30030dabb2937",
+  "sha256": "ef30cf23b146d2bd6ef6c12ea4d9903fe0f9836d8c35ff571c37974a80739949"
 }
