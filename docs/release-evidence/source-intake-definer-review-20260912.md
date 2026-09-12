@@ -41,7 +41,7 @@ An upload is `received_pending_reading`, with `information_satisfied = false`. O
 
 ## Actual-role acceptance plan
 
-Use a dedicated, clearly synthetic QA case with a committed original legacy paid receipt and linked identity. Do not put a synthetic payroll document in a retained private customer copy. Provisioning belongs to the operator and is separate from the proof runner.
+For a durable synthetic journey, use a dedicated, clearly synthetic QA case with a committed original legacy paid receipt and linked identity. A smaller SQL-role proof can use an existing authorized QA copy: commit only its genuine missing-source request, then keep every synthetic upload effect inside one web transaction that is rolled back. Do not persist a synthetic payroll document in a retained private customer copy. Provisioning belongs to the operator and is separate from the proof runner.
 
 1. Through the actual worker connection and a current authoritative worker session for that QA case, load the exact current head, replay the source-intake context, and open the generated request twice. Verify one request identity. Reject foreign/stale target and wrong source hash. Roll back this worker transaction, or explicitly retain a separately authorized request for the next role.
 2. With a committed request, use the actual web connection and four-argument reserve RPC. Verify reserve retry returns the same files, paths and scope, while a different manifest with the same batch identifier fails. Force deferred constraints before ending the transaction. Reject a foreign identity and scope.
