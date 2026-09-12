@@ -66,6 +66,15 @@ describe('saved draft job consumer',()=>{
   expect(result).toMatchObject({extractedVersions:2,analyzedMonths:3,completion:{manifest:{publication:'draft'}}});
   expect(s.state.heartbeats).toBe(5);expect(s.state.outbox).toBe(1);
  });
+ it('keeps an other tariff PDF out of both OCR queues while valid payslips complete normally',async()=>{
+  const s=setup(),tariff=randomUUID();s.source.documents=s.source.documents.filter(d=>d.type==='payslip');
+  s.source.documents.push({id:randomUUID(),version_id:tariff,type:'other',month:'2025-01'});
+  const result=await runSavedDraftJob({...s.input,documentEvidence:{}});
+  expect(ports.extract.mock.calls.map(([input])=>input.versionId).sort()).toEqual([s.january,s.february].sort());
+  expect(ports.evidence).not.toHaveBeenCalled();expect(s.input.storage.download).not.toHaveBeenCalled();
+  expect(result).toMatchObject({extractedVersions:2,analyzedMonths:3});
+  expect(ports.complete).toHaveBeenCalledOnce();expect(s.state.receipts).toHaveLength(3);
+ });
  it('skips OCR only when every purchased scope consuming each version has an admitted pinned review',async()=>{
   const s=setup();ports.reviewScope.mockImplementation(async(_context,_job,order)=>({orderId:order.id,reviewSha256:'c'.repeat(64),sourceVersionIds:[s.january,s.february]}));
   const result=await runSavedDraftJob(s.input);

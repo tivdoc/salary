@@ -112,7 +112,7 @@
     },
     {
       "path": "src/engine/document-review/completions.ts",
-      "sha256": "e7732a4a24f17ae321a8f35352aad8c3d27ab9cd7eefbbc6b18a7178360140fe"
+      "sha256": "8598851be9438c9cb4b84e2dea3b2a8be4e911fed457083b8e58dabd65503da2"
     },
     {
       "path": "src/engine/document-review/contracts.ts",
@@ -132,7 +132,7 @@
     },
     {
       "path": "src/engine/document-review/payslip-adapter.ts",
-      "sha256": "30b689b599d6e26e497db0bdf77b3d17a1dcbf300cebc57dbe3d0038c9bd7336"
+      "sha256": "ce33cdd22a9e5f35732377a1fddf06e5ac7e5798e27573d9bad7c715fdc15641"
     },
     {
       "path": "src/engine/document-review/payslip-source-structures.ts",
@@ -144,11 +144,11 @@
     },
     {
       "path": "src/engine/document-review/source-dependencies.ts",
-      "sha256": "6b47b740f401b3f35c7bf24b8a78d31de6c6beab2e81d9d3f1187bd3f8ec02d4"
+      "sha256": "9bb4467e5f7e036db3ed6689136bd7823f85881698f42af65f48864fbb1153d4"
     },
     {
       "path": "src/engine/document-review/source-structure-evidence.ts",
-      "sha256": "3ec8406f4440c6ed9a2a8ee7f4badc832c00a5ab7439193b7527b924a35c41ca"
+      "sha256": "14787c0bc59836edc3fbc58e6667f3f756fc9209aa6538c10f61c622ba28fab6"
     },
     {
       "path": "src/engine/domain/documents.ts",
@@ -164,7 +164,7 @@
     },
     {
       "path": "src/engine/entitlement-review/automatic-benefits.ts",
-      "sha256": "59ca4a40cd3c852ff1fa0d0f307fc6bf27f87930e778cface5b473cd447f4db9"
+      "sha256": "32a67f95fb892d5106cd9caf7baef430826cc68df43d93e5f14c328f0133d3ba"
     },
     {
       "path": "src/engine/entitlement-review/automatic-nonpay.ts",
@@ -172,11 +172,11 @@
     },
     {
       "path": "src/engine/entitlement-review/automatic-payroll.ts",
-      "sha256": "d9277e48eac6471a7ce8112d17745c3fa55e2aea59aaa6679339a52f0cfd058f"
+      "sha256": "957fba20fd59ac274579ac8dc9b75c3dfaef75598ebde5784fbf43f0c3d581e9"
     },
     {
       "path": "src/engine/entitlement-review/automatic-pension.ts",
-      "sha256": "d1f3b3742beb4fb18ec9a086b56eecb61e02d1a89c037cb5c49d416895c8f3cb"
+      "sha256": "e06c64ecf96cd65637b102912c0626a5083100e1e3010e7c171a0081b7d4d8f7"
     },
     {
       "path": "src/engine/entitlement-review/branch-contract.ts",
@@ -531,12 +531,16 @@
       "sha256": "4ae6e35f3f7136c8f8bc262f2a6b70dcba1fac2c7f5666f9878a0c811ea2bb6c"
     },
     {
+      "path": "src/engine/extraction/source-period-association.ts",
+      "sha256": "c4aa559294268ab8824634a208c6d96bcbbeadbd9a1b4f57e8f67d2579969486"
+    },
+    {
       "path": "src/engine/extraction/source-structure-resolution.ts",
-      "sha256": "4c1c482bce1e22ec76c22c0facd7189b4083bc4faf623cd776550f25f17c98be"
+      "sha256": "dde4d90999e352dc1f735bb174b731a56f05290bcfaa2515d8cad8086023f1aa"
     },
     {
       "path": "src/engine/extraction/source-structure.ts",
-      "sha256": "40afc52290f83291a4d0f3d6f6e4ded2c9dc933d9248cde158ca8c53759b5b5a"
+      "sha256": "7e5f78a4b1e28b8b542cac5e3878404c3aa01a514ab5beb8fc48d85be47600a7"
     },
     {
       "path": "src/engine/extraction/validation.ts",
@@ -811,6 +815,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "d96040b87b4455c3699828e1c1fff826f308bcc3d061ad9d22bd5ef77d6cebe0",
-  "sha256": "b69f6f33e87ffa3b882b62ecc37094e5620659154f2931f2b7271c49849796d9"
+  "source_graph_sha256": "466e96279ea49d7f942fde041cd86b36185779bf94016038cc41a877f27b674a",
+  "sha256": "b50d76d47008f3100df64075e7060986bb759e4c2583dd4dfeec55b8342ebbdf"
 }

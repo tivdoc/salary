@@ -4,6 +4,7 @@ import {documentReviewInputSchema,type DocumentReviewInput} from '../document-re
 import {documentReviewCalculationInputSchema,type DocumentReviewSource,type DocumentReviewOperand} from '../document-review/calculations.ts';
 import {reviewInputFromPayslips,PAYSLIP_REVIEW_POLICY} from '../document-review/payslip-adapter.ts';
 import {materializeValidatedPayslipReadings} from '../extraction/reading-resolution.ts';
+import {payslipSourcePeriod} from '../extraction/source-period-association.ts';
 import {validatePayslipGate0,SOURCE_ROW_DUPLICATE_POLICY} from '../extraction/validation.ts';
 import {resolvePayslipSnapshot,resolvedPayslipFactPaths,IDENTIFIED_AGREEING_CANDIDATES_POLICY} from '../extraction/resolver.ts';
 import type {NormalizedCandidateField} from '../extraction/payslip.ts';
@@ -36,7 +37,8 @@ function readSource(pair:Matched,input:DocumentReviewInput,snapshot:StoredCaseIn
  const start=date?.status==='confirmed'&&typeof date.value==='string'&&starts.length&&starts.every(f=>f.normalized_value===date.value)
   ?{value:date.value,source:source(starts,'תאריך תחילת עבודה שנקרא בתלוש')}:null;
  const fields=e.fields.filter(f=>f.field==='convalescence_amount'),amount=resolved.facts.find(f=>f.path==='convalescence.payment'),v=fields[0]?.normalized_value;
- let convalescence:DocumentReviewOperand|null=amount?.status==='confirmed'&&fields.length>0&&fields.every(f=>f.source.source_scope?.period_kind==='current'&&canonicalSha256(f.normalized_value)===canonicalSha256(v))
+ let convalescence:DocumentReviewOperand|null=amount?.status==='confirmed'&&fields.length>0&&fields.every(f=>payslipSourcePeriod({original:materialized.original,structureReadings:materialized.structureReadings,
+  ref:{kind:'field',id:f.candidate_id},period:input.period}).state==='current'&&canonicalSha256(f.normalized_value)===canonicalSha256(v))
   &&v!==null&&typeof v==='object'&&'currency'in v&&v.currency==='ILS'&&'minor_units'in v
   ?{id:'convalescence.recorded',observation_id:fields[0].candidate_id,state:'observed',printed_value:(v.minor_units/100).toFixed(2),representation:'money_ils',quantity_unit:null,precision:'source_exact',source:source(fields,'סכום הבראה שנקרא בתלוש — תקופת הצבירה טרם שויכה')}:null;
  if(!fields.length&&input.purchased_scope.topics.includes('convalescence')){

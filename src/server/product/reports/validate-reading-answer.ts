@@ -11,5 +11,13 @@ export async function validateSavedReadingAnswer(input:{store:CaseAccessDb;caseI
  const matches=rows.filter(r=>r.request_id===input.requestId);if(matches.length!==1)throw Error('REQUEST_FIELD_FORBIDDEN');
  const target=documentReadingTargetSchema.parse(matches[0].target);
  if(target.case_id!==z.uuid().parse(input.caseId)||input.code!==`document_field:${target.target_sha256}`)throw Error('REQUEST_FIELD_FORBIDDEN');
+ if(target.schema_version==='document-travel-tariff-transcription-v1'){
+  // A well-formed purpose hash is not proof that the purpose is admitted.
+  // The protected SQL lookup checks its current persisted receipt; the writer
+  // repeats the same check under the case lock to close the answer race.
+  const states=z.array(z.object({request_id:z.uuid(),source_current:z.boolean()})).parse(await input.store.rpc('case_request_field_states',{target_case:input.caseId,target_identity:input.identityId}));
+  const current=states.filter(row=>row.request_id===input.requestId);
+  if(current.length!==1||!current[0].source_current)throw Error('REQUEST_FIELD_SOURCE_CHANGED');
+ }
  validateDocumentReadingAnswerForTarget(target,input.answer);
 }

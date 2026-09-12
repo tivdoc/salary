@@ -2,11 +2,14 @@
 import {useState} from 'react';
 import type {StoredRequest} from '@/server/product/reports/case-requests';
 import {customerErrorFromResponse,customerErrorMessage} from '@/lib/customer-copy';
-import {balanceMovementLabels,deductionGroupLabels,buildSourceStructureAnswer,initialSourceStructureDraft,
+import {balanceMovementLabels,deductionGroupLabels,sourcePeriodKindLabels,buildSourceStructureAnswer,initialSourceStructureDraft,
  type SourceStructureContext,type SourceStructureAction,type SourceStructureDraft} from '@/lib/source-structure-display';
 
 const unitLabel=(unit:string)=>unit==='days'?'ימים':unit==='hours'?'שעות':'היחידה אינה מודפסת במקור';
 function SourceDetails({context,rawValue}:{context:SourceStructureContext;rawValue:string|null}){
+ if(context.kind==='period_association')return <div><p>יש לזהות לאיזו תקופה מתייחסים הנתונים המסומנים. המספרים מוצגים לזיהוי בלבד ואין צורך לאשר אותם שוב.</p>
+  <ul>{context.refs.map((ref,index)=><li key={`${ref.label}:${index}`}>{ref.label} · עמוד {ref.page}: <bdi>{ref.raw_value??'לא נקרא מספר'}</bdi></li>)}</ul>
+  <p>החודש הנבדק: <bdi>{context.month}</bdi>. יש להעתיק את התקופה שהמקור מציין; תאריך התלוש לבדו אינו קובע את תקופת כל רכיב.</p></div>;
  if(context.kind==='source_relationship')return <div><p>הסכומים מוצגים לצורך זיהוי השדות בלבד. השאלה היא על הקשר שמופיע במקור, ולא על אישור המספרים מחדש.</p>
   <dl><dt>{context.contribution.label}{context.contribution.page?` · עמוד ${context.contribution.page}`:''}</dt><dd><bdi>{context.contribution.raw_value??'לא נקרא סכום'}</bdi></dd><dt>{context.base.label}{context.base.page?` · עמוד ${context.base.page}`:''}</dt><dd><bdi>{context.base.raw_value??'לא נקרא סכום'}</bdi></dd></dl>
   {context.proposed_value?<p>השיוך המוצג: {context.proposed_value.relationship==='same_base'?'הרכיב משויך לאותו בסיס':'הרכיב אינו משויך לאותו בסיס'}.</p>:null}</div>;
@@ -21,7 +24,7 @@ function SourceDetails({context,rawValue}:{context:SourceStructureContext;rawVal
 export function SourceStructureAnswer({request,context,publicId,onAnswered,correction=false,sourceShared=false}:{request:StoredRequest;context:SourceStructureContext;publicId:string;onAnswered:()=>void;correction?:boolean;sourceShared?:boolean}){
  const [initial]=useState(()=>initialSourceStructureDraft(context,request.draft_text??(correction?request.answer_text:null)));
  const [action,setAction]=useState<SourceStructureAction|null>(initial.action),[draft,setDraft]=useState(initial.draft),[busy,setBusy]=useState(false),[error,setError]=useState(''),[conflict,setConflict]=useState(false);
- const display=request.reading_display!,disabled=busy||request.source_current===false;
+ const display=request.reading_display!,disabled=busy||(context.kind==='period_association'?request.source_current!==true:request.source_current===false);
  const allowed:SourceStructureAction[]=context.kind==='source_relationship'&&context.allows_explicit_confirmation===true?['confirm','correct','unreadable','unknown']:['correct','unreadable','unknown'];
  const hasForm=action==='correct'||action==='confirm'&&context.kind==='source_relationship';
  const answer=buildSourceStructureAnswer(context,action,draft);
@@ -69,7 +72,13 @@ export function SourceStructureAnswer({request,context,publicId,onAnswered,corre
       <option value="days">ימים</option><option value="hours">שעות</option><option value="source_native_unknown">היחידה אינה מודפסת במקור</option></select></label></>:null}
     <label className="field"><span>החודש שאליו מתייחס התא</span><input type="month" value={draft.period} onChange={event=>change('period',event.target.value)}/></label>
     <p>אין להעביר מספר מתא סמוך, להשלים יתרה בחישוב או להזין אפס במקום תא ריק. היחידה והתקופה מתייחסות לתא הזה בלבד.</p></>:null}
-   <label className="field"><span>עמוד המקור</span><input inputMode="numeric" value={draft.page} maxLength={4} onChange={event=>change('page',event.target.value)}/></label>
+   {context.kind==='period_association'?<>
+    <label className="field"><span>סוג התקופה שמצוין במקור</span><select value={draft.period_kind} onChange={event=>change('period_kind',event.target.value as SourceStructureDraft['period_kind'])}>
+     <option value="">בחירת סוג התקופה לפי המקור</option>{(['current','retroactive','cumulative'] as const).map(kind=><option key={kind} value={kind}>{sourcePeriodKindLabels[kind]}</option>)}</select></label>
+    <label className="field"><span>מתאריך</span><input type="date" value={draft.period_from} onChange={event=>change('period_from',event.target.value)}/></label>
+    <label className="field"><span>עד תאריך</span><input type="date" value={draft.period_to} onChange={event=>change('period_to',event.target.value)}/></label>
+    <p>עמוד המקור: {display.page}. אם גבולות התקופה אינם מצוינים או אינם ברורים, יש לבחור לא יודע או לא קריא.</p>
+   </>:<label className="field"><span>עמוד המקור</span><input inputMode="numeric" value={draft.page} maxLength={4} onChange={event=>change('page',event.target.value)}/></label>}
    <label className="field"><span>מיקום השדה או הקבוצה בעמוד</span><input value={draft.locator} maxLength={120} onChange={event=>change('locator',event.target.value)} placeholder="למשל: כותרת הטבלה ושם השורה"/></label>
    <label className="field"><span>הכיתוב במקור שמבסס את ההעתקה או השיוך</span><textarea value={draft.text} maxLength={160} onChange={event=>change('text',event.target.value)}/></label>
    <p>יש להעתיק את הכיתוב הרלוונטי. אם המקור אינו מאפשר לקבוע את הפרט, בוחרים לא יודע או לא קריא.</p>

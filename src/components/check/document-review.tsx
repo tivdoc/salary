@@ -5,19 +5,20 @@ import { useRouter } from "next/navigation";
 import { FileArrowUp, FilePdf, X } from "@phosphor-icons/react/dist/ssr";
 import { trackEvent } from "@/lib/analytics";
 import { countPdfPages, measureImage, type ReadabilityReport } from "@/lib/document-readability";
-import { lastCompleteMonth, MAX_PAYSLIPS, validateUploadDescriptor, type DocumentType } from "@/lib/validation";
-import { uploadNextPath, type DocumentUpload, type SavedDocument, type UploadSnapshot } from "@/lib/document-upload";
+import { lastCompleteMonth, MAX_PAYSLIPS, validateUploadDescriptor } from "@/lib/validation";
+import { documentUploadSchema, MAX_TRAVEL_TARIFF_DOCUMENTS, uploadNextPath, type DocumentUpload, type DocumentUploadType, type SavedDocument, type TravelTariffEvidencePurpose, type UploadSnapshot } from "@/lib/document-upload";
 import { transferDocuments } from "./document-transfer";
 import { documentCapacity, uploadMonthOptions } from "@/lib/document-capacity";
 import "./document-review.css";
 
 type Chosen = {
-  id: string; documentType: DocumentType; file: File; previewUrl: string;
+  id: string; documentType: DocumentUploadType; file: File; previewUrl: string;
   pages: number | null; readability: ReadabilityReport | null; periodMonth: string;
+  evidencePurpose?: TravelTariffEvidencePurpose;
   replace?: { documentId: string; versionId: string };
   sent: number;
 };
-const labels = { payslip: "תלוש", contract: "חוזה", attendance: "דוח נוכחות" };
+const labels = { payslip: "תלוש", contract: "חוזה", attendance: "דוח נוכחות", other: "מסמך נוסף" };
 function formatSize(size: number) {
   return size < 1024 * 1024 ? `${Math.round(size / 1024)}KB` : `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
@@ -36,6 +37,27 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
   const data = await response.json();
   if (!response.ok) throw new Error(data.error ?? "ההעלאה לא הושלמה. אפשר לנסות שוב.");
   return data;
+}
+
+export function TravelTariffPurposeFields({ purpose, months, disabled, onChange }: {
+  purpose: TravelTariffEvidencePurpose; months: readonly string[]; disabled: boolean;
+  onChange: (purpose: TravelTariffEvidencePurpose) => void;
+}) {
+  return <fieldset disabled={disabled}>
+    <legend>מקור תעריפי הנסיעה</legend>
+    <label>חודש הבדיקה של תעריף הנסיעה
+      <select value={purpose.month} onChange={event => onChange({ ...purpose, month: event.target.value })}>
+        <option value="">בחרו חודש שנרכש לבדיקה</option>
+        {months.map(month => <option key={month} value={month}>{monthLabel(month)}</option>)}
+      </select>
+    </label>
+    <label>עמוד במקור
+      <input type="number" min={1} max={100} step={1} value={purpose.page || ""} onChange={event => onChange({ ...purpose, page: Number(event.target.value) })} />
+    </label>
+    <label>מיקום התעריף או טבלת הכרטיסים בעמוד
+      <input type="text" maxLength={120} value={purpose.locator} placeholder="למשל: טבלת תעריפים במרכז העמוד" onChange={event => onChange({ ...purpose, locator: event.target.value })} />
+    </label>
+  </fieldset>;
 }
 
 export function DocumentReview({ initial, initialRequestId, replacementVersionId }: { initial: UploadSnapshot; initialRequestId?: string; replacementVersionId?: string }) {
@@ -57,6 +79,7 @@ export function DocumentReview({ initial, initialRequestId, replacementVersionId
   const recent = useMemo(() => recentMonths(), []);
   const capacity = documentCapacity(snapshot.capacity);
   const months = uploadMonthOptions(capacity, recent, snapshot.documents.map(doc => doc.period_month));
+  const tariffMonths = capacity.paidMonths.filter(month => /^2026-(05|06|07)$/u.test(month)).sort().reverse();
   useEffect(() => {
     // Only an opaque batch id is persisted; no files, names or signed URLs.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate external tab storage after SSR; initial HTML must be identical on server and client.
@@ -81,14 +104,15 @@ export function DocumentReview({ initial, initialRequestId, replacementVersionId
   const effectiveCheckMonth = availableMonths.includes(checkMonth) ? checkMonth : availableMonths[0];
   const locked = busy || batchId !== null || !recoveryReady;
 
-  async function add(documentType: DocumentType, file?: File, replace?: SavedDocument) {
+  async function add(documentType: DocumentUploadType, file?: File, replace?: SavedDocument) {
     if (!file || workingRef.current || batchId) return;
     const problem = validateUploadDescriptor(file);
     if (problem) { setError(problem); return; }
+    if (documentType === "other" && file.type !== "application/pdf") { setError("מקור תעריפי נסיעה מצורף כקובץ PDF."); return; }
     const current = chosenRef.current;
     const count = snapshot.documents.filter((doc) => doc.document_type === documentType).length
       + current.filter((doc) => doc.documentType === documentType && !doc.replace).length;
-    if (!replace && count >= (documentType === "payslip" ? capacity.maxPayslips : 1)) {
+    if (!replace && count >= (documentType === "payslip" ? capacity.maxPayslips : documentType === "other" ? MAX_TRAVEL_TARIFF_DOCUMENTS : 1)) {
       setError("אין מקום למסמך נוסף מסוג זה. להחלפה, יש לבחור במסמך השמור."); return;
     }
     const pending = current.filter(item => !replace || item.replace?.documentId !== replace.id);
@@ -103,6 +127,10 @@ export function DocumentReview({ initial, initialRequestId, replacementVersionId
       updateChosen([...current.filter((item) => item !== prior), {
         id: crypto.randomUUID(), documentType, file, pages, readability, previewUrl: URL.createObjectURL(file),
         periodMonth: replace?.period_month ?? months[0]!, sent: 0,
+        ...(documentType === "other" ? { evidencePurpose: {
+          kind: "travel_tariff" as const, month: replace?.evidence_purpose?.month ?? tariffMonths[0] ?? "",
+          page: 1, locator: "",
+        } } : {}),
         ...(replace ? { replace: { documentId: replace.id, versionId: replace.version_id } } : {}),
       }]);
     } catch { setError("לא הצלחנו לקרוא את הקובץ. אפשר לבחור אותו שוב."); }
@@ -153,12 +181,15 @@ export function DocumentReview({ initial, initialRequestId, replacementVersionId
             clientId: item.id, documentType: item.documentType, name: item.file.name, type: item.file.type as DocumentUpload["files"][number]["type"], size: item.file.size,
             sha256: Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await item.file.arrayBuffer())), (byte) => byte.toString(16).padStart(2, "0")).join(""),
             ...(item.documentType === "payslip" ? { periodMonth: item.periodMonth } : {}),
+            ...(item.evidencePurpose ? { evidencePurpose: item.evidencePurpose } : {}),
             ...(item.replace ? { replace: item.replace } : {}),
           })));
-          manifestRef.current = { caseId: snapshot.caseId, batchId: id, files,
+          const parsed = documentUploadSchema.safeParse({ caseId: snapshot.caseId, batchId: id, files,
             ...(!paid && effectiveCheckMonth ? { checkPeriodMonth: effectiveCheckMonth } : {}),
             ...(requestId ? { requestId } : {}),
-          };
+          });
+          if (!parsed.success) throw new Error("יש לבדוק את סוג הקובץ, החודש, העמוד והמיקום במקור לפני ההעלאה.");
+          manifestRef.current = parsed.data;
           remember(id);
         }
         result = await transferDocuments({ manifest: manifestRef.current, files: new Map(chosenRef.current.map((item) => [item.id, item.file])), signal: controller.signal, post, put: putFile }) as UploadSnapshot;
@@ -195,11 +226,12 @@ export function DocumentReview({ initial, initialRequestId, replacementVersionId
           <div className="document-card__body">
             <p className="document-card__name">{doc.original_filename}</p>
             {doc.version_id === replacementVersionId ? <p role="status">זה המסמך של השאלה. להחלפתו, בחרו קובץ דרך ״החלפת מסמך״ בכרטיס זה. שאר המסמכים נשמרים בתיק.</p> : null}
-            <p>{labels[doc.document_type]} · {formatSize(doc.size)}{doc.period_month ? ` · ${monthLabel(doc.period_month)}` : ""}</p>
+            <p>{doc.evidence_purpose?.kind === "travel_tariff" ? "מקור תעריפי נסיעה" : labels[doc.document_type]} · {formatSize(doc.size)}{doc.period_month && !doc.evidence_purpose ? ` · ${monthLabel(doc.period_month)}` : ""}</p>
+            {doc.evidence_purpose ? <p>{monthLabel(doc.evidence_purpose.month)} · עמוד {doc.evidence_purpose.page} מתוך {doc.evidence_purpose.page_count} · {doc.evidence_purpose.locator}</p> : null}
             <p role="status">{replaced.has(doc.id) ? "נבחר קובץ להחלפה. המסמך השמור נשאר עד לסיום." : "שמור בתיק"}</p>
           </div>
           <label className="button button--ghost">החלפת מסמך
-            <input type="file" aria-label={`החלפת ${doc.original_filename}`} accept="application/pdf,image/jpeg,image/png" disabled={locked}
+            <input type="file" aria-label={`החלפת ${doc.original_filename}`} accept={doc.document_type === "other" ? "application/pdf" : "application/pdf,image/jpeg,image/png"} disabled={locked}
               onChange={(event) => { void add(doc.document_type, event.target.files?.[0], doc); event.target.value = ""; }} />
           </label>
         </li>)}</ul>
@@ -213,7 +245,13 @@ export function DocumentReview({ initial, initialRequestId, replacementVersionId
               onChange={(event) => { void add(type, event.target.files?.[0]); event.target.value = ""; }} />
           </label>;
         })}
+        {paid && tariffMonths.length > 0 ? <label className="button button--ghost">
+          <FileArrowUp aria-hidden="true" /> הוספת מקור תעריפי נסיעה
+          <input type="file" aria-label="הוספת מקור תעריפי נסיעה" accept="application/pdf" disabled={locked || snapshot.documents.filter(doc => doc.document_type === "other").length + chosen.filter(doc => doc.documentType === "other" && !doc.replace).length >= MAX_TRAVEL_TARIFF_DOCUMENTS}
+            onChange={event => { void add("other", event.target.files?.[0]); event.target.value = ""; }} />
+        </label> : null}
       </div>
+      {paid && tariffMonths.length > 0 ? <p>לבדיקת נסיעות אפשר לצרף PDF עם תעריפים או כרטיסי נסיעה, ולציין את החודש והמיקום במקור.</p> : null}
       <ul className="document-review__list">{chosen.map((item) => <li className="document-card" key={item.id}>
         <div className="document-card__preview">{item.file.type === "application/pdf" ? <FilePdf aria-hidden="true" />
           // eslint-disable-next-line @next/next/no-img-element -- local object URL
@@ -227,6 +265,8 @@ export function DocumentReview({ initial, initialRequestId, replacementVersionId
               {[...new Set([item.periodMonth, ...months])].sort().reverse().map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
             </select>
           </label> : null}
+          {item.evidencePurpose ? <TravelTariffPurposeFields purpose={item.evidencePurpose} months={tariffMonths} disabled={locked}
+            onChange={evidencePurpose => updateChosen(chosenRef.current.map(row => row.id === item.id ? { ...row, evidencePurpose } : row))} /> : null}
           {item.sent > 0 ? <p role="status">נשלח {formatSize(item.sent)} מתוך {formatSize(item.file.size)} · ממתין לשמירה בתיק</p> : null}
         </div>
         <button type="button" className="document-card__remove" aria-label={`הסרת ${item.file.name} מהבחירה`} disabled={locked} onClick={() => remove(item.id)}><X aria-hidden="true" /></button>

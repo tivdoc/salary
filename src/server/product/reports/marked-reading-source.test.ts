@@ -8,6 +8,7 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {CaseAccessDb} from '../case-access/db';
 import {documentSourceScopeTarget} from './document-source-scope-confirmation';
 import {documentSourceTranscriptionTarget} from './document-source-transcription';
+import {documentTravelTariffTarget} from './document-travel-tariff';
 vi.mock('server-only',()=>({}));
 async function fixture(box=true){
  const f=reviewRowCellCoverageFixture(),pdf=await PDFDocument.create();pdf.addPage([400,600]);const bytes=Buffer.from(await pdf.save());
@@ -56,4 +57,17 @@ it('returns the original protected page for missing hours without inventing a hi
  const input={caseId:target.case_id,identityId:'11111111-1111-4111-8111-111111111111',requestId:f.fieldRequest.request_id,version:target.version_id,bytes,mime:'application/pdf'};
  expect(await markReadingSource(input,db)).toBeNull();
  await expect(markReadingSource({...input,bytes:Buffer.from('foreign bytes')},db)).rejects.toThrow('REQUEST_FIELD_SOURCE_CHANGED');
+});
+it('accepts the exact tariff wrapper and page without inventing a rectangle, while retaining the byte/version/case fences',async()=>{
+ const pdf=await PDFDocument.create();pdf.addPage([400,600]);pdf.addPage([400,600]);const bytes=Buffer.from(await pdf.save());
+ const target=documentTravelTariffTarget({source:{document:{case_id:'11111111-1111-4111-8111-111111111111',document_id:'22222222-2222-4222-8222-222222222222',
+  version_id:'33333333-3333-4333-8333-333333333333',file_sha256:createHash('sha256').update(bytes).digest('hex'),page_count:2,month:'2026-06',
+  document_type:'other',evidence_purpose:'travel_tariff',purpose_sha256:'d'.repeat(64)},group:{page:2,locator:'Synthetic tariff source group'}},subject:'daily_fare'});
+ const input={caseId:target.case_id,identityId:'44444444-4444-4444-8444-444444444444',requestId:'55555555-5555-4555-8555-555555555555',version:target.version_id,bytes,mime:'application/pdf'};
+ const calls:unknown[]=[];
+ const db:CaseAccessDb={provider:'fake',async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>){calls.push({fn,args});return [{request_id:input.requestId,target}] as T[];}};
+ expect(await markReadingSource(input,db)).toBeNull();expect(createHash('sha256').update(bytes).digest('hex')).toBe(target.source_sha256);
+ expect(calls).toEqual([{fn:'case_request_field_reading_targets',args:{target_case:input.caseId,target_identity:input.identityId}}]);
+ for(const changed of [{caseId:input.identityId},{version:input.identityId},{bytes:Buffer.from('different source')}])
+  await expect(markReadingSource({...input,...changed},db)).rejects.toThrow('REQUEST_FIELD_SOURCE_CHANGED');
 });

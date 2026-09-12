@@ -72,7 +72,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //one worker finding recorder and one retained-source receipt loader. The
 //owner enrollment RPC is security invoker; exact grants are inventoried below.
 //181 adds the scoped owner engineering recorder; no customer publication grant.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 370;
+//185–188: seven literal declarations (4+1+1+1), reviewed by name below.
+// Captured wrappers retain their prior ACLs and are inventoried separately;
+// the period metadata branch adds no new runtime authority or answer store.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 377;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -240,7 +243,82 @@ const PRODUCT_UPLOAD_SURFACE = [
   }
 ] as const;
 
+const TARIFF_PERIOD_SURFACE = [
+  {
+    file: '20260912190000_travel_tariff_document_purpose.sql',
+    literal: ['private.document_source_purpose_immutable','private.travel_tariff_paid','private.document_source_purpose_journal',
+      'public.case_documents_reserve','private.document_tariff_upload_validate','private.document_tariff_upload_record','private.document_tariff_snapshot'],
+    definers: ['public.case_documents_reserve','private.document_tariff_upload_validate','private.document_tariff_upload_record','private.document_tariff_snapshot'],
+    grants: ['public.case_documents_reserve(uuid,uuid,jsonb,uuid) to service_role,tivdoc_web_runtime',
+      'private.document_tariff_upload_validate(uuid,uuid,jsonb) to service_role,tivdoc_web_runtime',
+      'private.document_tariff_upload_record(uuid,uuid,jsonb) to service_role,tivdoc_web_runtime',
+      'private.document_tariff_snapshot(uuid,jsonb) to service_role,tivdoc_web_runtime'],
+    dynamic: ['public.case_documents_reserve(uuid,uuid,jsonb)','public.case_documents_commit(uuid,uuid,jsonb)',
+      'private.capture_case_input(uuid,text)','public.case_documents_snapshot(uuid)'],
+    revokedNew: ['private.document_source_purpose_immutable()','private.travel_tariff_paid(uuid,date)','private.document_source_purpose_journal(uuid)',
+      'public.case_documents_reserve(uuid,uuid,jsonb,uuid)','private.document_tariff_upload_validate(uuid,uuid,jsonb)',
+      'private.document_tariff_upload_record(uuid,uuid,jsonb)','private.document_tariff_snapshot(uuid,jsonb)'],
+  },
+  {
+    file: '20260912191500_travel_tariff_reading_targets.sql',
+    literal: ['private.travel_tariff_target_matches','private.travel_tariff_target_current','private.travel_tariff_answer_valid',
+      'private.document_field_current','private.document_reading_question_scope_v4'],
+    definers: ['private.document_field_current'],
+    grants: ['private.document_reading_question_scope_before_tariff_v1(text[],jsonb) to service_role,tivdoc_worker_runtime'],
+    dynamic: ['private.document_field_current(uuid,jsonb)','private.document_reading_question_scope_v4(text[],jsonb)',
+      'private.guard_document_cell_decision()','private.document_field_request_open(uuid,integer,text,jsonb,text)',
+      'public.case_request_document_source(uuid,uuid,uuid)'],
+    revokedNew: ['private.travel_tariff_target_matches(jsonb,jsonb)','private.travel_tariff_target_current(uuid,jsonb)',
+      'private.travel_tariff_answer_valid(jsonb,text)','private.document_field_current_before_tariff_v1(uuid,jsonb)',
+      'private.document_reading_question_scope_before_tariff_v1(text[],jsonb)'],
+  },
+  {
+    file: '20260912193000_travel_tariff_review_upload.sql',
+    literal: ['private.document_review_upload_validate'],
+    definers: ['private.document_review_upload_validate'],
+    grants: ['private.document_review_upload_validate(uuid,uuid,jsonb) to tivdoc_web_runtime,service_role'],
+    dynamic: ['private.document_review_upload_validate(uuid,uuid,jsonb)','private.document_review_request_open(uuid,integer,text,text,text,text)',
+      'private.document_review_upload_snapshot(uuid,jsonb)','public.case_documents_commit(uuid,uuid,jsonb)',
+      'private.document_review_upload_received(uuid,uuid,jsonb)'],
+    revokedNew: ['private.document_review_upload_validate_before_tariff_v1(uuid,uuid,jsonb)'],
+  },
+  {
+    file: '20260912194500_document_source_period_association.sql',
+    literal: ['private.source_period_subject_current','private.source_period_refs_in_scope','private.source_period_current_checkpoint',
+      'private.source_period_target_in_scope','private.source_period_target_current','private.document_field_current',
+      'private.document_reading_question_scope_v4','private.source_period_answer_valid'],
+    definers: ['private.document_field_current'],
+    grants: ['private.document_reading_question_scope_before_period_v1(text[],jsonb) to service_role,tivdoc_worker_runtime'],
+    dynamic: ['private.document_field_current(uuid,jsonb)','private.document_reading_question_scope_v4(text[],jsonb)',
+      'private.source_structure_target_current(jsonb,jsonb)','private.guard_document_cell_decision()',
+      'private.document_field_request_open(uuid,integer,text,jsonb,text)','public.case_request_document_source(uuid,uuid,uuid)'],
+    revokedNew: ['private.document_field_current_before_period_v1(uuid,jsonb)','private.document_reading_question_scope_before_period_v1(text[],jsonb)',
+      'private.source_period_target_matches(jsonb,jsonb)','private.source_period_subject_current(jsonb,jsonb,jsonb)',
+      'private.source_period_refs_in_scope(jsonb,text[],jsonb)','private.source_period_current_checkpoint(uuid,jsonb)',
+      'private.source_period_target_in_scope(uuid,jsonb,text[])','private.source_period_target_current(uuid,jsonb)',
+      'private.source_period_answer_valid(jsonb,text)'],
+  },
+] as const;
+
 describe("security definer search_path contract", () => {
+  it('inventories tariff and period definitions, explicit grants and preserved dynamic wrappers in 185–188',async()=>{
+    const definitions=await securityDefinerDefinitions();
+    for(const reviewed of TARIFF_PERIOD_SURFACE){
+      const source=(await readFile(path.join(MIGRATION_ROOT,reviewed.file),'utf8')).replaceAll('\r\n','\n');
+      const sql=source.replaceAll(/\s+/gu,' ').toLowerCase(),literal=[...source.matchAll(DEFINITION)];
+      expect(literal.map(m=>m[1]),reviewed.file).toEqual(reviewed.literal);
+      expect(definitions.filter(d=>d.file===reviewed.file).map(d=>d.name),reviewed.file).toEqual(reviewed.definers);
+      expect(literal.filter(m=>!PINNED_EMPTY_SEARCH_PATH.test(m[3]??'')).map(m=>m[1]),reviewed.file).toEqual([]);
+      expect([...sql.matchAll(/grant execute on function ([^;]+);/gu)].map(m=>m[1]),reviewed.file).toEqual(reviewed.grants);
+      expect([...source.matchAll(/pg_get_functiondef\('([^']+)'::regprocedure\)/gu)].map(m=>m[1]),reviewed.file).toEqual(reviewed.dynamic);
+      const revoked=[...sql.matchAll(/revoke all on function ([^;]+?) from ([^;]+);/gu)];
+      for(const signature of reviewed.revokedNew){
+        const entry=revoked.find(m=>m[1].replaceAll(/\s+/gu,'').split(/(?<=\)),/u).includes(signature));
+        expect(entry?.[2],`${reviewed.file}: ${signature}`).toBe('public,anon,authenticated,service_role,tivdoc_web_runtime,tivdoc_worker_runtime,tivdoc_operations_runtime');
+      }
+      expect(sql,reviewed.file).not.toMatch(/drop\s+function|alter\s+function[\s\S]*?owner\s+to|grant\s+(?:all|select|insert|update|delete)\s/iu);
+    }
+  });
   it('inventories the exact AI/source boundaries without granting enrollment to a runtime',async()=>{
     const reviewed=[
       ['20260912080403_document_evidence_invocation_contract.sql',[],[]],

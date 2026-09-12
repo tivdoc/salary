@@ -1,8 +1,9 @@
+import {missingSourcePeriodSelector} from '../extraction/source-period-association.ts';
 import {z} from 'zod';
 import {sourceStructureEntries} from './source-structure-evidence.ts';
-import {sourceStructureSelector,assertSourceStructureSubject,type SourceStructureSelector} from '../extraction/source-structure-resolution.ts';
+import {sourceStructureSelector,sourceStructureSubject,assertSourceStructureSubject,type SourceStructureSelector} from '../extraction/source-structure-resolution.ts';
 import type {SourceStructureSubject} from '../extraction/source-structure.ts';
-import {payslipMachineExtractionSha256} from '../extraction/reading-resolution.ts';
+import {payslipMachineExtraction,payslipMachineExtractionSha256} from '../extraction/reading-resolution.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {normalizedPayslipExtractionSchema,type NormalizedPayslipExtraction} from '../extraction/payslip.ts';
 import type {DocumentReviewCalculationInput} from './calculations.ts';
@@ -109,6 +110,25 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
     const value='component_ids' in locator?extraction.additional_components.find(c=>c.component_id===id)![`${locator.cell}_raw`]
      :'scope' in locator?extraction.source_scope_observations!.find(c=>c.candidate.candidate_id===id)!.candidate.raw_value:extraction.fields.find(c=>c.candidate_id===id)!.raw_value;
     if(value===null||!value.trim()){unmapped.push({check_id:check.check_id,operand_id:operand.id,reason:'blank_source'});continue;}
+    if(!('scope' in locator)&&extraction.source_reading_context){
+     const row='component_ids' in locator?extraction.additional_components.find(r=>r.component_id===id):undefined;
+     const topic=row?PAYSLIP_ROW_REVIEW_TOPICS[row.semantic_kind]:check.topic;
+     if(topic&&input.review.purchased_scope.topics.includes(topic)){
+      const machine=payslipMachineExtraction(extraction);let selector=missingSourcePeriodSelector(machine,{kind:'component_ids' in locator?'component':'field',id});
+      if(selector?.refs.some(r=>r.kind==='component'&&!input.review.purchased_scope.topics.includes(PAYSLIP_ROW_REVIEW_TOPICS[machine.additional_components.find(c=>c.component_id===r.id)!.semantic_kind]!))){
+       // A scalar dependency does not purchase the topic of its mapped row.
+       selector='component_ids' in locator?null:{kind:'period_association',refs:[{kind:'field',id}]};
+      }
+      if(selector){
+       const subject=sourceStructureSubject({extraction:machine,firstPass:normalizedPayslipExtractionSchema.parse(extraction.source_reading_context.first_pass),selector});
+       const answered=extraction.customer_source_structures?.some(r=>r.subject.kind==='period_association'&&canonicalSha256(r.subject)===canonicalSha256(subject));
+       if(!answered){
+        const key=canonicalSha256(subject),entry=structures.get(key)??{subject,selector,check_ids:[]};
+        if(!entry.check_ids.includes(check.check_id))entry.check_ids.push(check.check_id);structures.set(key,entry);
+       }
+      }
+     }
+    }
     if('component_ids' in locator){
      const sourceRow=extraction.additional_components.find(c=>c.component_id===id)!,topic=PAYSLIP_ROW_REVIEW_TOPICS[sourceRow.semantic_kind];
      if((!topic||!input.review.purchased_scope.topics.includes(topic))&&!(structure?.kind==='deduction_group'&&locator.cell==='amount'&&operation.kind==='reconciliation'&&operation.inventory_complete&&structure.row_bindings.some(b=>b.component_id===id)&&input.review.purchased_scope.topics.includes('minimum_wage')))continue;

@@ -1,7 +1,10 @@
+import {travelEntitlementInputSchema} from '@/engine/entitlement-review/travel/contracts';
+import {TRAVEL_GENERAL_ORDER_FLOOR_POLICY} from '@/engine/entitlement-review/travel/floor-policy';
 import {enableObligationCasePolicy} from '@/engine/entitlement-review/obligations/case-replay';
 import {obligationsEntitlementInputSchema} from '@/engine/entitlement-review/obligations/contracts';
 import {attachAutomaticNonPayslipEvidence} from '@/engine/entitlement-review/automatic-nonpay';
 import {openSavedDocumentEvidenceRequests} from './saved-document-evidence-requests';
+import {readSavedTravelTariffReadings,attachSavedTravelTariffReadings,openSavedTravelTariffRequests,projectSavedTravelTariffCompletions} from './saved-travel-tariff-readings';
 import {DOCUMENT_EVIDENCE_POLICY} from '@/engine/extraction/document-evidence/contracts';
 import {attachNonPayslipInventory} from '@/engine/document-review/non-payslip';
 import {attachAutomaticPayrollEvidence} from '@/engine/entitlement-review/automatic-payroll';
@@ -166,7 +169,9 @@ export function withSavedPurchaseCoverage(input:DocumentReviewInput,order:SavedE
 
 export async function savedDocumentReviewInput(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
  const input=composeEntitlementReview((await automaticDocumentReview(context,job,order,month,snapshot,automaticOnly)).input);
- return replaySavedSourceReviewAnswers(context,job,snapshot,input);
+ const effective=await replaySavedSourceReviewAnswers(context,job,snapshot,input);
+ return automaticOnly&&order.topics.includes('travel')
+  ?projectSavedTravelTariffCompletions(effective,await readSavedTravelTariffReadings(context,job,month)):effective;
 }
 async function replaySavedSourceReviewAnswers(context:PostgresTransactionContext,job:SourceJob,snapshot:StoredCaseInputSnapshot,prepared:DocumentReviewInput){
  let input=prepared;
@@ -187,7 +192,16 @@ async function replaySavedSourceReviewAnswers(context:PostgresTransactionContext
 async function automaticDocumentReview(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
  const sources=attachNonPayslipInventory(await sourceReviewInput(context,job,order,month,snapshot,automaticOnly),snapshot);
  const payroll=attachAutomaticBenefitsEvidence(attachAutomaticPayrollEvidence(attachAutomaticPensionEvidence(sources,snapshot,automaticOnly?{source_facts:true}:undefined),snapshot),snapshot);
- const prepared=attachAutomaticNonPayslipEvidence(payroll,snapshot);
+ let prepared=attachAutomaticNonPayslipEvidence(payroll,snapshot);
+ if(automaticOnly&&order.topics.includes('travel')){
+  // The explicit profile selects the bounded calculation policy even when a
+  // sourced zero needs no tariff. Selection grants no applicability decision.
+  const evidence=prepared.input.entitlement_evidence;
+  if(evidence?.travel)prepared={...prepared,input:documentReviewInputSchema.parse({...prepared.input,entitlement_evidence:{...evidence,
+   travel:{...travelEntitlementInputSchema.parse(evidence.travel),calculation_policy:TRAVEL_GENERAL_ORDER_FLOOR_POLICY}}})};
+  const tariff=attachSavedTravelTariffReadings(prepared.input,await readSavedTravelTariffReadings(context,job,month));
+  prepared={...prepared,input:tariff.input};
+ }
  // This new profile owns its command hash. Historical packets and previously
  // generated answer targets retain their original shape and reading rules.
  if(automaticOnly&&prepared.input.entitlement_evidence){
@@ -200,9 +214,10 @@ async function automaticDocumentReview(context:PostgresTransactionContext,job:So
 /** Open only source cells used by this purchased month's actual branch mapping.
  * Recomputes from authenticated snapshots; no client list can authorize a cell. */
 export async function openSavedNonPayslipReviewRequests(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
- if(!snapshot.non_payslip_evidence?.some(e=>e.extraction))return [];
+ if(!snapshot.non_payslip_evidence?.some(e=>e.extraction)&&!automaticOnly)return [];
  const prepared=await automaticDocumentReview(context,job,order,month,snapshot,automaticOnly);
- const sourceDependencies=automaticOnly?entitlementSourceReadingDependencies(await replaySavedSourceReviewAnswers(context,job,snapshot,composeEntitlementReview(prepared.input)),prepared.reading_dependencies):prepared.reading_dependencies;
+ const effective=automaticOnly?await replaySavedSourceReviewAnswers(context,job,snapshot,composeEntitlementReview(prepared.input)):prepared.input;
+ const sourceDependencies=automaticOnly?entitlementSourceReadingDependencies(effective,prepared.reading_dependencies):prepared.reading_dependencies;
  const opened=[];
  for(const dependency of sourceDependencies){
   const rows=await context.client.query(statement('review_nonpay_dependency_checkpoint',
@@ -211,5 +226,6 @@ export async function openSavedNonPayslipReviewRequests(context:PostgresTransact
   if(rows.row_count!==1)throw Error('DOCUMENT_EVIDENCE_READING_SOURCE_CHANGED');
   opened.push(await openSavedDocumentEvidenceRequests(context,job,rows.rows[0].result,{month,observationIds:dependency.observation_ids}));
  }
+ if(automaticOnly&&order.topics.includes('travel'))opened.push(...await openSavedTravelTariffRequests(context,job,month,effective));
  return opened;
 }

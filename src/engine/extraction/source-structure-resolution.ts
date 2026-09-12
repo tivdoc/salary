@@ -5,6 +5,7 @@ import {customerSourceStructureReadingSchema,sourceStructureRefSchema,sourceStru
 
 export type SourceStructureSelector=
  |{kind:'source_relationship';componentKind:'pension_employee'|'pension_employer'|'severance'|'combined_employer_funds';contribution:{kind:SourceStructureRef['kind'];id:string};base:{kind:SourceStructureRef['kind'];id:string}}
+ |{kind:'period_association';refs:{kind:'field'|'component';id:string}[]}
  |{kind:'deduction_group'}
  |{kind:'balance_movement';balanceKind:'vacation'|'sick';cell:'opening'|'accrued'|'used'|'adjustments'|'closing';candidateId:string};
 export function sourceStructureRef(extraction:NormalizedPayslipExtraction,selector:{kind:SourceStructureRef['kind'];id:string}):SourceStructureRef {
@@ -25,6 +26,7 @@ export function sourceStructureRef(extraction:NormalizedPayslipExtraction,select
 export function sourceStructureSelector(subject:SourceStructureSubject):SourceStructureSelector {
  if(subject.kind==='source_relationship')return {kind:subject.kind,componentKind:subject.component_kind,contribution:{kind:subject.contribution.kind,id:subject.contribution.id},base:{kind:subject.base.kind,id:subject.base.id}};
  if(subject.kind==='deduction_group')return {kind:subject.kind};
+ if(subject.kind==='period_association')return {kind:subject.kind,refs:subject.refs.map(r=>{if(r.kind==='scope')throw Error('SOURCE_PERIOD_REF_UNSUPPORTED');return {kind:r.kind,id:r.id};})};
  return {kind:subject.kind,balanceKind:subject.balance_kind,cell:subject.cell,candidateId:subject.anchor.id};
 }
 export function sourceStructureSubject(input:{extraction:NormalizedPayslipExtraction;firstPass:NormalizedPayslipExtraction;selector:SourceStructureSelector}):SourceStructureSubject {
@@ -38,6 +40,10 @@ export function sourceStructureSubject(input:{extraction:NormalizedPayslipExtrac
   if(s.componentKind==='combined_employer_funds'?(s.contribution.kind!=='scope'||scope?.scope!=='combined_employer_funds')
    :s.contribution.kind==='field'?field?.field!==expected[s.componentKind]:s.contribution.kind!=='component'||row?.semantic_kind!=='deduction')throw Error('SOURCE_STRUCTURE_CONTRIBUTION_UNSUPPORTED');
   subject={kind:s.kind,component_kind:s.componentKind,contribution:sourceStructureRef(e,s.contribution),base:sourceStructureRef(e,s.base)};
+ }else if(s.kind==='period_association'){
+  const refs=s.refs.map(r=>sourceStructureRef(e,r)).sort((a,b)=>`${a.kind}:${a.id}`.localeCompare(`${b.kind}:${b.id}`));
+  if(new Set(refs.map(r=>r.id)).size!==refs.length||new Set(refs.map(r=>r.source.page)).size!==1)throw Error('SOURCE_PERIOD_REF_AMBIGUOUS');
+  subject={kind:s.kind,refs};
  }else if(s.kind==='deduction_group'){
   const totals=e.fields.filter(f=>f.field==='total_deductions'),voluntary=e.source_scope_observations?.filter(o=>o.scope==='voluntary_deduction')??[];
   if(totals.length!==1||voluntary.length>1)throw Error('SOURCE_STRUCTURE_TOTAL_AMBIGUOUS');
@@ -50,21 +56,27 @@ export function sourceStructureSubject(input:{extraction:NormalizedPayslipExtrac
    original_raw_value:s.cell==='closing'?candidate.raw_value:null};
  }
  const parsed=sourceStructureSubjectSchema.parse(subject);
- const refs=parsed.kind==='source_relationship'?[parsed.contribution,parsed.base]:parsed.kind==='deduction_group'?[...parsed.rows,parsed.mandatory_total,...(parsed.voluntary_total?[parsed.voluntary_total]:[])]:[parsed.anchor];
+ const refs=parsed.kind==='period_association'?parsed.refs:parsed.kind==='source_relationship'?[parsed.contribution,parsed.base]:parsed.kind==='deduction_group'?[...parsed.rows,parsed.mandatory_total,...(parsed.voluntary_total?[parsed.voluntary_total]:[])]:[parsed.anchor];
  if(refs.some(r=>r.source.document_id!==e.document_id||r.source.page>e.quality_metrics.page_count||r.source.page>first.quality_metrics.page_count
-  ||r.source.source_scope?.period_kind!=='current'))throw Error('SOURCE_STRUCTURE_CURRENT_SOURCE_REQUIRED');
+  ||parsed.kind!=='period_association'&&r.source.source_scope?.period_kind!=='current'))throw Error('SOURCE_STRUCTURE_CURRENT_SOURCE_REQUIRED');
  return parsed;
 }
 export function sourceStructureSubjectKey(subject:SourceStructureSubject):string {
  if(subject.kind==='source_relationship')return `${subject.kind}:${subject.component_kind}:${subject.contribution.id}:${subject.base.id}`;
  if(subject.kind==='deduction_group')return subject.kind;
+ if(subject.kind==='period_association')return `${subject.kind}:${canonicalSha256(subject.refs.map(r=>({kind:r.kind,id:r.id})))}`;
  return `${subject.kind}:${subject.balance_kind}:${subject.anchor.id}:${subject.cell}`;
 }
 export function normalizeSourceStructureValue(subject:SourceStructureSubject,valueInput:unknown,month:string):SourceStructureValue {
  const value=sourceStructureValueSchema.parse(valueInput);
  if(value.kind!==subject.kind)throw Error('REQUEST_ANSWER_INVALID');
- const pages=subject.kind==='source_relationship'?[subject.contribution.source.page,subject.base.source.page]:subject.kind==='deduction_group'?[...subject.rows.map(r=>r.source.page),subject.mandatory_total.source.page,...(subject.voluntary_total?[subject.voluntary_total.source.page]:[])]:[subject.page];
+ const pages=subject.kind==='period_association'?subject.refs.map(r=>r.source.page):subject.kind==='source_relationship'?[subject.contribution.source.page,subject.base.source.page]:subject.kind==='deduction_group'?[...subject.rows.map(r=>r.source.page),subject.mandatory_total.source.page,...(subject.voluntary_total?[subject.voluntary_total.source.page]:[])]:[subject.page];
  if(!pages.includes(value.basis.page))throw Error('REQUEST_ANSWER_INVALID');
+ if(subject.kind==='period_association'&&value.kind==='period_association'){
+  const end=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
+  if(value.period_kind==='current'&&(value.period.from!==month+'-01'||value.period.to!==end))throw Error('REQUEST_ANSWER_INVALID');
+  return value;
+ }
  if(subject.kind==='source_relationship'&&value.kind==='source_relationship'){
   if(value.component_kind!==subject.component_kind)throw Error('REQUEST_ANSWER_INVALID');return value;
  }

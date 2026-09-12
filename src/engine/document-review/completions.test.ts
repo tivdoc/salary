@@ -98,6 +98,20 @@ describe('document review completion planning',()=>{
   expect(()=>parseReviewCompletionInput({...scoped,documents:[{...scoped.documents[0],review_completed_fact_keys:['payslip.full']}]})).toThrow();
   expect(()=>generateReviewCompletions({...scoped,documents:[{...scoped.documents[0],review:'unreadable'}]})).toThrow();
  });
+ it('never substitutes a generic other PDF for the dedicated travel tariff source',()=>{
+  const n=need({fact_key:'travel.tariff_source',kind:'document',document_kind:'other',required_evidence_kind:'document',answer_kind:'document',reason:'missing'});
+  for(const review of ['complete','not_reviewed'] as const){
+   const current:ReviewCompletionInput={...input([n]),documents:[{pin,kind:'other',period,review}]};
+   expect(generateReviewCompletions(current).customer_requests).toHaveLength(1);
+   const legacy=generateReviewCompletions({...current,needs:[{...n,fact_key:'legacy.other_source'}]});
+   expect(legacy.customer_requests).toHaveLength(0);
+   expect(review==='complete'?legacy.suppressed[0].reason:legacy.internal_tasks[0].kind).toBe(review==='complete'?'existing_document':'review_existing_source');
+  }
+  const verified:ReviewCompletionInput={...input([n]),documents:[{pin,kind:'other',period:null,review:'partial'}],
+   evidence:[evidence({fact_key:n.fact_key,origin:'document',state:'observed',value:'Exact identified route context',source_pins:[pin]})]};
+  expect(generateReviewCompletions(verified).suppressed[0]).toMatchObject({reason:'already_known',state:'satisfied'});
+  expect(generateReviewCompletions({...verified,evidence:[{...verified.evidence[0],state:'unknown',value:null}]}).customer_requests).toHaveLength(1);
+ });
  it('does not mistake a prior-month payslip for the missing month or assign scope to an undated contract',()=>{
   const n=need({kind:'document',document_kind:'payslip',required_evidence_kind:'document',answer_kind:'document'});
   expect(generateReviewCompletions({...input([n]),documents:[{pin,kind:'payslip',period:{from:'2026-05-01',to:'2026-05-31'},review:'complete'}]}).customer_requests).toHaveLength(1);

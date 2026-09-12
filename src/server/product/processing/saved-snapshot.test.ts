@@ -47,6 +47,17 @@ describe('exact saved source to canonical snapshot',()=>{
   await expect(s.reader.loadPinned({...command,case_id:'22222222-2222-4222-8222-222222222222'})).rejects.toThrow('SAVED_COMMAND_SCOPE');
   await expect(s.reader.loadPinned({...command,extraction_snapshot_sha256:'b'.repeat(64)})).rejects.toThrow('SAVED_COMMAND_PIN_MISMATCH');
  });
+ it('loads the valid payslip without an OCR checkpoint or pending marker for an other tariff PDF',async()=>{
+  const s=setup(),baseline=await s.reader.read();s.calls.splice(0);
+  s.input.documents.push({id:'77777777-7777-4777-8777-777777777777',version_id:'88888888-8888-4888-8888-888888888888',sha256:'e'.repeat(64),type:'other',month:'2025-01'});
+  const snapshot=await s.reader.read();
+  expect(snapshot.documents).toEqual(baseline.documents);expect(snapshot.extractions).toEqual(baseline.extractions);
+  expect(snapshot.non_payslip_evidence).toBeUndefined();
+  expect(s.calls.filter(c=>c.name==='saved_snapshot_document')).toHaveLength(1);
+  expect(s.calls.some(c=>c.name==='saved_non_payslip_snapshot')).toBe(false);
+  expect(snapshot.document_snapshot_sha256).toBe(baseline.document_snapshot_sha256);
+  expect(snapshot.extraction_snapshot_sha256).toBe(baseline.extraction_snapshot_sha256);
+ });
  it('checks case lock before reads and refuses replacement since enqueue',async()=>{
   const s=setup();s.responses.source_revision_check[0].revision=3;
   await expect(s.reader.read()).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');

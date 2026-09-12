@@ -1,3 +1,4 @@
+import {payslipSourcePeriod} from '../extraction/source-period-association.ts';
 import {z} from 'zod';
 import {appendPayslipSourceStructures} from './payslip-source-structures.ts';
 import type {DocumentReviewSourceStructure} from './source-structure-evidence.ts';
@@ -287,15 +288,16 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
   for(const [key,rows] of groups){
    const row=rows[0],topic=rowTopic[row.semantic_kind]!,rowId=`row.${key.slice(0,20)}`;
    const cells=(r:Component)=>[r.semantic_kind,r.quantity_raw,r.rate_raw,r.percentage_raw,r.amount_raw,r.quantity,r.rate,r.percentage,r.amount];
-   const conflict=new Set(rows.map(r=>canonicalSha256(cells(r)))).size>1;
+   const rowPeriod=(r:Component)=>payslipSourcePeriod({original:materialized.original,structureReadings:materialized.structureReadings,ref:{kind:'component',id:r.component_id},period:input.period});
+   const conflict=new Set(rows.map(r=>canonicalSha256(cells(r)))).size>1||withCoverage&&rows.some(r=>rowPeriod(r).state==='conflict');
    const cellNormalizationWarnings=new Set(['quantity_normalization_failed','rate_normalization_failed','amount_normalization_failed','percentage_normalization_failed']);
    const uncertain=(cell:string)=>globallyUnreadable||extraction.document_quality_confidence<0.95||rows.some(r=>r.confidence<0.95||r.warning_flags.length>0
-    ||withCoverage&&r.source.source_scope?.period_kind!=='current'
+    ||withCoverage&&rowPeriod(r).state!=='current'
     ||r.normalization_warnings.some(w=>!withCoverage||!cellNormalizationWarnings.has(w)||w===`${cell}_normalization_failed`));
    const confirmedCell=(id:'quantity'|'rate'|'amount'|'percentage')=>{
     const originalRow=originalExtraction.additional_components.find(r=>r.component_id===row.component_id);
     if(!originalRow||conflict||globallyUnreadable||extraction.document_quality_confidence<.95
-     ||rows.some(r=>r.warning_flags.length>0||withCoverage&&r.source.source_scope?.period_kind!=='current'
+     ||rows.some(r=>r.warning_flags.length>0||withCoverage&&rowPeriod(r).state!=='current'
       ||r.normalization_warnings.some(w=>!withCoverage||!cellNormalizationWarnings.has(w))))return null;
     const direct=rows.map(r=>{
      const original=originalExtraction.additional_components.find(o=>o.component_id===r.component_id);
@@ -362,7 +364,7 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    const blanks=printedAmounts.filter(p=>p.rows.every(r=>r.amount_raw===null&&r.quantity_raw===null));
    const unboundBlank=printedAmounts.some(p=>p.rows.some(r=>r.amount_raw===null&&r.quantity_raw!==null));
    const unknown=extraction.additional_components.some(r=>!rowTopic[r.semantic_kind]&&r.semantic_kind!=='deduction');
-   const current=extraction.additional_components.filter(r=>r.semantic_kind!=='deduction').every(r=>r.source.source_scope?.period_kind==='current');
+   const current=extraction.additional_components.filter(r=>r.semantic_kind!=='deduction').every(r=>payslipSourcePeriod({original:materialized.original,structureReadings:materialized.structureReadings,ref:{kind:'component',id:r.component_id},period:input.period}).state==='current');
    const disjoint=printedAmounts.every(p=>!p.conflict);
    if(populated.length&&populated.length<=24){
     const scopeCovered=populated.every(p=>p.rows.every(r=>rowTopic[r.semantic_kind]!==undefined&&input.purchased_scope.topics.includes(rowTopic[r.semantic_kind]!)));

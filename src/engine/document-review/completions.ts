@@ -184,7 +184,11 @@ export function generateReviewCompletions(candidate:ReviewCompletionInput):Revie
    if(latest.state==='provided'&&need.required_evidence_kind!=='customer_declaration')internalTask('review_existing_source');
    continue;
   }
-  if(need.kind==='document'){
+  // A dedicated tariff purpose is verified by its current source/context
+  // receipt. Merely reviewing an arbitrary PDF of kind `other` proves neither.
+  const tariffSource=need.fact_key==='travel.tariff_source'&&need.kind==='document'&&need.document_kind==='other'
+   &&need.required_evidence_kind==='document'&&need.answer_kind==='document';
+  if(need.kind==='document'&&!tariffSource){
    const known=input.documents.filter(d=>d.kind===need.document_kind);
    const matching=known.filter(d=>d.period&&periodContains(d.period,input.period));
    if(matching.some(d=>d.review==='complete')&&need.reason!=='conflicted'){

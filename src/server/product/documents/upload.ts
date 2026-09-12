@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
+import { PDFDocument } from "pdf-lib";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { matchesDocumentSignature, type DocumentUpload, type UploadSnapshot } from "@/lib/document-upload";
+import { matchesDocumentSignature, travelTariffEvidencePurposeSchema, type DocumentUpload, type UploadSnapshot } from "@/lib/document-upload";
 import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db";
-import { reviewUploadReceiptSchema, reviewUploadScopeSchema, type ReviewUploadReceipt, type ReviewUploadScope } from "./review-fulfillment";
+import { isTravelTariffReviewUpload, reviewUploadReceiptSchema, reviewUploadScopeSchema, type ReviewUploadReceipt, type ReviewUploadScope } from "./review-fulfillment";
 
 export class UploadError extends Error {
   constructor(public readonly code: string, public readonly status = 409) { super(code); }
@@ -33,9 +34,17 @@ function batchReviewScope(caseId: string, batch: UploadBatch, requestId?: string
   const parsed = reviewUploadScopeSchema.safeParse(batch.review_scope);
   if (!parsed.success) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
   if (batch.case_id !== caseId || parsed.data.request.target.case_id !== caseId || requestId !== undefined && parsed.data.request_id !== requestId) throw new UploadError("UPLOAD_FORBIDDEN", 403);
+  if (isTravelTariffReviewUpload(parsed.data.request.target)) {
+    const files = batch.files.filter(file => file.documentType === "other");
+    const purpose = travelTariffEvidencePurposeSchema.safeParse(files[0]?.evidencePurpose);
+    const period = parsed.data.request.target.period;
+    if (files.length !== 1 || files[0].type !== "application/pdf" || files[0].periodMonth !== undefined || !purpose.success
+      || purpose.data.month !== period.from.slice(0, 7) || purpose.data.month !== period.to.slice(0, 7)) throw new UploadError("UPLOAD_REQUEST_CONFLICT");
+  }
   return parsed.data;
 }
-function reviewSnapshot(caseId: string, snapshot: ReviewUploadSnapshot, expected?: { scope: ReviewUploadScope; batchId: string; files: ReservedFile[] }): ReviewUploadSnapshot {
+type ExpectedReviewUpload = { scope: ReviewUploadScope; batchId: string; files: ReservedFile[]; verifiedTariffPageCounts?: Readonly<Record<string, number>> };
+function reviewSnapshot(caseId: string, snapshot: ReviewUploadSnapshot, expected?: ExpectedReviewUpload): ReviewUploadSnapshot {
   const receipts = snapshot.reviewReceipts;
   if (receipts !== undefined) {
     if (!Array.isArray(receipts)) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
@@ -52,6 +61,27 @@ function reviewSnapshot(caseId: string, snapshot: ReviewUploadSnapshot, expected
     if (matches[0].files.length !== submitted.length || matches[0].files.some(f => !submitted.some(s =>
       s.documentId === f.document_id && s.versionId === f.version_id && s.sha256 === f.source_sha256
       && s.documentType === f.document_kind && (s.periodMonth ?? null) === f.period_month))) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+    const tariffScope = isTravelTariffReviewUpload(expected.scope.request.target), receipt = matches[0];
+    if (tariffScope !== (receipt.schema_version === "document-review-upload-receipt-v2")) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+    if (receipt.schema_version === "document-review-upload-receipt-v2") {
+      const file = submitted[0], source = receipt.files[0].tariff_source;
+      const purpose = travelTariffEvidencePurposeSchema.safeParse(file?.evidencePurpose);
+      const period = expected.scope.request.target.period;
+      const current = snapshot.documents.filter(document => document.id === file.documentId && document.version_id === file.versionId);
+      const saved = current[0]?.evidence_purpose;
+      // SQL authenticates purpose_sha256 against its immutable actor/purpose
+      // receipt. This boundary independently binds the visible purpose and,
+      // on first completion, the physical page count just parsed from bytes.
+      if (!purpose.success || receipt.period.from !== period.from || receipt.period.to !== period.to
+        || source.document.case_id !== caseId || source.document.month !== purpose.data.month
+        || source.group.page !== purpose.data.page || source.group.locator !== purpose.data.locator
+        || current.length !== 1 || current[0].document_type !== "other" || current[0].mime_type !== "application/pdf"
+        || !saved || saved.kind !== purpose.data.kind || saved.month !== purpose.data.month || saved.page !== purpose.data.page
+        || saved.locator !== purpose.data.locator || saved.page_count !== source.document.page_count
+        || expected.verifiedTariffPageCounts !== undefined && expected.verifiedTariffPageCounts[file.versionId] !== source.document.page_count) {
+        throw new UploadError("UPLOAD_UNAVAILABLE", 503);
+      }
+    }
   }
   return snapshot;
 }
@@ -60,9 +90,20 @@ export async function uploadSnapshot(caseId: string, db?: CaseAccessDb): Promise
 }
 
 export async function prepareUpload(manifest: DocumentUpload) {
+  let targetIdentity: string | undefined;
+  if (manifest.files.some(file => file.documentType === "other")) {
+    const [{ readCaseSessionCookie }, { resolveIdentitySession }] = await Promise.all([
+      import("../case-access/session-cookie"), import("../case-access/service"),
+    ]);
+    const identity = await resolveIdentitySession(await readCaseSessionCookie());
+    if (!identity) throw new UploadError("UPLOAD_FORBIDDEN", 403);
+    targetIdentity = identity.identity_id;
+  }
   const batch = await rpc<UploadBatch>("case_documents_reserve", {
     target_case: manifest.caseId, target_batch: manifest.batchId, target_manifest: manifest,
+    ...(targetIdentity ? { target_identity: targetIdentity } : {}),
   });
+  if (targetIdentity && batch.case_id !== manifest.caseId) throw new UploadError("UPLOAD_FORBIDDEN", 403);
   batchReviewScope(manifest.caseId, batch, manifest.requestId);
   if (batch.completed_at) return { batchId: batch.id, completed: true, uploads: [] };
   const storage = getSupabaseAdmin().storage.from("salary-documents");
@@ -86,13 +127,15 @@ export async function prepareUpload(manifest: DocumentUpload) {
 
 export async function completeUpload(caseId: string, batchId: string): Promise<ReviewUploadSnapshot> {
   const batch = await rpc<UploadBatch>("case_documents_batch", { target_case: caseId, target_batch: batchId });
+  if (batch.files.some(file => file.documentType === "other") && batch.case_id !== caseId) throw new UploadError("UPLOAD_FORBIDDEN", 403);
   const scope = batchReviewScope(caseId, batch);
   const expected = scope ? { scope, batchId, files: batch.files } : undefined;
   if (batch.completed_at) return reviewSnapshot(caseId, await uploadSnapshot(caseId), expected);
   if (batch.cancelled_at) throw new UploadError("UPLOAD_CANCELLED");
   if (Date.parse(batch.expires_at) <= Date.now()) throw new UploadError("UPLOAD_EXPIRED");
   const storage = getSupabaseAdmin().storage.from("salary-documents");
-  const checks: Record<string, string> = {};
+  const checks: Record<string, string | { page_count: number }> = {};
+  const verifiedTariffPageCounts: Record<string, number> = {};
   for (const file of batch.files) {
     const { data, error } = await storage.download(file.path);
     if (error || !data) throw new UploadError("UPLOAD_INCOMPLETE", 503);
@@ -101,9 +144,25 @@ export async function completeUpload(caseId: string, batchId: string): Promise<R
     const digest = createHash("sha256").update(bytes).digest("hex");
     if (!matchesDocumentSignature(bytes, file.type) || digest !== file.sha256) throw new UploadError("UPLOAD_INVALID_FILE", 422);
     checks[file.versionId] = digest;
+    if (file.documentType === "other") {
+      const purpose = travelTariffEvidencePurposeSchema.safeParse(file.evidencePurpose);
+      if (batch.case_id !== caseId || file.type !== "application/pdf" || file.periodMonth !== undefined || !purpose.success) throw new UploadError("UPLOAD_INVALID_FILE", 422);
+      try {
+        // Only the parsed physical page tree is trusted; browser hints and
+        // /Type /Page text counts are not source-page evidence.
+        const pdf = await PDFDocument.load(bytes, { updateMetadata: false });
+        const pages = pdf.getPageCount();
+        if (pdf.isEncrypted || pages < 1 || pages > 100 || purpose.data.page > pages) throw new UploadError("UPLOAD_INVALID_FILE", 422);
+        checks[`purpose:${file.versionId}`] = { page_count: pages };
+        verifiedTariffPageCounts[file.versionId] = pages;
+      } catch (error) {
+        if (error instanceof UploadError) throw error;
+        throw new UploadError("UPLOAD_INVALID_FILE", 422);
+      }
+    }
   }
   // No storage deletion, and no independently committed case/request changes.
-  return reviewSnapshot(caseId, await rpc("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: checks }), expected);
+  return reviewSnapshot(caseId, await rpc("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: checks }), expected ? { ...expected, verifiedTariffPageCounts } : undefined);
 }
 
 export function cancelUpload(caseId: string, batchId: string): Promise<UploadSnapshot> {

@@ -21,10 +21,18 @@ export const sourceBalanceMovementValueSchema=z.discriminatedUnion('state',[
  z.object({kind:z.literal('balance_movement'),state:z.literal('value'),amount:z.string().trim().min(1).max(100),unit:z.enum(['days','hours','source_native_unknown']),period:sourceStructureMonthSchema,basis:sourceStructureBasisSchema}).strict(),
  z.object({kind:z.literal('balance_movement'),state:z.literal('not_present'),period:sourceStructureMonthSchema,basis:sourceStructureBasisSchema}).strict(),
 ]);
-export const sourceStructureValueSchema=z.union([sourceRelationshipValueSchema,sourceDeductionGroupValueSchema,sourceBalanceMovementValueSchema]);
+const sourcePeriodDate=z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).refine(v=>Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v);
+export const sourcePeriodAssociationValueSchema=z.object({kind:z.literal('period_association'),period_kind:z.enum(['current','retroactive','cumulative']),
+ period:z.object({from:sourcePeriodDate,to:sourcePeriodDate}).strict().refine(p=>p.from<=p.to),basis:sourceStructureBasisSchema}).strict();
+export const sourceStructureValueSchema=z.union([sourceRelationshipValueSchema,sourceDeductionGroupValueSchema,sourceBalanceMovementValueSchema,sourcePeriodAssociationValueSchema]);
 export type SourceStructureValue=Readonly<z.infer<typeof sourceStructureValueSchema>>;
 export const sourceBalanceCellSchema=z.enum(['opening','accrued','used','adjustments','closing']);
 export const sourceStructureSubjectSchema=z.discriminatedUnion('kind',[
+ z.object({kind:z.literal('period_association'),refs:z.array(sourceStructureRefSchema).min(1).max(20)}).strict().superRefine((s,ctx)=>{
+  const keys=s.refs.map(r=>`${r.kind}:${r.id}`);
+  if(s.refs.some(r=>r.kind==='scope')||new Set(s.refs.map(r=>r.id)).size!==s.refs.length||new Set(s.refs.map(r=>r.source.page)).size!==1
+   ||keys.join('|')!==[...keys].sort((a,b)=>a.localeCompare(b)).join('|'))ctx.addIssue({code:'custom',message:'Invalid period association references'});
+ }),
  z.object({kind:z.literal('source_relationship'),component_kind:sourceRelationshipComponentSchema,contribution:sourceStructureRefSchema,base:sourceStructureRefSchema}).strict(),
  z.object({kind:z.literal('deduction_group'),rows:z.array(sourceStructureRefSchema).min(1).max(100),mandatory_total:sourceStructureRefSchema,voluntary_total:sourceStructureRefSchema.nullable()}).strict(),
  z.object({kind:z.literal('balance_movement'),balance_kind:z.enum(['vacation','sick']),cell:sourceBalanceCellSchema,anchor:sourceStructureRefSchema,

@@ -1,5 +1,6 @@
 import {documentSourceStructureTargetSchema,documentSourceStructureQuestion,validateDocumentSourceStructureAnswer,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from './document-source-structure';
 import {documentEvidenceReadingDisplay,validateDocumentEvidenceAnswer,resolveDocumentEvidenceAnswer} from './document-evidence-reading';
+import {documentTravelTariffDisplay,validateDocumentTravelTariffAnswer,resolveDocumentTravelTariffVerification,type DocumentTravelTariffSource} from './document-travel-tariff';
 import type {ImmutableDocument} from '@/engine/domain/documents';
 export {documentFieldAnswerV3Schema,parseDocumentFieldAnswerV3,serializeDocumentFieldAnswerV3,type DocumentFieldAnswerV3} from './document-source-structure';
 import {z} from 'zod';
@@ -90,6 +91,7 @@ function transcriptionAnswerValue(target:z.infer<typeof documentSourceTranscript
  * enforce request authorization/currentness, and the worker replays all pins. */
 export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answerInput:unknown) {
  const target=documentReadingTargetSchema.parse(targetInput);
+ if(target.schema_version==='document-travel-tariff-transcription-v1')return validateDocumentTravelTariffAnswer(target,answerInput);
  if(target.schema_version==='document-evidence-reading-v1'){
   try{validateDocumentEvidenceAnswer(target,answerInput);return parseDocumentFieldAnswer(answerInput);}
   catch{throw Error('REQUEST_ANSWER_INVALID');}
@@ -106,7 +108,7 @@ export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answe
  return answer;
 }
 
-type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string};
+type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource};
 export function resolveDocumentFieldVerification(input:ResolveInput){
  const answer=parseDocumentFieldAnswer(input.answer),target=documentFieldTargetSchema.parse(input.target);
  // Reuse the existing exact checkpoint/case/version/hash/month/policy fences.
@@ -146,6 +148,7 @@ export function materializeDocumentFieldVerification(verification:DocumentFieldV
 
 export function documentFieldVerificationDisplay(input:unknown){
  const parsed=documentReadingTargetSchema.parse(input);
+ if(parsed.schema_version==='document-travel-tariff-transcription-v1')return documentTravelTariffDisplay(parsed);
  if(parsed.schema_version==='document-evidence-reading-v1'){
   const display=documentEvidenceReadingDisplay(parsed),original=parsed.observation.original;
   return {question:display.question,field:display.field,raw_value:display.raw_value,
@@ -232,6 +235,10 @@ function resolveDocumentSourceTranscriptionVerification(input:ResolveInput){
 }
 export function resolveDocumentReadingVerification(input:ResolveInput){
  const target=documentReadingTargetSchema.parse(input.target);
+ if(target.schema_version==='document-travel-tariff-transcription-v1'){
+  if(!input.travelTariffSource)throw Error('TRAVEL_TARIFF_PURPOSE_CONTEXT_REQUIRED');
+  return resolveDocumentTravelTariffVerification({...input,target,source:input.travelTariffSource});
+ }
  if(target.schema_version==='document-evidence-reading-v1'){
   if(!input.nonPayslipDocument||!input.nonPayslipProductDocumentId)throw Error('DOCUMENT_EVIDENCE_DOCUMENT_CONTEXT_REQUIRED');
   if(input.policyVersion!==target.policy_version)return {state:'stale' as const};
@@ -244,6 +251,7 @@ export function resolveDocumentReadingVerification(input:ResolveInput){
 }
 export type DocumentReadingVerification=ReturnType<typeof resolveDocumentReadingVerification>;
 export function materializeDocumentVerification(verification:DocumentReadingVerification,normalizedExtractionSha256:string){
+ if(verification.state==='tariff_current')return {kind:'travel_tariff' as const,reading:verification.reading,entry:verification.entry};
  if(verification.state==='current'){
   if(verification.reading.target.normalized_sha256!==normalizedExtractionSha256)throw Error('DOCUMENT_EVIDENCE_NORMALIZED_SCOPE');
   return {kind:'document_evidence' as const,reading:verification.reading};
@@ -287,10 +295,11 @@ export function materializeDocumentVerification(verification:DocumentReadingVeri
 
 function documentSourceStructureDisplay(input:unknown){
  const target=documentSourceStructureTargetSchema.parse(input),subject=target.subject;
- const ref=subject.kind==='source_relationship'?subject.contribution:subject.kind==='deduction_group'?subject.mandatory_total:subject.anchor;
+ const ref=subject.kind==='period_association'?subject.refs[0]:subject.kind==='source_relationship'?subject.contribution:subject.kind==='deduction_group'?subject.mandatory_total:subject.anchor;
  const source={version_id:target.version_id,source_sha256:target.source_sha256,page:ref.source.page,text_fragment:ref.source.text_fragment??null,
   region:ref.source.region??null,source_scope:ref.source.source_scope??null,bounding_box:ref.source.bounding_box??null};
- const structure_context=subject.kind==='source_relationship'?{kind:subject.kind,component_kind:subject.component_kind,allows_explicit_confirmation:true as const,
+ const structure_context=subject.kind==='period_association'?{kind:subject.kind,month:target.month,refs:subject.refs.map(r=>({label:r.label,raw_value:r.raw_value,page:r.source.page})),proposed_value:null}
+  :subject.kind==='source_relationship'?{kind:subject.kind,component_kind:subject.component_kind,allows_explicit_confirmation:true as const,
   contribution:{label:subject.contribution.label,raw_value:subject.contribution.raw_value,page:subject.contribution.source.page},base:{label:subject.base.label,raw_value:subject.base.raw_value,page:subject.base.source.page},proposed_value:null}
   :subject.kind==='deduction_group'?{kind:subject.kind,allows_voluntary:subject.voluntary_total!==null,rows:subject.rows.map(r=>({component_id:r.id,label:r.label,raw_value:r.raw_value,page:r.source.page})),proposed_value:null}
   :{kind:subject.kind,group_id:canonicalSha256({version_id:target.version_id,month:target.month,anchor:subject.anchor,balance_kind:subject.balance_kind}),

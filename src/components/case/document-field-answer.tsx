@@ -3,6 +3,7 @@ import {useState} from 'react';
 import type {StoredRequest} from '@/server/product/reports/case-requests';
 import {customerErrorFromResponse,customerErrorMessage} from '@/lib/customer-copy';
 import {SourceStructureAnswer} from './source-structure-answer';
+import {TravelTariffAnswer} from './travel-tariff-answer';
 
 type Action='confirm'|'correct'|'unreadable'|'unknown';
 const labels:Record<Action,string>={confirm:'זה הערך בתא',correct:'הערך בתא שונה',unreadable:'לא קריא',unknown:'לא יודע'};
@@ -12,6 +13,8 @@ function previous(value:string|null|undefined):{action:Action|null;raw:string}{
 }
 type Props={request:StoredRequest;publicId:string;onAnswered:()=>void;correction?:boolean;sourceShared?:boolean};
 export function DocumentFieldAnswer(props:Props){
+ const tariff=props.request.reading_display?.tariff_context;
+ if(tariff)return <TravelTariffAnswer {...props} context={tariff}/>;
  const context=props.request.reading_display?.structure_context;
  return context?<SourceStructureAnswer {...props} context={context}/>:<ScalarDocumentFieldAnswer {...props}/>;
 }

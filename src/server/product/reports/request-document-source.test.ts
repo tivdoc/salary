@@ -23,6 +23,13 @@ it('does not read Storage when the scoped SQL lookup refuses the identity',async
 it('resolves replacement metadata without downloading document bytes',async()=>{
  const s=setup();expect(await requestDocumentSourceMetadata(s.input,s.db)).toMatchObject({version:s.source.version});expect(ports.download).not.toHaveBeenCalled();
 });
+it('retains a tariff group page from the protected SQL response without changing the storage path or replacing the original bytes',async()=>{
+ const s=setup();s.source.page=3;
+ expect(await requestDocumentSourceMetadata(s.input,s.db)).toMatchObject({page:3,path:s.source.path,version:s.source.version});
+ expect(ports.download).not.toHaveBeenCalled();
+ const result=await loadRequestDocumentSource(s.input,s.db);expect(result?.bytes.equals(s.bytes)).toBe(true);
+ expect(ports.download).toHaveBeenCalledExactlyOnceWith(s.source.path);
+});
 it('refuses multiple source receipts before choosing or downloading a document',async()=>{
  const s=setup();s.rpc.mockResolvedValueOnce([{value:s.source},{value:s.source}]);await expect(requestDocumentSourceMetadata(s.input,s.db)).rejects.toThrow('REQUEST_FIELD_SOURCE_AMBIGUOUS');expect(ports.download).not.toHaveBeenCalled();
 });

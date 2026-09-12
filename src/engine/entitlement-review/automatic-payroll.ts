@@ -1,3 +1,4 @@
+import {payslipSourcePeriod} from '../extraction/source-period-association.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import type {StoredCaseInputSnapshot} from '../case-analysis/contracts.ts';
 import {documentReviewInputSchema,type DocumentReviewInput} from '../document-review/contracts.ts';
@@ -38,7 +39,7 @@ function sourceValues(pair:Matched,input:DocumentReviewInput):SourceValues{
   ||periods.some(f=>f.normalized_value?.start_date!==input.period.from||f.normalized_value?.end_date!==input.period.to))return empty;
  const read=(field:'regular_hours'|'base_monthly_salary'|'travel_amount',path:'work.regular_hours'|'compensation.base_monthly_salary'|'travel.reimbursement'):DocumentReviewOperand|null=>{
   const fields=extraction.fields.filter(f=>f.field===field),fact=resolved.facts.find(f=>f.path===path);
-  if(!fields.length||fields.some(f=>f.source.source_scope?.period_kind!=='current'))return null;
+  if(!fields.length||fields.some(f=>payslipSourcePeriod({original:materialized.original,structureReadings:materialized.structureReadings,ref:{kind:'field',id:f.candidate_id},period:input.period}).state!=='current'))return null;
   // Keep uncertain scalar values in the original extraction and its existing
   // reading requests. They do not become a known entitlement operand.
   if(fact?.status!=='confirmed'||fields.some(f=>canonicalSha256(f.normalized_value)!==canonicalSha256(fields[0].normalized_value)))return null;

@@ -63,3 +63,24 @@ it('disables stale relationship controls and preserves the prior literal answer'
  const html=render(request,true);expect(html.match(/disabled=""/g)).toHaveLength(3);
  expect(request.answer_text).toBe('תשובה היסטורית');expect(request.source_current).toBe(false);
 });
+const periodAssociation:SourceStructureContext={kind:'period_association',month:'2026-06',refs:[
+ {label:'רכיב סינתטי',raw_value:'120.00',page:1},{label:'כמות סינתטית',raw_value:'3.00',page:1}],proposed_value:null};
+it('offers three period-source actions and displays existing amounts without editable numeric cells',()=>{
+ const html=render(row(periodAssociation));expect(html.match(/option-button/g)).toHaveLength(3);
+ expect(html).toContain('<bdi>120.00</bdi>');expect(html).toContain('<bdi>3.00</bdi>');expect(html).toContain('אין צורך לאשר אותם שוב');
+ expect(html).toContain('2026-06');expect(html).not.toContain('אישור קשר');expect(html).not.toContain('<input');
+});
+it('edits only the source period, preserving cumulative dates and a fixed protected page',()=>{
+ const answer=JSON.stringify({schema_version:'document-field-answer-v3',action:'correct',structured_value:{kind:'period_association',period_kind:'cumulative',
+  period:{from:'2026-01-01',to:'2026-06-30'},basis}});
+ const request=row(periodAssociation,0,answer),html=render(request,true);
+ expect(html).toContain('value="cumulative" selected=""');expect(html.match(/type="date"/g)).toHaveLength(2);
+ expect(html).toContain('value="2026-01-01"');expect(html).toContain('value="2026-06-30"');expect(html).toContain('עמוד המקור: 1');
+ expect(html).not.toContain('value="120.00"');expect(html).not.toContain('value="3.00"');expect(html).not.toContain('inputMode="numeric"');
+ expect(html).toContain('שמירת תיקון בדיקת המקור');expect(html).toContain('שמירת טיוטה');
+ const history=renderToStaticMarkup(createElement(ThreadView,{publicId:'TV-SYNTH001',requests:[{...request,answered_at:'2026-09-12T00:00:00Z'}],renderedAt:Date.parse('2026-09-12T12:00:00Z')}));
+ expect(history).toContain('נתון מצטבר');expect(history).toContain('המספרים נשמרו ללא אישור מחדש');expect(history).not.toContain('structured_value');
+});
+it.each([false,undefined])('requires current source proof for the new period controls: %s',source_current=>{
+ const html=render({...row(periodAssociation),source_current});expect(html.match(/disabled=""/g)).toHaveLength(3);
+});

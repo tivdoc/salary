@@ -5,6 +5,7 @@ import {documentReviewCalculationInputSchema,type DocumentReviewOperand,type Doc
 import {validatePayslipGate0,SOURCE_ROW_DUPLICATE_POLICY} from '../extraction/validation.ts';
 import {resolvePayslipSnapshot,resolvedPayslipFactPaths,IDENTIFIED_AGREEING_CANDIDATES_POLICY} from '../extraction/resolver.ts';
 import {materializeValidatedPayslipReadings} from '../extraction/reading-resolution.ts';
+import {payslipSourcePeriod} from '../extraction/source-period-association.ts';
 import {payslipMachineExtractionSha256} from '../extraction/reading-resolution.ts';
 import {reviewInputFromPayslips,PAYSLIP_REVIEW_POLICY} from '../document-review/payslip-adapter.ts';
 import {validateReviewSourceStructure} from '../document-review/source-structure-evidence.ts';
@@ -57,7 +58,8 @@ function currentPensionSources(input:DocumentReviewInput,snapshot:StoredCaseInpu
   const fact=resolved.facts.find(f=>f.path==='pension.base_salary'),period=resolved.facts.find(f=>f.path==='documents.period');
   const fields=e.fields.filter(f=>f.field==='pension_base'),periods=e.fields.filter(f=>f.field==='salary_period');
   if(e.status==='failed'||e.document_quality_confidence<.65||period?.status!=='confirmed'||!periods.length||periods.some(f=>f.normalized_value?.start_date!==input.period.from||f.normalized_value?.end_date!==input.period.to)
-   ||fact?.status!=='confirmed'||!fields.length||fields.some(f=>f.source.source_scope?.period_kind!=='current'||canonicalSha256(f.normalized_value)!==canonicalSha256(fields[0].normalized_value)))continue;
+   ||fact?.status!=='confirmed'||!fields.length||fields.some(f=>payslipSourcePeriod({original:m.original,structureReadings:m.structureReadings,
+    ref:{kind:'field',id:f.candidate_id},period:input.period}).state!=='current'||canonicalSha256(f.normalized_value)!==canonicalSha256(fields[0].normalized_value)))continue;
   const v=fields[0].normalized_value;if(!v||typeof v!=='object'||!('currency'in v)||!('minor_units'in v)||v.currency!=='ILS'||v.minor_units<0)continue;
   const originals=p.extraction.fields.filter(f=>fields.some(x=>x.candidate_id===f.candidate_id));
   const locator={schema_version:'document-review-source-locator-v2',field:'pension_base',candidate_ids:originals.map(f=>f.candidate_id),candidate_sha256:originals.map(f=>canonicalSha256(f))};

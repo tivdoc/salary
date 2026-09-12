@@ -67,6 +67,9 @@ export function validateReviewSourceStructure(input:DocumentReviewCalculationInp
  const entries=sourceStructureEntries(s),requests=new Set<string>(),targets=new Set<string>();
  if(new Set(entries.map(e=>canonicalSha256(e.subject))).size!==entries.length)fail();
  for(const e of entries){
+  // Period associations are metadata witnesses, never one of these three
+  // arithmetic relationship/group/balance witness variants.
+  if(e.subject.kind==='period_association')throw Error('REVIEW_SOURCE_STRUCTURE_BINDING');
   const refs=e.subject.kind==='balance_movement'?[e.subject.anchor]:e.subject.kind==='source_relationship'?[e.subject.contribution,e.subject.base]:[...e.subject.rows,e.subject.mandatory_total,...(e.subject.voluntary_total?[e.subject.voluntary_total]:[])];
   if(refs.some(r=>r.source.document_id!==s.document_id||r.source.page>manifest!.page_count||r.source.source_scope?.period_kind!=='current'))fail();
   if(!e.reading)continue;

@@ -5,11 +5,11 @@ import {sourceStructureSubjectSchema,sourceStructureMonthSchema,sourceStructureV
 import {sourceStructureSubject,sourceStructureSelector,normalizeSourceStructureValue,type SourceStructureSelector} from '@/engine/extraction/source-structure-resolution';
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
-const schemaForKind={source_relationship:'document-source-relationship-v1',deduction_group:'document-source-deduction-group-v1',balance_movement:'document-source-balance-movement-v1'} as const;
+const schemaForKind={period_association:'document-source-period-association-v1',source_relationship:'document-source-relationship-v1',deduction_group:'document-source-deduction-group-v1',balance_movement:'document-source-balance-movement-v1'} as const;
 const checkpointSchema=z.object({schema_version:z.literal('tivdoc-saved-extraction-v1'),case_id:z.uuid(),product_document_id:z.uuid(),version_id:z.uuid(),input_sha256:sha,
  expected_month:sourceStructureMonthSchema,period_mismatch:z.boolean(),result_sha256:sha,run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema,
  first_pass:z.object({normalized_extraction:normalizedPayslipExtractionSchema}).passthrough()}).passthrough()}).passthrough()});
-export const documentSourceStructureTargetSchema=z.object({schema_version:z.enum(['document-source-relationship-v1','document-source-deduction-group-v1','document-source-balance-movement-v1']),
+export const documentSourceStructureTargetSchema=z.object({schema_version:z.enum(['document-source-period-association-v1','document-source-relationship-v1','document-source-deduction-group-v1','document-source-balance-movement-v1']),
  case_id:z.uuid(),product_document_id:z.uuid(),version_id:z.uuid(),source_sha256:sha,month:sourceStructureMonthSchema,policy_version:z.string().min(1).max(100),
  extraction_result_sha256:sha,normalized_extraction_sha256:sha,first_pass_extraction_sha256:sha,subject:sourceStructureSubjectSchema,
  // No provider proposal is invented. Relationship affirmation instead requires
@@ -19,7 +19,7 @@ export const documentSourceStructureTargetSchema=z.object({schema_version:z.enum
 }).strict().superRefine((target,ctx)=>{
  if(target.schema_version!==schemaForKind[target.subject.kind])ctx.addIssue({code:'custom',message:'Subject/target kind mismatch'});
  const {target_sha256,...body}=target;if(canonicalSha256(body)!==target_sha256)ctx.addIssue({code:'custom',message:'Source structure target hash mismatch'});
- const refs=target.subject.kind==='source_relationship'?[target.subject.contribution,target.subject.base]:target.subject.kind==='deduction_group'?[...target.subject.rows,target.subject.mandatory_total,...(target.subject.voluntary_total?[target.subject.voluntary_total]:[])]:[target.subject.anchor];
+ const refs=target.subject.kind==='period_association'?target.subject.refs:target.subject.kind==='source_relationship'?[target.subject.contribution,target.subject.base]:target.subject.kind==='deduction_group'?[...target.subject.rows,target.subject.mandatory_total,...(target.subject.voluntary_total?[target.subject.voluntary_total]:[])]:[target.subject.anchor];
  if(refs.some(r=>r.source.document_id!==target.version_id))ctx.addIssue({code:'custom',message:'Foreign source structure observation'});
 });
 export type DocumentSourceStructureTarget=Readonly<z.infer<typeof documentSourceStructureTargetSchema>>;
@@ -62,7 +62,7 @@ export function validateDocumentSourceStructureAnswer(targetInput:unknown,answer
 export function documentSourceStructureQuestion(targetInput:unknown){
  const target=documentSourceStructureTargetSchema.parse(targetInput),subject=target.subject;
  const cells={opening:'יתרה קודמת',accrued:'צבירה',used:'ניצול',adjustments:'התאמות',closing:'יתרה חדשה'};
- const question=subject.kind==='source_relationship'?'האם הסכום ובסיס השכר המוצגים שייכים לאותו רכיב באותה תקופה? יש לציין היכן המסמך מראה את הקשר; אישור המספרים אינו מאשר את הקשר.'
+ const question=subject.kind==='period_association'?'לאיזו תקופה שייכים הנתונים המסומנים במקור? יש לציין את סוג התקופה, תאריכיה והיכן זה מצוין. המספרים שנקראו אינם נדרשים לאישור מחדש.':subject.kind==='source_relationship'?'האם הסכום ובסיס השכר המוצגים שייכים לאותו רכיב באותה תקופה? יש לציין היכן המסמך מראה את הקשר; אישור המספרים אינו מאשר את הקשר.'
   :subject.kind==='deduction_group'?'יש לזהות במקור אילו שורות שייכות לניכויי חובה ואילו לניכויי רשות, ולציין אם רשימת השורות מלאה. אין לבחור קבוצה לפי התאמת הסכום בלבד.'
   :`יש לקרוא מהמקור את התא בטבלת ${subject.balance_kind==='vacation'?'החופשה':'המחלה'} (${cells[subject.cell]}), ולציין בנפרד את המספר, היחידה והתקופה. אם היחידה אינה מודפסת, יש לציין זאת; אין להסיק ימים או שעות.`;
  return {code:`document_field:${target.target_sha256}`,question,answer_kind:'choice' as const,options:[...(subject.kind==='source_relationship'?['אישור הקשר על סמך המקור']:[]),'הערך שונה במסמך','לא ניתן לקרוא את השדה','לא יודע/ת'],field_crop:`source_structure.${subject.kind}`,blocking:false};

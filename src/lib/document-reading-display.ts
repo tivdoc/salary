@@ -1,6 +1,7 @@
 /** Client-safe presentation contract. Targets, hashes and verification remain server-side. */
 import {displaySourceStructureAnswer,type SourceStructureContext} from './source-structure-display';
-export type {SourceStructureContext,SourceStructureValue,SourceRelationshipValue,SourceDeductionGroupValue,SourceBalanceMovementValue} from './source-structure-display';
+import {displayTravelTariffAnswer,type TravelTariffContext} from './travel-tariff-display';
+export type {SourceStructureContext,SourceStructureValue,SourceRelationshipValue,SourceDeductionGroupValue,SourceBalanceMovementValue,SourcePeriodAssociationValue} from './source-structure-display';
 export type DocumentReadingDisplay=Readonly<{
  question:string;field:string;raw_value:string|null;page:number;text_fragment:string|null;
  bounding_box:{x:number;y:number;width:number;height:number;coordinate_space:'normalized'|'pixels'}|null;
@@ -12,6 +13,7 @@ export type DocumentReadingDisplay=Readonly<{
  evidence_context?:Readonly<{value_kind:'iso_date'|'clock_time'|'duration_hhmm'|'decimal'|'money'|'percentage'|'text';can_confirm:boolean;
   reading_state:'candidate'|'missing'|'unreadable'|'conflict'|'invalid';basis_origin:'system_action_context'}>;
  structure_context?:SourceStructureContext;
+ tariff_context?:TravelTariffContext;
  dependent_checks?:readonly string[];
 }>;
 export const documentRowCellLabels={quantity:'כמות',rate:'תעריף ליחידה',amount:'סכום',percentage:'שיעור'} as const;
@@ -39,6 +41,7 @@ export function groupDocumentReadingRequests<T extends ReadingRequest>(requests:
 }
 export function displayDocumentReadingAnswer(value:string|null,display?:DocumentReadingDisplay):string|null{
  if(!value)return value;
+ const tariff=displayTravelTariffAnswer(value,display?.tariff_context);if(tariff!==null)return tariff;
  const structured=displaySourceStructureAnswer(value,display?.structure_context);if(structured!==null)return structured;
  try{
   const answer=JSON.parse(value) as {schema_version?:unknown;action?:unknown;corrected_raw_value?:unknown};

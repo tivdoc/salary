@@ -2,6 +2,16 @@ import { z } from "zod";
 import { acceptedDocumentMimeTypes, documentTypes, MAX_FILE_SIZE, MAX_PAYSLIPS, MAX_UPLOAD_SIZE } from "./validation";
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
+export const documentUploadTypes = [...documentTypes, "other"] as const;
+export type DocumentUploadType = typeof documentUploadTypes[number];
+export const MAX_TRAVEL_TARIFF_DOCUMENTS = 12;
+export const travelTariffEvidencePurposeSchema = z.object({
+  kind: z.literal("travel_tariff"),
+  month: z.string().regex(/^2026-(05|06|07)$/u),
+  page: z.number().int().min(1).max(100),
+  locator: z.string().trim().min(1).max(120),
+}).strict();
+export type TravelTariffEvidencePurpose = z.infer<typeof travelTariffEvidencePurposeSchema>;
 export const documentUploadSchema = z.object({
   caseId: z.uuid(),
   batchId: z.uuid(),
@@ -9,12 +19,13 @@ export const documentUploadSchema = z.object({
   checkPeriodMonth: month.optional(),
   files: z.array(z.object({
     clientId: z.uuid(),
-    documentType: z.enum(documentTypes),
+    documentType: z.enum(documentUploadTypes),
     name: z.string().trim().min(1).max(240),
     type: z.enum(acceptedDocumentMimeTypes),
     size: z.number().int().positive().max(MAX_FILE_SIZE),
     sha256: z.string().regex(/^[a-f0-9]{64}$/u),
     periodMonth: month.optional(),
+    evidencePurpose: travelTariffEvidencePurposeSchema.optional(),
     replace: z.object({ documentId: z.uuid(), versionId: z.uuid() }).strict().optional(),
   }).strict()).min(1).max(MAX_PAYSLIPS + 2),
 }).strict().superRefine(({ files }, ctx) => {
@@ -25,7 +36,10 @@ export const documentUploadSchema = z.object({
   for (const file of files) {
     if (file.documentType === "payslip" && !file.periodMonth) ctx.addIssue({ code: "custom", message: "יש לבחור חודש לתלוש" });
     if (file.documentType !== "payslip" && file.periodMonth) ctx.addIssue({ code: "custom", message: "חודש נרשם לתלוש בלבד" });
+    if (file.documentType === "other" && (file.type !== "application/pdf" || !file.evidencePurpose)) ctx.addIssue({ code: "custom", message: "מסמך תעריפי נסיעה חייב להיות PDF עם חודש, עמוד ומיקום במקור" });
+    if (file.documentType !== "other" && file.evidencePurpose) ctx.addIssue({ code: "custom", message: "תעריפי נסיעה מצורפים כמסמך נוסף בלבד" });
   }
+  if (files.filter(file => file.documentType === "other").length > MAX_TRAVEL_TARIFF_DOCUMENTS) ctx.addIssue({ code: "custom", message: "אפשר לצרף עד 12 מסמכי תעריפי נסיעה" });
 });
 
 export const documentCompletionSchema = z.object({
@@ -33,8 +47,9 @@ export const documentCompletionSchema = z.object({
 }).strict();
 export type DocumentUpload = z.infer<typeof documentUploadSchema>;
 export type SavedDocument = {
-  id: string; version_id: string; document_type: "payslip" | "contract" | "attendance";
+  id: string; version_id: string; document_type: DocumentUploadType;
   slot: string; original_filename: string; mime_type: string; size: number; period_month: string | null;
+  evidence_purpose?: (TravelTariffEvidencePurpose & { page_count: number }) | null;
 };
 export type UploadSnapshot = {
   caseId: string; publicId: string; status: string; paymentStatus: string;
