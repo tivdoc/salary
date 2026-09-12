@@ -4,6 +4,7 @@ import type {DocumentReviewOperand,DocumentReviewSource} from '../../document-re
 import {vacationEntitlementInputSchema,type VacationEntitlementInput,type VacationDecision,type VacationGap} from './contracts.ts';
 import {VACATION_CATALOG,VACATION_SOURCE_REVIEW,VACATION_SOURCE_REVIEW_SHA256,isPinnedVacationLegalSource,vacationLegalSource} from './sources.ts';
 import {vacationAnnualCalculation,vacationPayCalculation} from './rules.ts';
+import {assertVacationDerivedFacts,vacationProductDecisionSources} from './product-facts.ts';
 export * from './contracts.ts';export * from './sources.ts';
 
 export const VACATION_APPLICABILITY=deepFreeze({
@@ -38,6 +39,7 @@ function money(o:DocumentReviewOperand|null){if(o&&(o.representation!=='money_il
  * proration and actual leave pay. These are independent of balance arithmetic. */
 export function resolveVacationEntitlement(candidate:unknown){
  const input=vacationEntitlementInputSchema.parse(candidate),ids=vacationCheckIds(input.check_prefix),checks:DocumentReviewInput['checks']=[],gaps:VacationGap[]=[];
+ assertVacationDerivedFacts(input);
  const last=new Date(Date.UTC(Number(input.period.from.slice(0,4)),Number(input.period.from.slice(5,7)),0)).toISOString().slice(0,10);
  if(input.period.from<VACATION_SOURCE_REVIEW.supported_period.from||input.period.to>VACATION_SOURCE_REVIEW.supported_period.to||input.period.from.slice(8)!=='01'||input.period.to!==last)throw Error('VACATION_SUPPORTED_MONTH_REQUIRED');
  if(new Set(input.applicability.map(d=>d.decision_id)).size!==input.applicability.length||input.applicability.some(d=>!(d.decision_id in VACATION_APPLICABILITY)))throw Error('VACATION_DECISION_SET');
@@ -48,7 +50,7 @@ export function resolveVacationEntitlement(candidate:unknown){
  for(const d of input.applicability)for(const s of d.sources){if(s.reading==='source_research'){if(!isPinnedVacationLegalSource(s))throw Error('VACATION_LEGAL_SOURCE_PIN');}else sourceBound(s,input);}
  const a=input.annual_basis,p=input.leave_pay;
  const facts=[...Object.values(input.facts),...(a?[a.employment_start,a.employment_end,a.complete_year_evidence,a.covered_through]:[])];
- for(const f of facts)if(f.source){sourceBound(f.source,input);if((f.basis==='customer_declaration')!==['customer_declaration','questionnaire_declaration'].includes(f.source.reading))throw Error('VACATION_FACT_BASIS');}
+ for(const f of facts)if(f.source){if(f.state==='derived'){if(!isPinnedVacationLegalSource(f.source))throw Error('VACATION_DERIVED_SOURCE');}else sourceBound(f.source,input);if((f.basis==='customer_declaration')!==['customer_declaration','questionnaire_declaration'].includes(f.source.reading))throw Error('VACATION_FACT_BASIS');}
  const operands=[input.seniority_year,a?.actual_workdays,p?.wage,p?.recorded,...(p?.mode==='hourly_quarter'?[p.leave_calendar_days]:[])];
  for(const o of operands)if(o)sourceBound(o.source,input);
  quantity(input.seniority_year,'count',60);if(input.seniority_year?.printed_value==='0')throw Error('VACATION_SENIORITY_POSITIVE');
@@ -57,7 +59,8 @@ export function resolveVacationEntitlement(candidate:unknown){
  const select=(keys:Key[],dependent:readonly string[])=>keys.map(decision_id=>{
   const d:VacationDecision=input.applicability.find(d=>d.decision_id===decision_id)??{decision_id,state:'missing',basis:'ai_source_assessment',explanation:VACATION_APPLICABILITY[decision_id],sources:[vacationLegalSource('law',decision_id.startsWith('vacation.pay')?3:1,decision_id)],valid_until:null};
   if(d.state!=='accepted'||d.basis==='customer_declaration'||!d.sources.length||d.valid_until!==null&&d.valid_until<=input.evaluated_at)add(decision_id,d.state==='accepted'?'unknown':d.state,`applicability.${decision_id}`,d.explanation,dependent,'missing_applicability');
-  return d;
+  const extra=vacationProductDecisionSources(input,decision_id);
+  return extra.length?{...d,sources:[...new Map([...d.sources,...extra].map(s=>[canonicalSha256(s),s])).values()]}:d;
  });
  const trace=(id:string,values:unknown,sources:DocumentReviewSource[]):VacationDecision=>({decision_id:id,state:'accepted',basis:'ai_source_assessment',
   explanation:JSON.stringify({schema_version:'vacation-factual-scope-v1',values,values_sha256:canonicalSha256(values),legal_applicability_approved:false}),
@@ -67,10 +70,10 @@ export function resolveVacationEntitlement(candidate:unknown){
    annual_unit:'calendar_days',net_workday_conversion:false,payroll_balance_is_entitlement:false,redemption_assessed:false,
    annual_result_is_monthly_accrual:false,expected_is_cash_debt:false,human_attestation:null,real_activation_allowed:false}});
  let population=true;
- for(const [key,f]of Object.entries(input.facts))if(f.state!=='known'||f.value!==true){population=false;add(`vacation.${key}`,f.state==='known'?'conflict':f.state,`facts.${key}`,'הענף הנוכחי מוגבל לעובדים בגיל 21–59; נדרש נתון גיל מתאים לתקופה.',Object.values(ids),'missing_applicability');}
+ for(const [key,f]of Object.entries(input.facts))if(!['known','derived'].includes(f.state)||f.value!==true){population=false;add(`vacation.${key}`,f.state==='known'?'conflict':f.state,`facts.${key}`,'הענף הנוכחי מוגבל לעובדים בגיל 21–59; נדרש נתון גיל מתאים לתקופה.',Object.values(ids),'missing_applicability');}
  if(!population)return finish();
  const populationTrace=trace('vacation.population_scope',Object.fromEntries(Object.entries(input.facts).map(([key,f])=>[key,{value:f.value,source_sha256:canonicalSha256(f.source)}])),Object.values(input.facts).map(f=>f.source!));
- if(!available(input.seniority_year))add('vacation.seniority_year',input.seniority_year?.state??'missing','seniority_year','נדרשת שנת הוותק המזוהה לצורך מכסת החופשה השנתית.',[ids.quota,ids.prorated],'missing_source','number');
+ if(!available(input.seniority_year)&&!input.derived_seniority)add('vacation.seniority_year',input.seniority_year?.state??'missing','seniority_year','נדרשת שנת הוותק המזוהה לצורך מכסת החופשה השנתית.',[ids.quota,ids.prorated],'missing_source','number');
  else{
   const decisions=[...select(['vacation.general_section3','vacation.no_better_arrangement','vacation.seniority_basis'],[ids.quota,ids.prorated]),populationTrace];
   checks.push({check_id:ids.quota,topic:'vacation',title:'מכסה שנתית בסיסית לפני חישוב יחסי — ימי לוח',

@@ -4,6 +4,7 @@ import {documentReviewCalculationInputSchema} from '../document-review/calculati
 import type {ReviewCompletionNeed} from '../document-review/completions.ts';
 import {obligationsEntitlementInputSchema,resolveExplicitObligations,obligationCheckIds,OBLIGATIONS_CATALOG} from './obligations/index.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
+import {obligationProductQuestions} from './obligations/product-facts.ts';
 
 /** Clause and condition identities remain distinct from labels and monetary
  * allocation. An answer confirms a case fact, never a binding agreement. */
@@ -23,6 +24,15 @@ export function obligationsProductReview(input:DocumentReviewInput,candidate:unk
    if(condition)answer_targets.push({fact_key,input_path:m.input_path,branch:'obligations',index:null,value_kind:'boolean'});
   }
   for(const id of m.dependent_check_ids){const old=gaps.find(g=>g.check_id===id);if(old){if(!old.next_step.includes(m.question))old.next_step+=' '+m.question;}else gaps.push({check_id:id,topic:m.topic,kind:m.kind,detail:'התחייבות זו תלויה בתנאים ובמקור המסוימים. סכום שחולץ אינו מוכיח הסכם מחייב או תשלום בפועל.',next_step:m.question,source_pins:pins});}
+ }
+ // Factual agreement context travels through the existing identified answer
+ // journal. It never replaces the separate internal interpretation decisions.
+ for(const [index,o]of e.obligations.entries())for(const q of obligationProductQuestions(e,o,index)){
+  const ids=obligationCheckIds(e.check_prefix,o.obligation_id),pins=pinsFor(o.obligation_id);
+  needs.push({fact_key:q.fact_key,kind:'factual',reason:q.fact.state==='conflict'?'conflicted':q.fact.state==='unreadable'?'unreadable':q.fact.state==='missing'?'missing':'unknown',
+   required_evidence_kind:'customer_declaration',question:q.question,answer_kind:q.value_kind==='date'?'text':'boolean',
+   ...(q.value_kind==='date'?{value_validation:{schema_version:'document-review-value-validation-v1' as const,format:'iso_date' as const}}:{}),source_pins:pins,dependent_check_ids:ids,general_question:false});
+  answer_targets.push({fact_key:q.fact_key,input_path:q.path,branch:'obligations',index:null,value_kind:q.value_kind});
  }
  // A purchased topic without a discovered clause is visible; an empty array is
  // not proof that the agreement contains no monetary obligations.

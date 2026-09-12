@@ -5,6 +5,8 @@ import {workingTimeEntitlementInputSchema,type WorkingTimeMissing,type WorkingTi
 import {WORKING_TIME_CATALOG,workingTimeLegalSource} from './source-policy.ts';
 import {atTime,sourceInterval,sourceNumber,sourcePin,usable,validateAllSources,type TimeReading} from './time-source.ts';
 import {buildWorkingTimeRule,type WorkingDayReading} from './rules.ts';
+import {WORKING_TIME_PRODUCT_FACTS_POLICY} from './product-fact-contracts.ts';
+import {workingTimeCaseDecisionSources,workingTimeRestDeclarationSources,replayWorkingTimeProductFacts} from './product-facts.ts';
 
 export const WORKING_TIME_APPLICABILITY=deepFreeze({
  'wt.coverage':'יש לזהות את התפקיד וההסדר החל, לרבות חריגים לחוק והסדר ענפי או מיטיב. הצהרת הלקוח אינה הכרעת תחולה.',
@@ -24,8 +26,15 @@ const dateAt=(date:string,offset:number)=>new Date(Date.parse(date+'T00:00:00Z')
 /** Facts and source-time representations enter ordinary candidate_rule checks.
  * This function neither grants legal authority nor creates Findings/reports. */
 export function resolveWorkingTimeEntitlement(raw:unknown){
- const input=workingTimeEntitlementInputSchema.parse(raw),missing:WorkingTimeMissing[]=[],checks:DocumentReviewInput['checks']=[];
+ const parsed=workingTimeEntitlementInputSchema.parse(raw);
+ // A persisted recipe can describe an answer that is absent from the immutable
+ // source packet. Replay its exact binding before baseline resolution; only the
+ // later, authenticated effective packet can retain an accepted decision.
+ const input=parsed.product_facts?.schema_version===WORKING_TIME_PRODUCT_FACTS_POLICY&&parsed.case_recipe_bindings?.length?replayWorkingTimeProductFacts(parsed,parsed):parsed;
+ const missing:WorkingTimeMissing[]=[],checks:DocumentReviewInput['checks']=[];
  const separated=input.calculation_policy==='working-time-separated-expected-v2';
+ const scoped=input.product_facts?.schema_version===WORKING_TIME_PRODUCT_FACTS_POLICY;
+ const scopeDecision=(id:string,dayId:string)=>scoped&&['wt.arrangement','wt.workday_assignment','wt.payroll_allocation'].includes(id)?id+'.'+dayId:id;
  const dayCheckIds=(id:string)=>[`${input.check_id_prefix}.${id}`,...(separated?[`${input.check_id_prefix}.${id}.expected`]:[])];
  if(input.period.from<WORKING_TIME_CATALOG.supported_work_period.from||input.period.to>WORKING_TIME_CATALOG.supported_work_period.to||input.period.from>input.period.to)throw Error('WORKING_TIME_RESEARCH_PERIOD');
  validateAllSources(input);
@@ -34,7 +43,7 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  if(input.workdays.some(d=>d.date<input.week_start||d.date>dateAt(input.week_start,6)||d.date<input.period.from||d.date>input.period.to))throw Error('WORKING_TIME_DAY_PERIOD');
  if(input.workdays.reduce((n,d)=>n+d.intervals.length,0)>14)throw Error('WORKING_TIME_INTERVAL_BOUND');
  if(new Set(input.applicability.map(d=>d.decision_id)).size!==input.applicability.length)throw Error('WORKING_TIME_DUPLICATE_DECISION');
- const permitted=new Set([...Object.keys(WORKING_TIME_APPLICABILITY),...input.workdays.map(d=>'wt.worked_time.'+d.id)]);
+ const permitted=new Set([...Object.keys(WORKING_TIME_APPLICABILITY),...input.workdays.map(d=>'wt.worked_time.'+d.id),...(scoped?input.workdays.flatMap(d=>['wt.arrangement','wt.workday_assignment','wt.payroll_allocation'].map(id=>scopeDecision(id,d.id))):[])]);
  if(input.applicability.some(d=>!permitted.has(d.decision_id))||input.conditional_assumptions?.some(a=>!permitted.has(a.decision_id)))throw Error('WORKING_TIME_DECISION_ID');
  if(input.applicability.some(d=>d.state==='accepted'&&(d.basis==='customer_declaration'||!d.sources.length)))throw Error('WORKING_TIME_DECLARATION_NOT_APPLICABILITY');
  const targetIds=input.workdays.filter(d=>d.inventory.value!=='no_work').flatMap(d=>dayCheckIds(d.id));
@@ -151,11 +160,12 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
  for(const [i,view]of views.entries()){
   if(view.noWork||!paymentReadyDays.has(view.day.id)&&!(separated&&expectedReadyDays.has(view.day.id)))continue;
   for(const compared of separated?[false,...(paymentReadyDays.has(view.day.id)?[true]:[])]:[true]){
-  const ids=[`${input.check_id_prefix}.${view.day.id}${compared?'':'.expected'}`],required:string[]=[...baseDecisions.filter(id=>compared||id!=='wt.payroll_allocation'),'wt.worked_time.'+view.day.id];
+  const ids=[`${input.check_id_prefix}.${view.day.id}${compared?'':'.expected'}`],required:string[]=[...baseDecisions.filter(id=>compared||id!=='wt.payroll_allocation').map(id=>scopeDecision(id,view.day.id)),'wt.worked_time.'+view.day.id];
   if(complete)required.push('wt.weekly_aggregation');
   if(!rest)required.push('wt.non_rest_scope');else if(view.readings.some(r=>(r.rest_minutes??0)>0))required.push('wt.rest_additive');
   const decisions:WorkingTimeDecision[]=required.map(decision_id=>{
-   const question=decision_id.startsWith('wt.worked_time.')?'יש להעריך את סיווג זמן העבודה וההפסקות ביום המזוהה.':WORKING_TIME_APPLICABILITY[decision_id as keyof typeof WORKING_TIME_APPLICABILITY];
+   const baseId=decision_id.replace(/^(wt\.(?:arrangement|workday_assignment|payroll_allocation))\..+$/u,'$1');
+   const question=decision_id.startsWith('wt.worked_time.')?'יש להעריך את סיווג זמן העבודה וההפסקות ביום המזוהה.':WORKING_TIME_APPLICABILITY[baseId as keyof typeof WORKING_TIME_APPLICABILITY];
    let d:WorkingTimeDecision=input.applicability.find(d=>d.decision_id===decision_id)??{decision_id,state:'missing',basis:'ai_source_assessment',explanation:question,sources:[workingTimeLegalSource('law',1,decision_id)],valid_until:null};
    if(d.valid_until)d={...d,valid_until:new Date(d.valid_until).toISOString()};
    if(decision_id==='wt.non_rest_scope'&&['conflict','stale','expired'].includes(input.rest_window.state))d={...d,state:input.rest_window.state as 'conflict'|'stale'|'expired',sources:input.rest_window.source?[input.rest_window.source]:d.sources};
@@ -176,6 +186,8 @@ export function resolveWorkingTimeEntitlement(raw:unknown){
    for(const s of sources)if(s&&!factualSources.some(existing=>canonicalSha256(existing)===canonicalSha256(s)))factualSources.push(s);}
   for(const s of [input.arrangement.source,input.rest_window.source,...(compared?[view.day.payment_allocation.source]:[]),...(complete?[input.week_inventory.source,input.scheduled_weekdays.source]:[])])
    if(s&&!factualSources.some(existing=>canonicalSha256(existing)===canonicalSha256(s)))factualSources.push(s);
+  if(scoped)for(const s of [...required.flatMap(id=>workingTimeCaseDecisionSources(input,id)),...(rest?workingTimeRestDeclarationSources(input):[])])
+   if(!factualSources.some(existing=>canonicalSha256(existing)===canonicalSha256(s)))factualSources.push(s);
   // Decision source arrays are bounded. Split factual witnesses rather than
   // dropping a customer-answer citation from the normal calculation manifest.
   for(let start=0;start<Math.max(1,factualSources.length);start+=16)decisions.push({decision_id:'wt.evidence_binding.'+start,state:'accepted',basis:'ai_source_assessment',

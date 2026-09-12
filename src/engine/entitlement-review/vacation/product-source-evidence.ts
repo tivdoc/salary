@@ -119,3 +119,16 @@ export function produceVacationSourceEvidence(candidate:VacationEntitlementInput
   factual_questions:needed.map(key=>({schema_version:'vacation-source-factual-question-v1' as const,path:'product_source_facts.'+key,fact_key:vacationSourceFactKey(key),question:questions[key],answer_kind:'choice' as const,options:['כן','לא'],required_evidence_kind:'customer_declaration' as const,existing_fact:facts[key]})),
   reading_dependencies:cells.dependencies,software_gaps:[...new Set(softwareGaps)],publication_authority:false as const};
 }
+
+/** Normal request opener port. Source identities are copied only from the
+ * authenticated immutable inventory; it cannot synthesize an OCR candidate. */
+export function vacationSourceReadingDependencies(input:VacationEntitlementInput,review:DocumentReviewInput){
+ const produced=produceVacationSourceEvidence(input,review);
+ return (review.non_payslip_evidence??[]).flatMap(raw=>{
+  const r=savedNonPayslipEvidenceSchema.parse(raw),observation_ids=[...new Set(produced.reading_dependencies.filter(d=>d.version_id===r.document.document_id).map(d=>d.observation_id))];
+  if(!observation_ids.length)return [];
+  if(!r.extraction||!r.checkpoint_result_sha256||!observation_ids.every(id=>r.extraction!.observations.some(o=>o.observation_id===id)))throw Error('VACATION_DEPENDENCY_SOURCE_BINDING');
+  return [{version_id:r.document.document_id,product_document_id:r.product_document_id,checkpoint_sha256:r.checkpoint_result_sha256,
+   normalized_sha256:canonicalSha256(r.extraction),observation_ids,dependent_check_ids:[input.check_prefix+'.annual.prorated']}];
+ });
+}

@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput} from '../../document-review/calculations.ts';
+import {workingTimeProductFactsSchema,workingTimeCaseRecipeBindingSchema} from './product-fact-contracts.ts';
 
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
 const source=operand.shape.source;
@@ -32,10 +33,11 @@ export const workingTimeEntitlementInputSchema=z.object({
  workdays:z.array(workday).max(7),
  rest_window:workingTimeSourceFactSchema(z.object({start_at:z.string().max(40),end_at:z.string().max(40)}).strict()),
  regular_hourly_wage:operand,
- applicability:z.array(decision).max(32),
+ product_facts:workingTimeProductFactsSchema.optional(),case_recipe_bindings:z.array(workingTimeCaseRecipeBindingSchema).max(32).optional(),
+ applicability:z.array(decision).max(64),
  mode:z.enum(['source_classified','explicit_presence_scenario']),
  conditional_assumptions:z.array(z.object({decision_id:id,explanation:z.string().min(1).max(1000)}).strict()).min(1).max(32).optional(),
-}).strict();
+}).strict().superRefine((v,ctx)=>{if(v.product_facts?.schema_version!=='working-time-product-facts-v2'&&v.applicability.length>32)ctx.addIssue({code:'custom',message:'WORKING_TIME_LEGACY_DECISION_LIMIT'});});
 export type WorkingTimeEntitlementInput=z.infer<typeof workingTimeEntitlementInputSchema>;
 export type WorkingTimeWorkday=WorkingTimeEntitlementInput['workdays'][number];
 export type WorkingTimeSourceFact<T>={state:z.infer<typeof evidenceState>;value:T|null;source:z.infer<typeof source>|null};

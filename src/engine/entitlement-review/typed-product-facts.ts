@@ -12,26 +12,35 @@ import {pensionEntitlementInputSchema} from './pension/contracts.ts';
 import {pensionProductFacts,replayPensionProductFacts} from './pension/product-facts.ts';
 import {travelEntitlementInputSchema} from './travel/contracts.ts';
 import {travelProductFacts,travelProductFactQuestions,replayTravelProductFacts} from './travel/product-facts.ts';
+import {vacationEntitlementInputSchema} from './vacation/contracts.ts';
+import {vacationProductFacts,vacationProductFactQuestions,replayVacationProductFacts} from './vacation/product-facts.ts';
+import {replayConvalescenceCaseFacts,enableConvalescenceCaseFacts,convalescenceCaseQuestions} from './convalescence/product-decisions.ts';
+
+import {workingTimeEntitlementInputSchema} from './working-time/contracts.ts';
+import {enableWorkingTimeProductFacts,replayWorkingTimeProductFacts} from './working-time/product-facts.ts';
 
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
 type Choice=Readonly<{label:string;value:string|number|boolean|null}>;
 export type TypedEntitlementQuestion=Readonly<{path:string;question:string;fact:Fact;answer_kind:'text'|'choice';
- format?:NonNullable<ReviewCompletionNeed['value_validation']>['format'];choices?:readonly Choice[]}>;
+ format?:NonNullable<ReviewCompletionNeed['value_validation']>['format'];choices?:readonly Choice[];fact_key?:string}>;
 const usable=(f:Fact)=>['observed','declared','derived'].includes(f.state)&&f.value!==null&&f.source!==null;
 const unknown={label:'לא ידוע',value:null};
 const choices=(entries:Record<string,string|number|boolean>):Choice[]=>[...Object.entries(entries).map(([label,value])=>({label,value})),unknown];
 
 /** Explicit opt-in for new saved source packets. Existing packets are untouched. */
-export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence,options?:{travel:true}):EntitlementEvidence{
+export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence,options?:{travel?:true;vacation?:true;convalescence?:true;working_time?:true}):EntitlementEvidence{
  const e=structuredClone(candidate);
  if(e.pension){const p=pensionEntitlementInputSchema.parse(e.pension);e.pension={...p,product_facts:p.product_facts??pensionProductFacts()};}
  if(e.minimum_wage){const p=minimumWageEntitlementInputSchema.parse(e.minimum_wage);e.minimum_wage={...p,product_facts:p.product_facts??minimumWagePersonalFacts()};}
- if(e.convalescence){const p=convalescenceEntitlementInputSchema.parse(e.convalescence);e.convalescence={...p,product_facts:p.product_facts??convalescencePersonalFacts()};}
+ if(e.convalescence){const p=convalescenceEntitlementInputSchema.parse(e.convalescence);e.convalescence=options?.convalescence?enableConvalescenceCaseFacts(p):{...p,product_facts:p.product_facts??convalescencePersonalFacts()};}
  if(options?.travel&&e.travel){const p=travelEntitlementInputSchema.parse(e.travel);e.travel={...p,product_facts:p.product_facts??travelProductFacts()};}
+ if(options?.vacation&&e.vacation){const p=vacationEntitlementInputSchema.parse(e.vacation);e.vacation={...p,product_facts:p.product_facts??vacationProductFacts()};}
+ if(options?.working_time&&e.working_time)e.working_time=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(e.working_time).map(p=>enableWorkingTimeProductFacts(p));
  return e;
 }
 
-export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'travel',raw:unknown):TypedEntitlementQuestion[]{
+export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'travel'|'vacation',raw:unknown):TypedEntitlementQuestion[]{
+ if(topic==='vacation')return vacationProductFactQuestions(vacationEntitlementInputSchema.parse(raw));
  if(topic==='travel')return travelProductFactQuestions(travelEntitlementInputSchema.parse(raw));
  const result:TypedEntitlementQuestion[]=[];
  const add=(path:string,fact:Fact,question:string,options?:readonly Choice[],format?:TypedEntitlementQuestion['format'])=>{
@@ -60,7 +69,8 @@ export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'
  }
  const p=convalescenceEntitlementInputSchema.parse(raw);if(!p.product_facts)return result;
  const f=p.product_facts;
- if(!usable(p.population)){
+ if(p.source_gates_policy==='cv-source-gates-v2')result.push(...convalescenceCaseQuestions(p));
+ else if(!usable(p.population)){
   add('product_facts.birth_date',f.birth_date,'מה תאריך הלידה שלך? הנתון ישמש לבדיקת הגיל בתקופה.',undefined,'iso_date');
   add('product_facts.employment_category',f.employment_category,'מה סוג מקום העבודה והסדר השכר שלך בפועל?',choices({'מקום עבודה פרטי':'private','מקום עבודה ציבורי או שכר המוצמד לשכר ציבורי':'public_or_pegged','מפעל מוגן':'protected_workshop','אחר':'other'}));
  }
@@ -86,6 +96,13 @@ export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'
 }
 
 export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence,original?:EntitlementEvidence,source?:DocumentReviewInput):EntitlementEvidence{
+ if(candidate.working_time&&original?.working_time&&source){const current=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(candidate.working_time),rawItems=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(original.working_time);
+  if(current.length!==rawItems.length)throw Error('WT_MATERIALIZATION_WEEK_SCOPE');
+  candidate={...candidate,working_time:current.map((p,i)=>{
+  const raw=rawItems[i];
+  return p.product_facts?.schema_version==='working-time-product-facts-v2'||raw.case_recipe_bindings?.length?replayWorkingTimeProductFacts(p,raw,source):p;})};}
+ if(candidate.vacation&&original?.vacation&&source){const p=vacationEntitlementInputSchema.parse(candidate.vacation),raw=vacationEntitlementInputSchema.parse(original.vacation);
+  if(raw.case_recipe_bindings?.length||raw.product_scenario_policy)candidate={...candidate,vacation:replayVacationProductFacts(p,raw,source)};}
  if(candidate.travel&&original?.travel&&source){const p=travelEntitlementInputSchema.parse(candidate.travel),raw=travelEntitlementInputSchema.parse(original.travel);
   if(raw.case_recipe_bindings?.length)candidate={...candidate,travel:replayTravelProductFacts(p,raw,source)};}
  if(candidate.pension&&original?.pension&&source){const p=pensionEntitlementInputSchema.parse(candidate.pension),raw=pensionEntitlementInputSchema.parse(original.pension);
@@ -99,7 +116,8 @@ export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence,o
  if(!usable(p.payment_coverage)||p.payment_coverage.source&&isDeclaredPeriodSource(p.payment_coverage.source))p.payment_coverage=period??unresolvedDeclaredPeriod(f.payment_from,f.payment_to);
  if(!p.segments.length||p.segments.every(s=>s.id.startsWith('declared.segment.')))p.segments=f.segments.map(s=>({id:s.id,
   period:periodFromDeclarations(s.from,s.to)??unresolvedDeclaredPeriod(s.from,s.to),fte:s.fte}));
- return {...candidate,convalescence:convalescenceEntitlementInputSchema.parse(p)};
+ const materialized=convalescenceEntitlementInputSchema.parse(p);
+ return {...candidate,convalescence:original?.convalescence&&source&&materialized.case_recipe_bindings?.length?replayConvalescenceCaseFacts(materialized,convalescenceEntitlementInputSchema.parse(original.convalescence),source):materialized};
 }
 
 /** Only the exact generated period positions may use a two-receipt derivation. */

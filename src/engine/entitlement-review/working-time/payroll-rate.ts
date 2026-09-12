@@ -1,8 +1,8 @@
-import {canonicalSha256} from '../../rule-runtime/canonical';
-import type {StoredCaseInputSnapshot} from '../../case-analysis/contracts';
-import type {DocumentReviewInput} from '../../document-review/contracts';
-import {documentReviewCalculationInputSchema,type DocumentReviewOperand} from '../../document-review/calculations';
-import {reviewInputFromPayslips,PAYSLIP_REVIEW_POLICY} from '../../document-review/payslip-adapter';
+import {canonicalSha256} from '../../rule-runtime/canonical.ts';
+import type {StoredCaseInputSnapshot} from '../../case-analysis/contracts.ts';
+import type {DocumentReviewInput} from '../../document-review/contracts.ts';
+import {documentReviewCalculationInputSchema,type DocumentReviewOperand} from '../../document-review/calculations.ts';
+import {reviewInputFromPayslips,PAYSLIP_REVIEW_POLICY} from '../../document-review/payslip-adapter.ts';
 
 /** Read the already accepted ordinary payroll cell again from the saved
  * snapshot. This supplies a printed base rate, not approval that this is the

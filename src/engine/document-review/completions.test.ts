@@ -28,6 +28,11 @@ function answer(current:ReviewCompletionInput,overrides:Partial<Parameters<typeo
 }
 
 describe('document review completion planning',()=>{
+ it('accepts exact clock time only and never infers a date or accepts 24:00',()=>{
+  const current=input([need({answer_kind:'text',value_validation:{schema_version:'document-review-value-validation-v1',format:'clock_time'}})]);
+  for(const value of ['00:00','09:05','23:59'])expect(answer(current,{value}).state).toBe('provided');
+  for(const value of ['24:00','9:05','12:60','2026-06-01T12:00','12:00Z',' 12:00','12:00 '])expect(()=>answer(current,{value})).toThrow('REVIEW_COMPLETION_ANSWER_INVALID');
+ });
  it('deduplicates one fact across checks and keeps the target stable across dependency/input ordering changes',()=>{
   const a=generateReviewCompletions(input([need(),need({dependent_check_ids:['weekly_rest.break','overtime.daily']})]));
   const b=generateReviewCompletions(input([need({dependent_check_ids:['weekly_rest.break']}),need()]));

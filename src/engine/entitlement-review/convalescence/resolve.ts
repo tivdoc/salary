@@ -6,6 +6,7 @@ import {convalescenceEntitlementInputSchema,type ConvalescenceMissing,type Conva
 import {CONVALESCENCE_CATALOG,CONVALESCENCE_SOURCE_REVIEW,CONVALESCENCE_PINNED_LEGAL_DOCUMENTS,convalescenceLegalSource,isPinnedConvalescenceLegalSource} from './source-policy.ts';
 import {employmentAnniversary,nextConvalescenceDate,splitConvalescenceAccrual,type ConvalescenceAccrualSlice} from './periods.ts';
 import {isDeclaredPeriodSource,periodFromDeclarations} from './product-facts.ts';
+import {convalescenceCaseDecisionSources,assertConvalescenceDerivedPopulation} from './product-decisions.ts';
 
 export const CONVALESCENCE_APPLICABILITY=deepFreeze({
  'cv.population':'יש לבסס תחולת המגזר הפרטי הכללי, ללא שכר ציבורי או הצמדה לשכר ציבורי, מפעל מוגן או הסדר מיוחד.',
@@ -18,6 +19,11 @@ export const CONVALESCENCE_APPLICABILITY=deepFreeze({
  'cv.rounding':'המועמד מעגל לאגורה במחצית כלפי מעלה בסכום הכולל אחרי שקלול כל המקטעים. יש לבדוק אם חל הסדר מחייב אחר.',
  'cv.allocation':'יש לשייך מלאי תשלומי הבראה שלם לאותה תקופת צבירה, ללא כפל, יתרת עבר או תשלום לתקופה אחרת. רישום אינו הוכחת העברה בפועל.',
 });
+// Opt-in only. Historical combined-source decisions remain readable metadata;
+// current legal-source completeness cannot stand in for arrangement evidence.
+export const CONVALESCENCE_APPLICABILITY_V2=deepFreeze(Object.fromEntries(Object.entries(CONVALESCENCE_APPLICABILITY).flatMap(([id,text])=>id==='cv.source_chain'?
+ [['cv.legal_source_chain','יש לאמת בנפרד את גרסאות צו 2016, צו 2026 והוראות 2025 למועד הידיעה ולתקופה הנבדקת.'],
+  ['cv.arrangement_scope','נדרשת הערכת מקור חוזי מזוהה לתחולת ההסדר הכללי או להסדר מיטיב. חוסר ידיעה על תנאים מיוחדים אינו ראיה שאין זכויות נוספות.']]:[[id,text]])));
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
 type Decision=Extract<DocumentReviewCalculationInput['operation'],{kind:'candidate_rule'}>['decisions'][number];
 const usable=(f:Fact)=>['observed','declared'].includes(f.state)&&f.value!==null&&f.source!==null;
@@ -67,11 +73,13 @@ export function resolveConvalescenceEntitlement(raw:unknown){
  const month=input.period.from.slice(0,7),last=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
  if(input.period.from<CONVALESCENCE_CATALOG.supported_work_period.from||input.period.to>CONVALESCENCE_CATALOG.supported_work_period.to||input.period.from!==month+'-01'||input.period.to!==last)throw Error('CONVALESCENCE_SUPPORTED_PAYROLL_MONTH');
  assertSources(input);
+ assertConvalescenceDerivedPopulation(input);
+ const applicability=input.source_gates_policy==='cv-source-gates-v2'?CONVALESCENCE_APPLICABILITY_V2:CONVALESCENCE_APPLICABILITY;
  if(new Set(input.segments.map(s=>s.id)).size!==input.segments.length)throw Error('CONVALESCENCE_DUPLICATE_SEGMENT');
- if(new Set(input.applicability.map(d=>d.decision_id)).size!==input.applicability.length||input.applicability.some(d=>!Object.hasOwn(CONVALESCENCE_APPLICABILITY,d.decision_id)))throw Error('CONVALESCENCE_DECISION_SET');
+ if(new Set(input.applicability.map(d=>d.decision_id)).size!==input.applicability.length||input.applicability.some(d=>!Object.hasOwn(applicability,d.decision_id)&&!(input.source_gates_policy==='cv-source-gates-v2'&&d.decision_id==='cv.source_chain')))throw Error('CONVALESCENCE_DECISION_SET');
  if(input.applicability.some(d=>d.state==='accepted'&&(d.basis==='customer_declaration'||!d.sources.length)))throw Error('CONVALESCENCE_DECLARATION_NOT_APPLICABILITY');
  const assumptions=input.conditional_assumptions??[];
- if(new Set(assumptions.map(a=>a.decision_id)).size!==assumptions.length||assumptions.some(a=>!Object.hasOwn(CONVALESCENCE_APPLICABILITY,a.decision_id)))throw Error('CONVALESCENCE_ASSUMPTION_SET');
+ if(new Set(assumptions.map(a=>a.decision_id)).size!==assumptions.length||assumptions.some(a=>!Object.hasOwn(applicability,a.decision_id)))throw Error('CONVALESCENCE_ASSUMPTION_SET');
  const add=(fact_key:string,input_path:string,state:ConvalescenceMissing['state'],question:string,kind:ConvalescenceMissing['kind'],sources:DocumentReviewSource[]=[],dependent_check_ids:readonly string[]=ids)=>{
   const pins=[...new Map(sources.filter(s=>s.reading!=='source_research').map(s=>{const pin={case_id:input.case_id,document_id:s.document_id,version_id:s.version_id,source_sha256:s.file_sha256};return [canonicalSha256(pin),pin];})).values()];
   missing.push({fact_key,input_path,state,question,kind,answer_kind:kind==='source'?'document':'text',customer_declaration_allowed:false,source_pins:pins,dependent_check_ids});
@@ -79,7 +87,8 @@ export function resolveConvalescenceEntitlement(raw:unknown){
  const gap=(key:string,f:Fact,text:string,kind:ConvalescenceMissing['kind']='fact',state=missingState(f))=>add('cv.'+key,key,state,text,kind,f.source?[f.source]:[]);
  let hard=false;
  if(input.evaluated_at.slice(0,10)<CONVALESCENCE_SOURCE_REVIEW.knowledge_available_from){add('cv.publication_knowledge','evaluated_at','unsupported','צו התעריף לשנת 2026 פורסם ב־18.8.2026. אין לחשב לפי מקור עתידי כאשר מועד הידיעה שנבחר מוקדם מהפרסום.','source');hard=true;}
- if(!usable(input.population)||input.population.value!=='adult_private_general_21_59'){gap('population',input.population,CONVALESCENCE_APPLICABILITY['cv.population'],'applicability',usable(input.population)?'unsupported':missingState(input.population));hard=true;}
+ const populationUsable=usable(input.population)||input.population.state==='derived';
+ if(!populationUsable||input.population.value!=='adult_private_general_21_59'){gap('population',input.population,CONVALESCENCE_APPLICABILITY['cv.population'],'applicability',populationUsable?'unsupported':missingState(input.population));hard=true;}
  if(!usable(input.employment_start)){gap('employment_start',input.employment_start,'נדרש מועד תחילת עבודה מזוהה באותו מקום עבודה לצורך הוותק; תאריך התלוש אינו תאריך התחלה.','source');hard=true;}
  if(input.employment_start.value?.slice(5)==='02-29'){gap('leap_start',input.employment_start,'תחילת עבודה ב־29 בפברואר דורשת הכרעה מפורשת במועד יום השנה בשנים שאינן מעוברות; הענף אינו מזיז תאריך בשקט.','applicability','unsupported');hard=true;}
  if(!usable(input.qualifying_service)||input.qualifying_service.value!=='continuous_no_excluded_absence'){gap('qualifying_service',input.qualifying_service,CONVALESCENCE_APPLICABILITY['cv.qualifying_service'],'source',usable(input.qualifying_service)?'unsupported':missingState(input.qualifying_service));hard=true;}
@@ -107,12 +116,19 @@ export function resolveConvalescenceEntitlement(raw:unknown){
   payment_coverage:input.payment_coverage,benefit_year:input.benefit_year,due_date:input.due_date,segments:input.segments,slices,
   ...(input.product_facts?{product_facts:input.product_facts}:{})};
  const decisionsFor=(compared:boolean):Decision[]=>{
-  const decisions=Object.entries(CONVALESCENCE_APPLICABILITY).filter(([id])=>compared||id!=='cv.allocation').map(([decision_id,question])=>{
+  const caseEvidence:Decision[]=[];
+  const decisions=Object.entries(applicability).filter(([id])=>compared||id!=='cv.allocation').map(([decision_id,question])=>{
    let d:Decision=input.applicability.find(d=>d.decision_id===decision_id)??{decision_id,state:'missing',basis:'ai_source_assessment',explanation:question,sources:[convalescenceLegalSource(decision_id==='cv.rate_2026'?1:0)],valid_until:null};
    if(d.valid_until){const expiry=new Date(d.valid_until).toISOString();d={...d,valid_until:expiry,...(Date.parse(expiry)<=Date.parse(input.evaluated_at)?{state:'expired' as const}:{})};}
+   if(d.state==='accepted'){const consumed=convalescenceCaseDecisionSources(input,decision_id);if(consumed.length){
+    const sources=[...new Map([...d.sources,...consumed].map(s=>[canonicalSha256(s),s])).values()];d={...d,sources:sources.slice(0,16)};
+    for(let offset=16;offset<sources.length;offset+=16)caseEvidence.push({decision_id:`${decision_id}.evidence.${offset}`,state:'accepted',basis:'ai_source_assessment',
+     explanation:'Additional exact case-recipe source citations; no new applicability decision: '+canonicalSha256({decision_id,sources}),sources:sources.slice(offset,offset+16),valid_until:d.valid_until});
+   }}
    if(d.state!=='accepted'&&!missing.some(m=>m.fact_key===decision_id))add(decision_id,'applicability.'+decision_id,d.state,question,'applicability',d.sources,decision_id==='cv.allocation'?[ids[1]]:ids);
    return d;
   });
+  decisions.push(...caseEvidence);
   const evidence=compared?{core,recorded_coverage:input.recorded_coverage,recorded_inventory:input.recorded_inventory}:core;
   const cited=sourcesIn(evidence);
   for(let i=0;i<cited.length;i+=16)decisions.push({decision_id:'cv.evidence.'+i,state:'accepted',basis:'ai_source_assessment',

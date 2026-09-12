@@ -17,7 +17,7 @@ function candidate(input:VacationEntitlementInput,checkId:string,facts:Binding[]
  const expected=output;
  if(comparison){nodes=[...nodes,{node_id:'vacation.pay.difference',operation:'subtract',left_ref:expected,right_ref:'fact.recorded'}];output='vacation.pay.difference';}
  const rule=createRuleSpecPackage({schema_version:'tivdoc-rulespec-v0.6.0',rule_spec_id:`il.review.vacation.${checkId.split('.').slice(-2).join('.')}`,
-  rule_spec_version:'1.0.0',topic:'vacation',catalog_boundary:'real_inactive',source_version_ids:VACATION_LEGAL_MANIFEST.map(s=>s.version_id),
+  rule_spec_version:input.derived_seniority&&checkId.includes('.annual.')?'1.1.0':'1.0.0',topic:'vacation',catalog_boundary:'real_inactive',source_version_ids:VACATION_LEGAL_MANIFEST.map(s=>s.version_id),
   effective_period:VACATION_SOURCE_REVIEW.supported_period,sectors:['general_private_conditionally_assessed'],populations:['adult_21_59'],
   facts:facts.map(declaration),parameters:parameters.map(b=>({...declaration(b),parameter_id:`il.vacation.${b.ref_id}`,parameter_version:'1.0.0'})),nodes,output_ref:output,
   golden_case_set_sha256:canonicalSha256({annual_gross:[16,18,21,22,28],whole_year_100_of_200:8,part_year_100_of_240:6,
@@ -39,9 +39,14 @@ function candidate(input:VacationEntitlementInput,checkId:string,facts:Binding[]
 /** Count / count derives a dimensionless multiplier; no count is relabelled
  * as calendar days. The increment after year seven remains visible in trace. */
 export function vacationAnnualCalculation(input:VacationEntitlementInput,decisions:VacationDecision[],prorate?:{wholeYear:boolean;workdays:DocumentReviewOperand}){
- if(!input.seniority_year)throw Error('VACATION_SENIORITY_REQUIRED');
- const facts:Binding[]=[{ref_id:'fact.seniority',operand:input.seniority_year}],parameters=[integer('parameter.first.five',16,'calendar_days',true),integer('parameter.year.six',18,'calendar_days'),integer('parameter.year.seven',21,'calendar_days'),integer('parameter.increment',1,'calendar_days'),integer('parameter.cap',28,'calendar_days')];
- const nodes:Node[]=[{node_id:'boundary.seven',operation:'constant.integer',value:7,unit:'count'},
+ if(!input.seniority_year&&!input.derived_seniority)throw Error('VACATION_SENIORITY_REQUIRED');
+ const facts:Binding[]=input.seniority_year?[{ref_id:'fact.seniority',operand:input.seniority_year}]:[],parameters=[integer('parameter.first.five',16,'calendar_days',true),integer('parameter.year.six',18,'calendar_days'),integer('parameter.year.seven',21,'calendar_days'),integer('parameter.increment',1,'calendar_days'),integer('parameter.cap',28,'calendar_days')];
+ // Opt-in calendar extraction is explicit in the RuleSpec and source-bound
+ // decision trace. No computed seniority is called an observed document cell.
+ const derived:Node[]=input.seniority_year?[]:[{node_id:'source.employment.start.year',operation:'constant.integer',value:Number(input.derived_seniority!.employment_start.slice(0,4)),unit:'count'},
+  {node_id:'source.reference.year',operation:'constant.integer',value:2026,unit:'count'},{node_id:'source.year.offset',operation:'subtract',left_ref:'source.reference.year',right_ref:'source.employment.start.year'},
+  {node_id:'source.year.one',operation:'constant.integer',value:1,unit:'count'},{node_id:'fact.seniority',operation:'add',refs:['source.year.offset','source.year.one']}];
+ const nodes:Node[]=[...derived,{node_id:'boundary.seven',operation:'constant.integer',value:7,unit:'count'},
   {node_id:'count.one',operation:'constant.integer',value:1,unit:'count'},
   {node_id:'years.after.seven',operation:'subtract',left_ref:'fact.seniority',right_ref:'boundary.seven'},
   {node_id:'year.multiplier',operation:'divide',left_ref:'years.after.seven',right_ref:'count.one'},

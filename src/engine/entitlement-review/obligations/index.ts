@@ -38,7 +38,17 @@ export function resolveExplicitObligations(candidate:unknown){
   if(new Set(o.conditions.map(c=>c.condition_id)).size!==o.conditions.length)throw Error('OBLIGATION_DUPLICATE_CONDITION');
   for(const c of o.conditions)if(c.fact.source){bound(c.fact.source,input);if(c.fact.basis==='customer_declaration'&&!['customer_declaration','questionnaire_declaration'].includes(c.fact.source.reading))throw Error('OBLIGATION_FACT_BASIS');}
   const decisions=assessed(input,o);
-  for(const d of decisions)if(d.state!=='accepted'||d.basis==='customer_declaration'||!d.sources.length||d.valid_until!==null&&d.valid_until<=input.evaluated_at)add(d.decision_id,d.state==='accepted'?'unknown':d.state,'assessments.'+d.decision_id,d.explanation,'missing_applicability');
+  if(o.product_facts){
+   for(const key of ['agreement_used_for_employment','agreement_made_or_renewed_on','changes_or_side_terms','employer_disputes_term'] as const){
+    const f=o.product_facts[key];if(f.source){bound(f.source,input);if(f.basis==='customer_declaration'&&!['customer_declaration','questionnaire_declaration'].includes(f.source.reading))throw Error('OBLIGATION_FACT_BASIS');}
+    const conflict=f.state==='known'&&(key==='agreement_used_for_employment'&&f.value===false||['changes_or_side_terms','employer_disputes_term'].includes(key)&&f.value===true);
+    const state=conflict?'conflict':f.state==='known'?'accepted':f.state==='unreadable'?'unknown':f.state;
+    const explanation=conflict?(key==='agreement_used_for_employment'?'המסמך זוהה ככזה שלא שימש לקביעת תנאי העבודה בתקופה. נדרש המקור המתאים לפני חישוב מכוחו.':key==='changes_or_side_terms'?'נמסר שקיימים תיקון או תנאים נוספים לסעיף. יש לקשר ולקרוא אותם לפני שימוש בנוסחה מתוך הסעיף לבדו.':'נמסר שהמעסיק חולק על החלת הסעיף. נדרש מקור לעמדה ולנסיבות; אין להציג את הנוסחה כהתחייבות מוסכמת.'):'עובדת הקשר מזוהה בלבד; אינה אישור לתוקף, לפרשנות או לשלמות תנאי ההתחייבות.';
+    decisions.push({decision_id:'obligation.context.'+key,state,basis:'ai_source_assessment',explanation:JSON.stringify({schema_version:'obligation-case-context-v1',key,fact_sha256:canonicalSha256(f),original_state:f.state,explanation,legal_applicability_approved:false}),sources:[o.clause.source,...(f.source?[f.source]:[])],valid_until:null});
+    if(conflict)add('obligation.context.'+key,'conflict','product_facts.'+key,explanation,'missing_source');
+   }
+  }
+  for(const d of decisions)if(!d.decision_id.startsWith('obligation.context.')&&(d.state!=='accepted'||d.basis==='customer_declaration'||!d.sources.length||d.valid_until!==null&&d.valid_until<=input.evaluated_at))add(d.decision_id,d.state==='accepted'?'unknown':d.state,'assessments.'+d.decision_id,d.explanation,'missing_applicability');
   const falseCondition=o.conditions.find(c=>c.fact.state==='known'&&c.fact.value===false);
   if(falseCondition){outcome('not_triggered',[falseCondition.condition_id]);continue;}
   const assumptions:{decision_id:string;explanation:string}[]=[];

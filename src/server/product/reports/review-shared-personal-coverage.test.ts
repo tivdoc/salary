@@ -15,6 +15,7 @@ import {pensionEntitlementInputSchema} from '@/engine/entitlement-review/pension
 import {pensionProductFacts} from '@/engine/entitlement-review/pension/product-facts';
 import {enableSharedPersonalFacts} from '@/engine/entitlement-review/shared-product-facts';
 import {reviewSharedPersonalRequestProjection,type SharedPersonalRequest} from './review-shared-personal-coverage';
+import {sharedPersonalV3Fixture} from '@/engine/entitlement-review/shared-product-facts-v3.fixture';
 
 function raw(shared=true){const input=nineTopicRuntimeSource(),e=input.entitlement_evidence!,m=minimumWageEntitlementInputSchema.parse(e.minimum_wage),p=pensionEntitlementInputSchema.parse(e.pension);
  m.product_facts=minimumWagePersonalFacts();m.population={state:'missing',value:null,source:null};m.employment={state:'missing',value:null,source:null};
@@ -35,6 +36,21 @@ function fixture(){
  return {review,requests,nowMs};
 }
 describe('shared personal question presentation uses the ordinary replayed report',()=>{
+ it('projects fourteen existing personal requests into three actions without inventing historical travel or pension questions',()=>{
+  const input=sharedPersonalV3Fixture(),oldInput=structuredClone(input);delete oldInput.entitlement_evidence!.shared_personal_facts_policy;
+  const prior=runDocumentReview(composeEntitlementReview(oldInput),'before.expanded'),review=runDocumentReview(composeEntitlementReview(input),'after.expanded');
+  const requests:SharedPersonalRequest[]=prior.completions.customer_requests.map((r,i)=>({request_id:`77777777-7777-4777-8777-${String(i).padStart(12,'0')}`,code:r.code,target:r.target,source_current:true,answered_at:null,expires_at:'2026-09-13T00:00:00Z'}));
+  const groups=review.input.entitlement_composition!.shared_personal_facts!.groups;
+  const aliases=new Set(groups.flatMap(g=>g.aliases.map(a=>a.fact_key)));
+  const relevant=requests.filter(r=>aliases.has(r.target.fact_key));
+  // The historical fixture already has pension age facts and predates the two
+  // opt-in travel questions: 17 possible aliases minus those 3 absent requests.
+  expect(relevant).toHaveLength(14);const projected=reviewSharedPersonalRequestProjection({review,requests,nowMs});
+  expect(projected).toHaveLength(11);expect(relevant.filter(r=>!projected.some(m=>m.request_id===r.request_id))).toHaveLength(3);
+  expect(review.purchased_scope.topics).toHaveLength(9);expect(review.input.answer_history).toEqual([]);
+  expect(projected.every(m=>requests.some(r=>r.request_id===m.replacement_request_id&&r.answered_at===null))).toBe(true);
+  const stale=requests.map(r=>({...r,source_current:false}));expect(reviewSharedPersonalRequestProjection({review,requests:stale,nowMs})).toEqual([]);
+ });
  it('shows three canonical actions for six old questions and retains their history',()=>{
   const f=fixture(),before=canonicalSha256(f),matches=reviewSharedPersonalRequestProjection(f);
   expect(matches).toHaveLength(3);expect(new Set(matches.map(m=>m.replacement_request_id)).size).toBe(3);

@@ -40,6 +40,25 @@ function travelCaseRecipe(decision_id:string,method:string,paths:string[],page:n
  const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'travel-case-facts-v1' as const};
  return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
 }
+function convalescenceCaseRecipe(decision_id:string,method:string,paths:string[],laws:DocumentReviewSource[]){
+ const ordinary=recipe('convalescence',decision_id,method,paths,CONVALESCENCE_SOURCE_REVIEW_SHA256,laws);
+ const {recipe_sha256:prior,...body}=ordinary;void prior;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'convalescence-case-facts-v1' as const};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+function vacationCaseRecipe(decision_id:string,method:string,paths:string[],page:number,locator:string){
+ const ordinary=recipe('vacation',decision_id,method,paths,VACATION_SOURCE_REVIEW_SHA256,[vacationLegalSource('law',page,locator),vacationLegalSource('amendment15',1,'תיקון 15 — מכסת השנים הראשונות והתחילה; אינו אישור לתנאי המקרה')]);
+ const {recipe_sha256:prior,...body}=ordinary;void prior;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'vacation-product-facts-v1' as const,source_context_paths:['documents','checks','answer_history']};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+function workingTimeCaseRecipe(decision_id:string,method:string,paths:string[],laws:DocumentReviewSource[],perDay=false){
+ const ordinary=recipe('working_time',decision_id,method,paths,WORKING_TIME_SOURCE_REVIEW_SHA256,laws);
+ const {recipe_sha256:prior,...body}=ordinary;void prior;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'working-time-product-facts-v2' as const,
+  decision_scope:perDay?'exact_workday_id_v2_or_historical_scope_v1' as const:'source_week' as const,source_context_paths:['documents','non_payslip_evidence','answer_history']};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
 export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  recipe('pension','pension.rounding','half_up_per_component_per_month',['period','facts.aged_21_or_more','facts.under_60','pensionable_wage'],PENSION_SOURCE_REVIEW_SHA256,[pensionLegalSource('order2011',4,'סעיף 6; שיטת העיגול היא בחירת פרשנות נפרדת')]),
  recipe('travel','travel.rounding','half_up_final_period_agora',['period','commute_days','discounted_daily_fare'],TRAVEL_SOURCE_REVIEW_SHA256,[travelLegalSource(1,'סעיפים 2–3; שיטת העיגול אינה הוראה מפורשת בצו')]),
@@ -61,5 +80,25 @@ export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  travelCaseRecipe('travel.general_coverage','explicit_private_employee_and_source_selected_uniform_route',['period','product_facts.employment_relationship','product_facts.workplace_sector','facts','commute_days'],1,'רישת הצו וסעיף 3 — עובד שכיר במגזר הפרטי וצורך/הגעה מזוהים; אין אישור להסדר מיטיב'),
  travelCaseRecipe('travel.fare_basis','identified_standard_adult_route_tariff_group_exact_daily_cell',['period','product_facts','facts','commute_days','fare_source_context','discounted_daily_fare'],2,'סעיף 4 — תעריף מוזל מזוהה למסלול ולתקופה; פרופיל הנחה, כיוונים ושיוך מקור נבדקים בנפרד'),
  travelCaseRecipe('travel.ticket_options','identified_complete_same_route_ticket_inventory_and_monthly_availability',['period','product_facts','facts','commute_days','fare_source_context','discounted_daily_fare','monthly_pass','monthly_pass_cost'],2,'סעיף 4 — מלאי כרטיסים שלם וזמינות מנוי מתאימים במקור; מחיר חסר אינו היעדר מנוי'),
+ convalescenceCaseRecipe('cv.benefit_year','explicit_benefit_year_2026_and_source_payment_coverage',['period','evaluated_at','benefit_year','payment_coverage'],[convalescenceLegalSource(1),convalescenceLegalSource(2)]),
+ convalescenceCaseRecipe('cv.qualifying_service','completed_first_year_continuous_service_complete_positive_fte_segments',['period','employment_start','qualifying_service','payment_coverage','due_date','segments'],[convalescenceLegalSource(0,'סעיפים 4–5 — השלמת שנה, רציפות וחלקיות לפי תקופות מקור מפורשות')]),
+ convalescenceCaseRecipe('cv.due_date','explicit_due_date_in_selected_payroll_month_not_summer_default',['period','employment_start','payment_coverage','due_date'],[convalescenceLegalSource(0,'סעיף 6 — מועד מפורש ומזוהה; אין בחירת חודש אוטומטית בטווח הקיץ')]),
+ convalescenceCaseRecipe('cv.allocation','identified_complete_recorded_inventory_exact_accrual_period',['period','payment_coverage','recorded','recorded_coverage','recorded_inventory'],[convalescenceLegalSource(0,'שיוך רישום לתקופת צבירה מזוהה; אין הוכחת העברה בפועל')]),
+ convalescenceCaseRecipe('cv.population','v2_explicit_employee_private_without_public_wage_linkage_product_age21_59',['period','source_gates_policy','product_facts.birth_date','product_facts.employment_relationship','product_facts.workplace_sector','product_facts.employment_category','product_facts.public_wage_linked'],[convalescenceLegalSource(0,'תחולת המגזר הפרטי; גיל 21–59 הוא גבול מוצר מפורש ולא תנאי בצו')]),
+ convalescenceCaseRecipe('cv.legal_source_chain','v2_complete_pinned_2016_2026_2025_chain_after_publication_separate_arrangement',['period','evaluated_at','source_gates_policy'],[convalescenceLegalSource(0),convalescenceLegalSource(1),convalescenceLegalSource(2)]),
+ convalescenceCaseRecipe('cv.arrangement_scope','v2_existing_positive_current_contract_classification_not_negative_awareness',['period','source_gates_policy','applicability#cv.source_chain','product_facts.special_terms_known'],[convalescenceLegalSource(0,'הסדר כללי או מיטיב דורש הערכת מקור נפרדת; חוסר ידיעה אינו הוכחת היעדר זכויות')]),
+ vacationCaseRecipe('vacation.general_section3','explicit_employee_private_product_age21_59_salary_basis_and_section4_boundary',['period','product_facts.birth_date','product_facts.employment_relationship','product_facts.workplace_sector','product_facts.salary_basis','product_facts.continuous_employment','annual_basis.employment_start'],1,'סעיפים 1, 3 ו־4 — סוג ההעסקה ותקופה רציפה מפורשת; גיל 21–59 הוא גבול המוצר'),
+ vacationCaseRecipe('vacation.seniority_basis','same_employer_calendar_seniority_from_pinned_start_or_replayed_source_witness',['period','calendar_year','seniority_year','annual_basis.employment_start','product_facts.same_employer_or_workplace'],1,'סעיפים 1 ו־3 — שנת העבודה אצל אותו מעסיק או מקום עבודה; ללא יצירת קריאת ותק פיקטיבית'),
+ vacationCaseRecipe('vacation.annual_workdays','replayed_complete_annual_classified_workday_inventory',['period','evaluated_at','annual_basis'],1,'סעיף 3 — מלאי ימי עבודה שנתי מסווג ושלם; אין חלוקה שרירותית לחודש'),
+ vacationCaseRecipe('vacation.pay_calendar_days','replayed_exact_leave_days_after_source_bound_exclusions',['period','leave_pay.mode','leave_pay.leave_period','leave_pay.leave_calendar_days'],2,'סעיפים 3 ו־5 — ימי החופשה בתקופה לאחר בדיקת ההחרגות; אין המרת יתרה לימי חופשה שנוצלו'),
+ vacationCaseRecipe('vacation.pay_quarter_selection','replayed_preceding_full_quarter_or_explicit_fullest_quarter_inventory',['period','leave_pay.mode','leave_pay.leave_period','leave_pay.quarter_period'],3,'סעיף 10(ב)(2) — בחירת רבע השנה לפי המקורות המזוהים, בלי לבחור סכום לצורך התוצאה'),
+ vacationCaseRecipe('vacation.pay_monthly_period','replayed_monthly_wage_if_worked_same_leave_period',['period','leave_pay.mode','leave_pay.leave_period','leave_pay.wage'],3,'סעיף 10(ב)(1) — השכר שהיה משתלם באותה תקופת חופשה; אינו כל שכר חודשי בתלוש'),
+ vacationCaseRecipe('vacation.pay_recorded_allocation','replayed_exclusive_payment_for_exact_leave_period',['period','leave_pay.leave_period','leave_pay.recorded'],3,'סעיף 10(א) — שיוך רישום תשלום לאותם ימי חופשה; אין אישור העברה בפועל'),
+ workingTimeCaseRecipe('wt.coverage','explicit_private_hourly_product_population_duties_and_tracking_boundaries',['period','week_start','calculation_policy','product_facts'],[workingTimeLegalSource('law',6,'סעיף 30 — גבולות התחולה נבחנים מנתוני המקרה; גיל 21–59 הוא גבול המוצר'),workingTimeLegalSource('week',1,'הסדר השבוע הפרטי הנתמך; אין אישור גורף להסדרים מיוחדים')]),
+ workingTimeCaseRecipe('wt.regular_wage','identified_complete_regular_hourly_wage_composition_exact_period',['period','week_start','calculation_policy','regular_hourly_wage','product_facts.regular_wage_basis'],[workingTimeLegalSource('law',3,'סעיף 18 — הרכב השכר הרגיל לפי מקור מזוהה'),workingTimeLegalSource('rest',1,'עותק פסק הדין המלא; הבחנת תוספת חוזית לפי הפניות קבלת הפרשנות, ללא אימות חדש באתר בית המשפט')]),
+ workingTimeCaseRecipe('wt.arrangement','identified_explicit_schedule_daily_limit_and_source_day_no_42_division',['period','week_start','calculation_policy','arrangement','scheduled_weekdays','workdays'],[workingTimeLegalSource('law',1,'סעיפים 2–3 — מגבלה יומית לפי ההסדר והיום'),workingTimeLegalSource('week',1,'שבוע בן 42 שעות אינו קובע לבדו מגבלה יומית או יום מקוצר')],true),
+ workingTimeCaseRecipe('wt.workday_assignment','identified_exact_clock_rows_and_explicit_multi_interval_day_association',['period','week_start','calculation_policy','workdays','product_facts.assignment_witnesses'],[workingTimeLegalSource('law',1,'זהות יום העבודה ומקטעיו מזוהה במקור; אין איחוד משמרות מכוח הפסקה קצרה בלבד'),workingTimeLegalSource('week',1,'שיוך רישום ליום העבודה בהסדר המזוהה')],true),
+ workingTimeCaseRecipe('wt.payroll_allocation','identified_complete_same_day_payment_allocation_without_reused_rows',['period','week_start','calculation_policy','workdays'],[workingTimeLegalSource('law',3,'סעיפים 16–17 — השוואה לרישום שהוקצה לאותו יום; אין הוכחת תשלום או חלוקה שווה אוטומטית')],true),
+ workingTimeCaseRecipe('wt.worked_time','identified_clock_duration_and_explicit_work_break_classification_per_day',['period','week_start','calculation_policy','workdays'],[workingTimeLegalSource('law',1,'הגדרת שעות עבודה בסעיף 1; סיווג נוכחות והפסקות מתוך עובדות המקור')],true),
 ]);
 export type AiReleaseDecisionRecipe=(typeof AI_RELEASE_DECISION_RECIPES)[number];

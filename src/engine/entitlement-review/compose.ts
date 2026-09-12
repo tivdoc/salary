@@ -36,7 +36,7 @@ function answeredEvidence(input:DocumentReviewInput,original:EntitlementEvidence
   if(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==r.answer_sha256)continue;
   const decoded=r.state==='provided'?reviewDeclaredAnswerValue(h.request.target,r.value):null;
   const fact=factAt(packet,target),known=r.state==='provided'&&!admitted.blocked&&decoded!==null;
-  const personalPension=['pension','travel'].includes(target.branch)&&target.input_path.startsWith('product_facts.');
+  const personalPension=['pension','travel','vacation'].includes(target.branch)&&target.input_path.startsWith('product_facts.');
   fact.state=known?(['working_time','minimum_wage','convalescence'].includes(target.branch)||personalPension?'declared':'known'):r.state==='conflicted'||admitted.state==='provided'&&admitted.blocked?'conflict':'unknown';
   fact.value=known?(target.value_kind==='date_or_ongoing'&&decoded==='העבודה נמשכת'?'ongoing':decoded):null;
   fact.source={document_id:r.request_id,version_id:`${r.request_id}:${r.answer_revision}`,file_sha256:r.answer_sha256,page:1,locator:target.fact_key,label:h.request.target.question,reading:'customer_declaration',reading_receipt_sha256:r.answer_sha256};
@@ -67,13 +67,14 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  // the named empty slots, then their own dated/FTE receipts fill those slots.
  // Rebuild from the original packet every run; old count/cell answers cannot
  // survive a count correction through a previously materialized result.
- const targets=new Map(baseline.answer_targets.map(t=>[t.fact_key,t]));
+ const targetKey=(t:EntitlementAnswerTarget)=>canonicalSha256({fact_key:t.fact_key,branch:t.branch,index:t.index,input_path:t.input_path});
+ const targets=new Map(baseline.answer_targets.map(t=>[targetKey(t),t]));
  for(let step=0;step<4;step++){
   const staged=materializeTypedEntitlementFacts(effective,packet,withNeeds);
   if(canonicalSha256(staged)===canonicalSha256(effective)&&step===0)break;
   const expanded=resolve(base,staged,packet),oldNeeds=parseReviewCompletionInput(withNeeds.completion_input).needs;
   const needs=[...oldNeeds];for(const n of expanded.needs)if(!needs.some(old=>old.fact_key===n.fact_key))needs.push(n);
-  for(const target of expanded.answer_targets)targets.set(target.fact_key,target);
+  for(const target of expanded.answer_targets)targets.set(targetKey(target),target);
   withNeeds=documentReviewInputSchema.parse({...withNeeds,completion_input:{...parseReviewCompletionInput(withNeeds.completion_input),needs}});
   const next=materializeTypedEntitlementFacts(materializeSharedPersonalFacts(withNeeds,packet,answeredEvidence(withNeeds,staged,[...targets.values()])),packet,withNeeds);
   if(canonicalSha256(next)===canonicalSha256(effective)){effective=next;break;}effective=next;
@@ -95,7 +96,9 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  });
  if(checks.some(c=>base.checks.some(old=>old.check_id===c.check_id)))throw Error('ENTITLEMENT_CHECK_COLLISION');
  const externalFacts=new Set(parseReviewCompletionInput(base.completion_input).needs.map(n=>n.fact_key));
- const needs=parseReviewCompletionInput(withNeeds.completion_input).needs.filter(n=>!externalFacts.has(n.fact_key));
+ const currentKeys=new Set(current.needs.map(n=>n.fact_key)),addressedKeys=new Set(original.answer_history.map(h=>h.request.target.fact_key));
+ const needs=parseReviewCompletionInput(withNeeds.completion_input).needs.filter(n=>!externalFacts.has(n.fact_key)
+  &&(!n.fact_key.startsWith('entitlement.obligation-fact.')||currentKeys.has(n.fact_key)||addressedKeys.has(n.fact_key)));
  // A newly revealed dependency creates new work; original targets remain
  // addressable for answer replay and correction after the fact is known.
  for(const need of current.needs)if(!needs.some(n=>n.fact_key===need.fact_key))needs.push(need);

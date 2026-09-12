@@ -8,7 +8,7 @@ import {vacationEntitlementInputSchema,resolveVacationEntitlement,VACATION_CATAL
 import {convalescenceEntitlementInputSchema,resolveConvalescenceEntitlement,CONVALESCENCE_CATALOG} from './convalescence/index.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
 import {typedEntitlementQuestions,type TypedEntitlementQuestion} from './typed-product-facts.ts';
-import {SHARED_PERSONAL_FACTS_TRAVEL_POLICY} from './shared-product-fact-contracts.ts';
+import {SHARED_PERSONAL_FACTS_TRAVEL_POLICY,SHARED_PERSONAL_FACTS_EXPANDED_POLICY} from './shared-product-fact-contracts.ts';
 type Topic='travel'|'minimum_wage'|'vacation'|'convalescence';
 type Gap={key:string;path:string;state:string;kind:'missing_fact'|'missing_source'|'missing_applicability'|'missing_rule';question:string;ids:readonly string[];answer_kind:string;date_format?:'iso_date'|'iso_date_or_ongoing';typed?:TypedEntitlementQuestion;gap_only?:boolean};
 
@@ -22,10 +22,13 @@ export function simpleEntitlementProduct(input:DocumentReviewInput,topic:Topic,c
  const missing:Gap[]='gaps'in raw?raw.gaps.map(g=>({key:g.dependency_id,path:g.input_path,state:g.state,kind:g.kind,question:g.question,ids:g.dependent_check_ids,answer_kind:g.answer_kind,
   ...('value_validation'in g&&g.value_validation?{date_format:g.value_validation.format}:{})})):raw.missing.map(g=>({key:g.fact_key,path:g.input_path,state:g.state,
    kind:g.kind==='source'?'missing_source':g.kind==='applicability'?'missing_applicability':'missing_fact',question:g.question,ids:g.dependent_check_ids,answer_kind:g.answer_kind}));
- if(topic==='minimum_wage'||topic==='convalescence'||topic==='travel'&&input.entitlement_evidence?.shared_personal_facts_policy===SHARED_PERSONAL_FACTS_TRAVEL_POLICY){
-  const typed=typedEntitlementQuestions(topic,e),ids=topic==='minimum_wage'?[minimumWageEntitlementInputSchema.parse(e).check_id]:['expected','comparison'].map(s=>(topic==='travel'?travelEntitlementInputSchema.parse(e):convalescenceEntitlementInputSchema.parse(e)).check_prefix+'.'+s);
+ if(topic==='minimum_wage'||topic==='convalescence'||topic==='vacation'&&vacationEntitlementInputSchema.parse(e).product_facts||topic==='travel'&&[SHARED_PERSONAL_FACTS_TRAVEL_POLICY,SHARED_PERSONAL_FACTS_EXPANDED_POLICY].some(p=>p===input.entitlement_evidence?.shared_personal_facts_policy)){
+  const typed=typedEntitlementQuestions(topic,e),ids=topic==='minimum_wage'?[minimumWageEntitlementInputSchema.parse(e).check_id]:topic==='vacation'?['annual.quota','annual.prorated','pay.expected','pay.comparison'].map(s=>vacationEntitlementInputSchema.parse(e).check_prefix+'.'+s):['expected','comparison'].map(s=>(topic==='travel'?travelEntitlementInputSchema.parse(e):convalescenceEntitlementInputSchema.parse(e)).check_prefix+'.'+s);
   for(const q of typed){const old=missing.find(m=>m.path===q.path);if(old){Object.assign(old,{kind:'missing_fact',question:q.question,answer_kind:q.answer_kind,typed:q});}
    else missing.push({key:'personal.'+q.path,path:q.path,state:q.fact.state,kind:'missing_fact',question:q.question,ids,answer_kind:q.answer_kind,typed:q});}
+  if(topic==='vacation'&&vacationEntitlementInputSchema.parse(e).product_facts){
+   for(const m of missing)if(['facts.aged_21_or_more','facts.under_60','seniority_year'].includes(m.path))m.gap_only=true;
+  }
   if(topic==='convalescence'){
    const p=convalescenceEntitlementInputSchema.parse(e);
    if(p.product_facts)for(const m of missing){
@@ -36,7 +39,7 @@ export function simpleEntitlementProduct(input:DocumentReviewInput,topic:Topic,c
  const pins=input.documents.filter(d=>e.source_manifest.some(m=>m.kind==='case_document'&&m.document_id===d.document_id)).map(d=>({case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256}));
  const gaps:DocumentReviewInput['coverage_gaps']=[],needs:ReviewCompletionNeed[]=[],answer_targets:EntitlementAnswerTarget[]=[];
  for(const m of missing){
-  const fact_key=`entitlement.${topic}.${canonicalSha256({period:input.period,pins,path:m.path,key:m.key}).slice(0,28)}`;
+  const fact_key=m.typed?.fact_key??`entitlement.${topic}.${canonicalSha256({period:input.period,pins,path:m.path,key:m.key}).slice(0,28)}`;
   const field=topic==='travel'&&m.kind==='missing_fact'?travelProductAnswerField(m.path):null;
   const boolean=topic==='vacation'&&m.kind==='missing_fact'&&['facts.aged_21_or_more','facts.under_60','annual_basis.complete_year_evidence'].includes(m.path);
   const date=topic==='vacation'&&m.kind==='missing_fact'&&m.date_format;

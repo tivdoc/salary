@@ -3,6 +3,7 @@ import {canonicalSha256} from '../../rule-runtime/canonical.ts';
 import {createRuleSpecPackage} from '../../legal-operations/rulespec.ts';
 import {calculateDocumentReview,replayDocumentReviewCalculation,documentReviewCalculationInputSchema,type DocumentReviewOperand} from '../../document-review/calculations.ts';
 import {obligationTextSha256,obligationsEntitlementInputSchema,resolveExplicitObligations,OBLIGATION_ASSESSMENTS,type ObligationsEntitlementInput} from './index.ts';
+import {enableObligationProductFacts,obligationProductFactKey} from './product-facts.ts';
 const sha='d'.repeat(64),source={document_id:'synthetic-agreement',version_id:'synthetic-agreement.v1',file_sha256:sha,page:1,locator:'Synthetic promise clause 1',label:'Synthetic explicit agreement; not a real customer',reading:'ai_document_review' as const,reading_receipt_sha256:sha};
 function input():ObligationsEntitlementInput{
  const text='Synthetic example only: a 500.00 ILS bonus is payable for June 2026 if the specified project is completed.';
@@ -13,6 +14,24 @@ function input():ObligationsEntitlementInput{
 }
 const results=(i:ObligationsEntitlementInput)=>resolveExplicitObligations(i).checks.map(c=>calculateDocumentReview(c.calculation));
 describe('explicit contract and bonus obligations through the versioned normal RuleSpec engine',()=>{
+ it('binds optional ordinary agreement facts to an exact clause and preserves historical packages',()=>{
+  const old=input(),hash=canonicalSha256(old),i=enableObligationProductFacts(old),o=i.obligations[0];
+  expect(results(i).every(r=>r.state==='blocked')).toBe(true);expect(canonicalSha256(old)).toBe(hash);
+  const facts=o.product_facts!;
+  for(const key of ['agreement_used_for_employment','changes_or_side_terms','employer_disputes_term'] as const)facts[key]={state:'known',value:key==='agreement_used_for_employment',source,basis:'identified_document_reading'};
+  facts.agreement_made_or_renewed_on={state:'known',value:'2026-01-01',source,basis:'identified_document_reading'};
+  expect(results(i)[0]).toMatchObject({state:'calculated',expected:{minor_units:50000}});
+  const key=obligationProductFactKey(i,o,'agreement_used_for_employment'),copy=structuredClone(o);copy.clause.source.locator+=' second row';
+  expect(obligationProductFactKey(i,copy,'agreement_used_for_employment')).not.toBe(key);
+  copy.clause.source=o.clause.source;copy.clause.source={...source,version_id:'replacement'};
+  expect(obligationProductFactKey(i,copy,'agreement_used_for_employment')).not.toBe(key);
+  expect(obligationProductFactKey({...i,period:{from:'2026-07-01',to:'2026-07-31'}},o,'agreement_used_for_employment')).not.toBe(key);
+  const result=results(i)[0];facts.changes_or_side_terms.value=true;
+  expect(results(i)[0].state).toBe('blocked');expect(resolveExplicitObligations(i).gaps).toEqual(expect.arrayContaining([expect.objectContaining({dependency_id:'obligation.context.changes_or_side_terms',state:'conflict',kind:'missing_source'})]));
+  expect(results(i)[0].dependency_fingerprint).not.toBe(result.dependency_fingerprint);
+  facts.changes_or_side_terms.value=false;facts.employer_disputes_term.value=true;expect(results(i)[0].state).toBe('blocked');
+  facts.employer_disputes_term.value=false;o.assessments=[];expect(results(i)[0].state).toBe('blocked');
+ });
  it('computes a sourced fixed bonus and signed comparison, preserving the original clause',()=>{
   const i=input(),original=canonicalSha256(i),r=results(i);expect(r).toHaveLength(2);expect(r[0]).toMatchObject({state:'calculated',expected:{minor_units:50000},claim:'conditional_entitlement_candidate'});expect(r[1]).toMatchObject({recorded:{minor_units:45000},difference:{minor_units:5000}});expect(canonicalSha256(i)).toBe(original);
   for(const c of r){expect(c.input.operation).toHaveProperty('rule.topic','bonuses');expect(c.input.operation).toHaveProperty('rule.schema_version','tivdoc-rulespec-v0.6.1');expect(replayDocumentReviewCalculation(c)).toEqual(c);}

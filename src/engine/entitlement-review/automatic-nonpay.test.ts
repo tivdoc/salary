@@ -13,6 +13,8 @@ import {workingTimeEntitlementInputSchema,resolveWorkingTimeEntitlement} from '.
 import {obligationsEntitlementInputSchema,resolveExplicitObligations,OBLIGATION_ASSESSMENTS} from './obligations/index.ts';
 import {calculateDocumentReview} from '../document-review/calculations.ts';
 import {composeEntitlementReview} from './compose.ts';
+import {runDocumentReview,applyDocumentReviewAnswer,replayDocumentReview} from '../document-review/service.ts';
+import {entitlementSourceReadingDependencies} from './product-source-dependencies.ts';
 
 const uuid=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const period={from:'2026-06-01',to:'2026-06-30'};
@@ -52,6 +54,15 @@ function fixture(kind:'attendance'|'contract'='attendance',observations=kind==='
 const weeks=(input:DocumentReviewInput)=>(input.entitlement_evidence?.working_time as unknown[]??[]).map(v=>workingTimeEntitlementInputSchema.parse(v));
 const obligations=(input:DocumentReviewInput)=>obligationsEntitlementInputSchema.parse(input.entitlement_evidence!.obligations);
 describe('automatic ordinary non-payslip source evidence',()=>{
+ it('merges exact source cells across checks and refuses stale or foreign checkpoint dependencies',()=>{
+  const f=fixture(),r=f.run(),first=r.reading_dependencies[0];
+  expect(first).toBeDefined();
+  const merged=entitlementSourceReadingDependencies(r.input,[first,{...first,dependent_check_ids:['additional.same.source.check']}]);
+  expect(merged).toHaveLength(1);expect(merged[0].observation_ids).toEqual(first.observation_ids);
+  expect(merged[0].dependent_check_ids).toContain('additional.same.source.check');
+  for(const altered of [{...first,checkpoint_sha256:'f'.repeat(64)},{...first,version_id:uuid(999)},{...first,observation_ids:['invented.cell']}])
+   expect(()=>entitlementSourceReadingDependencies(r.input,[altered])).toThrow('ENTITLEMENT_SOURCE_DEPENDENCY_BINDING');
+ });
  it('retains confidence-one candidates and returns only real dependent observation IDs',()=>{
   const f=fixture(),before=canonicalSha256(f.snapshot()),r=f.run();expect(weeks(r.input)).toEqual([]);expect(r.reading_dependencies[0].observation_ids).toEqual(expect.arrayContaining(f.extraction.observations.map(o=>o.observation_id)));
   expect(canonicalSha256(f.snapshot())).toBe(before);expect(r.input.non_payslip_evidence![0].extraction?.observations.every(o=>o.state==='candidate')).toBe(true);
@@ -108,11 +119,16 @@ describe('automatic ordinary non-payslip source evidence',()=>{
   const f=fixture('contract');f.identify();const r=f.run(),packet=obligations(r.input),o=packet.obligations[0];expect(o).toMatchObject({promise:{kind:'fixed',amount:{printed_value:'500.00'}},payment_period:period,assessments:[],recorded:null,scenario:'established_only'});
   expect(resolveExplicitObligations(packet).checks.map(c=>calculateDocumentReview(c.calculation)).every(c=>c.state==='blocked')).toBe(true);expect(()=>composeEntitlementReview(r.input)).not.toThrow();
   o.assessments=Object.keys(OBLIGATION_ASSESSMENTS).map(decision_id=>({decision_id,state:'accepted',basis:'ai_source_assessment',explanation:'Independent synthetic assessment, never produced by mapper',sources:[o.clause.source],valid_until:null}));
+  expect(resolveExplicitObligations(packet).checks.map(c=>calculateDocumentReview(c.calculation)).every(c=>c.state==='blocked')).toBe(true);
+  // The old resolver fixture is still readable; the new automatic packet
+  // additionally requires its identified context, even with assessments.
+  delete o.product_facts;
   expect(resolveExplicitObligations(packet).checks.map(c=>calculateDocumentReview(c.calculation))[0]).toMatchObject({state:'calculated',expected:{minor_units:50000}});
  });
  it('maps exact linear count and period; independent oracle 12.50 times 8 = 100.00',()=>{
   const f=fixture('contract',contract(true));f.identify();const packet=obligations(f.run().input),o=packet.obligations[0];expect(o.promise).toMatchObject({kind:'linear',rate:{printed_value:'12.50'},quantity:{printed_value:'8',quantity_unit:'count'}});
   o.assessments=Object.keys(OBLIGATION_ASSESSMENTS).map(decision_id=>({decision_id,state:'accepted',basis:'ai_source_assessment',explanation:'Independent synthetic source assessment',sources:[o.clause.source],valid_until:null}));
+  delete o.product_facts; // Explicit historical resolver fixture, not product acceptance.
   expect(resolveExplicitObligations(packet).checks.map(c=>calculateDocumentReview(c.calculation))[0]).toMatchObject({state:'calculated',expected:{minor_units:10000}});
  });
  it.each(['quantity','period_start'] as const)('keeps linear quantity null without identified %s',field=>{
@@ -132,5 +148,36 @@ describe('automatic ordinary non-payslip source evidence',()=>{
  });
  it('never copies an ordinary contract promise into an unpurchased bonus or vice versa',()=>{
   const f=fixture('contract');f.identify();const r=attachAutomaticNonPayslipEvidence(f.input(['bonuses']),f.snapshot());expect(r.input.entitlement_evidence?.obligations).toBeUndefined();
+ });
+ it('takes identified agreement context through ordinary completions without turning it into a binding decision',()=>{
+  const f=fixture('contract');f.identify();const prepared=composeEntitlementReview(f.run().input),before=runDocumentReview(prepared,'contract.before');
+  const requests=before.completions.customer_requests.filter(r=>r.target.fact_key.startsWith('entitlement.obligation-fact.'));
+  expect(requests).toHaveLength(4);
+  const request=requests.find(r=>r.target.question.includes('שימש לקביעת'))!;
+  const actor={case_id:prepared.case_id,identity_id:uuid(990)};
+  const answer={request_id:uuid(991),revision:1,answered_at:'2026-09-12T00:01:00Z',state:'provided' as const,value:true};
+  const next=applyDocumentReviewAnswer(prepared,{request,actor,answer}),result=runDocumentReview(next.input,'contract.after');
+  const effective=obligationsEntitlementInputSchema.parse(result.input.entitlement_composition!.evidence.obligations);
+  expect(effective.obligations[0].product_facts!.agreement_used_for_employment).toMatchObject({state:'known',value:true,basis:'customer_declaration',source:{reading:'customer_declaration'}});
+  expect(effective.obligations[0].assessments).toEqual([]);expect(result.checks.every(c=>c.calculation.state==='blocked')).toBe(true);
+  expect(result.input.entitlement_evidence).toEqual(prepared.entitlement_evidence);expect(result.input.answer_history).toHaveLength(1);
+  expect(applyDocumentReviewAnswer(next.input,{request,actor,answer}).input).toEqual(next.input);
+  expect(replayDocumentReview(result)).toEqual(result);
+  const corrected=applyDocumentReviewAnswer(next.input,{request,actor,answer:{...answer,revision:2,state:'unknown',value:null}});
+  const changed=runDocumentReview(corrected.input,'contract.unknown');
+  expect(obligationsEntitlementInputSchema.parse(changed.input.entitlement_composition!.evidence.obligations).obligations[0].product_facts!.agreement_used_for_employment).toMatchObject({state:'unknown',value:null});
+  expect(changed.input.answer_history).toHaveLength(2);expect(changed.checks.every(c=>c.calculation.state==='blocked')).toBe(true);
+  expect(()=>applyDocumentReviewAnswer(prepared,{request,actor:{...actor,case_id:'foreign'},answer})).toThrow();
+ });
+ it('does not ask irrelevant contract context after an identified unrelated agreement answer and validates the agreement date',()=>{
+  const f=fixture('contract');f.identify();const prepared=composeEntitlementReview(f.run().input),before=runDocumentReview(prepared,'contract.context');
+  const requests=before.completions.customer_requests.filter(r=>r.target.fact_key.startsWith('entitlement.obligation-fact.'));
+  const actor={case_id:prepared.case_id,identity_id:uuid(990)},answer={request_id:uuid(992),revision:1,answered_at:'2026-09-12T00:01:00Z',state:'provided' as const,value:false};
+  const date=requests.find(r=>r.target.value_validation?.format==='iso_date')!;
+  expect(()=>applyDocumentReviewAnswer(prepared,{request:date,actor,answer:{...answer,value:'2026-02-30'}})).toThrow('REVIEW_COMPLETION_ANSWER_INVALID');
+  const request=requests.find(r=>r.target.question.includes('שימש לקביעת'))!;
+  const next=applyDocumentReviewAnswer(prepared,{request,actor,answer}),result=runDocumentReview(next.input,'contract.unrelated');
+  expect(result.completions.customer_requests.filter(r=>r.target.fact_key.startsWith('entitlement.obligation-fact.'))).toHaveLength(0);
+  expect(result.checks.every(c=>c.calculation.state==='blocked')).toBe(true);
  });
 });

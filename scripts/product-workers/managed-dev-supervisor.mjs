@@ -10,6 +10,7 @@ const hex=/^[a-f0-9]{64}$/u;
 const keys=['schema_version','control_id','enabled','expires_at','expected_git_sha','expected_bundle_sha256','expected_manifest_sha256','working_directory','bundle_path','manifest_path','environment_path','output_directory','max_ticks','child_timeout_ms'];
 const inheritedNames=['SystemRoot','SYSTEMROOT','WINDIR','TEMP','TMP','PATH','Path','USERPROFILE','APPDATA','LOCALAPPDATA','ProgramFiles','ProgramFiles(x86)'];
 const environmentNames=new Set(['NODE_ENV','TIVDOC_MANAGED_DEV_WORKER_ENABLED','TIVDOC_MANAGED_DEV_WORKER_CAPABILITY','TIVDOC_MANAGED_DEV_BUILD_SHA',
+ 'TIVDOC_AI_RELEASE_ENABLED',
  'TIVDOC_WORKER_POSTGRES_URL','NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED',
  'TIVDOC_MANAGED_EXTRACTION_MODE','OPENAI_API_KEY','OPENAI_EXTRACTION_MODEL','OPENAI_EXTRACTION_TIMEOUT_MS','TIVDOC_MANAGED_SOL_PACKAGE_FILE',
  'TIVDOC_NOTIFICATION_PROVIDER','RESEND_API_KEY','TIVDOC_NOTIFICATION_FROM','TIVDOC_NOTIFICATION_OUTBOX_ENABLED',
@@ -35,7 +36,8 @@ export function validateSupervisorControl(value,repositoryRoot,now=Date.now()){
 export function buildSupervisorEnvironment(raw,parent,buildSha){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.entries(raw).some(([key,value])=>!environmentNames.has(key)||typeof value!=='string'))fail('SUPERVISOR_ENVIRONMENT_INVALID');
  if(raw.NODE_ENV!=='development'||raw.TIVDOC_MANAGED_DEV_WORKER_ENABLED!=='true'
-  ||raw.TIVDOC_MANAGED_DEV_BUILD_SHA&&raw.TIVDOC_MANAGED_DEV_BUILD_SHA!==buildSha)fail('SUPERVISOR_ENVIRONMENT_INVALID');
+  ||raw.TIVDOC_MANAGED_DEV_BUILD_SHA&&raw.TIVDOC_MANAGED_DEV_BUILD_SHA!==buildSha
+  ||raw.TIVDOC_AI_RELEASE_ENABLED!==undefined&&!['0','1'].includes(raw.TIVDOC_AI_RELEASE_ENABLED))fail('SUPERVISOR_ENVIRONMENT_INVALID');
  // Never inherit NODE_OPTIONS, cloud credentials, a second database URL,
  // proxy settings, or provider keys from the launching shell.
  return {...Object.fromEntries(inheritedNames.filter(key=>typeof parent[key]==='string').map(key=>[key,parent[key]])),...raw,TIVDOC_MANAGED_DEV_BUILD_SHA:buildSha};

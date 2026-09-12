@@ -1,3 +1,17 @@
+## Ordinary benefit facts and source decisions checkpoint — 2026-09-12
+
+Preserved base da4c80003b76aa5355b618102fd59d907c27ec48. Its two CI runs failed: both found the same twelve extensionless engine imports; run34691591037 additionally timed out52 tests while the twin passed6005 tests. The imports are corrected. CI now runs the complete suite with one worker, retaining every assertion and existing timeout, to avoid competing source replay/PDF jobs on shared runners. A separate new test helper TypeScript narrowing was corrected.
+
+The ordinary AI profile now connects working-time6, vacation7 and convalescence7 case recipes, bringing the catalog to44. Current source/answer replay binds all consumed inputs and keeps v1 receipts unchanged. Working-time source facts use explicit supported clauses and identified readings; expected wages remain independent of unavailable payment allocation. Vacation source cells revealed by an answer now enter the existing document evidence request path with exact checkpoint/version bindings. A free-form contract clause not covered by the supported mapping is a software/source-interpretation gap, not proof that the customer omitted the document.
+
+Shared-personal-facts-v3 covers six branch families without weakening their reading acceptance. Protected historical projection proves14 existing personal questions become3 current actions with11 aliases; it does not invent the two later travel questions or ask pension age again when existing facts suffice. New obligation context questions capture actual agreement use, formation/renewal date, changes and dispute; those facts do not certify binding terms or complete conditions. The five obligation decision recipes remain next-step work outside this checkpoint.
+
+Validation: final integration92 tests/6 suites PASS; preceding focused107 had106 PASS and one incorrect historical question-count expectation, now resolved from fixture/source behavior. Agent scoped working-time98, vacation112, convalescence92, shared v3/legacy22 and supervisor10 checks passed in their reported groups; these overlap and are not a summed total. A supervisor defect that rejected the exact AI flag produced by lifecycle preparation is fixed with a strict0|1 allowlist. No authority guard was changed.
+
+TypeScript and root15-file lint PASS; full CI of this checkpoint is still required.
+
+Compiled source graph72b98dc6081d13bd5401d25edb442e12fd5503938be132503f3cf9a7a8bc33d0; manifest3ffcd6d4c95136e93bd9c6d3a456559634c076d2594037864f1d07284deebf89,180 source files. DEV schema180 unchanged. Read-only DEV verification confirms the retained synthetic live-Sol document still has the exact saved version/hash at revision33; this is not a new analysis/browser proof. No new provider call, budget reset, machine/grant window, message, deployment or Production change. Work continues through obligation integration, remaining source producers, actual DEV acceptance and private reports.
+
 ## Travel and independent expected wages checkpoint — 2026-09-12
 
 Saved base1db4848c0553534cac84a9d2e9ce45cc938a8631 passed both full CI34690620805/34690618980. This checkpoint adds three ordinary travel case recipes with exact method/consumed-source replay, typed factual answers and shared-personal-facts-v2. V1 receipts and17 earlier recipe hashes remain unchanged. The shared protected request projection now recognizes travel aliases. No customer declaration certifies a fare, special arrangement or legal classification.

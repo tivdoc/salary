@@ -52,8 +52,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Keep CPU-heavy source replay and PDF checks sequential on shared runners.
+      # Retain every assertion and existing per-test timeout.
       - name: Unit and guard suites (no credentials)
-        run: npm test
+        run: npm test -- --maxWorkers=1
 
       - name: Build
         run: npm run build

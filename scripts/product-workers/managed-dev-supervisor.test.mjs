@@ -57,6 +57,16 @@ describe('local managed supervisor, injected subprocess only',()=>{
   expect(env).toEqual({SystemRoot:'C:/Windows',NODE_ENV:'development',TIVDOC_MANAGED_DEV_WORKER_ENABLED:'true',OPENAI_API_KEY:'owned',TIVDOC_MANAGED_DEV_BUILD_SHA:'a'.repeat(40)});
   expect(()=>buildSupervisorEnvironment({...env,RESEND_WEBHOOK_SECRET:'unneeded'}, {},'a'.repeat(40))).toThrow('SUPERVISOR_ENVIRONMENT_INVALID');
  });
+ it('passes only the explicit lifecycle AI flag to a pinned saved-receipt worker',async()=>{
+  const f=fixture(`if(process.env.TIVDOC_AI_RELEASE_ENABLED!=='1'||process.env.TIVDOC_MANAGED_EXTRACTION_MODE!=='saved_receipts_only'||process.env.OPENAI_API_KEY)process.exit(3);console.log(JSON.stringify({worker:'managed_dev',state:'finished',items:[]}));`);
+  writeFileSync(f.control.environment_path,JSON.stringify({NODE_ENV:'development',TIVDOC_MANAGED_DEV_WORKER_ENABLED:'true',TIVDOC_AI_RELEASE_ENABLED:'1',TIVDOC_MANAGED_EXTRACTION_MODE:'saved_receipts_only',TIVDOC_SAVED_EXTRACTION_PROVIDER_ENABLED:'false',TIVDOC_NOTIFICATION_OUTBOX_ENABLED:'false'}));
+  expect(await f.run()).toMatchObject({state:'finished',exit_code:0});
+  const raw={NODE_ENV:'development',TIVDOC_MANAGED_DEV_WORKER_ENABLED:'true'};
+  expect(buildSupervisorEnvironment(raw,{TIVDOC_AI_RELEASE_ENABLED:'1'},'a'.repeat(40))).not.toHaveProperty('TIVDOC_AI_RELEASE_ENABLED');
+  expect(buildSupervisorEnvironment({...raw,TIVDOC_AI_RELEASE_ENABLED:'0'},{},'a'.repeat(40)).TIVDOC_AI_RELEASE_ENABLED).toBe('0');
+  expect(()=>buildSupervisorEnvironment({...raw,TIVDOC_AI_RELEASE_ENABLED:'true'},{},'a'.repeat(40))).toThrow('SUPERVISOR_ENVIRONMENT_INVALID');
+  expect(()=>buildSupervisorEnvironment({...raw,TIVDOC_AI_RELEASE_BYPASS:'1'},{},'a'.repeat(40))).toThrow('SUPERVISOR_ENVIRONMENT_INVALID');
+ });
  it('refuses a control path escaping the release output/private roots and an unlimited lifetime',()=>{
   const f=fixture();expect(()=>validateSupervisorControl({...f.control,environment_path:path.join(f.directory,'foreign.json')},f.repositoryRoot)).toThrow('SUPERVISOR_ENVIRONMENT_SCOPE');
   expect(()=>validateSupervisorControl({...f.control,output_directory:f.directory},f.repositoryRoot)).toThrow('SUPERVISOR_OUTPUT_SCOPE');

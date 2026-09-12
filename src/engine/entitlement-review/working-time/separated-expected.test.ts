@@ -1,11 +1,11 @@
 import {describe,it,expect} from 'vitest';
-import {canonicalSha256} from '../../rule-runtime/canonical';
-import {calculateDocumentReview,replayDocumentReviewCalculation} from '../../document-review/calculations';
-import {resolveWorkingTimeEntitlement} from './resolve';
-import {singleDay,operand,weekInput} from './working-time.fixture';
-import {nineTopicRuntimeSource,runtimeFixture} from '../../ai-release-runtime/runtime.fixture';
-import {runAiReleaseRuntime,replayAiReleaseRuntime} from '../../ai-release-runtime/runtime';
-import {workingTimeEntitlementInputSchema} from './contracts';
+import {canonicalSha256} from '../../rule-runtime/canonical.ts';
+import {calculateDocumentReview,replayDocumentReviewCalculation} from '../../document-review/calculations.ts';
+import {resolveWorkingTimeEntitlement} from './resolve.ts';
+import {singleDay,operand,weekInput} from './working-time.fixture.ts';
+import {nineTopicRuntimeSource,runtimeFixture} from '../../ai-release-runtime/runtime.fixture.ts';
+import {runAiReleaseRuntime,replayAiReleaseRuntime} from '../../ai-release-runtime/runtime.ts';
+import {workingTimeEntitlementInputSchema} from './contracts.ts';
 
 function fixture(){return {...singleDay(),calculation_policy:'working-time-separated-expected-v2' as const};}
 describe('working time expected wages stay independent of recorded payment in v2',()=>{

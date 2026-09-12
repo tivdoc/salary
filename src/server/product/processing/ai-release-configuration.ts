@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {canonicalSha256,deepFreeze} from '../../../engine/rule-runtime/canonical';
 import {aiReleasePolicySchema,aiReleaseRegistrySchema,aiReleaseSourceReceiptSchema,
  aiReleaseInterpretationReceiptSchema,aiReleaseTestReceiptSchema} from '../../../engine/ai-release/contracts';
-import {aiReleaseDecisionMethodSchema,type AiReleaseDecisionMethod} from '../../../engine/ai-release-decisions/contracts';
+import {aiReleaseDecisionMethodSchema,AI_RELEASE_MAX_DECISION_METHODS,type AiReleaseDecisionMethod} from '../../../engine/ai-release-decisions/contracts';
 import {AI_RELEASE_DECISION_RECIPES} from '../../../engine/ai-release-decisions/catalog';
 import {AI_RELEASE_RUNTIME_FAMILIES} from '../../../engine/ai-release-runtime/contracts';
 import {assertCompiledAiReleaseBuild,type AiReleaseCompiledBuild} from './ai-release-build';
@@ -16,7 +16,7 @@ export const aiReleaseConfigurationSchema=z.object({schema_version:z.literal(AI_
  source_receipts:z.array(aiReleaseSourceReceiptSchema).min(1).max(256),
  interpretation_receipts:z.array(aiReleaseInterpretationReceiptSchema).min(1).max(128),
  test_receipts:z.array(aiReleaseTestReceiptSchema).min(1).max(256),
- methods:z.array(aiReleaseDecisionMethodSchema).max(24).optional(),sha256:hash,
+ methods:z.array(aiReleaseDecisionMethodSchema).max(AI_RELEASE_MAX_DECISION_METHODS).optional(),sha256:hash,
 }).strict().superRefine((value,ctx)=>{
  const {sha256,...body}=value;
  if(canonicalSha256(body)!==sha256)ctx.addIssue({code:'custom',message:'AI_CONFIGURATION_CONTENT_HASH'});

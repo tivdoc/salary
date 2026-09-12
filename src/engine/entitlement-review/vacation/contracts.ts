@@ -1,12 +1,14 @@
 import {z} from 'zod';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput} from '../../document-review/calculations.ts';
+import {vacationProductFactsSchema,vacationCaseRecipeBindingSchema,vacationDerivedFactSchema,vacationDerivedSenioritySchema} from './product-facts.ts';
 
 const source=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
-const state=z.enum(['known','missing','unknown','conflict','stale','expired','unreadable']);
+const state=z.enum(['known','derived','missing','unknown','conflict','stale','expired','unreadable']);
 const fact=<T extends z.ZodType>(value:T)=>z.object({state,value:value.nullable(),source:source.nullable(),
- basis:z.enum(['identified_document_reading','customer_declaration','ai_source_assessment'])}).strict()
- .refine(f=>f.state!=='known'||'value' in f&&f.value!==null&&f.source!==null,'VACATION_KNOWN_FACT_SOURCE');
+ basis:z.enum(['identified_document_reading','customer_declaration','ai_source_assessment']),derivation:vacationDerivedFactSchema.optional()}).strict()
+ .refine(f=>!['known','derived'].includes(f.state)||'value' in f&&f.value!==null&&f.source!==null,'VACATION_KNOWN_FACT_SOURCE')
+ .refine(f=>f.state==='derived'?f.derivation!==undefined&&f.basis==='ai_source_assessment'&&f.source?.reading==='source_research':f.derivation===undefined,'VACATION_DERIVED_FACT_CONTRACT');
 export const vacationFactSchemas={boolean:fact(z.boolean()),date:fact(z.iso.date()),
  employmentEnd:fact(z.union([z.iso.date(),z.literal('ongoing')]))};
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict().refine(p=>p.from<=p.to,'VACATION_PERIOD');
@@ -20,6 +22,10 @@ export const vacationEntitlementInputSchema=z.object({schema_version:z.literal('
  period,calendar_year:z.literal(2026),evaluated_at:z.iso.datetime(),source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,
  facts:z.object({aged_21_or_more:vacationFactSchemas.boolean,under_60:vacationFactSchemas.boolean}).strict(),
  seniority_year:operand.nullable(),
+ derived_seniority:vacationDerivedSenioritySchema.optional(),
+ product_facts:vacationProductFactsSchema.optional(),
+ case_recipe_bindings:z.array(vacationCaseRecipeBindingSchema).max(14).optional(),
+ product_scenario_policy:z.literal('vacation-qualified-statutory-scenario-v1').optional(),
  annual_basis:z.object({employment_start:vacationFactSchemas.date,employment_end:vacationFactSchemas.employmentEnd,
   complete_year_evidence:vacationFactSchemas.boolean,covered_through:vacationFactSchemas.date,actual_workdays:operand.nullable()}).strict().nullable(),
  leave_pay:z.discriminatedUnion('mode',[

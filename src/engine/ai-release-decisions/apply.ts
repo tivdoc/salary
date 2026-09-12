@@ -14,6 +14,10 @@ import {AI_RELEASE_DECISION_RECIPES,type AiReleaseDecisionRecipe,type DecisionBr
 import {evaluateMinimumWageCaseRecipe,materializeMinimumWageCaseFacts,minimumWageCaseBinding,minimumWageCaseConsumed} from './minimum-wage-case.ts';
 import {evaluatePensionCaseRecipe,replayPensionProductFacts,pensionCaseBinding} from '../entitlement-review/pension/product-facts.ts';
 import {evaluateTravelCaseRecipe,replayTravelProductFacts,travelCaseBinding} from '../entitlement-review/travel/product-facts.ts';
+import {evaluateConvalescenceCaseRecipe,replayConvalescenceCaseFacts,convalescenceCaseBinding,convalescenceCaseConsumed} from '../entitlement-review/convalescence/product-decisions.ts';
+import {evaluateVacationProductRecipe,replayVacationProductFacts,vacationCaseBinding,vacationProductCaseConsumed} from '../entitlement-review/vacation/product-facts.ts';
+import {evaluateWorkingTimeCaseRecipe,workingTimeCaseConsumed} from '../entitlement-review/working-time/product-decisions.ts';
+import {replayWorkingTimeProductFacts,workingTimeCaseBinding} from '../entitlement-review/working-time/product-facts.ts';
 
 const schemas={pension:pensionEntitlementInputSchema,travel:travelEntitlementInputSchema,vacation:vacationEntitlementInputSchema,
  minimum_wage:minimumWageEntitlementInputSchema,working_time:workingTimeEntitlementInputSchema,convalescence:convalescenceEntitlementInputSchema};
@@ -83,7 +87,7 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
  // New case recipes establish only their narrowly derived facts. Run them in
  // compiled order before the historical method-only recipes; caller ordering
  // must not select a different arithmetic policy or result.
- const caseOrder=['ai-case.mw.population','ai-case.mw.ordinary_scope','ai-case.mw.eligible_components','ai-case.mw.allocation','ai-case.pension.general_coverage','ai-case.pension.pension_fund','ai-case.travel.general_coverage','ai-case.travel.fare_basis','ai-case.travel.ticket_options'];
+ const caseOrder=['ai-case.mw.population','ai-case.mw.ordinary_scope','ai-case.mw.eligible_components','ai-case.mw.allocation','ai-case.pension.general_coverage','ai-case.pension.pension_fund','ai-case.travel.general_coverage','ai-case.travel.fare_basis','ai-case.travel.ticket_options','ai-case.cv.population','ai-case.cv.legal_source_chain','ai-case.cv.arrangement_scope','ai-case.cv.benefit_year','ai-case.cv.qualifying_service','ai-case.cv.due_date','ai-case.cv.allocation',...['general_section3','seniority_basis','annual_workdays','pay_calendar_days','pay_quarter_selection','pay_monthly_period','pay_recorded_allocation'].map(id=>'ai-case.vacation.'+id),...['coverage','regular_wage','arrangement','workday_assignment','payroll_allocation','worked_time'].map(id=>'ai-case.wt.'+id)];
  const methods=[...input.methods.filter(m=>caseOrder.includes(m.recipe_id)).sort((a,b)=>caseOrder.indexOf(a.recipe_id)-caseOrder.indexOf(b.recipe_id)),...input.methods.filter(m=>!caseOrder.includes(m.recipe_id))];
  for(const method of methods){
   const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===method.recipe_id);
@@ -94,6 +98,12 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
   const effectiveEntries=recipe.branch==='working_time'&&Array.isArray(raw)?raw:[raw];
   const originalEntries=recipe.branch==='working_time'&&Array.isArray(original)?original:[original];
   for(const [index,entry] of effectiveEntries.entries()){
+   const workingCase=recipe.recipe_id.startsWith('ai-case.wt.');
+   const week=workingCase?workingTimeEntitlementInputSchema.parse(entry):null;
+   const dynamic=week&&(recipe.decision_id==='wt.worked_time'||week.product_facts?.schema_version==='working-time-product-facts-v2'&&['wt.arrangement','wt.workday_assignment','wt.payroll_allocation'].includes(recipe.decision_id));
+   const targetDays:(string|null)[]=dynamic?week.workdays.map(d=>d.id):[null];
+   for(const dayId of targetDays){
+   const actualDecisionId=dayId===null?recipe.decision_id:recipe.decision_id+'.'+dayId;
    let b=schemas[recipe.branch].parse(entry);const output=schemas[recipe.branch].parse(originalEntries[index]);
    if(recipe.branch==='minimum_wage'){
     const original=minimumWageEntitlementInputSchema.parse(output);
@@ -107,8 +117,20 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
     const original=travelEntitlementInputSchema.parse(output);
     if(original.case_recipe_bindings?.length)b=replayTravelProductFacts({...travelEntitlementInputSchema.parse(entry),applicability:original.applicability,case_recipe_bindings:original.case_recipe_bindings},original,base);
    }
-   const target={branch:recipe.branch,branch_index:recipe.branch==='working_time'?index:null,decision_id:recipe.decision_id};
-   const current=b.applicability.find(d=>d.decision_id===recipe.decision_id);
+   if(recipe.branch==='convalescence'){
+    const original=convalescenceEntitlementInputSchema.parse(output);
+    if(original.case_recipe_bindings?.length)b=replayConvalescenceCaseFacts({...convalescenceEntitlementInputSchema.parse(entry),applicability:original.applicability,case_recipe_bindings:original.case_recipe_bindings},original,base);
+   }
+   if(recipe.branch==='vacation'){
+    const original=vacationEntitlementInputSchema.parse(output);
+    if(original.case_recipe_bindings?.length||original.product_scenario_policy)b=replayVacationProductFacts({...vacationEntitlementInputSchema.parse(entry),applicability:original.applicability,case_recipe_bindings:original.case_recipe_bindings},original,base);
+   }
+   if(recipe.branch==='working_time'){
+    const original=workingTimeEntitlementInputSchema.parse(output);
+    if(original.case_recipe_bindings?.length)b=replayWorkingTimeProductFacts({...workingTimeEntitlementInputSchema.parse(entry),applicability:original.applicability,case_recipe_bindings:original.case_recipe_bindings},original,base);
+   }
+   const target={branch:recipe.branch,branch_index:recipe.branch==='working_time'?index:null,decision_id:actualDecisionId};
+   const current=b.applicability.find(d=>d.decision_id===actualDecisionId);
    // Reusing our output could retain an earlier fact-bound decision after a
    // correction. Rebuild the original packet with current authenticated answers.
    if(current?.basis==='ai_source_assessment'){
@@ -118,13 +140,16 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
    const mwCase=recipe.recipe_id.startsWith('ai-case.mw.');
    const caseReady=mwCase?evaluateMinimumWageCaseRecipe(recipe.decision_id,minimumWageEntitlementInputSchema.parse(b),base)
     :recipe.recipe_id.startsWith('ai-case.pension.')?evaluatePensionCaseRecipe(recipe.decision_id,pensionEntitlementInputSchema.parse(b),base)
-    :recipe.recipe_id.startsWith('ai-case.travel.')?evaluateTravelCaseRecipe(recipe.decision_id,travelEntitlementInputSchema.parse(b),base):null;
+    :recipe.recipe_id.startsWith('ai-case.travel.')?evaluateTravelCaseRecipe(recipe.decision_id,travelEntitlementInputSchema.parse(b),base)
+    :recipe.recipe_id.startsWith('ai-case.cv.')?evaluateConvalescenceCaseRecipe(recipe.decision_id,convalescenceEntitlementInputSchema.parse(b),base)
+    :recipe.recipe_id.startsWith('ai-case.vacation.')?evaluateVacationProductRecipe(recipe.decision_id,vacationEntitlementInputSchema.parse(b),base)
+    :workingCase?evaluateWorkingTimeCaseRecipe(actualDecisionId,workingTimeEntitlementInputSchema.parse(b),{review:base,...(dayId?{day_id:dayId}:{})}):null;
    const issue=duplicate?'duplicate_method':matches(method,recipe,input.at)
     ??(current&&current.state!=='missing'?'existing_decision_preserved':null)
     ??(b.period.from<recipe.supported_period.from||b.period.to>recipe.supported_period.to?'period_not_supported':null)
     ??(caseReady?caseReady.allowed?null:caseReady.reason:!methodAllowed(recipe,b)?'required_source_fact_missing_or_incompatible':null);
    if(issue){unresolved.push({...target,reason:issue});continue;}
-   const consumed=caseReady&&mwCase?minimumWageCaseConsumed(minimumWageEntitlementInputSchema.parse(b),caseReady.consumed_paths,base):(caseReady?.consumed_paths??recipe.consumed_paths).map(path=>{
+   const consumed=caseReady&&mwCase?minimumWageCaseConsumed(minimumWageEntitlementInputSchema.parse(b),caseReady.consumed_paths,base):caseReady&&recipe.branch==='convalescence'?convalescenceCaseConsumed(convalescenceEntitlementInputSchema.parse(b),caseReady.consumed_paths):caseReady&&recipe.branch==='vacation'?vacationProductCaseConsumed(vacationEntitlementInputSchema.parse(b),caseReady.consumed_paths,base):caseReady&&workingCase?workingTimeCaseConsumed(workingTimeEntitlementInputSchema.parse(b),caseReady.consumed_paths):(caseReady?.consumed_paths??recipe.consumed_paths).map(path=>{
     const value=atPath(b,path),sources=sourcesIn(value);
     return {path:'entitlement_evidence.'+recipe.branch+(target.branch_index===null?'':'.'+index)+'.'+path,
      state:record(value)&&'state'in value?String(value.state):value===null?'missing':'structural',value_sha256:canonicalSha256(value),
@@ -132,7 +157,7 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
    });
    const basis={schema_version:'ai-release-method-basis-v1',recipe_id:recipe.recipe_id,recipe_sha256:recipe.recipe_sha256,
     interpretation_receipt_sha256:method.interpretation_receipt_sha256,consumed_sha256:canonicalSha256(consumed)};
-   const decision={decision_id:recipe.decision_id,state:'accepted' as const,basis:'ai_source_assessment' as const,
+   const decision={decision_id:actualDecisionId,state:'accepted' as const,basis:'ai_source_assessment' as const,
     explanation:JSON.stringify(basis),sources:recipe.legal_sources.map(s=>({...s})),valid_until:method.expires_at};
    for(const law of recipe.legal_sources){
     const document=base.documents.find(d=>d.document_id===law.document_id&&d.version_id===law.version_id&&d.file_sha256===law.file_sha256);
@@ -142,12 +167,16 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
     if(existing&&canonicalSha256(existing)!==canonicalSha256(pin))throw Error('AI_DECISION_LEGAL_MANIFEST_MISMATCH');
     if(!existing)output.source_manifest.push(pin);
    }
-   output.applicability=output.applicability.filter(d=>d.decision_id!==recipe.decision_id);output.applicability.push(decision);
+   output.applicability=output.applicability.filter(d=>d.decision_id!==actualDecisionId);output.applicability.push(decision);
    if(caseReady&&mwCase){const m=minimumWageEntitlementInputSchema.parse(output);m.case_recipe_bindings=[...(m.case_recipe_bindings??[]),minimumWageCaseBinding(method,input.at)];packet.minimum_wage=m;}
    else if(caseReady&&recipe.branch==='pension'){const p=pensionEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),pensionCaseBinding(method,input.at)];packet.pension=p;}
    else if(caseReady&&recipe.branch==='travel'){const p=travelEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),travelCaseBinding(method,input.at)];packet.travel=p;}
+   else if(caseReady&&recipe.branch==='convalescence'){const p=convalescenceEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),convalescenceCaseBinding(method,input.at)];packet.convalescence=p;}
+   else if(caseReady&&recipe.branch==='vacation'){const p=vacationEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),vacationCaseBinding(method,input.at)];packet.vacation=p;}
+   else if(caseReady&&workingCase){const p=workingTimeEntitlementInputSchema.parse(output);p.case_recipe_bindings=[...(p.case_recipe_bindings??[]),workingTimeCaseBinding(method,input.at,actualDecisionId,dayId)];originalEntries[index]=p;packet.working_time=originalEntries;}
    else if(recipe.branch==='working_time'){originalEntries[index]=output;packet.working_time=originalEntries;}else packet[recipe.branch]=output;
    receipts.push(makeReceipt({case_id:base.case_id,period:b.period,...target,method,recipe,consumed,decision,at:input.at}));
+   }
   }
  }
  // Retire only the validated composer's derived projection before changing its

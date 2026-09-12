@@ -7,7 +7,8 @@ import {attachAutomaticBenefitsEvidence} from '@/engine/entitlement-review/autom
 import {attachAutomaticPensionEvidence} from '@/engine/entitlement-review/automatic-pension';
 import {composeEntitlementReview} from '@/engine/entitlement-review/compose';
 import {enableTypedEntitlementPersonalFacts} from '@/engine/entitlement-review/typed-product-facts';
-import {enableSharedPersonalFacts,SHARED_PERSONAL_FACTS_TRAVEL_POLICY} from '@/engine/entitlement-review/shared-product-facts';
+import {entitlementSourceReadingDependencies} from '@/engine/entitlement-review/product-source-dependencies';
+import {enableSharedPersonalFacts,SHARED_PERSONAL_FACTS_EXPANDED_POLICY} from '@/engine/entitlement-review/shared-product-facts';
 import {savedReviewSourceEvidence} from './saved-review-source-proof';
 import {z} from 'zod';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
@@ -162,7 +163,11 @@ export function withSavedPurchaseCoverage(input:DocumentReviewInput,order:SavedE
 }
 
 export async function savedDocumentReviewInput(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
- let input=composeEntitlementReview((await automaticDocumentReview(context,job,order,month,snapshot,automaticOnly)).input);
+ const input=composeEntitlementReview((await automaticDocumentReview(context,job,order,month,snapshot,automaticOnly)).input);
+ return replaySavedSourceReviewAnswers(context,job,snapshot,input);
+}
+async function replaySavedSourceReviewAnswers(context:PostgresTransactionContext,job:SourceJob,snapshot:StoredCaseInputSnapshot,prepared:DocumentReviewInput){
+ let input=prepared;
  if(!snapshot.has_document_review_answers)return input;
  const history=await readSavedReviewAnswers(context,job);
  for(const row of history){
@@ -184,7 +189,7 @@ async function automaticDocumentReview(context:PostgresTransactionContext,job:So
  // This new profile owns its command hash. Historical packets and previously
  // generated answer targets retain their original shape and reading rules.
  if(automaticOnly&&prepared.input.entitlement_evidence)return {...prepared,input:documentReviewInputSchema.parse({...prepared.input,
-  entitlement_evidence:enableSharedPersonalFacts(enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence,{travel:true}),SHARED_PERSONAL_FACTS_TRAVEL_POLICY)})};
+  entitlement_evidence:enableSharedPersonalFacts(enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence,{travel:true,vacation:true,convalescence:true,working_time:true}),SHARED_PERSONAL_FACTS_EXPANDED_POLICY)})};
  return prepared;
 }
 /** Open only source cells used by this purchased month's actual branch mapping.
@@ -192,8 +197,9 @@ async function automaticDocumentReview(context:PostgresTransactionContext,job:So
 export async function openSavedNonPayslipReviewRequests(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
  if(!snapshot.non_payslip_evidence?.some(e=>e.extraction))return [];
  const prepared=await automaticDocumentReview(context,job,order,month,snapshot,automaticOnly);
+ const sourceDependencies=automaticOnly?entitlementSourceReadingDependencies(await replaySavedSourceReviewAnswers(context,job,snapshot,composeEntitlementReview(prepared.input)),prepared.reading_dependencies):prepared.reading_dependencies;
  const opened=[];
- for(const dependency of prepared.reading_dependencies){
+ for(const dependency of sourceDependencies){
   const rows=await context.client.query(statement('review_nonpay_dependency_checkpoint',
    'select result from private.case_extraction_checkpoints where case_id=$1::uuid and revision=$2 and version_id=$3::uuid and policy_version=$4 and result_sha256=$5',
    [job.case_id,job.revision,dependency.version_id,DOCUMENT_EVIDENCE_POLICY,dependency.checkpoint_sha256]));

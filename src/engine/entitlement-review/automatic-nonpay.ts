@@ -9,6 +9,7 @@ import {workingTimeEntitlementInputSchema,type WorkingTimeEntitlementInput,type 
 import {obligationsEntitlementInputSchema,obligationTextSha256,type ExplicitObligation} from './obligations/index.ts';
 import {normalizeMoney} from '../extraction/normalization.ts';
 import {workingTimePayrollRate} from './working-time/payroll-rate.ts';
+import {enableObligationProductFacts} from './obligations/product-facts.ts';
 
 export const AUTOMATIC_NONPAY_EVIDENCE_POLICY='automatic-nonpay-source-evidence-v1' as const;
 type Observation=NormalizedDocumentEvidence['observations'][number];
@@ -209,7 +210,7 @@ export function attachAutomaticNonPayslipEvidence(candidate:DocumentReviewInput,
  }
  if(payloads.length>6)throw Error('AUTOMATIC_NONPAY_WEEK_BOUND');
  const packet=input.entitlement_evidence??{schema_version:'entitlement-source-evidence-v1' as const,case_id:input.case_id,order_id:input.purchased_scope.order_id,receipt_sha256:input.purchased_scope.receipt_sha256,period:input.period};
- const obligationPacket=obligations.length?obligationsEntitlementInputSchema.parse({schema_version:'obligations-entitlement-input-v1',catalog_id:'il.review.explicit_obligations.2026',catalog_version:'1.0.0',case_id:input.case_id,run_id:'automatic.source.selection',check_prefix:'entitlement.literal',period:input.period,
-  evaluated_at:new Date([...timestamps].sort().at(-1)!).toISOString(),purchased_topics:contracts,source_manifest:obligationManifest,obligations}):null;
+ const obligationPacket=obligations.length?enableObligationProductFacts(obligationsEntitlementInputSchema.parse({schema_version:'obligations-entitlement-input-v1',catalog_id:'il.review.explicit_obligations.2026',catalog_version:'1.0.0',case_id:input.case_id,run_id:'automatic.source.selection',check_prefix:'entitlement.literal',period:input.period,
+  evaluated_at:new Date([...timestamps].sort().at(-1)!).toISOString(),purchased_topics:contracts,source_manifest:obligationManifest,obligations})):null;
  return {input:documentReviewInputSchema.parse({...input,coverage_gaps:gaps,...(payloads.length||obligationPacket?{entitlement_evidence:{...packet,...(payloads.length?{working_time:payloads}:{}),...(obligationPacket?{obligations:obligationPacket}:{})}}:{})}),reading_dependencies:dependencies};
 }
