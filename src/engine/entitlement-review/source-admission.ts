@@ -4,6 +4,8 @@ import type {DocumentReviewInput,ReviewDocument} from '../document-review/contra
 import type {DocumentReviewSource} from '../document-review/calculations.ts';
 import {parseReviewCompletionInput,resolveReviewCompletion,reviewDeclaredAnswerValue} from '../document-review/completions.ts';
 import {entitlementEvidenceSchema,type EntitlementEvidence} from './contracts.ts';
+import {assertTypedPeriodDerivation} from './typed-product-facts.ts';
+import {isDeclaredPeriodSource} from './convalescence/product-facts.ts';
 
 /** Inspect source citations rather than treating a caller's 'known' or
  * 'accepted' label as evidence. Legal sources are supplied by the selected
@@ -42,10 +44,10 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
   if(value.reading==='source_research'&&!legalDocuments.some(d=>canonicalSha256(d)===canonicalSha256(document)))throw Error('ENTITLEMENT_LEGAL_SOURCE_REQUIRED');
  }
  let nodes=0;
- function visit(value:unknown,depth=0):void{
+ function visit(value:unknown,depth=0,path=''):void{
   if(++nodes>25000||depth>35)throw Error('ENTITLEMENT_PACKET_BOUNDS');
   if(!value||typeof value!=='object')return;
-  if(Array.isArray(value)){for(const item of value)visit(item,depth+1);return;}
+  if(Array.isArray(value)){for(const [i,item]of value.entries())visit(item,depth+1,path+'.'+i);return;}
   const object=value as Record<string,unknown>;
   // A source pointer is not permission to replace the receipt's answer value.
   const boundSource=object.source as DocumentReviewSource|undefined;
@@ -53,7 +55,9 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
   if(boundSource?.reading==='customer_declaration'&&('value' in object||'printed_value' in object)){
    const h=input.answer_history.find(h=>h.receipt.answer_sha256===boundSource.reading_receipt_sha256);
    const supplied='printed_value' in object?object.printed_value:object.value;
-   if(!h||(h.receipt.state==='provided'?String(supplied)!==String(reviewDeclaredAnswerValue(h.request.target,h.receipt.value))&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');
+   if(isDeclaredPeriodSource(boundSource)){
+    if(!h||!assertTypedPeriodDerivation(packet,path,object))throw Error('ENTITLEMENT_DECLARED_PERIOD_CHANGED');
+   }else if(!h||(h.receipt.state==='provided'?String(supplied)!==String(reviewDeclaredAnswerValue(h.request.target,h.receipt.value))&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');
   }
   if('reading_receipt_sha256'in object&&'document_id'in object&&'file_sha256'in object) citation(object as DocumentReviewSource);
   if('source_manifest'in object){
@@ -65,7 +69,7 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
      ||(pin.kind==='legal_source'?pin.case_id!==null:pin.case_id!==input.case_id))throw Error('ENTITLEMENT_MANIFEST_BINDING');
    }
   }
-  for(const item of Object.values(object))visit(item,depth+1);
+  for(const [key,item]of Object.entries(object))visit(item,depth+1,path?path+'.'+key:key);
  }
  visit(packet);
  return packet;

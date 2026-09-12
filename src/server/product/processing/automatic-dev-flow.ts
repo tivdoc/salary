@@ -51,8 +51,14 @@ async function completeQualifiedAiMonth(input:Input){
  const stage=parent.stages.filter(s=>s.stage==='review_pending');
  if(stage.length!==1||stage[0].payload_sha256!==canonicalSha256(stage[0].payload)
   ||z.object({report_sha256:z.string()}).parse(stage[0].payload).report_sha256!==expected.report_sha256)throw Error('AI_RELEASE_MANAGED_STAGE');
- // A separate narrow SQL publication boundary will authorize present access
- // and outbox delivery. Calculation completion alone grants neither.
+ // Serialize against answers/replacements and admission revocation once more
+ // at the database boundary. The receipt references these exact saved bytes;
+ // it cannot insert a report, select different findings or invent approval.
+ const published=await context.client.query(statement('qualified_ai_report_publish',
+  'select private.ai_release_report_publish($1::uuid,$2,$3::uuid,$4,$5) value',
+  [job.case_id,parent.analysis_run_id,expected.report_id,expected.report_sha256,bundle.ai_release.sha256]));
+ const receipt=z.object({report_id:z.uuid(),analysis_run_id:z.uuid(),published_at:z.iso.datetime({offset:true}),replayed:z.boolean()}).strict().parse(published.rows[0]?.value);
+ if(published.row_count!==1||receipt.report_id!==expected.report_id||receipt.analysis_run_id!==parent.analysis_run_id)throw Error('AI_RELEASE_PUBLICATION_ACK');
 }
 const HISTORICAL_REVIEW_CODE_VERSIONS=new Set(['case-analysis@0.6.0','case-analysis@0.6.1','case-analysis@0.6.2',
  'case-analysis@0.6.3','case-analysis@0.6.4','case-analysis@0.6.5','case-analysis@0.6.6']);

@@ -6,6 +6,7 @@ import {attachAutomaticPayrollEvidence} from '@/engine/entitlement-review/automa
 import {attachAutomaticBenefitsEvidence} from '@/engine/entitlement-review/automatic-benefits';
 import {attachAutomaticPensionEvidence} from '@/engine/entitlement-review/automatic-pension';
 import {composeEntitlementReview} from '@/engine/entitlement-review/compose';
+import {enableTypedEntitlementPersonalFacts} from '@/engine/entitlement-review/typed-product-facts';
 import {savedReviewSourceEvidence} from './saved-review-source-proof';
 import {z} from 'zod';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
@@ -178,7 +179,12 @@ export async function savedDocumentReviewInput(context:PostgresTransactionContex
 async function automaticDocumentReview(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
  const sources=attachNonPayslipInventory(await sourceReviewInput(context,job,order,month,snapshot,automaticOnly),snapshot);
  const payroll=attachAutomaticBenefitsEvidence(attachAutomaticPayrollEvidence(attachAutomaticPensionEvidence(sources,snapshot),snapshot),snapshot);
- return attachAutomaticNonPayslipEvidence(payroll,snapshot);
+ const prepared=attachAutomaticNonPayslipEvidence(payroll,snapshot);
+ // This new profile owns its command hash. Historical packets and previously
+ // generated answer targets retain their original shape and reading rules.
+ if(automaticOnly&&prepared.input.entitlement_evidence)return {...prepared,input:documentReviewInputSchema.parse({...prepared.input,
+  entitlement_evidence:enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence)})};
+ return prepared;
 }
 /** Open only source cells used by this purchased month's actual branch mapping.
  * Recomputes from authenticated snapshots; no client list can authorize a cell. */

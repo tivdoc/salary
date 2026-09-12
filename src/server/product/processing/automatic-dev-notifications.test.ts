@@ -4,8 +4,22 @@ import type {CaseAccessDb} from '../case-access/db';
 import {decryptNotification,encryptNotification} from '../case-access/notification-outbox';
 import {payloadDigest,type NotificationMessage,type NotificationProvider} from '../case-access/notifications';
 import {runAutomaticNotificationPass} from './automatic-dev-notifications';
+import {getCompiledAiReleaseBuild} from './ai-release-build';
 vi.mock('server-only',()=>({}));
 afterEach(()=>vi.unstubAllEnvs());
+it('pins the compiled build at final dispatch and never sends after a database build refusal',async()=>{
+ const s=fixture(),message:NotificationMessage={template:'report_ready',channel:'email',to:contact,subject:'Synthetic qualified report',body:'Synthetic report link'},id=payloadDigest(message);
+ s.claims.push({delivery_id:id,encrypted_payload:encryptNotification(message,id,secret),fencing_token:3});
+ const db:CaseAccessDb={provider:'fake',async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>){
+  if(fn==='case_notification_managed_dispatch'){
+   expect(args.expected_ai_build_sha256).toBe(getCompiledAiReleaseBuild().manifest.sha256);
+   throw Error('AI_RELEASE_NOTIFICATION_BUILD_CHANGED');
+  }
+  return s.db.rpc<T>(fn,args);
+ }};
+ await expect(runAutomaticNotificationPass({db,provider:s.provider,capability:'synthetic',secret,origin})).rejects.toThrow('AI_RELEASE_NOTIFICATION_BUILD_CHANGED');
+ expect(s.sent).toEqual([]);expect(s.queries.some(q=>q.fn==='case_notification_outbox_finish')).toBe(false);
+});
 const secret=Buffer.alloc(32,7).toString('base64'),origin='https://tivdoc-synthetic.vercel.app',contact='notification-unit@example.invalid';
 function fixture(events:unknown[]=[]){
  vi.stubEnv('DELIVERY_RECIPIENT_ALLOWLIST',contact);vi.stubEnv('VERCEL_ENV','test');
@@ -56,6 +70,45 @@ it('an optional event selection narrows authenticated pending report events and 
  expect(s.queries.filter(q=>q.fn==='case_notification_managed_enqueue').map(q=>q.args.target_event)).toEqual(['report:'+a]);
  expect(await pass([])).toMatchObject({queued:0});
  expect(s.queries.filter(q=>q.fn==='case_notification_managed_enqueue')).toHaveLength(1);
+});
+it('renders an owner AI draft from its exact saved event without claiming a synthetic source or human approval',async()=>{
+ const reportId=randomUUID(),event={event_key:`qualified_ai:${reportId}`,event_kind:'qualified_ai_report_ready',case_id:randomUUID(),
+  public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:null,report_id:reportId};
+ const s=fixture([event]);await s.pass();await s.pass();
+ const enqueued=s.queries.filter(q=>q.fn==='case_notification_managed_enqueue');expect(enqueued).toHaveLength(2);
+ expect(enqueued[0].args.target_delivery).toBe(enqueued[1].args.target_delivery);expect(enqueued[0].args.target_event).toBe(event.event_key);
+ expect(enqueued[0].args).toMatchObject({expected_case:event.case_id,expected_identity:event.identity_id});
+ const message=decryptNotification(enqueued[0].args.target_payload,String(enqueued[0].args.target_delivery),secret);
+ expect(message.template).toBe('report_ready');expect(message.subject).toContain('DEV — טיוטת דוח AI');
+ expect(message.body).toContain('המקורות והתשובות שבתיק');expect(message.body).toContain('חוסרים שעדיין דורשים בירור');
+ expect(message.body).toContain('אינה אישור אנושי');expect(message.body).toContain('אינה קביעה על חוב מאומת');
+ expect(message.body).not.toContain('סינתטי');expect(message.body).not.toContain('engineering=1');
+ expect(message.body).toContain(`${origin}/case/${event.public_id}/reports?review=1&report=${reportId}`);
+ expect(message.body).toContain('כניסה לתיק דרך האימייל המאומת');expect(s.sent).toHaveLength(0);
+ expect(JSON.stringify(enqueued[0].args.target_payload)).not.toContain(contact);
+});
+it.each(['wrong_report','wrong_prefix','legacy_kind'])('rejects a mismatched AI report event %s before enqueue',async mutation=>{
+ const reportId=randomUUID(),event={event_key:`qualified_ai:${reportId}`,event_kind:'qualified_ai_report_ready',case_id:randomUUID(),
+  public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:null,report_id:reportId};
+ if(mutation==='wrong_report')event.report_id=randomUUID();
+ if(mutation==='wrong_prefix')event.event_key=`report:${reportId}`;
+ if(mutation==='legacy_kind')event.event_kind='report_ready';
+ const s=fixture([event]);await expect(s.pass()).rejects.toThrow();expect(s.queries.map(q=>q.fn)).toEqual(['case_notification_managed_pending']);expect(s.sent).toHaveLength(0);
+});
+it('keeps AI report recipients on the same allowlist',async()=>{
+ const reportId=randomUUID(),s=fixture([{event_key:`qualified_ai:${reportId}`,event_kind:'qualified_ai_report_ready',case_id:randomUUID(),
+  public_id:'TV-UNIT0001',identity_id:randomUUID(),contact:'foreign@example.invalid',request_id:null,report_id:reportId}]);
+ expect(await s.pass()).toMatchObject({queued:0,attempts:[]});expect(s.queries.some(q=>q.fn==='case_notification_managed_enqueue')).toBe(false);expect(s.sent).toHaveLength(0);
+});
+it('does not send a queued AI draft when its final currentness fence cancels it',async()=>{
+ const s=fixture(),message:NotificationMessage={template:'report_ready',channel:'email',to:contact,subject:'Synthetic AI draft',body:'Synthetic protected link'},id=payloadDigest(message);
+ s.claims.push({delivery_id:id,encrypted_payload:encryptNotification(message,id,secret),fencing_token:4});
+ const db:CaseAccessDb={provider:'fake',async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>){
+  if(fn==='case_notification_managed_dispatch')return [{state:'cancelled'}] as T[];
+  return s.db.rpc<T>(fn,args);
+ }};
+ expect(await runAutomaticNotificationPass({db,provider:s.provider,capability:'synthetic',secret,origin})).toMatchObject({attempts:[],deliveryConfirmed:false});
+ expect(s.sent).toHaveLength(0);expect(s.queries.some(q=>q.fn==='case_notification_outbox_finish')).toBe(false);
 });
 it('does not send individual request emails while a completion round is not READY',async()=>{
  const events=Array.from({length:10},()=>({event_key:'request:'+randomUUID(),event_kind:'request_required',case_id:randomUUID(),public_id:'TV-UNIT0001',identity_id:randomUUID(),contact,request_id:randomUUID(),report_id:null}));

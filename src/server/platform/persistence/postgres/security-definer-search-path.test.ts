@@ -71,7 +71,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //171-177: one currentness redeclaration, four profile/dependency helpers,
 //one worker finding recorder and one retained-source receipt loader. The
 //owner enrollment RPC is security invoker; exact grants are inventoried below.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 364;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 367;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -249,6 +249,7 @@ describe("security definer search_path contract", () => {
       ['20260912090500_ai_release_findings.sql',['private.ai_release_findings_record'],['private.ai_release_findings_record(text,text,text) to tivdoc_worker_runtime']],
       ['20260912091000_document_evidence_retained_receipts.sql',['private.document_evidence_receipt_source'],['private.document_evidence_receipt_source(uuid) to tivdoc_worker_runtime']],
       ['20260912092000_ai_release_operator_events.sql',[],[]],
+      ['20260912094426_ai_release_report_publication.sql',['private.ai_release_report_publish','public.case_notification_managed_dispatch','public.case_notification_managed_dispatch'],['private.ai_release_report_publish(uuid,text,uuid,text,text) to tivdoc_worker_runtime','public.case_notification_managed_dispatch(text,text,uuid,integer,text),public.case_notification_managed_dispatch(text,text,uuid,integer) to tivdoc_worker_runtime']],
     ] as const;
     const definitions=await securityDefinerDefinitions();
     for(const [file,names,grants]of reviewed){

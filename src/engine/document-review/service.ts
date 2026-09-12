@@ -5,6 +5,7 @@ import {calculateDocumentReview,documentReviewCalculationInputSchema} from './ca
 import {generateReviewCompletions,parseReviewCompletionInput,resolveReviewCompletion,type ReviewCompletion} from './completions.ts';
 import {DOCUMENT_REVIEW_POLICY,documentReviewInputSchema,type DocumentReviewResult} from './contracts.ts';
 import {documentReviewCoverageInventory} from './coverage.ts';
+import {convalescenceDeclaredChronologyOperand} from '../entitlement-review/convalescence/resolve.ts';
 
 /** A supplemental stage of ordinary case analysis. Results are source arithmetic
  * or conditional candidates, never a substitute for catalog admission. */
@@ -63,7 +64,10 @@ export function runDocumentReview(candidate:unknown,analysisRunId:string):Docume
     for(const source of citedSources.filter(s=>s.document_id===pin.document_id))
      if(source.reading_receipt_sha256!==receipt.answer_sha256||source.reading!=='customer_declaration')throw Error('REVIEW_ANSWER_VALUE_MISMATCH');
     for(const operand of calculation.operands.filter(o=>o.source.document_id===pin.document_id)){
-     if(operand.printed_value!==(answer.receipt.state==='provided'?String(answer.receipt.value):null)||operand.source.reading_receipt_sha256!==answer.receipt.answer_sha256
+     const chronology=input.entitlement_composition?.evidence.convalescence;
+     const derivedDateCount=chronology!==undefined&&check.topic==='convalescence'&&receipt.state==='provided'
+      &&convalescenceDeclaredChronologyOperand(chronology,check.check_id,operand);
+     if(operand.printed_value!==(answer.receipt.state==='provided'?String(answer.receipt.value):null)&&!derivedDateCount||operand.source.reading_receipt_sha256!==answer.receipt.answer_sha256
       ||operand.source.reading!=='customer_declaration'||operand.state!==expectedState
       ||!input.answer_bindings.some(b=>b.check_id===check.check_id&&b.operand_id===operand.id&&b.fact_key===answer.request.target.fact_key))throw Error('REVIEW_ANSWER_VALUE_MISMATCH');
     }

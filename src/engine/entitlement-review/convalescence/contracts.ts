@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {documentReviewCalculationInputSchema} from '../../document-review/calculations.ts';
+import {convalescencePersonalFactsSchema} from './product-facts.ts';
 
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
 const source=operand.shape.source;
@@ -22,6 +23,7 @@ export const convalescenceEntitlementInputSchema=z.object({
  }).strict()).max(8),
  recorded:operand.nullable(),recorded_coverage:convalescenceFactSchema(period),
  recorded_inventory:convalescenceFactSchema(z.enum(['complete_allocated','partial','unknown'])),
+ product_facts:convalescencePersonalFactsSchema.optional(),
  applicability:z.array(z.object({decision_id:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),
   state:z.enum(['accepted','missing','unknown','conflict','stale','expired']),
   basis:z.enum(['ai_source_assessment','customer_declaration','verified_rule_source']),explanation:z.string().min(1).max(1000),

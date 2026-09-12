@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {documentReviewCalculationInputSchema} from '../../document-review/calculations.ts';
+import {minimumWagePersonalFactsSchema} from './product-facts.ts';
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
 const source=operand.shape.source;
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict();
@@ -16,6 +17,7 @@ export const minimumWageEntitlementInputSchema=z.object({schema_version:z.litera
  ordinary_hours_period:minimumWageFactSchema(period),
  monthly_coverage:minimumWageFactSchema(z.enum(['full_month_full_time','partial','unknown'])),
  eligible_pay_inventory:minimumWageFactSchema(z.enum(['complete','partial','unknown'])),
+ product_facts:minimumWagePersonalFactsSchema.optional(),
  components:z.array(z.object({id:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),amount:operand,period:minimumWageFactSchema(period),classification:minimumWageFactSchema(minimumWageComponentKindSchema)}).strict()).max(32),
  applicability:z.array(z.object({decision_id:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),state:z.enum(['accepted','missing','unknown','conflict','stale','expired']),
   basis:z.enum(['ai_source_assessment','customer_declaration','verified_rule_source']),explanation:z.string().min(1).max(1000),sources:z.array(source).max(16),valid_until:z.iso.datetime({offset:true}).nullable()}).strict()).max(16),

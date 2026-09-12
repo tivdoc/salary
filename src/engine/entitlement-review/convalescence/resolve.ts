@@ -5,6 +5,7 @@ import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {convalescenceEntitlementInputSchema,type ConvalescenceMissing,type ConvalescenceEntitlementInput} from './contracts.ts';
 import {CONVALESCENCE_CATALOG,CONVALESCENCE_SOURCE_REVIEW,CONVALESCENCE_PINNED_LEGAL_DOCUMENTS,convalescenceLegalSource,isPinnedConvalescenceLegalSource} from './source-policy.ts';
 import {employmentAnniversary,nextConvalescenceDate,splitConvalescenceAccrual,type ConvalescenceAccrualSlice} from './periods.ts';
+import {isDeclaredPeriodSource,periodFromDeclarations} from './product-facts.ts';
 
 export const CONVALESCENCE_APPLICABILITY=deepFreeze({
  'cv.population':'יש לבסס תחולת המגזר הפרטי הכללי, ללא שכר ציבורי או הצמדה לשכר ציבורי, מפעל מוגן או הסדר מיוחד.',
@@ -28,6 +29,25 @@ function sourcesIn(value:unknown):DocumentReviewSource[]{
  const visit=(v:unknown):void=>{if(!v||typeof v!=='object')return;if(Array.isArray(v)){v.forEach(visit);return;}const r=v as Record<string,unknown>;
   if(typeof r.reading_receipt_sha256==='string'&&typeof r.locator==='string'){list.push(v as DocumentReviewSource);return;}Object.values(r).forEach(visit);};
  visit(value);return [...new Map(list.map(s=>[canonicalSha256(s),s])).values()];
+}
+
+/** A source date is not itself a day-count answer. Only these three exact
+ * chronology operands may be derived from the paired date receipts. The
+ * ordinary source/answer admission must still authenticate both receipts. */
+export function convalescenceDeclaredChronologyOperand(raw:unknown,checkId:string,operand:DocumentReviewOperand):boolean{
+ const parsed=convalescenceEntitlementInputSchema.safeParse(raw);if(!parsed.success)return false;
+ const input=parsed.data,personal=input.product_facts;
+ if(!personal||!/^slice\.\d+\.(?:year|calendar_days|year_days)$/u.test(operand.id)||operand.representation!=='integer'||operand.state!=='declared')return false;
+ if(!convalescenceCheckIds(input.check_prefix).includes(checkId))return false;
+ const segments=input.segments.filter(s=>s.period.source&&isDeclaredPeriodSource(s.period.source));
+ if(!segments.length)return false;
+ for(const segment of segments){const supplied=personal.segments.find(s=>s.id===segment.id);
+  if(!supplied||!same(periodFromDeclarations(supplied.from,supplied.to),segment.period))return false;
+ }
+ const check=resolveConvalescenceEntitlement(input).checks.find(c=>c.check_id===checkId);if(!check)return false;
+ const expected=documentReviewCalculationInputSchema.parse(check.calculation).operands.find(o=>o.id===operand.id);
+ return expected!==undefined&&same(expected,operand)&&segments.some(s=>s.period.source!.document_id===operand.source.document_id
+  &&s.period.source!.version_id===operand.source.version_id&&s.period.source!.reading_receipt_sha256===operand.source.reading_receipt_sha256);
 }
 function assertSources(input:ConvalescenceEntitlementInput){
  if(new Set(input.source_manifest.map(d=>d.document_id+':'+d.version_id)).size!==input.source_manifest.length)throw Error('CONVALESCENCE_MANIFEST_DUPLICATE');
@@ -84,7 +104,8 @@ export function resolveConvalescenceEntitlement(raw:unknown){
  }
  if(hard)return finish();
  const core={population:input.population,employment_start:input.employment_start,qualifying_service:input.qualifying_service,
-  payment_coverage:input.payment_coverage,benefit_year:input.benefit_year,due_date:input.due_date,segments:input.segments,slices};
+  payment_coverage:input.payment_coverage,benefit_year:input.benefit_year,due_date:input.due_date,segments:input.segments,slices,
+  ...(input.product_facts?{product_facts:input.product_facts}:{})};
  const decisionsFor=(compared:boolean):Decision[]=>{
   const decisions=Object.entries(CONVALESCENCE_APPLICABILITY).filter(([id])=>compared||id!=='cv.allocation').map(([decision_id,question])=>{
    let d:Decision=input.applicability.find(d=>d.decision_id===decision_id)??{decision_id,state:'missing',basis:'ai_source_assessment',explanation:question,sources:[convalescenceLegalSource(decision_id==='cv.rate_2026'?1:0)],valid_until:null};

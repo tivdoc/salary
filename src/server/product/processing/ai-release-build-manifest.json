@@ -16,6 +16,7 @@
     "src/engine/entitlement-review/automatic-pension.ts",
     "src/server/product/processing/ai-release-build.ts",
     "src/server/product/processing/ai-release-configuration.ts",
+    "src/server/product/processing/automatic-dev-notifications.ts",
     "src/server/product/processing/saved-ai-release.ts",
     "src/server/product/reports/ai-release-report.ts"
   ],
@@ -26,7 +27,7 @@
     },
     {
       "path": "scripts/ai-release-build-manifest.mjs",
-      "sha256": "413b23beb222e584fb22220aae8a95d3cb87977d07fbb11bf8978be16db2938f"
+      "sha256": "5c15c8962dba6d145595a9a963e547c27ae50070db88474b8f868324ebfd13b5"
     },
     {
       "path": "src/engine/ai-release-decisions/apply.ts",
@@ -102,7 +103,7 @@
     },
     {
       "path": "src/engine/document-review/completions.ts",
-      "sha256": "b551f764f35970c209470a6f3ee3c7e630d621d7e060ab0b3d1d25f4f0c17969"
+      "sha256": "a9b3a8407eb162dd3cf9c3d556c901533c70ea8996aeec48d3232967f482cd74"
     },
     {
       "path": "src/engine/document-review/contracts.ts",
@@ -130,7 +131,7 @@
     },
     {
       "path": "src/engine/document-review/service.ts",
-      "sha256": "3cbc9529eabaaf075bf0d998de5b100e9fe440e014cb9af69c1d852e064cb1e0"
+      "sha256": "c9fcf1dbacc89a0a594014c98a86642ce3901a2c54e403e74e437253c481077b"
     },
     {
       "path": "src/engine/document-review/source-dependencies.ts",
@@ -170,7 +171,7 @@
     },
     {
       "path": "src/engine/entitlement-review/compose.ts",
-      "sha256": "33f6cb1446e99ede28d37f7a4c4f490babbdaefdbb74405e909ec16420a96935"
+      "sha256": "90999ab67198a6ee3358624ae137c093001ee8f18b0f94c52805ba14f61b2aca"
     },
     {
       "path": "src/engine/entitlement-review/contracts.ts",
@@ -178,7 +179,7 @@
     },
     {
       "path": "src/engine/entitlement-review/convalescence/contracts.ts",
-      "sha256": "07624b686178fd1fa6a37a7f27cbcf45bc5f18c892f95183ecd68236d4c4aa1f"
+      "sha256": "18398ca6c0464249b255a7e4ce56461758c2a8de69feaa87c1de9025345c5da0"
     },
     {
       "path": "src/engine/entitlement-review/convalescence/index.ts",
@@ -189,8 +190,12 @@
       "sha256": "282b9cc27cf7f0900ef5b59edb947bf8bbd5032d2203488a609046dcc39d794a"
     },
     {
+      "path": "src/engine/entitlement-review/convalescence/product-facts.ts",
+      "sha256": "df895a47ee0d531b5865c1d511ab29e7e0568dec5d9d117689ebe2d3d50ce97f"
+    },
+    {
       "path": "src/engine/entitlement-review/convalescence/resolve.ts",
-      "sha256": "e63ff8e69ce283d2b8da4eee5060e722a0c4a002f2bf26ab6f7d3a0bff88147a"
+      "sha256": "391cd2a0de82134dd0ee4f634e4e377d1b4fcea2ea5a786567cde45d29642447"
     },
     {
       "path": "src/engine/entitlement-review/convalescence/source-policy.ts",
@@ -206,11 +211,15 @@
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/contracts.ts",
-      "sha256": "d0db3804c4939c02da2d49c4ac410a24436bfa8916eb71176060e19326e78d37"
+      "sha256": "b73d1e21b896d84da0a1dd67f33589406b1d9a364fcd6cedfa0da8e107ea211c"
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/index.ts",
       "sha256": "01b3d8a50fc2a6444bc3af56fdbea5fde8ad57f81b57da8cd7ed56ffdb72ab81"
+    },
+    {
+      "path": "src/engine/entitlement-review/minimum-wage/product-facts.ts",
+      "sha256": "a8898443f5098c6ec0b084037c10ea51ae2f5e24e9bde6eb5f0f5ba666527711"
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/resolve.ts",
@@ -258,11 +267,11 @@
     },
     {
       "path": "src/engine/entitlement-review/simple-product.ts",
-      "sha256": "03504072ed319cb5fa331cdfec3272737a3f25f204ee9a1f1f3905cf37f624fa"
+      "sha256": "30f9463ac7314066cc44a3e7ee90945be41d68a93fb2311c18f051217c469ba6"
     },
     {
       "path": "src/engine/entitlement-review/source-admission.ts",
-      "sha256": "d321acfd28dac1158afb94c2262bced1f30fc6ad1b16594366dcc970f597f42d"
+      "sha256": "5c8d987b4c63dd72153b8e00824ffd0ac8fee10a0c170f0847a628c43168f7b8"
     },
     {
       "path": "src/engine/entitlement-review/travel/contracts.ts",
@@ -270,7 +279,11 @@
     },
     {
       "path": "src/engine/entitlement-review/travel/index.ts",
-      "sha256": "d252e877bb4076c4669033a66c7e493fe48fad0afd4a5acd932fd2173da45d46"
+      "sha256": "bcea5161884e0c236989616dc8b7f3defc89bb7a59701a9ca3cfd389e997a001"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/legacy-formula-provenance.ts",
+      "sha256": "476c7e9bf7f5f8d16759b0cd2011d5cf1521dc42aac672dde1c0e437e544dcb8"
     },
     {
       "path": "src/engine/entitlement-review/travel/product-labels.ts",
@@ -279,6 +292,10 @@
     {
       "path": "src/engine/entitlement-review/travel/sources.ts",
       "sha256": "448f65e4a72329d2d5de3dcf868f68ee253a38c1c8fdf636c7b1c7a39648a30b"
+    },
+    {
+      "path": "src/engine/entitlement-review/typed-product-facts.ts",
+      "sha256": "8ed0cb4da86137790dd93dd6f20aa59835849a6bf2b42908fd7657d53fe41588"
     },
     {
       "path": "src/engine/entitlement-review/vacation/contracts.ts",
@@ -449,18 +466,6 @@
       "sha256": "e4e2dae01d628253ede6b3d0421d40360488b5dc0ea2c6129b1e976d012e9ce3"
     },
     {
-      "path": "src/engine/legal-quality/golden-case-templates.ts",
-      "sha256": "506b883d79a2b9df0eb0025bc61416534520e5b002802f1ea543743951a9cea2"
-    },
-    {
-      "path": "src/engine/legal-quality/release-rulespecs.ts",
-      "sha256": "5abcd4d0cbfc5fd4e8b1ae4f26b90173459bcab8db357d8b6f847ddfc53cb490"
-    },
-    {
-      "path": "src/engine/legal-quality/sensitivity-rulespecs.ts",
-      "sha256": "e878438ffa8faba5517e3e207190c917fc27dd2a6bce284f61cdd87f047b191a"
-    },
-    {
       "path": "src/engine/minimum-wage-june2026/admitted-context.ts",
       "sha256": "7b646b6c0ab5061b911e077fc0f7b72211ba17684cf8ea26df97982a036d5f2e"
     },
@@ -545,6 +550,14 @@
       "sha256": "1b115680ba82df455da10b080a611dcc6115b992f2cc9e25184d68f2da36d584"
     },
     {
+      "path": "src/lib/supabase-admin.ts",
+      "sha256": "af6f1669f740c176dbb9819bf84e7007c0819df55cf17d482a2aa513c8488927"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/config.ts",
+      "sha256": "05cc8e5c2182babf053377fa3134f93a6ffc313c61cf617b7882b641a57aef5f"
+    },
+    {
       "path": "src/server/platform/jobs/durable-job-queue.ts",
       "sha256": "6bfd8cf0150103afb5b46f97ae4ae80792e9d0b17c3a2111f698d057e1a9e779"
     },
@@ -573,12 +586,52 @@
       "sha256": "34fa3ea56b8895c5620a0566b512dce55d3d39a22c952e8d1b4d76580fcf3dda"
     },
     {
+      "path": "src/server/product/case-access/crypto.ts",
+      "sha256": "612e3276c4b73c038ce27908f79d988f229144c44a09cc1dd5644443b0f2fe5c"
+    },
+    {
+      "path": "src/server/product/case-access/db.ts",
+      "sha256": "36044b5c3be2e018bd03375ac13da9e6efd8c25dcb63a6f9a114035966ee39f6"
+    },
+    {
+      "path": "src/server/product/case-access/notification-outbox.ts",
+      "sha256": "ef20e6d65c8eb956579ae94b96b97899b112aec188f4b0ba33187d6232eb6623"
+    },
+    {
+      "path": "src/server/product/case-access/notifications.ts",
+      "sha256": "c4bde15bd7f1d7e0b4a8700257f661d1b10cd7c5468b362f862a8d9ea21b0442"
+    },
+    {
+      "path": "src/server/product/case-access/preview-database.ts",
+      "sha256": "41cf677455b9fdb2feb423b0032f9e3200a3d571eca6a688a32cd3b14d7c8bd9"
+    },
+    {
+      "path": "src/server/product/case-access/resend-provider.ts",
+      "sha256": "6e9be565f61fbd00417f0eff2710c2d1be4e8e41c6eeeaaa8119232f90f476b4"
+    },
+    {
+      "path": "src/server/product/case-access/supabase-ca.ts",
+      "sha256": "dc51f049aff8163babc6f2a35b3a204c731cd1d3b0bef9f4c50549bb0f96228b"
+    },
+    {
       "path": "src/server/product/processing/ai-release-build.ts",
       "sha256": "c9608761aa80c48f718c48b80ae5accf23bf4f11fd941e5ae63955bd9a1e7fcf"
     },
     {
       "path": "src/server/product/processing/ai-release-configuration.ts",
       "sha256": "d2df649f3692059bb430c8eed4519c20c1e91c7077e61966aabef23615fc134a"
+    },
+    {
+      "path": "src/server/product/processing/automatic-dev-completion-notifications.ts",
+      "sha256": "d631ce2a6a1575dc46d8d65783d205dddd8f4a16fb708e8f365229b045d64b42"
+    },
+    {
+      "path": "src/server/product/processing/automatic-dev-notifications.ts",
+      "sha256": "6d34b10bfea85ce1d3196e9ec1b4413519cb802e7285c4a39f07d8dc3f5d0dea"
+    },
+    {
+      "path": "src/server/product/processing/managed-worker-config.ts",
+      "sha256": "8c4970cd12c6dd6c1d08474a0cc991a68e0e44d8cb1c390f82ecd6ee02945138"
     },
     {
       "path": "src/server/product/processing/saved-ai-release-configuration.ts",
@@ -621,6 +674,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "7421649e7fc755cb0c929a0020599ee6b2f30df4851a7b9d563d8ac716ed8d97",
-  "sha256": "bfad8e557911fdfdb059e40502255e8cfcf4a7be3ee2133ca1adbc3fcc0e4d8b"
+  "source_graph_sha256": "737c3511edd2cac0b8e44cd67c200bd21d596dc74c2c3b581e7344854660b297",
+  "sha256": "4f6fe14390e4d2ae8f95ca11217f20b4dee561b0516dd8ecc521f760fc00caab"
 }

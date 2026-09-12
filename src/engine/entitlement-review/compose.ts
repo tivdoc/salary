@@ -10,6 +10,7 @@ import {entitlementLegalDocuments} from './legal-documents.ts';
 import {pensionProductReview} from './pension-product.ts';
 import {workingTimeProductReview} from './working-time-product.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
+import {materializeTypedEntitlementFacts} from './typed-product-facts.ts';
 
 function resolve(input:DocumentReviewInput,e:EntitlementEvidence):EntitlementBranchReview{
  const parts=[...(e.pension===undefined?[]:[pensionProductReview(input,e.pension)]),...(e.working_time===undefined?[]:[workingTimeProductReview(input,e.working_time)]),...(['travel','minimum_wage','vacation','convalescence'] as const).flatMap(topic=>e[topic]===undefined?[]:[simpleEntitlementProduct(input,topic,e[topic])]),...(e.obligations===undefined?[]:[obligationsProductReview(input,e.obligations)])];
@@ -58,8 +59,24 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  const laws=entitlementLegalDocuments(base.case_id,['working_time','pension','travel','minimum_wage','vacation','convalescence'].filter(t=>base.entitlement_evidence?.[t as keyof EntitlementEvidence]!==undefined)),packet=assertEntitlementSourcePacket(base,base.entitlement_evidence,laws);
  const baseline=resolve(base,packet);
  const documents=[...base.documents];for(const law of laws){const at=documents.findIndex(d=>d.document_id===law.document_id);if(at<0)documents.push(law);else documents[at]=law;}
- const withNeeds=documentReviewInputSchema.parse({...base,documents,completion_input:{...parseReviewCompletionInput(base.completion_input),needs:[...parseReviewCompletionInput(base.completion_input).needs,...baseline.needs]}});
- const effective=answeredEvidence(withNeeds,packet,baseline.answer_targets);
+ let withNeeds=documentReviewInputSchema.parse({...base,documents,completion_input:{...parseReviewCompletionInput(base.completion_input),needs:[...parseReviewCompletionInput(base.completion_input).needs,...baseline.needs]}});
+ let effective=answeredEvidence(withNeeds,packet,baseline.answer_targets);
+ // Opt-in fact inventories have two stages: an identified count creates only
+ // the named empty slots, then their own dated/FTE receipts fill those slots.
+ // Rebuild from the original packet every run; old count/cell answers cannot
+ // survive a count correction through a previously materialized result.
+ const targets=new Map(baseline.answer_targets.map(t=>[t.fact_key,t]));
+ for(let step=0;step<4;step++){
+  const staged=materializeTypedEntitlementFacts(effective);
+  if(canonicalSha256(staged)===canonicalSha256(effective)&&step===0)break;
+  const expanded=resolve(base,staged),oldNeeds=parseReviewCompletionInput(withNeeds.completion_input).needs;
+  const needs=[...oldNeeds];for(const n of expanded.needs)if(!needs.some(old=>old.fact_key===n.fact_key))needs.push(n);
+  for(const target of expanded.answer_targets)targets.set(target.fact_key,target);
+  withNeeds=documentReviewInputSchema.parse({...withNeeds,completion_input:{...parseReviewCompletionInput(withNeeds.completion_input),needs}});
+  const next=materializeTypedEntitlementFacts(answeredEvidence(withNeeds,staged,[...targets.values()]));
+  if(canonicalSha256(next)===canonicalSha256(effective)){effective=next;break;}effective=next;
+  if(step===3)throw Error('ENTITLEMENT_FACT_MATERIALIZATION_DID_NOT_SETTLE');
+ }
  assertEntitlementSourcePacket(withNeeds,effective,laws);
  const current=resolve(withNeeds,effective);
  const bindings=[...base.answer_bindings];
@@ -75,7 +92,8 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
   return {...check,calculation:{...calc,source_manifest,input_basis_policy:'all-consumed-citations-v2'}};
  });
  if(checks.some(c=>base.checks.some(old=>old.check_id===c.check_id)))throw Error('ENTITLEMENT_CHECK_COLLISION');
- const needs=[...baseline.needs];
+ const externalFacts=new Set(parseReviewCompletionInput(base.completion_input).needs.map(n=>n.fact_key));
+ const needs=parseReviewCompletionInput(withNeeds.completion_input).needs.filter(n=>!externalFacts.has(n.fact_key));
  // A newly revealed dependency creates new work; original targets remain
  // addressable for answer replay and correction after the fact is known.
  for(const need of current.needs)if(!needs.some(n=>n.fact_key===need.fact_key))needs.push(need);

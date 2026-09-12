@@ -13,6 +13,7 @@ const ENTRIES=[
  'src/engine/ai-release-runtime/automatic-assessment.ts',
  'src/engine/case-analysis/service.ts',
  'src/server/product/processing/saved-ai-release.ts',
+ 'src/server/product/processing/automatic-dev-notifications.ts',
  'src/server/product/reports/ai-release-report.ts',
  'src/engine/document-review/non-payslip.ts',
  ...['pension','payroll','benefits','nonpay'].map(name=>`src/engine/entitlement-review/automatic-${name}.ts`),
@@ -63,7 +64,7 @@ export async function collectAiReleaseBuildManifest(root=ROOT,options={}){
  while(pending.length){
   const p=pending.pop();
   if(sourceMap.has(p)||p===OUTPUT)continue;
-  if(excluded(p))throw Error('AI_BUILD_EXCLUDED_DEPENDENCY');
+  if(excluded(p))throw Error('AI_BUILD_EXCLUDED_DEPENDENCY',{cause:p});
   const content=await source(p);sourceMap.set(p,content);
   if(p.endsWith('.json'))continue;
   const ast=ts.createSourceFile(p,content,ts.ScriptTarget.Latest,true),imports=[];
