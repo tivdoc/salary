@@ -41,10 +41,26 @@ export const sourceStructureSubjectSchema=z.discriminatedUnion('kind',[
 export type SourceStructureSubject=Readonly<z.infer<typeof sourceStructureSubjectSchema>>;
 /** Reading a relationship or a source section is explicit evidence separate
  * from numeric cell reading. It grants no legal applicability or remittance. */
-export const customerSourceStructureReadingSchema=z.object({schema_version:z.literal('document-source-structure-reading-v1'),actor_kind:z.literal('customer'),
+export const customerSourceStructureReadingV1Schema=z.object({schema_version:z.literal('document-source-structure-reading-v1'),actor_kind:z.literal('customer'),
  case_id:z.uuid(),document_id:z.uuid(),source_sha256:sha,normalized_extraction_sha256:sha,first_pass_extraction_sha256:sha,extraction_result_sha256:sha,target_sha256:sha,
  subject:sourceStructureSubjectSchema,month:sourceStructureMonthSchema,policy_version:z.string().min(1).max(100),
  request_id:z.uuid(),answer_revision:z.number().int().positive(),identity_id:z.uuid(),confirmed_at:z.string().datetime({offset:true}),
  value:sourceStructureValueSchema,decision_sha256:sha,verification_sha256:sha,
 }).strict();
+export type CustomerSourceStructureReadingV1=Readonly<z.infer<typeof customerSourceStructureReadingV1Schema>>;
+const periodReading=customerSourceStructureReadingV1Schema.refine(r=>r.subject.kind==='period_association'&&r.value.kind==='period_association');
+export const sourceStructurePeriodWitnessSchema=z.object({schema_version:z.literal('document-source-structure-period-witness-v1'),
+ period:z.object({from:sourcePeriodDate,to:sourcePeriodDate}).strict().refine(p=>p.from<=p.to),
+ refs:z.array(z.discriminatedUnion('basis',[
+  z.object({ref:sourceStructureRefSchema,basis:z.literal('original_current'),reading:z.null()}).strict(),
+  z.object({ref:sourceStructureRefSchema,basis:z.literal('identified_current'),reading:periodReading}).strict(),
+ ])).min(1).max(102),
+}).strict().superRefine((w,ctx)=>{
+ const keys=w.refs.map(e=>`${e.ref.kind}:${e.ref.id}`);
+ if(new Set(w.refs.map(e=>e.ref.id)).size!==keys.length||keys.join('|')!==[...keys].sort((a,b)=>a.localeCompare(b)).join('|'))ctx.addIssue({code:'custom',message:'Period witness references must be unique and ordered'});
+});
+export type SourceStructurePeriodWitness=Readonly<z.infer<typeof sourceStructurePeriodWitnessSchema>>;
+export const customerSourceStructureReadingV2Schema=customerSourceStructureReadingV1Schema.extend({schema_version:z.literal('document-source-structure-reading-v2'),
+ period_witness:sourceStructurePeriodWitnessSchema}).refine(r=>r.subject.kind==='source_relationship'||r.subject.kind==='deduction_group');
+export const customerSourceStructureReadingSchema=z.discriminatedUnion('schema_version',[customerSourceStructureReadingV1Schema,customerSourceStructureReadingV2Schema]);
 export type CustomerSourceStructureReading=Readonly<z.infer<typeof customerSourceStructureReadingSchema>>;

@@ -35,8 +35,9 @@ const unknown={label:'לא ידוע',value:null};
 const choices=(entries:Record<string,string|number|boolean>):Choice[]=>[...Object.entries(entries).map(([label,value])=>({label,value})),unknown];
 
 /** Explicit opt-in for new saved source packets. Existing packets are untouched. */
-export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence,options?:{travel?:true;travel_journey?:true;vacation?:true;convalescence?:true;working_time?:true;age_range?:true}):EntitlementEvidence{
+export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence,options?:{travel?:true;travel_journey?:true;vacation?:true;convalescence?:true;working_time?:true;age_range?:true;resolved_minimum_wage_needs?:true}):EntitlementEvidence{
  const e=structuredClone(candidate);
+ if(options?.resolved_minimum_wage_needs&&e.minimum_wage)e.resolved_need_policy='minimum-wage-resolved-needs-v1';
  if(e.pension){const p=pensionEntitlementInputSchema.parse(e.pension);e.pension={...p,product_facts:p.product_facts??pensionProductFacts()};}
  if(e.minimum_wage){const p=minimumWageEntitlementInputSchema.parse(e.minimum_wage);e.minimum_wage={...p,product_facts:p.product_facts??minimumWagePersonalFacts()};}
  if(e.convalescence){const p=convalescenceEntitlementInputSchema.parse(e.convalescence);e.convalescence=options?.convalescence?enableConvalescenceCaseFacts(p):{...p,product_facts:p.product_facts??convalescencePersonalFacts()};}

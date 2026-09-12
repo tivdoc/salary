@@ -1,4 +1,6 @@
 import {documentSourceStructureTargetSchema,documentSourceStructureTarget} from './document-source-structure';
+import type {CustomerSourceStructureReading} from '@/engine/extraction/source-structure';
+import {IDENTIFIED_PERIOD_STRUCTURE_POLICY} from '@/engine/extraction/source-structure-period';
 import {documentEvidenceReadingTargetSchema} from '@/engine/extraction/document-evidence/reading';
 import {documentEvidenceTarget} from './document-evidence-reading';
 import {documentTravelTariffTargetSchema,documentTravelTariffTarget,type DocumentTravelTariffSource} from './document-travel-tariff';
@@ -99,7 +101,7 @@ export type DocumentReadingTarget=Readonly<z.infer<typeof documentReadingTargetS
 
 /** Reconstruct, do not mutate, from the exact saved checkpoint. Callers compare
  * the returned hash with the original target and retain their source fence. */
-export function documentReadingTargetForCheckpoint(input:{target:unknown;currentCheckpoint:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource}):DocumentReadingTarget {
+export function documentReadingTargetForCheckpoint(input:{target:unknown;currentCheckpoint:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource;periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>}):DocumentReadingTarget {
  const target=documentReadingTargetSchema.parse(input.target),base={checkpoint:input.currentCheckpoint,policyVersion:target.policy_version};
  if(target.schema_version==='document-travel-tariff-transcription-v1'){
   if(!input.travelTariffSource)throw Error('TRAVEL_TARIFF_PURPOSE_CONTEXT_REQUIRED');
@@ -110,7 +112,8 @@ export function documentReadingTargetForCheckpoint(input:{target:unknown;current
   return documentEvidenceTarget({checkpoint:input.currentCheckpoint,document:input.nonPayslipDocument,productDocumentId:input.nonPayslipProductDocumentId,month:target.month,
    observationId:target.observation.observation_id});
  }
- if('proposed_value' in target)return documentSourceStructureTarget({...base,selector:sourceStructureSelector(target.subject)});
+ if('proposed_value' in target)return documentSourceStructureTarget({...base,selector:sourceStructureSelector(target.subject),
+  ...('period_witness' in target?{periodPolicy:IDENTIFIED_PERIOD_STRUCTURE_POLICY,periodReadings:input.periodReadings}:{})});
  if(target.schema_version==='document-field-confirmation-v1')return documentFieldTarget({...base,candidateId:target.candidate.candidate_id});
  if(target.schema_version==='document-row-cell-confirmation-v1')return documentRowCellTarget({...base,componentId:target.original_component.component_id,cell:target.cell});
  if(target.schema_version==='document-source-scope-confirmation-v1')return documentSourceScopeTarget({...base,candidateId:target.original_observation.candidate.candidate_id});

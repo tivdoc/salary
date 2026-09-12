@@ -12,6 +12,7 @@ import {attachAutomaticBenefitsEvidence} from '@/engine/entitlement-review/autom
 import {attachAutomaticPensionEvidence} from '@/engine/entitlement-review/automatic-pension';
 import {composeEntitlementReview} from '@/engine/entitlement-review/compose';
 import {enableTypedEntitlementPersonalFacts} from '@/engine/entitlement-review/typed-product-facts';
+import {IDENTIFIED_PERIOD_STRUCTURE_POLICY} from '@/engine/extraction/source-structure-period';
 import {entitlementSourceReadingDependencies} from '@/engine/entitlement-review/product-source-dependencies';
 import {enableSharedPersonalFacts,SHARED_PERSONAL_FACTS_EXPANDED_POLICY} from '@/engine/entitlement-review/shared-product-facts';
 import {savedReviewSourceEvidence} from './saved-review-source-proof';
@@ -156,7 +157,7 @@ async function sourceReviewInput(context:PostgresTransactionContext,job:SourceJo
  const evidence=await savedReviewSourceEvidence(context,job,snapshot);
  return withSavedPurchaseCoverage(reviewInputFromPayslips({case_id:job.case_id,period:{from:month+'-01',to:new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10)},
   purchased_scope:{order_id:order.id,receipt_sha256:savedOrderReceiptSha256(order),topics:[...order.topics],origin:savedOrderOrigin(order)},snapshot,
-  financial_source_proofs:evidence.proofs,retained_unresolved_fields:evidence.retained,review_policy:PAYSLIP_SOURCE_STRUCTURE_POLICY}),order);
+  financial_source_proofs:evidence.proofs,retained_unresolved_fields:evidence.retained,review_policy:PAYSLIP_SOURCE_STRUCTURE_POLICY,...(automaticOnly?{identified_period_structure_policy:IDENTIFIED_PERIOD_STRUCTURE_POLICY}:{})}),order);
 }
 
 export function withSavedPurchaseCoverage(input:DocumentReviewInput,order:SavedExecutionOrder){
@@ -205,7 +206,7 @@ async function automaticDocumentReview(context:PostgresTransactionContext,job:So
  // This new profile owns its command hash. Historical packets and previously
  // generated answer targets retain their original shape and reading rules.
  if(automaticOnly&&prepared.input.entitlement_evidence){
-  const evidence=enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence,{travel:true,travel_journey:true,vacation:true,convalescence:true,working_time:true,age_range:true});
+  const evidence=enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence,{travel:true,travel_journey:true,vacation:true,convalescence:true,working_time:true,age_range:true,resolved_minimum_wage_needs:true});
   if(evidence.obligations)evidence.obligations=enableObligationCasePolicy(obligationsEntitlementInputSchema.parse(evidence.obligations));
   return {...prepared,input:documentReviewInputSchema.parse({...prepared.input,entitlement_evidence:enableSharedPersonalFacts(evidence,SHARED_PERSONAL_FACTS_EXPANDED_POLICY)})};
  }

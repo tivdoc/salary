@@ -75,7 +75,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //185–188: seven literal declarations (4+1+1+1), reviewed by name below.
 // Captured wrappers retain their prior ACLs and are inventoried separately;
 // the period metadata branch adds no new runtime authority or answer store.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 377;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 379;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -298,10 +298,29 @@ const TARIFF_PERIOD_SURFACE = [
       'private.source_period_target_in_scope(uuid,jsonb,text[])','private.source_period_target_current(uuid,jsonb)',
       'private.source_period_answer_valid(jsonb,text)'],
   },
+  {
+    file: '20260912194600_document_source_structure_period_witness.sql',
+    literal: ['private.source_structure_period_readings','private.source_structure_period_witness','private.source_structure_period_target_in_scope',
+      'private.source_structure_period_target_current','private.source_structure_period_answer_valid','private.document_field_current',
+      'private.document_reading_question_scope_v4','public.case_request_source_period_context'],
+    definers: ['private.document_field_current','public.case_request_source_period_context'],
+    grants: ['private.document_reading_question_scope_before_structure_period_v2(text[],jsonb) to service_role,tivdoc_worker_runtime',
+      'public.case_request_source_period_context(uuid,uuid,uuid) to service_role,tivdoc_web_runtime'],
+    dynamic: ['private.document_field_current(uuid,jsonb)','private.document_reading_question_scope_v4(text[],jsonb)',
+      'private.source_structure_subject_current(jsonb,jsonb,jsonb)','private.source_structure_target_current(jsonb,jsonb)',
+      'private.source_period_current_checkpoint(uuid,jsonb)','private.guard_document_cell_decision()',
+      'private.document_field_request_open(uuid,integer,text,jsonb,text)','public.case_request_document_source(uuid,uuid,uuid)'],
+    revokedNew: ['private.document_field_current_before_structure_period_v2(uuid,jsonb)',
+      'private.document_reading_question_scope_before_structure_period_v2(text[],jsonb)','private.source_structure_period_subject_matches(jsonb,jsonb,jsonb)',
+      'private.source_structure_period_target_matches(jsonb,jsonb)','private.source_structure_period_checkpoint(uuid,jsonb)',
+      'private.source_structure_period_readings(uuid,jsonb,jsonb)','private.source_structure_period_witness(uuid,jsonb,jsonb)',
+      'private.source_structure_period_target_in_scope(uuid,jsonb,text[])','private.source_structure_period_target_current(uuid,jsonb)',
+      'private.source_structure_period_answer_valid(jsonb,text)','public.case_request_source_period_context(uuid,uuid,uuid)'],
+  },
 ] as const;
 
 describe("security definer search_path contract", () => {
-  it('inventories tariff and period definitions, explicit grants and preserved dynamic wrappers in 185–188',async()=>{
+  it('inventories tariff and period definitions, explicit grants and preserved dynamic wrappers in 185–189',async()=>{
     const definitions=await securityDefinerDefinitions();
     for(const reviewed of TARIFF_PERIOD_SURFACE){
       const source=(await readFile(path.join(MIGRATION_ROOT,reviewed.file),'utf8')).replaceAll('\r\n','\n');

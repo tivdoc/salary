@@ -15,6 +15,7 @@ export const entitlementEvidenceSchema=z.object({
  order_id:z.string().min(1),receipt_sha256:hash,period,
  shared_personal_facts_policy:sharedPersonalFactsPolicySchema.optional(),
  age_range_policy:z.literal('questionnaire-age-range-reuse-v1').optional(),
+ resolved_need_policy:z.literal('minimum-wage-resolved-needs-v1').optional(),
  working_time:z.unknown().optional(),pension:z.unknown().optional(),travel:z.unknown().optional(),minimum_wage:z.unknown().optional(),vacation:z.unknown().optional(),convalescence:z.unknown().optional(),obligations:z.unknown().optional(),
 }).strict();
 export type EntitlementEvidence=z.infer<typeof entitlementEvidenceSchema>;

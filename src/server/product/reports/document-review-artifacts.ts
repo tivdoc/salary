@@ -109,11 +109,11 @@ export function renderDocumentReviewArtifacts(
   const blocks: RtlBlock[] = [];
   const html: string[] = [];
   const heading = (text: string, level: 1 | 2 = 2) => { blocks.push({ kind: 'heading', level, text }); html.push(`<h${level}>${escape(text)}</h${level}>`); };
-  const paragraph = (raw: string) => {
+  const paragraph = (raw: string, keepWithNext = false) => {
     // Display-only spacing between adjacent Hebrew prose and numeric tokens.
     // The typed input, raw readings and source labels remain unchanged.
     const text = raw.replace(/(?<=\p{Script=Hebrew})(?=\d)|(?<=[\d%])(?=\p{Script=Hebrew})/gu, ' ');
-    blocks.push({ kind: 'paragraph', text }); html.push(`<p>${escape(text)}</p>`);
+    blocks.push({ kind: 'paragraph', text, ...(keepWithNext ? {keep_with_next:true} : {}) }); html.push(`<p${keepWithNext ? ' style="break-after:avoid"' : ''}>${escape(text)}</p>`);
   };
   const table = (columns: readonly string[], rows: readonly (readonly string[])[]) => {
     blocks.push({ kind: 'table', columns, rows });
@@ -141,7 +141,7 @@ export function renderDocumentReviewArtifacts(
   if (!input.findings.length) paragraph('לא נוספו ממצאים בהיקף הבדיקה הנוכחי. אין בכך קביעה שכל הזכויות נבדקו או שאין פערים.');
   for (const finding of input.findings) {
     heading(finding.title);
-    paragraph(STATUS[finding.status]);
+    paragraph(STATUS[finding.status], true);
     paragraph(finding.summary);
     if (finding.status === 'conditional') for (const condition of finding.conditions) paragraph(`תנאי לבירור: ${condition}`);
     for (const amount of finding.amounts) paragraph(`${amount.label}: ${money(amount)} ₪`);
@@ -152,7 +152,7 @@ export function renderDocumentReviewArtifacts(
   for (const item of input.missing_inputs) { heading(item.title); paragraph(item.detail); paragraph(`להשלמה: ${item.next_step}`); }
   heading('מקורות ואסמכתאות');
   input.sources.forEach((source, index) => {
-    const label = `[${index + 1}] ${source.title}${source.document_label ? ` - ${source.document_label}` : ''}${source.page ? `, עמוד ${source.page}` : ''}`;
+    const label = `[${index + 1}] ${source.title}${source.document_label && source.document_label !== source.title ? ` - ${source.document_label}` : ''}${source.page ? `, עמוד ${source.page}` : ''}`;
     const url = source.url === undefined ? undefined : safeLink(source.url);
     blocks.push({ kind: 'paragraph', text: label + (url ? `\n${url}` : '') });
     html.push(`<p>${escape(label)}${url ? `<br><a href="${escape(url)}" target="_blank" rel="noopener noreferrer"><bdi dir="ltr">${escape(url)}</bdi></a>` : ''}</p>`);

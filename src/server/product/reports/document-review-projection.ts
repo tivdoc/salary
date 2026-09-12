@@ -1,6 +1,7 @@
 import type {AnalysisResultBundle} from '@/engine/wave3/contracts';
 import {renderDocumentReviewArtifacts,type DocumentReviewPresentationInput} from './document-review-artifacts';
 import {DOCUMENT_REVIEW_RENDER_POLICY,type DocumentReviewRenderPolicy} from './document-review-render-policy';
+import {documentReviewSourceLabel} from './document-review-source-labels';
 const TOPICS={minimum_wage:'שכר ושעות',working_time:'זמני עבודה ונוכחות',pension:'רישומי פנסיה',travel:'נסיעות',convalescence:'הבראה',vacation:'חופשה',sick_leave:'מחלה',rest_day:'מנוחה שבועית',bonuses:'רכיבים נוספים',contract:'תנאי ההעסקה'} as const;
 const customerTitle=(title:string)=>title.replace(/(?<=\p{Script=Hebrew})(?=\d)|(?<=\d)(?=\p{Script=Hebrew})/gu,' ');
 export const GROUPED_REVIEW_GAP_PRESENTATION=DOCUMENT_REVIEW_RENDER_POLICY;
@@ -14,8 +15,10 @@ export type ReviewProjectionOptions={gapPresentation?:DocumentReviewRenderPolicy
 export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,options:ReviewProjectionOptions={}){
  const review=bundle.document_review;if(!review)throw Error('DOCUMENT_REVIEW_REQUIRED');
  const sourceId=(id:string,version:string,page:number)=>`${id}:${version}:${page}`;
+ const labels=new Map(review.documents.map(d=>[sourceId(d.document_id,d.version_id,0),documentReviewSourceLabel(d)]));
+ const documentLabel=(d:typeof review.documents[number])=>labels.get(sourceId(d.document_id,d.version_id,0))!;
  const sources=review.documents.flatMap(d=>Array.from({length:d.page_count??1},(_,i)=>({
-  id:sourceId(d.document_id,d.version_id,i+1),title:d.label,document_label:d.label,...(d.page_count?{page:i+1}:{}),
+  id:sourceId(d.document_id,d.version_id,i+1),title:documentLabel(d).label,document_label:documentLabel(d).label,...(d.page_count?{page:i+1}:{}),
  })));
  const monetaryFindings:DocumentReviewPresentationInput['findings']=review.checks.map(check=>{
   const c=check.calculation;
@@ -84,9 +87,12 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,o
    :coverage.purchase_period_evidence.state==='missing'?'במקור הרכישה לא נרשמה תקופת בדיקה. תקופת המסמך או הדוח אינה משלימה את החסר הזה.':'תקופת הרכישה אינה מתועדת בקלט הבדיקה; אין להסיק אותה מחודש התלוש.');
   coverageLines.push(`מסגרת הדוח הנוכחי: ${coverage.review_period.from} עד ${coverage.review_period.to}.`);
   for(const source of coverage.source_periods){
-   const label=review.documents.find(d=>d.document_id===source.document_id&&d.version_id===source.version_id)?.label;
+   const document=review.documents.find(d=>d.document_id===source.document_id&&d.version_id===source.version_id);
+   if(document&&documentLabel(document).legal)continue;
+   const label=document?.label;
    if(label)coverageLines.push(source.period?`תקופת המקור — ${label}: ${source.period.from} עד ${source.period.to}.`:`תקופת המקור — ${label}: לא זוהתה.`);
   }
+  if(review.documents.some(d=>documentLabel(d).legal))coverageLines.push('מקורות הדין והפרמטרים מפורטים באסמכתאות. הם אינם מסמכי שכר חודשיים; תחולתם לתקופת הבדיקה תלויה בכלל ובתנאים המפורטים בכל ממצא.');
   if(coverage.period_projection?.excluded_checks.length){
    const excluded=coverage.period_projection.excluded_checks,whole=excluded.filter(c=>c.reason==='outside_month').length;
    coverageLines.push(`${excluded.length} בדיקות מהקלט המקורי לא חושבו במסגרת החודש: ${whole} מחוץ לחודש ו־${excluded.length-whole} חוצות את גבולותיו. התקופות המקוריות נשמרו, ולא בוצעה חלוקה יחסית של סכומים או שעות.`);
@@ -113,7 +119,7 @@ export function renderReviewBundle(bundle:AnalysisResultBundle,reportId:string,o
   case_public_id:'סקירת המסמכים',period:review.period,coverage:'partial',
   what_checked:[...coverageLines,...(review.checks.length?[...topicCounts].map(([topic,count])=>`${TOPICS[topic as keyof typeof TOPICS]}: ${count} ${count===1?'בדיקה':'בדיקות'}`):['זיהוי המסמכים, התקופות והמידע הזמין לצורך הבדיקה'])],
   overview_finding_ids:highlights,
-  documents_checked:review.documents.map(d=>({label:d.label,source_ids:Array.from({length:d.page_count??1},(_,i)=>sourceId(d.document_id,d.version_id,i+1))})),
+  documents_checked:review.documents.map(d=>({label:documentLabel(d).label,source_ids:Array.from({length:d.page_count??1},(_,i)=>sourceId(d.document_id,d.version_id,i+1))})),
   sources,findings,missing_inputs:missing};
  return renderDocumentReviewArtifacts(options.transformPresentation?options.transformPresentation(input):input,{document_review:review,analysis_run_id:bundle.analysis_run_id,
   analysis_result_sha256:bundle.result_sha256,legal_topic_results:bundle.topic_results,

@@ -1,8 +1,9 @@
 import {missingSourcePeriodSelector} from '../extraction/source-period-association.ts';
 import {z} from 'zod';
 import {sourceStructureEntries} from './source-structure-evidence.ts';
-import {sourceStructureSelector,sourceStructureSubject,assertSourceStructureSubject,type SourceStructureSelector} from '../extraction/source-structure-resolution.ts';
-import type {SourceStructureSubject} from '../extraction/source-structure.ts';
+import {sourceStructureSelector,sourceStructureSubject,sourceStructureCandidateSubject,assertSourceStructureSubject,type SourceStructureSelector} from '../extraction/source-structure-resolution.ts';
+import type {SourceStructurePeriodWitness,SourceStructureRef,SourceStructureSubject} from '../extraction/source-structure.ts';
+import {IDENTIFIED_PERIOD_STRUCTURE_POLICY,sourceStructureRefs} from '../extraction/source-structure-period.ts';
 import {payslipMachineExtraction,payslipMachineExtractionSha256} from '../extraction/reading-resolution.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {normalizedPayslipExtractionSchema,type NormalizedPayslipExtraction} from '../extraction/payslip.ts';
@@ -64,19 +65,58 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
  const rows=new Map<string,{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage';check_ids:string[]}>();
  const scopes=new Map<string,{candidate_id:string;scope:string;check_ids:string[]}>(),fields=new Map<string,{candidate_id:string;check_ids:string[]}>();
  const transcriptions=new Map<string,{subject:{kind:'reported_work_hours';page:number}|{kind:'balance_unit';candidateId:string};check_ids:string[]}>();
- const structures=new Map<string,{subject:SourceStructureSubject;selector:SourceStructureSelector;check_ids:string[]}>();
- const unmapped:{check_id:string;operand_id:string;reason:'locator_unavailable'|'source_changed'|'blank_source'}[]=[];
+ const structures=new Map<string,{subject:SourceStructureSubject;selector:SourceStructureSelector;check_ids:string[];period_witness?:SourceStructurePeriodWitness}>();
+ const unmapped:{check_id:string;operand_id:string;reason:'locator_unavailable'|'source_changed'|'blank_source'|'period_target_unsupported'}[]=[];
+ const identifiedPeriods=input.review.input.source_structure_period_policy===IDENTIFIED_PERIOD_STRUCTURE_POLICY;
+ const structurePeriods=(selector:SourceStructureSelector,checkId:string,topic:typeof input.review.purchased_scope.topics[number])=>{
+  if(!identifiedPeriods||!extraction.source_reading_context||!input.review.purchased_scope.topics.includes(topic))return;
+  const machine=payslipMachineExtraction(extraction),firstPass=normalizedPayslipExtractionSchema.parse(extraction.source_reading_context.first_pass);
+  let subject:SourceStructureSubject;try{subject=sourceStructureCandidateSubject({extraction:machine,firstPass,selector});}catch{return;}
+  for(const ref of sourceStructureRefs(subject)){
+   if(ref.source.source_scope?.period_kind&&ref.source.source_scope.period_kind!=='unknown')continue;
+   const mappedTopic=ref.kind==='component'?PAYSLIP_ROW_REVIEW_TOPICS[machine.additional_components.find(r=>r.component_id===ref.id)!.semantic_kind]:topic;
+   // V1 does not authorize period readings for scope observations or generic
+   // deduction rows. Surface that software boundary; never widen its purpose.
+   if(ref.kind==='scope'||!mappedTopic||!input.review.purchased_scope.topics.includes(mappedTopic)){
+    unmapped.push({check_id:checkId,operand_id:ref.id,reason:'period_target_unsupported'});continue;
+   }
+   let selected=missingSourcePeriodSelector(machine,{kind:ref.kind,id:ref.id});if(!selected)continue;
+   if(selected.refs.some(r=>r.kind==='component'&&!input.review.purchased_scope.topics.includes(PAYSLIP_ROW_REVIEW_TOPICS[machine.additional_components.find(row=>row.component_id===r.id)!.semantic_kind]!)))
+    selected=ref.kind==='field'?{kind:'period_association',refs:[{kind:'field',id:ref.id}]}:null;
+   if(!selected)continue;
+   const periodSubject=sourceStructureSubject({extraction:machine,firstPass,selector:selected});
+   if(extraction.customer_source_structures?.some(r=>r.subject.kind==='period_association'&&canonicalSha256(r.subject)===canonicalSha256(periodSubject)))continue;
+   const key=canonicalSha256(periodSubject),entry=structures.get(key)??{subject:periodSubject,selector:selected,check_ids:[]};
+   if(!entry.check_ids.includes(checkId))entry.check_ids.push(checkId);structures.set(key,entry);
+  }
+ };
  for(const check of input.review.checks){
   if(check.calculation.state!=='blocked')continue;
   const operation=check.calculation.input.operation;
   const structure=check.calculation.input.source_structure;
+  if(!structure&&operation.kind==='observed_ratio'&&!operation.same_period_and_base&&check.topic==='pension'){
+   const numerator=check.calculation.input.operands.find(o=>o.id===operation.numerator_ref),denominator=check.calculation.input.operands.find(o=>o.id===operation.denominator_ref);
+   const field=extraction.fields.find(f=>f.candidate_id===numerator?.observation_id),scope=extraction.source_scope_observations?.find(o=>o.candidate.candidate_id===numerator?.observation_id);
+   const kind=scope?.scope==='combined_employer_funds'?'combined_employer_funds':field?.field==='pension_employee_contribution'?'pension_employee':field?.field==='pension_employer_contribution'?'pension_employer':field?.field==='severance_contribution'?'severance':null;
+   const exact=(o:typeof numerator,ref:SourceStructureRef)=>{
+    const loc=o?parseDocumentReviewSourceLocator(o.source.locator):null;
+    return o&&loc&&o.source.document_id===document.document_id&&o.source.file_sha256===document.file_sha256&&o.source.reading_receipt_sha256===document.reading_sha256
+     &&('field'in loc||'scope'in loc)&&loc.candidate_ids.length===1&&loc.candidate_ids[0]===ref.id&&('field'in loc?loc.candidate_sha256[0]:loc.scope_observation_sha256[0])===ref.sha256;
+   };
+   if(kind&&numerator&&denominator&&extraction.source_reading_context){
+    const selector:SourceStructureSelector={kind:'source_relationship',componentKind:kind,contribution:{kind:scope?'scope':'field',id:numerator.observation_id},base:{kind:'field',id:denominator.observation_id}};
+    try{const subject=sourceStructureCandidateSubject({extraction:payslipMachineExtraction(extraction),firstPass:normalizedPayslipExtractionSchema.parse(extraction.source_reading_context.first_pass),selector});
+     if(subject.kind==='source_relationship'&&exact(numerator,subject.contribution)&&exact(denominator,subject.base))structurePeriods(selector,check.check_id,'pension');}catch{/* A malformed/foreign source never becomes a selector. */}
+   }
+  }
   if(structure&&structure.document_id===document.document_id){
    if(structure.reading_sha256!==document.reading_sha256||structure.machine_extraction_sha256!==payslipMachineExtractionSha256(extraction))throw Error('REVIEW_STRUCTURE_DEPENDENCY_CHANGED');
    // Subjects for absent answers are source requests, not manufactured values.
    // The authenticated opener reconstructs them from its saved first pass.
    for(const e of sourceStructureEntries(structure).filter(e=>!e.reading)){
-    if(extraction.source_reading_context)assertSourceStructureSubject({subject:e.subject,extraction,firstPass:extraction.source_reading_context.first_pass});
-    const key=canonicalSha256(e.subject),selected=structures.get(key)??{subject:e.subject,selector:sourceStructureSelector(e.subject),check_ids:[]};
+    const periodWitness=structure.schema_version==='document-review-source-structure-v2'?structure.period_witness:undefined;
+    if(extraction.source_reading_context)assertSourceStructureSubject({subject:e.subject,extraction,firstPass:extraction.source_reading_context.first_pass,...(periodWitness?{period_witness:periodWitness}:{})});
+    const key=canonicalSha256(e.subject),selected=structures.get(key)??{subject:e.subject,selector:sourceStructureSelector(e.subject),check_ids:[],...(periodWitness?{period_witness:periodWitness}:{})};
     if(!selected.check_ids.includes(check.check_id))selected.check_ids.push(check.check_id);structures.set(key,selected);
    }
    if(structure.kind==='balance_movement'||sourceStructureEntries(structure).some(e=>!e.reading)
@@ -142,6 +182,10 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
     else {const entry=fields.get(id)??{candidate_id:id,check_ids:[]};if(!entry.check_ids.includes(check.check_id))entry.check_ids.push(check.check_id);fields.set(id,entry);}
    }
   }
+ }
+ for(const gap of input.review.coverage_gaps){
+  if(gap.topic==='minimum_wage'&&gap.check_id.endsWith('.deductions.grouping')&&gap.source_pins?.some(p=>p.document_id===document.document_id&&p.version_id===document.version_id&&p.source_sha256===document.file_sha256))
+   structurePeriods({kind:'deduction_group'},gap.check_id,'minimum_wage');
  }
  for(const row of input.review.coverage_inventory?.unresolved_source_observations??[]){
   if(row.document_id!==document.document_id||row.version_id!==document.version_id)continue;

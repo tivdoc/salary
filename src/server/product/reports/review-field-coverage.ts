@@ -12,6 +12,7 @@ import {parseReviewCompletionInput,reviewCompletionTargetSchema,type ReviewCompl
 import {documentReadingTargetSchema,type DocumentReadingTarget} from './document-field-confirmation';
 import {parseDocumentFieldAnswer,validateDocumentReadingAnswerForTarget} from './reading-verification';
 import {parseDocumentFieldAnswerV3} from './document-source-structure';
+import {resolvedMinimumWageSourceNeeds,matchesResolvedMinimumWageNeed} from '@/engine/entitlement-review/resolved-minimum-wage-needs';
 
 export type ExistingFieldReadingRequest=Readonly<{request_id:string;code:string;target:DocumentReadingTarget;source_current:boolean;answered_at:string|null;answer_text?:string|null;expires_at:string;expired_at?:string|null}>;
 export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'}|{transcription_kind:'balance_unit';candidate_id:string}|{structure_kind:'period_association';ref_kind:'field'|'component';ref_id:string})>;
@@ -436,7 +437,7 @@ export function reviewFieldReadingCheckLabels(input:{review:unknown;fieldRequest
 }
 
 export type ExistingGenericReviewRequest=Readonly<{request_id:string;code:string;target:ReviewCompletionTarget;source_current:boolean;answered_at:string|null;expires_at:string}>;
-export type HistoricalReviewRequestProjection=Readonly<{request_id:string;field_request_id:string}&(
+export type HistoricalReviewRequestProjection=Readonly<{request_id:string;state:'resolved_source_fact';check_id:string}>|Readonly<{request_id:string;field_request_id:string}&(
  |{state:'not_required';replacement_request_id?:string}
  |{state:'already_read'}
  |{state:'period_required';structure_kind:'period_association';ref_kind:'field'|'component';ref_id:string;reading_state?:'unresolved_answer'}
@@ -470,6 +471,7 @@ export function reviewHistoricalRequestProjection(input:{review:unknown;reviewRe
  const review=replayDocumentReview(input.review);
  if(review.input.coverage_policy!=='document-review-coverage-v1'||!Number.isFinite(input.nowMs))return [];
  const deferred=new Set(reviewFieldRequestsNotRequired(input).map(r=>r.field_request_id));
+ const resolvedMinimum=resolvedMinimumWageSourceNeeds(review.input,review.input.entitlement_composition?.evidence.minimum_wage,review.input.checks);
  return deepFreeze(input.reviewRequests.flatMap<HistoricalReviewRequestProjection>(request=>{
   if(!request.source_current||request.answered_at!==null||Date.parse(request.expires_at)<=input.nowMs)return [];
   const target=reviewCompletionTargetSchema.parse(request.target);
@@ -478,6 +480,9 @@ export function reviewHistoricalRequestProjection(input:{review:unknown;reviewRe
    ||target.period.from!==review.period.from||target.period.to!==review.period.to)return [];
   if(target.answer_kind==='text'){
    const pin=target.source_pins[0],planner=parseReviewCompletionInput(review.input.completion_input);
+   const resolved=resolvedMinimum.find(r=>matchesResolvedMinimumWageNeed(target,r));
+   if(resolved&&!planner.needs.some(n=>n.fact_key===target.fact_key)&&!review.input.answer_history.some(h=>h.request.target.fact_key===target.fact_key))
+    return [{request_id:request.request_id,state:'resolved_source_fact' as const,check_id:resolved.dependent_check_ids[0]}];
    // Only retired generated source-role questions. An independent current
    // need of the same fact remains visible even if a structure also exists.
    if(planner.needs.some(n=>n.fact_key===target.fact_key))return [];

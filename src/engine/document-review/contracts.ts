@@ -58,6 +58,7 @@ export const documentReviewInputSchema=z.object({
  purchased_scope:z.object({order_id:z.string().min(1),receipt_sha256:sha,topics:z.array(reviewTopicSchema).min(1),
   origin:z.enum(['saved_order','legacy_paid_receipt']),purchase_period_evidence:reviewPurchasePeriodEvidenceSchema.optional()}).strict(),
  coverage_policy:z.literal(DOCUMENT_REVIEW_COVERAGE_POLICY).optional(),
+ source_structure_period_policy:z.literal('identified-period-structures-v2').optional(),
  entitlement_evidence:entitlementEvidenceSchema.optional(),
  entitlement_declarations:entitlementDeclarationsSchema.optional(),
  non_payslip_evidence:z.array(savedNonPayslipEvidenceSchema).max(32).optional(),

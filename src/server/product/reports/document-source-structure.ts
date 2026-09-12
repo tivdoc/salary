@@ -1,41 +1,61 @@
 import {z} from 'zod';
 import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
 import {hasPayslipReadingAnnotations} from '@/engine/extraction/reading-resolution';
-import {sourceStructureSubjectSchema,sourceStructureMonthSchema,sourceStructureValueSchema,sourceRelationshipValueSchema,customerSourceStructureReadingSchema,type SourceStructureSubject} from '@/engine/extraction/source-structure';
-import {sourceStructureSubject,sourceStructureSelector,normalizeSourceStructureValue,type SourceStructureSelector} from '@/engine/extraction/source-structure-resolution';
+import {sourceStructureSubjectSchema,sourceStructureMonthSchema,sourceStructureValueSchema,sourceRelationshipValueSchema,customerSourceStructureReadingSchema,sourceStructurePeriodWitnessSchema,type SourceStructureSubject,type CustomerSourceStructureReading} from '@/engine/extraction/source-structure';
+import {sourceStructureSubject,sourceStructureCandidateSubject,sourceStructureSelector,normalizeSourceStructureValue,type SourceStructureSelector} from '@/engine/extraction/source-structure-resolution';
+import {IDENTIFIED_PERIOD_STRUCTURE_POLICY,buildSourceStructurePeriodWitness,assertSourceStructurePeriodWitness,sourceStructureRefs} from '@/engine/extraction/source-structure-period';
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 const schemaForKind={period_association:'document-source-period-association-v1',source_relationship:'document-source-relationship-v1',deduction_group:'document-source-deduction-group-v1',balance_movement:'document-source-balance-movement-v1'} as const;
 const checkpointSchema=z.object({schema_version:z.literal('tivdoc-saved-extraction-v1'),case_id:z.uuid(),product_document_id:z.uuid(),version_id:z.uuid(),input_sha256:sha,
  expected_month:sourceStructureMonthSchema,period_mismatch:z.boolean(),result_sha256:sha,run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema,
  first_pass:z.object({normalized_extraction:normalizedPayslipExtractionSchema}).passthrough()}).passthrough()}).passthrough()});
-export const documentSourceStructureTargetSchema=z.object({schema_version:z.enum(['document-source-period-association-v1','document-source-relationship-v1','document-source-deduction-group-v1','document-source-balance-movement-v1']),
+const targetBase=z.object({schema_version:z.enum(['document-source-period-association-v1','document-source-relationship-v1','document-source-deduction-group-v1','document-source-balance-movement-v1']),
  case_id:z.uuid(),product_document_id:z.uuid(),version_id:z.uuid(),source_sha256:sha,month:sourceStructureMonthSchema,policy_version:z.string().min(1).max(100),
  extraction_result_sha256:sha,normalized_extraction_sha256:sha,first_pass_extraction_sha256:sha,subject:sourceStructureSubjectSchema,
  // No provider proposal is invented. Relationship affirmation instead requires
  // a complete, explicitly identified v3 relationship decision and source basis.
  // Group/balance confirm still requires a future supported proposal policy.
  proposed_value:z.null(),target_sha256:sha,
-}).strict().superRefine((target,ctx)=>{
- if(target.schema_version!==schemaForKind[target.subject.kind])ctx.addIssue({code:'custom',message:'Subject/target kind mismatch'});
+}).strict();
+const targetV2=targetBase.extend({schema_version:z.enum(['document-source-relationship-v2','document-source-deduction-group-v2']),period_witness:sourceStructurePeriodWitnessSchema});
+function monthPeriod(month:string){return {from:month+'-01',to:new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10)};}
+export const documentSourceStructureTargetSchema=z.union([targetBase,targetV2]).superRefine((target,ctx)=>{
+ const v2='period_witness' in target;
+ const expected=v2?target.subject.kind==='source_relationship'?'document-source-relationship-v2':target.subject.kind==='deduction_group'?'document-source-deduction-group-v2':null:schemaForKind[target.subject.kind];
+ if(target.schema_version!==expected)ctx.addIssue({code:'custom',message:'Subject/target kind mismatch'});
  const {target_sha256,...body}=target;if(canonicalSha256(body)!==target_sha256)ctx.addIssue({code:'custom',message:'Source structure target hash mismatch'});
  const refs=target.subject.kind==='period_association'?target.subject.refs:target.subject.kind==='source_relationship'?[target.subject.contribution,target.subject.base]:target.subject.kind==='deduction_group'?[...target.subject.rows,target.subject.mandatory_total,...(target.subject.voluntary_total?[target.subject.voluntary_total]:[])]:[target.subject.anchor];
  if(refs.some(r=>r.source.document_id!==target.version_id))ctx.addIssue({code:'custom',message:'Foreign source structure observation'});
+ if(v2){try{assertSourceStructurePeriodWitness({witness:target.period_witness,refs,period:monthPeriod(target.month),pins:{case_id:target.case_id,document_id:target.version_id,
+  source_sha256:target.source_sha256,normalized_extraction_sha256:target.normalized_extraction_sha256,first_pass_extraction_sha256:target.first_pass_extraction_sha256,
+  extraction_result_sha256:target.extraction_result_sha256,month:target.month,policy_version:target.policy_version}});}catch{ctx.addIssue({code:'custom',message:'Invalid source period witness'});}}
 });
 export type DocumentSourceStructureTarget=Readonly<z.infer<typeof documentSourceStructureTargetSchema>>;
-export function documentSourceStructureTarget(input:{checkpoint:unknown;policyVersion:string;selector:SourceStructureSelector}):DocumentSourceStructureTarget {
+type PeriodContext={periodPolicy?:typeof IDENTIFIED_PERIOD_STRUCTURE_POLICY;periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>};
+export function documentSourceStructureTarget(input:{checkpoint:unknown;policyVersion:string;selector:SourceStructureSelector}&PeriodContext):DocumentSourceStructureTarget {
  const checkpoint=checkpointSchema.parse(input.checkpoint),extraction=checkpoint.run.result.final_extraction,firstPass=checkpoint.run.result.first_pass.normalized_extraction;
  if(hasPayslipReadingAnnotations(extraction)||hasPayslipReadingAnnotations(firstPass))throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
  if(canonicalSha256(checkpoint.run.result)!==checkpoint.result_sha256||extraction.document_id!==checkpoint.version_id||firstPass.document_id!==checkpoint.version_id)throw Error('REQUEST_FIELD_SOURCE_MISMATCH');
  const periods=extraction.fields.filter(f=>f.field==='salary_period');
  if(checkpoint.period_mismatch||!periods.length||periods.some(p=>!p.normalized_value||`${p.normalized_value.year}-${String(p.normalized_value.month).padStart(2,'0')}`!==checkpoint.expected_month))throw Error('REQUEST_FIELD_PERIOD_UNKNOWN');
- const subject=sourceStructureSubject({extraction,firstPass,selector:input.selector});
+ let periodWitness;
+ if(input.periodPolicy!==undefined){
+  if(input.periodPolicy!==IDENTIFIED_PERIOD_STRUCTURE_POLICY||!input.periodReadings||!['source_relationship','deduction_group'].includes(input.selector.kind))throw Error('SOURCE_STRUCTURE_PERIOD_CONTEXT_REQUIRED');
+  const candidate=sourceStructureCandidateSubject({extraction,firstPass,selector:input.selector});
+  const resolved=buildSourceStructurePeriodWitness({refs:sourceStructureRefs(candidate),period:monthPeriod(checkpoint.expected_month),currentReadings:input.periodReadings,
+   pins:{case_id:checkpoint.case_id,document_id:checkpoint.version_id,source_sha256:checkpoint.input_sha256,normalized_extraction_sha256:canonicalSha256(extraction),
+    first_pass_extraction_sha256:canonicalSha256(firstPass),extraction_result_sha256:checkpoint.result_sha256,month:checkpoint.expected_month,policy_version:input.policyVersion}});
+  if(resolved.state!=='current')throw Error('SOURCE_STRUCTURE_PERIOD_NOT_CURRENT');periodWitness=resolved.witness;
+ }
+ const subject=sourceStructureSubject({extraction,firstPass,selector:input.selector,...(periodWitness?{period_witness:periodWitness}:{})});
  const body={schema_version:schemaForKind[subject.kind],case_id:checkpoint.case_id,product_document_id:checkpoint.product_document_id,version_id:checkpoint.version_id,
   source_sha256:checkpoint.input_sha256,month:checkpoint.expected_month,policy_version:input.policyVersion,extraction_result_sha256:checkpoint.result_sha256,
   normalized_extraction_sha256:canonicalSha256(extraction),first_pass_extraction_sha256:canonicalSha256(firstPass),subject,proposed_value:null};
- return deepFreeze(documentSourceStructureTargetSchema.parse({...body,target_sha256:canonicalSha256(body)}));
+ const versioned=periodWitness?{...body,schema_version:subject.kind==='source_relationship'?'document-source-relationship-v2':'document-source-deduction-group-v2',period_witness:periodWitness}:body;
+ return deepFreeze(documentSourceStructureTargetSchema.parse({...versioned,target_sha256:canonicalSha256(versioned)}));
 }
-export function documentSourceStructureTargetFromSubject(input:{checkpoint:unknown;policyVersion:string;subject:SourceStructureSubject}){
+export function documentSourceStructureTargetFromSubject(input:{checkpoint:unknown;policyVersion:string;subject:SourceStructureSubject}&PeriodContext){
  const target=documentSourceStructureTarget({...input,selector:sourceStructureSelector(input.subject)});
  if(canonicalSha256(target.subject)!==canonicalSha256(input.subject))throw Error('REQUEST_FIELD_SOURCE_MISMATCH');return target;
 }
@@ -67,13 +87,14 @@ export function documentSourceStructureQuestion(targetInput:unknown){
   :`יש לקרוא מהמקור את התא בטבלת ${subject.balance_kind==='vacation'?'החופשה':'המחלה'} (${cells[subject.cell]}), ולציין בנפרד את המספר, היחידה והתקופה. אם היחידה אינה מודפסת, יש לציין זאת; אין להסיק ימים או שעות.`;
  return {code:`document_field:${target.target_sha256}`,question,answer_kind:'choice' as const,options:[...(subject.kind==='source_relationship'?['אישור הקשר על סמך המקור']:[]),'הערך שונה במסמך','לא ניתן לקרוא את השדה','לא יודע/ת'],field_crop:`source_structure.${subject.kind}`,blocking:false};
 }
-type ResolveInput={target:unknown;currentCheckpoint:unknown;policyVersion:string;caseId:string;month:string;requestId:string;answerRevision:number;identityId:string;answeredAt:string;answer:unknown};
+type ResolveInput={target:unknown;currentCheckpoint:unknown;policyVersion:string;caseId:string;month:string;requestId:string;answerRevision:number;identityId:string;answeredAt:string;answer:unknown;periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>};
 export function resolveDocumentSourceStructureVerification(input:ResolveInput){
  const target=documentSourceStructureTargetSchema.parse(input.target);
  z.uuid().parse(input.caseId);z.uuid().parse(input.requestId);z.uuid().parse(input.identityId);z.number().int().positive().parse(input.answerRevision);z.string().datetime({offset:true}).parse(input.answeredAt);
  if(target.case_id!==input.caseId)throw Error('REQUEST_FIELD_CASE_MISMATCH');
  if(target.month!==input.month||target.policy_version!==input.policyVersion)return deepFreeze({state:'stale' as const});
- try{if(documentSourceStructureTarget({checkpoint:input.currentCheckpoint,policyVersion:input.policyVersion,selector:sourceStructureSelector(target.subject)}).target_sha256!==target.target_sha256)return deepFreeze({state:'stale' as const});}
+ try{if(documentSourceStructureTarget({checkpoint:input.currentCheckpoint,policyVersion:input.policyVersion,selector:sourceStructureSelector(target.subject),
+  ...('period_witness' in target?{periodPolicy:IDENTIFIED_PERIOD_STRUCTURE_POLICY,periodReadings:input.periodReadings}:{})}).target_sha256!==target.target_sha256)return deepFreeze({state:'stale' as const});}
  catch{return deepFreeze({state:'stale' as const});}
  const answer=validateDocumentSourceStructureAnswer(target,input.answer),authority={actor_kind:'identified_account' as const,identity_id:input.identityId,request_id:input.requestId,answer_revision:input.answerRevision,answered_at:input.answeredAt};
  const body={policy_version:'document-source-structure-identified-v1' as const,scope:'source_structure_reading_only' as const,target,answer,authority,source_structure_subject:target.subject,
@@ -87,10 +108,11 @@ export function materializeDocumentSourceStructureVerification(verification:Retu
  if(verification.state!=='corrected_reading'&&verification.state!=='confirmed_reading'||verification.effective_value===null)return null;
  const {target,authority}=verification;
  if(normalizedExtractionSha256!==target.normalized_extraction_sha256)throw Error('REQUEST_FIELD_SOURCE_MISMATCH');
- const body={schema_version:'document-source-structure-reading-v1',actor_kind:'customer',case_id:target.case_id,document_id:target.version_id,
+ const body={schema_version:'period_witness' in target?'document-source-structure-reading-v2':'document-source-structure-reading-v1',actor_kind:'customer',case_id:target.case_id,document_id:target.version_id,
   source_sha256:target.source_sha256,normalized_extraction_sha256:normalizedExtractionSha256,first_pass_extraction_sha256:target.first_pass_extraction_sha256,extraction_result_sha256:target.extraction_result_sha256,
   target_sha256:target.target_sha256,subject:target.subject,month:target.month,policy_version:target.policy_version,request_id:authority.request_id,answer_revision:authority.answer_revision,identity_id:authority.identity_id,
-  confirmed_at:authority.answered_at,value:verification.effective_value,decision_sha256:verification.receipt_sha256};
+  confirmed_at:authority.answered_at,value:verification.effective_value,decision_sha256:verification.receipt_sha256,
+  ...('period_witness' in target?{period_witness:target.period_witness}:{})};
  const reading=customerSourceStructureReadingSchema.parse({...body,verification_sha256:canonicalSha256(body)});
  return {kind:'source_structure' as const,reading};
 }

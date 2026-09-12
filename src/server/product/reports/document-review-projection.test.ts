@@ -5,6 +5,8 @@ import {calculateDocumentReview} from '@/engine/document-review/calculations';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {GROUPED_REVIEW_GAP_PRESENTATION,renderReviewBundle} from './document-review-projection';
 import {attachDocumentReviewCoverage} from '@/engine/document-review/coverage';
+import {minimumWageLegalDocuments} from '@/engine/entitlement-review/minimum-wage/source-policy';
+import {documentReviewSourceLabel} from './document-review-source-labels';
 
 function bundle():AnalysisResultBundle{
  const caseId='11111111-1111-4111-8111-111111111111',sha='a'.repeat(64),period={from:'2026-06-01',to:'2026-06-30'};
@@ -21,6 +23,24 @@ function bundle():AnalysisResultBundle{
  return {schema_version:'tivdoc-analysis-result-bundle-v0.6.0',analysis_run_id:'synthetic-run',case_id:caseId,case_revision:1,period:{start_date:period.from,end_date:period.to},as_of:'2026-09-11',
   document_snapshot_sha256:sha,extraction_snapshot_sha256:sha,declared_fact_snapshot_sha256:sha,facts_snapshot_sha256:sha,facts:[],rule_inputs:[],catalog_sha256:sha,topic_results:[],known_subtotal:null,coverage_complete:false,document_review:review,result_sha256:canonicalSha256(review)};
 }
+
+it('names exact compiled law sources and distinguishes their applicability from payroll periods without changing evidence or amounts',()=>{
+ const original=bundle(),review=original.document_review!,law=minimumWageLegalDocuments(original.case_id);
+ const documents=[...review.documents,...law];
+ const next=runDocumentReview(attachDocumentReviewCoverage({...review.input,documents},
+  {schema_version:'document-review-purchase-period-v1',receipt_sha256:review.purchased_scope.receipt_sha256,state:'missing',periods:[]}),original.analysis_run_id);
+ const before=canonicalSha256(next),rendered=renderReviewBundle({...original,document_review:next},'law-label-test');
+ const body=JSON.parse(Buffer.from(rendered.json).toString('utf8')),html=Buffer.from(rendered.html).toString('utf8');
+ expect(body.documents_checked.slice(2).map((d:{label:string})=>d.label)).toEqual(law.map(d=>documentReviewSourceLabel(d).label));
+ expect(new Set(body.documents_checked.slice(2).map((d:{label:string})=>d.label)).size).toBe(4);
+ expect(html).toContain('אינם מסמכי שכר חודשיים');expect(html).toContain('תקופת המקור — מסמך סינתטי');
+ expect(html).not.toContain('מקור לשכר מינימום: לא זוהתה');expect(html).not.toContain('מקור לשכר מינימום - מקור לשכר מינימום');
+ expect(body.sources).toHaveLength(documents.reduce((n,d)=>n+(d.page_count??1),0));
+ expect(body.findings).toEqual(JSON.parse(Buffer.from(renderReviewBundle(original,'before').json).toString('utf8')).findings);
+ expect(canonicalSha256(next)).toBe(before);
+ const foreign={...law[0],version_id:'uploaded-other-version',label:'מקור לשכר מינימום'};
+ expect(documentReviewSourceLabel(foreign)).toEqual({label:foreign.label,legal:false});
+});
 
 it('binds identically named documents by identity, summarizes topics and retains ownership only in the private appendix',()=>{
  const report=renderReviewBundle(bundle(),'synthetic-report'),body=JSON.parse(Buffer.from(report.json).toString('utf8'));
@@ -74,7 +94,7 @@ it('groups only identical gap presentations, discloses count and topics, and ret
 it('preserves legacy default artifacts byte for byte under explicit individual-v1 selection',()=>{
  const input=bundle(),original=renderReviewBundle(input,'synthetic-legacy-report');
  const explicit=renderReviewBundle(input,'synthetic-legacy-report',{gapPresentation:'individual-v1'});
- for(const key of ['json','html','pdf','private_evidence_appendix'] as const)expect(Buffer.from(explicit[key])).toEqual(Buffer.from(original[key]));
+ for(const key of ['json','html','pdf','private_evidence_appendix'] as const)expect(Buffer.from(explicit[key]).equals(Buffer.from(original[key]))).toBe(true);
 });
 it('shows paid scope, missing purchase period and observed document periods separately only in the coverage policy',()=>{
  const original=bundle(),review=original.document_review!;

@@ -1,21 +1,30 @@
 import {z} from 'zod';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
-import {customerSourceStructureReadingSchema,sourceStructureSubjectSchema,type SourceStructureRef} from '../extraction/source-structure.ts';
+import {customerSourceStructureReadingV1Schema,customerSourceStructureReadingV2Schema,sourceStructurePeriodWitnessSchema,sourceStructureSubjectSchema,type SourceStructureRef} from '../extraction/source-structure.ts';
 import {parseSourceStructureReadingValue} from '../extraction/source-structure-resolution.ts';
+import {assertSourceStructurePeriodWitness,sourceStructureRefs} from '../extraction/source-structure-period.ts';
 import type {DocumentReviewCalculationInput,DocumentReviewOperand} from './calculations.ts';
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/u),id=z.string().min(1).max(160);
-const entry=z.object({subject:sourceStructureSubjectSchema,reading:customerSourceStructureReadingSchema.nullable()}).strict();
+const entry=z.object({subject:sourceStructureSubjectSchema,reading:customerSourceStructureReadingV1Schema.nullable()}).strict();
+const entryV2=entry.extend({reading:customerSourceStructureReadingV2Schema.nullable()});
 export const SOURCE_STRUCTURE_BLOCKER_POLICY='source-structure-blockers-v2' as const;
 const pins={schema_version:z.literal('document-review-source-structure-v1'),blocker_policy:z.literal(SOURCE_STRUCTURE_BLOCKER_POLICY).optional(),document_id:id,version_id:id,file_sha256:sha,
  reading_sha256:sha,machine_extraction_sha256:sha,first_pass_sha256:sha,checkpoint_result_sha256:sha};
-export const documentReviewSourceStructureSchema=z.discriminatedUnion('kind',[
+const v1=z.discriminatedUnion('kind',[
  z.object({...pins,kind:z.literal('source_relationship'),entry,numerator_ref:id,denominator_ref:id}).strict(),
  z.object({...pins,kind:z.literal('deduction_group'),entry,group:z.enum(['mandatory','voluntary']),
   row_bindings:z.array(z.object({component_id:z.uuid(),operand_id:id}).strict()).max(100),recorded_ref:id}).strict(),
  z.object({...pins,kind:z.literal('balance_movement'),entries:z.array(entry).length(5),
   cell_bindings:z.array(z.object({cell:z.enum(['opening','accrued','used','adjustments','closing']),operand_id:id}).strict()).min(4).max(5)}).strict(),
 ]);
+const pinsV2={...pins,schema_version:z.literal('document-review-source-structure-v2'),period_witness:sourceStructurePeriodWitnessSchema};
+const v2=z.discriminatedUnion('kind',[
+ z.object({...pinsV2,kind:z.literal('source_relationship'),entry:entryV2,numerator_ref:id,denominator_ref:id}).strict(),
+ z.object({...pinsV2,kind:z.literal('deduction_group'),entry:entryV2,group:z.enum(['mandatory','voluntary']),
+  row_bindings:z.array(z.object({component_id:z.uuid(),operand_id:id}).strict()).max(100),recorded_ref:id}).strict(),
+]);
+export const documentReviewSourceStructureSchema=z.union([v1,v2]);
 export type DocumentReviewSourceStructure=z.infer<typeof documentReviewSourceStructureSchema>;
 export function sourceRelationshipUsable(s:DocumentReviewSourceStructure){
  if(s.kind!=='source_relationship')return false;
@@ -71,7 +80,14 @@ export function validateReviewSourceStructure(input:DocumentReviewCalculationInp
   // arithmetic relationship/group/balance witness variants.
   if(e.subject.kind==='period_association')throw Error('REVIEW_SOURCE_STRUCTURE_BINDING');
   const refs=e.subject.kind==='balance_movement'?[e.subject.anchor]:e.subject.kind==='source_relationship'?[e.subject.contribution,e.subject.base]:[...e.subject.rows,e.subject.mandatory_total,...(e.subject.voluntary_total?[e.subject.voluntary_total]:[])];
-  if(refs.some(r=>r.source.document_id!==s.document_id||r.source.page>manifest!.page_count||r.source.source_scope?.period_kind!=='current'))fail();
+  if(refs.some(r=>r.source.document_id!==s.document_id||r.source.page>manifest!.page_count
+   ||s.schema_version==='document-review-source-structure-v1'&&r.source.source_scope?.period_kind!=='current'))fail();
+  if(s.schema_version==='document-review-source-structure-v2'){
+   assertSourceStructurePeriodWitness({witness:s.period_witness,refs:sourceStructureRefs(e.subject),period:input.period,
+    pins:{case_id:input.case_id,document_id:s.document_id,source_sha256:s.file_sha256,normalized_extraction_sha256:s.machine_extraction_sha256,
+     first_pass_extraction_sha256:s.first_pass_sha256,extraction_result_sha256:s.checkpoint_result_sha256,month:input.period.from.slice(0,7)}});
+   if(e.reading&&(e.reading.schema_version!=='document-source-structure-reading-v2'||canonicalSha256(e.reading.period_witness)!==canonicalSha256(s.period_witness)))fail();
+  }
   if(!e.reading)continue;
   const r=parseSourceStructureReadingValue(e.reading).reading;
   if(canonicalSha256(r.subject)!==canonicalSha256(e.subject)||r.case_id!==input.case_id||r.document_id!==s.document_id||r.source_sha256!==s.file_sha256

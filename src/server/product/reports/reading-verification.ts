@@ -2,6 +2,7 @@ import {documentSourceStructureTargetSchema,documentSourceStructureQuestion,vali
 import {documentEvidenceReadingDisplay,validateDocumentEvidenceAnswer,resolveDocumentEvidenceAnswer} from './document-evidence-reading';
 import {documentTravelTariffDisplay,validateDocumentTravelTariffAnswer,resolveDocumentTravelTariffVerification,type DocumentTravelTariffSource} from './document-travel-tariff';
 import type {ImmutableDocument} from '@/engine/domain/documents';
+import type {CustomerSourceStructureReading} from '@/engine/extraction/source-structure';
 export {documentFieldAnswerV3Schema,parseDocumentFieldAnswerV3,serializeDocumentFieldAnswerV3,type DocumentFieldAnswerV3} from './document-source-structure';
 import {z} from 'zod';
 import {rawCandidateFieldSchema} from '@/engine/extraction/contracts';
@@ -108,7 +109,7 @@ export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answe
  return answer;
 }
 
-type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource};
+type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource;periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>};
 export function resolveDocumentFieldVerification(input:ResolveInput){
  const answer=parseDocumentFieldAnswer(input.answer),target=documentFieldTargetSchema.parse(input.target);
  // Reuse the existing exact checkpoint/case/version/hash/month/policy fences.

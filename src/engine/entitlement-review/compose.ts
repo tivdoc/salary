@@ -16,6 +16,7 @@ import {workingTimeProductReview} from './working-time-product.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
 import {materializeTypedEntitlementFacts} from './typed-product-facts.ts';
 import {projectSharedPersonalFactNeeds,materializeSharedPersonalFacts,sharedPersonalFactManifest} from './shared-product-facts.ts';
+import {resolvedMinimumWageSourceNeeds,matchesResolvedMinimumWageNeed} from './resolved-minimum-wage-needs.ts';
 
 function resolve(input:DocumentReviewInput,e:EntitlementEvidence,original=e):EntitlementBranchReview{
  const parts=[...(e.pension===undefined?[]:[pensionProductReview(input,e.pension)]),...(e.working_time===undefined?[]:[workingTimeProductReview(input,e.working_time)]),...(['travel','minimum_wage','vacation','convalescence'] as const).flatMap(topic=>e[topic]===undefined?[]:[simpleEntitlementProduct(input,topic,e[topic])]),...(e.obligations===undefined?[]:[obligationsProductReview(input,e.obligations)])];
@@ -105,8 +106,10 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  if(checks.some(c=>base.checks.some(old=>old.check_id===c.check_id)))throw Error('ENTITLEMENT_CHECK_COLLISION');
  const externalFacts=new Set(parseReviewCompletionInput(base.completion_input).needs.map(n=>n.fact_key));
  const currentKeys=new Set(current.needs.map(n=>n.fact_key)),addressedKeys=new Set(original.answer_history.map(h=>h.request.target.fact_key));
+ const resolvedMinimum=resolvedMinimumWageSourceNeeds(withNeeds,effective.minimum_wage,checks);
  const needs=parseReviewCompletionInput(withNeeds.completion_input).needs.filter(n=>!externalFacts.has(n.fact_key)
-  &&(!n.fact_key.startsWith('entitlement.obligation-fact.')||currentKeys.has(n.fact_key)||addressedKeys.has(n.fact_key)));
+  &&(!n.fact_key.startsWith('entitlement.obligation-fact.')||currentKeys.has(n.fact_key)||addressedKeys.has(n.fact_key))
+  &&(currentKeys.has(n.fact_key)||addressedKeys.has(n.fact_key)||!resolvedMinimum.some(r=>matchesResolvedMinimumWageNeed(n,r)&&canonicalSha256(n.dependent_check_ids)===canonicalSha256(r.dependent_check_ids))));
  // A newly revealed dependency creates new work; original targets remain
  // addressable for answer replay and correction after the fact is known.
  for(const need of current.needs)if(!needs.some(n=>n.fact_key===need.fact_key))needs.push(need);

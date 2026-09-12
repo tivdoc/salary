@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {SOURCE_STRUCTURE_BLOCKER_POLICY,documentReviewSourceStructureSchema,validateReviewSourceStructure,reviewSourceStructureBlockers,sourceStructureEntries,balanceStructureGroupSha256} from './source-structure-evidence.ts';
+import {sourceStructurePeriodReadings} from '../extraction/source-structure-period.ts';
 import {canonicalSha256, deepFreeze} from '../rule-runtime/canonical.ts';
 import {createRuleSpecPackage, executeRuleSpec, ruleSpecPackageSchema, type RuleSpecDraft, type RuleSpecInputValue} from '../legal-operations/rulespec.ts';
 
@@ -304,9 +305,12 @@ export function calculateDocumentReview(candidate:unknown){
   if(expected.kind!=='money'||recorded?.kind!=='money'||difference.kind!=='money'||expected.currency!==recorded.currency||expected.currency!==difference.currency||BigInt(expected.minor_units)-BigInt(recorded.minor_units)!==BigInt(difference.minor_units))throw Error('DOCUMENT_REVIEW_COMPARISON_AMOUNTS');
  }
  const assumptionBinding=op.kind==='candidate_rule'&&op.conditional_assumptions?{schema_version:'candidate-counterfactual-trace-v1',assumptions_sha256:canonicalSha256({assumptions:op.conditional_assumptions,decisions:op.decisions}),execution_trace_sha256:execution.trace_sha256,rule_sha256:rule.content_sha256,dependency_fingerprint}:null;
- const structureBinding=input.source_structure?{schema_version:'document-review-source-structure-trace-v1',source_structure_sha256:canonicalSha256(input.source_structure),
+ const structureBinding=input.source_structure?{schema_version:input.source_structure.schema_version==='document-review-source-structure-v2'?'document-review-source-structure-trace-v2':'document-review-source-structure-trace-v1',source_structure_sha256:canonicalSha256(input.source_structure),
   reading_verification_sha256:sourceStructureEntries(input.source_structure).flatMap(e=>e.reading?[e.reading.verification_sha256]:[]),
   decision_sha256:sourceStructureEntries(input.source_structure).flatMap(e=>e.reading?[e.reading.decision_sha256]:[]),
+  ...(input.source_structure.schema_version==='document-review-source-structure-v2'?{period_witness_sha256:canonicalSha256(input.source_structure.period_witness),
+   period_reading_verification_sha256:sourceStructurePeriodReadings(input.source_structure.period_witness).map(r=>r.verification_sha256),
+   period_decision_sha256:sourceStructurePeriodReadings(input.source_structure.period_witness).map(r=>r.decision_sha256)}:{}),
   execution_trace_sha256:execution.trace_sha256,rule_sha256:rule.content_sha256,dependency_fingerprint}:null;
  const seed={...common,state:'calculated' as const,blockers:[],rule,facts,parameters,transformations,execution,expected,recorded,difference,
   ...(structureBinding?{source_structure_trace_binding:{...structureBinding,binding_sha256:canonicalSha256(structureBinding)}}:{}),

@@ -46,6 +46,7 @@ function setup(hasDocumentReviewAnswers=false){
 describe('explicit ordinary automatic travel profile without a tariff purpose',()=>{
  it('selects floor v2 for source-supported zero, preserving facts and independent method evidence',async()=>{
   const f=setup(),before=canonicalSha256(f.travel),out=await f.load(true);
+  expect(ports.source).toHaveBeenCalledWith(expect.objectContaining({identified_period_structure_policy:'identified-period-structures-v2'}));
   const packet=travelEntitlementInputSchema.parse(out.entitlement_evidence!.travel),resolved=resolveTravelEntitlement(packet);
   expect(packet.calculation_policy).toBe('travel-general-order-floor-v2');
   expect(packet.applicability).toEqual(f.travel.applicability);expect(packet.commute_days).toEqual(f.travel.commute_days);
@@ -68,6 +69,7 @@ describe('explicit ordinary automatic travel profile without a tariff purpose',(
  it('leaves default historical policy and its no-better blocker unchanged',async()=>{
   const f=setup();f.travel.applicability=travelFloorFixture(false).applicability.filter(d=>d.decision_id!=='travel.no_better_arrangement');
   const out=await f.load(),packet=travelEntitlementInputSchema.parse(out.entitlement_evidence!.travel);
+  expect(ports.source.mock.calls.every(call=>!Object.hasOwn(call[0],'identified_period_structure_policy'))).toBe(true);
   expect(packet.calculation_policy).toBeUndefined();expect(packet.applicability).toEqual(f.travel.applicability);
   expect(resolveTravelEntitlement(packet).gaps.some(g=>g.dependency_id==='travel.no_better_arrangement')).toBe(true);
   expect(ports.tariff).not.toHaveBeenCalled();

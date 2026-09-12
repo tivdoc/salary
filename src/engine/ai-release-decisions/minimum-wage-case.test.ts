@@ -1,8 +1,9 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {documentReviewInputSchema,type DocumentReviewInput} from '../document-review/contracts.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewSource} from '../document-review/calculations.ts';
 import {applyDocumentReviewAnswer,runDocumentReview,replayDocumentReview} from '../document-review/service.ts';
+import {parseReviewCompletionInput} from '../document-review/completions.ts';
 import {composeEntitlementReview} from '../entitlement-review/compose.ts';
 import {minimumFixture} from '../entitlement-review/product-branch.fixture.ts';
 import {minimumWageEntitlementInputSchema} from '../entitlement-review/minimum-wage/contracts.ts';
@@ -11,6 +12,10 @@ import {AI_RELEASE_DECISION_RECIPES} from './catalog.ts';
 import {applyAiReleaseDecisionRecipes} from './apply.ts';
 import {evaluateMinimumWageCaseRecipe} from './minimum-wage-case.ts';
 import type {AiReleaseDecisionMethod} from './contracts.ts';
+import {enableTypedEntitlementPersonalFacts} from '../entitlement-review/typed-product-facts.ts';
+import {resolvedMinimumWageSourceNeeds} from '../entitlement-review/resolved-minimum-wage-needs.ts';
+import {reviewHistoricalRequestProjection} from '../../server/product/reports/review-field-coverage.ts';
+vi.mock('server-only',()=>({}));
 
 const h=(v:unknown)=>canonicalSha256({synthetic:v}),caseId='11111111-1111-4111-8111-111111111111',rowId='33333333-3333-4333-8333-333333333333';
 const at='2026-09-12T12:00:00Z',missing={state:'missing' as const,value:null,source:null};
@@ -47,6 +52,48 @@ const branch=(s:DocumentReviewInput)=>minimumWageEntitlementInputSchema.parse(s.
 function fact(s:DocumentReviewInput,key:keyof typeof expectedFacts,change:object){const m=branch(s),p=minimumWageCaseFactsSchema.parse(m.product_facts);Object.assign(p[key],change);m.product_facts=p;s.entitlement_evidence!.minimum_wage=m;}
 
 describe('fact-backed minimum wage case recipes with independent source and amount oracles',()=>{
+ it('opts resolved source needs out of new completions while retaining the exact historical replay contract',()=>{
+  const legacy=apply().source,legacyHash=canonicalSha256(legacy),legacyReview=runDocumentReview(legacy,'legacy-source-needs');
+  const oldInventory=legacyReview.completions.customer_requests.find(r=>r.target.question.includes('מלאי רכיבי השכר הרגיל'))!;
+  expect(oldInventory).toBeDefined();expect(composeEntitlementReview(legacy)).toEqual(legacy);expect(replayDocumentReview(legacyReview)).toEqual(legacyReview);
+  const s=source();s.entitlement_evidence=enableTypedEntitlementPersonalFacts(s.entitlement_evidence!,{resolved_minimum_wage_needs:true});
+  const after=apply(s).source,r=runDocumentReview(after,'resolved-source-needs'),resolved=resolvedMinimumWageSourceNeeds(after,after.entitlement_composition?.evidence.minimum_wage,after.checks);
+  expect(resolved).toHaveLength(3);expect(r.completions.customer_requests.some(q=>resolved.some(n=>n.fact_key===q.target.fact_key))).toBe(false);
+  expect(branch(after).eligible_pay_inventory.state).toBe('unknown');expect(after.entitlement_composition?.evidence.minimum_wage).toMatchObject({eligible_pay_inventory:{state:'derived',value:'complete'}});
+  expect(composeEntitlementReview(after)).toEqual(after);expect(replayDocumentReview(r)).toEqual(r);expect(canonicalSha256(legacy)).toBe(legacyHash);
+  expect(enableTypedEntitlementPersonalFacts(s.entitlement_evidence!)).toEqual(enableTypedEntitlementPersonalFacts(s.entitlement_evidence!,{}));
+ });
+ it('preserves an explicit unknown inventory answer and its immutable target/history after the source becomes complete',()=>{
+  const s=source();s.entitlement_evidence!.resolved_need_policy='minimum-wage-resolved-needs-v1';
+  const before=runDocumentReview(composeEntitlementReview(s),'inventory-unknown-before'),request=before.completions.customer_requests.find(r=>r.target.question.includes('מלאי רכיבי השכר הרגיל'))!;
+  const answered=applyDocumentReviewAnswer(before.input,{request,actor:{case_id:caseId,identity_id:'22222222-2222-4222-8222-222222222222'},answer:{request_id:'55555555-5555-4555-8555-555555555555',revision:1,answered_at:at,state:'unknown',value:null}}).input;
+  const after=apply(answered).source;
+  expect(after.answer_history).toEqual(answered.answer_history);expect(parseReviewCompletionInput(after.completion_input).needs.some(n=>n.fact_key===request.target.fact_key)).toBe(true);
+ });
+ it.each(['current','legacy','source_unknown','foreign_pin','unknown_history','changed_question']as const)('retires only exact historical source needs against a current witnessed MW composition: %s',state=>{
+  const beforeSource=source(),beforeRaw=branch(beforeSource);beforeRaw.components[0].amount.state='unknown';beforeSource.entitlement_evidence!.minimum_wage=beforeRaw;
+  const before=runDocumentReview(composeEntitlementReview(beforeSource),'old-mw-source');
+  const current=source();current.coverage_policy='document-review-coverage-v1';current.entitlement_evidence!.resolved_need_policy='minimum-wage-resolved-needs-v1';
+  if(state==='source_unknown'){const m=branch(current);m.components[0].amount.state='unknown';current.entitlement_evidence!.minimum_wage=m;}
+  const prepared=apply(current).source,knownSource=source();knownSource.entitlement_evidence!.resolved_need_policy='minimum-wage-resolved-needs-v1';
+  const known=state==='source_unknown'?apply(knownSource).source:prepared,descriptors=resolvedMinimumWageSourceNeeds(known,known.entitlement_composition?.evidence.minimum_wage,known.checks);
+  let review=runDocumentReview(prepared,'current-mw-source');
+  if(state==='legacy'){const legacy=source();legacy.coverage_policy='document-review-coverage-v1';review=runDocumentReview(apply(legacy).source,'legacy');}
+  const keys=new Set(descriptors.map(n=>n.fact_key));
+  const selected=before.completions.customer_requests.filter(q=>keys.has(q.target.fact_key));
+  expect(selected).toHaveLength(3);
+  const requests=selected.map((q,i)=>{
+   const target=structuredClone(q.target);
+   if(state==='foreign_pin')target.source_pins[0].source_sha256=h('foreign');
+   if(state==='changed_question')target.question='Independent source question';
+   const {target_sha256:oldHash,...body}=target;void oldHash;target.target_sha256=canonicalSha256(body);
+   return {request_id:`66666666-6666-4666-8666-66666666666${i}`,code:'document_review:'+target.target_sha256,target,source_current:true,answered_at:state==='unknown_history'?at:null,expires_at:'2099-01-01T00:00:00Z'};
+  });
+  const hash=canonicalSha256(review),projected=reviewHistoricalRequestProjection({review,fieldRequests:[],reviewRequests:requests,nowMs:Date.parse(at)});
+  expect(projected).toHaveLength(state==='current'?3:0);
+  if(state==='current')for(const p of projected)expect(p).toMatchObject({state:'resolved_source_fact',check_id:'minimum.synthetic'});
+  expect(canonicalSha256(review)).toBe(hash);expect(requests.every(r=>r.answered_at===(state==='unknown_history'?at:null))).toBe(true);
+ });
  it.each([['3300',24000],['3540',0],['3700',-16000]] as const)('keeps signed comparison for recorded %s and does not choose the higher formula', (amount,difference)=>{
   const s=source(amount),before=canonicalSha256(s),a=apply(s),r=runDocumentReview(a.source,'synthetic-mw-normal'),result=r.checks.find(c=>c.check_id==='minimum.synthetic')!.calculation;
   expect(a.receipts).toHaveLength(6);expect(result).toMatchObject({state:'calculated',expected:{minor_units:354000},recorded:{minor_units:Number(amount)*100},difference:{minor_units:difference},real_activation_allowed:false,human_attestation:null});

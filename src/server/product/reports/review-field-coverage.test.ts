@@ -400,7 +400,7 @@ it.each(['balance','group','relationship']as const)('replaces only the historica
  const old=f.generic(key),before=canonicalSha256(old);
  const result=reviewHistoricalRequestProjection({review:f.review,fieldRequests:f.structures,reviewRequests:[old],nowMs});
  expect(result).toHaveLength(1);expect(result[0]).toMatchObject({request_id:old.request_id,state:'not_required'});
- expect(f.structures.some(r=>r.request_id===result[0].field_request_id)).toBe(true);expect(canonicalSha256(old)).toBe(before);
+ const projected=result[0];if(projected.state==='resolved_source_fact')throw Error('EXPECTED_SOURCE_FIELD_PROJECTION');expect(f.structures.some(r=>r.request_id===projected.field_request_id)).toBe(true);expect(canonicalSha256(old)).toBe(before);
 });
 it.each(['complete','unknown_cell','missing_cell','stale_cell','expired_cell','wrong_checkpoint','wrong_anchor','foreign_source','wrong_period','independent_unit_need']as const)('replaces the old balance-unit question only with the same complete five-role action set: %s',change=>{
  const f=structureProjectionFixture(),old=f.generic('document.0.balance.vacation_balance.unit'),input=structuredClone(f.input);

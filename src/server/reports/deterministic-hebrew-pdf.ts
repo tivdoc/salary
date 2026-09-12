@@ -379,7 +379,7 @@ const REPORT_CREATOR = "tivdoc-rtl-hebrew-report-template-v0.8.0";
 
 export type RtlBlock =
   | Readonly<{ kind: "heading"; text: string; level: 1 | 2 }>
-  | Readonly<{ kind: "paragraph"; text: string; wrap_text?: boolean }>
+  | Readonly<{ kind: "paragraph"; text: string; wrap_text?: boolean; keep_with_next?: boolean }>
   | Readonly<{ kind: "rule" }>
   | Readonly<{ kind: "table"; columns: readonly string[]; rows: readonly (readonly string[])[]; wrap_cells?: boolean }>
   | Readonly<{ kind: "hash"; label: string; value: string }>;
@@ -539,7 +539,12 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
       const next = document.blocks[index];
       if (next.kind === "heading") { height += headingHeight(next); continue; }
       if (next.kind === "rule") { height += 14; continue; }
-      if (next.kind === "paragraph") return height + Math.min(2, customerLines(next.text, 9).length) * LINE_HEIGHT;
+      if (next.kind === "paragraph") {
+        const lines = customerLines(next.text, 9).length;
+        // A finding status is introductory text, not the body its title needs.
+        if (next.keep_with_next) { height += lines * LINE_HEIGHT + 4; continue; }
+        return height + Math.min(2, lines) * LINE_HEIGHT;
+      }
       if (next.kind === "hash") return height + LINE_HEIGHT;
       if (next.rows.length === 0) continue;
       if (next.columns.length === 0 || next.rows.some((row) => row.length !== next.columns.length)) {
@@ -586,6 +591,11 @@ export function renderDeterministicRtlDocument(document: RtlDocument): Uint8Arra
       continue;
     }
     if (block.kind === "paragraph") {
+      if (customerLayout && block.keep_with_next) {
+        const required = customerLines(block.text, 9).length * LINE_HEIGHT + 4 + followingHeight(blockIndex + 1);
+        if (required > PAGE_HEIGHT - MARGIN - BOTTOM) throw new Error("RTL_HEADING_GROUP_TOO_TALL");
+        room(required);
+      }
       // Opt-in measured wrapping preserves legacy report bytes while allowing
       // private source URLs and immutable identifiers to remain fully visible.
       const lines = customerLayout ? customerLines(block.text, 9) : block.wrap_text === true

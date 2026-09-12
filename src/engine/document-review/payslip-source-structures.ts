@@ -1,7 +1,9 @@
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {normalizeMoney} from '../extraction/normalization.ts';
 import {payslipMachineExtractionSha256,identifiedSourceStructure,identifiedDirectRowCell,identifiedMappedRowCell,type materializeValidatedPayslipReadings} from '../extraction/reading-resolution.ts';
-import {sourceStructureSubject,type SourceStructureSelector} from '../extraction/source-structure-resolution.ts';
+import {sourceStructureSubject,sourceStructureCandidateSubject,type SourceStructureSelector} from '../extraction/source-structure-resolution.ts';
+import {buildSourceStructurePeriodWitness,sourceStructureRefs,IDENTIFIED_PERIOD_STRUCTURE_POLICY} from '../extraction/source-structure-period.ts';
+import type {CustomerSourceStructureReading,SourceStructurePeriodWitness,SourceStructureSubject} from '../extraction/source-structure.ts';
 import type {NormalizedPayslipExtraction} from '../extraction/payslip.ts';
 import type {DocumentReviewInput,ReviewDocument} from './contracts.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput,type DocumentReviewOperand} from './calculations.ts';
@@ -14,17 +16,33 @@ type Add=(id:string,topic:Topic,title:string,explanation:string,operands:Documen
 /** A v3 adapter over the ordinary source arithmetic path. This consumes source
  * structure readings and never writes a scalar candidate or legal decision. */
 export function appendPayslipSourceStructures(input:{index:number;case_id:string;period:DocumentReviewInput['period'];topics:Topic[];
+ identified_period_structure_policy?:typeof IDENTIFIED_PERIOD_STRUCTURE_POLICY;
  document:ReviewDocument;original:NormalizedPayslipExtraction;materialized:Materialized;firstPass:NormalizedPayslipExtraction;checkpointSha256:string;
  checks:DocumentReviewInput['checks'];gaps:DocumentReviewInput['coverage_gaps'];needs:ReviewCompletionNeed[];bindings:DocumentReviewInput['answer_bindings'];
  add:Add;moneyOperand:(field:string,id:string,label:string)=>DocumentReviewOperand;scopedOperand:(scope:'voluntary_deduction',id:string,label:string)=>DocumentReviewOperand}){
  const {document:d,original,materialized:m,index}=input;
  const pins={schema_version:'document-review-source-structure-v1' as const,blocker_policy:SOURCE_STRUCTURE_BLOCKER_POLICY,document_id:d.document_id,version_id:d.version_id,file_sha256:d.file_sha256,
   reading_sha256:d.reading_sha256,machine_extraction_sha256:payslipMachineExtractionSha256(original),first_pass_sha256:canonicalSha256(input.firstPass),checkpoint_result_sha256:input.checkpointSha256};
- const entry=(selector:SourceStructureSelector)=>{
-  const subject=sourceStructureSubject({extraction:original,firstPass:input.firstPass,selector});
+ const entry=(selector:SourceStructureSelector):{subject:SourceStructureSubject;reading:CustomerSourceStructureReading|null;period_witness?:SourceStructurePeriodWitness}=>{
+  if(input.identified_period_structure_policy!==IDENTIFIED_PERIOD_STRUCTURE_POLICY||selector.kind!=='source_relationship'&&selector.kind!=='deduction_group'){
+   const subject=sourceStructureSubject({extraction:original,firstPass:input.firstPass,selector});
+   const reading=identifiedSourceStructure({original,structureReadings:m.structureReadings,subject})?.reading??null;
+   if(reading?.schema_version==='document-source-structure-reading-v2')throw Error('REVIEW_SOURCE_STRUCTURE_PERIOD_POLICY_REQUIRED');
+   return {subject,reading};
+  }
+  const subject=sourceStructureCandidateSubject({extraction:original,firstPass:input.firstPass,selector}),refs=sourceStructureRefs(subject);
   const reading=identifiedSourceStructure({original,structureReadings:m.structureReadings,subject})?.reading??null;
-  return {subject,reading};
+  const result=buildSourceStructurePeriodWitness({refs,period:input.period,currentReadings:m.structureReadings,pins:{case_id:input.case_id,document_id:d.document_id,source_sha256:d.file_sha256,
+   normalized_extraction_sha256:pins.machine_extraction_sha256,first_pass_extraction_sha256:pins.first_pass_sha256,extraction_result_sha256:pins.checkpoint_result_sha256,month:input.period.from.slice(0,7)}});
+  if(!result.witness)throw Error(`REVIEW_SOURCE_STRUCTURE_PERIOD_${result.state.toUpperCase()}`);
+  // Preserve the old source-current route only after checking that an actual
+  // current period decision does not contradict it. No extra reading needed.
+  if(refs.every(r=>r.source.source_scope?.period_kind==='current')&&reading?.schema_version!=='document-source-structure-reading-v2')return {subject,reading};
+  if(reading&&(reading.schema_version!=='document-source-structure-reading-v2'||canonicalSha256(reading.period_witness)!==canonicalSha256(result.witness)))throw Error('REVIEW_SOURCE_STRUCTURE_PERIOD_CHANGED');
+  return {subject,reading,period_witness:result.witness};
  };
+ const structurePins=(e:ReturnType<typeof entry>)=>e.period_witness?{...pins,schema_version:'document-review-source-structure-v2' as const,period_witness:e.period_witness}:pins;
+ const structureEntry=(e:ReturnType<typeof entry>)=>({subject:e.subject,reading:e.reading});
  const remove=(ids:string[])=>{
   for(let i=input.gaps.length-1;i>=0;i--)if(ids.includes(input.gaps[i].check_id))input.gaps.splice(i,1);
   for(let i=input.needs.length-1;i>=0;i--)if(input.needs[i].dependent_check_ids.some(id=>ids.includes(id)))input.needs.splice(i,1);
@@ -43,7 +61,7 @@ export function appendPayslipSourceStructures(input:{index:number;case_id:string
   const exact=(o:DocumentReviewOperand)=>{try{const loc=JSON.parse(o.source.locator);return Array.isArray(loc.candidate_ids)&&loc.candidate_ids.length===1;}catch{return false;}};
   if(!exact(numerator)||!exact(denominator))continue;
   let e;try{e=entry({kind:'source_relationship',componentKind:kind,contribution:{kind:scope?'scope':'field',id:numerator.observation_id},base:{kind:'field',id:denominator.observation_id}});}catch{continue;}
-  const witness=documentReviewSourceStructureSchema.parse({...pins,kind:'source_relationship',entry:e,numerator_ref:op.numerator_ref,denominator_ref:op.denominator_ref});
+  const witness=documentReviewSourceStructureSchema.parse({...structurePins(e),kind:'source_relationship',entry:structureEntry(e),numerator_ref:op.numerator_ref,denominator_ref:op.denominator_ref});
   const ready=sourceRelationshipUsable(witness);
   input.checks.splice(input.checks.indexOf(check),1);remove([check.check_id,`${check.check_id}.relationship`]);
   input.add(check.check_id.slice(`document.${index}.`.length),check.topic,check.title,
@@ -76,9 +94,9 @@ export function appendPayslipSourceStructures(input:{index:number;case_id:string
     // An empty/partial assignment is not a zero total. Keep a missing inventory
     // term, with the whole source group, until membership is established.
     const selected=members.length?members:e.subject.rows.map(r=>r.id);
-    const operands=selected.map((id,i)=>deductionAmount(original,m,id,`deduction.${i}`,d));
+    const operands=selected.map((id,i)=>deductionAmount(original,m,id,`deduction.${i}`,d,e.period_witness));
     const complete=value?.kind==='deduction_group'&&value.inventory==='complete'&&members.length>0;
-    const witness=documentReviewSourceStructureSchema.parse({...pins,kind:'deduction_group',entry:e,group,row_bindings:selected.map((component_id,i)=>({component_id,operand_id:`deduction.${i}`})),recorded_ref:'total'});
+    const witness=documentReviewSourceStructureSchema.parse({...structurePins(e),kind:'deduction_group',entry:structureEntry(e),group,row_bindings:selected.map((component_id,i)=>({component_id,operand_id:`deduction.${i}`})),recorded_ref:'total'});
     input.add(`deductions.${group}`,'minimum_wage',group==='mandatory'?'התאמת שורות ניכויי חובה לסיכום':'התאמת שורות ניכויי רשות לסיכום',
      'סכום השורות ששויכו במפורש לקבוצה במקור מול הסיכום שלה. השיוך והשלמות אינם מוסקים מהתאמת סכומים; אין כאן קביעה שהניכוי מותר או אישור תשלום.',
      [...operands,group==='mandatory'?input.moneyOperand('total_deductions','total','סך ניכויי חובה'):input.scopedOperand('voluntary_deduction','total','סך ניכויי רשות')],
@@ -116,14 +134,15 @@ export function appendPayslipSourceStructures(input:{index:number;case_id:string
     inventory_complete:entries.every(e=>e.reading!==null),inventory_basis:'All five source roles identified; absent adjustment requires explicit source reading.',disjoint_components:true,overlap_basis:'One opening/accrued/used/adjustment/closing cell in the same pinned balance block and month.'},false,witness);
  }
 }
-function deductionAmount(original:NormalizedPayslipExtraction,m:Materialized,id:string,operandId:string,d:ReviewDocument):DocumentReviewOperand{
+function deductionAmount(original:NormalizedPayslipExtraction,m:Materialized,id:string,operandId:string,d:ReviewDocument,periodWitness?:SourceStructurePeriodWitness):DocumentReviewOperand{
  const rawRow=original.additional_components.find(r=>r.component_id===id)!,row=m.extraction.additional_components.find(r=>r.component_id===id)!;
  const direct=identifiedDirectRowCell({original,effective:m.extraction,rowReadings:m.rowReadings,row:rawRow,cell:'amount'});
  const mapped=identifiedMappedRowCell({original,effective:m.extraction,readings:m.readings,row:rawRow,cell:'amount'});
  const raw=direct?.raw_value??mapped?.raw_value??row.amount_raw,value=raw===null?null:normalizeMoney(raw);
  const valid=value?.currency==='ILS'&&canonicalSha256(row.amount)===canonicalSha256(value);
+ const identifiedPeriod=periodWitness?.refs.some(e=>e.ref.kind==='component'&&e.ref.id===id&&e.ref.sha256===canonicalSha256(rawRow));
  const unsafe=m.extraction.status==='failed'||m.extraction.document_quality_confidence<.95||row.warning_flags.length>0
-  ||row.source.source_scope?.period_kind!=='current'||row.normalization_warnings.some(w=>w!=='quantity_normalization_failed'&&w!=='rate_normalization_failed'&&w!=='percentage_normalization_failed');
+  ||!identifiedPeriod&&row.source.source_scope?.period_kind!=='current'||row.normalization_warnings.some(w=>w!=='quantity_normalization_failed'&&w!=='rate_normalization_failed'&&w!=='percentage_normalization_failed');
  return {id:operandId,observation_id:`${id}:amount`,state:raw===null?'missing':!valid?'unreadable':unsafe?'unknown':direct||mapped||row.confidence>=.95?'observed':'unknown',
   printed_value:value?.currency==='ILS'?(value.minor_units/100).toFixed(2):null,representation:'money_ils',quantity_unit:null,precision:'printed_precision',
   source:{document_id:d.document_id,version_id:d.version_id,file_sha256:d.file_sha256,page:row.source.page,label:row.source_label,

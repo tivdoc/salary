@@ -1,4 +1,5 @@
 import {assertSourceStructureSubject,normalizeSourceStructureValue,sourceStructureSubjectKey,parseSourceStructureReadingValue} from './source-structure-resolution.ts';
+import {assertSourceStructurePeriodWitness,sourceStructureRefs} from './source-structure-period.ts';
 import type {CustomerSourceStructureReading,SourceStructureSubject} from './source-structure.ts';
 import {immutableDocumentSchema} from '../domain/documents.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
@@ -193,8 +194,12 @@ export function materializeValidatedPayslipReadings(input:{document:unknown;extr
  }
  if(customer_source_structures.length){
   if(!source_reading_context)throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_CONTEXT_REQUIRED');
-  for(const reading of customer_source_structures){
-   const first=assertSourceStructureSubject({subject:reading.subject,extraction:machine,firstPass:source_reading_context.first_pass});
+  // V2 consumers must compare prerequisite receipts with the independently
+  // admitted current period map, irrespective of annotation array order.
+  const ordered=[...customer_source_structures.filter(r=>r.schema_version==='document-source-structure-reading-v1'),...customer_source_structures.filter(r=>r.schema_version==='document-source-structure-reading-v2')];
+  for(const reading of ordered){
+   const periodWitness=reading.schema_version==='document-source-structure-reading-v2'?reading.period_witness:undefined;
+   const first=assertSourceStructureSubject({subject:reading.subject,extraction:machine,firstPass:source_reading_context.first_pass,...(periodWitness?{period_witness:periodWitness}:{})});
    const periods=machine.fields.filter(f=>f.field==='salary_period'),key=sourceStructureSubjectKey(reading.subject);
    if(hasPayslipReadingAnnotations(first)||reading.case_id!==document.case_id||reading.document_id!==document.document_id||reading.source_sha256!==document.content_sha256
     ||reading.normalized_extraction_sha256!==canonicalSha256(machine)||reading.first_pass_extraction_sha256!==canonicalSha256(first)
@@ -202,6 +207,9 @@ export function materializeValidatedPayslipReadings(input:{document:unknown;extr
     ||!periods.length||periods.some(f=>!f.normalized_value||`${f.normalized_value.year}-${String(f.normalized_value.month).padStart(2,'0')}`!==reading.month))throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_BINDING_MISMATCH');
    const {normalized_value:value}=parseSourceStructureReadingValue(reading);
    if(canonicalSha256(value)!==canonicalSha256(reading.value))throw new TypeError('DOCUMENT_SOURCE_STRUCTURE_VALUE_INVALID');
+   if(periodWitness)assertSourceStructurePeriodWitness({witness:periodWitness,refs:sourceStructureRefs(reading.subject),period:periodWitness.period,currentReadings:structureReadings,
+    pins:{case_id:document.case_id,document_id:document.document_id,source_sha256:document.content_sha256,normalized_extraction_sha256:canonicalSha256(machine),
+     first_pass_extraction_sha256:canonicalSha256(first),extraction_result_sha256:source_reading_context.checkpoint_result_sha256,month:reading.month,policy_version:reading.policy_version}});
    structureReadings.set(key,reading);requests.add(reading.request_id);targets.add(reading.target_sha256);
   }
  }

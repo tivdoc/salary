@@ -105,7 +105,11 @@ it('refuses unbound sources and complete claims with unresolved inputs', () => {
 it('preserves exact signed minor units and deterministic bindings without recomputing an amount', async () => {
   const source = input({ findings: [{ ...input().findings[0], status: 'derived_arithmetic', amounts: [{ label: 'הפרש חתום', currency: 'ILS', minor_units: -24058 }] }] });
   const first = renderDocumentReviewArtifacts(source), second = renderDocumentReviewArtifacts(source);
-  expect(first).toEqual(second);
+  for(const key of Object.keys(first) as (keyof typeof first)[]){
+    const value=first[key],other=second[key];
+    if(value instanceof Uint8Array){expect(other).toBeInstanceOf(Uint8Array);expect(Buffer.from(value).equals(Buffer.from(other as Uint8Array))).toBe(true);}
+    else expect(value).toEqual(other);
+  }
   expect(await pdfText(first.pdf)).toContain('-240.58 ₪');
   const manifest = JSON.parse(Buffer.from(first.manifest).toString('utf8'));
   expect(manifest).toMatchObject({ analysis_run_id: source.analysis_run_id, analysis_result_sha256: source.analysis_result_sha256,

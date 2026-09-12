@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
 import {mappedRowCellCandidate} from '@/engine/extraction/reading-resolution';
+import {IDENTIFIED_PERIOD_STRUCTURE_POLICY} from '@/engine/extraction/source-structure-period';
 import {documentReviewReadingDependencies} from '@/engine/document-review/source-dependencies';
 import type {DocumentReviewResult} from '@/engine/document-review/contracts';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
@@ -13,6 +14,7 @@ import {documentSourceStructureTargetFromSubject,documentSourceStructureQuestion
 import {documentReadingTargetSchema,documentReadingTargetForCheckpoint,documentFieldTarget,documentFieldQuestion} from '../reports/document-field-confirmation';
 import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
 import type {SourceJob} from './source-dispatch';
+import {savedSourcePeriodReadings} from './saved-field-readings';
 
 /** Only cells used by a blocked purchased check become reading requests.
  * Existing scalar requests retain their exact v1 targets and history. */
@@ -23,7 +25,7 @@ export async function openSavedReadingDependencies(context:PostgresTransactionCo
   const dependencies=documentReviewReadingDependencies({review,document_id:extraction.document_id,extraction});
   if(!dependencies.row_cells.length&&!dependencies.scope_fields.length&&!dependencies.source_transcriptions.length&&!dependencies.scalar_fields.length&&!dependencies.source_structures?.length)continue;
   const rows=await context.client.query(statement('review_dependency_checkpoint',
-   `select c.result,c.result_sha256 from private.case_extraction_checkpoints c
+   `select c.result,c.result_sha256,v.input as source_journal from private.case_extraction_checkpoints c
     join private.case_input_versions v on v.case_id=c.case_id and v.revision=c.revision
     join public.documents d on d.case_id=c.case_id and d.version_id=c.version_id and d.content_sha256=c.input_sha256
     where c.case_id=$1::uuid and c.revision=$2 and v.input_sha256=$3 and c.version_id=$4::uuid and c.policy_version=$5`,
@@ -47,11 +49,19 @@ export async function openSavedReadingDependencies(context:PostgresTransactionCo
    const mapped=mappedRowCellCandidate({fields:saved.run.result.final_extraction.fields,row,cell:dep.cell});
    return !mapped||!scalarIds.has(mapped.candidate_id);
   });
+  const periodReadings=dependencies.source_structures?.some(dep=>dep.period_witness)?savedSourcePeriodReadings({caseId:job.case_id,month:review.period.from.slice(0,7),policyVersion:SAVED_EXTRACTION_POLICY,
+   checkpoint,journal:rows.rows[0].source_journal}):undefined;
+  const structureTargets=(dependencies.source_structures??[]).map(dep=>{
+   const target=documentSourceStructureTargetFromSubject({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject,
+    ...(dep.period_witness?{periodPolicy:IDENTIFIED_PERIOD_STRUCTURE_POLICY,periodReadings}:{})});
+   if(dep.period_witness&&(!('period_witness' in target)||canonicalSha256(target.period_witness)!==canonicalSha256(dep.period_witness)))throw Error('REVIEW_DEPENDENCY_PERIOD_CHANGED');
+   return {target,checkIds:dep.check_ids};
+  });
   const targets=[...rowsToOpen.map(dep=>({target:documentRowCellTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,componentId:dep.component_id,cell:dep.cell}),checkIds:dep.check_ids})),
    ...dependencies.scalar_fields.filter(dep=>!scalarIds.has(dep.candidate_id)&&saved.run.result.final_extraction.fields.some(f=>f.candidate_id===dep.candidate_id&&f.normalized_value!==null)).map(dep=>({target:documentFieldTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,candidateId:dep.candidate_id}),checkIds:dep.check_ids})),
    ...dependencies.scope_fields.map(dep=>({target:documentSourceScopeTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,candidateId:dep.candidate_id}),checkIds:dep.check_ids})),
    ...dependencies.source_transcriptions.map(dep=>({target:documentSourceTranscriptionTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject}),checkIds:dep.check_ids})),
-   ...(dependencies.source_structures??[]).map(dep=>({target:documentSourceStructureTargetFromSubject({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject}),checkIds:dep.check_ids}))];
+   ...structureTargets];
   for(const {target,checkIds} of targets){
    const question=target.schema_version==='document-field-confirmation-v1'?documentFieldQuestion(target):target.schema_version==='document-row-cell-confirmation-v1'?documentRowCellQuestion(target)
     :target.schema_version==='document-source-scope-confirmation-v1'?documentSourceScopeQuestion(target):target.schema_version==='document-source-transcription-v1'?documentSourceTranscriptionQuestion(target):documentSourceStructureQuestion(target);

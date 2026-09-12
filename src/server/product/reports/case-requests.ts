@@ -132,10 +132,12 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   // can overlap. No artifact, stale artifact or no exact match means no hiding.
   const sharedPersonalCandidates=reviewStates.filter(r=>r.source_current&&r.target?.kind==='factual'
    &&r.target.required_evidence_kind==='customer_declaration'&&/^entitlement\.(minimum_wage|pension|travel|convalescence|vacation|work\.personal)\./u.test(r.target.fact_key));
+  const minimumSourceOverlap=reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='text'
+   &&r.target.required_evidence_kind==='observed_reading'&&r.target.source_pins.length===1&&/^entitlement\.minimum_wage\.[a-f0-9]{28}$/u.test(r.target.fact_key));
   const fieldOverlap=(reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
    ||[...displays.values()].some(display=>display.row_context||display.transcription_context||display.structure_context||display.field.startsWith('source_scope.')||REVIEW_DEFERRABLE_SCALAR_FIELDS.some(field=>field===display.field)))
    &&fieldTargets.some(t=>bound.some(r=>r.id===t.request_id&&(r.answered_at===null||reviewStates.some(s=>s.source_current)))&&fields.some(f=>f.request_id===t.request_id&&f.source_current));
-  if(identityId&&(fieldOverlap||sharedPersonalCandidates.length>1)){
+  if(identityId&&(fieldOverlap||minimumSourceOverlap||sharedPersonalCandidates.length>1)){
    const summaries=await privateDocumentReviewReports(caseId,identityId,store);
    const summary=summaries.filter(r=>r.current).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
    if(summary){
@@ -159,8 +161,9 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
      for(const match of reviewSharedPersonalRequestProjection({review:artifact.bundle.document_review,requests:genericRequests,nowMs:Date.now()})){
       notRequired.add(match.request_id);replacementReviews.set(match.request_id,match.replacement_request_id);
      }
-     for(const match of fieldOverlap?reviewHistoricalRequestProjection({review:artifact.bundle.document_review,fieldRequests,reviewRequests:genericRequests,nowMs:Date.now()}):[]){
-      if(match.state==='not_required'){notRequired.add(match.request_id);if('replacement_request_id'in match&&typeof match.replacement_request_id==='string')replacementReviews.set(match.request_id,match.replacement_request_id);}
+     for(const match of fieldOverlap||minimumSourceOverlap?reviewHistoricalRequestProjection({review:artifact.bundle.document_review,fieldRequests,reviewRequests:genericRequests,nowMs:Date.now()}):[]){
+      if(match.state==='resolved_source_fact')notRequired.add(match.request_id);
+      else if(match.state==='not_required'){notRequired.add(match.request_id);if('replacement_request_id'in match&&typeof match.replacement_request_id==='string')replacementReviews.set(match.request_id,match.replacement_request_id);}
       else if(match.state==='period_required'){covered.set(match.request_id,match.field_request_id);if(match.reading_state==='unresolved_answer')unresolvedRead.add(match.request_id);}
       else{covered.set(match.request_id,match.field_request_id);alreadyRead.add(match.request_id);}
      }

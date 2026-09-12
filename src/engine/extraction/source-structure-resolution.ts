@@ -1,7 +1,8 @@
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {normalizedPayslipExtractionSchema,type NormalizedPayslipExtraction} from './payslip.ts';
 import {normalizeDecimal} from './normalization.ts';
-import {customerSourceStructureReadingSchema,sourceStructureRefSchema,sourceStructureSubjectSchema,sourceStructureValueSchema,type SourceStructureRef,type SourceStructureSubject,type SourceStructureValue} from './source-structure.ts';
+import {customerSourceStructureReadingSchema,sourceStructureRefSchema,sourceStructureSubjectSchema,sourceStructureValueSchema,type SourceStructurePeriodWitness,type SourceStructureRef,type SourceStructureSubject,type SourceStructureValue} from './source-structure.ts';
+import {assertSourceStructurePeriodWitness,sourceStructureRefs} from './source-structure-period.ts';
 
 export type SourceStructureSelector=
  |{kind:'source_relationship';componentKind:'pension_employee'|'pension_employer'|'severance'|'combined_employer_funds';contribution:{kind:SourceStructureRef['kind'];id:string};base:{kind:SourceStructureRef['kind'];id:string}}
@@ -29,7 +30,9 @@ export function sourceStructureSelector(subject:SourceStructureSubject):SourceSt
  if(subject.kind==='period_association')return {kind:subject.kind,refs:subject.refs.map(r=>{if(r.kind==='scope')throw Error('SOURCE_PERIOD_REF_UNSUPPORTED');return {kind:r.kind,id:r.id};})};
  return {kind:subject.kind,balanceKind:subject.balance_kind,cell:subject.cell,candidateId:subject.anchor.id};
 }
-export function sourceStructureSubject(input:{extraction:NormalizedPayslipExtraction;firstPass:NormalizedPayslipExtraction;selector:SourceStructureSelector}):SourceStructureSubject {
+/** Structural candidate only. It does not establish the period required for
+ * a reading target or an arithmetic witness. Use sourceStructureSubject there. */
+export function sourceStructureCandidateSubject(input:{extraction:NormalizedPayslipExtraction;firstPass:NormalizedPayslipExtraction;selector:SourceStructureSelector}):SourceStructureSubject {
  const {extraction:e,firstPass:first,selector:s}=input;let subject:SourceStructureSubject;
  if(e.document_id!==first.document_id)throw Error('SOURCE_STRUCTURE_DOCUMENT_MISMATCH');
  if(s.kind==='source_relationship'){
@@ -57,9 +60,16 @@ export function sourceStructureSubject(input:{extraction:NormalizedPayslipExtrac
  }
  const parsed=sourceStructureSubjectSchema.parse(subject);
  const refs=parsed.kind==='period_association'?parsed.refs:parsed.kind==='source_relationship'?[parsed.contribution,parsed.base]:parsed.kind==='deduction_group'?[...parsed.rows,parsed.mandatory_total,...(parsed.voluntary_total?[parsed.voluntary_total]:[])]:[parsed.anchor];
- if(refs.some(r=>r.source.document_id!==e.document_id||r.source.page>e.quality_metrics.page_count||r.source.page>first.quality_metrics.page_count
-  ||parsed.kind!=='period_association'&&r.source.source_scope?.period_kind!=='current'))throw Error('SOURCE_STRUCTURE_CURRENT_SOURCE_REQUIRED');
+ if(refs.some(r=>r.source.document_id!==e.document_id||r.source.page>e.quality_metrics.page_count||r.source.page>first.quality_metrics.page_count))throw Error('SOURCE_STRUCTURE_CURRENT_SOURCE_REQUIRED');
  return parsed;
+}
+export function sourceStructureSubject(input:{extraction:NormalizedPayslipExtraction;firstPass:NormalizedPayslipExtraction;selector:SourceStructureSelector;period_witness?:SourceStructurePeriodWitness}):SourceStructureSubject {
+ const subject=sourceStructureCandidateSubject(input),refs=sourceStructureRefs(subject);
+ if(input.period_witness){
+  if(subject.kind!=='source_relationship'&&subject.kind!=='deduction_group')throw Error('SOURCE_STRUCTURE_PERIOD_KIND');
+  assertSourceStructurePeriodWitness({witness:input.period_witness,refs,period:input.period_witness.period});
+ }else if(subject.kind!=='period_association'&&refs.some(r=>r.source.source_scope?.period_kind!=='current'))throw Error('SOURCE_STRUCTURE_CURRENT_SOURCE_REQUIRED');
+ return subject;
 }
 export function sourceStructureSubjectKey(subject:SourceStructureSubject):string {
  if(subject.kind==='source_relationship')return `${subject.kind}:${subject.component_kind}:${subject.contribution.id}:${subject.base.id}`;
@@ -96,7 +106,7 @@ export function normalizeSourceStructureValue(subject:SourceStructureSubject,val
 }
 /** Context is supplied independently from the saved checkpoint, never from an
  * answer. Rebuilding detects source changes and unknown/foreign observations. */
-export function assertSourceStructureSubject(input:{subject:SourceStructureSubject;extraction:NormalizedPayslipExtraction;firstPass:unknown}){
+export function assertSourceStructureSubject(input:{subject:SourceStructureSubject;extraction:NormalizedPayslipExtraction;firstPass:unknown;period_witness?:SourceStructurePeriodWitness}){
  const firstPass=normalizedPayslipExtractionSchema.parse(input.firstPass);
  const actual=sourceStructureSubject({...input,firstPass,selector:sourceStructureSelector(input.subject)});
  if(canonicalSha256(actual)!==canonicalSha256(input.subject))throw Error('SOURCE_STRUCTURE_SUBJECT_CHANGED');
@@ -109,5 +119,8 @@ export function parseSourceStructureReadingValue(input:unknown){
  if(canonicalSha256(body)!==verification_sha256)throw Error('DOCUMENT_SOURCE_STRUCTURE_RECEIPT_HASH');
  const value=normalizeSourceStructureValue(reading.subject,reading.value,reading.month);
  if(canonicalSha256(value)!==canonicalSha256(reading.value))throw Error('DOCUMENT_SOURCE_STRUCTURE_VALUE_INVALID');
+ if(reading.schema_version==='document-source-structure-reading-v2')assertSourceStructurePeriodWitness({witness:reading.period_witness,refs:sourceStructureRefs(reading.subject),period:reading.period_witness.period,
+  pins:{case_id:reading.case_id,document_id:reading.document_id,source_sha256:reading.source_sha256,normalized_extraction_sha256:reading.normalized_extraction_sha256,
+   first_pass_extraction_sha256:reading.first_pass_extraction_sha256,extraction_result_sha256:reading.extraction_result_sha256,month:reading.month,policy_version:reading.policy_version}});
  return {reading,subject:reading.subject,normalized_value:value};
 }

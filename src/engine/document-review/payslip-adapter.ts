@@ -1,4 +1,5 @@
 import {payslipSourcePeriod} from '../extraction/source-period-association.ts';
+import {IDENTIFIED_PERIOD_STRUCTURE_POLICY} from '../extraction/source-structure-period.ts';
 import {z} from 'zod';
 import {appendPayslipSourceStructures} from './payslip-source-structures.ts';
 import type {DocumentReviewSourceStructure} from './source-structure-evidence.ts';
@@ -48,8 +49,9 @@ const monetary=(f:NormalizedCandidateField|undefined)=>f?.normalized_value&&type
 /** Source arithmetic from the SAME saved extraction and canonical reading
  * policy. Neither a model confidence nor a customer's cell reading is legal
  * authority. Every original observation remains in the immutable receipt. */
-export function reviewInputFromPayslips(input:{case_id:string;period:DocumentReviewInput['period'];purchased_scope:DocumentReviewInput['purchased_scope'];snapshot:StoredCaseInputSnapshot;financial_source_proofs?:readonly PayslipFinancialSourceProof[];review_policy?:typeof PAYSLIP_REVIEW_POLICY|typeof PAYSLIP_SOURCE_STRUCTURE_POLICY;retained_unresolved_fields?:readonly RetainedUnresolvedPayslipFields[]}):DocumentReviewInput{
+export function reviewInputFromPayslips(input:{case_id:string;period:DocumentReviewInput['period'];purchased_scope:DocumentReviewInput['purchased_scope'];snapshot:StoredCaseInputSnapshot;financial_source_proofs?:readonly PayslipFinancialSourceProof[];review_policy?:typeof PAYSLIP_REVIEW_POLICY|typeof PAYSLIP_SOURCE_STRUCTURE_POLICY;retained_unresolved_fields?:readonly RetainedUnresolvedPayslipFields[];identified_period_structure_policy?:typeof IDENTIFIED_PERIOD_STRUCTURE_POLICY}):DocumentReviewInput{
  const {snapshot}=input;
+ if(input.identified_period_structure_policy&&input.review_policy!==PAYSLIP_SOURCE_STRUCTURE_POLICY)throw Error('DOCUMENT_REVIEW_SOURCE_PERIOD_POLICY');
  const withCoverage=input.review_policy===PAYSLIP_REVIEW_POLICY||input.review_policy===PAYSLIP_SOURCE_STRUCTURE_POLICY;
  const proofs=(input.financial_source_proofs??[]).map(proof=>financialSourceProofSchema.parse(proof));
  const retained=(input.retained_unresolved_fields??[]).map(r=>retainedUnresolvedFieldsSchema.parse(r));
@@ -262,7 +264,9 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    const sharedExcerpt=ct===bt&&ct.includes(c?.raw_value??'\u0000')&&ct.includes(b?.raw_value??'\u0000');
    const labelledBase=/pension\s+base|insured\s+(salary|base)|שכר\s*(מבוטח|לפנסיה|לגמל)|בסיס\s*(לפנסיה|פנסיה|לגמל|גמל)/iu.test(bt);
    const labelledContribution=field==='severance_contribution'?/פיצויים|severance/iu.test(ct):/פנסיה|pension/iu.test(ct);
-   const related=contributions.length===1&&bases.length===1&&c.source.page===b.source.page&&labelledBase&&labelledContribution&&!/השתלמות|study\s*fund/iu.test(both)&&Boolean(sharedRow||sharedExcerpt);
+   const related=contributions.length===1&&bases.length===1&&c.source.page===b.source.page&&labelledBase&&labelledContribution&&!/השתלמות|study\s*fund/iu.test(both)&&Boolean(sharedRow||sharedExcerpt)
+    &&(!input.identified_period_structure_policy||[c,b].every(f=>f.source.source_scope?.period_kind==='current'
+     &&payslipSourcePeriod({original:materialized.original,structureReadings:materialized.structureReadings,ref:{kind:'field',id:f.candidate_id},period:input.period}).state==='current'));
    add(`ratio.${field}`,'pension',`יחס נצפה — ${label}`,'יחס בין סכום לבסיס שזוהו באותו רכיב. זה אינו שיעור חובה ואינו אישור הפקדה.',
     [moneyOperand(field,'contribution',label),moneyOperand('pension_base','base','בסיס הפנסיה')],{kind:'observed_ratio',numerator_ref:'contribution',denominator_ref:'base',component_identity:label,same_period_and_base:related,
      basis:related?'Explicit source-labelled same pension row/excerpt and confirmed source period; immutable observations retain labels and locations.':'The saved source does not establish that this contribution and this base belong to the same pension component.'});
@@ -386,9 +390,10 @@ export function reviewInputFromPayslips(input:{case_id:string;period:DocumentRev
    }
   }
   if(input.review_policy===PAYSLIP_SOURCE_STRUCTURE_POLICY&&prior)appendPayslipSourceStructures({index,case_id:input.case_id,period:input.period,topics:input.purchased_scope.topics,
+   ...(input.identified_period_structure_policy?{identified_period_structure_policy:input.identified_period_structure_policy}:{}),
    document:d,original:originalExtraction,materialized,firstPass:prior.first_pass,checkpointSha256:prior.checkpoint_result_sha256,checks,gaps:coverage_gaps,needs,bindings:answer_bindings,add,moneyOperand,scopedOperand});
  }
- return {schema_version:DOCUMENT_REVIEW_POLICY,...(withCoverage?{coverage_policy:DOCUMENT_REVIEW_COVERAGE_POLICY,...(source_observation_inventory.length?{source_observation_inventory}:{})}:{}),coverage_gaps,answer_bindings,answer_history:[],case_id:input.case_id,period:input.period,purchased_scope:input.purchased_scope,documents,checks,
+ return {schema_version:DOCUMENT_REVIEW_POLICY,...(input.identified_period_structure_policy?{source_structure_period_policy:input.identified_period_structure_policy}:{}),...(withCoverage?{coverage_policy:DOCUMENT_REVIEW_COVERAGE_POLICY,...(source_observation_inventory.length?{source_observation_inventory}:{})}:{}),coverage_gaps,answer_bindings,answer_history:[],case_id:input.case_id,period:input.period,purchased_scope:input.purchased_scope,documents,checks,
   completion_input:{case_id:input.case_id,period:input.period,documents:documents.map(d=>({pin:{case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256},kind:d.kind,review:'partial',period:completedFinancialSources.has(d.document_id)?input.period:d.period,
    ...(completedFinancialSources.has(d.document_id)?{review_completed_fact_keys:[PAYSLIP_FINANCIAL_SOURCE_FACT]}:{})})),needs,evidence}};
 }

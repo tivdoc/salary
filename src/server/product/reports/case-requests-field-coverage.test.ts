@@ -9,6 +9,9 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewCalculationInputSchema} from '@/engine/document-review/calculations';
 import {parseReviewCompletionInput} from '@/engine/document-review/completions';
 import {runDocumentReview} from '@/engine/document-review/service';
+import {documentReviewInputSchema} from '@/engine/document-review/contracts';
+import {minimumFixture} from '@/engine/entitlement-review/product-branch.fixture';
+import {composeEntitlementReview} from '@/engine/entitlement-review/compose';
 const artifactPort=vi.hoisted(()=>({list:vi.fn(),artifact:vi.fn()}));
 vi.mock('server-only',()=>({}));
 // The existing protected artifact adapter owns strict decoding and case/report
@@ -73,4 +76,26 @@ it.each(['missing','stale','run_mismatch','no_current_summary','lookup_failure']
  if(change==='lookup_failure'){artifactPort.artifact.mockRejectedValue(Error('PRIVATE_REVIEW_STORE'));await expect(f.run()).rejects.toThrow('PRIVATE_REVIEW_STORE');return;}
  expect((await f.run()).find(r=>r.id===f.numeric.id)).not.toHaveProperty('covered_by_field_request_id');
  expect(artifactPort.list).toHaveBeenCalledTimes(1);expect(artifactPort.artifact).toHaveBeenCalledTimes(change==='no_current_summary'?0:1);
+});
+
+it.each(['current','stale','wrong_run','legacy','foreign_target','answered']as const)('projects resolved MW source work from the protected current report without requiring an open cell: %s',async state=>{
+ const f=fixture(),e=minimumFixture();e.case_id=f.review.case_id;e.source_manifest=e.source_manifest.map(s=>({...s,case_id:e.case_id}));
+ const source=e.components[0].amount.source,documents=e.source_manifest.map(s=>({case_id:e.case_id,document_id:s.document_id,version_id:s.version_id,file_sha256:s.file_sha256,page_count:s.page_count,kind:'payslip',label:'Synthetic MW source',period:e.period,reading_origin:'ai_document_review',reading_sha256:source.reading_receipt_sha256}));
+ const input=documentReviewInputSchema.parse({schema_version:'document-review-product-v1',case_id:e.case_id,period:e.period,coverage_policy:'document-review-coverage-v1',
+  purchased_scope:{order_id:'synthetic.order',receipt_sha256:'f'.repeat(64),topics:['minimum_wage'],origin:'saved_order'},documents,checks:[],coverage_gaps:[],
+  completion_input:{case_id:e.case_id,period:e.period,documents:documents.map(d=>({pin:{case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256},kind:'payslip',period:d.period,review:'complete'})),needs:[],evidence:[]},
+  entitlement_evidence:{schema_version:'entitlement-source-evidence-v1',case_id:e.case_id,order_id:'synthetic.order',receipt_sha256:'f'.repeat(64),period:e.period,minimum_wage:e,...(state==='legacy'?{}:{resolved_need_policy:'minimum-wage-resolved-needs-v1'})}});
+ const old=structuredClone(input),missing=structuredClone(e);missing.components[0].amount.state='unknown';missing.eligible_pay_inventory={...missing.eligible_pay_inventory,state:'unknown',value:'unknown'};old.entitlement_evidence!.minimum_wage=missing;
+ const before=runDocumentReview(composeEntitlementReview(old),'old-mw-work'),current=runDocumentReview(composeEntitlementReview(input),f.review.analysis_run_id);
+ expect(before.completions.customer_requests).toHaveLength(3);
+ const targets=before.completions.customer_requests.map(r=>{const target=structuredClone(r.target);if(state==='foreign_target')target.source_pins[0].source_sha256='c'.repeat(64);
+  const {target_sha256:prior,...body}=target;void prior;return {...target,target_sha256:canonicalSha256(body)};});
+ const rows=targets.map(target=>({...f.numeric,id:randomUUID(),code:'document_review:'+target.target_sha256,question:savedReviewRequestQuestion(target),answered_at:state==='answered'?'2026-09-12T12:00:00.000Z':null,answer_text:state==='answered'?'לא יודע':null}));
+ f.responses.case_request_list=rows;f.responses.case_request_review_states=rows.map((r,i)=>({request_id:r.id,source_current:true,target:targets[i]}));
+ artifactPort.artifact.mockResolvedValue({current:state!=='stale',bundle:{analysis_run_id:state==='wrong_run'?randomUUID():current.analysis_run_id,document_review:current}});
+ const projected=await f.run();
+ expect(projected.filter(r=>r.not_required_for_current_review)).toHaveLength(state==='current'?3:0);
+ expect(projected.map(r=>[r.answered_at,r.answer_text])).toEqual(rows.map(r=>[r.answered_at,r.answer_text]));
+ expect(projected.every(r=>!r.covered_by_confirmed_reading&&!r.covered_by_field_request_id)).toBe(true);
+ expect(artifactPort.list).toHaveBeenCalledTimes(1);expect(artifactPort.artifact).toHaveBeenCalledTimes(1);
 });

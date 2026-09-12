@@ -108,7 +108,7 @@
     },
     {
       "path": "src/engine/document-review/calculations.ts",
-      "sha256": "4cf2072b2222c09601060c2bcb01e00191f6241ee811569b05d28b3afbb9bf84"
+      "sha256": "34363e3937e226e6b217ff884a79a56198766ea377dc05601cdd6445493dd2b2"
     },
     {
       "path": "src/engine/document-review/completions.ts",
@@ -116,7 +116,7 @@
     },
     {
       "path": "src/engine/document-review/contracts.ts",
-      "sha256": "c39c2fae6fb85d061ed5ccf096b4fb948a3b664d97c89ac4f92cc72b8cca16ec"
+      "sha256": "f92172a6eee1bd735cd1a61b237d099498697fbdac4ea5a7c4eef35a5beb9498"
     },
     {
       "path": "src/engine/document-review/coverage.ts",
@@ -132,11 +132,11 @@
     },
     {
       "path": "src/engine/document-review/payslip-adapter.ts",
-      "sha256": "ce33cdd22a9e5f35732377a1fddf06e5ac7e5798e27573d9bad7c715fdc15641"
+      "sha256": "4515d79ae720b2bf3633fd22f4e8eb2b0e820d10abda0c7f773017c66fde5ab6"
     },
     {
       "path": "src/engine/document-review/payslip-source-structures.ts",
-      "sha256": "1fb4c2f4136938e657e7c0492b6d992a6716f4208ff69dfb70e484646875f201"
+      "sha256": "a53734c18554497cff847072eede7a2a20cf3856faf79f9fc79bff9963ab16ef"
     },
     {
       "path": "src/engine/document-review/service.ts",
@@ -144,11 +144,11 @@
     },
     {
       "path": "src/engine/document-review/source-dependencies.ts",
-      "sha256": "9bb4467e5f7e036db3ed6689136bd7823f85881698f42af65f48864fbb1153d4"
+      "sha256": "f57055a08772bc06a276b684ad998bbc21641938f66fef5d9b512aec32b6c5af"
     },
     {
       "path": "src/engine/document-review/source-structure-evidence.ts",
-      "sha256": "14787c0bc59836edc3fbc58e6667f3f756fc9209aa6538c10f61c622ba28fab6"
+      "sha256": "9a2f906b0c05388b8c6a3e7b355d4e84dc5bf528c195d6efdbe06d0e05026f5d"
     },
     {
       "path": "src/engine/domain/documents.ts",
@@ -184,11 +184,11 @@
     },
     {
       "path": "src/engine/entitlement-review/compose.ts",
-      "sha256": "4db2a76e3eaaa299328903d172d42890e309fe75555c33d69ac47edfcacae407"
+      "sha256": "d79f1c8da73ef1c1d5f7eb8e9553d0623314219f35a2cdbe18cdc3ead2bb739e"
     },
     {
       "path": "src/engine/entitlement-review/contracts.ts",
-      "sha256": "1550cb673c21a6a673d1bbb7f60b6c95857800b81322255473bf38a19dd146d7"
+      "sha256": "8c05d8921a9f78247171e98bec3466f2ee72bf2a3b4d435fc04cd2a18cbe0bc9"
     },
     {
       "path": "src/engine/entitlement-review/convalescence/case-bindings.ts",
@@ -339,6 +339,10 @@
       "sha256": "4e1b9ba1cb425af339a5c8ffdad3989843d5b9aa845e0e2a72d6858cbf63dc06"
     },
     {
+      "path": "src/engine/entitlement-review/resolved-minimum-wage-needs.ts",
+      "sha256": "705d91da9da4024c0a6dd3929827281442a3a9d24726e76ea29f067400f6cc10"
+    },
+    {
       "path": "src/engine/entitlement-review/shared-product-fact-contracts.ts",
       "sha256": "38abb64e665b087b77dc14806b117974091da2128c03513d303884acc6936f14"
     },
@@ -400,7 +404,7 @@
     },
     {
       "path": "src/engine/entitlement-review/typed-product-facts.ts",
-      "sha256": "bcd1979593c825b03c3be93384818ef6e1a3668eeccb5b010761848558ef514b"
+      "sha256": "1a7626fa63913b5f6d2052fd20e23877e1c39fb1c37ebf4f47b59ce4bf774958"
     },
     {
       "path": "src/engine/entitlement-review/vacation/contracts.ts",
@@ -524,7 +528,7 @@
     },
     {
       "path": "src/engine/extraction/reading-resolution.ts",
-      "sha256": "e4867bb5b1dfa8757df97f4d95854e83a299d7e22164e773c71fbe52f297e7ea"
+      "sha256": "0944b5ae415a3725cd4c301a588a7b9b1618d5fff209b5e3ce2dfde9fef29d12"
     },
     {
       "path": "src/engine/extraction/resolver.ts",
@@ -535,12 +539,16 @@
       "sha256": "c4aa559294268ab8824634a208c6d96bcbbeadbd9a1b4f57e8f67d2579969486"
     },
     {
+      "path": "src/engine/extraction/source-structure-period.ts",
+      "sha256": "3f5ef6681633184f01062def2333f97001743f31e992631e2857947b85b7f557"
+    },
+    {
       "path": "src/engine/extraction/source-structure-resolution.ts",
-      "sha256": "dde4d90999e352dc1f735bb174b731a56f05290bcfaa2515d8cad8086023f1aa"
+      "sha256": "2add87012c3cdd9e8a9a6c9dbe35d1d84ffe7fa92832aca591bdf2a7687197b6"
     },
     {
       "path": "src/engine/extraction/source-structure.ts",
-      "sha256": "7e5f78a4b1e28b8b542cac5e3878404c3aa01a514ab5beb8fc48d85be47600a7"
+      "sha256": "ff50f5fc0537711923d024e8495a3bad565cb786e4d462ed09fad11cad87dd54"
     },
     {
       "path": "src/engine/extraction/validation.ts",
@@ -792,19 +800,23 @@
     },
     {
       "path": "src/server/product/reports/document-review-artifacts.ts",
-      "sha256": "1ca452b3e4147453dcf0d6b693defd1b7ffa6531d3bf2373e694c57801fe7857"
+      "sha256": "c2e1e5da4fb6e3566f3b27c0a98bc39e83e29551f3123c78e144b981aa90ae9e"
     },
     {
       "path": "src/server/product/reports/document-review-projection.ts",
-      "sha256": "fa6f6e83af5e16682413f70736dad10ced3618c7a4c37d5efd95cb584adb3b9f"
+      "sha256": "3949f05f98cb8ee596314b2e46f2328726c07973aa5fc6882dd8523952898d1f"
     },
     {
       "path": "src/server/product/reports/document-review-render-policy.ts",
       "sha256": "acd43174a23b627b5818aac3d69e10bc1c62cf6614b35b62592da16145a7ef79"
     },
     {
+      "path": "src/server/product/reports/document-review-source-labels.ts",
+      "sha256": "ac1a370b786dc254346010fba0053dc871c594b84664fc7e43ae7b5f0fb477ed"
+    },
+    {
       "path": "src/server/reports/deterministic-hebrew-pdf.ts",
-      "sha256": "f8eaf3ed6b2e12bf8735f9e545fde09cc12a9d0aa665700c7a4fdd71b9d7eb90"
+      "sha256": "9b8e322a698e4e0fdfc86cb4ea23873ecf80e1490725d5c9093e423422e21f2b"
     },
     {
       "path": "src/server/reports/deterministic-report-builder.ts",
@@ -815,6 +827,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "466e96279ea49d7f942fde041cd86b36185779bf94016038cc41a877f27b674a",
-  "sha256": "b50d76d47008f3100df64075e7060986bb759e4c2583dd4dfeec55b8342ebbdf"
+  "source_graph_sha256": "bc54cb9b167195273bac59152447964538b0897203b2c515edc96baeabd74be6",
+  "sha256": "0d0a7a03c0d4a523b6077e8798017efcbdab19c78b4289617f814d26a8dcbcad"
 }

@@ -83,6 +83,23 @@ it('keeps a heading and its following content on the same page at the legacy orp
   expect(pages[1].text).toContain('כותרת חדשהcontinued-body-sentinel');
 });
 
+it('keeps a finding heading and its status with the actual summary at the status-only orphan boundary', async () => {
+  const blocks: RtlDocument['blocks'] = [
+    ...Array.from({length:40},()=>({kind:'paragraph' as const,text:'שורת מילוי'})),
+    {kind:'heading',level:2,text:'כותרת הבדיקה'},
+    {kind:'paragraph',text:'סטטוס הבדיקה'},
+    {kind:'paragraph',text:'summary-body-sentinel'},
+  ];
+  const old=await layout(renderDeterministicRtlDocument(document(blocks)));
+  expect(old[0].text).toContain('כותרת הבדיקהסטטוס הבדיקה');
+  expect(old[0].text).not.toContain('summary-body-sentinel');
+  const next=blocks.map(block=>block.kind==='paragraph'&&block.text==='סטטוס הבדיקה'?{...block,keep_with_next:true}:block);
+  const pages=await layout(renderDeterministicRtlDocument(document(next)));
+  expect(pages[0].text).not.toContain('כותרת הבדיקה');
+  expect(pages[1].text).toContain('כותרת הבדיקהסטטוס הבדיקהsummary-body-sentinel');
+  expect(pages.map(page=>page.text).join('')).toBe(old.map(page=>page.text).join(''));
+});
+
 it('wraps headings and full source URLs inside the page without losing their text', async () => {
   const title = ('כותרת ארוכה עם סכום 1,234.50 ₪ ').repeat(9);
   const source = 'מקור https://example.test/official/' + 'W'.repeat(600);
