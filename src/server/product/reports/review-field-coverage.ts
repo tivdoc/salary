@@ -14,7 +14,7 @@ import {parseDocumentFieldAnswer,validateDocumentReadingAnswerForTarget} from '.
 import {parseDocumentFieldAnswerV3} from './document-source-structure';
 
 export type ExistingFieldReadingRequest=Readonly<{request_id:string;code:string;target:DocumentReadingTarget;source_current:boolean;answered_at:string|null;answer_text?:string|null;expires_at:string;expired_at?:string|null}>;
-export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'}|{transcription_kind:'balance_unit';candidate_id:string})>;
+export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'}|{transcription_kind:'balance_unit';candidate_id:string}|{structure_kind:'period_association';ref_kind:'field'|'component';ref_id:string})>;
 type ReplayedReview=ReturnType<typeof replayDocumentReview>;
 type ReviewCalculation=ReplayedReview['checks'][number]['calculation']['input'];
 /** replayDocumentReview already validates each witness and its operand binding.
@@ -67,6 +67,72 @@ function balanceUnitReplacement(review:ReplayedReview,requests:readonly Existing
 function unresolvedAnswer(text:string|null|undefined){try{const answer=typeof text==='string'&&JSON.parse(text).schema_version==='document-field-answer-v3'?parseDocumentFieldAnswerV3(text):parseDocumentFieldAnswer(text);return answer.action==='unknown'||answer.action==='unreadable';}catch{return false;}}
 const rowLocator=z.object({component_ids:z.array(z.uuid()).min(1),candidate_id:z.uuid().nullable(),raw:z.string().nullable(),original_raw:z.string().nullable(),
  source:candidateSourceSchema,semantic_kind:normalizedAdditionalComponentSchema.shape.semantic_kind}).passthrough();
+
+/** Presentation only: an identified number can still have an unknown period.
+ * This redirects its duplicate numeric action to the exact missing metadata
+ * action. It never changes an operand or certifies a period/structure reading. */
+function pendingPeriodPrerequisite(operand:DocumentReviewOperand,generic:ReviewCompletionTarget,review:ReplayedReview,requests:readonly ExistingFieldReadingRequest[],nowMs:number){
+ if(review.input.coverage_policy!=='document-review-coverage-v1'||operand.state!=='unknown'||operand.printed_value===null||!['provider_extraction','identified_document_reading'].includes(operand.source.reading)
+  ||generic.kind!=='factual'||generic.answer_kind!=='number'||generic.required_evidence_kind!=='observed_reading'
+  ||generic.case_id!==review.case_id||generic.source_pins.length!==1||canonicalSha256(generic.period)!==canonicalSha256(review.period))return null;
+ const pin=generic.source_pins[0],source=operand.source,document=review.documents.find(d=>d.case_id===review.case_id&&d.document_id===source.document_id
+  &&d.version_id===source.version_id&&d.file_sha256===source.file_sha256&&d.reading_sha256===source.reading_receipt_sha256);
+ if(!document||document.kind!=='payslip'||pin.case_id!==review.case_id||pin.version_id!==document.version_id||pin.source_sha256!==document.file_sha256
+  ||![document.document_id,document.version_id].includes(pin.document_id)
+  ||document.period!==null&&canonicalSha256(document.period)!==canonicalSha256(review.period))return null;
+ const locator=parseDocumentReviewSourceLocator(source.locator);
+ if(!locator||!('field'in locator||'component_ids'in locator))return null;
+ const row='component_ids'in locator,ids=row?locator.component_ids:locator.candidate_ids,hashes=row?locator.original_component_sha256:locator.candidate_sha256;
+ if(ids.length!==1||hashes.length!==1||locator.raw_values.length!==1
+  ||operand.observation_id!==(row?`${ids[0]}:${locator.cell}`:ids[0]))return null;
+ const refKind=row?'component' as const:'field' as const;
+ const current=(request:ExistingFieldReadingRequest)=>request.source_current&&request.code===`document_field:${request.target.target_sha256}`
+  &&request.target.case_id===review.case_id&&request.target.version_id===document.version_id&&request.target.source_sha256===document.file_sha256
+  &&request.target.month===review.period.from.slice(0,7)&&request.target.month===review.period.to.slice(0,7);
+ const matches=requests.flatMap(request=>{
+  if(!current(request)||request.expired_at||Date.parse(request.expires_at)<=nowMs
+   ||request.answered_at!==null&&!unresolvedAnswer(request.answer_text))return [];
+  const period=documentReadingTargetSchema.parse(request.target);
+  if(period.schema_version!=='document-source-period-association-v1'||period.subject.kind!=='period_association'
+   ||period.subject.refs.some(r=>r.source.source_scope?.period_kind&&r.source.source_scope.period_kind!=='unknown'))return [];
+  const subject=period.subject;
+  const ref=subject.refs.find(r=>r.kind===refKind&&r.id===ids[0]&&r.sha256===hashes[0]&&r.source.page===source.page);
+  if(!ref)return [];
+  const numeric=requests.filter(field=>{
+   if(!current(field)||field.expired_at||field.answered_at===null)return false;
+   const target=documentReadingTargetSchema.parse(field.target);
+   if(target.schema_version!=='document-field-confirmation-v1'&&target.schema_version!=='document-row-cell-confirmation-v1')return false;
+   if(target.product_document_id!==period.product_document_id||target.policy_version!==period.policy_version
+    ||target.extraction_result_sha256!==period.extraction_result_sha256)return false;
+   try{
+    const answer=validateDocumentReadingAnswerForTarget(target,field.answer_text);
+    if(answer.schema_version!=='document-field-answer-v2'||answer.action!=='confirm'&&answer.action!=='correct')return false;
+    const original=target.schema_version==='document-field-confirmation-v1'?target.candidate:target.original_component;
+    if(original.source.page!==source.page||original.source.source_scope?.period_kind&&original.source.source_scope.period_kind!=='unknown')return false;
+    const raw=answer.action==='correct'?answer.corrected_raw_value:target.schema_version==='document-field-confirmation-v1'?target.candidate.raw_value:target.original_component[`${target.cell}_raw`];
+    if(raw===null||!raw.trim()||locator.raw_values[0]!==raw)return false;
+    if(target.schema_version==='document-row-cell-confirmation-v1'){
+     if(!row||target.cell!==locator.cell||target.original_component.component_id!==ref.id||canonicalSha256(target.original_component)!==ref.sha256)return false;
+    }else{
+     const candidate=target.candidate;
+     if(row){
+      if(locator.mapped_candidate?.candidate_id!==candidate.candidate_id||locator.mapped_candidate.candidate_sha256!==canonicalSha256(candidate)
+       ||!subject.refs.some(r=>r.kind==='field'&&r.id===candidate.candidate_id&&r.sha256===canonicalSha256(candidate)&&canonicalSha256(r.source)===canonicalSha256(candidate.source)))return false;
+     }else if(candidate.candidate_id!==ref.id||canonicalSha256(candidate)!==ref.sha256||candidate.field!==locator.field)return false;
+    }
+    const scalar=target.schema_version==='document-field-confirmation-v1'?Object.fromEntries(Object.entries(target.candidate).filter(([key])=>key!=='normalized_value')):null;
+    const value=target.schema_version==='document-row-cell-confirmation-v1'?normalizeDocumentRowCellValue(target.cell,raw)
+     :normalizePayslipFieldValue(rawCandidateFieldSchema.parse({...scalar,raw_value:raw}));
+    const expected=value&&typeof value==='object'&&'amount'in value?value.amount:value;
+    const actual=operand.representation==='money_ils'?normalizeMoney(operand.printed_value!):operand.representation==='decimal_quantity'?normalizeDecimal(operand.printed_value!):operand.representation==='percent'?normalizePercentage(operand.printed_value!):null;
+    return expected!==null&&actual!==null&&canonicalSha256(expected)===canonicalSha256(actual);
+   }catch{return false;}
+  });
+  return numeric.length===1?[{field_request_id:request.request_id,structure_kind:'period_association' as const,ref_kind:refKind,ref_id:ref.id,
+   ...(request.answered_at!==null?{reading_state:'unresolved_answer' as const}:{})}]:[];
+ });
+ return matches.length===1?matches[0]:null;
+}
 function coversOperand(operand:DocumentReviewOperand,target:DocumentReadingTarget,phase:'pending'|'identified'='pending',effectiveRaw?:string):boolean{
  if(target.schema_version==='document-evidence-reading-v1'||target.schema_version==='document-travel-tariff-transcription-v1')return false; // Independent non-payroll consumer, never a payroll scalar alias.
  if('proposed_value'in target)return false; // Structure decisions do not certify numeric operands.
@@ -177,6 +243,9 @@ export function reviewRequestsCoveredByFieldReadings(input:{review:unknown;field
   if(bindings.length!==1)continue;
   const binding=bindings[0],check=review.input.checks.find(c=>c.check_id===binding.check_id);
   if(!check||request.dependent_check_ids.length!==1||request.dependent_check_ids[0]!==binding.check_id)continue;
+  const currentOperand=documentReviewCalculationInputSchema.parse(check.calculation).operands.find(o=>o.id===binding.operand_id);
+  const periodAction=currentOperand?pendingPeriodPrerequisite(currentOperand,target,review,input.fieldRequests,input.nowMs):null;
+  if(periodAction){result.push({target_sha256:target.target_sha256,fact_key:target.fact_key,...periodAction});continue;}
   const history=[...review.input.answer_history].reverse().find(h=>h.request.target.target_sha256===target.target_sha256);
   const original=history?.original_checks.find(c=>c.check_id===binding.check_id);
   const calculation=documentReviewCalculationInputSchema.parse(original??check.calculation),operand=calculation.operands.find(o=>o.id===binding.operand_id);
@@ -367,6 +436,11 @@ export function reviewFieldReadingCheckLabels(input:{review:unknown;fieldRequest
 }
 
 export type ExistingGenericReviewRequest=Readonly<{request_id:string;code:string;target:ReviewCompletionTarget;source_current:boolean;answered_at:string|null;expires_at:string}>;
+export type HistoricalReviewRequestProjection=Readonly<{request_id:string;field_request_id:string}&(
+ |{state:'not_required';replacement_request_id?:string}
+ |{state:'already_read'}
+ |{state:'period_required';structure_kind:'period_association';ref_kind:'field'|'component';ref_id:string;reading_state?:'unresolved_answer'}
+)>;
 function acceptedIdentifiedAnswer(operand:DocumentReviewOperand,field:ExistingFieldReadingRequest){
  try{
   const target=field.target,answer=validateDocumentReadingAnswerForTarget(target,field.answer_text);
@@ -396,7 +470,7 @@ export function reviewHistoricalRequestProjection(input:{review:unknown;reviewRe
  const review=replayDocumentReview(input.review);
  if(review.input.coverage_policy!=='document-review-coverage-v1'||!Number.isFinite(input.nowMs))return [];
  const deferred=new Set(reviewFieldRequestsNotRequired(input).map(r=>r.field_request_id));
- return deepFreeze(input.reviewRequests.flatMap(request=>{
+ return deepFreeze(input.reviewRequests.flatMap<HistoricalReviewRequestProjection>(request=>{
   if(!request.source_current||request.answered_at!==null||Date.parse(request.expires_at)<=input.nowMs)return [];
   const target=reviewCompletionTargetSchema.parse(request.target);
   if(request.code!==`document_review:${target.target_sha256}`||target.case_id!==review.case_id)throw Error('REVIEW_FIELD_COVERAGE_TARGET');
@@ -423,6 +497,8 @@ export function reviewHistoricalRequestProjection(input:{review:unknown;reviewRe
   const operands=review.checks.flatMap(check=>check.calculation.input.operands.filter(o=>target.fact_key===`${check.check_id}.${o.id}`));
   if(operands.length!==1)return [];
   const operand=operands[0],pin=target.source_pins[0];
+  const periodAction=pendingPeriodPrerequisite(operand,target,review,input.fieldRequests,input.nowMs);
+  if(periodAction)return [{request_id:request.request_id,...periodAction,state:'period_required' as const}];
   const locator=parseDocumentReviewSourceLocator(operand.source.locator);
   if(locator&&'component_ids'in locator&&['quantity','amount','rate','percentage'].includes(locator.cell)){
    const check=review.checks.find(c=>target.fact_key===`${c.check_id}.${operand.id}`)!;

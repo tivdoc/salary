@@ -9,6 +9,7 @@ import {savedDocumentReadings} from './saved-field-readings';
 import { z } from 'zod';
 import { immutableDocumentSchema } from '@/engine/domain/documents';
 import { normalizedPayslipExtractionSchema } from '@/engine/extraction/payslip';
+import { hasPayslipReadingAnnotations } from '@/engine/extraction/reading-resolution';
 import { canonicalSha256, deepFreeze } from '@/engine/rule-runtime/canonical';
 import type { StoredCaseInputSnapshot, StoredCaseSnapshotPort } from '@/engine/case-analysis/contracts';
 import type { CaseAnalysisCommand } from '@/engine/wave3/contracts';
@@ -84,13 +85,26 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
     storage_path:`cases/${job.case_id}/documents/${pinned.version_id}/original.${extension}`,
     document_period:null,supersedes_document_id:null,created_at:new Date(String(d.created_at)).toISOString()}));
    const readings=savedDocumentReadings({caseId:job.case_id,month:selectedMonth,policyVersion:SAVED_EXTRACTION_POLICY,journal:row.input,checkpoint:d.result});
+   const retainContext=job.processing_profile==='qualified_ai_v1'||readings.source_transcription.length>0||readings.source_structure.length>0;
+   const firstPass=retainContext?z.object({first_pass:z.object({normalized_extraction:normalizedPayslipExtractionSchema})})
+    .safeParse(checkpoint.run.result):null;
+   if(retainContext&&(!firstPass||!firstPass.success))throw Error('SAVED_SOURCE_READING_FIRST_PASS_REQUIRED');
+   const first=firstPass?.success?firstPass.data.first_pass.normalized_extraction:null;
+   // The qualified profile needs this authenticated context to open its FIRST
+   // metadata target. No prior answer, client annotation or invented first pass
+   // can bootstrap it. Unmarked historical snapshot bytes remain unchanged.
+   if(job.processing_profile==='qualified_ai_v1'&&(!first||hasPayslipReadingAnnotations(first)||first.document_id!==pinned.version_id
+    ||[...first.fields,...first.additional_components,...(first.source_scope_observations??[]).map(o=>o.candidate)]
+     .some(o=>o.source.document_id!==pinned.version_id||o.source.page>first.quality_metrics.page_count)))throw Error('SAVED_SOURCE_READING_FIRST_PASS_INVALID');
    extractions.push({...extraction,...(readings.scalar.length?{customer_readings:readings.scalar}:{}),
     ...(readings.row_cell.length?{customer_row_readings:readings.row_cell}:{}),...(readings.source_scope.length?{customer_scope_readings:readings.source_scope}:{}),
     ...(readings.source_transcription.length?{customer_source_transcriptions:readings.source_transcription}:{}),
-    ...(readings.source_structure.length?{customer_source_structures:readings.source_structure}:{}),
-    ...(readings.source_transcription.length||readings.source_structure.length?{
+    // An explicitly loaded empty inventory is not a reading or confirmation.
+    // It pairs the qualified bootstrap context with its zero journal entries.
+    ...(readings.source_structure.length||job.processing_profile==='qualified_ai_v1'?{customer_source_structures:readings.source_structure}:{}),
+    ...(first?{
      source_reading_context:{checkpoint_result_sha256:checkpoint.result_sha256,
-      first_pass:z.object({first_pass:z.object({normalized_extraction:normalizedPayslipExtractionSchema})}).parse(checkpoint.run.result).first_pass.normalized_extraction}}:{})});
+      first_pass:first}}:{})});
   }
   const nonPayslipEvidence=await readSavedNonPayslipEvidence(this.context,job,source.documents,row.input,selectedMonth);
   // Free-text questionnaire/request answers are preserved by the source hash.

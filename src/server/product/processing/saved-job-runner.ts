@@ -69,6 +69,10 @@ async function plan(context:PostgresTransactionContext,input:Lease,documentEvide
  const documents=journal.documents.filter(d=>d.type==='payslip'&&covered.has(d.month??journal.month));
  const reviewedScopes=new Map<string,Awaited<ReturnType<typeof savedDocumentReviewSourceScope>>>();
  for(const order of orders)for(const scopeMonth of purchasedMonths(order)){
+  // Enrolled AI and owner-engineering analysis rebuild their inputs from
+  // ordinary extraction. A historical curated review cannot skip that work.
+  // The extraction worker still decides exact checkpoint/receipt reuse.
+  if(admitted.job.processing_profile==='qualified_ai_v1')continue;
   // Match canonical analysis routing: an active computation runtime still
   // requires its actual extraction. A source review is never a legal token.
   const june=scopeMonth==='2026-06'&&order.topics.length===1&&order.topics[0]==='minimum_wage';

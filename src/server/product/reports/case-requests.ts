@@ -161,6 +161,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
      }
      for(const match of fieldOverlap?reviewHistoricalRequestProjection({review:artifact.bundle.document_review,fieldRequests,reviewRequests:genericRequests,nowMs:Date.now()}):[]){
       if(match.state==='not_required'){notRequired.add(match.request_id);if('replacement_request_id'in match&&typeof match.replacement_request_id==='string')replacementReviews.set(match.request_id,match.replacement_request_id);}
+      else if(match.state==='period_required'){covered.set(match.request_id,match.field_request_id);if(match.reading_state==='unresolved_answer')unresolvedRead.add(match.request_id);}
       else{covered.set(match.request_id,match.field_request_id);alreadyRead.add(match.request_id);}
      }
      for(const match of fieldOverlap?reviewRequestsCoveredByFieldReadings({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}):[]){
