@@ -1,3 +1,5 @@
+import {enableObligationCasePolicy} from '@/engine/entitlement-review/obligations/case-replay';
+import {obligationsEntitlementInputSchema} from '@/engine/entitlement-review/obligations/contracts';
 import {attachAutomaticNonPayslipEvidence} from '@/engine/entitlement-review/automatic-nonpay';
 import {openSavedDocumentEvidenceRequests} from './saved-document-evidence-requests';
 import {DOCUMENT_EVIDENCE_POLICY} from '@/engine/extraction/document-evidence/contracts';
@@ -184,12 +186,15 @@ async function replaySavedSourceReviewAnswers(context:PostgresTransactionContext
 
 async function automaticDocumentReview(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
  const sources=attachNonPayslipInventory(await sourceReviewInput(context,job,order,month,snapshot,automaticOnly),snapshot);
- const payroll=attachAutomaticBenefitsEvidence(attachAutomaticPayrollEvidence(attachAutomaticPensionEvidence(sources,snapshot),snapshot),snapshot);
+ const payroll=attachAutomaticBenefitsEvidence(attachAutomaticPayrollEvidence(attachAutomaticPensionEvidence(sources,snapshot,automaticOnly?{source_facts:true}:undefined),snapshot),snapshot);
  const prepared=attachAutomaticNonPayslipEvidence(payroll,snapshot);
  // This new profile owns its command hash. Historical packets and previously
  // generated answer targets retain their original shape and reading rules.
- if(automaticOnly&&prepared.input.entitlement_evidence)return {...prepared,input:documentReviewInputSchema.parse({...prepared.input,
-  entitlement_evidence:enableSharedPersonalFacts(enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence,{travel:true,vacation:true,convalescence:true,working_time:true}),SHARED_PERSONAL_FACTS_EXPANDED_POLICY)})};
+ if(automaticOnly&&prepared.input.entitlement_evidence){
+  const evidence=enableTypedEntitlementPersonalFacts(prepared.input.entitlement_evidence,{travel:true,travel_journey:true,vacation:true,convalescence:true,working_time:true,age_range:true});
+  if(evidence.obligations)evidence.obligations=enableObligationCasePolicy(obligationsEntitlementInputSchema.parse(evidence.obligations));
+  return {...prepared,input:documentReviewInputSchema.parse({...prepared.input,entitlement_evidence:enableSharedPersonalFacts(evidence,SHARED_PERSONAL_FACTS_EXPANDED_POLICY)})};
+ }
  return prepared;
 }
 /** Open only source cells used by this purchased month's actual branch mapping.

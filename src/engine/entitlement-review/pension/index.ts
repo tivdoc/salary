@@ -5,11 +5,13 @@ import {sourceRelationshipUsable} from '../../document-review/source-structure-e
 import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {pensionEntitlementInputSchema,type PensionEntitlementInput,type PensionGap,type PensionDecision,type PensionShare} from './contracts.ts';
 import {resolvePensionEligibility,pensionCheckIds,pensionOrdinaryWaitingElapsed} from './eligibility.ts';
-import {PENSION_CATALOG,PENSION_LEGAL_MANIFEST,PENSION_SOURCE_REVIEW,PENSION_SOURCE_REVIEW_SHA256,pensionLegalSource,isPinnedPensionLegalSource} from './sources.ts';
+import {PENSION_CATALOG,PENSION_FLOOR_CATALOG,PENSION_FLOOR_SOURCE_REVIEW_SHA256,PENSION_LEGAL_MANIFEST,PENSION_SOURCE_REVIEW,PENSION_SOURCE_REVIEW_SHA256,pensionLegalSource,isPinnedPensionLegalSource} from './sources.ts';
+import {PENSION_STATUTORY_FLOOR_POLICY} from './source-fact-contracts.ts';
 import {assertPensionDerivedFacts,pensionCaseDecisionSources} from './product-facts.ts';
 export * from './contracts.ts';
 export * from './sources.ts';
 export * from './product-facts.ts';
+export * from './source-fact-contracts.ts';
 export {pensionCheckIds,resolvePensionEligibility} from './eligibility.ts';
 
 type Candidate=Extract<DocumentReviewCalculationInput['operation'],{kind:'candidate_rule'}>;
@@ -22,6 +24,8 @@ export const PENSION_APPLICABILITY=deepFreeze({
  'pension.rounding':'יש לציין שהחישוב המותנה משתמש בעיגול חצי כלפי מעלה לכל רכיב בחודש, ולבדוק הסדר מחייב אחר אם קיים.',
  'pension.cap_interval':'בחודש שבו תקופת הזכאות חלקית יש לקבוע בנפרד את אופן תחולת תקרת השכר הממוצע. אין בצו שנבדק נוסחת תקרה יומית מפורשת.',
 });
+export const PENSION_FLOOR_APPLICABILITY=deepFreeze({...PENSION_APPLICABILITY,
+ 'pension.statutory_floor':'החישוב מוגבל לרצפת ההפרשות על הבסיס המזוהה. הוא אינו בודק את מלוא ההסדר החוזי או הקיבוצי, וגם פער אפס או עודף רשום אינם מוכיחים עמידה בכל החובות.'});
 const shares=[['employee','6','רכיב עובד צפוי לניכוי'],['employer','6.5','תגמולי מעסיק צפויים'],['severance','6','הפרשה צפויה לרכיב פיצויים']] as const;
 type ReviewCheck=DocumentReviewInput['checks'][number];
 export type PensionComparisonEvidence=Readonly<{schema_version:'pension-recorded-source-evidence-v1';share:PensionShare;
@@ -44,12 +48,13 @@ function manifest(input:PensionEntitlementInput,operands:readonly DocumentReview
  return result;
 }
 function decisionSet(input:PensionEntitlementInput):PensionDecision[]{
- if(new Set(input.applicability.map(d=>d.decision_id)).size!==input.applicability.length||input.applicability.some(d=>!(d.decision_id in PENSION_APPLICABILITY)))throw Error('PENSION_DECISION_SET');
+ const floor=input.calculation_policy===PENSION_STATUTORY_FLOOR_POLICY,requirements=floor?PENSION_FLOOR_APPLICABILITY:PENSION_APPLICABILITY;
+ if(new Set(input.applicability.map(d=>d.decision_id)).size!==input.applicability.length||input.applicability.some(d=>!(d.decision_id in requirements)))throw Error('PENSION_DECISION_SET');
  for(const d of input.applicability)for(const source of d.sources){
   if(source.reading==='source_research'){if(!isPinnedPensionLegalSource(source))throw Error('PENSION_DECISION_LEGAL_SOURCE');}
   else sourceBound(source,input);
  }
- return Object.entries(PENSION_APPLICABILITY).filter(([id])=>!(id==='pension.prior_coverage_evidence'&&pensionOrdinaryWaitingElapsed(input))&&!(id==='pension.cap_interval'&&!resolvePensionEligibility(input).eligibility.partial_waiting_month)).map<PensionDecision>(([decision_id,explanation])=>input.applicability.find(d=>d.decision_id===decision_id)??{
+ return Object.entries(requirements).filter(([id])=>!(floor&&id==='pension.no_better_arrangement')&&!(id==='pension.prior_coverage_evidence'&&pensionOrdinaryWaitingElapsed(input))&&!(id==='pension.cap_interval'&&!resolvePensionEligibility(input).eligibility.partial_waiting_month)).map<PensionDecision>(([decision_id,explanation])=>input.applicability.find(d=>d.decision_id===decision_id)??{
   decision_id,state:'missing',basis:'ai_source_assessment',explanation,sources:[pensionLegalSource('order2011',decision_id==='pension.pensionable_wage'?4:3,decision_id)],valid_until:null}).map(d=>{const consumed=d.state==='accepted'?pensionCaseDecisionSources(input,d.decision_id):[];return consumed.length?{...d,sources:[...new Map([...d.sources,...consumed].map(s=>[canonicalSha256(s),s])).values()]}:d;});
 }
 function money(operand:DocumentReviewOperand){
@@ -73,6 +78,7 @@ function factualEligibilityDecision(input:PensionEntitlementInput):PensionDecisi
    date_policy:eligibility.date_policy,...(consumed.some(([,f])=>f.derivation)?{derivations:Object.fromEntries(consumed.filter(([,f])=>f.derivation).map(([k,f])=>[k,f.derivation]))}:{}),legal_applicability_approved:false}),sources,valid_until:null};
 }
 function calculation(input:PensionEntitlementInput,wage:DocumentReviewOperand,share:PensionShare,rate:string,decisions:PensionDecision[],recorded?:DocumentReviewOperand,relationship?:DocumentReviewCalculationInput):DocumentReviewCalculationInput{
+ const floor=input.calculation_policy===PENSION_STATUTORY_FLOOR_POLICY;
  const check_id=`${input.check_prefix}.${share}.${recorded?'comparison':'expected'}`;
  const wageOperand={...wage,id:'pension.wage'},operands:DocumentReviewOperand[]=[wageOperand,
   {id:'pension.cap',observation_id:'btl.2026.section2',state:'observed',printed_value:'13769.00',representation:'money_ils',quantity_unit:null,precision:'source_exact',source:pensionLegalSource('average2026',1,'2026-01-01; section 2; benefits: 13,769 ILS')},
@@ -84,7 +90,7 @@ function calculation(input:PensionEntitlementInput,wage:DocumentReviewOperand,sh
  const bindings:Candidate['fact_bindings']=[{ref_id:'fact.wage',operand_id:'pension.wage'}];
  if(recorded){operands.push({...recorded,id:'pension.recorded'});facts.push({ref_id:'fact.recorded',value_kind:'money',unit:'currency.ils'});bindings.push({ref_id:'fact.recorded',operand_id:'pension.recorded'});
   nodes.push({node_id:'pension.difference',operation:'subtract',left_ref:'pension.expected',right_ref:'fact.recorded'});}
- const rule=createRuleSpecPackage({schema_version:'tivdoc-rulespec-v0.6.0',rule_spec_id:`il.review.pension.${share}.${recorded?'comparison':'expected'}`,rule_spec_version:'1.0.0',topic:'pension',catalog_boundary:'real_inactive',
+ const rule=createRuleSpecPackage({schema_version:'tivdoc-rulespec-v0.6.0',rule_spec_id:`il.review.pension.${share}.${recorded?'comparison':'expected'}${floor?'.floor':''}`,rule_spec_version:floor?'2.0.0':'1.0.0',topic:'pension',catalog_boundary:'real_inactive',
   source_version_ids:PENSION_LEGAL_MANIFEST.map(s=>s.version_id),effective_period:PENSION_SOURCE_REVIEW.supported_period,sectors:['general_private_conditionally_assessed'],populations:['adult_21_59_pension_fund'],facts,
   parameters:[{ref_id:'parameter.cap',parameter_id:'il.pension.general.cap',parameter_version:'2026.1',value_kind:'money',unit:'currency.ils'},
    {ref_id:'parameter.rate',parameter_id:`il.pension.general.${share}.rate`,parameter_version:'2017.1',value_kind:'rational',unit:'ratio'}],nodes,
@@ -102,6 +108,7 @@ function calculation(input:PensionEntitlementInput,wage:DocumentReviewOperand,sh
  * Expected contributions do not depend on a transfer receipt or recorded amount. */
 export function resolvePensionEntitlement(candidate:unknown){
  const input=pensionEntitlementInputSchema.parse(candidate),ids=pensionCheckIds(input.check_prefix),checks:ReviewCheck[]=[],comparison_evidence:PensionComparisonEvidence[]=[];
+ const floor=input.calculation_policy===PENSION_STATUTORY_FLOOR_POLICY;
  assertPensionDerivedFacts(input);
  const lastDay=new Date(Date.UTC(Number(input.period.from.slice(0,4)),Number(input.period.from.slice(5,7)),0)).toISOString().slice(0,10);
  if(input.period.from<PENSION_SOURCE_REVIEW.supported_period.from||input.period.to>PENSION_SOURCE_REVIEW.supported_period.to||input.period.from.slice(8)!=='01'||input.period.to!==lastDay)throw Error('PENSION_SUPPORTED_MONTH_REQUIRED');
@@ -110,10 +117,12 @@ export function resolvePensionEntitlement(candidate:unknown){
  if(input.pensionable_wage){sourceBound(input.pensionable_wage.source,input);money(input.pensionable_wage);}
  if(input.eligible_interval_wage){sourceBound(input.eligible_interval_wage.operand.source,input);money(input.eligible_interval_wage.operand);}
  const resolved=resolvePensionEligibility(input),gaps=[...resolved.gaps],decisions=decisionSet(input);
+ if(floor)gaps.push(gap(input,'pension.complete_arrangement','unknown','מוצגת רצפת הפרשות בלבד. יש לבדוק בנפרד תנאי פנסיה מיטיבים בחוזה, בהסכם קיבוצי או בצו ענפי, לרבות בסיס גבוה יותר ושיעורים נוספים. פער אפס או עודף לעומת הרצפה אינם מאשרים שההסדר המלא קוים.',[`${input.check_prefix}.complete_arrangement`],'applicability.pension.no_better_arrangement','missing_applicability'));
  for(const d of decisions)if(d.state!=='accepted'||d.basis==='customer_declaration'||!d.sources.length||(d.valid_until!==null&&d.valid_until<=input.evaluated_at))gaps.push(gap(input,d.decision_id,d.state==='accepted'?'unknown':d.state,d.explanation,ids,`applicability.${d.decision_id}`,'missing_applicability'));
- const finish=()=>deepFreeze({schema_version:'pension-entitlement-resolution-v1' as const,input_sha256:canonicalSha256(input),catalog:PENSION_CATALOG,
+ const finish=()=>deepFreeze({schema_version:'pension-entitlement-resolution-v1' as const,input_sha256:canonicalSha256(input),catalog:floor?PENSION_FLOOR_CATALOG:PENSION_CATALOG,
   eligibility:resolved.eligibility,checks,gaps,comparison_evidence,rule_metadata:{source_review_sha256:PENSION_SOURCE_REVIEW_SHA256,
-   expected_is_cash_debt:false,recorded_is_fund_transfer:false,combined_employer_is_split:false,human_attestation:null,real_activation_allowed:false}});
+   expected_is_cash_debt:false,recorded_is_fund_transfer:false,combined_employer_is_split:false,human_attestation:null,real_activation_allowed:false,
+   ...(floor?{source_review_sha256:PENSION_FLOOR_SOURCE_REVIEW_SHA256,calculation_policy:PENSION_STATUTORY_FLOOR_POLICY,complete_arrangement_compliance_assessed:false,zero_difference_establishes_compliance:false}:{})}});
  if(resolved.eligibility.state!=='eligible')return finish();
  let wage=input.pensionable_wage;
  if(resolved.eligibility.partial_waiting_month){
@@ -124,7 +133,7 @@ export function resolvePensionEntitlement(candidate:unknown){
  if(!wage){gaps.push({...gap(input,'pension.pensionable_wage','missing','יש לזהות את סכום רכיבי השכר המבוטח של התקופה. בסיס המודפס בתלוש אינו תחליף לסיווג הרכיבים.',ids,'pensionable_wage','missing_source'),answer_kind:'number'});return finish();}
  decisions.push(factualEligibilityDecision(input));
  for(const [share,rate,title]of shares){
-  const expected=calculation(input,wage,share,rate,decisions);checks.push({check_id:expected.check_id,topic:'pension',title,explanation:'סכום צפוי לפי המסגרת הכללית שנבחרה, בכפוף לתנאי התחולה ולסיווג השכר. אינו הוכחת העברה לקופה או חוב מזומן ללקוח.',calculation:expected});
+  const expected=calculation(input,wage,share,rate,decisions);checks.push({check_id:expected.check_id,topic:'pension',title:floor?`${title} — רצפה בלבד`:title,explanation:floor?'רצפת הפרשות על בסיס המקור המזוהה, בכפוף לתנאי התחולה ולסיווג השכר. תנאים מיטיבים ובסיס גבוה יותר עשויים להגדיל את הזכאות. אין כאן בדיקת מלוא ההסדר או הוכחת העברה לקופה.':'סכום צפוי לפי המסגרת הכללית שנבחרה, בכפוף לתנאי התחולה ולסיווג השכר. אינו הוכחת העברה לקופה או חוב מזומן ללקוח.',calculation:expected});
   const recorded=input.recorded.find(r=>r.share===share),comparisonId=`${input.check_prefix}.${share}.comparison`;
   if(!recorded){gaps.push(gap(input,`pension.recorded.${share}`,'missing',`לצורך השוואת ${title}, יש לזהות בנפרד את הסכום שנרשם ואת הקשר שלו לבסיס ולתקופה. החישוב הצפוי אינו ממתין לאישור העברה לקופה.`,[comparisonId],`recorded.${share}`,'missing_source'));continue;}
   const r=recorded.relationship_check,s=r.source_structure;
@@ -140,7 +149,7 @@ export function resolvePensionEntitlement(candidate:unknown){
   const relationDecision:PensionDecision={decision_id:`pension.recorded_relationship.${share}`,state:'accepted',basis:'ai_source_assessment',
    explanation:`Existing exact source relationship receipt validated separately; source evidence SHA256 ${canonicalSha256(evidence)}. No legal or remittance authority is conferred.`,sources:[amount.source],valid_until:null};
   const compared=calculation(input,wage,share,rate,[...decisions,relationDecision],amount,r);
-  checks.push({check_id:compared.check_id,topic:'pension',title:`${title} — לעומת הסכום שנרשם`,explanation:'הפער הוא צפוי פחות רשום, עם סימן; עודף רשום אינו קובע גביית יתר. רכיב עובד, תגמולי מעסיק ופיצויים נפרדים, ואין הוכחת העברה בפועל.',calculation:compared});
+  checks.push({check_id:compared.check_id,topic:'pension',title:`${title}${floor?' — רצפה בלבד':''} — לעומת הסכום שנרשם`,explanation:floor?'הפער הוא רצפת ההפרשה פחות הסכום הרשום, עם סימן. פער אפס או עודף אינם מוכיחים קיום ההסדר המלא; תנאים מיטיבים נבדקים בנפרד. אין כאן הוכחת העברה בפועל.':'הפער הוא צפוי פחות רשום, עם סימן; עודף רשום אינו קובע גביית יתר. רכיב עובד, תגמולי מעסיק ופיצויים נפרדים, ואין הוכחת העברה בפועל.',calculation:compared});
  }
  if(input.recorded.some(r=>r.share==='combined_employer'))gaps.push(gap(input,'pension.combined_employer_split','unknown','הסכום המשולב של המעסיק נשמר כפי שנרשם. נדרש פירוט מקור כדי להשוות תגמולים ופיצויים בנפרד; לא נפצל לפי שיעורי החוק.',[`${input.check_prefix}.employer.comparison`,`${input.check_prefix}.severance.comparison`],'recorded.combined_employer','missing_source'));
  return finish();

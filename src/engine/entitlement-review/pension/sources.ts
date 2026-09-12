@@ -1,5 +1,6 @@
 import {canonicalSha256,deepFreeze} from '../../rule-runtime/canonical.ts';
 import type {DocumentReviewSource} from '../../document-review/calculations.ts';
+import {PENSION_STATUTORY_FLOOR_POLICY} from './source-fact-contracts.ts';
 
 export const PENSION_SOURCES=deepFreeze({
  order2011:{document_id:'il.pension.general.2011',version_id:'IL_GENERAL_PENSION_EXTENSION_ORDER_2011@review-20260912',
@@ -26,6 +27,16 @@ export const PENSION_CATALOG=deepFreeze({catalog_id:'il.review.pension.general.2
  rule_version:'1.0.0',catalog_boundary:'real_inactive',readiness:'conditional_review_only',interpreter:'executeRuleSpec',
  source_review_sha256:PENSION_SOURCE_REVIEW_SHA256,human_attestation:null,real_activation_allowed:false,
  supported_period:PENSION_SOURCE_REVIEW.supported_period});
+/** Additive review; historical catalog/source receipts above stay byte exact. */
+export const PENSION_FLOOR_SOURCE_REVIEW=deepFreeze({schema_version:PENSION_STATUTORY_FLOOR_POLICY,
+ reviewed_at:'2026-09-12',reviewer_kind:'ai_source_research',human_attestation:null,real_activation_allowed:false,
+ parent_source_review_sha256:PENSION_SOURCE_REVIEW_SHA256,sources:PENSION_SOURCES,supported_period:PENSION_SOURCE_REVIEW.supported_period,
+ locators:{order2011:'PDF page 4, sections 5(a) and 6(b)-(e); 6% severance minimum',order2016:'PDF page 1 section 2(a); PDF page 2 section 3(1)-(3)'},
+ interpretation:'A lower-bound contribution calculation on the identified source base; higher contractual or collective terms remain unresolved. The base is capped conservatively for this general floor, never to replace a higher contractual entitlement.',
+ rates:{employee:'6',employer:'6.5',severance:'6'},complete_arrangement_compliance_assessed:false,zero_difference_establishes_compliance:false});
+export const PENSION_FLOOR_SOURCE_REVIEW_SHA256=canonicalSha256(PENSION_FLOOR_SOURCE_REVIEW);
+export const PENSION_FLOOR_CATALOG=deepFreeze({...PENSION_CATALOG,catalog_version:'2.0.0',rule_version:'2.0.0',source_review_sha256:PENSION_FLOOR_SOURCE_REVIEW_SHA256,
+ review_claim:'statutory_floor_on_identified_base_only',complete_arrangement_compliance_assessed:false});
 export function pensionLegalSource(key:keyof typeof PENSION_SOURCES,page:number,locator:string):DocumentReviewSource{
  const s=PENSION_SOURCES[key];if(page<1||page>s.page_count)throw Error('PENSION_LEGAL_PAGE');
  return {document_id:s.document_id,version_id:s.version_id,file_sha256:s.file_sha256,page,locator,

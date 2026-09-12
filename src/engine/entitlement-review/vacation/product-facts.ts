@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {canonicalSha256} from '../../rule-runtime/canonical.ts';
+import {productAgeRangeSelection,productAgeRangeSources} from '../product-age-range.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewSource} from '../../document-review/calculations.ts';
 import {documentReviewInputSchema,type DocumentReviewInput} from '../../document-review/contracts.ts';
 import {aiReleaseDecisionMethodSchema,type AiReleaseDecisionMethod} from '../../ai-release-decisions/contracts.ts';
@@ -36,7 +37,10 @@ function validate(input:VacationEntitlementInput,review:DocumentReviewInput){
  for(const f of Object.values(input.product_facts??{}))if(typeof f==='object'&&f.source){sourceBound(f.source,input,review);if(f.state==='declared'&&!['customer_declaration','questionnaire_declaration'].includes(f.source.reading)||f.state==='observed'&&!['identified_document_reading','provider_extraction'].includes(f.source.reading))throw Error('VACATION_PRODUCT_FACT_BASIS');}
 }
 const ageAt=(birth:string,date:string)=>Number(date.slice(0,4))-Number(birth.slice(0,4))-(date.slice(5)<birth.slice(5)?1:0);
-export function evaluateVacationProductRecipe(decisionId:string,input:VacationEntitlementInput,review:DocumentReviewInput){
+export function evaluateVacationProductRecipe(decisionId:string,input:VacationEntitlementInput,review:DocumentReviewInput,options?:{age_range:true}){
+ return evaluateVacationProductRecipeInternal(decisionId,input,review,options,review);
+}
+function evaluateVacationProductRecipeInternal(decisionId:string,input:VacationEntitlementInput,review:DocumentReviewInput,options:{age_range:true}|undefined,ageReview:DocumentReviewInput|null){
  validate(input,review);const paths=['period'],no=(reason:string)=>({allowed:false,reason,consumed_paths:paths,derived_ages:null as {aged_21_or_more:boolean;under_60:boolean}|null,derived_seniority:null as number|null});
  if(!input.product_facts)return no('product_facts_opt_in_required');
  const last=new Date(Date.UTC(Number(input.period.from.slice(0,4)),Number(input.period.from.slice(5,7)),0)).toISOString().slice(0,10);
@@ -44,8 +48,11 @@ export function evaluateVacationProductRecipe(decisionId:string,input:VacationEn
  const f=input.product_facts;
  if(decisionId==='vacation.general_section3'){
   paths.push('product_facts.birth_date','product_facts.employment_relationship','product_facts.workplace_sector','product_facts.salary_basis');
-  if(!usable(f.birth_date)||!usable(f.employment_relationship)||!usable(f.workplace_sector)||!usable(f.salary_basis))return no('population_facts_missing');
-  if(f.employment_relationship.value!=='employee'||f.workplace_sector.value!=='private'||ageAt(f.birth_date.value!,input.period.from)<21||ageAt(f.birth_date.value!,input.period.to)>=60)return no('unsupported_population');
+  const age=options?.age_range?productAgeRangeSelection(input,f.birth_date,ageReview??undefined):null;
+  if(options?.age_range&&input.product_age_range){paths.push('product_age_range');if(age?.kind==='range')paths.splice(paths.indexOf('product_facts.birth_date'),1);}
+  if(age?.kind==='blocked')return no(age.reason!);
+  if(age?.kind!=='range'&&!usable(f.birth_date)||!usable(f.employment_relationship)||!usable(f.workplace_sector)||!usable(f.salary_basis))return no('population_facts_missing');
+  if(f.employment_relationship.value!=='employee'||f.workplace_sector.value!=='private'||age?.kind!=='range'&&(ageAt(f.birth_date.value!,input.period.from)<21||ageAt(f.birth_date.value!,input.period.to)>=60))return no('unsupported_population');
   if(f.salary_basis.value==='hourly'){
    paths.push('product_facts.continuous_employment','annual_basis.employment_start');
    const start=input.annual_basis?.employment_start;if(!usable(f.continuous_employment)||f.continuous_employment.value!==true||!usable(start))return no('consecutive_employment_facts_required');
@@ -77,6 +84,9 @@ export function vacationProductCaseConsumed(input:VacationEntitlementInput,paths
  return [...values,...(kinds.length?[{path:'vacation_internal_source_witnesses',state:'derived',value_sha256:canonicalSha256(witnesses),source_sha256s:hashes}]:[])];
 }
 export function replayVacationProductFacts(effective:VacationEntitlementInput,original:VacationEntitlementInput,review:DocumentReviewInput):VacationEntitlementInput{
+ return replayVacationProductFactsInternal(effective,original,review,review);
+}
+function replayVacationProductFactsInternal(effective:VacationEntitlementInput,original:VacationEntitlementInput,review:DocumentReviewInput,ageReview:DocumentReviewInput|null):VacationEntitlementInput{
  const out=structuredClone(effective);validate(out,review);if(!same(original.period,effective.period)||original.case_id!==effective.case_id)throw Error('VACATION_REPLAY_SCOPE');
  if(original.product_scenario_policy==='vacation-qualified-statutory-scenario-v1'){
   const awareness=out.product_facts?.other_vacation_terms_known,decision=out.applicability.find(d=>d.decision_id==='vacation.no_better_arrangement');
@@ -93,13 +103,13 @@ export function replayVacationProductFacts(effective:VacationEntitlementInput,or
   const binding=vacationCaseRecipeBindingSchema.parse(b),m=binding.method,r=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===m.recipe_id&&r.recipe_id.startsWith('ai-case.vacation.'));
   if(!r||r.branch!=='vacation'||r.recipe_sha256!==m.recipe_sha256||r.recipe_version!==m.recipe_version||m.source_policy_sha256!==VACATION_SOURCE_REVIEW_SHA256||m.issued_at>binding.evaluated_at||m.expires_at<=binding.evaluated_at||r.legal_sources.some(s=>!m.source_receipts.some(p=>p.source_version_id===s.version_id&&p.artifact_sha256===s.file_sha256)))throw Error('VACATION_RECIPE_BINDING');
   const prior=original.applicability.find(d=>d.decision_id===r.decision_id);if(prior){out.applicability=out.applicability.filter(d=>d.decision_id!==r.decision_id);out.applicability.push(structuredClone(prior));}
-  const ready=evaluateVacationProductRecipe(r.decision_id,out,review),inputsSha=canonicalSha256(vacationProductCaseConsumed(out,ready.consumed_paths,review));
+  const ready=evaluateVacationProductRecipeInternal(r.decision_id,out,review,r.recipe_id.endsWith('.age-range-v1')?{age_range:true}:undefined,ageReview),inputsSha=canonicalSha256(vacationProductCaseConsumed(out,ready.consumed_paths,review));
   out.applicability=out.applicability.map(d=>{if(d.decision_id!==r.decision_id||d.state!=='accepted')return d;let parsed;try{parsed=JSON.parse(d.explanation);}catch{return d;}
    return parsed?.schema_version==='ai-release-method-basis-v1'&&parsed.recipe_id===r.recipe_id&&parsed.recipe_sha256===r.recipe_sha256&&parsed.interpretation_receipt_sha256===m.interpretation_receipt_sha256&&(!ready.allowed||parsed.consumed_sha256!==inputsSha)?{...d,state:'stale',explanation:JSON.stringify({schema_version:'vacation-case-stale-v1',prior_sha256:canonicalSha256(d.explanation),reason:ready.reason??'consumed_facts_changed'})}:d;});
   const current=out.applicability.find(d=>d.decision_id===r.decision_id);let currentBasis;try{currentBasis=current?JSON.parse(current.explanation):null;}catch{currentBasis=null;}
   if(!ready.allowed||current?.state!=='accepted'||currentBasis?.schema_version!=='ai-release-method-basis-v1'||currentBasis.recipe_id!==r.recipe_id||currentBasis.recipe_sha256!==r.recipe_sha256||currentBasis.interpretation_receipt_sha256!==m.interpretation_receipt_sha256||currentBasis.consumed_sha256!==inputsSha)continue;
   const derivation={schema_version:'vacation-derived-fact-v1' as const,binding_sha256:binding.binding_sha256,inputs_sha256:inputsSha};
-  if(ready.derived_ages)for(const key of ['aged_21_or_more','under_60'] as const)if(out.facts[key].state==='missing')out.facts[key]={state:'derived',value:ready.derived_ages[key],basis:'ai_source_assessment',source:vacationLegalSource('law',1,'גיל לפי תאריך לידה; גבול מוצר 21–59'),derivation};
+  if(ready.derived_ages)for(const key of ['aged_21_or_more','under_60'] as const)if(out.facts[key].state==='missing')out.facts[key]={state:'derived',value:ready.derived_ages[key],basis:'ai_source_assessment',source:vacationLegalSource('law',1,ready.consumed_paths.includes('product_age_range')?'גיל לפי טווח שנת לידה שמורה; גבול מוצר 21–59':'גיל לפי תאריך לידה; גבול מוצר 21–59'),derivation};
   if(ready.derived_seniority!==null)out.derived_seniority={state:'derived',value:ready.derived_seniority,reference_year:2026,employment_start:out.annual_basis!.employment_start.value!,source:vacationLegalSource('law',1,'סעיפים 1 ו־3; שנת עבודה אצל אותו מעסיק או מקום'),derivation};
  }
  return out;
@@ -117,14 +127,14 @@ export function vacationProductFactQuestions(input:VacationEntitlementInput){
   ...(input.annual_basis?[{path:'annual_basis.employment_start',question:'באיזה תאריך התחלת לעבוד באותו מקום עבודה?',fact:input.annual_basis.employment_start,answer_kind:'text' as const,format:'iso_date' as const}]:[]),
   ...(f.salary_basis.value==='hourly'?[{path:'product_facts.continuous_employment',question:'האם יחסי העבודה נמשכו ברציפות מתאריך ההתחלה, בלי סיום העסקה והתחלה מחדש?',fact:f.continuous_employment,answer_kind:'choice' as const,choices:choices({'כן':true,'לא':false})}]:[]),
   ...(input.leave_pay?.mode==='hourly_quarter'?[{path:'product_facts.preceding_quarter_full_months',fact_key:vacationSourceFactKey('preceding_quarter_full_months'),question:'האם בכל שלושת החודשים שלפני החופשה עבדת חודש מלא, ללא חודש עבודה חלקי?',fact:f.preceding_quarter_full_months,answer_kind:'choice' as const,choices:choices({'כן':true,'לא':false})}]:[]),
- ];return all.filter(q=>!usable(q.fact));
+ ];return all.filter(q=>!usable(q.fact)&&!(q.path==='product_facts.birth_date'&&productAgeRangeSelection(input,f.birth_date).kind==='range'));
 }
 export function vacationProductDecisionSources(input:VacationEntitlementInput,id:string){
  if(id==='vacation.no_better_arrangement'&&input.product_scenario_policy&&input.conditional_assumptions?.some(a=>a.decision_id===id)&&input.product_facts?.other_vacation_terms_known.source)return [input.product_facts.other_vacation_terms_known.source];
- if(!input.case_recipe_bindings?.some(b=>b.method.recipe_id==='ai-case.'+id))return [];
+ const binding=input.case_recipe_bindings?.find(b=>b.method.recipe_id==='ai-case.'+id||b.method.recipe_id==='ai-case.'+id+'.age-range-v1');if(!binding)return [];
  const f=input.product_facts;if(!f)return [];
  const facts=id==='vacation.general_section3'?[f.birth_date,f.employment_relationship,f.workplace_sector,f.salary_basis,...(f.salary_basis.value==='hourly'?[f.continuous_employment,input.annual_basis?.employment_start]:[])]:id==='vacation.seniority_basis'?[f.same_employer_or_workplace,input.annual_basis?.employment_start]:[];
- return [...new Map(facts.flatMap(f=>f?.source?[f.source]:[]).map(s=>[canonicalSha256(s),s])).values()];
+ return [...new Map([...facts.flatMap(f=>f?.source?[f.source]:[]),...(binding.method.recipe_id.endsWith('.age-range-v1')?productAgeRangeSources(input):[])].map(s=>[canonicalSha256(s),s])).values()];
 }
 /** Arithmetic-layer defense. Authentication/currentness is independently
  * replayed by source-admission against the original saved source packet. */
@@ -134,7 +144,10 @@ export function assertVacationDerivedFacts(input:VacationEntitlementInput){
  for(const key of ['aged_21_or_more','under_60'] as const)if(raw.facts[key].state==='derived')raw.facts[key]={state:'missing',value:null,source:null,basis:'ai_source_assessment'};
  const sources:DocumentReviewSource[]=[];const visit=(v:unknown):void=>{const s=sourceSchema.safeParse(v);if(s.success){sources.push(s.data);return;}if(v&&typeof v==='object')Object.values(v).forEach(visit);};visit(raw);
  const review=documentReviewInputSchema.parse({schema_version:'document-review-product-v1',case_id:input.case_id,period:input.period,purchased_scope:{order_id:'internal.derived.replay',receipt_sha256:VACATION_SOURCE_REVIEW_SHA256,topics:['vacation'],origin:'legacy_paid_receipt'},documents:input.source_manifest.filter(m=>m.kind==='case_document'&&sources.some(s=>s.document_id===m.document_id&&s.version_id===m.version_id)).map(m=>({...m,kind:'other',period:input.period,label:'Internal immutable source replay',reading_origin:'provider_extraction',reading_sha256:sources.find(s=>s.document_id===m.document_id&&s.version_id===m.version_id)?.reading_receipt_sha256??VACATION_SOURCE_REVIEW_SHA256,accepted_reading_sha256:[...new Set(sources.filter(s=>s.document_id===m.document_id&&s.version_id===m.version_id).map(s=>s.reading_receipt_sha256))]})),checks:[],completion_input:{},answer_history:[],coverage_gaps:[]});
- const replay=replayVacationProductFacts(raw,raw,review);
+ // Arithmetic replay verifies the already bound interval/consumed hash. This
+ // synthetic replay context has no authenticated questionnaire snapshot; the
+ // exported replay and source-admission always perform that separate check.
+ const replay=replayVacationProductFactsInternal(raw,raw,review,null);
  for(const key of ['aged_21_or_more','under_60'] as const)if(input.facts[key].state==='derived'&&!same(input.facts[key],replay.facts[key]))throw Error('VACATION_DERIVED_AGE_REPLAY');
  if(input.derived_seniority&&!same(input.derived_seniority,replay.derived_seniority))throw Error('VACATION_DERIVED_SENIORITY_REPLAY');
 }

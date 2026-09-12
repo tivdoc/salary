@@ -1,4 +1,5 @@
 import {canonicalSha256} from '../../rule-runtime/canonical.ts';
+import {productAgeRangeSelection} from '../product-age-range.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewSource} from '../../document-review/calculations.ts';
 import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import type {AiReleaseDecisionMethod} from '../../ai-release-decisions/contracts.ts';
@@ -72,7 +73,7 @@ const pathsFor:Readonly<Record<string,readonly string[]>>={
 export type ConvalescenceCaseReadiness={allowed:boolean;reason:string|null;consumed_paths:string[];consumed_sha256:string;source_sha256s:string[];source_policy_sha256:string;dependent_check_ids:string[]};
 /** Readiness only. No assessment, legal acceptance, derived money, or extra
  * questions are generated. The caller still needs a pinned method receipt. */
-export function evaluateConvalescenceCaseRecipe(decisionId:string,candidate:ConvalescenceEntitlementInput,review?:DocumentReviewInput):ConvalescenceCaseReadiness{
+export function evaluateConvalescenceCaseRecipe(decisionId:string,candidate:ConvalescenceEntitlementInput,review?:DocumentReviewInput,options?:{age_range:true}):ConvalescenceCaseReadiness{
  const input=convalescenceEntitlementInputSchema.parse(candidate),paths=[...(pathsFor[decisionId]??[])];
  const finish=(reason:string|null):ConvalescenceCaseReadiness=>{const consumed=convalescenceCaseConsumed(input,paths);return {allowed:reason===null,reason,consumed_paths:paths,consumed_sha256:canonicalSha256(consumed),source_sha256s:[...new Set(consumed.flatMap(c=>c.source_sha256s))],source_policy_sha256:CONVALESCENCE_SOURCE_REVIEW_SHA256,dependent_check_ids:decisionId==='cv.allocation'?[input.check_prefix+'.comparison']:[input.check_prefix+'.expected',input.check_prefix+'.comparison']};};
  if(review&&(review.case_id!==input.case_id||!same(review.period,input.period)))throw Error('CV_CASE_SCOPE');
@@ -84,12 +85,16 @@ export function evaluateConvalescenceCaseRecipe(decisionId:string,candidate:Conv
   const p=input.product_facts;if(p?.schema_version!==CONVALESCENCE_CASE_FACTS_POLICY)return finish('personal_facts_v2_required');
   if(!['missing','observed','declared','derived'].includes(input.population.state))return finish('population:'+input.population.state);
   if(['observed','declared'].includes(input.population.state)&&input.population.value!=='adult_private_general_21_59')return finish('population:existing_source_conflict');
-  for(const [path,f]of [['birth_date',p.birth_date],['employment_relationship',p.employment_relationship],['public_wage_linked',p.public_wage_linked]] as const){const reason=factReason('product_facts.'+path,f,input,review);if(reason)return finish(reason);}
+  const age=options?.age_range?productAgeRangeSelection(input,p.birth_date,review):null;
+  if(options?.age_range&&input.product_age_range){paths.push('product_age_range');if(age?.kind==='range'){const index=paths.indexOf('product_facts.birth_date');if(index>=0)paths.splice(index,1);}}
+  if(age?.kind==='blocked')return finish(age.reason);
+  for(const [path,f]of [['birth_date',p.birth_date],['employment_relationship',p.employment_relationship],['public_wage_linked',p.public_wage_linked]] as const){if(path==='birth_date'&&age?.kind==='range')continue;const reason=factReason('product_facts.'+path,f,input,review);if(reason)return finish(reason);}
   const sector=p.workplace_sector.state==='missing'?p.employment_category:p.workplace_sector,reason=factReason('product_facts.workplace_sector',sector,input,review);if(reason)return finish(reason);
   if(p.employment_category.source)validateSource(p.employment_category.source,input,review);
   if(!['missing','observed','declared'].includes(p.employment_category.state))return finish('product_facts.employment_category:'+p.employment_category.state);
   if(p.employment_relationship.value!=='employee'||sector.value!=='private'||p.public_wage_linked.value!==false)return finish('population:unsupported_employee_sector_or_public_linkage');
   if(usable(p.employment_category)&&p.employment_category.value!=='private')return finish('population:employment_category_conflict');
+  if(age?.kind==='range')return finish(null);
   const birthday=p.birth_date.value!;const anniversary=(years:number)=>{const [year,month,day]=birthday.split('-').map(Number),last=new Date(Date.UTC(year+years,month,0)).getUTCDate();return `${year+years}-${String(month).padStart(2,'0')}-${String(Math.min(day,last)).padStart(2,'0')}`;};
   return finish(anniversary(21)>input.period.from||anniversary(60)<=input.period.to?'population:outside_product_age21_59':null);
  }
@@ -140,18 +145,18 @@ export function convalescenceSourceChainReadiness(input:ConvalescenceEntitlement
 export function validateConvalescenceCaseMethod(method:AiReleaseDecisionMethod,at:string,input:ConvalescenceEntitlementInput,review?:DocumentReviewInput){
  const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===method.recipe_id&&r.recipe_id.startsWith('ai-case.cv.'));
  if(!recipe||recipe.branch!=='convalescence'||recipe.recipe_sha256!==method.recipe_sha256||recipe.recipe_version!==method.recipe_version||method.source_policy_sha256!==CONVALESCENCE_SOURCE_REVIEW_SHA256||Date.parse(method.issued_at)>Date.parse(at)||Date.parse(method.expires_at)<=Date.parse(at)||recipe.legal_sources.some(s=>!method.source_receipts.some(r=>r.source_version_id===s.version_id&&r.artifact_sha256===s.file_sha256)))throw Error('CV_CASE_METHOD_BINDING');
- return evaluateConvalescenceCaseRecipe(recipe.decision_id,input,review);
+ return evaluateConvalescenceCaseRecipe(recipe.decision_id,input,review,recipe.recipe_id.endsWith('.age-range-v1')?{age_range:true}:undefined);
 }
 /** The immutable source keeps its original facts and law-only method decision.
  * Only the current effective candidate cites the consumed personal/source data. */
 export function convalescenceCaseDecisionSources(input:ConvalescenceEntitlementInput,id:string){
- if(!input.case_recipe_bindings?.some(b=>b.method.recipe_id==='ai-case.'+id))return [];
- const paths=pathsFor[id];return paths?sourcesIn(paths.map(p=>at(input,p))):[];
+ const binding=input.case_recipe_bindings?.find(b=>b.method.recipe_id==='ai-case.'+id||b.method.recipe_id==='ai-case.'+id+'.age-range-v1');if(!binding)return [];
+ const paths=binding.method.recipe_id.endsWith('.age-range-v1')?evaluateConvalescenceCaseRecipe(id,input,undefined,{age_range:true}).consumed_paths:pathsFor[id];return paths?sourcesIn(paths.map(p=>at(input,p))):[];
 }
 export function replayConvalescenceCaseFacts(effective:ConvalescenceEntitlementInput,original:ConvalescenceEntitlementInput,review?:DocumentReviewInput){
  if(original.case_id!==effective.case_id||!same(original.period,effective.period))throw Error('CV_CASE_REPLAY_SCOPE');
  const result=structuredClone(effective),bindings=original.case_recipe_bindings??[];
- if(bindings.some(b=>b.method.recipe_id==='ai-case.cv.population'))result.population=structuredClone(original.population);
+ if(bindings.some(b=>['ai-case.cv.population','ai-case.cv.population.age-range-v1'].includes(b.method.recipe_id)))result.population=structuredClone(original.population);
  if(new Set(bindings.map(b=>b.method.recipe_id)).size!==bindings.length)throw Error('CV_DUPLICATE_CASE_BINDING');
  if(original.case_recipe_bindings)result.case_recipe_bindings=structuredClone(original.case_recipe_bindings);
  for(const b of bindings){convalescenceCaseBindingSchema.parse(b);const ready=validateConvalescenceCaseMethod(b.method,b.evaluated_at,result,review),recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===b.method.recipe_id)!;
@@ -181,7 +186,7 @@ export function convalescenceCaseQuestions(input:ConvalescenceEntitlementInput){
  const add=(path:string,fact:Fact,question:string,entries?:Record<string,string|boolean>,format?:'iso_date')=>{if(!usable(fact))questions.push({path:'product_facts.'+path,fact,question,answer_kind:entries?'choice':'text',...(entries?{choices:[...Object.entries(entries).map(([label,value])=>({label,value})),{label:'לא ידוע',value:null}]}:{}),...(format?{format}:{})});};
  const populationAccepted=input.applicability.some(d=>d.decision_id==='cv.population'&&d.state==='accepted'&&d.basis!=='customer_declaration'&&d.sources.length&&(d.valid_until===null||Date.parse(d.valid_until)>Date.parse(input.evaluated_at)));
  if(!['observed','declared','derived'].includes(input.population.state)||!populationAccepted){
-  add('birth_date',p.birth_date,'מה תאריך הלידה שלך? גיל 21–59 מגדיר את היקף בדיקת המוצר, ואינו תנאי הזכאות לדמי הבראה בצו.',undefined,'iso_date');
+  if(productAgeRangeSelection(input,p.birth_date).kind!=='range')add('birth_date',p.birth_date,'מה תאריך הלידה שלך? גיל 21–59 מגדיר את היקף בדיקת המוצר, ואינו תנאי הזכאות לדמי הבראה בצו.',undefined,'iso_date');
   add('employment_relationship',p.employment_relationship,'איך הועסקת אצל המעסיק בתקופת הבדיקה?',{'כשכיר/ה':'employee','כעצמאי/ת כנגד חשבוניות':'self_employed','בדרך אחרת':'other'});
   if(!usable(p.employment_category))add('workplace_sector',p.workplace_sector,'מה סוג מקום העבודה בתקופה הנבדקת?',{'מעסיק פרטי':'private','מעסיק ציבורי':'public','מפעל מוגן':'protected_workshop','אחר':'other'});
   add('public_wage_linked',p.public_wage_linked,'האם השכר נקבע לפי דירוג או טבלאות שכר במגזר הציבורי, או מוצמד אליהם?',{'כן':true,'לא':false});

@@ -1,13 +1,14 @@
 import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import type {DocumentReviewSource} from '../document-review/calculations.ts';
-import {pensionLegalSource,PENSION_SOURCE_REVIEW_SHA256} from '../entitlement-review/pension/sources.ts';
+import {pensionLegalSource,PENSION_SOURCE_REVIEW_SHA256,PENSION_FLOOR_SOURCE_REVIEW_SHA256} from '../entitlement-review/pension/sources.ts';
 import {travelLegalSource,TRAVEL_SOURCE_REVIEW_SHA256} from '../entitlement-review/travel/sources.ts';
 import {vacationLegalSource,VACATION_SOURCE_REVIEW_SHA256} from '../entitlement-review/vacation/sources.ts';
 import {minimumWageLegalSource,MINIMUM_WAGE_SOURCE_REVIEW_SHA256} from '../entitlement-review/minimum-wage/source-policy.ts';
 import {workingTimeLegalSource,WORKING_TIME_SOURCE_REVIEW,WORKING_TIME_SOURCE_REVIEW_SHA256} from '../entitlement-review/working-time/source-policy.ts';
 import {convalescenceLegalSource,CONVALESCENCE_SOURCE_REVIEW_SHA256} from '../entitlement-review/convalescence/source-policy.ts';
+import {obligationLegalSource,OBLIGATIONS_SOURCE_REVIEW_SHA256} from '../entitlement-review/obligations/source-policy.ts';
 
-export type DecisionBranch='pension'|'travel'|'vacation'|'minimum_wage'|'working_time'|'convalescence';
+export type DecisionBranch='pension'|'travel'|'vacation'|'minimum_wage'|'working_time'|'convalescence'|'obligations';
 function weeklyInterpretationSource():DocumentReviewSource{
  const source=WORKING_TIME_SOURCE_REVIEW.sources.find(s=>s.key==='weekly_judgment');
  if(!source)throw Error('AI_DECISION_WEEKLY_SOURCE_REQUIRED');
@@ -59,7 +60,18 @@ function workingTimeCaseRecipe(decision_id:string,method:string,paths:string[],l
   decision_scope:perDay?'exact_workday_id_v2_or_historical_scope_v1' as const:'source_week' as const,source_context_paths:['documents','non_payslip_evidence','answer_history']};
  return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
 }
-export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
+function obligationCaseRecipe(decision_id:string,method:string,paths:string[]){
+ const ordinary=recipe('obligations',decision_id,method,paths,OBLIGATIONS_SOURCE_REVIEW_SHA256,[
+  obligationLegalSource('prior',381,'סעיפים 1–6 — הצעה וקיבול בהודעה או בהתנהגות; אין קיבול מכוח שתיקה'),
+  obligationLegalSource('amendment2',2,'סעיף 25(א), (ב1) בנוסח תיקון2; אינו מוחל מכוח חודש התלוש'),
+  obligationLegalSource('amendment3',2,'סעיף 25(א)(4) לחוזה עבודה והוראת תחולה סעיף2; נסיבות המקרה נבדקות בנפרד'),
+ ]);
+ const {recipe_sha256:prior,...body}=ordinary;void prior;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'explicit-obligations-case-policy-v2' as const,
+  decision_scope:'exact_obligation_id_and_clause' as const,source_context_paths:['documents','non_payslip_evidence','answer_history']};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+const historicalRecipes=deepFreeze([
  recipe('pension','pension.rounding','half_up_per_component_per_month',['period','facts.aged_21_or_more','facts.under_60','pensionable_wage'],PENSION_SOURCE_REVIEW_SHA256,[pensionLegalSource('order2011',4,'סעיף 6; שיטת העיגול היא בחירת פרשנות נפרדת')]),
  recipe('travel','travel.rounding','half_up_final_period_agora',['period','commute_days','discounted_daily_fare'],TRAVEL_SOURCE_REVIEW_SHA256,[travelLegalSource(1,'סעיפים 2–3; שיטת העיגול אינה הוראה מפורשת בצו')]),
  recipe('vacation','vacation.pay_rounding','hourly_quarter_half_up_once',['period','leave_pay.mode','leave_pay.wage','leave_pay.leave_calendar_days'],VACATION_SOURCE_REVIEW_SHA256,[vacationLegalSource('law',3,'סעיף 10; עיגול חד פעמי לפי שיטת החישוב שנבדקה')]),
@@ -100,5 +112,45 @@ export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  workingTimeCaseRecipe('wt.workday_assignment','identified_exact_clock_rows_and_explicit_multi_interval_day_association',['period','week_start','calculation_policy','workdays','product_facts.assignment_witnesses'],[workingTimeLegalSource('law',1,'זהות יום העבודה ומקטעיו מזוהה במקור; אין איחוד משמרות מכוח הפסקה קצרה בלבד'),workingTimeLegalSource('week',1,'שיוך רישום ליום העבודה בהסדר המזוהה')],true),
  workingTimeCaseRecipe('wt.payroll_allocation','identified_complete_same_day_payment_allocation_without_reused_rows',['period','week_start','calculation_policy','workdays'],[workingTimeLegalSource('law',3,'סעיפים 16–17 — השוואה לרישום שהוקצה לאותו יום; אין הוכחת תשלום או חלוקה שווה אוטומטית')],true),
  workingTimeCaseRecipe('wt.worked_time','identified_clock_duration_and_explicit_work_break_classification_per_day',['period','week_start','calculation_policy','workdays'],[workingTimeLegalSource('law',1,'הגדרת שעות עבודה בסעיף 1; סיווג נוכחות והפסקות מתוך עובדות המקור')],true),
+ obligationCaseRecipe('obligation.clause_interpretation','whole_literal_expression_with_identified_agreement_context_not_binding_by_ocr',['period','clause','promise','product_facts','source_witness.literal_promise']),
+ obligationCaseRecipe('obligation.agreement_binding','positive_exact_source_acceptance_matching_authentic_case_context',['period','clause','product_facts','source_witness.agreement_acceptance']),
+ obligationCaseRecipe('obligation.payment_scope','identified_whole_month_and_same_period_quantity_no_proration',['period','clause','payment_period','promise','source_witness.payment_period']),
+ obligationCaseRecipe('obligation.complete_conditions','positive_closed_source_inventory_not_empty_extraction',['period','clause','condition_inventory','source_witness.complete_conditions']),
+ obligationCaseRecipe('obligation.rounding','fixed_or_linear_exact_agora_without_rounding_effect',['period','promise','source_witness.payment_period']),
+]);
+// Additive recipes retain the exact historical bodies and hashes. Selection
+// requires the versioned source packet; a descriptor alone cannot upgrade it.
+function ageRangeRecipe(parentId:string){
+ const parent=historicalRecipes.find(r=>r.recipe_id===parentId);
+ if(!parent)throw Error('AI_AGE_RECIPE_PARENT_REQUIRED');
+ const {recipe_sha256,...body}=parent;void recipe_sha256;
+ const candidate={...body,recipe_id:parent.recipe_id+'.age-range-v1',
+  parent_recipe_sha256:parent.recipe_sha256,age_range_policy:'questionnaire-age-range-reuse-v1' as const,
+  case_predicate:'questionnaire-age-range-case-v1' as const,
+  method:parent.method+'_or_authenticated_questionnaire_age_interval_without_invented_birth_date',
+  consumed_paths:[...parent.consumed_paths,'product_age_range'],
+  source_context_paths:['documents','checks','entitlement_declarations','answer_history']};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+function pensionFloorRecipe(decision_id:string,method:string,paths:string[],page:number,locator:string){
+ const ordinary=recipe('pension',decision_id,method,paths,PENSION_FLOOR_SOURCE_REVIEW_SHA256,[
+  pensionLegalSource('order2011',page,locator),
+  pensionLegalSource('order2016',2,'סעיף 3 — שיעורי מינימום לפי המוצר המזוהה; הסדר מיטיב נשאר בלתי מוכרע'),
+  ...(decision_id==='pension.statutory_floor'?[pensionLegalSource('order2016',1,'סעיף 2(א) — השכר לפי ההסכם ולא פחות מבסיס פנסיית החובה; רצפה אינה אישור למלוא ההסדר')]:[]),
+ ]);
+ const {recipe_sha256,...body}=ordinary;void recipe_sha256;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id+'.floor-v2',case_predicate:'pension-statutory-floor-case-v2' as const,
+  calculation_policy:'pension-statutory-floor-v2' as const,source_context_paths:['documents','non_payslip_evidence','answer_history'],
+  complete_arrangement_compliance_assessed:false,zero_difference_establishes_compliance:false};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
+ ...historicalRecipes,
+ ...['ai-case.mw.population','ai-case.cv.population','ai-case.vacation.general_section3','ai-case.wt.coverage'].map(ageRangeRecipe),
+ pensionFloorRecipe('pension.general_coverage','explicit_employee_private_product_age21_59_for_floor_only',['period','product_facts','facts.aged_21_or_more','facts.under_60'],3,'סעיפים 2–4 — אוכלוסייה; גיל 21–59 הוא גבול המוצר ואינו אישור לבסיס או להסדר מיטיב'),
+ pensionFloorRecipe('pension.pension_fund','identified_pension_product_from_exact_current_relation_or_source_clause',['period','product_facts.pension_product','recorded','source_facts.arrangement'],4,'סעיף 6 — סוג המוצר לפי מקור מזוהה, לא סיווג לקוח'),
+ pensionFloorRecipe('pension.pensionable_wage','identified_complete_component_basis_exact_period_and_operand',['period','pensionable_wage','eligible_interval_wage','source_facts'],4,'סעיף 6(ב)–(ג) — בסיס מזוהה לתקופה; אין אישור לתקרה חלקית או להסדר גבוה יותר'),
+ pensionFloorRecipe('pension.prior_coverage_evidence','identified_prior_insurance_source_covers_actual_employment_start',['period','facts.employment_start','facts.prior_coverage_at_start','source_facts.prior_insurance'],4,'סעיף 6(ה) — מקור לביטוח קודם במועד תחילת העבודה; תזמון ההפקדה נבדק בנפרד'),
+ pensionFloorRecipe('pension.statutory_floor','explicit_general_minimum_on_identified_base_not_complete_entitlement',['period','calculation_policy'],4,'סעיפים 5(א), 6 — רצפת 6% לפיצויים; אין הכרעה במלוא ההסדר או הוכחת העברה'),
 ]);
 export type AiReleaseDecisionRecipe=(typeof AI_RELEASE_DECISION_RECIPES)[number];

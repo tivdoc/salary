@@ -24,7 +24,7 @@ export async function loadAiAssemblyHelpers(){
  export {canonicalSha256} from './src/engine/rule-runtime/canonical';
  export {AI_RELEASE_RUNTIME_FAMILIES} from './src/engine/ai-release-runtime/contracts';
  export {AI_RELEASE_DECISION_RECIPES} from './src/engine/ai-release-decisions/catalog';
- export {aiReleaseDecisionMethodSchema} from './src/engine/ai-release-decisions/contracts';
+ export {aiReleaseDecisionMethodSchema,AI_RELEASE_MAX_DECISION_METHODS} from './src/engine/ai-release-decisions/contracts';
  export {aiReleaseConfigurationSchema,aiReleaseFamilyMethodsSha256,verifyAiReleaseConfiguration} from './src/server/product/processing/ai-release-configuration';
  export {getCompiledAiReleaseBuild} from './src/server/product/processing/ai-release-build';`,resolveDir:ROOT,loader:'ts'},
   absWorkingDir:ROOT,bundle:true,platform:'node',format:'cjs',target:'node22',packages:'external',write:false,logLevel:'silent',
@@ -65,7 +65,7 @@ export function aiAssemblySchemas(h){
   configuration:z.object({configuration_id:z.uuid(),revision:z.number().int().positive(),population:id}).strict(),
   evidence:z.array(z.object({id,kind:z.enum(kinds),path:z.string().min(1).max(2048),sha256:sha}).strict()).min(1).max(2048),
   policy,registry,source_reviews:z.array(source).min(1).max(256),interpretations:z.array(interpretation).min(1).max(128),
-  tests:z.array(test).min(1).max(256),methods:z.array(method).max(24),branches:z.array(branch).min(1).max(9)}).strict();
+  tests:z.array(test).min(1).max(256),methods:z.array(method).max(h.AI_RELEASE_MAX_DECISION_METHODS),branches:z.array(branch).min(1).max(9)}).strict();
  return {input,result};
 }
 

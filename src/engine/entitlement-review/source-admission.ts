@@ -13,6 +13,12 @@ import {replayPensionProductFacts} from './pension/product-facts.ts';
 import {convalescenceEntitlementInputSchema} from './convalescence/contracts.ts';
 import {replayConvalescenceCaseFacts} from './convalescence/product-decisions.ts';
 import {obligationsEntitlementInputSchema} from './obligations/contracts.ts';
+import {replayObligationProductFacts} from './obligations/case-replay.ts';
+import {OBLIGATIONS_CASE_POLICY} from './obligations/source-policy.ts';
+import {materializeTravelJourneyFacts} from './travel/journey-facts.ts';
+import {TRAVEL_JOURNEY_FACTS_POLICY} from './travel/product-facts.ts';
+import {assertProductAgeRangeMaterialization} from './age-range-materialization.ts';
+import {assertPensionSourceFacts} from './pension/source-facts.ts';
 import {obligationProductFactKey,type ObligationProductFactKey} from './obligations/product-facts.ts';
 import {vacationEntitlementInputSchema} from './vacation/contracts.ts';
 import {replayVacationProductFacts} from './vacation/product-facts.ts';
@@ -39,6 +45,15 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
  }
  const completion=parseReviewCompletionInput(input.completion_input);
  assertSharedPersonalMaterialization(input,packet);
+ assertProductAgeRangeMaterialization(input,packet);
+ if(packet.pension){const pension=pensionEntitlementInputSchema.parse(packet.pension);if(pension.source_facts)assertPensionSourceFacts(pension,input);}
+ if(packet.obligations&&input.entitlement_evidence?.obligations){
+  const original=obligationsEntitlementInputSchema.parse(input.entitlement_evidence.obligations),effective=obligationsEntitlementInputSchema.parse(packet.obligations);
+  if(original.case_policy===OBLIGATIONS_CASE_POLICY&&canonicalSha256(original)!==canonicalSha256(effective)){
+   const expected=replayObligationProductFacts(effective,original,input);
+   if(canonicalSha256(expected.obligations.map(o=>({id:o.obligation_id,assessments:o.assessments})))!==canonicalSha256(effective.obligations.map(o=>({id:o.obligation_id,assessments:o.assessments}))))throw Error('OBLIGATION_CASE_ASSESSMENT_REPLAY');
+  }
+ }
  for(const raw of packet.working_time===undefined?[]:workingTimeEntitlementInputSchema.array().min(1).max(6).parse(packet.working_time)){const b=workingTimeEntitlementInputSchema.parse(raw);if(b.product_facts?.schema_version==='working-time-product-facts-v2')assertWorkingTimeSourceFacts(b,input);}
  function citation(value:DocumentReviewSource){
   if(value.reading==='questionnaire_declaration'){assertQuestionnaireSource(input,value);return;}
@@ -69,6 +84,13 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
   if(!value||typeof value!=='object')return;
   if(Array.isArray(value)){for(const [i,item]of value.entries())visit(item,depth+1,path+'.'+i);return;}
   const object=value as Record<string,unknown>;
+  if(path==='travel.commute_days'&&object.state==='declared'&&input.entitlement_evidence?.travel&&packet.travel){
+   const original=travelEntitlementInputSchema.parse(input.entitlement_evidence.travel),effective=travelEntitlementInputSchema.parse(packet.travel);
+   if(original.product_facts?.schema_version===TRAVEL_JOURNEY_FACTS_POLICY&&original.commute_days===null){
+    const expected=materializeTravelJourneyFacts(effective,original,input).commute_days;
+    if(canonicalSha256(expected)!==canonicalSha256(object))throw Error('TRAVEL_JOURNEY_SOURCE_REPLAY');
+   }
+  }
   if(object.state==='derived'&&path==='convalescence.population'){
    if(!input.entitlement_evidence?.convalescence||!packet.convalescence)throw Error('CV_DERIVED_POPULATION_KEY');
    const raw=convalescenceEntitlementInputSchema.parse(input.entitlement_evidence.convalescence),effective=convalescenceEntitlementInputSchema.parse(packet.convalescence);

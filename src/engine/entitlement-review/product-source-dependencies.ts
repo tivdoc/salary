@@ -1,9 +1,13 @@
+import {obligationSourceReadingDependencies} from './obligations/source-reading-dependencies.ts';
+import {obligationsEntitlementInputSchema} from './obligations/contracts.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import type {DocumentReviewInput} from '../document-review/contracts.ts';
 import type {NonPayslipReadingDependency} from './automatic-nonpay.ts';
 import {vacationEntitlementInputSchema} from './vacation/contracts.ts';
 import {vacationSourceReadingDependencies} from './vacation/product-source-evidence.ts';
 import {workingTimeEntitlementInputSchema} from './working-time/contracts.ts';
+import {pensionEntitlementInputSchema} from './pension/contracts.ts';
+import {attachPensionSourceFacts} from './pension/source-facts.ts';
 import {attachWorkingTimeSourceFacts} from './working-time/source-facts.ts';
 import {savedNonPayslipEvidenceSchema} from '../extraction/document-evidence/snapshot.ts';
 
@@ -13,6 +17,8 @@ import {savedNonPayslipEvidenceSchema} from '../extraction/document-evidence/sna
 export function entitlementSourceReadingDependencies(input:DocumentReviewInput,initial:readonly NonPayslipReadingDependency[]=[]):NonPayslipReadingDependency[]{
  const evidence=input.entitlement_composition?.evidence??input.entitlement_evidence;
  const dependencies=[...initial];
+ if(evidence?.obligations)dependencies.push(...obligationSourceReadingDependencies(obligationsEntitlementInputSchema.parse(evidence.obligations),input));
+ if(evidence?.pension)dependencies.push(...attachPensionSourceFacts(pensionEntitlementInputSchema.parse(evidence.pension),input).reading_dependencies);
  if(evidence?.vacation)dependencies.push(...vacationSourceReadingDependencies(vacationEntitlementInputSchema.parse(evidence.vacation),input));
  if(Array.isArray(evidence?.working_time))for(const week of evidence.working_time)
   dependencies.push(...attachWorkingTimeSourceFacts(workingTimeEntitlementInputSchema.parse(week),input).reading_dependencies);

@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {questionnaireAgeRangeProofSchema} from '../questionnaire-age-range.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput} from '../../document-review/calculations.ts';
 import {workingTimeProductFactsSchema,workingTimeCaseRecipeBindingSchema} from './product-fact-contracts.ts';
 
@@ -26,6 +27,7 @@ export const workingTimeEntitlementInputSchema=z.object({
  case_id:z.string().min(1).max(160),run_id:z.string().min(1).max(160),check_id_prefix:id,
  period:z.object({from:date,to:date}).strict(),evaluated_at:z.iso.datetime(),
  source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,
+ product_age_range:questionnaireAgeRangeProofSchema.optional(),
  arrangement:workingTimeSourceFactSchema(z.enum(['adult_hourly_five_day_42','adult_hourly_six_day_42','unsupported'])),
  scheduled_weekdays:workingTimeSourceFactSchema(z.array(z.number().int().min(0).max(6)).min(5).max(6)),
  week_start:date,week_inventory:workingTimeSourceFactSchema(z.enum(['complete','partial','unknown'])),

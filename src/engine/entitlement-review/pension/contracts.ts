@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput} from '../../document-review/calculations.ts';
 import {pensionProductFactsSchema,pensionCaseRecipeBindingSchema,pensionDerivedFactSchema} from './product-facts.ts';
+import {pensionSourceFactsSchema,PENSION_STATUTORY_FLOOR_POLICY} from './source-fact-contracts.ts';
 
 const source=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
@@ -26,6 +27,8 @@ export const pensionEntitlementInputSchema=z.object({schema_version:z.literal('p
  eligible_interval_wage:z.object({period,operand}).strict().nullable(),
  applicability:z.array(decision).max(12),
  product_facts:pensionProductFactsSchema.optional(),
+ source_facts:pensionSourceFactsSchema.optional(),
+ calculation_policy:z.literal(PENSION_STATUTORY_FLOOR_POLICY).optional(),
  case_recipe_bindings:z.array(pensionCaseRecipeBindingSchema).max(6).optional(),
  conditional_assumptions:z.array(z.object({decision_id:z.literal('pension.pensionable_wage'),explanation:z.string().min(1).max(1000)}).strict()).max(1).optional(),
  recorded:z.array(z.object({share:z.enum(['employee','employer','severance','combined_employer']),

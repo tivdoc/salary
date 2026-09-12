@@ -7,6 +7,9 @@ import {parseReviewCompletionInput,resolveReviewCompletion,reviewDeclaredAnswerV
 import {ENTITLEMENT_REVIEW_POLICY,entitlementCompositionSchema,type EntitlementEvidence} from './contracts.ts';
 import {assertEntitlementSourcePacket} from './source-admission.ts';
 import {entitlementLegalDocuments} from './legal-documents.ts';
+import {obligationsEntitlementInputSchema} from './obligations/contracts.ts';
+import {OBLIGATIONS_CASE_POLICY} from './obligations/source-policy.ts';
+import {materializeQuestionnaireAgeRanges} from './age-range-materialization.ts';
 import {pensionProductReview} from './pension-product.ts';
 import {workingTimeProductReview} from './working-time-product.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
@@ -58,8 +61,11 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
   checks:original.checks.filter(c=>!priorChecks.has(c.check_id)),coverage_gaps:original.coverage_gaps.filter(g=>!priorGaps.has(g.check_id)),
   answer_bindings:original.answer_bindings.filter(b=>!priorChecks.has(b.check_id)),
   completion_input:{...completion,needs:completion.needs.filter(n=>!priorFacts.has(n.fact_key))}});
- const laws=entitlementLegalDocuments(base.case_id,['working_time','pension','travel','minimum_wage','vacation','convalescence'].filter(t=>base.entitlement_evidence?.[t as keyof EntitlementEvidence]!==undefined)),packet=assertEntitlementSourcePacket(base,base.entitlement_evidence,laws);
- const baseline=resolve(base,packet);
+ const obligationPolicy=base.entitlement_evidence?.obligations?obligationsEntitlementInputSchema.parse(base.entitlement_evidence.obligations).case_policy:undefined;
+ const topics=['working_time','pension','travel','minimum_wage','vacation','convalescence'].filter(t=>base.entitlement_evidence?.[t as keyof EntitlementEvidence]!==undefined);
+ if(obligationPolicy===OBLIGATIONS_CASE_POLICY)topics.push(...base.purchased_scope.topics.filter(t=>t==='contract'||t==='bonuses'));
+ const laws=entitlementLegalDocuments(base.case_id,topics,obligationPolicy===OBLIGATIONS_CASE_POLICY?{obligations_policy:obligationPolicy}:undefined),packet=assertEntitlementSourcePacket(base,base.entitlement_evidence,laws);
+ const baseline=resolve(base,materializeQuestionnaireAgeRanges(packet,packet,base));
  const documents=[...base.documents];for(const law of laws){const at=documents.findIndex(d=>d.document_id===law.document_id);if(at<0)documents.push(law);else documents[at]=law;}
  let withNeeds=documentReviewInputSchema.parse({...base,documents,completion_input:{...parseReviewCompletionInput(base.completion_input),needs:[...parseReviewCompletionInput(base.completion_input).needs,...baseline.needs]}});
  let effective=materializeSharedPersonalFacts(withNeeds,packet,answeredEvidence(withNeeds,packet,baseline.answer_targets));

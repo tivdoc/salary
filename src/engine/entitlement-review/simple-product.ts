@@ -26,6 +26,7 @@ export function simpleEntitlementProduct(input:DocumentReviewInput,topic:Topic,c
   const typed=typedEntitlementQuestions(topic,e),ids=topic==='minimum_wage'?[minimumWageEntitlementInputSchema.parse(e).check_id]:topic==='vacation'?['annual.quota','annual.prorated','pay.expected','pay.comparison'].map(s=>vacationEntitlementInputSchema.parse(e).check_prefix+'.'+s):['expected','comparison'].map(s=>(topic==='travel'?travelEntitlementInputSchema.parse(e):convalescenceEntitlementInputSchema.parse(e)).check_prefix+'.'+s);
   for(const q of typed){const old=missing.find(m=>m.path===q.path);if(old){Object.assign(old,{kind:'missing_fact',question:q.question,answer_kind:q.answer_kind,typed:q});}
    else missing.push({key:'personal.'+q.path,path:q.path,state:q.fact.state,kind:'missing_fact',question:q.question,ids,answer_kind:q.answer_kind,typed:q});}
+  if(topic==='travel'&&travelEntitlementInputSchema.parse(e).product_facts?.schema_version==='travel-product-facts-v2')for(const m of missing)if(m.path==='commute_days')m.gap_only=true;
   if(topic==='vacation'&&vacationEntitlementInputSchema.parse(e).product_facts){
    for(const m of missing)if(['facts.aged_21_or_more','facts.under_60','seniority_year'].includes(m.path))m.gap_only=true;
   }

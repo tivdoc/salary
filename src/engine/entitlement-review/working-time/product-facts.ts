@@ -1,4 +1,5 @@
 import {canonicalSha256} from '../../rule-runtime/canonical.ts';
+import {productAgeRangeSelection} from '../product-age-range.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewSource} from '../../document-review/calculations.ts';
 import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import type {AiReleaseDecisionMethod} from '../../ai-release-decisions/contracts.ts';
@@ -24,7 +25,7 @@ export function workingTimeProductFactQuestions(input:WorkingTimeEntitlementInpu
  const p=input.product_facts;if(p?.schema_version!==WORKING_TIME_PRODUCT_FACTS_POLICY)return [];
  const out:WorkingTimeProductQuestion[]=[];
  const add=(key:keyof typeof p,question:string,values?:Record<string,string|boolean>,format?:WorkingTimeProductQuestion['format'])=>{const f=p[key];if(!f||typeof f!=='object'||!('state'in f)||usable(f))return;out.push({path:'product_facts.'+key,fact:f,question,answer_kind:values?'choice':'text',...(values?{choices:[...Object.entries(values).map(([label,value])=>({label,value})),{label:'לא ידוע',value:null}]}:{}),...(format?{format}:{})});};
- add('birth_date','מה תאריך הלידה שלך? הנתון ישמש לבדיקת הגיל בתקופת העבודה.',undefined,'iso_date');
+ if(productAgeRangeSelection(input,p.birth_date).kind!=='range')add('birth_date','מה תאריך הלידה שלך? הנתון ישמש לבדיקת הגיל בתקופת העבודה.',undefined,'iso_date');
  add('employment_relationship','מה היה מעמד העבודה בתקופה הנבדקת?',{'שכיר או שכירה':'employee','עצמאי או עצמאית':'self_employed','מעמד אחר':'other'});
  add('workplace_sector','באיזה מגזר היה מקום העבודה בתקופה הנבדקת?',{'המגזר הפרטי':'private','המגזר הציבורי':'public','מפעל מוגן':'protected_workshop','מגזר אחר':'other'});
  add('salary_basis','כיצד נקבע השכר בתקופה הנבדקת?',{'לפי שעות עבודה':'hourly','שכר חודשי':'monthly','שיטה אחרת':'other'});
@@ -97,14 +98,14 @@ export function replayWorkingTimeProductFacts(effective:WorkingTimeEntitlementIn
   // bound decision must carry the exact compiler-produced method basis.
   let basis;try{basis=JSON.parse(prior.explanation);}catch{throw Error('WT_CASE_DECISION_BINDING');}
   if(basis?.schema_version!=='ai-release-method-basis-v1'||basis.recipe_id!==recipe.recipe_id||basis.recipe_sha256!==recipe.recipe_sha256||basis.interpretation_receipt_sha256!==b.method.interpretation_receipt_sha256)throw Error('WT_CASE_DECISION_BINDING');
-  const ready=evaluateWorkingTimeCaseRecipe(b.decision_id,result,{review,day_id:b.day_id??undefined});
+  const ready=evaluateWorkingTimeCaseRecipe(b.decision_id,result,{review,day_id:b.day_id??undefined,...(b.method.recipe_id.endsWith('.age-range-v1')?{age_range:true as const}:{})});
   const current=ready.allowed&&basis.consumed_sha256===ready.consumed_sha256?prior:{...prior,state:'stale' as const,explanation:JSON.stringify({schema_version:'working-time-case-stale-v1',prior_explanation_sha256:canonicalSha256(prior.explanation),reason:ready.allowed?'consumed_facts_changed':ready.reason})};
   result.applicability=result.applicability.filter(d=>d.decision_id!==b.decision_id);result.applicability.push(structuredClone(current));
  }
  return result;
 }
 export function workingTimeCaseDecisionSources(input:WorkingTimeEntitlementInput,decisionId:string){
- if(!input.case_recipe_bindings?.some(b=>b.decision_id===decisionId))return [];
- const ready=evaluateWorkingTimeCaseRecipe(decisionId,input);return ready.allowed?sourcesIn(ready.consumed_paths.map(p=>at(input,p))):[];
+ const binding=input.case_recipe_bindings?.find(b=>b.decision_id===decisionId);if(!binding)return [];
+ const ready=evaluateWorkingTimeCaseRecipe(decisionId,input,binding.method.recipe_id.endsWith('.age-range-v1')?{age_range:true}:{});return ready.allowed?sourcesIn(ready.consumed_paths.map(p=>at(input,p))):[];
 }
 export function workingTimeRestDeclarationSources(input:WorkingTimeEntitlementInput){const p=input.product_facts;return p?.schema_version===WORKING_TIME_PRODUCT_FACTS_POLICY&&isWorkingTimeRestDeclarationSource(input.rest_window.source)?sourcesIn([p.rest_start_date,p.rest_start_time,p.rest_end_date,p.rest_end_time]):[];}

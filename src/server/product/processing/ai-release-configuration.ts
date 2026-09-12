@@ -112,7 +112,7 @@ export function verifyAiReleaseConfiguration(candidate:unknown,expectedBuild:AiR
    &&recipe.source_policy_sha256===method.source_policy_sha256,'AI_CONFIGURATION_METHOD_RECIPE');
   const interpretation=interpretations.get(method.interpretation_receipt_sha256);
   assert(interpretation&&within(method,interpretation)&&within(method,policy)&&within(method,registry),'AI_CONFIGURATION_METHOD_WINDOW');
-  const families=recipe.branch==='working_time'?['entitlement.working_time','entitlement.rest_day']:[`entitlement.${recipe.branch}`];
+  const families=recipe.branch==='working_time'?['entitlement.working_time','entitlement.rest_day']:recipe.branch==='obligations'?['entitlement.contract','entitlement.bonuses']:[`entitlement.${recipe.branch}`];
   assert(families.includes(interpretation.branch_id),'AI_CONFIGURATION_METHOD_FAMILY');
   const required=[...new Set(recipe.legal_sources.map(s=>`${s.version_id}:${s.file_sha256}`))];
   const supplied=method.source_receipts.map(s=>`${s.source_version_id}:${s.artifact_sha256}`);

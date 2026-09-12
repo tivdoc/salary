@@ -7,7 +7,7 @@ import {savedNonPayslipEvidenceSchema} from '../extraction/document-evidence/sna
 import type {NormalizedDocumentEvidence,DocumentEvidenceValue} from '../extraction/document-evidence/contracts.ts';
 import {workingTimeEntitlementInputSchema,type WorkingTimeEntitlementInput,type WorkingTimeWorkday} from './working-time/index.ts';
 import {obligationsEntitlementInputSchema,obligationTextSha256,type ExplicitObligation} from './obligations/index.ts';
-import {normalizeMoney} from '../extraction/normalization.ts';
+import {parseObligationLiteralPromise as literalPromise} from './obligations/literal-promise.ts';
 import {workingTimePayrollRate} from './working-time/payroll-rate.ts';
 import {enableObligationProductFacts} from './obligations/product-facts.ts';
 
@@ -23,15 +23,6 @@ const missing={state:'missing' as const,value:null,source:null};
 const dateAt=(date:string,days:number)=>new Date(Date.parse(date+'T00:00:00Z')+days*86400000).toISOString().slice(0,10);
 const sunday=(date:string)=>dateAt(date,-new Date(date+'T00:00:00Z').getUTCDay());
 const rowKey=(o:Observation)=>canonicalSha256({page:o.original.page,block:o.original.block_id,row:o.original.row_id});
-// Whole-clause grammar, not a search for whichever amount makes arithmetic fit.
-// Qualifications, ranges, discretion and multiple monetary terms do not match.
-function literalPromise(text:string){
- const match=/^המעסיק ישלם לעובד(?:ת)? (בונוס בסך )?([0-9]+(?:\.[0-9]{1,2})?) (?:ש״ח|ש"ח|ILS) (בכל חודש|לחודש|לכל (שעה|יום|משמרת) בחודש)[.]?$/u.exec(text.trim());
- if(!match)return null;
- const amount=normalizeMoney(match[2],'ILS');if(!amount)return null;
- return {bonus:!!match[1],minor:amount.minor_units,kind:match[4]?'linear' as const:'fixed' as const,
-  unit:match[4]==='שעה'?'hours' as const:match[4]==='יום'?'days' as const:'count' as const};
-}
 
 /** A normalized candidate is never accepted by its confidence. The caller's
  * saved snapshot must contain exactly the same authenticated reading journal. */

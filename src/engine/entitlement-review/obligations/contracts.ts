@@ -1,6 +1,8 @@
 import {z} from 'zod';
 import {createHash} from 'node:crypto';
 import {obligationProductFactsSchema} from './product-facts.ts';
+import {obligationCaseBindingSchema} from './case-bindings.ts';
+import {OBLIGATIONS_CASE_POLICY} from './source-policy.ts';
 import {documentReviewCalculationInputSchema} from '../../document-review/calculations.ts';
 const source=documentReviewCalculationInputSchema.shape.operands.element.shape.source,operand=documentReviewCalculationInputSchema.shape.operands.element;
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict().refine(p=>p.from<=p.to,'OBLIGATION_PERIOD');
@@ -12,12 +14,13 @@ const clause=z.object({source,text:z.string().min(1).max(6000),text_sha256:z.str
 export const obligationSchema=z.object({obligation_id:identifier,topic:z.enum(['contract','bonuses']),title:z.string().min(1).max(150),clause,payment_period:period,
  promise:z.discriminatedUnion('kind',[z.object({kind:z.literal('fixed'),amount:operand.nullable()}).strict(),z.object({kind:z.literal('linear'),rate:operand.nullable(),quantity:operand.nullable(),quantity_unit:z.enum(['count','hours','days'])}).strict()]),
  product_facts:obligationProductFactsSchema.optional(),
+ case_recipe_bindings:z.array(obligationCaseBindingSchema).max(5).optional(),
  conditions_mode:z.literal('all'),conditions:z.array(z.object({condition_id:identifier,description:z.string().min(1).max(300),fact}).strict()).max(8),
  assessments:z.array(decision).max(8),scenario:z.enum(['established_only','if_conditions_fulfilled']).default('established_only'),
  recorded:z.object({payment_id:identifier,amount:operand,payment_period:period,scope_assessment:decision}).strict().nullable(),
 }).strict();
 export const obligationsEntitlementInputSchema=z.object({schema_version:z.literal('obligations-entitlement-input-v1'),catalog_id:z.literal('il.review.explicit_obligations.2026'),catalog_version:z.literal('1.0.0'),case_id:z.string().min(1),run_id:z.string().min(1),check_prefix:z.string().regex(/^[a-z][a-z0-9._:-]{2,70}$/u),period,evaluated_at:z.iso.datetime(),
- purchased_topics:z.array(z.enum(['contract','bonuses'])).min(1).max(2),source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,obligations:z.array(obligationSchema).max(32),
+ purchased_topics:z.array(z.enum(['contract','bonuses'])).min(1).max(2),source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,obligations:z.array(obligationSchema).max(32),case_policy:z.literal(OBLIGATIONS_CASE_POLICY).optional(),
 }).strict();
 export type ObligationsEntitlementInput=z.infer<typeof obligationsEntitlementInputSchema>;
 export type ExplicitObligation=z.infer<typeof obligationSchema>;

@@ -6,7 +6,10 @@ import {validateReviewSourceStructure,sourceRelationshipUsable} from '../../docu
 import {aiReleaseDecisionMethodSchema,type AiReleaseDecisionMethod} from '../../ai-release-decisions/contracts.ts';
 import {AI_RELEASE_DECISION_RECIPES} from '../../ai-release-decisions/catalog.ts';
 import type {PensionEntitlementInput} from './contracts.ts';
-import {PENSION_SOURCE_REVIEW_SHA256,pensionLegalSource} from './sources.ts';
+import {PENSION_SOURCE_REVIEW_SHA256,PENSION_FLOOR_SOURCE_REVIEW_SHA256,pensionLegalSource} from './sources.ts';
+import {PENSION_STATUTORY_FLOOR_POLICY} from './source-fact-contracts.ts';
+import {assertPensionSourceFacts,isPensionProducedSource,attachPensionSourceFacts} from './source-facts.ts';
+import {resolvePensionEligibility} from './eligibility.ts';
 
 const source=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
@@ -40,6 +43,8 @@ function validateFacts(input:PensionEntitlementInput,review?:DocumentReviewInput
   sourceBound(f.source,input,review);
   if(f.state==='declared'&&!['customer_declaration','questionnaire_declaration'].includes(f.source.reading)||f.state==='observed'&&f.source.reading!=='identified_document_reading')throw Error('PENSION_PRODUCT_FACT_BASIS');
  }
+ for(const f of Object.values(input.source_facts??{}))if(typeof f==='object'&&f!==null&&'state'in f&&f.source)sourceBound(f.source,input,review);
+ if(review&&input.source_facts)assertPensionSourceFacts(input,review);
 }
 function anniversary(birth:string,years:number){const [y,m,d]=birth.split('-').map(Number),last=new Date(Date.UTC(y+years,m,0)).getUTCDate();return `${y+years}-${String(m).padStart(2,'0')}-${String(Math.min(d,last)).padStart(2,'0')}`;}
 export function pensionProductAge(input:PensionEntitlementInput){
@@ -56,6 +61,8 @@ function identifiedFund(input:PensionEntitlementInput,review?:DocumentReviewInpu
   validateReviewSourceStructure(c);const s=c.source_structure;
   if(s&&sourceRelationshipUsable(s)&&s.kind==='source_relationship'&&s.entry.reading?.value.kind==='source_relationship'&&s.entry.reading.value.fund_kind==='pension')paths.push(`recorded.${index}.relationship_check`);
  }
+ const arrangement=input.source_facts?.arrangement;
+ if(arrangement?.state==='observed'&&arrangement.value?.product==='pension_fund'&&isPensionProducedSource(arrangement.source))paths.push('source_facts.arrangement');
  return paths;
 }
 export type PensionProductQuestion={path:string;question:string;fact:ProductFact;answer_kind:'text'|'choice';format?:'iso_date';choices?:readonly {label:string;value:string|boolean|null}[]};
@@ -69,7 +76,7 @@ export function pensionProductFactQuestions(input:PensionEntitlementInput):Pensi
  add('employment_relationship','מה היה מעמד העבודה בתקופה הנבדקת?',[{label:'שכיר או שכירה',value:'employee'},{label:'עצמאי או עצמאית',value:'self_employed'},{label:'מעמד אחר',value:'other'}]);
  add('workplace_sector','באיזה מגזר היה מקום העבודה בתקופה הנבדקת?',[{label:'המגזר הפרטי',value:'private'},{label:'המגזר הציבורי',value:'public'},{label:'מפעל מוגן',value:'protected_workshop'},{label:'מגזר אחר',value:'other'}]);
  if(!identifiedFund(input).length)add('pension_product','באיזה מוצר פנסיוני נוהל הביטוח בתקופה הנבדקת?',[{label:'קרן פנסיה',value:'pension_fund'},{label:'פוליסת ביטוח',value:'insurance_policy'},{label:'קופת גמל',value:'provident_fund'},{label:'מוצר אחר',value:'other'}]);
- add('other_pension_terms_known','האם ידוע לך על תנאי פנסיה נוספים בחוזה, בהסכם קיבוצי או בהסדר של מקום העבודה?',[{label:'כן',value:true},{label:'לא ידוע לי על תנאים נוספים',value:false}]);
+ if(input.calculation_policy!==PENSION_STATUTORY_FLOOR_POLICY)add('other_pension_terms_known','האם ידוע לך על תנאי פנסיה נוספים בחוזה, בהסכם קיבוצי או בהסדר של מקום העבודה?',[{label:'כן',value:true},{label:'לא ידוע לי על תנאים נוספים',value:false}]);
  return out.filter(q=>!usable(q.fact)).map(q=>({...q,...(q.choices?{choices:[...q.choices,{label:'לא ידוע',value:null}]}:{})}));
 }
 export type PensionCaseRecipeReadiness={allowed:boolean;reason:string|null;consumed_paths:string[];derived_facts?:{aged_21_or_more:boolean;under_60:boolean}};
@@ -98,12 +105,37 @@ export function evaluatePensionCaseRecipe(decisionId:string,input:PensionEntitle
   const links=identifiedFund(input,review);paths.push(...links);
   if(usable(p?.pension_product)){paths.push('product_facts.pension_product');if(p!.pension_product.value!=='pension_fund')return no('pension_product_conflict_or_unsupported');}
   if(links.length)return {allowed:true,reason:null,consumed_paths:paths};
+  const arrangement=input.source_facts?.arrangement;
+  if(arrangement?.state==='observed'&&arrangement.value?.product==='pension_fund'&&isPensionProducedSource(arrangement.source)){
+   paths.push('source_facts.arrangement');return {allowed:true,reason:null,consumed_paths:paths};
+  }
   paths.push('product_facts.pension_product');
   return p?.pension_product.state==='observed'&&p.pension_product.source?.reading==='identified_document_reading'&&p.pension_product.value==='pension_fund'?{allowed:true,reason:null,consumed_paths:paths}:no('identified_fund_source_missing');
  }
  if(decisionId==='pension.no_better_arrangement')return no(usable(p?.other_pension_terms_known)&&p!.other_pension_terms_known.value===true?'other_arrangement_requires_source_review':'arrangement_source_scope_missing');
- if(decisionId==='pension.pensionable_wage')return no('wage_component_classification_source_missing');
- if(decisionId==='pension.prior_coverage_evidence')return no('prior_insurance_at_start_source_review_required');
+ if(decisionId==='pension.pensionable_wage'){
+  const interval=resolvePensionEligibility(input).eligibility,partial=interval.partial_waiting_month;
+  const wage=partial?input.eligible_interval_wage?.operand:input.pensionable_wage,basis=partial?input.source_facts?.eligible_interval_basis:input.source_facts?.wage_basis;
+  paths.push(partial?'eligible_interval_wage':'pensionable_wage',partial?'source_facts.eligible_interval_basis':'source_facts.wage_basis');
+  if(partial)paths.push('facts.employment_start','facts.employment_end','facts.prior_coverage_at_start','facts.continuous_employment');
+  if(basis?.state!=='observed'||!basis.value||!isPensionProducedSource(basis.source))return no(basis?.state==='conflict'?'wage_source_conflict':'wage_component_classification_source_missing');
+  const period=partial?interval.eligible_interval:input.period;
+  if(!period||canonicalSha256(period)!==canonicalSha256(basis.value.period))return no('wage_source_period_mismatch');
+  if(!wage||wage.state!=='observed'||wage.source.reading==='customer_declaration'||wage.printed_value===null||basis.value.operand_sha256!==canonicalSha256(wage))return no('wage_source_operand_mismatch');
+  sourceBound(wage.source,input,review);return {allowed:true,reason:null,consumed_paths:paths};
+ }
+ if(decisionId==='pension.prior_coverage_evidence'){
+  paths.push('facts.employment_start','facts.prior_coverage_at_start','source_facts.prior_insurance');
+  const start=input.facts.employment_start,prior=input.facts.prior_coverage_at_start,reading=input.source_facts?.prior_insurance;
+  if(!['known','derived'].includes(start.state)||!start.value||!['known','derived'].includes(prior.state)||prior.value!==true)return no('prior_insurance_fact_missing_or_conflicting');
+  if(reading?.state!=='observed'||!reading.value||!isPensionProducedSource(reading.source))return no(reading?.state==='conflict'?'prior_insurance_source_conflict':'prior_insurance_at_start_source_review_required');
+  if(reading.value.period.from>start.value||reading.value.period.to<start.value)return no('prior_insurance_source_period_mismatch');
+  return {allowed:true,reason:null,consumed_paths:paths};
+ }
+ if(decisionId==='pension.statutory_floor'){
+  paths.push('calculation_policy');
+  return input.calculation_policy===PENSION_STATUTORY_FLOOR_POLICY?{allowed:true,reason:null,consumed_paths:paths}:no('statutory_floor_policy_not_selected');
+ }
  if(decisionId==='pension.cap_interval')return no('partial_period_cap_method_not_supported');
  return no('unsupported_recipe');
 }
@@ -111,7 +143,8 @@ export function pensionCaseConsumed(input:PensionEntitlementInput,paths:readonly
  const sources:DocumentReviewSource[]=[];const visit=(v:unknown):void=>{const s=source.safeParse(v);if(s.success){sources.push(s.data);return;}if(v&&typeof v==='object')for(const child of Object.values(v))visit(child);};visit(value);
  return {path:'entitlement_evidence.pension.'+path,state:value&&typeof value==='object'&&'state' in value?String(value.state):value===null||value===undefined?'missing':'structural',value_sha256:canonicalSha256(value??null),source_sha256s:[...new Set(sources.map(s=>canonicalSha256(s)))]};});}
 export function pensionCaseDecisionSources(input:PensionEntitlementInput,decisionId:string){
- if(!input.case_recipe_bindings?.some(b=>b.method.recipe_id==='ai-case.'+decisionId))return [];
+ const suffix=input.calculation_policy===PENSION_STATUTORY_FLOOR_POLICY?'.floor-v2':'';
+ if(!input.case_recipe_bindings?.some(b=>b.method.recipe_id==='ai-case.'+decisionId+suffix))return [];
  const raw=structuredClone(input);for(const key of ['aged_21_or_more','under_60'] as const)if(raw.facts[key].state==='derived')raw.facts[key]={state:'missing',value:null,source:null,basis:'ai_source_assessment'};
  const ready=evaluatePensionCaseRecipe(decisionId,raw);if(!ready.allowed)return [];
  const result:DocumentReviewSource[]=[];const visit=(v:unknown):void=>{const s=source.safeParse(v);if(s.success){result.push(s.data);return;}if(v&&typeof v==='object')for(const child of Object.values(v))visit(child);};
@@ -125,7 +158,9 @@ export function materializePensionCaseFacts(input:PensionEntitlementInput,review
  const bindings=input.case_recipe_bindings??[];if(new Set(bindings.map(b=>b.method.recipe_id)).size!==bindings.length)throw Error('PENSION_DUPLICATE_CASE_BINDING');
  for(const raw of bindings){const binding=pensionCaseRecipeBindingSchema.parse(raw);
   const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===binding.method.recipe_id);
-  if(!recipe||!['ai-case.pension.general_coverage','ai-case.pension.pension_fund'].includes(recipe.recipe_id)||recipe.branch!=='pension'||recipe.recipe_sha256!==binding.method.recipe_sha256||recipe.recipe_version!==binding.method.recipe_version||binding.method.source_policy_sha256!==PENSION_SOURCE_REVIEW_SHA256
+  const expectedPolicy=input.calculation_policy===PENSION_STATUTORY_FLOOR_POLICY?PENSION_FLOOR_SOURCE_REVIEW_SHA256:PENSION_SOURCE_REVIEW_SHA256;
+  const allowed=input.calculation_policy===PENSION_STATUTORY_FLOOR_POLICY?['general_coverage','pension_fund','pensionable_wage','prior_coverage_evidence','statutory_floor'].map(id=>'ai-case.pension.'+id+'.floor-v2'):['ai-case.pension.general_coverage','ai-case.pension.pension_fund'];
+  if(!recipe||!allowed.includes(recipe.recipe_id)||recipe.branch!=='pension'||recipe.recipe_sha256!==binding.method.recipe_sha256||recipe.recipe_version!==binding.method.recipe_version||binding.method.source_policy_sha256!==expectedPolicy
    ||binding.method.issued_at>binding.evaluated_at||binding.method.expires_at<=binding.evaluated_at||recipe.legal_sources.some(s=>!binding.method.source_receipts.some(r=>r.source_version_id===s.version_id&&r.artifact_sha256===s.file_sha256)))throw Error('PENSION_CASE_BINDING_SCOPE');
   const ready=evaluatePensionCaseRecipe(recipe.decision_id,input,review);
   const currentConsumed=canonicalSha256(pensionCaseConsumed(input,ready.consumed_paths));
@@ -149,12 +184,12 @@ export function materializePensionCaseFacts(input:PensionEntitlementInput,review
 export function replayPensionProductFacts(effective:PensionEntitlementInput,original:PensionEntitlementInput,review:DocumentReviewInput){
  if(original.case_id!==effective.case_id||canonicalSha256(original.period)!==canonicalSha256(effective.period))throw Error('PENSION_CASE_REPLAY_SCOPE');
  const raw=structuredClone(effective);raw.case_recipe_bindings=structuredClone(original.case_recipe_bindings);
- for(const b of original.case_recipe_bindings??[]){const id=b.method.recipe_id.replace(/^ai-case\./u,'');const prior=original.applicability.find(d=>d.decision_id===id);if(!prior)continue;
+ for(const b of original.case_recipe_bindings??[]){const id=b.method.recipe_id.replace(/^ai-case\./u,'').replace(/\.floor-v2$/u,'');const prior=original.applicability.find(d=>d.decision_id===id);if(!prior)continue;
   let basis;try{basis=JSON.parse(prior.explanation);}catch{continue;}
   if(basis?.schema_version==='ai-release-method-basis-v1'&&basis.recipe_id===b.method.recipe_id&&basis.recipe_sha256===b.method.recipe_sha256&&basis.interpretation_receipt_sha256===b.method.interpretation_receipt_sha256){const index=raw.applicability.findIndex(d=>d.decision_id===id);if(index<0)raw.applicability.push(structuredClone(prior));else raw.applicability[index]=structuredClone(prior);}
  }
  for(const key of ['aged_21_or_more','under_60'] as const){if(original.facts[key].state==='derived')throw Error('PENSION_RAW_DERIVED_FACT');if(raw.facts[key].state==='derived')raw.facts[key]=structuredClone(original.facts[key]);}
- return materializePensionCaseFacts(raw,review);
+ return materializePensionCaseFacts(attachPensionSourceFacts(raw,review).input,review);
 }
 /** Defense in depth for the engine. Authentication replays this against raw
  * source input separately; a derivation cannot merely carry a claimed hash. */

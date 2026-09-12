@@ -108,6 +108,7 @@ export function resolveMinimumWageEntitlement(raw:unknown){
  });
  const evidence={method:input.method,population:input.population,employment:input.employment,inventory:input.eligible_pay_inventory,
   ...(input.case_recipe_bindings?.length?{product_facts:input.product_facts}:{}),
+  ...(input.case_recipe_bindings?.some(b=>b.method.recipe_id.endsWith('.age-range-v1'))&&input.product_age_range?{product_age_range:input.product_age_range}:{}),
   components:input.components.map(c=>({id:c.id,classification:c.classification,...(included.has(c.classification.value??'')?{period:c.period}:{} )})),
   coverage:method==='full_monthly'?input.monthly_coverage:input.ordinary_hours_period};
  const evidenceSources=sourcesOf(evidence);for(let i=0;i<Math.max(1,evidenceSources.length);i+=16)decisions.push({decision_id:'mw.evidence.'+i,state:'accepted',basis:'ai_source_assessment',

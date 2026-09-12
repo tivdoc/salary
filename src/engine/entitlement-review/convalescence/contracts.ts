@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {questionnaireAgeRangeProofSchema} from '../questionnaire-age-range.ts';
 import {documentReviewCalculationInputSchema} from '../../document-review/calculations.ts';
 import {convalescencePersonalFactsSchema} from './product-facts.ts';
 import {convalescenceCaseBindingSchema,convalescencePopulationDerivationSchema} from './case-bindings.ts';
@@ -14,6 +15,7 @@ export const convalescenceEntitlementInputSchema=z.object({
  schema_version:z.literal('convalescence-entitlement-input-v1'),catalog_version:z.literal('1.0.0'),
  case_id:z.string().min(1),run_id:z.string().min(1),check_prefix:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),
  period,evaluated_at:z.iso.datetime(),source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,
+ product_age_range:questionnaireAgeRangeProofSchema.optional(),
  population:convalescenceFactSchema(z.enum(['adult_private_general_21_59','public_or_pegged','protected_workshop','other'])).extend({
   state:z.enum(['observed','declared','derived','missing','unknown','conflict','stale','expired','unreadable']),derivation:convalescencePopulationDerivationSchema.optional(),
  }).strict().refine(f=>f.state==='derived'?f.derivation!==undefined:f.derivation===undefined,'CV_POPULATION_DERIVATION_STATE'),

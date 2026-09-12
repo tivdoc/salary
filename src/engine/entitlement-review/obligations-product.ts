@@ -45,6 +45,6 @@ export function obligationsProductReview(input:DocumentReviewInput,candidate:unk
  });
  return {checks:[...raw.checks],gaps,needs,answer_targets,...(outcomes.length?{nonmonetary_outcomes:outcomes}:{}),selections:topics.map(topic=>{
   const checks=raw.checks.filter(c=>c.topic===topic),rules=checks.map(c=>documentReviewCalculationInputSchema.parse(c.calculation).operation).filter(o=>o.kind==='candidate_rule').map(o=>({rule_id:o.rule.rule_spec_id,version:o.rule.rule_spec_version,sha256:o.rule.content_sha256}));
-  return {topic,catalog_id:OBLIGATIONS_CATALOG.catalog_id,catalog_version:OBLIGATIONS_CATALOG.catalog_version,evidence_sha256:canonicalSha256(e),source_policy_sha256:OBLIGATIONS_CATALOG.source_review_sha256,status:checks.length||outcomes.some(o=>o.topic===topic)?'selected_for_review':'missing_facts',rule_pins:rules,generated_check_ids:checks.map(c=>c.check_id),generated_gap_ids:gaps.filter(g=>g.topic===topic).map(g=>g.check_id),publication_authority:false,authority_status:'candidate_review_not_financial_authority'};
+  return {topic,catalog_id:OBLIGATIONS_CATALOG.catalog_id,catalog_version:OBLIGATIONS_CATALOG.catalog_version,evidence_sha256:canonicalSha256(e),source_policy_sha256:raw.catalog.source_review_sha256,status:checks.length||outcomes.some(o=>o.topic===topic)?'selected_for_review':'missing_facts',rule_pins:rules,generated_check_ids:checks.map(c=>c.check_id),generated_gap_ids:gaps.filter(g=>g.topic===topic).map(g=>g.check_id),publication_authority:false,authority_status:'candidate_review_not_financial_authority'};
  })};
 }

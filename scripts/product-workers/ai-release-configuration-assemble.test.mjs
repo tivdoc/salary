@@ -6,7 +6,7 @@ import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {AI_ASSEMBLY_VERSION,loadAiAssemblyHelpers,assembleAiReleaseConfiguration,aiAssemblyReviewBinding,parseAiAssemblyArgs,
+import {AI_ASSEMBLY_VERSION,aiAssemblySchemas,loadAiAssemblyHelpers,assembleAiReleaseConfiguration,aiAssemblyReviewBinding,parseAiAssemblyArgs,
  readAiAssemblyEvidence,writeAiAssemblyOutput,runAiAssembly,safeAiAssemblyError} from './ai-release-configuration-assemble.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -60,6 +60,15 @@ function fixture(withMethod=false){
  setResult({review_binding_sha256:aiAssemblyReviewBinding(input,'interpretation.one',h)});
  return {input,store,result,setResult,run};
 }
+
+it('shares the bounded method capacity with the ordinary configuration contract',()=>{
+ const f=fixture(true),method=f.input.methods[0],schema=aiAssemblySchemas(h).input.shape.methods;
+ expect(h.AI_RELEASE_MAX_DECISION_METHODS).toBe(64);
+ expect(schema.safeParse(Array.from({length:64},(_,i)=>({...method,recipe_id:'synthetic.capacity.'+i}))).success).toBe(true);
+ expect(schema.safeParse(Array.from({length:65},(_,i)=>({...method,recipe_id:'synthetic.capacity.'+i}))).success).toBe(false);
+ // Schema capacity does not accept invented recipe identities for assembly.
+ f.input.methods[0].recipe_id='synthetic.unknown';return expect(f.run()).rejects.toThrow('AI_ASSEMBLY_RECIPE_PIN');
+});
 
 describe('offline immutable AI configuration assembly',()=>{
  it('builds all links from receipt IDs and preserves unresolved status and original input',async()=>{

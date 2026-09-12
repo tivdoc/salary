@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {questionnaireAgeRangeProofSchema} from '../questionnaire-age-range.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput} from '../../document-review/calculations.ts';
 import {vacationProductFactsSchema,vacationCaseRecipeBindingSchema,vacationDerivedFactSchema,vacationDerivedSenioritySchema} from './product-facts.ts';
 
@@ -20,6 +21,7 @@ export const vacationEntitlementInputSchema=z.object({schema_version:z.literal('
  catalog_id:z.literal('il.review.vacation.general.2026'),catalog_version:z.literal('1.0.0'),
  case_id:z.string().min(1),run_id:z.string().min(1),check_prefix:z.string().regex(/^[a-z][a-z0-9._:-]{2,110}$/u),
  period,calendar_year:z.literal(2026),evaluated_at:z.iso.datetime(),source_manifest:documentReviewCalculationInputSchema.shape.source_manifest,
+ product_age_range:questionnaireAgeRangeProofSchema.optional(),
  facts:z.object({aged_21_or_more:vacationFactSchemas.boolean,under_60:vacationFactSchemas.boolean}).strict(),
  seniority_year:operand.nullable(),
  derived_seniority:vacationDerivedSenioritySchema.optional(),

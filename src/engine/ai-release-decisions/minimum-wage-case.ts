@@ -4,6 +4,7 @@ import type {DocumentReviewInput} from '../document-review/contracts.ts';
 import {minimumWageCaseRecipeBindingSchema,minimumWageEntitlementInputSchema,type MinimumWageEntitlementInput} from '../entitlement-review/minimum-wage/contracts.ts';
 import {AI_RELEASE_DECISION_RECIPES} from './catalog.ts';
 import type {AiReleaseDecisionMethod} from './contracts.ts';
+import {productAgeRangeSelection} from '../entitlement-review/product-age-range.ts';
 
 const record=(v:unknown):v is Record<string,unknown>=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const same=(a:unknown,b:unknown)=>canonicalSha256(a)===canonicalSha256(b);
@@ -74,7 +75,7 @@ function ordinary(input:MinimumWageEntitlementInput,source:DocumentReviewInput):
  if(!['missing','derived'].includes(input.method.state)&&!(usable(input.method)&&input.method.value==='published_hourly_182'))return 'method_state_preserved';
  return null;
 }
-export function evaluateMinimumWageCaseRecipe(decisionId:string,input:MinimumWageEntitlementInput,source:DocumentReviewInput){
+export function evaluateMinimumWageCaseRecipe(decisionId:string,input:MinimumWageEntitlementInput,source:DocumentReviewInput,options?:{age_range:true}){
  const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id==='ai-case.'+decisionId);let reason:string|null=null;
  if(!recipe||recipe.branch!=='minimum_wage')reason='unsupported_case_recipe';
  else if(input.case_id!==source.case_id||!same(input.period,source.period))reason='case_period_mismatch';
@@ -83,9 +84,11 @@ export function evaluateMinimumWageCaseRecipe(decisionId:string,input:MinimumWag
   const f=input.product_facts;
   if(f?.schema_version!=='minimum-wage-personal-facts-v2')reason='case_facts_v2_required';
   else{
-   for(const key of ['birth_date','employment_relationship','workplace_sector','adapted_wage_approval','special_wage_arrangement'] as const)if(!usable(f[key])){reason=key+':'+f[key].state;break;}
-   if(!reason){const birth=f.birth_date.value!,twentyOne=`${Number(input.period.from.slice(0,4))-21}${input.period.from.slice(4)}`,sixty=`${Number(input.period.to.slice(0,4))-60}${input.period.to.slice(4)}`;
-    if(birth>twentyOne||birth<=sixty)reason='age_outside_21_59_whole_month';
+   const age=options?.age_range?productAgeRangeSelection(input,f.birth_date,source):null;
+   if(age?.kind==='blocked')reason=age.reason;
+   for(const key of ['birth_date','employment_relationship','workplace_sector','adapted_wage_approval','special_wage_arrangement'] as const){if(key==='birth_date'&&age?.kind==='range')continue;if(!usable(f[key])){reason=reason??key+':'+f[key].state;break;}}
+   if(!reason){const birth=f.birth_date.value,twentyOne=`${Number(input.period.from.slice(0,4))-21}${input.period.from.slice(4)}`,sixty=`${Number(input.period.to.slice(0,4))-60}${input.period.to.slice(4)}`;
+    if(age?.kind!=='range'&&birth&&(birth>twentyOne||birth<=sixty))reason='age_outside_21_59_whole_month';
     else if(f.employment_relationship.value!=='employee')reason='employment_relationship:unsupported';
     else if(f.workplace_sector.value!=='private')reason='workplace_sector:unsupported';
     else if(f.adapted_wage_approval.value!==false)reason='adapted_wage:unsupported';
@@ -99,7 +102,12 @@ export function evaluateMinimumWageCaseRecipe(decisionId:string,input:MinimumWag
   reason=ordinary(input,source)??singlePrintedBase(input,source);
   if(!reason&&!sameDocument(input.ordinary_hours!.source,input.components[0].amount.source))reason='allocation_source_mismatch';
  }
- return {allowed:reason===null,reason,consumed_paths:recipe?.consumed_paths??[]};
+ const paths=[...(recipe?.consumed_paths??[])];
+ if(options?.age_range&&decisionId==='mw.population'&&input.product_facts&&input.product_age_range){
+  if(productAgeRangeSelection(input,input.product_facts.birth_date,source).kind==='range'){const i=paths.indexOf('product_facts.birth_date');if(i>=0)paths.splice(i,1);}
+  paths.push('product_age_range');
+ }
+ return {allowed:reason===null,reason,consumed_paths:paths};
 }
 export function minimumWageCaseBinding(method:AiReleaseDecisionMethod,evaluated_at:string){const body={schema_version:'minimum-wage-case-recipe-binding-v1' as const,method,evaluated_at};
  return minimumWageCaseRecipeBindingSchema.parse({...body,binding_sha256:canonicalSha256(body)});}
@@ -119,7 +127,7 @@ export function materializeMinimumWageCaseFacts(effective:MinimumWageEntitlement
   if(!recipe||recipe.recipe_sha256!==b.method.recipe_sha256||recipe.recipe_version!==b.method.recipe_version||recipe.source_policy_sha256!==b.method.source_policy_sha256
    ||Date.parse(b.method.issued_at)>Date.parse(b.evaluated_at)||Date.parse(b.method.expires_at)<=Date.parse(b.evaluated_at)
    ||recipe.legal_sources.some(s=>!b.method.source_receipts.some(r=>r.source_version_id===s.version_id&&r.artifact_sha256===s.file_sha256)))throw Error('MW_CASE_RECIPE_BINDING');
-  const evaluated=evaluateMinimumWageCaseRecipe(recipe.decision_id,result,source);
+  const evaluated=evaluateMinimumWageCaseRecipe(recipe.decision_id,result,source,recipe.recipe_id.endsWith('.age-range-v1')?{age_range:true}:undefined);
   const ownBasis=(d:MinimumWageEntitlementInput['applicability'][number])=>{
    if(d.decision_id!==recipe.decision_id||d.state!=='accepted'||d.basis!=='ai_source_assessment')return null;
    let basis:unknown;try{basis=JSON.parse(d.explanation);}catch{return null;}

@@ -3,6 +3,7 @@ import {documentReviewCalculationInputSchema} from '../../document-review/calcul
 import {minimumWagePersonalFactsSchema} from './product-facts.ts';
 import {aiReleaseDecisionMethodSchema} from '../../ai-release-decisions/contracts.ts';
 import {canonicalSha256} from '../../rule-runtime/canonical.ts';
+import {questionnaireAgeRangeProofSchema} from '../questionnaire-age-range.ts';
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
 const source=operand.shape.source;
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict();
@@ -25,6 +26,7 @@ export const minimumWageEntitlementInputSchema=z.object({schema_version:z.litera
  monthly_coverage:minimumWageFactSchema(z.enum(['full_month_full_time','partial','unknown'])),
  eligible_pay_inventory:minimumWageFactSchema(z.enum(['complete','partial','unknown'])),
  product_facts:minimumWagePersonalFactsSchema.optional(),
+ product_age_range:questionnaireAgeRangeProofSchema.optional(),
  case_recipe_bindings:z.array(minimumWageCaseRecipeBindingSchema).max(4).optional(),
  components:z.array(z.object({id:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),amount:operand,period:minimumWageFactSchema(period),classification:minimumWageFactSchema(minimumWageComponentKindSchema)}).strict()).max(32),
  applicability:z.array(z.object({decision_id:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),state:z.enum(['accepted','missing','unknown','conflict','stale','expired']),

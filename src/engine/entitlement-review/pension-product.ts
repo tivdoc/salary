@@ -2,7 +2,7 @@ import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import type {DocumentReviewInput} from '../document-review/contracts.ts';
 import {documentReviewCalculationInputSchema} from '../document-review/calculations.ts';
 import type {ReviewCompletionNeed} from '../document-review/completions.ts';
-import {resolvePensionEntitlement,PENSION_CATALOG,PENSION_SOURCE_REVIEW_SHA256,pensionEntitlementInputSchema} from './pension/index.ts';
+import {resolvePensionEntitlement,pensionEntitlementInputSchema} from './pension/index.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
 import {pensionProductFactQuestions} from './pension/product-facts.ts';
 
@@ -51,8 +51,8 @@ export function pensionProductReview(input:DocumentReviewInput,candidate:unknown
   answer_targets.push({fact_key,input_path:q.path,branch:'pension',index:null,value_kind:q.format?'date':'text'});
  }
  const rules=resolved.checks.map(c=>documentReviewCalculationInputSchema.parse(c.calculation).operation).filter(o=>o.kind==='candidate_rule').map(o=>({rule_id:o.rule.rule_spec_id,version:o.rule.rule_spec_version,sha256:o.rule.content_sha256}));
- return {checks:resolved.checks,gaps,needs,answer_targets,selections:[{topic:'pension',catalog_id:PENSION_CATALOG.catalog_id,catalog_version:PENSION_CATALOG.catalog_version,
-  evidence_sha256:canonicalSha256(e),source_policy_sha256:PENSION_SOURCE_REVIEW_SHA256,status:resolved.checks.length?'selected_for_review':'missing_facts',
+ return {checks:resolved.checks,gaps,needs,answer_targets,selections:[{topic:'pension',catalog_id:resolved.catalog.catalog_id,catalog_version:resolved.catalog.catalog_version,
+  evidence_sha256:canonicalSha256(e),source_policy_sha256:resolved.rule_metadata.source_review_sha256,status:resolved.checks.length?'selected_for_review':'missing_facts',
   rule_pins:[...new Map(rules.map(r=>[r.rule_id,r])).values()],generated_check_ids:resolved.checks.map(c=>c.check_id),generated_gap_ids:gaps.map(g=>g.check_id),
   publication_authority:false,authority_status:'candidate_review_not_financial_authority'}]};
 }

@@ -131,3 +131,10 @@ Validation: final integration92 tests/6 suites PASS; preceding focused107 had106
 TypeScript and root15-file lint PASS; full CI of this checkpoint is still required.
 
 Compiled source graph72b98dc6081d13bd5401d25edb442e12fd5503938be132503f3cf9a7a8bc33d0; manifest3ffcd6d4c95136e93bd9c6d3a456559634c076d2594037864f1d07284deebf89,180 source files. DEV schema180 unchanged. Read-only DEV verification confirms the retained synthetic live-Sol document still has the exact saved version/hash at revision33; this is not a new analysis/browser proof. No new provider call, budget reset, machine/grant window, message, deployment or Production change. Work continues through obligation integration, remaining source producers, actual DEV acceptance and private reports.
+# Current checkpoint: identified sources and immutable DEV epochs
+
+Base0be14228b2389ec50149f1b60c8fb88342e71e01 passed both CI34694261234/34694259400. The new integrated tree passed135 focused tests/12 suites, TypeScript and changed-file lint. See the current top of HANDOFF.md for exact scope, initial failures, compiled graph and unproven acceptance. Historical method count44 was a reporting error: original code has40; all40 bodies/hashes remain unchanged, with14 additions for54 total.
+
+This checkpoint closes ordinary obligation case-recipe wiring, age-range reuse, limited pension-floor/source production, commuting-day completion and DEV epoch/build evidence binding. It does not claim realistic contract-table intake is complete, that a fare source has an ordinary producer, that all benefit calendars/bases are sourced, or that the new application ran through DEV/scheduler/browser publication. Current source inspection distinguishes a missing extraction checkpoint from a missing upload. An expired existing worker identity refused the no-write audit before source reads; a new scoped epoch remains necessary.
+
+Production, customer messages, provider ledger and the parallel UI remain unchanged. Work continues to release acceptance; no intermediate stop is implied.

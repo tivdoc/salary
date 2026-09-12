@@ -15,6 +15,8 @@ import {workingTimeEntitlementInputSchema} from './working-time/contracts.ts';
 import {workingTimeProductReview} from './working-time-product.ts';
 import {workingTimeProductFactKey} from './working-time/product-facts.ts';
 import {assertQuestionnaireSource} from './declarations.ts';
+import {materializeQuestionnaireAgeRanges} from './age-range-materialization.ts';
+import {QUESTIONNAIRE_AGE_RANGE_REUSE_POLICY} from './product-age-range.ts';
 import {SHARED_PERSONAL_FACTS_EXPANDED_POLICY,sharedPersonalFactsManifestSchema,type SharedPersonalFactManifest} from './shared-product-fact-contracts.ts';
 
 
@@ -78,7 +80,9 @@ type ResolvedGroup={receipt:SharedPersonalFactManifest['groups'][number];aliases
  * No receipt is re-signed or assigned a new target to make reuse possible. */
 function groups(input:DocumentReviewInput,e:EntitlementEvidence):ResolvedGroup[]{
  if(!enabled(e))return [];
- const all=inventory(input,e),out:ResolvedGroup[]=[];
+ const ageReuse=e.age_range_policy===QUESTIONNAIRE_AGE_RANGE_REUSE_POLICY;
+ const planned=ageReuse?materializeQuestionnaireAgeRanges(e,input.entitlement_evidence??e,input):e;
+ const all=inventory(input,planned),out:ResolvedGroup[]=[];
  for(const key of keys){let aliases=all.filter(a=>a.key===key),needed=aliases.filter(a=>a.request);
   const recognized=input.answer_history.filter(h=>aliases.some(a=>a.fact_key===h.request.target.fact_key));
   const latest=[...new Map(recognized.map(h=>[h.receipt.request_id,recognized.filter(r=>r.receipt.request_id===h.receipt.request_id).sort((a,b)=>b.receipt.answer_revision-a.receipt.answer_revision)[0]])).values()];
@@ -87,7 +91,7 @@ function groups(input:DocumentReviewInput,e:EntitlementEvidence):ResolvedGroup[]
   const observations=aliases.filter(a=>observedSourceCurrent(input,a.fact));
   const sourceValues=[...answers.filter(a=>a.state==='provided').map(a=>a.value),...observations.map(a=>a.fact.value)];
   const conflict=new Set(sourceValues.map(v=>canonicalSha256(v))).size>1||answers.some(a=>a.state==='conflict')||aliases.some(a=>a.fact.state==='conflict');
-  if(!needed.length&&!conflict)continue;
+  if(!needed.length&&!conflict&&!(ageReuse&&chosen))continue;
   const rawUnknown=aliases.find(a=>a.fact.state==='unknown'),rawUnreadable=aliases.find(a=>a.fact.state==='unreadable');
   const rawBlocked=aliases.find(a=>a.fact.state==='conflict')??rawUnknown??rawUnreadable;
   // Recipient policies remain independent. A provider observation cannot

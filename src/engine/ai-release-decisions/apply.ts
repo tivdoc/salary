@@ -4,6 +4,7 @@ import type {DocumentReviewInput} from '../document-review/contracts.ts';
 import {parseReviewCompletionInput} from '../document-review/completions.ts';
 import {composeEntitlementReview} from '../entitlement-review/compose.ts';
 import {pensionEntitlementInputSchema} from '../entitlement-review/pension/contracts.ts';
+import {PENSION_STATUTORY_FLOOR_POLICY} from '../entitlement-review/pension/source-fact-contracts.ts';
 import {travelEntitlementInputSchema} from '../entitlement-review/travel/contracts.ts';
 import {vacationEntitlementInputSchema} from '../entitlement-review/vacation/contracts.ts';
 import {minimumWageEntitlementInputSchema} from '../entitlement-review/minimum-wage/contracts.ts';
@@ -18,11 +19,15 @@ import {evaluateConvalescenceCaseRecipe,replayConvalescenceCaseFacts,convalescen
 import {evaluateVacationProductRecipe,replayVacationProductFacts,vacationCaseBinding,vacationProductCaseConsumed} from '../entitlement-review/vacation/product-facts.ts';
 import {evaluateWorkingTimeCaseRecipe,workingTimeCaseConsumed} from '../entitlement-review/working-time/product-decisions.ts';
 import {replayWorkingTimeProductFacts,workingTimeCaseBinding} from '../entitlement-review/working-time/product-facts.ts';
+import {obligationsEntitlementInputSchema} from '../entitlement-review/obligations/contracts.ts';
+import {replayObligationProductFacts,obligationCaseBinding} from '../entitlement-review/obligations/case-replay.ts';
+import {evaluateObligationCaseRecipe,obligationCaseConsumed} from '../entitlement-review/obligations/product-decisions.ts';
 
 const schemas={pension:pensionEntitlementInputSchema,travel:travelEntitlementInputSchema,vacation:vacationEntitlementInputSchema,
  minimum_wage:minimumWageEntitlementInputSchema,working_time:workingTimeEntitlementInputSchema,convalescence:convalescenceEntitlementInputSchema};
 const sourceSchema=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const record=(v:unknown):v is Record<string,unknown>=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+const ageParentIds=['ai-case.mw.population','ai-case.cv.population','ai-case.vacation.general_section3','ai-case.wt.coverage'];
 function atPath(value:unknown,path:string):unknown{
  let current=value;for(const key of path.split('.')){if(!current||typeof current!=='object'||!Object.hasOwn(current,key))return null;current=Reflect.get(current,key);}return current;
 }
@@ -88,16 +93,64 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
  // compiled order before the historical method-only recipes; caller ordering
  // must not select a different arithmetic policy or result.
  const caseOrder=['ai-case.mw.population','ai-case.mw.ordinary_scope','ai-case.mw.eligible_components','ai-case.mw.allocation','ai-case.pension.general_coverage','ai-case.pension.pension_fund','ai-case.travel.general_coverage','ai-case.travel.fare_basis','ai-case.travel.ticket_options','ai-case.cv.population','ai-case.cv.legal_source_chain','ai-case.cv.arrangement_scope','ai-case.cv.benefit_year','ai-case.cv.qualifying_service','ai-case.cv.due_date','ai-case.cv.allocation',...['general_section3','seniority_basis','annual_workdays','pay_calendar_days','pay_quarter_selection','pay_monthly_period','pay_recorded_allocation'].map(id=>'ai-case.vacation.'+id),...['coverage','regular_wage','arrangement','workday_assignment','payroll_allocation','worked_time'].map(id=>'ai-case.wt.'+id)];
+ caseOrder.push(...['clause_interpretation','agreement_binding','payment_scope','complete_conditions','rounding'].map(id=>'ai-case.obligation.'+id));
+ for(const id of ageParentIds)caseOrder.splice(caseOrder.indexOf(id)+1,0,id+'.age-range-v1');
+ caseOrder.splice(caseOrder.indexOf('ai-case.pension.pension_fund')+1,0,...['general_coverage','pension_fund','pensionable_wage','prior_coverage_evidence','statutory_floor'].map(id=>'ai-case.pension.'+id+'.floor-v2'));
  const methods=[...input.methods.filter(m=>caseOrder.includes(m.recipe_id)).sort((a,b)=>caseOrder.indexOf(a.recipe_id)-caseOrder.indexOf(b.recipe_id)),...input.methods.filter(m=>!caseOrder.includes(m.recipe_id))];
  for(const method of methods){
   const recipe=AI_RELEASE_DECISION_RECIPES.find(r=>r.recipe_id===method.recipe_id);
   if(!recipe){unresolved.push({branch:'unknown',branch_index:null,decision_id:method.recipe_id,reason:'recipe_not_supported'});continue;}
   const duplicate=input.methods.filter(m=>m.recipe_id===method.recipe_id).length!==1;
+  if(recipe.branch==='obligations'){
+   if(effective.obligations===undefined||packet.obligations===undefined){unresolved.push({branch:recipe.branch,branch_index:null,decision_id:recipe.decision_id,reason:'branch_missing'});continue;}
+   const output=obligationsEntitlementInputSchema.parse(packet.obligations),e=obligationsEntitlementInputSchema.parse(effective.obligations);
+   const merged=obligationsEntitlementInputSchema.parse({...e,case_policy:output.case_policy,
+    source_manifest:[...new Map([...e.source_manifest,...output.source_manifest].map(s=>[s.document_id+':'+s.version_id,s])).values()],
+    obligations:e.obligations.map(o=>{const raw=output.obligations.find(r=>r.obligation_id===o.obligation_id);if(!raw)throw Error('OBLIGATION_RECIPE_ID');
+     return {...o,assessments:raw.assessments,case_recipe_bindings:raw.case_recipe_bindings};})});
+   const currentInput=replayObligationProductFacts(merged,output,base);
+   for(const [index,o]of currentInput.obligations.entries()){
+    const target={branch:recipe.branch,branch_index:index,decision_id:recipe.decision_id},current=o.assessments.find(d=>d.decision_id===recipe.decision_id);
+    if(current?.basis==='ai_source_assessment'){
+     let previous:unknown;try{previous=JSON.parse(current.explanation);}catch{previous=null;}
+     if(record(previous)&&previous.schema_version==='ai-release-method-basis-v1')throw Error('AI_DECISION_REBUILD_BASE_REQUIRED');
+    }
+    const ready=evaluateObligationCaseRecipe(recipe.decision_id,currentInput,o.obligation_id,base,currentInput.case_policy);
+    const issue=duplicate?'duplicate_method':matches(method,recipe,input.at)??(current&&current.state!=='missing'?'existing_decision_preserved':null)??(!ready.allowed?ready.reason:null);
+    if(issue){unresolved.push({...target,reason:issue});continue;}
+    const consumed=obligationCaseConsumed(currentInput,o.obligation_id,ready.consumed_paths,base),basis={schema_version:'ai-release-method-basis-v1',recipe_id:recipe.recipe_id,
+     recipe_sha256:recipe.recipe_sha256,interpretation_receipt_sha256:method.interpretation_receipt_sha256,consumed_sha256:canonicalSha256(consumed)};
+    const amount=o.promise.kind==='fixed'?o.promise.amount:o.promise.rate;
+    const citations=[...recipe.legal_sources,o.clause.source,...(amount?[amount.source]:[])];
+    const decision={decision_id:recipe.decision_id,state:'accepted' as const,basis:'ai_source_assessment' as const,explanation:JSON.stringify(basis),
+     sources:[...new Map(citations.map(s=>[canonicalSha256(s),s])).values()],valid_until:method.expires_at};
+    for(const law of recipe.legal_sources){
+     const doc=base.documents.find(d=>d.document_id===law.document_id&&d.version_id===law.version_id&&d.file_sha256===law.file_sha256);
+     if(!doc||doc.page_count===null)throw Error('AI_DECISION_LEGAL_MANIFEST_REQUIRED');
+     const pin={document_id:law.document_id,version_id:law.version_id,file_sha256:law.file_sha256,page_count:doc.page_count,kind:'legal_source' as const,case_id:null};
+     const old=output.source_manifest.find(s=>s.document_id===law.document_id);if(old&&canonicalSha256(old)!==canonicalSha256(pin))throw Error('AI_DECISION_LEGAL_MANIFEST_MISMATCH');
+     if(!old)output.source_manifest.push(pin);
+    }
+    const raw=output.obligations.find(r=>r.obligation_id===o.obligation_id)!;
+    raw.assessments=[...raw.assessments.filter(d=>d.decision_id!==recipe.decision_id),decision];
+    raw.case_recipe_bindings=[...(raw.case_recipe_bindings??[]),obligationCaseBinding(method,input.at,o.obligation_id)];
+    receipts.push(makeReceipt({case_id:base.case_id,period:currentInput.period,...target,method,recipe,consumed,decision,at:input.at}));
+   }
+   packet.obligations=output;continue;
+  }
   const raw=effective[recipe.branch],original=packet[recipe.branch];
   if(raw===undefined||original===undefined){unresolved.push({branch:recipe.branch,branch_index:null,decision_id:recipe.decision_id,reason:'branch_missing'});continue;}
   const effectiveEntries=recipe.branch==='working_time'&&Array.isArray(raw)?raw:[raw];
   const originalEntries=recipe.branch==='working_time'&&Array.isArray(original)?original:[original];
   for(const [index,entry] of effectiveEntries.entries()){
+   const ageRecipe=recipe.recipe_id.endsWith('.age-range-v1');
+   const ageParent=ageRecipe?recipe.recipe_id.slice(0,-'.age-range-v1'.length):recipe.recipe_id;
+   if(ageParentIds.includes(ageParent)&&ageRecipe!==(packet.age_range_policy==='questionnaire-age-range-reuse-v1')){
+    unresolved.push({branch:recipe.branch,branch_index:recipe.branch==='working_time'?index:null,decision_id:recipe.decision_id,reason:'age_recipe_policy_not_selected'});continue;
+   }
+   if(recipe.recipe_id.startsWith('ai-case.pension.')&&recipe.recipe_id.endsWith('.floor-v2')!==(pensionEntitlementInputSchema.parse(entry).calculation_policy===PENSION_STATUTORY_FLOOR_POLICY)){
+    unresolved.push({branch:recipe.branch,branch_index:null,decision_id:recipe.decision_id,reason:'pension_recipe_policy_not_selected'});continue;
+   }
    const workingCase=recipe.recipe_id.startsWith('ai-case.wt.');
    const week=workingCase?workingTimeEntitlementInputSchema.parse(entry):null;
    const dynamic=week&&(recipe.decision_id==='wt.worked_time'||week.product_facts?.schema_version==='working-time-product-facts-v2'&&['wt.arrangement','wt.workday_assignment','wt.payroll_allocation'].includes(recipe.decision_id));
@@ -138,12 +191,13 @@ export function applyAiReleaseDecisionRecipes(candidate:AiReleaseDecisionInput){
     if(record(previous)&&previous.schema_version==='ai-release-method-basis-v1')throw Error('AI_DECISION_REBUILD_BASE_REQUIRED');
    }
    const mwCase=recipe.recipe_id.startsWith('ai-case.mw.');
-   const caseReady=mwCase?evaluateMinimumWageCaseRecipe(recipe.decision_id,minimumWageEntitlementInputSchema.parse(b),base)
+   const ageOptions=ageRecipe?{age_range:true as const}:undefined;
+   const caseReady=mwCase?evaluateMinimumWageCaseRecipe(recipe.decision_id,minimumWageEntitlementInputSchema.parse(b),base,ageOptions)
     :recipe.recipe_id.startsWith('ai-case.pension.')?evaluatePensionCaseRecipe(recipe.decision_id,pensionEntitlementInputSchema.parse(b),base)
     :recipe.recipe_id.startsWith('ai-case.travel.')?evaluateTravelCaseRecipe(recipe.decision_id,travelEntitlementInputSchema.parse(b),base)
-    :recipe.recipe_id.startsWith('ai-case.cv.')?evaluateConvalescenceCaseRecipe(recipe.decision_id,convalescenceEntitlementInputSchema.parse(b),base)
-    :recipe.recipe_id.startsWith('ai-case.vacation.')?evaluateVacationProductRecipe(recipe.decision_id,vacationEntitlementInputSchema.parse(b),base)
-    :workingCase?evaluateWorkingTimeCaseRecipe(actualDecisionId,workingTimeEntitlementInputSchema.parse(b),{review:base,...(dayId?{day_id:dayId}:{})}):null;
+    :recipe.recipe_id.startsWith('ai-case.cv.')?evaluateConvalescenceCaseRecipe(recipe.decision_id,convalescenceEntitlementInputSchema.parse(b),base,ageOptions)
+    :recipe.recipe_id.startsWith('ai-case.vacation.')?evaluateVacationProductRecipe(recipe.decision_id,vacationEntitlementInputSchema.parse(b),base,ageOptions)
+    :workingCase?evaluateWorkingTimeCaseRecipe(actualDecisionId,workingTimeEntitlementInputSchema.parse(b),{review:base,...ageOptions,...(dayId?{day_id:dayId}:{})}):null;
    const issue=duplicate?'duplicate_method':matches(method,recipe,input.at)
     ??(current&&current.state!=='missing'?'existing_decision_preserved':null)
     ??(b.period.from<recipe.supported_period.from||b.period.to>recipe.supported_period.to?'period_not_supported':null)

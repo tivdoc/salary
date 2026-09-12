@@ -4,13 +4,16 @@ import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput
 import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {obligationsEntitlementInputSchema,type ObligationsEntitlementInput,type ExplicitObligation,type ObligationGap} from './contracts.ts';
 import {OBLIGATIONS_CATALOG,OBLIGATIONS_POLICY,OBLIGATIONS_POLICY_SHA256,OBLIGATION_ASSESSMENTS} from './policy.ts';
+import {OBLIGATIONS_CASE_POLICY,OBLIGATIONS_SOURCE_REVIEW_SHA256,OBLIGATIONS_PINNED_LEGAL_DOCUMENTS} from './source-policy.ts';
 export * from './contracts.ts';export * from './policy.ts';
 type Decision=Extract<DocumentReviewCalculationInput['operation'],{kind:'candidate_rule'}>['decisions'][number];
 export const obligationCheckIds=(prefix:string,id:string)=>[`${prefix}.${id}.expected`,`${prefix}.${id}.comparison`];
 const location=(s:DocumentReviewSource)=>canonicalSha256({document_id:s.document_id,version_id:s.version_id,file_sha256:s.file_sha256,page:s.page,locator:s.locator});
 function bound(s:DocumentReviewSource,i:ObligationsEntitlementInput){
  const m=i.source_manifest.filter(m=>m.document_id===s.document_id&&m.version_id===s.version_id);
- if(m.length!==1||m[0].case_id!==i.case_id||m[0].file_sha256!==s.file_sha256||m[0].page_count<s.page)throw Error('OBLIGATION_CASE_SOURCE_BINDING');
+ const law=m.length===1&&i.case_policy===OBLIGATIONS_CASE_POLICY&&m[0].kind==='legal_source'&&m[0].case_id===null&&s.reading==='source_research'
+  &&s.reading_receipt_sha256===OBLIGATIONS_SOURCE_REVIEW_SHA256&&OBLIGATIONS_PINNED_LEGAL_DOCUMENTS.some(p=>canonicalSha256(p)===canonicalSha256(m[0]));
+ if(m.length!==1||!law&&m[0].case_id!==i.case_id||m[0].file_sha256!==s.file_sha256||m[0].page_count<s.page)throw Error('OBLIGATION_CASE_SOURCE_BINDING');
  if((s.reading==='customer_declaration')!==(m[0].kind==='customer_answer')||(s.reading==='questionnaire_declaration')!==(m[0].kind==='questionnaire'))throw Error('OBLIGATION_DECLARATION_SOURCE');
 }
 function money(o:DocumentReviewOperand|null){if(o&&(o.representation!=='money_ils'||o.quantity_unit!==null||o.printed_value!==null&&!/^(0|[1-9]\d{0,10})(?:\.\d{1,2})?$/u.test(o.printed_value)))throw Error('OBLIGATION_MONEY_OPERAND');}
@@ -22,6 +25,7 @@ function assessed(input:ObligationsEntitlementInput,o:ExplicitObligation):Decisi
 }
 export function resolveExplicitObligations(candidate:unknown){
  const input=obligationsEntitlementInputSchema.parse(candidate),checks:DocumentReviewInput['checks']=[],gaps:ObligationGap[]=[],outcomes:{obligation_id:string;topic:'contract'|'bonuses';state:'selected'|'missing_facts'|'not_triggered'|'duplicate'|'outside_scope';evidence_sha256:string;consumed_condition_ids:string[]}[]=[];
+ const policySha=input.case_policy===OBLIGATIONS_CASE_POLICY?OBLIGATIONS_SOURCE_REVIEW_SHA256:OBLIGATIONS_POLICY_SHA256;
  const monthEnd=new Date(Date.UTC(Number(input.period.from.slice(0,4)),Number(input.period.from.slice(5,7)),0)).toISOString().slice(0,10);
  if(input.period.from<OBLIGATIONS_POLICY.supported_period.from||input.period.to>OBLIGATIONS_POLICY.supported_period.to||input.period.from.slice(8)!=='01'||input.period.to!==monthEnd)throw Error('OBLIGATION_SUPPORTED_MONTH_REQUIRED');
  if(new Set(input.purchased_topics).size!==input.purchased_topics.length)throw Error('OBLIGATION_DUPLICATE_PURCHASE_TOPIC');
@@ -68,7 +72,7 @@ export function resolveExplicitObligations(candidate:unknown){
   if(o.promise.kind==='fixed')money(o.promise.amount);else{money(o.promise.rate);if(o.promise.quantity){const q=o.promise.quantity;if(q.quantity_unit!==o.promise.quantity_unit||!['decimal_quantity','hours_minutes','integer'].includes(q.representation)||q.representation==='hours_minutes'&&o.promise.quantity_unit!=='hours')throw Error('OBLIGATION_QUANTITY_UNIT');
    if(q.printed_value!==null&&!(q.representation==='hours_minutes'?/^(?:\d{1,6}):[0-5]\d$/u:/^(?:0|[1-9]\d{0,10})(?:\.\d{1,6})?$/u).test(q.printed_value))throw Error('OBLIGATION_NONNEGATIVE_QUANTITY');}}
   if(amounts.some(a=>a===null)){if(o.promise.kind==='fixed')add('obligation.fixed_amount','missing','promise.amount','מהו סכום ההתחייבות הכספית המפורש בסעיף? נדרשת קריאת מקור, לא השלמה לפי הציפייה.','missing_source',ids,'number');else{if(!o.promise.rate)add('obligation.rate','missing','promise.rate','נדרש התעריף המפורש ליחידה בסעיף.','missing_source',ids,'number');if(!o.promise.quantity)add('obligation.quantity','missing','promise.quantity','נדרשת הכמות המזוהה ביחידות שנקבעו ובתקופה המתאימה.','missing_fact',ids,'number');}outcome('missing_facts',o.conditions.map(c=>c.condition_id));continue;}
-  const scopeEvidence={schema_version:'explicit-obligation-scope-v1',obligation_id:o.obligation_id,topic:o.topic,clause_source:o.clause.source,clause_text_sha256:o.clause.text_sha256,clause_effective_period:o.clause.effective_period,payment_period:o.payment_period,promise_kind:o.promise.kind,conditions:o.conditions.map(c=>({condition_id:c.condition_id,description:c.description})),conditions_mode:o.conditions_mode,policy_sha256:OBLIGATIONS_POLICY_SHA256};
+  const scopeEvidence={schema_version:'explicit-obligation-scope-v1',obligation_id:o.obligation_id,topic:o.topic,clause_source:o.clause.source,clause_text_sha256:o.clause.text_sha256,clause_effective_period:o.clause.effective_period,payment_period:o.payment_period,promise_kind:o.promise.kind,conditions:o.conditions.map(c=>({condition_id:c.condition_id,description:c.description})),conditions_mode:o.conditions_mode,policy_sha256:policySha};
   decisions.push({decision_id:'obligation.source_scope',state:'accepted',basis:'ai_source_assessment',explanation:JSON.stringify({schema_version:scopeEvidence.schema_version,scope_sha256:canonicalSha256(scopeEvidence),obligation_id:o.obligation_id,clause_text_sha256:o.clause.text_sha256,payment_period:o.payment_period,promise_kind:o.promise.kind,legal_applicability_approved:false}),sources:[o.clause.source],valid_until:null});
   for(const compared of [false,true]){
    let selectedDecisions=[...decisions];
@@ -95,7 +99,7 @@ export function resolveExplicitObligations(candidate:unknown){
   }
   outcome('selected',o.conditions.map(c=>c.condition_id));
  }
- return deepFreeze({schema_version:'obligations-entitlement-resolution-v1' as const,input_sha256:canonicalSha256(input),catalog:OBLIGATIONS_CATALOG,checks,gaps,outcomes,rule_metadata:{policy_sha256:OBLIGATIONS_POLICY_SHA256,duplicate_cash_claims_created:false,agreement_binding_from_ocr:false,human_attestation:null,real_activation_allowed:false,
+ return deepFreeze({schema_version:'obligations-entitlement-resolution-v1' as const,input_sha256:canonicalSha256(input),catalog:input.case_policy===OBLIGATIONS_CASE_POLICY?{...OBLIGATIONS_CATALOG,source_review_sha256:policySha}:OBLIGATIONS_CATALOG,checks,gaps,outcomes,rule_metadata:{policy_sha256:policySha,duplicate_cash_claims_created:false,agreement_binding_from_ocr:false,human_attestation:null,real_activation_allowed:false,
   additive_total_allowed:false,overlap_evidence:input.obligations.filter(o=>input.purchased_topics.includes(o.topic)).map(o=>({obligation_id:o.obligation_id,topic:o.topic,check_ids:obligationCheckIds(input.check_prefix,o.obligation_id),obligation_source_key:location(o.clause.source),
    payment_id:o.recorded?.payment_id??null,payment_source_key:o.recorded?location(o.recorded.amount.source):null,
    overlap_group:o.recorded?canonicalSha256({case_id:input.case_id,period:input.period,payment_source_key:location(o.recorded.amount.source)}):null,

@@ -11,10 +11,15 @@ const source=documentReviewCalculationInputSchema.shape.operands.element.shape.s
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict().refine(p=>p.from<=p.to,'TRAVEL_FARE_PERIOD');
 const fact=<T extends z.ZodType>(value:T)=>z.object({state:z.enum(['observed','declared','missing','unknown','conflict','stale','expired','unreadable']),value:value.nullable(),source:source.nullable()}).strict()
  .refine(f=>!['observed','declared'].includes(f.state)||'value' in f&&f.value!==null&&f.source!==null,'TRAVEL_PRODUCT_FACT_SOURCE');
-export const travelProductFactsSchema=z.object({schema_version:z.literal('travel-product-facts-v1'),
+const travelProductFactsV1Schema=z.object({schema_version:z.literal('travel-product-facts-v1'),
  employment_relationship:fact(z.enum(['employee','self_employed','other'])),workplace_sector:fact(z.enum(['private','public','protected_workshop','other'])),
  other_travel_terms_known:fact(z.boolean()),route_reference:fact(z.string().trim().min(1).max(2000)),personal_discount_profile:fact(z.enum(['standard_adult','special_discount'])),
 }).strict();
+export const TRAVEL_JOURNEY_FACTS_POLICY='travel-product-facts-v2' as const;
+export const travelProductFactsSchema=z.discriminatedUnion('schema_version',[
+ travelProductFactsV1Schema,
+ travelProductFactsV1Schema.extend({schema_version:z.literal(TRAVEL_JOURNEY_FACTS_POLICY),actual_commute_days:fact(z.number().int().min(0).max(31))}).strict(),
+]);
 /** Metadata are separate identified readings, not a client's classification of
  * a fare. Operand hashes bind the exact original source cells, including zero. */
 export const travelFareSourceContextSchema=z.object({schema_version:z.literal('travel-fare-source-context-v1'),
@@ -26,7 +31,7 @@ export const travelFareSourceContextSchema=z.object({schema_version:z.literal('t
 export const travelCaseRecipeBindingSchema=z.object({schema_version:z.literal('travel-case-recipe-binding-v1'),method:aiReleaseDecisionMethodSchema,evaluated_at:z.iso.datetime(),binding_sha256:hash}).strict()
  .refine(v=>{const {binding_sha256,...body}=v;return binding_sha256===canonicalSha256(body);},'TRAVEL_CASE_BINDING_HASH');
 export function travelCaseBinding(method:AiReleaseDecisionMethod,evaluated_at:string){const body={schema_version:'travel-case-recipe-binding-v1' as const,method,evaluated_at};return travelCaseRecipeBindingSchema.parse({...body,binding_sha256:canonicalSha256(body)});}
-export function travelProductFacts(){const missing={state:'missing',value:null,source:null};return travelProductFactsSchema.parse({schema_version:'travel-product-facts-v1',employment_relationship:missing,workplace_sector:missing,other_travel_terms_known:missing,route_reference:missing,personal_discount_profile:missing});}
+export function travelProductFacts(policy?:typeof TRAVEL_JOURNEY_FACTS_POLICY){const missing={state:'missing',value:null,source:null};return travelProductFactsSchema.parse({schema_version:policy??'travel-product-facts-v1',employment_relationship:missing,workplace_sector:missing,other_travel_terms_known:missing,route_reference:missing,personal_discount_profile:missing,...(policy?{actual_commute_days:missing}:{})});}
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
 const usable=(f:Fact|undefined)=>!!f&&['known','observed','declared'].includes(f.state)&&f.value!==null&&f.source!==null;
 const same=(a:unknown,b:unknown)=>canonicalSha256(a)===canonicalSha256(b);
@@ -64,7 +69,7 @@ export function travelProductRoute(input:TravelEntitlementInput):TravelRouteSele
  if(Number(days.printed_value)>Number(input.period.to.slice(8)))return result('unsupported','commute_days_conflict',paths);
  const covered=new Set([f.employer_transport.value,f.free_travel.value]);return result('required','required_uncovered_route',paths,covered.has('outbound')?'return':covered.has('return')?'outbound':'both');
 }
-export type TravelProductQuestion={path:string;question:string;fact:Fact;answer_kind:'text'|'choice';choices?:readonly {label:string;value:string|boolean|null}[]};
+export type TravelProductQuestion={path:string;question:string;fact:Fact;answer_kind:'text'|'choice';format?:'calendar_days';choices?:readonly {label:string;value:string|boolean|null}[]};
 export function travelProductFactQuestions(input:TravelEntitlementInput):TravelProductQuestion[]{
  validate(input);const p=input.product_facts;if(!p)return [];
  const out:TravelProductQuestion[]=[
@@ -72,6 +77,7 @@ export function travelProductFactQuestions(input:TravelEntitlementInput):TravelP
   {path:'product_facts.workplace_sector',question:'באיזה מגזר היה מקום העבודה בתקופה הנבדקת?',fact:p.workplace_sector,answer_kind:'choice',choices:[{label:'המגזר הפרטי',value:'private'},{label:'המגזר הציבורי',value:'public'},{label:'מפעל מוגן',value:'protected_workshop'},{label:'מגזר אחר',value:'other'},{label:'לא ידוע',value:null}]},
   {path:'product_facts.other_travel_terms_known',question:'האם ידוע לך על הסדר נסיעות נוסף או התחייבות מיוחדת של המעסיק לתשלום נסיעות?',fact:p.other_travel_terms_known,answer_kind:'choice',choices:[{label:'כן',value:true},{label:'לא ידוע לי על הסדר נוסף',value:false},{label:'לא ידוע',value:null}]},
  ];
+ if(p.schema_version===TRAVEL_JOURNEY_FACTS_POLICY&&travelProductRoute(input).kind!=='zero'&&!input.commute_days)out.push({path:'product_facts.actual_commute_days',question:'בכמה ימים הגעת בפועל למקום העבודה בחודש הנבדק? אין לכלול עבודה מהבית, חופשה או מחלה.',fact:p.actual_commute_days,answer_kind:'text',format:'calendar_days'});
  if(travelProductRoute(input).kind==='required'&&!usable(input.fare_source_context?.route_reference))out.push({path:'product_facts.route_reference',question:'מהו מסלול הנסיעה ממקום המגורים לעבודה בתקופה הנבדקת? אפשר לציין תחנות או אזורי נסיעה.',fact:p.route_reference,answer_kind:'text'});
  if(travelProductRoute(input).kind==='required')out.push({path:'product_facts.personal_discount_profile',question:'האם היה לך פרופיל הנחה אישי בתחבורה הציבורית בתקופה הנבדקת?',fact:p.personal_discount_profile,answer_kind:'choice',choices:[{label:'פרופיל מבוגר רגיל, ללא הנחה אישית',value:'standard_adult'},{label:'היה פרופיל הנחה אישי',value:'special_discount'},{label:'לא ידוע',value:null}]});
  const arrangement=input.applicability.find(d=>d.decision_id==='travel.no_better_arrangement');

@@ -10,13 +10,20 @@ import {convalescencePersonalFacts,scaffoldConvalescenceSegments,periodFromDecla
 import type {EntitlementEvidence} from './contracts.ts';
 import {pensionEntitlementInputSchema} from './pension/contracts.ts';
 import {pensionProductFacts,replayPensionProductFacts} from './pension/product-facts.ts';
+import {attachPensionSourceFacts} from './pension/source-facts.ts';
 import {travelEntitlementInputSchema} from './travel/contracts.ts';
-import {travelProductFacts,travelProductFactQuestions,replayTravelProductFacts} from './travel/product-facts.ts';
+import {travelProductFacts,travelProductFactQuestions,replayTravelProductFacts,TRAVEL_JOURNEY_FACTS_POLICY} from './travel/product-facts.ts';
+import {materializeTravelJourneyFacts} from './travel/journey-facts.ts';
 import {vacationEntitlementInputSchema} from './vacation/contracts.ts';
 import {vacationProductFacts,vacationProductFactQuestions,replayVacationProductFacts} from './vacation/product-facts.ts';
 import {replayConvalescenceCaseFacts,enableConvalescenceCaseFacts,convalescenceCaseQuestions} from './convalescence/product-decisions.ts';
 
 import {workingTimeEntitlementInputSchema} from './working-time/contracts.ts';
+import {enableQuestionnaireAgeRangeReuse,materializeQuestionnaireAgeRanges} from './age-range-materialization.ts';
+import {productAgeRangeSelection} from './product-age-range.ts';
+import {obligationsEntitlementInputSchema} from './obligations/contracts.ts';
+import {replayObligationProductFacts} from './obligations/case-replay.ts';
+import {OBLIGATIONS_CASE_POLICY} from './obligations/source-policy.ts';
 import {enableWorkingTimeProductFacts,replayWorkingTimeProductFacts} from './working-time/product-facts.ts';
 
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
@@ -28,15 +35,17 @@ const unknown={label:'לא ידוע',value:null};
 const choices=(entries:Record<string,string|number|boolean>):Choice[]=>[...Object.entries(entries).map(([label,value])=>({label,value})),unknown];
 
 /** Explicit opt-in for new saved source packets. Existing packets are untouched. */
-export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence,options?:{travel?:true;vacation?:true;convalescence?:true;working_time?:true}):EntitlementEvidence{
+export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence,options?:{travel?:true;travel_journey?:true;vacation?:true;convalescence?:true;working_time?:true;age_range?:true}):EntitlementEvidence{
  const e=structuredClone(candidate);
  if(e.pension){const p=pensionEntitlementInputSchema.parse(e.pension);e.pension={...p,product_facts:p.product_facts??pensionProductFacts()};}
  if(e.minimum_wage){const p=minimumWageEntitlementInputSchema.parse(e.minimum_wage);e.minimum_wage={...p,product_facts:p.product_facts??minimumWagePersonalFacts()};}
  if(e.convalescence){const p=convalescenceEntitlementInputSchema.parse(e.convalescence);e.convalescence=options?.convalescence?enableConvalescenceCaseFacts(p):{...p,product_facts:p.product_facts??convalescencePersonalFacts()};}
- if(options?.travel&&e.travel){const p=travelEntitlementInputSchema.parse(e.travel);e.travel={...p,product_facts:p.product_facts??travelProductFacts()};}
+ if((options?.travel||options?.travel_journey)&&e.travel){const p=travelEntitlementInputSchema.parse(e.travel);
+  const facts=options.travel_journey?{...travelProductFacts(TRAVEL_JOURNEY_FACTS_POLICY),...p.product_facts,schema_version:TRAVEL_JOURNEY_FACTS_POLICY}:p.product_facts??travelProductFacts();
+  e.travel=travelEntitlementInputSchema.parse({...p,product_facts:facts});}
  if(options?.vacation&&e.vacation){const p=vacationEntitlementInputSchema.parse(e.vacation);e.vacation={...p,product_facts:p.product_facts??vacationProductFacts()};}
  if(options?.working_time&&e.working_time)e.working_time=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(e.working_time).map(p=>enableWorkingTimeProductFacts(p));
- return e;
+ return options?.age_range?enableQuestionnaireAgeRangeReuse(e):e;
 }
 
 export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'travel'|'vacation',raw:unknown):TypedEntitlementQuestion[]{
@@ -65,7 +74,7 @@ export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'
    }
   }
   if(p.method.value==='full_monthly')add('monthly_coverage',p.monthly_coverage,'האם עבדת במשרה מלאה במשך כל חודש הבדיקה, ללא תקופת עבודה חלקית או היעדרות שמשנה את השכר?',choices({'כן, חודש מלא במשרה מלאה':'full_month_full_time','לא, חודש או היקף חלקי':'partial'}));
-  return result;
+  return p.product_age_range&&productAgeRangeSelection(p,p.product_facts.birth_date).kind==='range'?result.filter(q=>q.path!=='product_facts.birth_date'):result;
  }
  const p=convalescenceEntitlementInputSchema.parse(raw);if(!p.product_facts)return result;
  const f=p.product_facts;
@@ -96,6 +105,9 @@ export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence'|'
 }
 
 export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence,original?:EntitlementEvidence,source?:DocumentReviewInput):EntitlementEvidence{
+ if(original&&source)candidate=materializeQuestionnaireAgeRanges(candidate,original,source);
+ if(candidate.obligations&&original?.obligations&&source){const current=obligationsEntitlementInputSchema.parse(candidate.obligations),raw=obligationsEntitlementInputSchema.parse(original.obligations);
+  if(raw.case_policy===OBLIGATIONS_CASE_POLICY)candidate={...candidate,obligations:replayObligationProductFacts(current,raw,source)};}
  if(candidate.working_time&&original?.working_time&&source){const current=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(candidate.working_time),rawItems=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(original.working_time);
   if(current.length!==rawItems.length)throw Error('WT_MATERIALIZATION_WEEK_SCOPE');
   candidate={...candidate,working_time:current.map((p,i)=>{
@@ -104,9 +116,11 @@ export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence,o
  if(candidate.vacation&&original?.vacation&&source){const p=vacationEntitlementInputSchema.parse(candidate.vacation),raw=vacationEntitlementInputSchema.parse(original.vacation);
   if(raw.case_recipe_bindings?.length||raw.product_scenario_policy)candidate={...candidate,vacation:replayVacationProductFacts(p,raw,source)};}
  if(candidate.travel&&original?.travel&&source){const p=travelEntitlementInputSchema.parse(candidate.travel),raw=travelEntitlementInputSchema.parse(original.travel);
-  if(raw.case_recipe_bindings?.length)candidate={...candidate,travel:replayTravelProductFacts(p,raw,source)};}
+  const journey=materializeTravelJourneyFacts(p,raw,source);
+  if(raw.product_facts?.schema_version===TRAVEL_JOURNEY_FACTS_POLICY||raw.case_recipe_bindings?.length)candidate={...candidate,travel:raw.case_recipe_bindings?.length?replayTravelProductFacts(journey,raw,source):journey};}
  if(candidate.pension&&original?.pension&&source){const p=pensionEntitlementInputSchema.parse(candidate.pension),raw=pensionEntitlementInputSchema.parse(original.pension);
-  if(raw.case_recipe_bindings?.length)candidate={...candidate,pension:replayPensionProductFacts(p,raw,source)};}
+  if(raw.case_recipe_bindings?.length)candidate={...candidate,pension:replayPensionProductFacts(p,raw,source)};
+  else if(raw.source_facts)candidate={...candidate,pension:attachPensionSourceFacts(p,source).input};}
  if(candidate.minimum_wage&&original?.minimum_wage&&source){const p=minimumWageEntitlementInputSchema.parse(candidate.minimum_wage),raw=minimumWageEntitlementInputSchema.parse(original.minimum_wage);
   if(raw.case_recipe_bindings?.length)candidate={...candidate,minimum_wage:materializeMinimumWageCaseFacts(p,raw,source)};}
  if(!candidate.convalescence)return candidate;

@@ -1,9 +1,10 @@
-import {readFileSync,writeFileSync,existsSync,mkdirSync,renameSync,openSync,closeSync,fsyncSync} from 'node:fs';
+import {readFileSync,writeFileSync,existsSync,realpathSync,lstatSync,mkdirSync,renameSync,openSync,closeSync,fsyncSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createHash,randomUUID,randomBytes} from 'node:crypto';
 import path from 'node:path';
 import pg from 'pg';
 import {z} from 'zod';
+import {lifecyclePreview} from './dev-preview-receipt.mjs';
 import {SUPABASE_ROOT_2021_CA} from '../../src/server/product/case-access/supabase-ca';
 import {canonicalSha256} from '../../src/engine/rule-runtime/canonical';
 import {createRegularServiceTrustFixture} from '../../src/engine/minimum-wage-june2026/regular-service/regular-service.test-fixtures';
@@ -16,6 +17,33 @@ const repository=path.resolve('.'),privateRoot=path.resolve('../release-work');
 const configSchema=z.object({version:z.literal('managed-dev-lifecycle-v1'),caseId:z.uuid(),ownerIdentityId:z.uuid(),ownerEmail:z.enum(['tivdoc.com@gmail.com','info@tivdoc.com']),
  authorizationReference:z.string().min(8).max(1000),expiresAt:z.iso.datetime(),databaseEnvFile:z.string(),workerEnvironmentTemplate:z.string(),ledgerPath:z.string(),previewReceiptPath:z.string(),manifestPath:z.string(),taskName:z.string().regex(/^Tivdoc-[A-Za-z0-9-]{3,90}$/u)}).strict();
 type Config=z.infer<typeof configSchema>;
+const epochBuildSchema=z.object({schema_version:z.literal('dev-lifecycle-epoch-build-v1'),
+ config_sha256:z.string().regex(/^[a-f0-9]{64}$/u),template_sha256:z.string().regex(/^[a-f0-9]{64}$/u),
+ manifest_sha256:z.string().regex(/^[a-f0-9]{64}$/u),application_sha:z.string().regex(/^[a-f0-9]{40}$/u),
+ bundle_sha256:z.string().regex(/^[a-f0-9]{64}$/u),preview_receipt_sha256:z.string().regex(/^[a-f0-9]{64}$/u),
+ preview_origin:z.string().regex(/^https:\/\/salary-[a-z0-9-]+\.vercel\.app$/u)}).strict();
+/** A retry resumes the same immutable epoch. It cannot attest a new build
+ * while leaving the old supervisor and environment on disk. */
+export function assertLifecycleEpochBuild(expected:unknown,stored:unknown,supervisor?:unknown,environment?:unknown){
+ const target=epochBuildSchema.parse(expected),prior=epochBuildSchema.safeParse(stored);
+ if(!prior.success||canonicalSha256(prior.data)!==canonicalSha256(target))throw Error('DEV_EPOCH_RETRY_MISMATCH');
+ if(supervisor!==undefined){
+  const s=z.object({expected_git_sha:z.string(),expected_bundle_sha256:z.string(),expected_manifest_sha256:z.string()}).safeParse(supervisor);
+  if(!s.success||s.data.expected_git_sha!==target.application_sha||s.data.expected_bundle_sha256!==target.bundle_sha256||s.data.expected_manifest_sha256!==target.manifest_sha256)throw Error('DEV_EPOCH_RETRY_MISMATCH');
+ }
+ if(environment!==undefined){
+  const e=z.object({TIVDOC_MANAGED_DEV_BUILD_SHA:z.string(),TIVDOC_MANAGED_DEV_NOTIFICATION_ORIGIN:z.string()}).safeParse(environment);
+  if(!e.success||e.data.TIVDOC_MANAGED_DEV_BUILD_SHA!==target.application_sha||e.data.TIVDOC_MANAGED_DEV_NOTIFICATION_ORIGIN!==target.preview_origin)throw Error('DEV_EPOCH_RETRY_MISMATCH');
+ }
+}
+function lifecycleBuild(c:Config){
+ const manifest=read(c.manifestPath),preview=lifecyclePreview(read(c.previewReceiptPath),manifest);
+ const bundlePath=path.join(path.dirname(c.manifestPath),'worker.cjs');if(sha(readFileSync(bundlePath))!==manifest.bundleSha256)throw Error('DEV_BUILD_HASH');
+ const buildPins=epochBuildSchema.parse({schema_version:'dev-lifecycle-epoch-build-v1',config_sha256:canonicalSha256(c),
+  template_sha256:sha(readFileSync(c.workerEnvironmentTemplate)),manifest_sha256:sha(readFileSync(c.manifestPath)),
+  application_sha:manifest.gitSha,bundle_sha256:manifest.bundleSha256,preview_receipt_sha256:preview.receiptSha256,preview_origin:'https://'+preview.url});
+ return {manifest,preview,bundlePath,buildPins};
+}
 /** A missing predecessor is a first prepare, never an invented renewal. */
 export function lifecyclePredecessor(command:string,ownerIdentityId:string,raw:unknown):string|null{
  if(raw===undefined||raw===null){if(command!=='prepare')throw Error('DEV_FIRST_ENROLLMENT_REQUIRES_PREPARE');return null;}
@@ -35,7 +63,19 @@ export function validateLifecycleConfig(raw:unknown){
  for(const file of [c.ledgerPath,c.manifestPath])assertInside(path.join(repository,'output/release-completion'),file);
  return c;
 }
-function assertInside(root:string,file:string){const r=path.relative(root,path.resolve(file));if(!r||r.startsWith('..')||path.isAbsolute(r))throw Error('DEV_LIFECYCLE_PATH_SCOPE');}
+/** Resolve existing ancestors as well as future files; a junction must not
+ * redirect a scoped private input outside its permitted directory. */
+export function assertLifecyclePath(root:string,file:string){
+ const inside=(base:string,target:string)=>{const r=path.relative(base,target);return !!r&&r!=='..'&&!r.startsWith('..'+path.sep)&&!path.isAbsolute(r);};
+ const physical=(candidate:string):string=>{let current=path.resolve(candidate);const tail:string[]=[];
+  for(;;){try{lstatSync(current);return path.join(realpathSync(current),...tail);}catch(error){
+   if(!(error instanceof Error)||!('code' in error)||error.code!=='ENOENT')throw Error('DEV_LIFECYCLE_PATH_SCOPE');
+   const parent=path.dirname(current);if(parent===current)throw Error('DEV_LIFECYCLE_PATH_SCOPE');tail.unshift(path.basename(current));current=parent;
+  }}
+ };
+ if(!inside(path.resolve(root),path.resolve(file))||!inside(physical(root),physical(file)))throw Error('DEV_LIFECYCLE_PATH_SCOPE');
+}
+const assertInside=assertLifecyclePath;
 function atomic(file:string,value:unknown){const temporary=file+'.'+randomUUID()+'.tmp',fd=openSync(temporary,'wx',0o600);try{writeFileSync(fd,JSON.stringify(value,null,2)+'\n');fsyncSync(fd);}finally{closeSync(fd);}renameSync(temporary,file);}
 function receipt(directory:string,name:string,value:unknown){mkdirSync(directory,{recursive:true});writeFileSync(path.join(directory,name+'-'+Date.now()+'-'+randomUUID()+'.json'),JSON.stringify(value,null,2)+'\n',{flag:'wx'});}
 function task(command:'start'|'disable'|'status'|'prepare',c:Config,launcher:string){
@@ -55,7 +95,7 @@ async function connect(c:Config){
 }
 export async function main(args:string[]){
  const [command,configFile,epochId]=args;
- if(!['prepare','start','status','pause','stop','resume','authority','notifications-pause','notifications-resume'].includes(command??'')||!configFile||!epochId||!z.uuid().safeParse(epochId).success||process.env.VERCEL||process.env.NODE_ENV==='production')throw Error('DEV_LIFECYCLE_ARGUMENTS');
+ if(!['prepare','start','status','pause','stop','resume','authority','notifications-pause','notifications-resume'].includes(command??'')||!configFile||!epochId||!z.uuid().safeParse(epochId).success||process.env.VERCEL||process.env.VERCEL_ENV||process.env.NODE_ENV==='production')throw Error('DEV_LIFECYCLE_ARGUMENTS');
  assertInside(privateRoot,configFile);const c=validateLifecycleConfig(read(configFile)),epochFile=path.join(privateRoot,'dev-epoch-'+epochId+'.private.json');
  const directory=path.join(repository,'output/release-completion/dev-operations-'+epochId),supervisorFile=path.join(privateRoot,'dev-supervisor-'+epochId+'.private.json'),environmentFile=path.join(privateRoot,'dev-worker-'+epochId+'.private.json'),launcher=path.join(privateRoot,'dev-launch-'+epochId+'.ps1');
  const ledgerBefore=sha(readFileSync(c.ledgerPath)),at=new Date().toISOString();
@@ -63,15 +103,14 @@ export async function main(args:string[]){
  try{
  if(command==='prepare'||command==='resume'){
   if(Date.parse(c.expiresAt)<=Date.now()||Date.parse(c.expiresAt)>Date.now()+4*3600000)throw Error('DEV_WINDOW_EXPIRED_OR_UNBOUNDED');
-  const manifest=read(c.manifestPath),preview=read(c.previewReceiptPath);
-  if(manifest.dirty||manifest.proofOnly||manifest.gitSha!==preview.sha||preview.target!=='preview'||preview.readyState!=='READY'||!/^salary-[a-z0-9-]+\.vercel\.app$/u.test(preview.url))throw Error('MATCHING_READY_PREVIEW_REQUIRED');
-  const bundlePath=path.join(path.dirname(c.manifestPath),'worker.cjs');if(sha(readFileSync(bundlePath))!==manifest.bundleSha256)throw Error('DEV_BUILD_HASH');
+  const {manifest,preview,bundlePath,buildPins}=lifecycleBuild(c);
   let epoch=existsSync(epochFile)?read(epochFile):null;
+  if(epoch)assertLifecycleEpochBuild(buildPins,epoch.buildPins,existsSync(supervisorFile)?read(supervisorFile):undefined,existsSync(environmentFile)?read(environmentFile):undefined);
   if(!epoch){
    const predecessor=(await db.query('select capability_sha256,identity_id from private.managed_dev_worker_cases where case_id=$1',[c.caseId])).rows[0];
    const predecessorSha=lifecyclePredecessor(command,c.ownerIdentityId,predecessor);
    if(!(await db.query("select c.id from public.cases c join public.case_identity_cases ic on ic.case_id=c.id join public.case_identities i on i.id=ic.identity_id where c.id=$1 and c.is_qa and c.contact_verified_at is not null and i.id=$2 and i.channel='email' and i.contact_normalized=$3",[c.caseId,c.ownerIdentityId,c.ownerEmail])).rows.length)throw Error('DEV_OWNER_CASE_SCOPE');
-   epoch={epochId,caseId:c.caseId,ownerIdentityId:c.ownerIdentityId,capability:randomBytes(32).toString('base64url'),sid:'dev.epoch:'+epochId,jti:randomUUID(),expiresAt:c.expiresAt,predecessor:predecessorSha,ledgerSha:ledgerBefore,authorizationReference:c.authorizationReference};
+   epoch={epochId,caseId:c.caseId,ownerIdentityId:c.ownerIdentityId,capability:randomBytes(32).toString('base64url'),sid:'dev.epoch:'+epochId,jti:randomUUID(),expiresAt:c.expiresAt,predecessor:predecessorSha,ledgerSha:ledgerBefore,authorizationReference:c.authorizationReference,buildPins};
    writeFileSync(epochFile,JSON.stringify(epoch,null,2)+'\n',{flag:'wx',mode:0o600});
   }
   if(epoch.caseId!==c.caseId||epoch.expiresAt!==c.expiresAt||epoch.ownerIdentityId!==c.ownerIdentityId||epoch.ledgerSha!==ledgerBefore||epoch.authorizationReference!==c.authorizationReference)throw Error('DEV_EPOCH_RETRY_MISMATCH');
@@ -95,7 +134,7 @@ export async function main(args:string[]){
    const ps=(s:string)=>"'"+s.replaceAll("'","''")+"'";writeFileSync(launcher,`$ErrorActionPreference='Stop'\nSet-Location -LiteralPath ${ps(repository)}\n& ${ps(process.execPath)} ${ps(path.join(repository,'scripts/product-workers/managed-dev-supervisor.mjs'))} --control ${ps(supervisorFile)}\nexit $LASTEXITCODE\n`,{flag:'wx'});
   }
   if(!prior||JSON.parse(task('status',c,launcher)).state==='absent')task('prepare',c,launcher);
-  receipt(directory,'prepare',{at,epochId,caseId:c.caseId,replayed:!!prior,providerPolicy:'saved_receipts_only',ledgerSha256:ledgerBefore,calculationAuthorityRenewed:false,buildSha:manifest.gitSha,preview:preview.url});
+  receipt(directory,'prepare',{at,epochId,caseId:c.caseId,replayed:!!prior,providerPolicy:'saved_receipts_only',ledgerSha256:ledgerBefore,calculationAuthorityRenewed:false,buildSha:manifest.gitSha,preview:preview.url,previewEvidence:preview.evidence,previewReceiptSha256:preview.receiptSha256});
   if(command==='prepare'){console.log(JSON.stringify({state:'prepared',epochId,replayed:!!prior,providerCalls:0}));return;}
  }
  if(command==='authority'){
@@ -132,6 +171,7 @@ export async function main(args:string[]){
  }
  if(command==='start'||command==='resume'){
   const control=read(supervisorFile);if(Date.parse(control.expires_at)<=Date.now())throw Error('DEV_WINDOW_EXPIRED');
+  assertLifecycleEpochBuild(lifecycleBuild(c).buildPins,epoch.buildPins,control,read(environmentFile));
   const current=(await db.query('select m.capability_sha256,s.revoked_at,s.expires_at from private.managed_dev_worker_cases m join public.product_identity_sessions s on s.sid=m.session_sid where m.case_id=$1',[c.caseId])).rows[0];
   if(current?.capability_sha256!==capabilitySha||current.revoked_at!==null||Date.parse(current.expires_at)<=Date.now())throw Error('DEV_REVOKED_EPOCH_REQUIRES_NEW_ID');
   await db.query('begin');await db.query('update private.managed_dev_worker_capabilities set enabled=true where capability_sha256=$1 and expires_at>now()',[capabilitySha]);await db.query('update private.managed_dev_worker_cases set enabled=true where case_id=$1 and capability_sha256=$2',[c.caseId,capabilitySha]);await db.query('commit');

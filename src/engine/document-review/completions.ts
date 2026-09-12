@@ -4,7 +4,7 @@ import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 const id=z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,179}$/u);
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 const value=z.union([z.string().min(1).max(4000),z.number().finite().min(-1e12).max(1e12),z.boolean()]);
-const valueValidation=z.object({schema_version:z.literal('document-review-value-validation-v1'),format:z.enum(['iso_date','iso_date_or_ongoing','year','fte_ratio','clock_time'])}).strict();
+const valueValidation=z.object({schema_version:z.literal('document-review-value-validation-v1'),format:z.enum(['iso_date','iso_date_or_ongoing','year','fte_ratio','clock_time','calendar_days'])}).strict();
 const valueMap=z.object({schema_version:z.literal('document-review-choice-values-v1'),entries:z.array(z.object({label:z.string().min(1).max(300),value:z.union([z.string().min(1).max(300),z.boolean(),z.number().finite()]).nullable()}).strict()).min(2).max(12)}).strict();
 export const reviewPeriodSchema=z.object({from:z.iso.date(),to:z.iso.date()}).strict()
  .refine(period=>period.from<=period.to,'Period must be ordered');
@@ -265,6 +265,9 @@ export function resolveReviewCompletion(input:{request:ReviewCompletion;current:
 /** Opt-in target contract; absent validation preserves historical receipts. */
 export function validateReviewAnswerFormat(target:ReviewCompletionTarget,value:unknown):void{
  const format=target.value_validation?.format;if(!format)return;
+ if(format==='calendar_days'){
+  if(typeof value!=='string'||!/^(?:0|[1-9]|[12]\d|3[01])$/u.test(value)||Number(value)>Number(target.period.to.slice(8)))throw Error('REVIEW_COMPLETION_ANSWER_INVALID');return;
+ }
  if(format==='clock_time'){
   if(typeof value!=='string'||!/^(?:[01]\d|2[0-3]):[0-5]\d$/u.test(value))throw Error('REVIEW_COMPLETION_ANSWER_INVALID');return;
  }
@@ -279,7 +282,7 @@ export function validateReviewAnswerFormat(target:ReviewCompletionTarget,value:u
 }
 
 export function reviewDeclaredAnswerValue(target:ReviewCompletionTarget,value:unknown):unknown{
- if(target.value_validation?.format==='year'){validateReviewAnswerFormat(target,value);return Number(value);}
+ if(target.value_validation?.format==='year'||target.value_validation?.format==='calendar_days'){validateReviewAnswerFormat(target,value);return Number(value);}
  if(!target.value_mapping)return value;
  const mapped=target.value_mapping.entries.filter(e=>e.label===value);
  if(mapped.length!==1)throw Error('REVIEW_COMPLETION_ANSWER_MAPPING');return mapped[0].value;

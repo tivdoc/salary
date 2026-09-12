@@ -5,6 +5,7 @@ import {composeEntitlementReview} from './compose.ts';
 import {enableSharedPersonalFacts,SHARED_PERSONAL_FACTS_TRAVEL_POLICY,sharedPersonalAnswerCoversCheck} from './shared-product-facts.ts';
 import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
 import {pensionEntitlementInputSchema} from './pension/contracts.ts';
+import {pensionProductFactQuestions} from './pension/product-facts.ts';
 import {travelEntitlementInputSchema} from './travel/contracts.ts';
 import {convalescenceEntitlementInputSchema} from './convalescence/contracts.ts';
 import {convalescenceCaseFactsSchema} from './convalescence/product-facts.ts';
@@ -20,6 +21,21 @@ function values(input:DocumentReviewInput){const e=input.entitlement_composition
 function request(input:DocumentReviewInput,key:string){const g=input.entitlement_composition!.shared_personal_facts!.groups.find(g=>g.fact===key)!;return generateReviewCompletions({...parseReviewCompletionInput(input.completion_input),evidence:[],previous_answers:[]}).customer_requests.find(r=>r.target.target_sha256===g.canonical_target_sha256)!;}
 function answer(input:DocumentReviewInput,r:ReviewCompletion,value:string|null,revision=1){return applyDocumentReviewAnswer(input,{request:r,actor:{case_id:input.case_id,identity_id:identity},answer:{request_id:'55555555-5555-4555-8555-000000000001',revision,answered_at:at,state:value===null?'unknown':'provided',value}}).input;}
 describe('shared v3 exact personal facts across six families',()=>{
+ it('retains known pension age evidence without inventing or requesting a pension birthday',()=>{
+  const input=raw(),before=pensionEntitlementInputSchema.parse(input.entitlement_evidence!.pension),s=composeEntitlementReview(input),after=pensionEntitlementInputSchema.parse(s.entitlement_composition!.evidence.pension);
+  expect(before.facts.aged_21_or_more).toMatchObject({state:'known',value:true});expect(before.facts.under_60).toMatchObject({state:'known',value:true});
+  expect(pensionProductFactQuestions(before).some(q=>q.path==='product_facts.birth_date')).toBe(false);
+  expect(after.facts.aged_21_or_more).toEqual(before.facts.aged_21_or_more);expect(after.facts.under_60).toEqual(before.facts.under_60);expect(after.product_facts!.birth_date).toEqual(before.product_facts!.birth_date);
+ });
+ it('opens exactly three shared actions when all seventeen recipient personal facts are actually missing',()=>{
+  const input=raw(),p=pensionEntitlementInputSchema.parse(input.entitlement_evidence!.pension);
+  p.facts.aged_21_or_more={state:'missing',value:null,source:null,basis:'ai_source_assessment'};p.facts.under_60={state:'missing',value:null,source:null,basis:'ai_source_assessment'};input.entitlement_evidence!.pension=p;
+  expect(pensionProductFactQuestions(p).some(q=>q.path==='product_facts.birth_date')).toBe(true);
+  const s=composeEntitlementReview(input),groups=s.entitlement_composition!.shared_personal_facts!.groups,aliases=groups.flatMap(g=>g.aliases.map(a=>a.fact_key)),keys=new Set(aliases);
+  expect(aliases).toHaveLength(17);expect(values(s).every(f=>['birth_date','employment_relationship','workplace_sector'].every(key=>!(key in f)||Reflect.get(f,key).state==='missing'))).toBe(true);
+  const requests=runDocumentReview(s,'shared.all-missing').completions.customer_requests.filter(r=>keys.has(r.target.fact_key));
+  expect(requests).toHaveLength(3);expect(new Set(requests.map(r=>r.target.target_sha256))).toEqual(new Set(groups.map(g=>g.canonical_target_sha256)));expect(s.answer_history).toEqual([]);
+ });
  it('opens three personal questions and preserves separate legal, wage and rest questions',()=>{const s=composeEntitlementReview(raw()),groups=s.entitlement_composition!.shared_personal_facts!.groups;expect(groups).toHaveLength(3);expect(groups.every(g=>g.aliases.length===(g.fact==='birth_date'?5:6)&&g.schema_version==='shared-personal-fact-group-v2')).toBe(true);expect(runDocumentReview(s,'shared.v3').completions.customer_requests.filter(r=>groups.some(g=>g.canonical_target_sha256===r.target.target_sha256))).toHaveLength(3);expect(groups.every(g=>g.aliases.every(a=>a.input_path==='product_facts.'+g.fact))).toBe(true);});
  it('records separate exact week indices while reusing one personal answer',()=>{
   const input=raw(),weeks=workingTimeEntitlementInputSchema.array().parse(input.entitlement_evidence!.working_time),second=structuredClone(weeks[0]);

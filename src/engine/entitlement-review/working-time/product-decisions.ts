@@ -1,4 +1,5 @@
 import {canonicalSha256} from '../../rule-runtime/canonical.ts';
+import {productAgeRangeSelection} from '../product-age-range.ts';
 import {documentReviewCalculationInputSchema,type DocumentReviewOperand,type DocumentReviewSource} from '../../document-review/calculations.ts';
 import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {workingTimeEntitlementInputSchema,type WorkingTimeEntitlementInput,type WorkingTimeMissing,type WorkingTimeWorkday} from './contracts.ts';
@@ -6,7 +7,7 @@ import {assertSource,sourceInterval,sourceNumber,type TimeReading} from './time-
 import {WORKING_TIME_SOURCE_REVIEW_SHA256} from './source-policy.ts';
 import {workingTimeProductFactsSchema,type WorkingTimeProductFacts,WORKING_TIME_PRODUCT_FACTS_POLICY} from './product-fact-contracts.ts';
 export {workingTimeProductFactsSchema,workingTimeRegularWageBasisSchema,workingTimeAssignmentWitnessSchema,type WorkingTimeProductFacts} from './product-fact-contracts.ts';
-export type WorkingTimeCaseOptions={review?:DocumentReviewInput;product_facts?:WorkingTimeProductFacts;day_id?:string};
+export type WorkingTimeCaseOptions={review?:DocumentReviewInput;product_facts?:WorkingTimeProductFacts;day_id?:string;age_range?:true};
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
 const sourceSchema=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const same=(a:unknown,b:unknown)=>canonicalSha256(a)===canonicalSha256(b);
@@ -85,7 +86,11 @@ export function evaluateWorkingTimeCaseRecipe(requestedDecisionId:string,candida
  if(decisionId==='wt.coverage'){
   if(facts?.schema_version!==WORKING_TIME_PRODUCT_FACTS_POLICY)return finish('coverage_requires_separate_factual_packet_and_assessment',[],['working_time_coverage_facts_and_assessment']);
   const keys=['birth_date','employment_relationship','workplace_sector','salary_basis','job_duties','occupation_group','company_policy_authority','employer_personal_proxy','hours_trackable','other_hours_terms_known'] as const;
-  for(const key of keys){consume('product_facts.'+key);const reason=factReason(facts[key]);if(reason)return block('product_facts.'+key,reason,'נדרשת עובדה על התפקיד, המעמד או אופן העבודה בתקופה; זו אינה בקשה לקבוע תחולה משפטית.','fact',true);}
+  const age=options.age_range?productAgeRangeSelection(input,facts.birth_date,options.review):null;
+  if(options.age_range&&input.product_age_range)consume('product_age_range');
+  if(age?.kind==='blocked')return block('product_facts.birth_date',age.reason!,'נדרשת הבהרה של מקור הגיל או תאריך הלידה שנשמר.','fact',true);
+  for(const key of keys){if(key==='birth_date'&&age?.kind==='range')continue;consume('product_facts.'+key);const reason=factReason(facts[key]);if(reason)return block('product_facts.'+key,reason,'נדרשת עובדה על התפקיד, המעמד או אופן העבודה בתקופה; זו אינה בקשה לקבוע תחולה משפטית.','fact',true);}
+  if(age?.kind!=='range'){
   const birth=facts.birth_date.value!,adult=new Date(birth+'T00:00:00Z');adult.setUTCFullYear(adult.getUTCFullYear()+18);
   if(birth>input.period.from)return block('product_facts.birth_date','conflict','תאריך הלידה מאוחר מתקופת העבודה.');
   if(adult.toISOString().slice(0,10)>input.period.from)return finish('coverage:minor_population_requires_separate_branch');
@@ -93,6 +98,7 @@ export function evaluateWorkingTimeCaseRecipe(requestedDecisionId:string,candida
   // whole reviewed period must stay within the frozen 21–59 product boundary.
   const age21=new Date(birth+'T00:00:00Z'),age60=new Date(birth+'T00:00:00Z');age21.setUTCFullYear(age21.getUTCFullYear()+21);age60.setUTCFullYear(age60.getUTCFullYear()+60);
   if(age21.toISOString().slice(0,10)>input.period.from||age60.toISOString().slice(0,10)<=input.period.to)return finish('coverage:outside_release_population_21_59');
+  }
   if(facts.employment_relationship.value!=='employee'||facts.workplace_sector.value!=='private'||facts.salary_basis.value!=='hourly')return finish('coverage:unsupported_employment_population');
   if(facts.occupation_group.value!=='ordinary')return finish('coverage:special_occupation_requires_separate_assessment');
   if(facts.company_policy_authority.value||facts.employer_personal_proxy.value)return finish('coverage:responsibilities_require_source_assessment');
