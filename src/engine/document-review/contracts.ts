@@ -5,6 +5,8 @@ import {reviewCompletionSchema,reviewCompletionAnswerReceiptSchema,reviewSourceP
 import {documentReviewCalculationInputSchema} from './calculations.ts';
 import {normalizedCandidateFieldSchema,type NormalizedPayslipExtraction} from '../extraction/payslip.ts';
 import {customerSourceTranscriptionSchema} from '../extraction/customer-reading.ts';
+import {entitlementEvidenceSchema,entitlementCompositionSchema} from '../entitlement-review/contracts.ts';
+import {canonicalSha256} from '../rule-runtime/canonical.ts';
 
 export const DOCUMENT_REVIEW_POLICY='document-review-product-v1' as const;
 export const DOCUMENT_REVIEW_COVERAGE_POLICY='document-review-coverage-v1' as const;
@@ -54,6 +56,8 @@ export const documentReviewInputSchema=z.object({
  purchased_scope:z.object({order_id:z.string().min(1),receipt_sha256:sha,topics:z.array(reviewTopicSchema).min(1),
   origin:z.enum(['saved_order','legacy_paid_receipt']),purchase_period_evidence:reviewPurchasePeriodEvidenceSchema.optional()}).strict(),
  coverage_policy:z.literal(DOCUMENT_REVIEW_COVERAGE_POLICY).optional(),
+ entitlement_evidence:entitlementEvidenceSchema.optional(),
+ entitlement_composition:entitlementCompositionSchema.optional(),
  period_projection:reviewPeriodProjectionSchema.optional(),
  source_observation_inventory:z.array(reviewSourceObservationInventorySchema).max(64).optional(),
  coverage_gaps:z.array(z.object({check_id:z.string().min(1),topic:reviewTopicSchema,kind:z.enum(['missing_source','missing_fact','missing_rule','missing_applicability','ownership']),detail:z.string().min(1),next_step:z.string().min(1),source_pins:z.array(reviewSourcePinSchema).min(1).max(32).optional()}).strict()).max(100).default([]),
@@ -65,6 +69,15 @@ export const documentReviewInputSchema=z.object({
  answer_history:z.array(z.object({request:reviewCompletionSchema,receipt:reviewCompletionAnswerReceiptSchema,
   original_checks:z.array(documentReviewCalculationInputSchema).max(100)}).strict()).max(100).default([]),
 }).strict().superRefine((input,ctx)=>{
+ if(input.entitlement_evidence&&(input.entitlement_evidence.case_id!==input.case_id
+  ||input.entitlement_evidence.order_id!==input.purchased_scope.order_id
+  ||input.entitlement_evidence.receipt_sha256!==input.purchased_scope.receipt_sha256
+  ||canonicalSha256(input.entitlement_evidence.period)!==canonicalSha256(input.period)))
+  ctx.addIssue({code:'custom',path:['entitlement_evidence'],message:'ENTITLEMENT_SOURCE_SCOPE'});
+ if(input.entitlement_composition&&(!input.entitlement_evidence
+  ||input.entitlement_composition.source_evidence_sha256!==canonicalSha256(input.entitlement_evidence)
+  ||input.entitlement_composition.selections.some(s=>!input.purchased_scope.topics.includes(s.topic))))
+  ctx.addIssue({code:'custom',path:['entitlement_composition'],message:'ENTITLEMENT_SELECTION_SCOPE'});
  if(input.purchased_scope.purchase_period_evidence?.receipt_sha256!==undefined
   &&input.purchased_scope.purchase_period_evidence.receipt_sha256!==input.purchased_scope.receipt_sha256)
   ctx.addIssue({code:'custom',path:['purchased_scope','purchase_period_evidence'],message:'REVIEW_PURCHASE_PERIOD_RECEIPT'});

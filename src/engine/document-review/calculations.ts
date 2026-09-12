@@ -41,6 +41,8 @@ const candidateSchema=z.object({kind:z.literal('candidate_rule'),rule:ruleSpecPa
  // Opt-in comparison; old candidate receipts retain their exact null-difference semantics.
  comparison:z.object({schema_version:z.literal('candidate-comparison-v1'),expected_ref:id,recorded_ref:id,difference_ref:id,
   recorded_basis:z.enum(['document_amount','document_allocation','identified_answer'])}).strict().optional(),
+ recorded_source_evidence:z.object({schema_version:z.literal('candidate-recorded-source-evidence-v1'),
+  calculation:z.unknown(),calculation_sha256:hash,numerator_operand_id:id,recorded_operand_id:id}).strict().optional(),
  // Counterfactual conditions remain unresolved. This does not change the decision,
  // a source observation, a confidence status, or the REAL authority boundary.
  conditional_assumptions:z.array(z.object({decision_id:id,explanation:z.string().min(1).max(1000)}).strict()).min(1).max(32).optional(),
@@ -159,6 +161,22 @@ function validate(input:DocumentReviewCalculationInput){
    // Neither amount may be a freestanding parameter masquerading as a case result.
    const refs=new Set([...op.rule.facts.map(f=>f.ref_id),...op.rule.nodes.map(n=>n.node_id)]);
    if(!refs.has(c.expected_ref)||!refs.has(c.recorded_ref))throw Error('DOCUMENT_REVIEW_COMPARISON_BINDING');
+  }
+  if(op.recorded_source_evidence){
+   const e=op.recorded_source_evidence,nested=documentReviewCalculationInputSchema.parse(e.calculation);
+   if(canonicalSha256(nested)!==e.calculation_sha256||nested.case_id!==input.case_id
+    ||canonicalSha256(nested.period)!==canonicalSha256(input.period)||nested.operation.kind!=='observed_ratio'
+    ||nested.source_structure?.kind!=='source_relationship'||nested.operation.numerator_ref!==e.numerator_operand_id
+    ||!op.comparison||op.fact_bindings.find(b=>b.ref_id===op.comparison!.recorded_ref)?.operand_id!==e.recorded_operand_id)
+    throw Error('DOCUMENT_REVIEW_RECORDED_RELATIONSHIP_BINDING');
+   // The existing relationship witness checks exact row/cell, fund/base,
+   // version, month and identified reading. No recursive candidate is allowed.
+   validate(nested);
+   if(blockers(nested).length)throw Error('DOCUMENT_REVIEW_RECORDED_RELATIONSHIP_UNRESOLVED');
+   for(const operand of nested.operands)parseValue(operand,nested);
+   const original=nested.operands.find(o=>o.id===e.numerator_operand_id),recorded=input.operands.find(o=>o.id===e.recorded_operand_id);
+   if(!original||!recorded||canonicalSha256({...original,id:recorded.id})!==canonicalSha256(recorded))throw Error('DOCUMENT_REVIEW_RECORDED_RELATIONSHIP_AMOUNT');
+   for(const pin of nested.source_manifest)if(!input.source_manifest.some(p=>canonicalSha256(p)===canonicalSha256(pin)))throw Error('DOCUMENT_REVIEW_RECORDED_RELATIONSHIP_SOURCE');
   }
   if(op.execution_preconditions&&(new Set(op.execution_preconditions).size!==op.execution_preconditions.length||op.execution_preconditions.some(ref=>op.rule.nodes.find(n=>n.node_id===ref)?.operation!=='compare.gte')))throw Error('DOCUMENT_REVIEW_PRECONDITION_REF');
   const factRefs=op.fact_bindings.map(b=>b.ref_id),paramRefs=op.parameter_bindings.map(b=>b.ref_id);

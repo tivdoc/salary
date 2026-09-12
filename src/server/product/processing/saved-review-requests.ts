@@ -1,7 +1,7 @@
 import 'server-only';
 import {z} from 'zod';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
-import {reviewCompletionSchema,reviewCompletionTargetSchema,type ReviewCompletionTarget} from '@/engine/document-review/completions';
+import {reviewCompletionSchema,reviewCompletionTargetSchema,validateReviewAnswerFormat,type ReviewCompletionTarget} from '@/engine/document-review/completions';
 import {replayDocumentReview} from '@/engine/document-review/service';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatch';
@@ -42,6 +42,7 @@ export function normalizeSavedReviewAnswer(candidate:ReviewCompletionTarget,text
   return {state:'provided',value:Number(answer)};
  }
  if(target.answer_kind==='choice'&&!target.options?.includes(answer))throw Error('REVIEW_REQUEST_ANSWER_INVALID');
+ validateReviewAnswerFormat(target,answer);
  return {state:'provided',value:answer};
 }
 

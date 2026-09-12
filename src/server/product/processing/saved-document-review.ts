@@ -1,3 +1,4 @@
+import {composeEntitlementReview} from '@/engine/entitlement-review/compose';
 import {savedReviewSourceEvidence} from './saved-review-source-proof';
 import {z} from 'zod';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
@@ -32,7 +33,7 @@ async function verify(context:PostgresTransactionContext,job:SourceJob,input:Doc
  }
  // Parse and verify each operation, every operand and completion before a
  // source review can be checkpointed. This does not admit any legal rule.
- runDocumentReview(input,'source-review-validation');
+ runDocumentReview(composeEntitlementReview(input),'source-review-validation');
 }
 
 /** Internal worker adapter for normalized/reviewed attendance, contract and
@@ -151,7 +152,7 @@ export function withSavedPurchaseCoverage(input:DocumentReviewInput,order:SavedE
 }
 
 export async function savedDocumentReviewInput(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot){
- let input=await sourceReviewInput(context,job,order,month,snapshot);
+ let input=composeEntitlementReview(await sourceReviewInput(context,job,order,month,snapshot));
  if(!snapshot.has_document_review_answers)return input;
  const history=await readSavedReviewAnswers(context,job);
  for(const row of history){

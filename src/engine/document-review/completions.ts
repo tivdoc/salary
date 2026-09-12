@@ -4,6 +4,7 @@ import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 const id=z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,179}$/u);
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 const value=z.union([z.string().min(1).max(4000),z.number().finite().min(-1e12).max(1e12),z.boolean()]);
+const valueValidation=z.object({schema_version:z.literal('document-review-value-validation-v1'),format:z.enum(['iso_date','iso_date_or_ongoing'])}).strict();
 export const reviewPeriodSchema=z.object({from:z.iso.date(),to:z.iso.date()}).strict()
  .refine(period=>period.from<=period.to,'Period must be ordered');
 export const reviewSourcePinSchema=z.object({case_id:z.uuid(),document_id:id,version_id:id,source_sha256:sha}).strict();
@@ -32,10 +33,12 @@ export const reviewCompletionNeedSchema=z.object({fact_key:id,
  reason:z.enum(['missing','unknown','unreadable','conflicted']),
  required_evidence_kind:z.enum(['observed_reading','customer_declaration','document','actual_transfer']),
  question:z.string().min(1).max(1000),answer_kind:z.enum(['text','number','boolean','choice','document']),
+ value_validation:valueValidation.optional(),
  options:z.array(z.string().min(1).max(300)).min(2).max(12).optional(),
  source_pins:z.array(reviewSourcePinSchema).max(32),dependent_check_ids:z.array(id).min(1).max(128),
  general_question:z.boolean(),document_kind:id.optional(),
 }).strict().superRefine((need,ctx)=>{
+ if(need.value_validation&&need.answer_kind!=='text')ctx.addIssue({code:'custom',message:'Formatted value requires text'});
  if((need.answer_kind==='choice')!==(need.options!==undefined))
   ctx.addIssue({code:'custom',message:'Only choice questions have options'});
  if(need.options&&new Set(need.options).size!==need.options.length)
@@ -52,6 +55,7 @@ const targetBodySchema=z.object({schema_version:z.literal('document-review-compl
  reason:z.enum(['missing','unknown','unreadable','conflicted']),
  required_evidence_kind:z.enum(['observed_reading','customer_declaration','document','actual_transfer']),
  question:z.string().min(1).max(1000),answer_kind:z.enum(['text','number','boolean','choice','document']),
+ value_validation:valueValidation.optional(),
  options:z.array(z.string().min(1).max(300)).min(2).max(12).optional(),source_pins:z.array(reviewSourcePinSchema).max(32),
  document_kind:id.optional(),
 }).strict();
@@ -59,6 +63,7 @@ export const reviewCompletionTargetSchema=targetBodySchema.extend({target_sha256
  const {target_sha256,...body}=target;
  if(canonicalSha256(body)!==target_sha256)ctx.addIssue({code:'custom',message:'Completion target hash mismatch'});
  if(target.source_pins.some(pin=>pin.case_id!==target.case_id))ctx.addIssue({code:'custom',message:'Foreign source'});
+ if(target.value_validation&&target.answer_kind!=='text')ctx.addIssue({code:'custom',message:'Formatted value requires text'});
  if((target.answer_kind==='choice')!==(target.options!==undefined))ctx.addIssue({code:'custom',message:'Invalid choice target'});
 });
 export type ReviewCompletionTarget=Readonly<z.infer<typeof reviewCompletionTargetSchema>>;
@@ -235,6 +240,7 @@ export function resolveReviewCompletion(input:{request:ReviewCompletion;current:
   if((kind==='number'&&typeof body.value!=='number')||(kind==='boolean'&&typeof body.value!=='boolean')
    ||(['text','document','choice'].includes(kind)&&typeof body.value!=='string')
    ||(kind==='choice'&&!latest.target.options?.includes(String(body.value))))throw Error('REVIEW_COMPLETION_ANSWER_INVALID');
+  validateReviewAnswerFormat(latest.target,body.value);
  }
  const requiresSource=latest.target.required_evidence_kind!=='customer_declaration';
  const receipt=reviewCompletionAnswerReceiptSchema.parse({...body,answer_sha256:canonicalSha256(body)});
@@ -249,4 +255,11 @@ export function resolveReviewCompletion(input:{request:ReviewCompletion;current:
  return deepFreeze({state:body.state,blocked:body.state!=='provided'||requiresSource||externalConflict,
   invalidated_check_ids:prior?.answer_sha256===receipt.answer_sha256?[]:latest.dependent_check_ids,
   receipt,evidence,requires_source_verification:requiresSource});
+}
+
+/** Opt-in target contract; absent validation preserves historical receipts. */
+export function validateReviewAnswerFormat(target:ReviewCompletionTarget,value:unknown):void{
+ const format=target.value_validation?.format;if(!format)return;
+ if(format==='iso_date_or_ongoing'&&value==='העבודה נמשכת')return;
+ if(typeof value!=='string'||!z.iso.date().safeParse(value).success)throw Error('REVIEW_COMPLETION_ANSWER_INVALID');
 }

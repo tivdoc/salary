@@ -1,3 +1,4 @@
+import {assertEntitlementComposition,composeEntitlementReview} from '../entitlement-review/compose.ts';
 import {canonicalSha256,deepFreeze} from '../rule-runtime/canonical.ts';
 import {calculateDocumentReview,documentReviewCalculationInputSchema} from './calculations.ts';
 import {generateReviewCompletions,parseReviewCompletionInput,resolveReviewCompletion,type ReviewCompletion} from './completions.ts';
@@ -8,6 +9,7 @@ import {documentReviewCoverageInventory} from './coverage.ts';
  * or conditional candidates, never a substitute for catalog admission. */
 export function runDocumentReview(candidate:unknown,analysisRunId:string):DocumentReviewResult{
  const input=documentReviewInputSchema.parse(candidate);
+ assertEntitlementComposition(input);
  if(input.period.to<input.period.from)throw Error('REVIEW_PERIOD');
  if(new Set(input.documents.map(d=>d.document_id)).size!==input.documents.length
   ||input.documents.some(d=>d.case_id!==input.case_id))throw Error('REVIEW_DOCUMENT_SCOPE');
@@ -135,5 +137,5 @@ export function applyDocumentReviewAnswer(candidate:unknown,input:{request:Revie
   previous_answers:[...(completion.previous_answers??[]),resolved.receipt],
   evidence:[...completion.evidence.filter(e=>!replacedEvidence.has(e.evidence_id)),resolved.evidence]},
   answer_history:[...current.answer_history,{request:input.request,receipt:resolved.receipt,original_checks:originals}]});
- return {input:next,resolution:resolved};
+ return {input:next.entitlement_evidence?composeEntitlementReview(next):next,resolution:resolved};
 }
