@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {runSavedWorkerExtraction,recordSavedExtractionResult,type SavedWorkerTransactions} from './saved-extraction-worker';
-import {SOURCE_JOB_KIND} from './source-dispatch';
+import {SOURCE_JOB_KIND,type SourceJob} from './source-dispatch';
 const ports=vi.hoisted(()=>({extract:vi.fn(),checkpoint:vi.fn(),admit:vi.fn(),fields:vi.fn(),june:vi.fn(),transcriptions:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('@/server/engine/extraction/saved-payslip',()=>({extractSavedPayslip:ports.extract}));
@@ -19,7 +19,7 @@ beforeEach(()=>{vi.resetAllMocks();ports.admit.mockResolvedValue({});});
 // SQL concurrency/RLS is a separate actual PostgreSQL proof, not claimed here.
 function setup(){
  const caseId=randomUUID(),versionId=randomUUID();let depth=0;
- const job={schema_version:'saved-case-work-v1',case_id:caseId,revision:1,input_sha256:'a'.repeat(64),mode:'draft'};
+ const job:SourceJob={schema_version:'saved-case-work-v1',case_id:caseId,revision:1,input_sha256:'a'.repeat(64),mode:'draft'};
  const jobRow={job_kind:SOURCE_JOB_KIND,payload:job,payload_sha256:canonicalSha256(job),tenant_id:`saved-case:${caseId}`,canonical_case_id:caseId,state:'running',lease_owner:'worker',fencing_token:1,lease_valid:true,cancellation_requested:false};
  const document={id:randomUUID(),case_id:caseId,version_id:versionId,expected_month:'2025-01',content_sha256:'b'.repeat(64),created_at:'2025-02-01T00:00:00Z'};
  const run={result:{final_extraction:{document_id:versionId}}};
@@ -66,6 +66,31 @@ describe('durable saved extraction orchestration',()=>{
   s.state.failCheckpoint=false;ports.extract.mockClear();
   expect((await runSavedWorkerExtraction({...s.input,extractor:undefined,providerEnabled:false,receiptOnly:true})).reused).toBe(true);
   expect(ports.extract).not.toHaveBeenCalled();
+ });
+
+ it.each(['retained invocation','existing checkpoint'])('qualified %s keeps the seven ordinary field requests without dispatching historical June collection or transcription',async source=>{
+  const s=setup();s.jobRow.payload.processing_profile='qualified_ai_v1';
+  s.jobRow.payload_sha256=canonicalSha256(s.jobRow.payload);
+  if(source==='existing checkpoint')s.state.cached=s.result;
+  else s.state.invocation={invocation_id:randomUUID(),case_id:s.result.case_id,version_id:s.result.version_id,
+   expected_month:s.result.expected_month,input_sha256:s.result.input_sha256,dispatched_at:'2026-09-08T00:00:00Z',result:s.result};
+  const requestIds=Array.from({length:7},()=>randomUUID());
+  ports.fields.mockImplementation(async(context,job,checkpoint)=>{
+   expect(context).toBe(s.context);expect(job).toEqual(s.jobRow.payload);expect(checkpoint).toBe(s.result);
+   return requestIds;
+  });
+  ports.june.mockRejectedValue(Error('JUNE_COLLECTION_SOURCE_OR_SCOPE_CHANGED'));
+  ports.transcriptions.mockRejectedValue(Error('HISTORICAL_TRANSCRIPTION_MUST_NOT_RUN'));
+  const before=canonicalSha256(s.result);
+  const recovered=await runSavedWorkerExtraction({...s.input,extractor:undefined,providerEnabled:false,receiptOnly:true});
+  expect(recovered.reused).toBe(true);expect(recovered.result).toBe(s.result);
+  expect(ports.checkpoint).toHaveBeenCalledTimes(1);expect(ports.fields).toHaveBeenCalledTimes(1);
+  expect(await ports.fields.mock.results[0].value).toEqual(requestIds);
+  expect(ports.checkpoint.mock.invocationCallOrder[0]).toBeLessThan(ports.fields.mock.invocationCallOrder[0]);
+  expect(ports.june).not.toHaveBeenCalled();expect(ports.transcriptions).not.toHaveBeenCalled();
+  expect(ports.extract).not.toHaveBeenCalled();expect(s.input.storage.download).not.toHaveBeenCalled();
+  expect(s.calls).not.toContain('extraction_dispatch_once');expect(s.calls).not.toContain('extraction_receipt_record');
+  expect(canonicalSha256(s.result)).toBe(before);
  });
 
  it('commits dispatch before the external call and receipt before checkpoint; exact retry never invokes twice',async()=>{

@@ -5,7 +5,7 @@ import {claimSavedDraftJob,recordSavedJobFailure} from './saved-job-runtime';
 import {runSavedDraftJob,type SavedMonthCompletion} from './saved-job-runner';
 import {sourceJobSchema} from './source-dispatch';
 import {admitSavedSource} from './saved-admission';
-import {readSavedOrders,purchasedMonths} from './saved-order-scope';
+import {readSavedOrders,readSavedWorkerOrderAdmission,purchasedMonths} from './saved-order-scope';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {managedWorkerError} from './managed-worker-contract';
 import {loadSavedAiReleaseConfiguration} from './saved-ai-release-configuration';
@@ -36,7 +36,6 @@ async function scope(context:PostgresTransactionContext,caseId:string){
   ...(row.authority_dependency_sha256==null?{}:{authority_dependency_sha256:row.authority_dependency_sha256}),
   ...(row.processing_profile==null?{}:{processing_profile:row.processing_profile})});
  await admitSavedSource(context,job);
- const orders=await readSavedOrders(context,job);
  if(job.processing_profile==='qualified_ai_v1'){
   // A separately enrolled profile uses the same queue and spend reservation.
   // Never silently inherit a legacy June/test authority or truncate purchases.
@@ -45,15 +44,18 @@ async function scope(context:PostgresTransactionContext,caseId:string){
   // purpose is not. An invalid owner context must throw, never fall back.
   const owner=await loadSavedOwnerEngineeringConfiguration(context,job);
   if(!owner&&!await loadSavedAiReleaseConfiguration(context,job))throw Error('AI_RELEASE_ENROLLMENT_REQUIRED');
+  const {orders,intakeScopes}=await readSavedWorkerOrderAdmission(context,job);
   const months=[...new Set(orders.flatMap(purchasedMonths))];
-  if(!orders.length||orders.length>12||!months.length||months.length>12
-   ||!months.some(m=>m>='2026-05'&&m<='2026-07'))throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
+  const sourceIntakeOnly=!months.length&&intakeScopes.length>0;
+  if(!orders.length&&!intakeScopes.length||orders.length+intakeScopes.length>12||months.length>12
+   ||(!sourceIntakeOnly&&!months.some(m=>m>='2026-05'&&m<='2026-07')))throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
   // Retained documents outside the calculated month and unclassified periods
   // remain evidence/precise gaps; they are not reassigned or deleted here.
   z.object({documents:z.array(z.object({type:z.string(),month:z.string().nullable()})).max(24)}).parse(row.input);
   for(const order of orders)if(order.kind==='full')await requireFullAiOffer(context,caseId,order);
   return;
  }
+ const orders=await readSavedOrders(context,job);
  if(orders.length===1&&orders[0].kind==='legacy_initial'){
   // Enrollment, current receipt, machine session and the shared spend ceiling
   // still apply. This is private draft processing in the isolated QA database.

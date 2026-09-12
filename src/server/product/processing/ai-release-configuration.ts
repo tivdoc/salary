@@ -7,11 +7,13 @@ import {aiReleaseDecisionMethodSchema,AI_RELEASE_MAX_DECISION_METHODS,type AiRel
 import {AI_RELEASE_DECISION_RECIPES} from '../../../engine/ai-release-decisions/catalog';
 import {AI_RELEASE_RUNTIME_FAMILIES} from '../../../engine/ai-release-runtime/contracts';
 import {assertCompiledAiReleaseBuild,type AiReleaseCompiledBuild} from './ai-release-build';
+import {AI_RELEASE_BOUND_EVIDENCE_ANCHOR} from './ai-release-evaluation-anchor';
 
 export const AI_RELEASE_CONFIGURATION_VERSION='tivdoc-ai-release-configuration-v1' as const;
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 export const aiReleaseConfigurationSchema=z.object({schema_version:z.literal(AI_RELEASE_CONFIGURATION_VERSION),
  configuration_id:z.uuid(),revision:z.number().int().positive(),population:z.string().min(1).max(200),build_manifest_sha256:hash,
+ evaluation_anchor_policy:z.literal(AI_RELEASE_BOUND_EVIDENCE_ANCHOR).optional(),
  policy:aiReleasePolicySchema,registry:aiReleaseRegistrySchema,
  source_receipts:z.array(aiReleaseSourceReceiptSchema).min(1).max(256),
  interpretation_receipts:z.array(aiReleaseInterpretationReceiptSchema).min(1).max(128),

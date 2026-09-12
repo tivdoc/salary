@@ -1,3 +1,4 @@
+import {documentSourcePeriodIntakeTargetSchema,documentSourcePeriodIntakeTarget} from './document-source-period-intake';
 import {documentSourceStructureTargetSchema,documentSourceStructureTarget} from './document-source-structure';
 import type {CustomerSourceStructureReading} from '@/engine/extraction/source-structure';
 import {IDENTIFIED_PERIOD_STRUCTURE_POLICY} from '@/engine/extraction/source-structure-period';
@@ -96,13 +97,17 @@ export function resolveDocumentFieldReading(input:{target:unknown;currentCheckpo
 }
 
 /** Versioned union for new consumers; scalar v1 constructors and bytes stay intact. */
-export const documentReadingTargetSchema=z.union([documentFieldTargetSchema,documentRowCellTargetSchema,documentSourceScopeTargetSchema,documentSourceTranscriptionTargetSchema,documentSourceStructureTargetSchema,documentEvidenceReadingTargetSchema,documentTravelTariffTargetSchema]);
+export const documentReadingTargetSchema=z.union([documentFieldTargetSchema,documentRowCellTargetSchema,documentSourceScopeTargetSchema,documentSourceTranscriptionTargetSchema,documentSourceStructureTargetSchema,documentEvidenceReadingTargetSchema,documentTravelTariffTargetSchema,documentSourcePeriodIntakeTargetSchema]);
 export type DocumentReadingTarget=Readonly<z.infer<typeof documentReadingTargetSchema>>;
 
 /** Reconstruct, do not mutate, from the exact saved checkpoint. Callers compare
  * the returned hash with the original target and retain their source fence. */
-export function documentReadingTargetForCheckpoint(input:{target:unknown;currentCheckpoint:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource;periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>}):DocumentReadingTarget {
+export function documentReadingTargetForCheckpoint(input:{target:unknown;currentCheckpoint?:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource;sourcePeriodIntake?:Parameters<typeof documentSourcePeriodIntakeTarget>[0];periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>}):DocumentReadingTarget {
  const target=documentReadingTargetSchema.parse(input.target),base={checkpoint:input.currentCheckpoint,policyVersion:target.policy_version};
+ if(target.schema_version==='document-source-period-intake-v1'){
+  if(!input.sourcePeriodIntake)throw Error('SOURCE_INTAKE_CONTEXT_REQUIRED');
+  return documentSourcePeriodIntakeTarget(input.sourcePeriodIntake);
+ }
  if(target.schema_version==='document-travel-tariff-transcription-v1'){
   if(!input.travelTariffSource)throw Error('TRAVEL_TARIFF_PURPOSE_CONTEXT_REQUIRED');
   return documentTravelTariffTarget({source:input.travelTariffSource,subject:target.tariff.subject});

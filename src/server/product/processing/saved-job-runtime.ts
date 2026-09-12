@@ -5,7 +5,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {PostgresJobsOutboxAuditRepository} from '@/server/platform/persistence/postgres/runtime/jobs-outbox-audit';
 import {admitSavedSource,savedCaseTenant} from './saved-admission';
 import {dispatchCaseInput,SOURCE_JOB_KIND,sourceJobSchema} from './source-dispatch';
-import {readSavedOrders} from './saved-order-scope';
+import {readSavedWorkerOrderAdmission} from './saved-order-scope';
 import {runSavedDraftJob} from './saved-job-runner';
 
 type Worker={caseId:string;workerId:string};
@@ -55,7 +55,7 @@ export async function claimSavedDraftJob(context:PostgresTransactionContext,inpu
  const source=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:input.caseId,revision:head.revision,input_sha256:head.input_sha256,mode:'draft',
   ...(head.authority_dependency_sha256==null?{}:{authority_dependency_sha256:head.authority_dependency_sha256}),
   ...(head.processing_profile==null?{}:{processing_profile:head.processing_profile})});
- await admitSavedSource(context,source);await readSavedOrders(context,source);
+ await admitSavedSource(context,source);await readSavedWorkerOrderAdmission(context,source);
  const now=await context.client.query(statement('saved_runtime_clock',"select floor(extract(epoch from clock_timestamp())*1000)::bigint now_ms",[]));
  await dispatchCaseInput(context,{caseId:input.caseId,tenantId:tenant,mode:'draft',liveEnabled:false,nowMs:z.coerce.number().int().safe().parse(now.rows[0]?.now_ms)});
  const dispatch=await context.client.query(statement('saved_runtime_dispatch',
@@ -101,6 +101,8 @@ export function savedJobFailure(error:unknown){
   SOL_LIVE_WINDOW_LEDGER_CHANGED:'saved_provider_budget_invalid',SOL_LIVE_WINDOW_UNKNOWN_COST_ACKNOWLEDGEMENT:'saved_provider_budget_invalid',
   SOL_LIVE_WINDOW_CURRENT_RECEIPT:'saved_provider_replay_review',
   SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED:'saved_documents_missing',
+  SAVED_SOURCE_INTAKE_REQUIRED:'saved_source_intake_required',
+  SOURCE_INTAKE_PHYSICAL_CHANGED:'saved_source_integrity_required',
   SAVED_EXTRACTION_OUTCOME_PENDING:'saved_provider_outcome_unknown',SAVED_EXTRACTION_PERIOD_MISMATCH:'saved_period_confirmation_required',
   SAVED_EXTRACTION_PROVIDER_DISABLED:'saved_provider_disabled',SAVED_EXTRACTION_PROVIDER_UNCONFIGURED:'saved_provider_unconfigured',
   SAVED_ORDER_ENTITLEMENT_REQUIRED:'saved_entitlement_unavailable',SAVED_PAID_SOURCE_REQUIRED:'saved_payment_unavailable'};

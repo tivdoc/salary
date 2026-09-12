@@ -71,6 +71,16 @@ it('shares the bounded method capacity with the ordinary configuration contract'
 });
 
 describe('offline immutable AI configuration assembly',()=>{
+ it('produces the versioned evidence anchor only by explicit ordinary input without changing measured evidence',async()=>{
+  const f=fixture(),legacy=await f.run();expect(legacy.configuration).not.toHaveProperty('evaluation_anchor_policy');
+  f.input.configuration.evaluation_anchor_policy='bound-evidence-anchor-v1';
+  const next=await f.run();expect(next.configuration.evaluation_anchor_policy).toBe('bound-evidence-anchor-v1');
+  expect(next.configuration.sha256).not.toBe(legacy.configuration.sha256);expect(next.configuration.test_receipts).toEqual(legacy.configuration.test_receipts);
+  expect(next.configuration.test_receipts[0].issued_at).toBe(testsAt);expect(next.configuration.policy).toEqual(legacy.configuration.policy);
+  expect(await f.run()).toEqual(next);
+  delete f.input.configuration.evaluation_anchor_policy;expect(await f.run()).toEqual(legacy);
+  f.input.configuration.evaluation_anchor_policy='wall-clock-now';await expect(f.run()).rejects.toThrow();
+ });
  it('assembles a distinct owner purpose without upgrading source or human-law status',async()=>{
   const f=fixture();f.input.schema_version='tivdoc-owner-engineering-assembly-input-v1';
   Object.assign(f.input.policy,{schema_version:'tivdoc-owner-engineering-policy-v1',purpose:'owner_engineering_review',claim_kind:'owner_engineering_review',allowed_environments:['development'],

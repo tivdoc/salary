@@ -32,6 +32,10 @@ function readSavedDocumentReadings(input:SavedReadingInput,periodOnly:boolean){
  const selected=[];
  for(const value of answers){
   if(typeof value.code!=='string'||!value.code.startsWith('document_field:'))continue;
+  // Monthless intake is replayed by savedLegacySourceIntake, with its own
+  // original source anchors. It is never a numeric/monthly confirmation.
+  if(value.field_target&&typeof value.field_target==='object'&&'schema_version' in value.field_target
+   &&value.field_target.schema_version==='document-source-period-intake-v1')continue;
   const answer=answerSchema.parse(value);
   if(answer.case_id!==input.caseId||answer.field_target.case_id!==input.caseId)throw Error('REQUEST_FIELD_CASE_MISMATCH');
   if(seen.has(answer.id))throw Error('SAVED_REQUEST_ID_AMBIGUOUS');seen.add(answer.id);

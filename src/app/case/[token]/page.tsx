@@ -11,7 +11,6 @@ import { readCaseChallengeCookie, readCaseSessionCookie } from "@/server/product
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 import { LegacyPaidOrders } from "@/components/case/legacy-paid-orders";
 import { legacyCustomerReceipts } from "@/server/product/orders/legacy-customer";
-import { devFinancialPreviewEnabled } from "@/server/product/reports/dev-financial-customer";
 
 // UX Run 1 / U3 (D-1.2, D-1.5), corrected by the external review #1,
 // finding 8. One segment, two readings. A 22-character link token is
@@ -57,15 +56,14 @@ export default async function CaseAccessPage({ params }: { params: Promise<{ tok
     const item = cases.find((candidate) => candidate.public_id === token);
     if (!item) notFound();
     const overview = await loadCaseOverview(item, session.identity_id);
-    // Read only after authenticated case membership, and only in isolated DEV.
+    // Read only after authenticated case membership. The protected receipt RPC
+    // is independent of the optional DEV financial-artifact preview.
     // A legacy receipt is separate evidence; never mutate the original case's
     // payment flag or apply today's initial-product limits to its nine topics.
     let legacy: Awaited<ReturnType<typeof legacyCustomerReceipts>> = [];
     let legacyUnavailable = false;
-    if (devFinancialPreviewEnabled()) {
-      try { legacy = await legacyCustomerReceipts(item.case_id, session.identity_id); }
-      catch { legacyUnavailable = true; }
-    }
+    try { legacy = await legacyCustomerReceipts(item.case_id, session.identity_id); }
+    catch { legacyUnavailable = true; }
     return (
       <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
         {legacy.length > 0 || legacyUnavailable ? (
@@ -73,7 +71,7 @@ export default async function CaseAccessPage({ params }: { params: Promise<{ tok
             <span className="mono">תיק {item.public_id}</span><h1>התיק שלך</h1>
             {legacyUnavailable ? <p role="alert">לא ניתן לטעון את פרטי הרכישה ההיסטורית כרגע. אין בכך קביעה שהתשלום חסר, ואין צורך לשלם שוב לפני בירור.</p> : <>
               <p>ההיקף המאומת במידע השמור כולל תשעה נושאים.</p>
-              <LegacyPaidOrders receipts={legacy} />
+              <LegacyPaidOrders receipts={legacy} publicId={item.public_id} />
             </>}
             {!overview.requestsAvailable ? <p role="alert">לא ניתן לטעון את מצב בקשות ההשלמה כרגע.</p>
               : overview.blocking ? <div className="received-card__next"><b>נדרשת השלמה כדי להתקדם</b><span>{overview.blocking.question}</span></div>

@@ -4,6 +4,13 @@ import { expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 import { DocumentReview, TravelTariffPurposeFields } from "./document-review";
 import type { UploadSnapshot } from "@/lib/document-upload";
+it.each([null,'2026-06'])('renders authenticated legacy intake %s without a guessed file month, payment CTA or tariff picker',month=>{
+ const id='11111111-1111-4111-8111-111111111111',initial:UploadSnapshot={caseId:'case',publicId:'TV-SYNTH001',status:'documents_uploaded',paymentStatus:'not_started',checkPeriodMonth:null,documents:[],
+  requests:[{id,code:'legacy.source.document:order',question:'Source required',documentType:'payslip',sourceIntake:{policy:'legacy-source-intake-v1',target_sha256:'a'.repeat(64),month}}]};
+ const body=renderToStaticMarkup(createElement(DocumentReview,{initial,initialRequestId:id}));
+ expect(body).toContain('אין לבחור חודש');expect(body).toContain('שמירה וחזרה לתיק');expect(body).not.toContain('אישור ומעבר לתשלום');expect(body).not.toContain('חודש הבדיקה הראשונית');expect(body).not.toContain('הוספת מקור תעריפי נסיעה');
+ if(month)expect(body).toContain('הבקשה מתייחסת');else expect(body).not.toContain('הבקשה מתייחסת');
+});
 
 it("renders saved names, months and explicit per-document replacement controls from persisted state", () => {
   const initial: UploadSnapshot = { caseId: "case", publicId: "TV-SYNTH001", status: "under_review", paymentStatus: "verified", checkPeriodMonth: "2026-08", requests: [], documents: [

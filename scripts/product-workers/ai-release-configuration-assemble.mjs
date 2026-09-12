@@ -62,7 +62,8 @@ export function aiAssemblySchemas(h){
   test_definition_sha256:sha,independent_oracle_sha256:sha,categories:ids,passed:z.number().int().nonnegative(),failed:z.number().int().nonnegative(),
   outcome:z.enum(['passed','failed','incomplete']),issued_at:z.iso.datetime({offset:true})}).strict();
  const input=z.object({schema_version:z.enum([AI_ASSEMBLY_VERSION,'tivdoc-owner-engineering-assembly-input-v1']),build_manifest_sha256:sha,evaluated_at:z.iso.datetime({offset:true}),
-  configuration:z.object({configuration_id:z.uuid(),revision:z.number().int().positive(),population:id}).strict(),
+  configuration:z.object({configuration_id:z.uuid(),revision:z.number().int().positive(),population:id,
+   evaluation_anchor_policy:h.aiReleaseConfigurationSchema.shape.evaluation_anchor_policy}).strict(),
   evidence:z.array(z.object({id,kind:z.enum(kinds),path:z.string().min(1).max(2048),sha256:sha}).strict()).min(1).max(2048),
   policy,registry,source_reviews:z.array(source).min(1).max(256),interpretations:z.array(interpretation).min(1).max(128),
   tests:z.array(test).min(1).max(256),methods:z.array(method).max(h.AI_RELEASE_MAX_DECISION_METHODS),branches:z.array(branch).min(1).max(9)}).strict();

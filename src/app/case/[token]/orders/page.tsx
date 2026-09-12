@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import {LegacyPaidOrders} from '@/components/case/legacy-paid-orders';
 import {legacyCustomerReceipts} from '@/server/product/orders/legacy-customer';
-import {devFinancialPreviewEnabled} from '@/server/product/reports/dev-financial-customer';
 import {OrderRefundStatus} from '@/components/case/order-refund-status';
 import {OrderCancellation} from '@/components/case/order-cancellation';
 import {notFound,redirect} from 'next/navigation';
@@ -18,8 +17,13 @@ export default async function OrdersPage({params}:{params:Promise<{token:string}
  await guardStableAppEntrypoint("CEP-111");const {token}=await params;const session=await resolveIdentitySession(await readCaseSessionCookie());if(!session)redirect('/login');const item=(await listIdentityCases(session.identity_id)).find(c=>c.public_id===token);if(!item)notFound();
  const [ordersResult,clocksResult]=await Promise.allSettled([customerOrders(item.case_id,session.identity_id),customerServiceClocks(item.case_id,session.identity_id)]);
  let legacy:Awaited<ReturnType<typeof legacyCustomerReceipts>>=[];let legacyUnavailable=false;
- if(devFinancialPreviewEnabled())try{legacy=await legacyCustomerReceipts(item.case_id,session.identity_id);}catch{legacyUnavailable=true;}
+ try{legacy=await legacyCustomerReceipts(item.case_id,session.identity_id);}catch{legacyUnavailable=true;}
  const orders=ordersResult.status==='fulfilled'?ordersResult.value:null;
  const {clocks,observedAt}=clocksResult.status==='fulfilled'?clocksResult.value:{clocks:[],observedAt:0};
- return <CaseShell publicId={token} eyebrow={`תיק ${token}`}><h1>הזמנות ותשלומים</h1>{legacyUnavailable?<p role="alert">לא ניתן לטעון את פרטי הרכישה ההיסטורית כרגע.</p>:<LegacyPaidOrders receipts={legacy}/>}{orders===null?<p role="alert">ההזמנות אינן זמינות כרגע. אפשר לרענן; זו אינה היסטוריה ריקה.</p>:<>{orders.length===0&&legacy.length===0?<p>לא נמצאו הזמנות במסלול החדש. תשלום היסטורי שמופיע בתיק נשמר ואינו מחויב מחדש.</p>:orders.map(o=><article key={o.id} data-order-id={o.id}><h2>{o.kind==='full'?'דוח מלא':'בדיקה ראשונית'}</h2><p><bdi>{o.period_from.slice(0,7)} – {o.period_to.slice(0,7)}</bdi> · <bdi>{(o.amount_minor/100).toFixed(2)} ₪</bdi></p><p>{o.state==='paid'?'התשלום אומת':o.state==='cancelled'?'ההזמנה בוטלה':'התשלום טרם אומת'}</p><OrderRefundStatus order={o}/>{o.receipt_url?<a href={o.receipt_url} rel="noreferrer">הקבלה מהספק</a>:<p>קבלה מהספק טרם קושרה להזמנה.</p>}{o.state==='paid'?<OrderServiceClock publicId={token} clock={clocks.find(c=>c.order_id===o.id)} observedAt={observedAt}/>:null}<OrderCancellation publicId={token} order={o}/><RefundRequest publicId={token} order={o}/></article>)}<OrderPurchase publicId={token}/></>}<Link href={`/case/${token}`}>חזרה לתיק</Link></CaseShell>;
+ return <CaseShell publicId={token} eyebrow={`תיק ${token}`}><h1>הזמנות ותשלומים</h1>
+  {legacyUnavailable?<p role="alert">לא ניתן לטעון את פרטי הרכישה ההיסטורית כרגע. אין בכך קביעה שהתשלום חסר, ואין צורך לשלם שוב לפני בירור.</p>:<LegacyPaidOrders receipts={legacy} publicId={token}/>}
+  {orders===null?<p role="alert">ההזמנות אינן זמינות כרגע. אפשר לרענן; זו אינה היסטוריה ריקה.</p>:<>
+   {orders.length===0&&legacy.length===0&&!legacyUnavailable?<p>לא נמצאו הזמנות במסלול החדש. תשלום היסטורי שמופיע בתיק נשמר ואינו מחויב מחדש.</p>:orders.map(o=><article key={o.id} data-order-id={o.id}><h2>{o.kind==='full'?'דוח מלא':'בדיקה ראשונית'}</h2><p><bdi>{o.period_from.slice(0,7)} – {o.period_to.slice(0,7)}</bdi> · <bdi>{(o.amount_minor/100).toFixed(2)} ₪</bdi></p><p>{o.state==='paid'?'התשלום אומת':o.state==='cancelled'?'ההזמנה בוטלה':'התשלום טרם אומת'}</p><OrderRefundStatus order={o}/>{o.receipt_url?<a href={o.receipt_url} rel="noreferrer">הקבלה מהספק</a>:<p>קבלה מהספק טרם קושרה להזמנה.</p>}{o.state==='paid'?<OrderServiceClock publicId={token} clock={clocks.find(c=>c.order_id===o.id)} observedAt={observedAt}/>:null}<OrderCancellation publicId={token} order={o}/><RefundRequest publicId={token} order={o}/></article>)}
+   {!legacyUnavailable?(legacy.length>0?<details><summary>רכישה נוספת ונפרדת</summary><p>הבדיקה שנרכשה במסלול הקודם אינה דורשת תשלום חוזר.</p><OrderPurchase publicId={token}/></details>:<OrderPurchase publicId={token}/>):null}
+  </>}<Link href={`/case/${token}`}>חזרה לתיק</Link></CaseShell>;
 }

@@ -1,3 +1,5 @@
+import {readSavedOrders} from './saved-order-scope.ts';
+import {savedSourceDocumentRoute,savedSourcePeriodEvidence} from './saved-source-intake-planning.ts';
 import { z } from 'zod';
 import { canonicalSha256 } from '@/engine/rule-runtime/canonical';
 import { statement, type PostgresTransactionContext } from '@/server/platform/persistence/postgres/contracts';
@@ -20,7 +22,18 @@ export async function saveExtractionCheckpoint(context:PostgresTransactionContex
     and d->>'id'=$4 and d->>'version_id'=$5 and d->>'sha256'=$6 and d->>'type'='payslip'
     and left(coalesce(d->>'month',v.input->>'month'),7)=$7`,
   [job.case_id,job.revision,job.input_sha256,result.product_document_id,result.version_id,result.input_sha256,result.expected_month]));
- if(source.row_count!==1)throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
+ if(source.row_count!==1){
+  if(job.processing_profile!=='qualified_ai_v1')throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
+  const fallback=await context.client.query(statement('checkpoint_intake_source',
+   `select left(d->>'month',7) month,left(v.input->>'month',7) journal_month from private.case_input_versions v
+    cross join lateral jsonb_array_elements(v.input->'documents') d
+    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3 and d->>'id'=$4 and d->>'version_id'=$5
+     and d->>'sha256'=$6 and d->>'type'='payslip' and d->>'month' is null`,
+   [job.case_id,job.revision,job.input_sha256,result.product_document_id,result.version_id,result.input_sha256]));
+  if(fallback.row_count!==1)throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
+  const orders=await readSavedOrders(context,job),route=savedSourceDocumentRoute(orders,{id:result.product_document_id,version_id:result.version_id,sha256:result.input_sha256,type:'payslip',month:null},z.string().nullable().parse(fallback.rows[0].journal_month));
+  if(route.state!=='ready'||route.month!==result.expected_month||!savedSourcePeriodEvidence(orders,{caseId:job.case_id,documentId:result.product_document_id,versionId:result.version_id,sha256:result.input_sha256,month:result.expected_month}))throw new Error('EXTRACTION_CHECKPOINT_SOURCE_MISMATCH');
+ }
  await context.client.query(statement('checkpoint_insert',
   `insert into private.case_extraction_checkpoints(case_id,revision,version_id,input_sha256,policy_version,result_sha256,result)
    values($1::uuid,$2,$3::uuid,$4,$5,$6,$7::jsonb)

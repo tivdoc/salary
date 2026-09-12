@@ -7,6 +7,7 @@ import {AI_RELEASE_RUNTIME_FAMILIES} from '../../../engine/ai-release-runtime/co
 import {AI_RELEASE_DECISION_RECIPES} from '../../../engine/ai-release-decisions/catalog';
 import {aiReleaseConfigurationSchema,verifyAiReleaseConfiguration,aiReleaseFamilyMethodsSha256,type AiReleaseConfiguration,ownerEngineeringConfigurationSchema,verifyOwnerEngineeringConfiguration} from './ai-release-configuration';
 import {getCompiledAiReleaseBuild,aiReleaseBuildManifestSchema} from './ai-release-build';
+import {AI_RELEASE_BOUND_EVIDENCE_ANCHOR} from './ai-release-evaluation-anchor';
 
 vi.mock('server-only',()=>({}));
 const build=getCompiledAiReleaseBuild(),h=(label:string)=>canonicalSha256({synthetic:label});
@@ -78,6 +79,17 @@ function relink(c:AiReleaseConfiguration){
 const verify=(c:unknown)=>verifyAiReleaseConfiguration(c,build);
 
 describe('immutable AI release configuration',()=>{
+ it('preserves historical bytes and hashes while explicitly sealing the versioned bound-evidence anchor',()=>{
+  for(const original of [fixture(),engineeringConfiguration()]){
+   const schema=original.schema_version==='tivdoc-owner-engineering-configuration-v1'?ownerEngineeringConfigurationSchema:aiReleaseConfigurationSchema;
+   expect(JSON.stringify(schema.parse(original))).toBe(JSON.stringify(original));expect(original).not.toHaveProperty('evaluation_anchor_policy');
+   const next={...original,evaluation_anchor_policy:AI_RELEASE_BOUND_EVIDENCE_ANCHOR};reseal(next);
+   const verified=next.schema_version==='tivdoc-owner-engineering-configuration-v1'?verifyOwnerEngineeringConfiguration(next,build):verifyAiReleaseConfiguration(next,build);
+   expect(verified.configuration.sha256).not.toBe(original.sha256);expect(verified.configuration.test_receipts).toEqual(original.test_receipts);
+   expect(schema.safeParse({...original,evaluation_anchor_policy:AI_RELEASE_BOUND_EVIDENCE_ANCHOR}).success).toBe(false);
+   expect(schema.safeParse({...next,evaluation_anchor_policy:'wall-clock-now'}).success).toBe(false);
+  }
+ });
  it('returns nine compiled pins and retains unresolved reviews without admitting facts',()=>{
   const input=fixture(),result=verify(input);expect(result.trusted_generator_pins).toBe(build.trusted_generator_pins);
   expect(result.trusted_generator_pins).toHaveLength(9);expect(new Set(result.trusted_generator_pins.map(p=>p.generator.code_sha256))).toEqual(new Set([build.manifest.source_graph_sha256]));

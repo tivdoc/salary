@@ -75,7 +75,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //185–188: seven literal declarations (4+1+1+1), reviewed by name below.
 // Captured wrappers retain their prior ACLs and are inventoried separately;
 // the period metadata branch adds no new runtime authority or answer store.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 379;
+//191 adds22 literal declarations. Source-intake scope/answer/physical metadata
+// and finalizer helpers preserve original paid receipts; see the exact inventory
+// below and the isolated DEV upgrade/ACL evidence. No function is excluded.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 401;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -484,6 +487,30 @@ describe("security definer search_path contract", () => {
   it("counts the definer surface so a new one cannot arrive unnoticed", async () => {
     const definitions = await securityDefinerDefinitions();
     expect(definitions).toHaveLength(EXPECTED_SECURITY_DEFINER_DEFINITIONS);
+  });
+
+  it("inventories the source-intake definer declarations and worker boundaries",async()=>{
+    const file="20260912194800_legacy_source_period_intake.sql";
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>d.file===file).map(d=>d.name).sort()).toEqual([
+      "private.document_field_current","private.document_field_request_answer_valid","private.document_field_request_open",
+      "private.document_physical_page_receipt_guard","private.document_physical_pages_record","private.guard_extraction_source_period_evidence",
+      "private.legacy_scope_covers_month","private.legacy_source_document_request_open","private.legacy_source_intake_context",
+      "private.legacy_source_upload_assessment_context","private.legacy_source_upload_assessment_record","private.legacy_source_upload_bind",
+      "private.legacy_source_upload_commit_guard","private.legacy_source_upload_information_satisfied","private.legacy_source_upload_received",
+      "private.legacy_source_upload_scope","private.legacy_source_upload_snapshot","private.legacy_source_upload_validate",
+      "private.source_physical_pages_pending","private.upload_physical_pages_record",
+      "public.case_request_source_intake_context","public.case_request_source_intake_upload_context",
+    ].sort());
+    const sql=await readFile(path.join(MIGRATION_ROOT,file),"utf8");
+    expect([...sql.matchAll(/grant execute on function ([^;]+) to tivdoc_worker_runtime;/gu)].map(m=>m[1]).sort()).toEqual([
+      "private.legacy_source_document_request_open(uuid,integer,text,jsonb,text)",
+      "private.legacy_source_intake_context(uuid,bigint,text)",
+      "private.source_physical_pages_pending(uuid,bigint,text)",
+      "private.legacy_source_upload_assessment_context(uuid,bigint,text)",
+      "private.legacy_source_upload_assessment_record(uuid,bigint,text,jsonb)",
+    ].sort());
+    expect(sql).not.toMatch(/grant\s+(?:all|select|insert|update|delete)\s+on\s+(?:table\s+)?private\./iu);
   });
 
   it("accounts for all four reviewed direct-receipt declarations", async () => {

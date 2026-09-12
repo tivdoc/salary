@@ -6,7 +6,7 @@ vi.mock('server-only',()=>({}));
 vi.mock('./saved-job-runtime',()=>({claimSavedDraftJob:ports.claim,recordSavedJobFailure:ports.failure}));
 vi.mock('./saved-job-runner',()=>({runSavedDraftJob:ports.run}));
 vi.mock('./saved-admission',()=>({admitSavedSource:ports.admit,savedCaseTenant:(id:string)=>`saved-case:${id}`}));
-vi.mock('./saved-order-scope',async original=>({...await original<typeof import('./saved-order-scope')>(),readSavedOrders:ports.orders}));
+vi.mock('./saved-order-scope',async original=>({...await original<typeof import('./saved-order-scope')>(),readSavedOrders:ports.orders,readSavedWorkerOrderAdmission:async(...args:unknown[])=>({orders:await ports.orders(...args),intakeScopes:[]})}));
 vi.mock('./saved-ai-release-configuration',()=>({loadSavedAiReleaseConfiguration:ports.profile}));
 vi.mock('./saved-owner-engineering-configuration',()=>({loadSavedOwnerEngineeringConfiguration:ports.owner}));
 beforeEach(()=>vi.resetAllMocks());

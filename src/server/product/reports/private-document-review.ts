@@ -12,6 +12,7 @@ import {getCompiledAiReleaseBuild} from '../processing/ai-release-build';
 import {assertSavedAiReleaseCurrent} from '../processing/saved-ai-release';
 import type {SavedAiReleaseConfiguration} from '../processing/saved-ai-release-configuration';
 import {resolveCaseAccessDb,type CaseAccessDb} from '../case-access/db';
+import {savedAiEvaluationAnchor,aiEvaluationAnchorDependency} from '../processing/ai-release-evaluation-anchor';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u),time=z.iso.datetime({offset:true});
 const qualifiedContext=z.discriminatedUnion('state',[
@@ -40,12 +41,12 @@ function currentAiProfile(context:z.infer<typeof aiContext>|null|undefined):Save
   // admission/currentness receipt and the artifact replay below know which
   // source reviews, tests, reviewers and methods this report actually consumed.
   // Do not let an unrelated expired/revoked family invalidate a partial report.
-  const evaluated_at=new Date(Math.max(Date.parse(context.source_created_at),Date.parse(configuration.policy.issued_at),Date.parse(configuration.registry.issued_at))).toISOString();
+  const anchor=savedAiEvaluationAnchor(configuration,context.source_created_at,context.evaluated_at),{evaluated_at}=anchor;
   if(Date.parse(evaluated_at)>live)return null;
-  return {...verified,enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256,evaluated_at,
+  return {...verified,enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256,...anchor,
    live_evaluated_at:context.evaluated_at,expires_at:context.expires_at,environment:context.environment,is_qa:context.is_qa,
    profile_sha256:canonicalSha256({schema_version:'saved-ai-release-profile-v1',configuration_sha256:configuration.sha256,
-    enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256})};
+    enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256,...aiEvaluationAnchorDependency(anchor)})};
  }catch{
   // Invalid/mismatched compiled authority is unavailable, never a fallback to
   // the historical authority profile. Artifact corruption is checked outside.

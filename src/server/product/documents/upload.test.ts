@@ -11,7 +11,8 @@ import type { DocumentUpload } from "@/lib/document-upload";
 import { generateReviewCompletions } from "@/engine/document-review/completions";
 import { buildReviewUploadReceipt, type ReviewUploadReceipt, type ReviewUploadScope } from "./review-fulfillment";
 import { canonicalSha256 } from "@/engine/rule-runtime/canonical";
-const bytes = new TextEncoder().encode("%PDF-1.7\nsynthetic-test-only\n%%EOF");
+// One real synthetic page; physical validation now covers every document kind.
+const bytes = new Uint8Array(Buffer.from('JVBERi0xLjcKJYGBgYEKCjUgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL1R5cGUgL09ialN0bQovTiA0Ci9GaXJzdCAyMAovTGVuZ3RoIDI1Ngo+PgpzdHJlYW0KeJzVUk1LxDAUvOdXvKOe8ppm266UgvbjIsKyeFL2ELZhKchG0hb03ztJVsWDeDZhyMfMS14yLyMmRVpTTmVFmja5oroW8vH91ZLcmZOdhbyfxpmewTLt6SBk69bzQploGvGtbc1iXtxJpCDKgvhTsfNuXI/WUz30w8BcMnOhgYJZdRhbYAsorMGpCnOg1Bdgr8yZ81twQ0JRppjAR+3mEt9jhLYImi5pdZXWX/eGu/p0hvorn20j5IMbO7NYuupuQn6cocf2dI3v8NYs7v8+LuY/ufOvL/zhc7A3mOxtqIHostzb2a3+CNuha8J/2XEyd+4NVcPoOCriEMgPBaSNhgplbmRzdHJlYW0KZW5kb2JqCgo2IDAgb2JqCjw8Ci9TaXplIDcKL1Jvb3QgMiAwIFIKL0luZm8gMyAwIFIKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL1R5cGUgL1hSZWYKL0xlbmd0aCAzNAovVyBbIDEgMiAyIF0KL0luZGV4IFsgMCA3IF0KPj4Kc3RyZWFtCnicFcQxDgAgCASwHsbd1/p9CB2K7nLZstV24pF8BkN9AqoKZW5kc3RyZWFtCmVuZG9iagoKc3RhcnR4cmVmCjM3NAolJUVPRg==','base64'));
 const digest = createHash("sha256").update(bytes).digest("hex");
 const caseId = "11111111-1111-4111-8111-111111111111";
 const batchId = "22222222-2222-4222-8222-222222222222";
@@ -33,7 +34,7 @@ describe("immutable upload/storage boundary", () => {
   it("regression: adding a second payslip preserves first and contract; never deletes storage", async () => {
     expect(await completeUpload(caseId, batchId)).toEqual(snapshot);
     expect(fake.download).toHaveBeenCalledExactlyOnceWith(reserved.path);
-    expect(fake.rpc).toHaveBeenLastCalledWith("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: { "new-version": digest } });
+    expect(fake.rpc).toHaveBeenLastCalledWith("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: { "new-version": digest,'physical:new-version':{page_count:1} } });
     expect(fake.remove).not.toHaveBeenCalled();
   });
   it("signs only server-reserved immutable paths, never enables upsert", async () => {
@@ -126,7 +127,7 @@ describe("tariff PDF purpose and trusted upload actor", () => {
   it("adds actual parsed page count alongside the unchanged source digest and never duplicates it on completed retry", async () => {
     const { tariffFile } = await tariffBatch();
     await completeUpload(caseId,batchId);
-    expect(fake.rpc).toHaveBeenLastCalledWith("case_documents_commit", {target_case:caseId,target_batch:batchId,target_checks:{[tariffFile.versionId]:tariffFile.sha256,[`purpose:${tariffFile.versionId}`]:{page_count:2}}});
+    expect(fake.rpc).toHaveBeenLastCalledWith("case_documents_commit", {target_case:caseId,target_batch:batchId,target_checks:{[tariffFile.versionId]:tariffFile.sha256,[`purpose:${tariffFile.versionId}`]:{page_count:2},[`physical:${tariffFile.versionId}`]:{page_count:2}}});
     batch.completed_at="2026-09-12T00:00:00Z";fake.download.mockClear();fake.rpc.mockClear();
     await completeUpload(caseId,batchId);expect(fake.download).not.toHaveBeenCalled();
     expect(fake.rpc.mock.calls.some(call=>call[0]==="case_documents_commit")).toBe(false);expect(fake.remove).not.toHaveBeenCalled();
@@ -138,8 +139,9 @@ describe("tariff PDF purpose and trusted upload actor", () => {
   });
   it("rejects a PDF-looking byte string even when its MIME, size and digest match", async () => {
     const { tariffFile } = await tariffBatch();
-    batch.files=[{...tariffFile,size:bytes.length,sha256:digest}];
-    fake.download.mockResolvedValue({data:new Blob([bytes],{type:"application/pdf"}),error:null});
+    const broken=new TextEncoder().encode('%PDF-1.7\nSynthetic invalid physical tree\n%%EOF');
+    batch.files=[{...tariffFile,size:broken.length,sha256:createHash('sha256').update(broken).digest('hex')}];
+    fake.download.mockResolvedValue({data:new Blob([broken],{type:"application/pdf"}),error:null});
     await expect(completeUpload(caseId,batchId)).rejects.toMatchObject({code:"UPLOAD_INVALID_FILE",status:422});
     expect(fake.rpc.mock.calls.some(call=>call[0]==="case_documents_commit")).toBe(false);
   });

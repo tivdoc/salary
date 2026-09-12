@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { PDFDocument } from "pdf-lib";
+import {inspectSourcePhysicalPages} from './physical-pages';
+import {sourceIntakeUploadScopeSchema,sourceIntakeUploadReceiptSchema,type SourceIntakeUploadScope,type SourceIntakeUploadReceipt} from './source-intake-upload';
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { matchesDocumentSignature, travelTariffEvidencePurposeSchema, type DocumentUpload, type UploadSnapshot } from "@/lib/document-upload";
 import { resolveCaseAccessDb, type CaseAccessDb } from "../case-access/db";
@@ -11,8 +12,8 @@ export class UploadError extends Error {
 export type ReservedFile = DocumentUpload["files"][number] & {
   documentId: string; versionId: string; path: string; slot: string;
 };
-export type UploadBatch = { id: string; case_id: string; files: ReservedFile[]; completed_at: string | null; cancelled_at: string | null; expires_at: string; review_scope?: ReviewUploadScope | null };
-export type ReviewUploadSnapshot = UploadSnapshot & { reviewReceipts?: ReviewUploadReceipt[] };
+export type UploadBatch = { id: string; case_id: string; files: ReservedFile[]; completed_at: string | null; cancelled_at: string | null; expires_at: string; review_scope?: ReviewUploadScope | null;source_intake_scope?:SourceIntakeUploadScope|null };
+export type ReviewUploadSnapshot = Omit<UploadSnapshot,'sourceIntakeReceipts'> & { reviewReceipts?: ReviewUploadReceipt[];sourceIntakeReceipts?:SourceIntakeUploadReceipt[] };
 
 async function rpc<T>(fn: string, args: Record<string, unknown>, db?: CaseAccessDb): Promise<T> {
   const store = db ?? await resolveCaseAccessDb();
@@ -30,6 +31,7 @@ async function rpc<T>(fn: string, args: Record<string, unknown>, db?: CaseAccess
 }
 
 function batchReviewScope(caseId: string, batch: UploadBatch, requestId?: string) {
+  if(batch.review_scope!=null&&batch.source_intake_scope!=null)throw new UploadError('UPLOAD_UNAVAILABLE',503);
   if (batch.review_scope == null) return null;
   const parsed = reviewUploadScopeSchema.safeParse(batch.review_scope);
   if (!parsed.success) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
@@ -43,8 +45,30 @@ function batchReviewScope(caseId: string, batch: UploadBatch, requestId?: string
   }
   return parsed.data;
 }
+function batchSourceIntakeScope(caseId:string,batch:UploadBatch,manifest?:DocumentUpload){
+ if(batch.source_intake_scope==null){if(manifest?.sourceIntake)throw new UploadError('UPLOAD_REQUEST_CONFLICT');return null;}
+ const parsed=sourceIntakeUploadScopeSchema.safeParse(batch.source_intake_scope);
+ if(!parsed.success||batch.review_scope!=null)throw new UploadError('UPLOAD_UNAVAILABLE',503);
+ const scope=parsed.data;if(batch.case_id!==caseId||scope.target.case_id!==caseId)throw new UploadError('UPLOAD_FORBIDDEN',403);
+ if(manifest&&(!manifest.sourceIntake||manifest.sourceIntake.policy!==scope.target.policy_version||manifest.sourceIntake.target_sha256!==scope.target.target_sha256||manifest.requestId!==scope.request_id))throw new UploadError('UPLOAD_REQUEST_CONFLICT');
+ if(batch.files.length<1||batch.files.length>14||batch.files.some(f=>!['payslip','attendance','contract'].includes(f.documentType)||f.periodMonth!==undefined||f.evidencePurpose!==undefined))throw new UploadError('UPLOAD_REQUEST_CONFLICT');
+ return scope;
+}
 type ExpectedReviewUpload = { scope: ReviewUploadScope; batchId: string; files: ReservedFile[]; verifiedTariffPageCounts?: Readonly<Record<string, number>> };
-function reviewSnapshot(caseId: string, snapshot: ReviewUploadSnapshot, expected?: ExpectedReviewUpload): ReviewUploadSnapshot {
+type ExpectedSourceIntakeUpload={scope:SourceIntakeUploadScope;batchId:string;files:ReservedFile[];physicalPages?:Readonly<Record<string,number>>};
+function reviewSnapshot(caseId: string, snapshot: ReviewUploadSnapshot, expected?: ExpectedReviewUpload,intake?:ExpectedSourceIntakeUpload): ReviewUploadSnapshot {
+  if(snapshot.sourceIntakeReceipts!==undefined){
+   if(!Array.isArray(snapshot.sourceIntakeReceipts))throw new UploadError('UPLOAD_UNAVAILABLE',503);
+   for(const value of snapshot.sourceIntakeReceipts){const r=sourceIntakeUploadReceiptSchema.safeParse(value);if(!r.success)throw new UploadError('UPLOAD_UNAVAILABLE',503);if(r.data.case_id!==caseId)throw new UploadError('UPLOAD_FORBIDDEN',403);}
+  }
+  if(intake){
+   const t=intake.scope.target,matches=(snapshot.sourceIntakeReceipts??[]).filter(r=>r.batch_id===intake.batchId&&r.request_id===intake.scope.request_id);
+   if(matches.length!==1)throw new UploadError('UPLOAD_UNAVAILABLE',503);const r=matches[0];
+   if(r.target_sha256!==t.target_sha256||r.order_id!==t.order_id||r.order_receipt_sha256!==t.order_receipt_sha256||r.month!==t.month||r.files.length!==intake.files.length
+    ||r.files.some(f=>!intake.files.some(s=>s.documentId===f.document_id&&s.versionId===f.version_id&&s.sha256===f.source_sha256&&s.documentType===f.document_kind)
+     ||intake.physicalPages!==undefined&&intake.physicalPages[f.version_id]!==f.page_count
+     ||snapshot.documents.filter(d=>d.id===f.document_id&&d.version_id===f.version_id&&d.document_type===f.document_kind&&d.period_month===null).length!==1))throw new UploadError('UPLOAD_UNAVAILABLE',503);
+  }
   const receipts = snapshot.reviewReceipts;
   if (receipts !== undefined) {
     if (!Array.isArray(receipts)) throw new UploadError("UPLOAD_UNAVAILABLE", 503);
@@ -91,7 +115,7 @@ export async function uploadSnapshot(caseId: string, db?: CaseAccessDb): Promise
 
 export async function prepareUpload(manifest: DocumentUpload) {
   let targetIdentity: string | undefined;
-  if (manifest.files.some(file => file.documentType === "other")) {
+  if (manifest.sourceIntake||manifest.files.some(file => file.documentType === "other")) {
     const [{ readCaseSessionCookie }, { resolveIdentitySession }] = await Promise.all([
       import("../case-access/session-cookie"), import("../case-access/service"),
     ]);
@@ -105,6 +129,7 @@ export async function prepareUpload(manifest: DocumentUpload) {
   });
   if (targetIdentity && batch.case_id !== manifest.caseId) throw new UploadError("UPLOAD_FORBIDDEN", 403);
   batchReviewScope(manifest.caseId, batch, manifest.requestId);
+  batchSourceIntakeScope(manifest.caseId,batch,manifest);
   if (batch.completed_at) return { batchId: batch.id, completed: true, uploads: [] };
   const storage = getSupabaseAdmin().storage.from("salary-documents");
   const uploads = [];
@@ -129,13 +154,15 @@ export async function completeUpload(caseId: string, batchId: string): Promise<R
   const batch = await rpc<UploadBatch>("case_documents_batch", { target_case: caseId, target_batch: batchId });
   if (batch.files.some(file => file.documentType === "other") && batch.case_id !== caseId) throw new UploadError("UPLOAD_FORBIDDEN", 403);
   const scope = batchReviewScope(caseId, batch);
+  const intakeScope=batchSourceIntakeScope(caseId,batch),intake=intakeScope?{scope:intakeScope,batchId,files:batch.files}:undefined;
   const expected = scope ? { scope, batchId, files: batch.files } : undefined;
-  if (batch.completed_at) return reviewSnapshot(caseId, await uploadSnapshot(caseId), expected);
+  if (batch.completed_at) return reviewSnapshot(caseId, await uploadSnapshot(caseId), expected,intake);
   if (batch.cancelled_at) throw new UploadError("UPLOAD_CANCELLED");
   if (Date.parse(batch.expires_at) <= Date.now()) throw new UploadError("UPLOAD_EXPIRED");
   const storage = getSupabaseAdmin().storage.from("salary-documents");
   const checks: Record<string, string | { page_count: number }> = {};
   const verifiedTariffPageCounts: Record<string, number> = {};
+  const physicalPages:Record<string,number>={};
   for (const file of batch.files) {
     const { data, error } = await storage.download(file.path);
     if (error || !data) throw new UploadError("UPLOAD_INCOMPLETE", 503);
@@ -144,15 +171,16 @@ export async function completeUpload(caseId: string, batchId: string): Promise<R
     const digest = createHash("sha256").update(bytes).digest("hex");
     if (!matchesDocumentSignature(bytes, file.type) || digest !== file.sha256) throw new UploadError("UPLOAD_INVALID_FILE", 422);
     checks[file.versionId] = digest;
+    let pages:number;
+    try{pages=await inspectSourcePhysicalPages(bytes,file.type);}catch{throw new UploadError('UPLOAD_INVALID_FILE',422);}
+    checks[`physical:${file.versionId}`]={page_count:pages};physicalPages[file.versionId]=pages;
     if (file.documentType === "other") {
       const purpose = travelTariffEvidencePurposeSchema.safeParse(file.evidencePurpose);
       if (batch.case_id !== caseId || file.type !== "application/pdf" || file.periodMonth !== undefined || !purpose.success) throw new UploadError("UPLOAD_INVALID_FILE", 422);
       try {
         // Only the parsed physical page tree is trusted; browser hints and
         // /Type /Page text counts are not source-page evidence.
-        const pdf = await PDFDocument.load(bytes, { updateMetadata: false });
-        const pages = pdf.getPageCount();
-        if (pdf.isEncrypted || pages < 1 || pages > 100 || purpose.data.page > pages) throw new UploadError("UPLOAD_INVALID_FILE", 422);
+        if (purpose.data.page > pages) throw new UploadError("UPLOAD_INVALID_FILE", 422);
         checks[`purpose:${file.versionId}`] = { page_count: pages };
         verifiedTariffPageCounts[file.versionId] = pages;
       } catch (error) {
@@ -162,7 +190,7 @@ export async function completeUpload(caseId: string, batchId: string): Promise<R
     }
   }
   // No storage deletion, and no independently committed case/request changes.
-  return reviewSnapshot(caseId, await rpc("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: checks }), expected ? { ...expected, verifiedTariffPageCounts } : undefined);
+  return reviewSnapshot(caseId, await rpc("case_documents_commit", { target_case: caseId, target_batch: batchId, target_checks: checks }), expected ? { ...expected, verifiedTariffPageCounts } : undefined,intake?{...intake,physicalPages}:undefined);
 }
 
 export function cancelUpload(caseId: string, batchId: string): Promise<UploadSnapshot> {

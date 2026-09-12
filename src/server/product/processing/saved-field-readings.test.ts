@@ -5,7 +5,8 @@ import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {resolvePayslipSnapshot,resolvedPayslipFactPaths} from '@/engine/extraction/resolver';
 import {validatePayslipGate0} from '@/engine/extraction/validation';
 import {documentFieldTarget,DOCUMENT_FIELD_CONFIRMATION_ANSWERS} from '../reports/document-field-confirmation';
-import {savedDocumentFieldReadings} from './saved-field-readings';
+import {legacySourceIntakeFixture} from './saved-legacy-source-intake.fixture.ts';
+import {savedDocumentReadings,savedSourcePeriodReadings,savedDocumentFieldReadings} from './saved-field-readings';
 
 function setup(){
  const f=buildSyntheticCaseFixture({fixture_id:'customer-reading',mode:'real'}),doc=f.stored.documents[0],extraction=structuredClone(f.stored.extractions[0]);
@@ -72,4 +73,14 @@ it('a corrected cell still cannot discard caller-supplied non-reading validation
  const validation=validatePayslipGate0(s.extraction,{reference_year:2025}),assessment=validation.field_assessments.find(a=>a.candidate_id===s.candidate.candidate_id)!;
  assessment.issue_codes.push('critical_source_applicability_missing');assessment.status='requires_confirmation';
  expect(s.resolve(undefined,validation).facts.find(f=>f.path==='compensation.base_monthly_salary')?.status).not.toBe('confirmed');
+});
+
+it('keeps monthless intake out of monthly scalar and period replay without losing the existing reading',()=>{
+ const s=setup(),intake=legacySourceIntakeFixture(),before=canonicalSha256(intake.answerRow),expected=savedDocumentReadings(s.input);
+ const input={...s.input,journal:{answers:[intake.answerRow,s.answer]}};
+ expect(savedDocumentReadings(input)).toEqual(expected);expect(savedSourcePeriodReadings(input).size).toBe(0);
+ expect(canonicalSha256(intake.answerRow)).toBe(before);expect(expected.scalar).toHaveLength(1);
+});
+it('does not generalize the intake exception to malformed monthly answers',()=>{
+ const s=setup();expect(()=>savedDocumentFieldReadings({...s.input,journal:{answers:[{...s.answer,scope_month:null}]}})).toThrow();
 });

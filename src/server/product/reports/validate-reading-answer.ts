@@ -3,6 +3,7 @@ import type {CaseAccessDb} from '../case-access/db';
 import {documentReadingTargetSchema} from './document-field-confirmation';
 import {validateDocumentReadingAnswerForTarget} from './reading-verification';
 import {loadRequestSourcePeriodContext} from './request-source-period-context';
+import {loadRequestSourceIntakeContext} from './request-source-intake-context';
 
 /** Validate typed corrections before the authenticated writer captures a new
  * immutable source revision. SQL rechecks currentness inside the case lock. */
@@ -13,7 +14,8 @@ export async function validateSavedReadingAnswer(input:{store:CaseAccessDb;caseI
  const target=documentReadingTargetSchema.parse(matches[0].target);
  if(target.case_id!==z.uuid().parse(input.caseId)||input.code!==`document_field:${target.target_sha256}`)throw Error('REQUEST_FIELD_FORBIDDEN');
  if('period_witness' in target)await loadRequestSourcePeriodContext({store:input.store,caseId:input.caseId,identityId:input.identityId,requestId:input.requestId,target});
- if(target.schema_version==='document-travel-tariff-transcription-v1'){
+ if(target.schema_version==='document-source-period-intake-v1')await loadRequestSourceIntakeContext({store:input.store,caseId:input.caseId,identityId:input.identityId,requestId:input.requestId,target});
+ if(target.schema_version==='document-travel-tariff-transcription-v1'||target.schema_version==='document-source-period-intake-v1'){
   // A well-formed purpose hash is not proof that the purpose is admitted.
   // The protected SQL lookup checks its current persisted receipt; the writer
   // repeats the same check under the case lock to close the answer race.

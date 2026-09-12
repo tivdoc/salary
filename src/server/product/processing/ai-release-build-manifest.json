@@ -772,7 +772,11 @@
     },
     {
       "path": "src/server/product/processing/ai-release-configuration.ts",
-      "sha256": "5743650efc64c82eabc79e0603a7cd633239d406a1a69e0263ae830202b84374"
+      "sha256": "d21383a9b1a3c21bec100d016c32246f0d4ad5b81b7b771cdbfc26715015560f"
+    },
+    {
+      "path": "src/server/product/processing/ai-release-evaluation-anchor.ts",
+      "sha256": "9458907d85ac3b8916efdc88c7e3d1ef0cb089cded9fdafb800ceddda682fcc6"
     },
     {
       "path": "src/server/product/processing/automatic-dev-completion-notifications.ts",
@@ -788,7 +792,7 @@
     },
     {
       "path": "src/server/product/processing/saved-ai-release-configuration.ts",
-      "sha256": "6601d2f4b50d1419450f73b4680ffd22bc17d3a3844918266e6835658aae3feb"
+      "sha256": "4663701742c0fc21c216597223b0eeae6bc7f5d812aca0f54de9d759f8bec7d0"
     },
     {
       "path": "src/server/product/processing/saved-ai-release.ts",
@@ -831,6 +835,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "7b32eaa3676c396cfd2ecfe82ce449b7f577eb3ec4c6f7f966097df0269b2fae",
-  "sha256": "8054a3ad954fa0ed8991c4070507813dd77731b044c4acdddf967a36b65ab400"
+  "source_graph_sha256": "406ebe153932c7961a486039d3fd1249736de7d3d8daccad7dcbfbc14b247ca9",
+  "sha256": "d33048a6ea0d8409cab4c0ed680e6b26951b3ba8fc408e9f266755337d95cf69"
 }

@@ -18,8 +18,19 @@ function displayAnswer(request:StoredRequest){
  try{return formatHoursConflictAnswer(request.answer_text??'');}catch{return 'התשובה השמורה אינה זמינה להצגה.';}
 }
 
-const documentSatisfied=(request:StoredRequest)=>request.source_current!==false&&request.document_upload_state?.state==='satisfied'&&request.document_upload_state.information_satisfied;
+const documentSatisfied=(request:StoredRequest)=>request.source_current===true&&request.source_intake_upload_state?.state==='satisfied'&&request.source_intake_upload_state.information_satisfied
+ ||request.source_current!==false&&request.document_upload_state?.state==='satisfied'&&request.document_upload_state.information_satisfied;
 function DocumentUploadStatus({request}:{request:StoredRequest}){
+ const intake=request.source_intake_upload_state;
+ if(intake&&intake.state!=='requested')return <div role="status">
+  <p>{intake.state==='satisfied'?'סוג המקור ותקופתו זוהו. קליטת המקור הושלמה; הבדיקות בתשעת הנושאים נמשכות בנפרד.'
+   :intake.state==='stale'?'המקור שהתקבל הוחלף. הקבלה והקריאה הקודמות נשמרות בהיסטוריה.'
+    :intake.state==='received_pending_reading'?'הקובץ התקבל. זיהוי סוג המסמך והתקופה טרם הושלם; אין צורך להעלות שוב את אותו קובץ.'
+     :intake.reason==='duplicate_content'?'הקובץ הוא העתק של מקור שכבר קיים בתיק. המידע החסר עדיין לא זוהה.'
+      :intake.reason==='source_reading_unresolved'?'קריאת המקור נשארה לא ידועה או לא קריאה. אפשר לתקן את הקריאה או לצרף מקור ברור יותר.'
+       :'עדיין לא זוהתה במקור תקופה מלאה שניתן לבדוק. הקריאה והקובץ נשמרו.'}</p>
+  {intake.reading_request_ids.map((id,index)=><p key={id}><a href={`#request-${id}`}>זיהוי סוג המסמך והתקופה במקור {index+1}</a></p>)}
+ </div>;
  const upload=request.document_upload_state;if(!upload||upload.state==='requested')return null;
  if(upload.state==='satisfied')return <p role="status">המידע הנדרש נמצא במסמך שהעלית. ההשלמה נשמרת בהיסטוריה.</p>;
  if(upload.state==='received_pending_review')return <p role="status">הקובץ התקבל וממתין לבדיקה. עדיין לא נקבע שהמידע הנדרש נמצא בו. אין צורך להעלות שוב את אותו קובץ.</p>;
@@ -69,6 +80,7 @@ function AnswerForm({ request, publicId, onAnswered, correction = false }: { req
   if(request.code.startsWith('document_field:')&&request.reading_display)return <DocumentFieldAnswer request={request} publicId={publicId} onAnswered={onAnswered} correction={correction}/>;
 
   if (request.answer_kind === "document") {
+    if(request.source_intake_upload_state?.state==='received_pending_reading')return null;
     return <AddDocumentButton publicId={publicId} label={request.document_upload_state?.state==='received_pending_review'?"צירוף מסמך נוסף לבקשה":"צירוף המסמך לתיק"} requestId={request.id} />;
   }
 
@@ -174,7 +186,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
           <p>
             {blocking.length > 0
               ? "יש שאלה שאנחנו ממתינים לתשובה עליה כדי להמשיך. שעון הזמנים עצור עד שתענה."
-              : open.every(request=>request.document_upload_state?.state==='received_pending_review')
+              : open.every(request=>request.document_upload_state?.state==='received_pending_review'||request.source_intake_upload_state?.state==='received_pending_reading')
                 ? "הקבצים התקבלו וממתינים לבדיקת המידע. מצב כל השלמה מופיע כאן."
               : open.some(request=>request.code.startsWith('minimum_wage_june2026:')||request.code.startsWith(HOURS_CONFLICT_NAMESPACE))
                 ? "השאלות נועדו להשלמת מידע על תקופת העבודה ורכיבי השכר. התשובות נשמרות בתיק."

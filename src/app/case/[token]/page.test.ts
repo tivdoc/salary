@@ -44,6 +44,7 @@ it('shows authenticated legacy nine-topic receipt without applying modern price/
 it('keeps missing original purchase period distinct from a source period still missing',async()=>{
  state.receipts=[{...receipt(),period_state:'missing',periods:[]}];const body=await html();
  expect(body).toContain('תקופת הרכישה לא נשמרה');expect(body).toContain('חסרה תקופה מזוהה במסמכים');expect(body).not.toContain('חודש הבדיקה:');
+ expect(body).toContain('זיהוי המסמך והתקופה בבקשות התיק');expect(body).toContain('/case/TV-1234ABCD/thread');expect(body).toContain('אין צורך לשלם שוב');
 });
 it('routes to the real blocking request without marking the report ready from completed case status',async()=>{
  state.blocking=true;const body=await html();expect(body).toContain('מה הייתה תקופת העבודה?');expect(body).toContain('/thread#request-synthetic-request');
@@ -56,8 +57,9 @@ it('does not treat failed receipt read as proof that payment is absent',async()=
 it('retains the existing modern view when DEV has no admitted historical receipt',async()=>{
  state.receipts=[];const body=await html();expect(body).toContain('טרם התקבל אימות תשלום');expect(body).toContain('חודש אחד ועד שלושה');expect(body).toContain('הצעת ההמשך הקיימת.');
 });
-it('does not load or show isolated receipt data outside the DEV boundary',async()=>{
- state.dev=false;const body=await html();expect(state.legacyRead).not.toHaveBeenCalled();expect(body).toContain('חודש אחד ועד שלושה');expect(body).not.toContain('תקבול מאומת');
+it('reads the authenticated payment registry on the honest local runtime without a financial Preview flag',async()=>{
+ state.dev=false;const body=await html();expect(state.legacyRead).toHaveBeenCalledOnce();expect(state.events).toEqual(['membership','legacy']);
+ expect(body).not.toContain('חודש אחד ועד שלושה');expect(body).not.toContain('טרם התקבל אימות תשלום');expect(body).toContain('תקבול מאומת');
 });
 it.each(['session','member'] as const)('refuses absent %s before the protected receipt query',async key=>{
  state[key]=false;await expect(html()).rejects.toThrow(key==='session'?'REDIRECT':'NOT_FOUND');expect(state.legacyRead).not.toHaveBeenCalled();

@@ -9,6 +9,7 @@ import {createCaseAnalysisAiRelease} from '@/engine/case-analysis/contracts';
 import {WAVE3_TOPICS,type AnalysisResultBundle} from '@/engine/wave3/contracts';
 import type {CaseAccessDb} from '../case-access/db';
 import {privateDocumentReviewReports,privateDocumentReviewArtifact} from './private-document-review';
+import {AI_RELEASE_BOUND_EVIDENCE_ANCHOR} from '../processing/ai-release-evaluation-anchor';
 
 const ports=vi.hoisted(()=>({verify:vi.fn(),build:{synthetic:'compiled singleton'}}));
 vi.mock('server-only',()=>({}));
@@ -74,6 +75,20 @@ beforeEach(()=>{
 function db(value:unknown):CaseAccessDb{return {provider:'fake',rpc:vi.fn(async()=>[{value}]) as CaseAccessDb['rpc']};}
 function artifact(value:unknown){return privateDocumentReviewArtifact(base.bundle.case_id,identity,reportId,db(value));}
 describe('protected AI report reader authority',()=>{
+ it('reconstructs the same new evidence anchor for stored artifact replay without reissuing receipts',async()=>{
+  const input=runtimeFixture(pensionFixture().input),a=input.assessment_input;
+  a.test_receipts[0].issued_at='2026-09-12T09:30:00Z';a.assessment.issued_at='2026-09-12T09:30:00Z';a.current.evaluated_at='2026-09-12T09:30:00Z';relink(input);
+  const f=fixture(input),configuration={...f.configuration,evaluation_anchor_policy:AI_RELEASE_BOUND_EVIDENCE_ANCHOR};reseal(configuration);
+  const context={...f.context,configuration,configuration_sha256:configuration.sha256,source_created_at:'2026-09-12T09:00:00Z'};
+  const stored=report(f.bundle),before=JSON.stringify({bundle:f.bundle,report:stored,configuration});
+  const read=(ctx:unknown)=>privateDocumentReviewArtifact(f.bundle.case_id,identity,reportId,db({current:true,ai_context:ctx,completion:{bundle:f.bundle,report:stored}}));
+  const first=await read(context),later=await read({...context,evaluated_at:'2026-09-12T11:00:00Z'});
+  expect(first).not.toBeNull();expect(later).not.toBeNull();if(!first||!later)throw Error('expected current stored artifacts');
+  expect(first.current).toBe(true);expect(later.current).toBe(true);
+  expect(JSON.stringify({bundle:f.bundle,report:stored,configuration})).toBe(before);
+  const early=await privateDocumentReviewReports(f.bundle.case_id,identity,db([{...f.summary,ai_context:{...context,evaluated_at:'2026-09-12T09:20:00Z'}}]));
+  expect(early[0].current).toBe(false);expect(early[0].unavailable_reason).toBe('authority_unavailable');
+ });
  it('strips server context from summaries and checks the compiled configuration singleton',async()=>{
   const result=await privateDocumentReviewReports(base.bundle.case_id,identity,db([{...base.summary,ai_context:base.context}]));
   expect(result).toEqual([base.summary]);expect(ports.verify).toHaveBeenCalledOnce();

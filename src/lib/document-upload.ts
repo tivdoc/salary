@@ -12,10 +12,13 @@ export const travelTariffEvidencePurposeSchema = z.object({
   locator: z.string().trim().min(1).max(120),
 }).strict();
 export type TravelTariffEvidencePurpose = z.infer<typeof travelTariffEvidencePurposeSchema>;
+export const sourceIntakeUploadSelectionSchema=z.object({policy:z.literal('legacy-source-intake-v1'),target_sha256:z.string().regex(/^[a-f0-9]{64}$/u)}).strict();
+export type SourceIntakeUploadSelection=z.infer<typeof sourceIntakeUploadSelectionSchema>;
 export const documentUploadSchema = z.object({
   caseId: z.uuid(),
   batchId: z.uuid(),
   requestId: z.uuid().optional(),
+  sourceIntake: sourceIntakeUploadSelectionSchema.optional(),
   checkPeriodMonth: month.optional(),
   files: z.array(z.object({
     clientId: z.uuid(),
@@ -28,13 +31,14 @@ export const documentUploadSchema = z.object({
     evidencePurpose: travelTariffEvidencePurposeSchema.optional(),
     replace: z.object({ documentId: z.uuid(), versionId: z.uuid() }).strict().optional(),
   }).strict()).min(1).max(MAX_PAYSLIPS + 2),
-}).strict().superRefine(({ files }, ctx) => {
+}).strict().superRefine(({ files,sourceIntake,requestId,checkPeriodMonth }, ctx) => {
+  if(sourceIntake&&(!requestId||checkPeriodMonth!==undefined||files.some(f=>f.periodMonth!==undefined||f.documentType==='other'||f.evidencePurpose!==undefined)))ctx.addIssue({code:'custom',message:'קליטת מקור ללא תקופה דורשת בקשה מזוהה ואינה כוללת בחירת חודש'});
   if (new Set(files.map((file) => file.clientId)).size !== files.length) ctx.addIssue({ code: "custom", message: "קובץ מופיע פעמיים" });
   const targets = files.flatMap((file) => file.replace ? [file.replace.documentId] : []);
   if (new Set(targets).size !== targets.length) ctx.addIssue({ code: "custom", message: "אפשר להחליף מסמך פעם אחת בכל העלאה" });
   if (files.reduce((sum, file) => sum + file.size, 0) > MAX_UPLOAD_SIZE) ctx.addIssue({ code: "custom", message: "סך הקבצים גדול מ-25MB" });
   for (const file of files) {
-    if (file.documentType === "payslip" && !file.periodMonth) ctx.addIssue({ code: "custom", message: "יש לבחור חודש לתלוש" });
+    if (file.documentType === "payslip" && !file.periodMonth&&!sourceIntake) ctx.addIssue({ code: "custom", message: "יש לבחור חודש לתלוש" });
     if (file.documentType !== "payslip" && file.periodMonth) ctx.addIssue({ code: "custom", message: "חודש נרשם לתלוש בלבד" });
     if (file.documentType === "other" && (file.type !== "application/pdf" || !file.evidencePurpose)) ctx.addIssue({ code: "custom", message: "מסמך תעריפי נסיעה חייב להיות PDF עם חודש, עמוד ומיקום במקור" });
     if (file.documentType !== "other" && file.evidencePurpose) ctx.addIssue({ code: "custom", message: "תעריפי נסיעה מצורפים כמסמך נוסף בלבד" });
@@ -55,8 +59,14 @@ export type UploadSnapshot = {
   caseId: string; publicId: string; status: string; paymentStatus: string;
   checkPeriodMonth: string | null; documents: SavedDocument[];
   capacity?: import("./document-capacity").DocumentCapacity;
-  requests: { id: string; code: string; question: string; documentType: string }[];
+  sourceIntakeReceipts?:{batch_id:string}[];
+  requests: { id: string; code: string; question: string; documentType: string;sourceIntake?:SourceIntakeUploadSelection&{month:string|null} }[];
 };
+export function selectedSourceIntakeUpload(snapshot:Pick<UploadSnapshot,'requests'>,requestId:string|undefined):SourceIntakeUploadSelection|null{
+ const request=snapshot.requests.find(r=>r.id===requestId);if(!request?.code.startsWith('legacy.source.document:'))return null;
+ if(!request.sourceIntake||!month.nullable().safeParse(request.sourceIntake.month).success)throw Error('UPLOAD_REQUEST_CONFLICT');
+ return sourceIntakeUploadSelectionSchema.parse({policy:request.sourceIntake.policy,target_sha256:request.sourceIntake.target_sha256});
+}
 
 /** File type is checked from bytes at completion, as well as the storage metadata. */
 export function matchesDocumentSignature(bytes: Uint8Array, mime: string): boolean {
@@ -68,7 +78,8 @@ export function matchesDocumentSignature(bytes: Uint8Array, mime: string): boole
   return signatures[mime]?.every((byte, index) => bytes[index] === byte) ?? false;
 }
 
-export function uploadNextPath(snapshot: Pick<UploadSnapshot, "status" | "paymentStatus" | "publicId">): string {
+export function uploadNextPath(snapshot: Pick<UploadSnapshot, "status" | "paymentStatus" | "publicId">,sourceIntake=false): string {
+  if(sourceIntake)return `/case/${snapshot.publicId}/thread`;
   return ["payment_pending", "paid", "under_review", "completed"].includes(snapshot.status)
     || ["pending", "paid", "verified", "refunded"].includes(snapshot.paymentStatus)
     ? `/case/${snapshot.publicId}/documents` : "/check/payment";

@@ -1,3 +1,4 @@
+import {needsSavedSourceIntake,savedSourceDocumentRoute} from './saved-source-intake-planning.ts';
 import {readSavedNonPayslipEvidence} from './saved-non-payslip-snapshot';
 import {assertSavedDocumentReviewSourceScope,type SavedDocumentReviewSourceScope} from './saved-document-review';
 import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from './saved-june2026-test-authority';
@@ -21,7 +22,7 @@ const sha = z.string().regex(/^[a-f0-9]{64}$/);
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const storedMonth=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])(?:-01)?$/).transform(value=>value.slice(0,7));
 const sourceSchema = z.object({
- case_id: z.uuid(), month,
+ case_id: z.uuid(), month:month.nullable(),
  documents: z.array(z.object({id:z.uuid(),version_id:z.uuid(),sha256:sha,type:z.string(),month:storedMonth.nullable()})),
 });
 const checkpointSchema = z.object({
@@ -47,12 +48,16 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   if(!row||row.input_sha256!==job.input_sha256||row.actual_sha256!==job.input_sha256)throw new Error('SAVED_INPUT_HASH_MISMATCH');
   const source=sourceSchema.parse(row.input);
   if(source.case_id!==job.case_id)throw new Error('SAVED_INPUT_CASE_MISMATCH');
+  const intake=needsSavedSourceIntake(job,row.input);
+  if(!intake)month.parse(source.month);
+  const sourceOrders=intake?await readSavedOrders(this.context,job):[];
   const selectedMonth=month.parse(this.targetMonth??source.month);
   if(this.sourceReviewScope){
    if(this.testScope||this.regularScope||!this.targetMonth)throw Error('SAVED_REVIEW_SOURCE_MODE');
    await assertSavedDocumentReviewSourceScope(this.context,job,selectedMonth,this.sourceReviewScope);
   }
-  const payslips=this.sourceReviewScope?[]:source.documents.filter(d=>d.type==='payslip'&&(d.month??source.month)===selectedMonth);
+  const routes=source.documents.map(document=>({document,route:intake?savedSourceDocumentRoute(sourceOrders,document,source.month):{state:'ready' as const,kind:document.type,month:document.month??source.month}}));
+  const payslips=this.sourceReviewScope?[]:routes.filter(r=>r.route.state==='ready'&&r.route.kind==='payslip'&&r.route.month===selectedMonth).map(r=>r.document);
   if(!payslips.length&&!this.allowEmptyReview&&!this.sourceReviewScope)throw new Error('SAVED_PAYSLIP_REQUIRED');
   if(new Set(source.documents.map(d=>d.version_id)).size!==source.documents.length)throw new Error('SAVED_VERSION_DUPLICATE');
   const documents=[],extractions=[];
@@ -65,12 +70,13 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
       and c.revision=$4 and c.policy_version=$5`,[job.case_id,pinned.id,pinned.version_id,job.revision,SAVED_EXTRACTION_POLICY]));
    const d=rows.rows[0];
    if(!d)throw new Error('SAVED_EXTRACTION_PENDING');
+   if(intake&&d.document_type!=='payslip')throw Error('SAVED_EXTRACTION_BINDING_MISMATCH');
    const checkpoint=checkpointSchema.parse(d.result);
    if(checkpoint.case_id!==job.case_id||checkpoint.product_document_id!==pinned.id||checkpoint.version_id!==pinned.version_id
     ||checkpoint.input_sha256!==pinned.sha256||d.content_sha256!==pinned.sha256||d.checkpoint_input_sha256!==pinned.sha256
     ||d.checkpoint_result_sha256!==checkpoint.result_sha256||canonicalSha256(checkpoint.run.result)!==checkpoint.result_sha256)
     throw new Error('SAVED_EXTRACTION_BINDING_MISMATCH');
-   const expected=pinned.month??source.month;
+   const expected=intake?selectedMonth:pinned.month??source.month;
    if(checkpoint.expected_month!==expected||checkpoint.period_mismatch)throw new Error('SAVED_EXTRACTION_PERIOD_MISMATCH');
    const extraction=checkpoint.run.result.final_extraction;
    if(extraction.document_id!==pinned.version_id)throw new Error('SAVED_EXTRACTION_CASE_MISMATCH');

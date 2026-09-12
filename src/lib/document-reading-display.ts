@@ -1,6 +1,7 @@
 /** Client-safe presentation contract. Targets, hashes and verification remain server-side. */
 import {displaySourceStructureAnswer,type SourceStructureContext} from './source-structure-display';
 import {displayTravelTariffAnswer,type TravelTariffContext} from './travel-tariff-display';
+import {displaySourcePeriodIntakeAnswer,type SourcePeriodIntakeContext} from './source-period-intake-display';
 export type {SourceStructureContext,SourceStructureValue,SourceRelationshipValue,SourceDeductionGroupValue,SourceBalanceMovementValue,SourcePeriodAssociationValue} from './source-structure-display';
 export type DocumentReadingDisplay=Readonly<{
  question:string;field:string;raw_value:string|null;page:number;text_fragment:string|null;
@@ -14,6 +15,7 @@ export type DocumentReadingDisplay=Readonly<{
   reading_state:'candidate'|'missing'|'unreadable'|'conflict'|'invalid';basis_origin:'system_action_context'}>;
  structure_context?:SourceStructureContext;
  tariff_context?:TravelTariffContext;
+ period_intake_context?:SourcePeriodIntakeContext;
  dependent_checks?:readonly string[];
 }>;
 export const documentRowCellLabels={quantity:'כמות',rate:'תעריף ליחידה',amount:'סכום',percentage:'שיעור'} as const;
@@ -41,6 +43,7 @@ export function groupDocumentReadingRequests<T extends ReadingRequest>(requests:
 }
 export function displayDocumentReadingAnswer(value:string|null,display?:DocumentReadingDisplay):string|null{
  if(!value)return value;
+ const intake=displaySourcePeriodIntakeAnswer(value,display?.period_intake_context);if(intake!==null)return intake;
  const tariff=displayTravelTariffAnswer(value,display?.tariff_context);if(tariff!==null)return tariff;
  const structured=displaySourceStructureAnswer(value,display?.structure_context);if(structured!==null)return structured;
  try{

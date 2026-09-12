@@ -1,3 +1,7 @@
+import {sourceIntakeFullMonths} from './saved-legacy-source-intake.ts';
+import {ensureSavedSourcePhysicalPages} from './saved-source-physical-pages.ts';
+import {prepareSavedSourceIntake,recordSavedSourceIntakeUploadAssessments,openSavedSourceFinancialNeeds,needsSavedSourceIntake,intakeHasExecutableScope,savedSourceDocumentRoute,SavedSourceIntakeRequired,type SavedSourceIntakeHold} from './saved-source-intake-planning.ts';
+export {SavedSourceIntakeRequired} from './saved-source-intake-planning.ts';
 import {runSavedWorkerDocumentEvidence} from './saved-document-evidence-worker';
 import {savedDocumentReviewSourceScope} from './saved-document-review';
 import {loadJune2026TestAuthority} from './saved-june2026-test-authority';
@@ -22,8 +26,8 @@ export class SavedJobMissingDocuments extends Error {
 }
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
 const storedMonth=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])(?:-01)?$/u).transform(s=>s.slice(0,7));
-const journalSchema=z.object({case_id:z.uuid(),month,documents:z.array(z.object({
- id:z.uuid(),version_id:z.uuid(),type:z.string(),month:storedMonth.nullable(),
+const journalSchema=z.object({case_id:z.uuid(),month:month.nullable(),documents:z.array(z.object({
+ id:z.uuid(),version_id:z.uuid(),sha256:z.string().regex(/^[a-f0-9]{64}$/u).optional(),type:z.string(),month:storedMonth.nullable(),
 }))});
 
 /** This is a consumer of an already claimed/running saved-source job. Machine
@@ -53,20 +57,34 @@ async function admit(context:PostgresTransactionContext,input:Lease){
 
 async function plan(context:PostgresTransactionContext,input:Lease,documentEvidenceEnabled=false){
  const admitted=await admit(context,input);
- if(admitted.completed)return {...admitted,months:[],versions:[],evidenceVersions:[]};
- const orders=await readSavedOrders(context,admitted.job);
- const months=orders.flatMap(order=>purchasedMonths(order).map(month=>({orderId:order.id,month})));
+ if(admitted.completed)return {...admitted,months:[],versions:[],evidenceVersions:[],intake:null,held:[] as SavedSourceIntakeHold[]};
  const result=await context.client.query(statement('saved_runner_journal',
   `select input,encode(sha256(convert_to(input::text,'UTF8')),'hex') actual_sha256
    from private.case_input_versions where case_id=$1::uuid and revision=$2 and input_sha256=$3`,
   [admitted.job.case_id,admitted.job.revision,admitted.job.input_sha256]));
  const row=result.rows[0];
  if(!row||row.actual_sha256!==admitted.job.input_sha256)throw new Error('SAVED_INPUT_HASH_MISMATCH');
+ const intake=await prepareSavedSourceIntake(context,admitted.job,row.input);
  const journal=journalSchema.parse(row.input);
+ if(!intake)month.parse(journal.month);
+ const orders=intake&&!intakeHasExecutableScope(intake.saved,row.input)?[]:await readSavedOrders(context,admitted.job);
+ const allMonths=orders.flatMap(order=>purchasedMonths(order).map(month=>({orderId:order.id,month})));
+ const held:SavedSourceIntakeHold[]=[...(intake?.held??[])];
  if(journal.case_id!==admitted.job.case_id)throw new Error('SAVED_INPUT_CASE_MISMATCH');
  if(new Set(journal.documents.map(d=>d.version_id)).size!==journal.documents.length)throw new Error('SAVED_VERSION_DUPLICATE');
- const covered=new Set(months.map(m=>m.month));
- const documents=journal.documents.filter(d=>d.type==='payslip'&&covered.has(d.month??journal.month));
+ const covered=new Set(allMonths.map(m=>m.month));
+ const routed=journal.documents.map(document=>({document,route:intake?savedSourceDocumentRoute(orders,document,journal.month):{state:'ready' as const,kind:document.type,month:document.month??journal.month!}}));
+ const documents=routed.filter(r=>r.route.state==='ready'&&r.route.kind==='payslip'&&covered.has(r.route.month)).map(r=>({...r.document,routedMonth:r.route.state==='ready'?r.route.month:null}));
+ if(intake)for(const scope of allMonths){
+  if(!held.some(h=>h.orderId===scope.orderId&&h.month===scope.month)&&!documents.some(d=>d.routedMonth===scope.month)){
+   const order=orders.find(o=>o.id===scope.orderId);
+   const blocked=routed.find(r=>r.route.state==='held'&&order?.kind==='legacy_initial'&&order.source_period_evidence?.periods.some(p=>sourceIntakeFullMonths(p.period).includes(scope.month)&&p.source_pins.some(pin=>pin.document_id===r.document.id&&pin.version_id===r.document.version_id&&pin.source_sha256===r.document.sha256)));
+   held.push({orderId:scope.orderId,month:scope.month,code:blocked?.route.state==='held'?blocked.route.code:'source_financial_document_required'});
+  }
+ }
+ const additionalRequests=intake?await openSavedSourceFinancialNeeds(context,admitted.job,intake.saved,held):[];
+ if(intake)await recordSavedSourceIntakeUploadAssessments(context,admitted.job,row.input);
+ const months=allMonths.filter(s=>!held.some(h=>h.orderId===s.orderId&&h.month===s.month));
  const reviewedScopes=new Map<string,Awaited<ReturnType<typeof savedDocumentReviewSourceScope>>>();
  for(const order of orders)for(const scopeMonth of purchasedMonths(order)){
   // Enrolled AI and owner-engineering analysis rebuild their inputs from
@@ -82,13 +100,14 @@ async function plan(context:PostgresTransactionContext,input:Lease,documentEvide
   reviewedScopes.set(`${order.id}:${scopeMonth}`,await savedDocumentReviewSourceScope(context,admitted.job,order,scopeMonth));
  }
  const extractionDocuments=documents.filter(document=>{
-  const sourceMonth=document.month??journal.month;
+  const sourceMonth=document.routedMonth;
   return months.filter(scope=>scope.month===sourceMonth).some(scope=>!reviewedScopes.get(`${scope.orderId}:${scope.month}`)?.sourceVersionIds.includes(document.version_id));
  });
  // A missing financial source is an input to the normal document review, not
  // permission to drop a purchased month. Only existing payslips enter OCR; the
  // monthly service persists source requests and a partial review for the rest.
- return {...admitted,months,versions:extractionDocuments.map(d=>d.version_id).sort(),evidenceVersions:documentEvidenceEnabled?journal.documents.filter(d=>d.type==='attendance'||d.type==='contract').map(d=>d.version_id).sort():[]};
+ return {...admitted,months,versions:extractionDocuments.filter(d=>months.some(s=>s.month===d.routedMonth)).map(d=>d.version_id).sort(),
+ evidenceVersions:documentEvidenceEnabled&&(!intake||months.length)?journal.documents.filter(d=>d.type==='attendance'||d.type==='contract').map(d=>d.version_id).sort():[],intake:intake?{...intake,openedRequestIds:[...intake.openedRequestIds,...additionalRequests]}:null,held};
 }
 
 /** Database time is the authority. A delayed pulse cannot resurrect an expired,
@@ -140,6 +159,17 @@ export async function runSavedDraftJob(input:Lease&{
  },timing.intervalMs);};
  const stop=async()=>{stopped=true;if(timer)clearTimeout(timer);await pulse;};
  try{
+  healthy();
+  // Physical inspection runs outside the planning transaction, after the same
+  // source/lease admission. Completed receipts never require new inspection.
+  const preliminary=await transactions(context=>admit(context,input));
+  if(!preliminary.completed&&preliminary.job.processing_profile==='qualified_ai_v1'){
+   const raw=await transactions(async context=>{const r=await context.client.query(statement('saved_runner_journal',
+    `select input,encode(sha256(convert_to(input::text,'UTF8')),'hex') actual_sha256 from private.case_input_versions where case_id=$1::uuid and revision=$2 and input_sha256=$3`,
+    [preliminary.job.case_id,preliminary.job.revision,preliminary.job.input_sha256]));
+    if(r.rows[0]?.actual_sha256!==preliminary.job.input_sha256)throw Error('SAVED_INPUT_HASH_MISMATCH');return r.rows[0].input;});
+   if(needsSavedSourceIntake(preliminary.job,raw))await ensureSavedSourcePhysicalPages({...input,transactions,job:preliminary.job});
+  }
   healthy();const saved=await transactions(context=>plan(context,input,input.documentEvidence!==undefined));
   if(saved.completed)return {completion:await transactions(context=>completeSavedDraftJob({...input,context})),extractedVersions:0,analyzedMonths:0};
   await transactions(context=>renew(context,input,timing.leaseMs));schedule();
@@ -175,6 +205,7 @@ export async function runSavedDraftJob(input:Lease&{
   // Stop and drain the pulse before terminal success; no timer can race a
   // successful finalizer and turn its cleared lease into a spurious failure.
   await stop();healthy();
+  if(saved.intake&&saved.held.length)throw new SavedSourceIntakeRequired({job:saved.job,held:saved.held,openedRequestIds:saved.intake.openedRequestIds,technicalDependencies:saved.intake.technicalDependencies,analyzedMonths:saved.months.length});
   // The finalizer still requires a persisted receipt for every purchased month.
   // A partial document review completes this job's assessment, not its missing
   // facts or any financial entitlement. No receipt is synthesized by this runner.

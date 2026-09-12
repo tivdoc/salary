@@ -1,3 +1,4 @@
+import {savedSourceDocumentRoute,savedSourcePeriodEvidence,assertSavedSourcePeriodEvidence} from './saved-source-intake-planning.ts';
 import 'server-only';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
@@ -21,8 +22,8 @@ import {ensureSavedExtractionPromptProvenance} from './saved-extraction-prompt-a
 type Extraction=Awaited<ReturnType<typeof extractSavedPayslip>>;
 export type SavedExtractionLease={jobId:string;workerId:string;fencingToken:number;versionId:string};
 export type SavedWorkerTransactions=<T>(operation:(context:PostgresTransactionContext)=>Promise<T>)=>Promise<T>;
-type Invocation={invocation_id:string;case_id:string;version_id:string;expected_month:string;input_sha256:string;source_revision:number;dispatched_at:string;result:Extraction|null};
-type Admission={job:SourceJob;document:Record<string,unknown>;month:string;requestedMonths:string[]};
+type Invocation={invocation_id:string;case_id:string;version_id:string;expected_month:string;input_sha256:string;source_revision:number;dispatched_at:string;result:Extraction|null;source_period_evidence?:unknown};
+type Admission={job:SourceJob;document:Record<string,unknown>;month:string;requestedMonths:string[];sourcePeriodEvidence:ReturnType<typeof savedSourcePeriodEvidence>};
 
 /** The caller installs its actual machine session for EVERY short transaction.
  * A case/source lock is acquired before the job lock, matching finalization. */
@@ -44,7 +45,7 @@ export async function admitSavedExtractionLease(context:PostgresTransactionConte
   ||locked.lease_valid!==true||locked.cancellation_requested!==false)throw new Error('SAVED_JOB_FENCE');
  const orders=await readSavedOrders(context,job);
  const rows=await context.client.query(statement('extraction_pinned_document',
-  `select d.*,left(coalesce(p->>'month',v.input->>'month'),7) expected_month
+  `select d.*,left(p->>'month',7) pinned_month,left(v.input->>'month',7) journal_month,left(coalesce(p->>'month',v.input->>'month'),7) expected_month
    from private.case_input_versions v cross join lateral jsonb_array_elements(v.input->'documents') p
    join public.documents d on d.id=(p->>'id')::uuid and d.version_id=(p->>'version_id')::uuid and d.case_id=v.case_id
    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3 and d.version_id=$4::uuid
@@ -52,9 +53,15 @@ export async function admitSavedExtractionLease(context:PostgresTransactionConte
   [job.case_id,job.revision,job.input_sha256,input.versionId,JSON.stringify(kinds)]));
  if(rows.row_count!==1)throw new Error('SAVED_EXTRACTION_SOURCE_SCOPE');
  const requestedMonths=[...new Set(orders.flatMap(purchasedMonths))].sort();
- const document=rows.rows[0],month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).parse(document.document_type==='payslip'||kinds.length===1&&kinds[0]==='payslip'?document.expected_month:requestedMonths[0]);
+ const document=rows.rows[0];let selectedMonth=document.document_type==='payslip'||kinds.length===1&&kinds[0]==='payslip'?document.expected_month:requestedMonths[0];
+ if(job.processing_profile==='qualified_ai_v1'&&orders.some(o=>o.kind==='legacy_initial'&&o.source_period_evidence)&&document.document_type==='payslip'){
+  const route=savedSourceDocumentRoute(orders,{id:z.uuid().parse(document.id),version_id:input.versionId,sha256:z.string().parse(document.content_sha256),type:'payslip',month:document.pinned_month===null?null:z.string().parse(document.pinned_month)},document.journal_month===null?null:z.string().parse(document.journal_month));
+  if(route.state!=='ready'||route.kind!=='payslip')throw Error('SAVED_EXTRACTION_SOURCE_INTAKE_REQUIRED');selectedMonth=route.month;
+ }
+ const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u).parse(selectedMonth);
+ const sourcePeriodEvidence=job.processing_profile==='qualified_ai_v1'&&document.document_type==='payslip'?savedSourcePeriodEvidence(orders,{caseId:job.case_id,documentId:z.uuid().parse(document.id),versionId:input.versionId,sha256:z.string().parse(document.content_sha256),month}):null;
  if(!orders.some(order=>purchasedMonths(order).includes(month)))throw new Error('SAVED_EXTRACTION_UNPURCHASED_MONTH');
- return {job,document,month,requestedMonths};
+ return {job,document,month,requestedMonths,sourcePeriodEvidence};
 }
 const admit=admitSavedExtractionLease;
 
@@ -87,12 +94,12 @@ async function prepare(context:PostgresTransactionContext,input:SavedExtractionL
   return {...admitted,invocation,checkpoint:null,reused:true};
  }
  const inserted=await context.client.query(statement('extraction_dispatch_once',
-  `insert into private.case_extraction_invocations(invocation_id,case_id,version_id,policy_version,expected_month,input_sha256,source_revision,job_id,fencing_token)
-   select $1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9 from public.engine_durable_jobs j
+  `insert into private.case_extraction_invocations(invocation_id,case_id,version_id,policy_version,expected_month,input_sha256,source_revision,job_id,fencing_token,source_period_evidence)
+   select $1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9,$11::jsonb from public.engine_durable_jobs j
    where j.job_id=$8 and j.lease_owner=$10 and j.fencing_token=$9 and j.state='running'
     and not j.cancellation_requested and j.lease_expires_at>clock_timestamp()
    on conflict(case_id,version_id,policy_version,expected_month) do nothing returning invocation_id`,
-  [invocationId,job.case_id,input.versionId,SAVED_EXTRACTION_POLICY,month,contentHash,job.revision,input.jobId,input.fencingToken,input.workerId]));
+  [invocationId,job.case_id,input.versionId,SAVED_EXTRACTION_POLICY,month,contentHash,job.revision,input.jobId,input.fencingToken,input.workerId,admitted.sourcePeriodEvidence===null?null:JSON.stringify(admitted.sourcePeriodEvidence)]));
  const rows=await context.client.query(statement('extraction_invocation_read',
   `select * from private.case_extraction_invocations where case_id=$1::uuid and version_id=$2::uuid and policy_version=$3 and expected_month=$4`,
   [job.case_id,input.versionId,SAVED_EXTRACTION_POLICY,month]));
@@ -116,11 +123,12 @@ export async function recordSavedExtractionResult(context:PostgresTransactionCon
   'select * from private.case_extraction_invocations where invocation_id=$1::uuid for update',[invocationId]));
  const invocation=rows.rows[0] as Invocation|undefined;
  if(!invocation)throw new Error('SAVED_EXTRACTION_RECEIPT_SCOPE');validateResult(invocation,result);
+ const sourcePeriodEvidence=invocation.source_period_evidence==null?null:assertSavedSourcePeriodEvidence(invocation.source_period_evidence,{caseId:invocation.case_id,documentId:result.product_document_id,versionId:invocation.version_id,sha256:invocation.input_sha256,month:invocation.expected_month});
  const source=await context.client.query(statement('extraction_receipt_source',
   `select 1 from private.case_input_versions v cross join lateral jsonb_array_elements(v.input->'documents') d
    where v.case_id=$1::uuid and v.revision=$2 and d->>'id'=$3 and d->>'version_id'=$4
-    and d->>'sha256'=$5 and d->>'type'='payslip' and left(coalesce(d->>'month',v.input->>'month'),7)=$6`,
-  [invocation.case_id,invocation.source_revision,result.product_document_id,invocation.version_id,invocation.input_sha256,invocation.expected_month]));
+    and d->>'sha256'=$5 and d->>'type'='payslip' and (left(coalesce(d->>'month',v.input->>'month'),7)=$6 or ($7::boolean and d->>'month' is null))`,
+  [invocation.case_id,invocation.source_revision,result.product_document_id,invocation.version_id,invocation.input_sha256,invocation.expected_month,sourcePeriodEvidence!==null]));
  if(source.row_count!==1)throw new Error('SAVED_EXTRACTION_RECEIPT_SCOPE');
  if(invocation.result!==null){
   if(canonicalSha256(invocation.result)!==canonicalSha256(result))throw new Error('SAVED_EXTRACTION_RECEIPT_IMMUTABLE');
@@ -169,8 +177,12 @@ export async function runSavedWorkerExtraction(input:SavedExtractionLease&{
   // receipt never needs this and no provider output is rewritten or retried.
   if(input.promptDerivationAudit)await ensureSavedExtractionPromptProvenance(context,current.job,saved.result,input.promptDerivationAudit);
   await openSavedDocumentFieldRequests(context,current.job,saved.result);
-  await openSavedJune2026Collection(context,current.job,saved.result);
-  await openSavedTranscriptionRequests(context,current.job,saved.result);
+  // Qualified reviews collect factual dependencies through the ordinary review
+  // pipeline. The historical June collection requires its own modern-order scope.
+  if(current.job.processing_profile!=='qualified_ai_v1'){
+   await openSavedJune2026Collection(context,current.job,saved.result);
+   await openSavedTranscriptionRequests(context,current.job,saved.result);
+  }
   return saved;
  });
  return {invocationId:prepared.invocation?.invocation_id??null,reused:prepared.reused,result:checkpoint.result};

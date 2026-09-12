@@ -5,6 +5,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {getCompiledAiReleaseBuild} from './ai-release-build';
 import {verifyAiReleaseConfiguration} from './ai-release-configuration';
 import {sourceJobSchema,type SourceJob} from './source-dispatch';
+import {savedAiEvaluationAnchor,aiEvaluationAnchorDependency} from './ai-release-evaluation-anchor';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u),time=z.iso.datetime({offset:true});
 const stateSchema=z.discriminatedUnion('state',[
@@ -37,11 +38,11 @@ export async function loadSavedAiReleaseConfiguration(context:PostgresTransactio
  for(const window of [config.policy,config.registry]){
   if(at<Date.parse(window.issued_at)||at>=Date.parse(window.expires_at))throw Error('AI_RELEASE_CONFIGURATION_EXPIRED');
  }
- const evaluated_at=new Date(Math.max(Date.parse(state.source_created_at),Date.parse(config.policy.issued_at),Date.parse(config.registry.issued_at))).toISOString();
+ const anchor=savedAiEvaluationAnchor(config,state.source_created_at,state.evaluated_at),{evaluated_at}=anchor;
  if(Date.parse(evaluated_at)>at)throw Error('AI_RELEASE_EVALUATION_ANCHOR_FUTURE');
  return {...verified,enrollment_id:state.enrollment_id,dependency_sha256:state.dependency_sha256,
-  evaluated_at,live_evaluated_at:state.evaluated_at,expires_at:state.expires_at,
-  profile_sha256:canonicalSha256({schema_version:'saved-ai-release-profile-v1',configuration_sha256:config.sha256,enrollment_id:state.enrollment_id,dependency_sha256:state.dependency_sha256}),
+  ...anchor,live_evaluated_at:state.evaluated_at,expires_at:state.expires_at,
+  profile_sha256:canonicalSha256({schema_version:'saved-ai-release-profile-v1',configuration_sha256:config.sha256,enrollment_id:state.enrollment_id,dependency_sha256:state.dependency_sha256,...aiEvaluationAnchorDependency(anchor)}),
   environment:state.environment,is_qa:state.is_qa};
 }
 export type SavedAiReleaseConfiguration=NonNullable<Awaited<ReturnType<typeof loadSavedAiReleaseConfiguration>>>;

@@ -85,12 +85,16 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
     join public.documents d on d.case_id=c.case_id and d.version_id=c.version_id and d.content_sha256=c.input_sha256
     where t.case_id=$1::uuid and c.revision=$2 and v.input_sha256=$3 and r.answered_at is null
      and r.expired_at is null and r.expires_at>clock_timestamp()`,[job.case_id,job.revision,job.input_sha256]));
-  const fieldRequests:ExistingFieldReadingRequest[]=targets.rows.map(row=>{
-   const target=documentReadingTargetSchema.parse(row.target),current=documentReadingTargetForCheckpoint({target,currentCheckpoint:row.checkpoint});
+  const fieldRequests:ExistingFieldReadingRequest[]=targets.rows.flatMap(row=>{
+   const target=documentReadingTargetSchema.parse(row.target);
+   // This independent source-intake target cannot replace a monthly numeric
+   // request or be rebuilt from a payroll checkpoint.
+   if(target.schema_version==='document-source-period-intake-v1')return [];
+   const current=documentReadingTargetForCheckpoint({target,currentCheckpoint:row.checkpoint});
    if(target.case_id!==job.case_id||canonicalSha256(current)!==canonicalSha256(target))throw Error('REVIEW_FIELD_COVERAGE_CHECKPOINT');
-   return {request_id:z.uuid().parse(row.request_id),code:z.string().parse(row.code),target,source_current:true,
+   return [{request_id:z.uuid().parse(row.request_id),code:z.string().parse(row.code),target,source_current:true,
     answered_at:row.answered_at===null?null:z.string().parse(row.answered_at),expires_at:new Date(String(row.expires_at)).toISOString(),
-    expired_at:row.expired_at==null?null:new Date(String(row.expired_at)).toISOString()};
+    expired_at:row.expired_at==null?null:new Date(String(row.expired_at)).toISOString()}];
   });
   covered=reviewRequestsCoveredByFieldReadings({review,fieldRequests,nowMs:Date.now()});
  }

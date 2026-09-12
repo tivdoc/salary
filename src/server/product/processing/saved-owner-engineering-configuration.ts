@@ -5,6 +5,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {getCompiledAiReleaseBuild} from './ai-release-build';
 import {verifyOwnerEngineeringConfiguration} from './ai-release-configuration';
 import {sourceJobSchema,type SourceJob} from './source-dispatch';
+import {savedAiEvaluationAnchor,aiEvaluationAnchorDependency} from './ai-release-evaluation-anchor';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u),time=z.iso.datetime({offset:true});
 export const savedOwnerEngineeringContextSchema=z.object({state:z.literal('configured'),configuration:z.unknown(),configuration_sha256:hash,
@@ -20,12 +21,12 @@ export function resolveSavedOwnerEngineeringProfile(candidate:unknown){
   ||owner.enrollment_id!==context.enrollment_id)throw Error('OWNER_ENGINEERING_ENROLLMENT_SCOPE');
  if(live>=Date.parse(context.expires_at)||[configuration.policy,configuration.registry].some(w=>live<Date.parse(w.issued_at)||live>=Date.parse(w.expires_at)))
   throw Error('OWNER_ENGINEERING_ENROLLMENT_EXPIRED');
- const evaluated_at=new Date(Math.max(Date.parse(context.source_created_at),Date.parse(configuration.policy.issued_at),Date.parse(configuration.registry.issued_at))).toISOString();
+ const anchor=savedAiEvaluationAnchor(configuration,context.source_created_at,context.evaluated_at),{evaluated_at}=anchor;
  if(Date.parse(evaluated_at)>live)throw Error('OWNER_ENGINEERING_ANCHOR_FUTURE');
- return {...verified,enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256,evaluated_at,live_evaluated_at:context.evaluated_at,
+ return {...verified,enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256,...anchor,live_evaluated_at:context.evaluated_at,
   expires_at:context.expires_at,environment:context.environment,is_qa:context.is_qa,owner_scope:owner,
   profile_sha256:canonicalSha256({schema_version:'saved-owner-engineering-profile-v1',configuration_sha256:configuration.sha256,
-   enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256,owner_scope:owner})};
+   enrollment_id:context.enrollment_id,dependency_sha256:context.dependency_sha256,owner_scope:owner,...aiEvaluationAnchorDependency(anchor)})};
 }
 export async function loadSavedOwnerEngineeringConfiguration(context:PostgresTransactionContext,candidate:SourceJob){
  const job=sourceJobSchema.parse(candidate);

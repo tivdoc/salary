@@ -23,6 +23,7 @@ import {privateDocumentReviewReports,privateDocumentReviewArtifact} from './priv
 import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection,REVIEW_DEFERRABLE_SCALAR_FIELDS} from './review-field-coverage';
 import {validateSavedReadingAnswer} from './validate-reading-answer';
 import {reviewSharedPersonalRequestProjection} from './review-shared-personal-coverage';
+import {projectSourceIntakeUploadContext,sourceIntakeUploadContextSchema,type SourceIntakeUploadState} from '../documents/source-intake-upload';
 
 const reviewNamespace='document_review:';
 const reviewStateSchema=z.object({request_id:z.uuid(),source_current:z.boolean(),target:reviewCompletionTargetSchema.nullable()}).strict();
@@ -44,13 +45,15 @@ const reviewUploadStateSchema=z.object({request_id:z.uuid(),state:z.enum(['reque
  if(row.state==='satisfied'&&row.reason!=='target_specific_observed_source')ctx.addIssue({code:'custom',message:'Positive document evidence required'});
 });
 type DocumentUploadState=Omit<z.infer<typeof reviewUploadStateSchema>,'request_id'|'source_current'>;
+type SourceIntakeProjection=Readonly<{source_intake_upload_state?:SourceIntakeUploadState}>;
 
 const conflictSourceSchema=z.object({conflict_reason:z.enum(['conflicting_observations','provider_reported_conflict']),
  source_observations:z.array(z.object({candidate_id:z.uuid(),raw_value:z.string().max(1000).nullable(),page:z.number().int().positive().max(100),source_label:z.string().max(1000).nullable()}).strict()).max(12)}).strict();
-export type StoredRequest = ThreadRequest & Readonly<{ id: string; covered_by_field_request_id?:string; covered_by_confirmed_reading?:true; covered_by_unresolved_reading?:true; replacement_review_request_id?:string; not_required_for_current_review?:true; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; document_upload_state?:DocumentUploadState; reading_display?:DocumentReadingDisplay; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
+export type StoredRequest = ThreadRequest & SourceIntakeProjection & Readonly<{ id: string; covered_by_field_request_id?:string; covered_by_confirmed_reading?:true; covered_by_unresolved_reading?:true; replacement_review_request_id?:string; not_required_for_current_review?:true; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; document_upload_state?:DocumentUploadState; reading_display?:DocumentReadingDisplay; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
 
 export function documentRequestSatisfied(request:StoredRequest):boolean{
- return request.source_current!==false&&request.document_upload_state?.state==='satisfied'&&request.document_upload_state.information_satisfied===true;
+ return request.source_current===true&&request.source_intake_upload_state?.state==='satisfied'&&request.source_intake_upload_state.information_satisfied===true
+  ||request.source_current!==false&&request.document_upload_state?.state==='satisfied'&&request.document_upload_state.information_satisfied===true;
 }
 
 type RequestRow = Readonly<{
@@ -109,6 +112,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     ...(target.schema_version==='document-source-transcription-v1'?{transcription_context:{kind:target.subject.kind}}:{}),
     ...('evidence_context'in display?{evidence_context:display.evidence_context}:{}),
     ...('tariff_context'in display?{tariff_context:display.tariff_context}:{}),
+    ...('period_intake_context'in display?{period_intake_context:display.period_intake_context}:{}),
     ...('structure_context'in display?{structure_context:display.structure_context}:{})});
   }
   const juneStates=identityId&&june.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_june_states',{target_case:caseId,target_identity:identityId}):[];
@@ -122,10 +126,26 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const reviewStates=identityId&&reviews.length?parseReviewStates(await store.rpc('case_request_review_states',{target_case:caseId,target_identity:identityId}),caseId):[];
   if(reviewStates.some(s=>s.target&&reviews.find(r=>r.id===s.request_id)?.code!==reviewNamespace+s.target.target_sha256))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   const documentReviews=reviews.filter(r=>r.answer_kind==='document');
+  const intakeDocuments=rows.filter(r=>r.answer_kind==='document'&&r.code.startsWith('legacy.source.document:'));
+  const intakeContext=identityId&&intakeDocuments.length?await store.rpc<{value:unknown}>('case_request_source_intake_upload_context',{target_case:caseId,target_identity:identityId}):null;
+  if(intakeContext&&(intakeContext.length!==1||!Array.isArray(intakeContext[0].value)))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+  const intakeStates=intakeContext?z.array(sourceIntakeUploadContextSchema).max(256).parse(intakeContext[0].value).map(item=>{
+   const t=item.scope.target,row=intakeDocuments.find(r=>r.id===item.scope.request_id);
+   if(!row||row.code!==`legacy.source.document:${t.order_id}${t.month?':'+t.month:''}`||item.reading_request_ids.some(id=>{
+    const target=fieldTargets.find(f=>f.request_id===id)?.target,parsed=documentReadingTargetSchema.safeParse(target);
+    if(!parsed.success||parsed.data.schema_version!=='document-source-period-intake-v1')return true;
+    const reading=parsed.data;return reading.order_id!==t.order_id||reading.order_receipt_sha256!==t.order_receipt_sha256
+     ||!item.receipt?.files.some(f=>f.document_id===reading.product_document_id&&f.version_id===reading.version_id&&f.source_sha256===reading.source_sha256);
+   }))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+   return projectSourceIntakeUploadContext(item,caseId).state;
+  }):[];
+  if(identityId&&intakeDocuments.length&&(intakeStates.length!==intakeDocuments.length||new Set(intakeStates.map(s=>s.request_id)).size!==intakeStates.length
+   ||intakeStates.some(s=>!intakeDocuments.some(r=>r.id===s.request_id)||s.reading_request_ids.some(id=>!fields.some(f=>f.request_id===id&&f.source_current)
+    ||!displays.get(id)?.period_intake_context))))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   const uploadStates=identityId&&documentReviews.length?z.array(reviewUploadStateSchema).parse(await store.rpc('case_request_review_upload_states',{target_case:caseId,target_identity:identityId})):[];
   if(identityId&&documentReviews.length&&(uploadStates.length!==documentReviews.length||new Set(uploadStates.map(s=>s.request_id)).size!==uploadStates.length
    ||uploadStates.some(s=>!documentReviews.some(r=>r.id===s.request_id)||reviewStates.find(r=>r.request_id===s.request_id)?.source_current!==s.source_current)))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
-  const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates,...reviewStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts,...reviews];
+  const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates,...reviewStates,...intakeStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts,...reviews,...intakeDocuments];
   if (identityId && allBound.length && (states.length !== allBound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!allBound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   const covered=new Map<string,string>(),notRequired=new Set<string>(),alreadyRead=new Set<string>(),unresolvedRead=new Set<string>(),replacementReviews=new Map<string,string>();
   // Two bounded protected lookups per case, only when both question families
@@ -179,10 +199,12 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     const state = states.find(value => value.request_id === row.id);
     const conflict=conflictStates.find(value=>value.request_id===row.id);
     const upload=uploadStates.find(value=>value.request_id===row.id);
+    const intake=intakeStates.find(value=>value.request_id===row.id);
+    const intakeProjection:SourceIntakeProjection=intake?{source_intake_upload_state:{state:intake.state,information_satisfied:intake.information_satisfied,reason:intake.reason,reading_request_ids:intake.reading_request_ids}}:{};
     const document_upload_state:DocumentUploadState|undefined=upload?{state:upload.state,information_satisfied:upload.information_satisfied,analysis_run_id:upload.analysis_run_id,reason:upload.reason}:undefined;
     const source=conflict&&!(conflict.source_current===false&&conflict.conflict_reason===null)
       ?conflictSourceSchema.parse({conflict_reason:conflict.conflict_reason,source_observations:conflict.source_observations}):undefined;
-    return {...toRequest(row),...(unresolvedRead.has(row.id)?{covered_by_unresolved_reading:true as const}:{}),...(replacementReviews.has(row.id)?{replacement_review_request_id:replacementReviews.get(row.id)}:{}),...(alreadyRead.has(row.id)?{covered_by_confirmed_reading:true as const}:{}),...(notRequired.has(row.id)?{not_required_for_current_review:true as const}:{}),...(displays.has(row.id)?{question:displays.get(row.id)!.question}:{}),...(covered.has(row.id)?{covered_by_field_request_id:covered.get(row.id)}:{}),...(state?{source_current:state.source_current}:{}),...(document_upload_state?{document_upload_state}:{}),...(displays.has(row.id)?{reading_display:displays.get(row.id)}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
+    return {...toRequest(row),...intakeProjection,...(unresolvedRead.has(row.id)?{covered_by_unresolved_reading:true as const}:{}),...(replacementReviews.has(row.id)?{replacement_review_request_id:replacementReviews.get(row.id)}:{}),...(alreadyRead.has(row.id)?{covered_by_confirmed_reading:true as const}:{}),...(notRequired.has(row.id)?{not_required_for_current_review:true as const}:{}),...(displays.has(row.id)?{question:displays.get(row.id)!.question}:{}),...(covered.has(row.id)?{covered_by_field_request_id:covered.get(row.id)}:{}),...(state?{source_current:state.source_current}:{}),...(document_upload_state?{document_upload_state}:{}),...(displays.has(row.id)?{reading_display:displays.get(row.id)}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
   });
 }
 

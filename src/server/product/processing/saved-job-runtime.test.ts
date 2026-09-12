@@ -8,7 +8,7 @@ import type {SourceJob} from './source-dispatch';
 const ports=vi.hoisted(()=>({admit:vi.fn(),orders:vi.fn(),dispatch:vi.fn(),audit:vi.fn(),run:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./saved-admission',()=>({savedCaseTenant:(id:string)=>`saved-case:${id}`,admitSavedSource:ports.admit}));
-vi.mock('./saved-order-scope',()=>({readSavedOrders:ports.orders}));
+vi.mock('./saved-order-scope',()=>({readSavedOrders:ports.orders,readSavedWorkerOrderAdmission:ports.orders}));
 vi.mock('./source-dispatch',async importOriginal=>({...await importOriginal<typeof import('./source-dispatch')>(),dispatchCaseInput:ports.dispatch}));
 vi.mock('./saved-job-runner',()=>({runSavedDraftJob:ports.run}));
 vi.mock('@/server/platform/persistence/postgres/runtime/jobs-outbox-audit',()=>({PostgresJobsOutboxAuditRepository:class {append=ports.audit;}}));
@@ -132,6 +132,8 @@ describe('scoped saved job runtime',()=>{
   ['SOL_REPLAY_REQUIRES_REVIEW','dead_letter','saved_provider_replay_review'],
   ['SOL_MANAGED_PACKAGE_EXPIRED','dead_letter','saved_provider_budget_expired'],
   ['SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED','dead_letter','saved_documents_missing'],
+  ['SAVED_SOURCE_INTAKE_REQUIRED','dead_letter','saved_source_intake_required'],
+  ['SOURCE_INTAKE_PHYSICAL_CHANGED','dead_letter','saved_source_integrity_required'],
   ['ANALYSIS_INPUT_SUPERSEDED','cancelled','saved_source_superseded'],
   ['ANALYSIS_AUTHORITY_SUPERSEDED','cancelled','saved_authority_superseded'],
   ['SAVED_JOB_INTERRUPTED','retry_wait','saved_worker_interrupted'],
