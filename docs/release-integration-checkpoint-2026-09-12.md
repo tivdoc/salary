@@ -44,3 +44,12 @@ The complete100-check follow-up preflight rolled back. It is not proof of migrat
 Source and method decisions retain their own receipts, periods and limitations, including hourly minimum-wage method and monetary rounding. No human approval was created. Historical private source gaps and ownership review remain scoped to their cases.
 
 Provider ledger remains **10/12 content calls, USD3.56 reserved/5, two historical unknown costs**. No provider spending, customer messages, charges, Production changes or parallel UI edits were made in this checkpoint. Continue the authorized release work; do not stop merely because this checkpoint is saved.
+
+
+## Follow-up: CI and DEV schema177
+
+Checkpoint a135fd6f7c284a37cef09922d3ec92a9cab0336d was pushed. CI34685847893/34685850878 passed the build-manifest guard, typecheck and lint, then failed nine tests in four files: explicit migration/definer inventories had not been extended, one test import lacked its required extension, and a saved-source fixture lacked the new authenticated attendance metadata read. The fixture now supplies real contract-shaped synthetic metadata and separately asserts missing retained extraction; source disappearance still refuses cache reuse. All four failure groups passed focused reruns (36 tests in total); no guard was removed.
+
+DEV is now **schema177**. Migrations173–176 applied after the100-check existing-schema preflight. Migration177 `20260912092000_ai_release_operator_events.sql` applied after15 additional rollback assertions: exact DEV, grant/retry, profile precedence over June, append-only revoke and renew, old retry unable to revive a revoked grant, immutable rows and denial of operator RPC to all five runtime/public roles. Synthetic configurations and grants were rolled back; applying the migration created no case authority, worker permission or provider budget. This is SQL lifecycle evidence, not the final Finding/report/browser journey.
+
+The Finding boundary is now saved as `20260912090500_ai_release_findings.sql`; earlier references to a pending proposal describe the preceding checkpoint. Source/answer/declared-fact binding still needs the integrated product DB proof. Release publication/currentness and final acceptance continue.

@@ -1,4 +1,4 @@
-import {pensionEntitlementInputSchema} from '../entitlement-review/pension/contracts';
+import {pensionEntitlementInputSchema} from '../entitlement-review/pension/contracts.ts';
 import {describe,it,expect} from 'vitest';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
 import {aiReleasePolicySchema,aiReleaseRegistrySchema} from '../ai-release/contracts.ts';

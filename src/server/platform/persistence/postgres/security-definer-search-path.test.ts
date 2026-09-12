@@ -68,7 +68,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //168 patches only that put body's locked QA check; no additional declaration.
 //169 redeclares the current-source predicate, worker opener and protected source
 // lookup. Their OIDs/ACLs are retained; the new scope helper is security invoker.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 357;
+//171-177: one currentness redeclaration, four profile/dependency helpers,
+//one worker finding recorder and one retained-source receipt loader. The
+//owner enrollment RPC is security invoker; exact grants are inventoried below.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 364;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -237,6 +240,32 @@ const PRODUCT_UPLOAD_SURFACE = [
 ] as const;
 
 describe("security definer search_path contract", () => {
+  it('inventories the exact AI/source boundaries without granting enrollment to a runtime',async()=>{
+    const reviewed=[
+      ['20260912080403_document_evidence_invocation_contract.sql',[],[]],
+      ['20260912082645_document_evidence_identified_readings.sql',['private.document_field_current'],['private.document_reading_question_scope_before_evidence_v1(text[],jsonb) to tivdoc_worker_runtime,service_role']],
+      ['20260912084511_document_evidence_answer_revision_currentness.sql',[],[]],
+      ['20260912085031_ai_release_configuration_registry.sql',['private.ai_release_dependency','private.ai_release_dispatch_profile_guard','private.ai_release_refresh_dispatch','private.ai_release_context_read'],['private.ai_release_context_read(uuid,integer,text) to tivdoc_worker_runtime']],
+      ['20260912090500_ai_release_findings.sql',['private.ai_release_findings_record'],['private.ai_release_findings_record(text,text,text) to tivdoc_worker_runtime']],
+      ['20260912091000_document_evidence_retained_receipts.sql',['private.document_evidence_receipt_source'],['private.document_evidence_receipt_source(uuid) to tivdoc_worker_runtime']],
+      ['20260912092000_ai_release_operator_events.sql',[],[]],
+    ] as const;
+    const definitions=await securityDefinerDefinitions();
+    for(const [file,names,grants]of reviewed){
+      expect(definitions.filter(d=>d.file===file).map(d=>d.name),file).toEqual(names);
+      const sql=(await readFile(path.join(MIGRATION_ROOT,file),'utf8')).replaceAll(/\s+/gu,' ').toLowerCase();
+      expect([...sql.matchAll(/grant execute on function ([^;]+);/gu)].map(m=>m[1]),file).toEqual(grants);
+      expect(sql).not.toMatch(/alter\s+function[\s\S]*?owner\s+to/iu);
+    }
+    const operator=await readFile(path.join(MIGRATION_ROOT,reviewed[6][0]),'utf8');
+    expect(operator).toContain("session_user<>'tivdoc_dev_migrator'");
+    expect(operator).toContain("current_database()<>'tivdoc_release_replay_20260907'");
+    expect(operator).toContain('security invoker');
+    const profile=await readFile(path.join(MIGRATION_ROOT,reviewed[3][0]),'utf8');
+    expect(profile).toContain("private.runtime_verified_tenant() is distinct from 'saved-case:'||target_case::text");
+    expect(profile).toContain('force row level security');
+    expect(profile).toContain('AI_RELEASE_QA_ENROLLMENT_REQUIRED');
+  });
   it('accounts for both prompt-derivation boundaries and their sole worker EXECUTE grant',async()=>{
     const file='20260911183000_extraction_prompt_derivation.sql';
     expect((await securityDefinerDefinitions()).filter(d=>d.file===file).map(d=>d.name)).toEqual([

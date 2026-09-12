@@ -12,9 +12,9 @@ const DEV_ENV = { SUPABASE_PROJECT_REF: TIVDOC_DEV_PROJECT_REF, SUPABASE_PROJECT
 describe("V0.10.9 byte-pinned chain replay", () => {
   it("discovers every migration in filename order with LF-normalized hashes", async () => {
     const files = await discoverMigrationFiles(MIGRATIONS);
-    expect(files).toHaveLength(170);
+    expect(files).toHaveLength(177);
     expect(files.map((file) => file.name)).toEqual([...files.map((file) => file.name)].sort());
-    expect(files.slice(-39).map(file=>file.name)).toEqual([
+    expect(files.slice(-46).map(file=>file.name)).toEqual([
       "20260910040429_document_source_transcriptions.sql",
       "20260910040753_dev_financial_source_completion_runs.sql",
       "20260910042333_dev_missing_hours_declaration_wording.sql",
@@ -54,6 +54,13 @@ describe("V0.10.9 byte-pinned chain replay", () => {
       "20260911183500_extraction_prompt_qa_lock.sql",
       "20260911195557_document_row_cell_readings.sql",
       "20260911222336_document_source_structures.sql",
+      "20260912080403_document_evidence_invocation_contract.sql",
+      "20260912082645_document_evidence_identified_readings.sql",
+      "20260912084511_document_evidence_answer_revision_currentness.sql",
+      "20260912085031_ai_release_configuration_registry.sql",
+      "20260912090500_ai_release_findings.sql",
+      "20260912091000_document_evidence_retained_receipts.sql",
+      "20260912092000_ai_release_operator_events.sql",
     ]);
     for (const file of files) {
       expect(file.sha256_raw).toMatch(/^[a-f0-9]{64}$/u);

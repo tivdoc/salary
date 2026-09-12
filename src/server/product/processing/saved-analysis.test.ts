@@ -42,6 +42,7 @@ function setup(){
   events.push(s.name);
   if(s.name==='saved_order_entitlements')return {rows:[{orders:[order],current_orders:current}],row_count:1};
   if(s.name==='saved_analysis_order')return {rows:[{input:{orders:[order]},created_at:'2026-09-08T00:00:00.000Z',engine_revision:1}],row_count:1};
+  if(s.name==='saved_non_payslip_snapshot')return {rows:inventory.map(d=>({...d,case_id:caseId,storage_path:`cases/${caseId}/versions/${d.version_id}.pdf`,original_filename:'synthetic-attendance.pdf',mime_type:'application/pdf',size:100,period_month:'2026-08',created_at:journal.created_at,result:null,has_uncertain_dispatch:false})),row_count:inventory.length};
   if(s.name==='saved_snapshot_journal')return {rows:[journal],row_count:1};
   if(s.name==='review_source_read')return {rows:[{source:{state:'legacy'}}],row_count:1};
   if(s.name==='review_checkpoint_read')return {rows:[],row_count:0};
@@ -96,7 +97,7 @@ describe('saved monthly analysis admission before replay',()=>{
  });
  it('refuses a source removed from the current inventory before reading cached results',async()=>{
   const s=setup();await s.prepareReplay();s.inventory.length=0;
-  await expect(runSavedMonthAnalysis(s.input)).rejects.toThrow('SAVED_REVIEW_DOCUMENT_REQUIRED');expect(s.cached).not.toHaveBeenCalled();
+  await expect(runSavedMonthAnalysis(s.input)).rejects.toThrow('SAVED_NON_PAYSLIP_SOURCE_CHANGED');expect(s.cached).not.toHaveBeenCalled();
  });
  it('refuses a cached result with an unrelated review hash after resolving current inputs',async()=>{
   const s=setup();await s.prepareReplay();s.replay.command.document_review_sha256='d'.repeat(64);
@@ -142,7 +143,11 @@ describe('June source review versus admitted canonical composition',()=>{
   expect(result.completed).toBe(true);expect(result.command.idempotency_key).toMatch(/^review:/u);expect(result.command.mode).toBe('real');
   const review=result.bundle?.document_review;if(!review)throw Error('EXPECTED_WIDE_REVIEW');
   expect(review.purchased_scope).toMatchObject({origin:'legacy_paid_receipt',receipt_sha256:admission.scope.receipt_sha256,topics:LEGACY_PAID_TOPICS});
-  expect(review.coverage_gaps.map(g=>g.topic)).toEqual(LEGACY_PAID_TOPICS);expect(opened).toHaveLength(1);
+  expect(review.coverage_gaps.map(g=>g.topic)).toEqual([...LEGACY_PAID_TOPICS,'working_time']);
+  const pending=review.coverage_gaps.at(-1)!;
+  expect(pending).toMatchObject({check_id:`entitlement.nonpay.${canonicalSha256(s.journal.input.documents[0].version_id).slice(0,16)}.source`,topic:'working_time',kind:'missing_source',
+   source_pins:[{case_id:caseId,document_id:s.journal.input.documents[0].version_id,version_id:s.journal.input.documents[0].version_id,source_sha256:s.journal.input.documents[0].sha256}]});
+  expect(pending.next_step).toContain('המסמך שכבר הועלה');expect(opened).toHaveLength(1);
   expect(result.command.requested_topics).toEqual(savedOrderLegalTopics({...s.order,kind:'full',topics:['working_time','pension','vacation','convalescence','travel','minimum_wage']}));
   expect(vi.mocked(readSavedJune2026Collection)).not.toHaveBeenCalled();expect(vi.mocked(loadSavedJune2026AdmittedContext)).not.toHaveBeenCalled();
   expect(events).not.toContain('june_test_authority');expect(events).not.toContain('june_regular_authority');

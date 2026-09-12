@@ -32,4 +32,3 @@ revoke all on function private.document_evidence_receipt_source(uuid) from publi
 grant execute on function private.document_evidence_receipt_source(uuid) to tivdoc_worker_runtime;
 -- This function never mutates a checkpoint or source journal. Current-source
 -- and job-lease checks are deliberately retained at checkpoint finalization.
-
