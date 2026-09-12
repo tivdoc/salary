@@ -1,13 +1,14 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {runManagedDevCase} from './managed-worker-case';
-const ports=vi.hoisted(()=>({claim:vi.fn(),run:vi.fn(),failure:vi.fn(),admit:vi.fn(),orders:vi.fn(),profile:vi.fn()}));
+const ports=vi.hoisted(()=>({claim:vi.fn(),run:vi.fn(),failure:vi.fn(),admit:vi.fn(),orders:vi.fn(),profile:vi.fn(),owner:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./saved-job-runtime',()=>({claimSavedDraftJob:ports.claim,recordSavedJobFailure:ports.failure}));
 vi.mock('./saved-job-runner',()=>({runSavedDraftJob:ports.run}));
 vi.mock('./saved-admission',()=>({admitSavedSource:ports.admit,savedCaseTenant:(id:string)=>`saved-case:${id}`}));
 vi.mock('./saved-order-scope',async original=>({...await original<typeof import('./saved-order-scope')>(),readSavedOrders:ports.orders}));
 vi.mock('./saved-ai-release-configuration',()=>({loadSavedAiReleaseConfiguration:ports.profile}));
+vi.mock('./saved-owner-engineering-configuration',()=>({loadSavedOwnerEngineeringConfiguration:ports.owner}));
 beforeEach(()=>vi.resetAllMocks());
 function setup(){
  const caseId='11111111-1111-4111-8111-111111111111';
@@ -32,6 +33,19 @@ function setup(){
  return {input,row,order,state,calls};
 }
 describe('managed worker existing-queue composition',()=>{
+ it('accepts an authenticated owner purpose on the shared transport without passing it to qualified verification',async()=>{
+  const s=setup();s.row.processing_profile='qualified_ai_v1';s.row.authority_dependency_sha256='d'.repeat(64);
+  ports.owner.mockResolvedValue({verified:true,purpose:'owner_engineering_review'});
+  ports.profile.mockRejectedValue(Error('QUALIFIED_SCHEMA_REFUSES_OWNER'));
+  expect(await runManagedDevCase(s.input)).toMatchObject({state:'succeeded'});
+  expect(ports.profile).not.toHaveBeenCalled();expect(ports.claim).toHaveBeenCalledTimes(1);
+ });
+ it.each(['OWNER_ENGINEERING_ENROLLMENT_EXPIRED','OWNER_ENGINEERING_JOB_SCOPE','OWNER_ENGINEERING_ENROLLMENT_SCOPE'])('does not fall back or claim after owner refusal %s',async code=>{
+  const s=setup();s.row.processing_profile='qualified_ai_v1';s.row.authority_dependency_sha256='d'.repeat(64);
+  ports.owner.mockRejectedValue(Error(code));ports.profile.mockResolvedValue({verified:true});
+  await expect(runManagedDevCase(s.input)).rejects.toThrow(code);
+  expect(ports.profile).not.toHaveBeenCalled();expect(ports.claim).not.toHaveBeenCalled();expect(ports.run).not.toHaveBeenCalled();
+ });
  it('admits the separately configured multi-topic AI profile while retaining paid periods and unclassified documents',async()=>{
   const s=setup();s.row.processing_profile='qualified_ai_v1';s.row.authority_dependency_sha256='d'.repeat(64);ports.profile.mockResolvedValue({verified:true});
   s.order.kind='full';s.order.from='2026-04-01';s.order.to='2026-07-01';s.order.topics=['pension','working_time','minimum_wage'];

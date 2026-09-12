@@ -9,6 +9,7 @@ import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {managedWorkerError} from './managed-worker-contract';
 import {loadSavedAiReleaseConfiguration} from './saved-ai-release-configuration';
+import {loadSavedOwnerEngineeringConfiguration} from './saved-owner-engineering-configuration';
 
 type Runner=Parameters<typeof runSavedDraftJob>[0];
 async function requireFullAiOffer(context:PostgresTransactionContext,caseId:string,order:{id:string;offer_sha256:string}){
@@ -39,7 +40,11 @@ async function scope(context:PostgresTransactionContext,caseId:string){
  if(job.processing_profile==='qualified_ai_v1'){
   // A separately enrolled profile uses the same queue and spend reservation.
   // Never silently inherit a legacy June/test authority or truncate purchases.
-  if(!job.authority_dependency_sha256||!await loadSavedAiReleaseConfiguration(context,job))throw Error('AI_RELEASE_ENROLLMENT_REQUIRED');
+  if(!job.authority_dependency_sha256)throw Error('AI_RELEASE_ENROLLMENT_REQUIRED');
+  // The transport profile is shared, but its authenticated configuration
+  // purpose is not. An invalid owner context must throw, never fall back.
+  const owner=await loadSavedOwnerEngineeringConfiguration(context,job);
+  if(!owner&&!await loadSavedAiReleaseConfiguration(context,job))throw Error('AI_RELEASE_ENROLLMENT_REQUIRED');
   const months=[...new Set(orders.flatMap(purchasedMonths))];
   if(!orders.length||orders.length>12||!months.length||months.length>12
    ||!months.some(m=>m>='2026-05'&&m<='2026-07'))throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');

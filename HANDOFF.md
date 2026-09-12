@@ -1,3 +1,11 @@
+## Scheduled owner preflight repair — 2026-09-12
+
+Base eb2defa5d0d0946a0fcf641e1e342a4c6f1134c0 passed both CI34699157040/34699155538. Its exact frozen real worker and authenticated GitHub Preview receipt were prepared. A measured55-test owner configuration was stored and enrolled for the single retained synthetic live-Sol QA source, with unresolved human-law review preserved and expiry17:25:22UTC. No provider or notification calls occurred.
+
+Actual Windows scheduled execution exposed PostgreSQL42702 before discovery: unqualified case_id conflicted with the output variable. Forward migration182 qualifies that one enrollment column, preserving every gate and ACL; rollback definition comparison passed and isolated DEV applied SHA a9e446f2d34ddcafaa8b8937c65e8afbb32d833702929dfd0158d33129b5303a. The next scheduled tick discovered the case but failed before claim. Code inspection identified the shared transport preflight passing owner configuration to the qualified-only loader. It now authenticates the separate owner purpose first, without fallback after refusal.38 focused tests and scoped lint passed; CI of this repair remains required. No successful analysis/report is claimed yet.
+
+Service is PAUSED, not revoked; existing owner grant and ledger remain unchanged. Resume only with an exact new build/Preview epoch. Tariff intake work remains uncommitted and independent; preserve it. Continue toward release acceptance, not final delivery.
+
 ## Owner engineering purpose, pension tables and travel floor — 2026-09-12
 
 Saved base6706a993ec73bab2d5ecabd75c77db477eb8d36c passed both required CI34696819309/34696816876. This checkpoint adds an explicit owner-only engineering policy/configuration/envelope to the ordinary saved CaseAnalysisService pipeline. Unresolved human-law review stays visible; required review and missing/conflicting/expired source, interpretation, case decisions and tests remain blocking. Qualified v1 schemas/publication refuse this purpose. Same-run private findings and HTML/PDF retain null debt totals and conditional labels. New operator and queue integration uses the existing transport; exact owner/enrollment/purpose distinguishes its authority.
