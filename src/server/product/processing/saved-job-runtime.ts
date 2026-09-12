@@ -47,19 +47,20 @@ async function audit(context:PostgresTransactionContext,input:Worker,job:z.infer
 export async function claimSavedDraftJob(context:PostgresTransactionContext,input:Worker&{leaseMs:number}){
  z.number().int().min(10000).max(300000).parse(input.leaseMs);const tenant=await authorize(context,input);
  const heads=await context.client.query(statement('saved_runtime_head',
-  `select h.revision,h.input_sha256,d.authority_dependency_sha256 from private.case_input_heads h
+  `select h.revision,h.input_sha256,d.authority_dependency_sha256,d.processing_profile from private.case_input_heads h
    left join private.case_analysis_dispatch d on d.case_id=h.case_id and d.revision=h.revision and d.mode='draft'
    where h.case_id=$1::uuid`,[input.caseId]));
  if(!heads.rows[0])return {state:'idle' as const,reason:'no_saved_source'};
  const head=heads.rows[0];
  const source=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:input.caseId,revision:head.revision,input_sha256:head.input_sha256,mode:'draft',
-  ...(head.authority_dependency_sha256==null?{}:{authority_dependency_sha256:head.authority_dependency_sha256})});
+  ...(head.authority_dependency_sha256==null?{}:{authority_dependency_sha256:head.authority_dependency_sha256}),
+  ...(head.processing_profile==null?{}:{processing_profile:head.processing_profile})});
  await admitSavedSource(context,source);await readSavedOrders(context,source);
  const now=await context.client.query(statement('saved_runtime_clock',"select floor(extract(epoch from clock_timestamp())*1000)::bigint now_ms",[]));
  await dispatchCaseInput(context,{caseId:input.caseId,tenantId:tenant,mode:'draft',liveEnabled:false,nowMs:z.coerce.number().int().safe().parse(now.rows[0]?.now_ms)});
  const dispatch=await context.client.query(statement('saved_runtime_dispatch',
-  "select job_id from private.case_analysis_dispatch where case_id=$1::uuid and revision=$2 and mode='draft' and authority_dependency_sha256 is not distinct from $3",
-  [input.caseId,source.revision,source.authority_dependency_sha256??null]));
+  "select job_id from private.case_analysis_dispatch where case_id=$1::uuid and revision=$2 and mode='draft' and authority_dependency_sha256 is not distinct from $3 and processing_profile is not distinct from $4",
+  [input.caseId,source.revision,source.authority_dependency_sha256??null,source.processing_profile??null]));
  const id=dispatch.rows[0]?.job_id;if(typeof id!=='string')return {state:'idle' as const,reason:'no_draft_dispatch'};
  const job=await lockJob(context,input,id);
  if(canonicalSha256(job.payload)!==canonicalSha256(source))throw new Error('SAVED_JOB_SCOPE');

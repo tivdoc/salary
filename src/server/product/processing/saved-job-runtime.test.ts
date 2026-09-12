@@ -19,14 +19,14 @@ function setup(){
  let row={job_id:'job',tenant_id:`saved-case:${caseId}`,canonical_case_id:caseId,job_kind:'saved_case_analysis_v1',payload:source,payload_sha256:canonicalSha256(source),
   state:'queued',revision:1,fencing_token:0,attempt_count:0,max_attempts:3,lease_owner:null as string|null,lease_valid:false,due:true,cancellation_requested:false};
  const authority={principal:'tivdoc_worker_runtime',tenant_id:row.tenant_id},calls:string[]=[];
- const state={missingHead:false,missingDispatch:false,atomicRefusal:false,commits:0,dependency:null as string|null};
+ const state={missingHead:false,missingDispatch:false,atomicRefusal:false,commits:0,dependency:null as string|null,profile:null as string|null};
  const context:PostgresTransactionContext={transaction_id:'recording',client:{async query(s){
   calls.push(s.name);
   switch(s.name){
    case 'saved_runtime_authority':return {rows:[authority],row_count:1};
-   case 'saved_runtime_head':expect(s.text).toContain("d.mode='draft'");return {rows:state.missingHead?[]:[{revision:1,input_sha256:source.input_sha256,authority_dependency_sha256:state.dependency}],row_count:state.missingHead?0:1};
+   case 'saved_runtime_head':expect(s.text).toContain("d.mode='draft'");expect(s.text).toContain('d.processing_profile');return {rows:state.missingHead?[]:[{revision:1,input_sha256:source.input_sha256,authority_dependency_sha256:state.dependency,processing_profile:state.profile}],row_count:state.missingHead?0:1};
    case 'saved_runtime_clock':return {rows:[{now_ms:1788854400000}],row_count:1};
-   case 'saved_runtime_dispatch':expect(s.text).toContain('authority_dependency_sha256 is not distinct from $3');expect(s.values[2]).toBe(state.dependency);return {rows:state.missingDispatch?[]:[{job_id:row.job_id}],row_count:state.missingDispatch?0:1};
+   case 'saved_runtime_dispatch':expect(s.text).toContain('authority_dependency_sha256 is not distinct from $3');expect(s.values[2]).toBe(state.dependency);expect(s.values[3]).toBe(state.profile);return {rows:state.missingDispatch?[]:[{job_id:row.job_id}],row_count:state.missingDispatch?0:1};
    case 'saved_runtime_job_lock':return {rows:[row],row_count:1};
    case 'saved_runtime_failure_case_lock':return {rows:[{id:caseId}],row_count:1};
    case 'saved_runtime_audit_time':return {rows:[{now:'2026-09-08T08:00:00Z'}],row_count:1};
@@ -50,6 +50,19 @@ function setup(){
  return {input,claim,fail,authority,state,calls,row:()=>row};
 }
 describe('scoped saved job runtime',()=>{
+ it('keeps the authenticated processing profile through admission, dispatch and lease retry',async()=>{
+  const s=setup();s.state.profile='qualified_ai_v1';s.state.dependency='b'.repeat(64);
+  const payload={...s.row().payload,authority_dependency_sha256:s.state.dependency,processing_profile:'qualified_ai_v1' as const};
+  Object.assign(s.row(),{payload,payload_sha256:canonicalSha256(payload)});
+  ports.admit.mockImplementation(async(_context,source)=>{expect(source).toEqual(payload);});
+  expect(await s.claim()).toMatchObject({state:'claimed',fencingToken:1});
+  expect((await s.claim()).state).toBe('busy');expect(s.row().attempt_count).toBe(1);
+  s.row().lease_valid=false;expect(await s.claim()).toMatchObject({state:'claimed',fencingToken:2});
+ });
+ it('refuses a historical payload under a new profile without spending an attempt',async()=>{
+  const s=setup();s.state.profile='qualified_ai_v1';const before=structuredClone(s.row());
+  await expect(s.claim()).rejects.toThrow('SAVED_JOB_SCOPE');expect(s.row()).toEqual(before);expect(ports.audit).not.toHaveBeenCalled();
+ });
  it('dispatches at DB time and claims only the pinned source with a new fencing token',async()=>{
   const s=setup();expect(await s.claim()).toEqual({state:'claimed',jobId:'job',fencingToken:1});
   expect(ports.dispatch.mock.calls[0][1]).toMatchObject({mode:'draft',liveEnabled:false,nowMs:1788854400000});

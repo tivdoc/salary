@@ -1,3 +1,9 @@
+## Processing profile preserved at queue claim — 2026-09-12
+
+9a5a45d8766e4a84ed651de2315d50061c43bca0 passed both CI34700296152/34700292995. Actual frozen9a scheduler reached the enrolled case but refused authority before claim: claimSavedDraftJob had omitted processing_profile while rebuilding its source identity. This repair carries the profile through its head read, admission, dispatch match and lease comparison; legacy payloads without a profile stay unchanged.26 focused runtime tests and lint passed. An actual DEV host/identity diagnostic of the working-tree repair reached ordinary enqueue/dispatch/claim/audit, then deliberately rolled back. No committed job or financial run is claimed by that diagnostic.
+
+Schema182 unchanged. New epoch06a27e94 is paused, expires17:25:22UTC, while prior eb2 epoch is revoked. Calculation authority and all provider ledgers are unchanged. No provider calls, messages or Production change. Tariff purpose/readings/upload work remains independently uncommitted pending SQL/whole-product verification. Continue with the repaired exact build and actual scheduled analysis.
+
 ## Scheduled owner preflight repair — 2026-09-12
 
 Base eb2defa5d0d0946a0fcf641e1e342a4c6f1134c0 passed both CI34699157040/34699155538. Its exact frozen real worker and authenticated GitHub Preview receipt were prepared. A measured55-test owner configuration was stored and enrolled for the single retained synthetic live-Sol QA source, with unresolved human-law review preserved and expiry17:25:22UTC. No provider or notification calls occurred.
