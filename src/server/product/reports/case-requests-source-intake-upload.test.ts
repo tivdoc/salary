@@ -43,6 +43,15 @@ it('keeps an unknown reading unresolved with its original history and an option 
  expect(rows[0]).toMatchObject({answered_at:null,source_intake_upload_state:{state:'insufficient',information_satisfied:false,reason:'source_reading_unresolved'}});
  expect(rows[1].answer_text).toBe(f.answerRow.answer);expect(render(rows)).toContain('לא ידועה או לא קריאה');expect(render(rows)).toContain('צירוף המסמך לתיק');
 });
+it('shows the identified partial attendance range and the precise missing payroll source without changing satisfaction',async()=>{
+ const f=fixture();f.answerRow.answer=JSON.stringify({...f.answer,value:{...f.answer.value,document_kind:'attendance',period:{from:'2026-06-18',to:'2026-07-17'}}});
+ f.context.journalContext.journalSha256=canonicalSha256(f.context.journalContext.journal);
+ const rows=await listCaseRequests(f.caseId,f.db,f.answerRow.answer_identity_id);
+ expect(rows[0].source_intake_coverage).toEqual([{state:'partial_period',kind:'attendance',period:{from:'2026-06-18',to:'2026-07-17'},months:[]}]);
+ expect(documentRequestSatisfied(rows[0])).toBe(false);const html=render(rows);
+ expect(html).toContain('2026-06-18');expect(html).toContain('2026-07-17');expect(html).toContain('תלוש שכר מלא המציג את חודש השכר');
+ expect(html).toContain('אין צורך לקרוא שוב');expect(JSON.stringify(rows[0].source_intake_coverage)).not.toContain(f.document.sha256);
+});
 it.each(['missing_anchor','wrong_code','foreign_link','missing_context','duplicate_context'] as const)('refuses %s context instead of projecting satisfaction',async kind=>{
  const f=fixture();if(kind==='missing_anchor')f.context.journalContext.sourceAnchors=[];
  if(kind==='wrong_code')f.row.code+=':2026-07';if(kind==='foreign_link')f.context.reading_request_ids=[f.scope.request_id];

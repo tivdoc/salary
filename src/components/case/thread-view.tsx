@@ -30,6 +30,12 @@ function DocumentUploadStatus({request}:{request:StoredRequest}){
      :intake.reason==='duplicate_content'?'הקובץ הוא העתק של מקור שכבר קיים בתיק. המידע החסר עדיין לא זוהה.'
       :intake.reason==='source_reading_unresolved'?'קריאת המקור נשארה לא ידועה או לא קריאה. אפשר לתקן את הקריאה או לצרף מקור ברור יותר.'
        :'עדיין לא זוהתה במקור תקופה מלאה שניתן לבדוק. הקריאה והקובץ נשמרו.'}</p>
+  {request.source_intake_coverage?.map((coverage,index)=>coverage.state==='partial_period'&&coverage.period?<p key={index}>
+   במקור {index+1} זוהה הטווח <bdi>{coverage.period.from} – {coverage.period.to}</bdi>. הטווח אינו מכסה חודש קלנדרי מלא.
+   {coverage.kind==='attendance'?' דוח הנוכחות נשמר. להמשך בדיקת השכר יש לצרף תלוש שכר מלא המציג את חודש השכר; אין צורך לקרוא שוב את התאריכים שכבר זוהו.':' הקריאה נשמרה. נדרש מסמך המציג את חודש השכר המלא; אין צורך להעלות שוב את אותו קובץ.'}
+  </p>:coverage.state==='conflict'?<p key={index}>במקור {index+1} נשמרו קריאות סותרות. יש לבדוק ולתקן את הקריאה במקור; לא נבחרה תקופה אוטומטית.</p>
+   :coverage.state==='multi_month_dispatch_required'?<p key={index}>במקור {index+1} זוהו כמה חודשים. שיוך הבדיקות לכל חודש עדיין דורש השלמה במערכת; אין צורך להעלות אותו שוב.</p>
+    :coverage.state==='kind_dispatch_required'?<p key={index}>סוג המקור {index+1} תוקן בקריאה המזוהה. התאמת העיבוד לסוג המתוקן עדיין ממתינה לטיפול במערכת; אין צורך לאשר שוב את הקריאה.</p>:null)}
   {intake.reading_request_ids.map((id,index)=><p key={id}><a href={`#request-${id}`}>זיהוי סוג המסמך והתקופה במקור {index+1}</a></p>)}
  </div>;
  const upload=request.document_upload_state;if(!upload||upload.state==='requested')return null;

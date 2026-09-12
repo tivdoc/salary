@@ -24,6 +24,8 @@ import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,revie
 import {validateSavedReadingAnswer} from './validate-reading-answer';
 import {reviewSharedPersonalRequestProjection} from './review-shared-personal-coverage';
 import {projectSourceIntakeUploadContext,sourceIntakeUploadContextSchema,type SourceIntakeUploadState} from '../documents/source-intake-upload';
+import {savedLegacySourceIntake} from '../processing/saved-legacy-source-intake';
+import {sourceIntakeReadingCoverage,type SourceIntakeCoverage} from '../processing/source-intake-coverage';
 
 const reviewNamespace='document_review:';
 const reviewStateSchema=z.object({request_id:z.uuid(),source_current:z.boolean(),target:reviewCompletionTargetSchema.nullable()}).strict();
@@ -45,7 +47,7 @@ const reviewUploadStateSchema=z.object({request_id:z.uuid(),state:z.enum(['reque
  if(row.state==='satisfied'&&row.reason!=='target_specific_observed_source')ctx.addIssue({code:'custom',message:'Positive document evidence required'});
 });
 type DocumentUploadState=Omit<z.infer<typeof reviewUploadStateSchema>,'request_id'|'source_current'>;
-type SourceIntakeProjection=Readonly<{source_intake_upload_state?:SourceIntakeUploadState}>;
+type SourceIntakeProjection=Readonly<{source_intake_upload_state?:SourceIntakeUploadState;source_intake_coverage?:readonly Pick<SourceIntakeCoverage,'state'|'period'|'kind'|'months'>[]}>;
 
 const conflictSourceSchema=z.object({conflict_reason:z.enum(['conflicting_observations','provider_reported_conflict']),
  source_observations:z.array(z.object({candidate_id:z.uuid(),raw_value:z.string().max(1000).nullable(),page:z.number().int().positive().max(100),source_label:z.string().max(1000).nullable()}).strict()).max(12)}).strict();
@@ -137,7 +139,12 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     const reading=parsed.data;return reading.order_id!==t.order_id||reading.order_receipt_sha256!==t.order_receipt_sha256
      ||!item.receipt?.files.some(f=>f.document_id===reading.product_document_id&&f.version_id===reading.version_id&&f.source_sha256===reading.source_sha256);
    }))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
-   return projectSourceIntakeUploadContext(item,caseId).state;
+   const state=projectSourceIntakeUploadContext(item,caseId).state;
+   const saved=savedLegacySourceIntake(item.journalContext),scope=saved.scopes.find(s=>s.id===t.order_id&&s.receipt_sha256===t.order_receipt_sha256);
+   const coverage=state.source_current&&scope&&item.receipt?sourceIntakeReadingCoverage(saved,scope)
+    .filter(c=>item.receipt!.files.some(f=>f.document_id===c.document_id&&f.version_id===c.version_id&&f.source_sha256===c.source_sha256))
+    .map(({state,period,kind,months})=>({state,period,kind,months})):[];
+   return {...state,coverage};
   }):[];
   if(identityId&&intakeDocuments.length&&(intakeStates.length!==intakeDocuments.length||new Set(intakeStates.map(s=>s.request_id)).size!==intakeStates.length
    ||intakeStates.some(s=>!intakeDocuments.some(r=>r.id===s.request_id)||s.reading_request_ids.some(id=>!fields.some(f=>f.request_id===id&&f.source_current)
@@ -200,7 +207,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     const conflict=conflictStates.find(value=>value.request_id===row.id);
     const upload=uploadStates.find(value=>value.request_id===row.id);
     const intake=intakeStates.find(value=>value.request_id===row.id);
-    const intakeProjection:SourceIntakeProjection=intake?{source_intake_upload_state:{state:intake.state,information_satisfied:intake.information_satisfied,reason:intake.reason,reading_request_ids:intake.reading_request_ids}}:{};
+    const intakeProjection:SourceIntakeProjection=intake?{source_intake_upload_state:{state:intake.state,information_satisfied:intake.information_satisfied,reason:intake.reason,reading_request_ids:intake.reading_request_ids},source_intake_coverage:intake.coverage}:{};
     const document_upload_state:DocumentUploadState|undefined=upload?{state:upload.state,information_satisfied:upload.information_satisfied,analysis_run_id:upload.analysis_run_id,reason:upload.reason}:undefined;
     const source=conflict&&!(conflict.source_current===false&&conflict.conflict_reason===null)
       ?conflictSourceSchema.parse({conflict_reason:conflict.conflict_reason,source_observations:conflict.source_observations}):undefined;

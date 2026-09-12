@@ -6,6 +6,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import type {SourceJob} from './source-dispatch.ts';
 import {savedLegacySourceIntake,legacySourceIntakeRequests,sourceIntakeTechnicalDependencies,sourceIntakeUnresolvedDocuments,effectiveLegacySourcePeriods,sourceIntakeFullMonths,type SavedLegacySourceIntake} from './saved-legacy-source-intake.ts';
 import type {SavedExecutionOrder} from './saved-order-scope.ts';
+import {sourceIntakeReadingCoverage} from './source-intake-coverage.ts';
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
 export type SavedSourceIntakeHold={orderId:string;month:string|null;code:string};
 export class SavedSourceIntakeRequired extends Error{
@@ -53,7 +54,13 @@ export async function prepareSavedSourceIntake(context:PostgresTransactionContex
  }
  const held:SavedSourceIntakeHold[]=saved.scopes.flatMap<SavedSourceIntakeHold>(scope=>{
   const months=[...new Set([...scope.periods,...effectiveLegacySourcePeriods(scope,saved).periods].flatMap(p=>sourceIntakeFullMonths(p.period)))];
-  if(!months.length)return [{orderId:scope.id,month:null,code:'source_period_required'}];
+  if(!months.length){
+   const coverage=sourceIntakeReadingCoverage(saved,scope);
+   const states=[...new Set(coverage.map(c=>c.state))];
+   const codes=states.map(s=>s==='partial_period'?'source_partial_period':s==='conflict'?'source_period_conflict':s==='unknown'?'source_reading_unknown'
+    :s==='unreadable'?'source_reading_unreadable':s==='period_not_printed'?'source_period_not_printed':s==='nonfinancial_source'?'source_financial_document_required':'source_period_required');
+   return [...new Set(codes.length?codes:['source_period_required'])].map(code=>({orderId:scope.id,month:null,code}));
+  }
   if(!saved.documents.length)return months.map(month=>({orderId:scope.id,month,code:'source_document_required'}));
   return scope.period_state==='missing'&&sourceIntakeUnresolvedDocuments(saved,scope).length?[{orderId:scope.id,month:null,code:'source_period_required'}]:[];
  });
