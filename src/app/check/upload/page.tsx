@@ -5,7 +5,7 @@ import { openDocumentRequest } from "@/server/product/reports/awaiting-document"
 import { requireVerifiedFunnelCase } from "@/server/product/case-access/funnel-guard";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
-export default async function UploadPage({searchParams}: {searchParams?: Promise<{requestId?: string;replaceVersionId?: string}>} = {}) {
+export default async function UploadPage({searchParams}: {searchParams?: Promise<{requestId?: string;replaceVersionId?: string}>}) {
   await guardStableAppEntrypoint("CEP-003");
   const caseId = await requireVerifiedFunnelCase(); // UX Run 1 / U7 + external review #1: no case, or an unverified contact, no screen.
   // S2.4: a case that is here because it was waiting for this file says so

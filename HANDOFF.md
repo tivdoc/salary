@@ -1,3 +1,7 @@
+## Upload page generated-type build repair — 2026-09-12
+
+The exact827c9d7 optimized local build compiled assets but failed Next generated PageProps checking: UploadPage defaulting its argument to {} made the full parameter optional. The page now requires the props object supplied by Next; unit callers supply {}. All five route/authorization tests and scoped lint passed. No upload behavior, CSP or guard was weakened. A repeated optimized build is required; prior standalone TypeScript success did not prove this generated contract.
+
 ## First reading bootstrap and period action projection — 2026-09-12
 
 Base089e664cc7bca8d32d29f9777f09053924c4e845 passed CI34704033857 and34704031084. Its actual DEV scheduled worker completed a retained live-Sol QA analysis at16:10:33UTC, but remained a partial draft: its first period question was absent because the saved loader emitted reading context only after prior structure/transcription answers. The qualified profile now authenticates the original first-pass context with an explicitly empty structure inventory; it invents no reading or receipt. Legacy snapshot bytes remain unchanged. An identified number with unresolved period now redirects to the exact period action instead of asking again for its number. No period/value certification follows from that presentation alias.
