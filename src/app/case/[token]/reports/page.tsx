@@ -14,6 +14,7 @@ import { listIdentityCases, resolveIdentitySession } from "@/server/product/case
 import { readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 import {privateDocumentReviewReports} from '@/server/product/reports/private-document-review';
+import {privateReviewEnvironmentEnabled} from '@/server/product/reports/private-review-environment';
 
 export const metadata: Metadata = {
   title: "הדוח | Tivdoc",
@@ -37,7 +38,7 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
   let engineeringUnavailable=false;
   if(devFinancialPreviewEnabled())try{engineering=await devFinancialCustomerReports(item.case_id,session.identity_id);}catch{engineeringUnavailable=true;}
   let reviews:Awaited<ReturnType<typeof privateDocumentReviewReports>>=[];let reviewsUnavailable=false;
-  if(devFinancialPreviewEnabled())try{reviews=await privateDocumentReviewReports(item.case_id,session.identity_id);}catch{reviewsUnavailable=true;}
+  if(privateReviewEnvironmentEnabled())try{reviews=await privateDocumentReviewReports(item.case_id,session.identity_id);}catch{reviewsUnavailable=true;}
 
   return (
     <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
