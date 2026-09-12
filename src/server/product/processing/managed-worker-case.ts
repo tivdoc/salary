@@ -8,13 +8,23 @@ import {admitSavedSource} from './saved-admission';
 import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {managedWorkerError} from './managed-worker-contract';
+import {loadSavedAiReleaseConfiguration} from './saved-ai-release-configuration';
 
 type Runner=Parameters<typeof runSavedDraftJob>[0];
+async function requireFullAiOffer(context:PostgresTransactionContext,caseId:string,order:{id:string;offer_sha256:string}){
+ const offer=await context.client.query(statement('managed_worker_full_ai_offer',
+  `select o.id from private.product_orders o join private.order_entitlements e on e.order_id=o.id
+   where o.id=$1::uuid and o.case_id=$2::uuid and o.offer_sha256=$3 and o.kind='full'
+    and o.state='paid' and o.refund_state<>'refunded' and e.state='active'
+    and o.offer->>'version'='tivdoc-order-offer-v2' and o.offer->>'service_kind'='ai_assisted'
+    and o.offer->'human_review_required'='false'::jsonb`,[order.id,caseId,order.offer_sha256]));
+ if(offer.rows.length!==1||offer.rows[0].id!==order.id)throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
+}
 /** Bound scope before claiming or spending provider work. The SQL enrollment
  * is a separate authorization gate; this adapter cannot authorize new cases. */
 async function scope(context:PostgresTransactionContext,caseId:string){
  const result=await context.client.query(statement('managed_worker_scope',
-  `select current_database() database,c.is_qa,h.revision,h.input_sha256,v.input,d.authority_dependency_sha256
+  `select current_database() database,c.is_qa,h.revision,h.input_sha256,v.input,d.authority_dependency_sha256,d.processing_profile
    from public.cases c join private.case_input_heads h on h.case_id=c.id
    join private.case_input_versions v on v.case_id=h.case_id and v.revision=h.revision
    left join private.case_analysis_dispatch d on d.case_id=h.case_id and d.revision=h.revision and d.mode='draft'
@@ -22,9 +32,23 @@ async function scope(context:PostgresTransactionContext,caseId:string){
  const row=result.rows[0];
  if(!row||row.database!=='tivdoc_release_replay_20260907'||row.is_qa!==true)throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
  const job=sourceJobSchema.parse({schema_version:'saved-case-work-v1',case_id:caseId,revision:row.revision,input_sha256:row.input_sha256,mode:'draft',
-  ...(row.authority_dependency_sha256==null?{}:{authority_dependency_sha256:row.authority_dependency_sha256})});
+  ...(row.authority_dependency_sha256==null?{}:{authority_dependency_sha256:row.authority_dependency_sha256}),
+  ...(row.processing_profile==null?{}:{processing_profile:row.processing_profile})});
  await admitSavedSource(context,job);
  const orders=await readSavedOrders(context,job);
+ if(job.processing_profile==='qualified_ai_v1'){
+  // A separately enrolled profile uses the same queue and spend reservation.
+  // Never silently inherit a legacy June/test authority or truncate purchases.
+  if(!job.authority_dependency_sha256||!await loadSavedAiReleaseConfiguration(context,job))throw Error('AI_RELEASE_ENROLLMENT_REQUIRED');
+  const months=[...new Set(orders.flatMap(purchasedMonths))];
+  if(!orders.length||orders.length>12||!months.length||months.length>12
+   ||!months.some(m=>m>='2026-05'&&m<='2026-07'))throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
+  // Retained documents outside the calculated month and unclassified periods
+  // remain evidence/precise gaps; they are not reassigned or deleted here.
+  z.object({documents:z.array(z.object({type:z.string(),month:z.string().nullable()})).max(24)}).parse(row.input);
+  for(const order of orders)if(order.kind==='full')await requireFullAiOffer(context,caseId,order);
+  return;
+ }
  if(orders.length===1&&orders[0].kind==='legacy_initial'){
   // Enrollment, current receipt, machine session and the shared spend ceiling
   // still apply. This is private draft processing in the isolated QA database.
@@ -36,15 +60,7 @@ async function scope(context:PostgresTransactionContext,caseId:string){
  }
  if(orders.length!==1||!['initial','full'].includes(orders[0].kind)||orders[0].from!=='2026-06-01'||orders[0].to!=='2026-06-01'
   ||orders[0].topics.length!==1||orders[0].topics[0]!=='minimum_wage')throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
- if(orders[0].kind==='full'){
-  const offer=await context.client.query(statement('managed_worker_full_ai_offer',
-   `select o.id from private.product_orders o join private.order_entitlements e on e.order_id=o.id
-    where o.id=$1::uuid and o.case_id=$2::uuid and o.offer_sha256=$3 and o.kind='full'
-     and o.state='paid' and o.refund_state<>'refunded' and e.state='active'
-     and o.offer->>'version'='tivdoc-order-offer-v2' and o.offer->>'service_kind'='ai_assisted'
-     and o.offer->'human_review_required'='false'::jsonb`,[orders[0].id,caseId,orders[0].offer_sha256]));
-  if(offer.rows.length!==1||offer.rows[0].id!==orders[0].id)throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');
- }
+ if(orders[0].kind==='full')await requireFullAiOffer(context,caseId,orders[0]);
  const input=z.object({month:z.literal('2026-06'),documents:z.array(z.object({type:z.string(),month:z.string().nullable()}))}).parse(row.input);
  const payslips=input.documents.filter(d=>d.type==='payslip');
  if(payslips.length!==1||payslips.some(d=>d.month!==null&&!['2026-06','2026-06-01'].includes(d.month)))throw Error('MANAGED_DEV_SCOPE_UNSUPPORTED');

@@ -1,3 +1,4 @@
+import {getCompiledAiReleaseBuild} from './ai-release-build';
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import {runManagedDevTick,readManagedDevStatus,readManagedDevHealth,retryManagedDevJob} from './managed-worker-host';
 const ports=vi.hoisted(()=>({driver:vi.fn(),query:vi.fn(),release:vi.fn(),close:vi.fn(),host:vi.fn(),run:vi.fn(),provider:vi.fn(),storage:vi.fn(),budget:vi.fn(),budgetClose:vi.fn(),budgetSummary:vi.fn()}));
@@ -91,7 +92,7 @@ describe('managed scheduler boundary',()=>{
  it('reads real status timestamps without returning the scheduler capability or identity',async()=>{
   const s=setup(),now=new Date('2026-09-09T15:00:00Z');ports.query.mockResolvedValue({rows:[{case_id:s.candidates[0].case_id,state:'waiting',input_revision:1,job_id:'saved_job',job_revision:3,
    attempt_count:1,max_attempts:3,next_attempt_at:now,last_error:null,current_run_id:null,updated_at:now}],row_count:1});
-  const result=await readManagedDevStatus(s.env);expect(result[0].updated_at).toBe(now.toISOString());expect(JSON.stringify(result)).not.toContain('synthetic_capability');expect(ports.close).toHaveBeenCalledOnce();
+  const result=await readManagedDevStatus(s.env);expect(ports.query.mock.calls[0][0].values).toEqual([s.env.TIVDOC_MANAGED_DEV_WORKER_CAPABILITY,getCompiledAiReleaseBuild().manifest.sha256]);expect(result[0].updated_at).toBe(now.toISOString());expect(JSON.stringify(result)).not.toContain('synthetic_capability');expect(ports.close).toHaveBeenCalledOnce();
  });
  it('requires a matching durable retry receipt instead of claiming an unacknowledged retry',async()=>{
   const s=setup(),input={caseId:s.candidates[0].case_id,jobId:'saved_job',expectedRevision:3};

@@ -12,6 +12,7 @@ import {createSavedWorkerHost} from './saved-worker-host';
 import {managedWorkerConfig,managedWorkerControlConfig} from './managed-worker-config';
 import {managedWorkerCandidateSchema,managedWorkerStatusSchema,managedWorkerError} from './managed-worker-contract';
 import {managedWorkerHealthSchema} from './managed-worker-health';
+import {getCompiledAiReleaseBuild} from './ai-release-build';
 import {runManagedDevCase} from './managed-worker-case';
 import type {SavedMonthCompletion} from './saved-job-runner';
 
@@ -33,7 +34,7 @@ export async function readManagedDevStatus(env:Environment=process.env){
  const config=managedWorkerControlConfig(env);if(!config.enabled)return [];
  const driver=driverFor(config);
  try{
-  const result=await queryControl(driver,'managed_worker_status','select * from private.managed_dev_worker_status($1)',[config.capability]);
+  const result=await queryControl(driver,'managed_worker_status','select * from private.managed_dev_worker_status($1,$2)',[config.capability,getCompiledAiReleaseBuild().manifest.sha256]);
   return z.array(managedWorkerStatusSchema).max(20).parse(result.rows);
  }finally{await driver.close();}
 }

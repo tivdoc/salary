@@ -1,16 +1,17 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 import {runManagedDevCase} from './managed-worker-case';
-const ports=vi.hoisted(()=>({claim:vi.fn(),run:vi.fn(),failure:vi.fn(),admit:vi.fn(),orders:vi.fn()}));
+const ports=vi.hoisted(()=>({claim:vi.fn(),run:vi.fn(),failure:vi.fn(),admit:vi.fn(),orders:vi.fn(),profile:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./saved-job-runtime',()=>({claimSavedDraftJob:ports.claim,recordSavedJobFailure:ports.failure}));
 vi.mock('./saved-job-runner',()=>({runSavedDraftJob:ports.run}));
 vi.mock('./saved-admission',()=>({admitSavedSource:ports.admit,savedCaseTenant:(id:string)=>`saved-case:${id}`}));
-vi.mock('./saved-order-scope',()=>({readSavedOrders:ports.orders}));
+vi.mock('./saved-order-scope',async original=>({...await original<typeof import('./saved-order-scope')>(),readSavedOrders:ports.orders}));
+vi.mock('./saved-ai-release-configuration',()=>({loadSavedAiReleaseConfiguration:ports.profile}));
 beforeEach(()=>vi.resetAllMocks());
 function setup(){
  const caseId='11111111-1111-4111-8111-111111111111';
- const row={database:'tivdoc_release_replay_20260907',is_qa:true,revision:1,input_sha256:'a'.repeat(64),authority_dependency_sha256:null as string|null,input:{month:'2026-06',documents:[{type:'payslip',month:'2026-06'}]}};
+ const row={database:'tivdoc_release_replay_20260907',is_qa:true,revision:1,input_sha256:'a'.repeat(64),authority_dependency_sha256:null as string|null,processing_profile:null as string|null,input:{month:'2026-06',documents:[{type:'payslip',month:'2026-06' as string|null}]}};
  const order={id:'22222222-2222-4222-8222-222222222222',kind:'initial',from:'2026-06-01',to:'2026-06-01',topics:['minimum_wage'],offer_sha256:'c'.repeat(64)};
  const state={depth:0,budgetFails:false,noteFails:false,rollbacks:0,fullAiOffer:true,foreignOffer:false},calls:{name:string;values:readonly unknown[]}[]=[];
  const transactions:SavedWorkerTransactions=async operation=>{state.depth++;try{return await operation({transaction_id:'managed-unit',client:{async query(s){
@@ -31,6 +32,26 @@ function setup(){
  return {input,row,order,state,calls};
 }
 describe('managed worker existing-queue composition',()=>{
+ it('admits the separately configured multi-topic AI profile while retaining paid periods and unclassified documents',async()=>{
+  const s=setup();s.row.processing_profile='qualified_ai_v1';s.row.authority_dependency_sha256='d'.repeat(64);ports.profile.mockResolvedValue({verified:true});
+  s.order.kind='full';s.order.from='2026-04-01';s.order.to='2026-07-01';s.order.topics=['pension','working_time','minimum_wage'];
+  s.row.input.month='2026-07';s.row.input.documents.push({type:'payslip',month:'2026-04'},{type:'contract',month:null});
+  const before=structuredClone(s.order);
+  expect(await runManagedDevCase(s.input)).toMatchObject({state:'succeeded'});
+  expect(s.order).toEqual(before);expect(ports.profile.mock.calls[0][1]).toMatchObject({processing_profile:'qualified_ai_v1',authority_dependency_sha256:'d'.repeat(64)});
+  expect(s.calls.filter(c=>c.name==='managed_worker_admit_claim')).toHaveLength(1);
+ });
+ it.each(['absent','expired','build','no-dependency','no-supported-month','unqualified-full'])('refuses AI %s before reserving a queue/provider attempt',async condition=>{
+  const s=setup();s.row.processing_profile='qualified_ai_v1';s.row.authority_dependency_sha256='d'.repeat(64);ports.profile.mockResolvedValue({verified:true});
+  if(condition==='absent')ports.profile.mockResolvedValue(null);
+  if(condition==='expired')ports.profile.mockRejectedValue(Error('AI_RELEASE_ENROLLMENT_EXPIRED'));
+  if(condition==='build')ports.profile.mockRejectedValue(Error('AI_CONFIGURATION_BUILD_MISMATCH'));
+  if(condition==='no-dependency')s.row.authority_dependency_sha256=null;
+  if(condition==='no-supported-month')s.order.from=s.order.to='2026-08-01';
+  if(condition==='unqualified-full'){s.order.kind='full';s.state.fullAiOffer=false;}
+  await expect(runManagedDevCase(s.input)).rejects.toThrow();expect(ports.claim).not.toHaveBeenCalled();expect(ports.run).not.toHaveBeenCalled();
+  expect(s.calls.some(c=>c.name==='managed_worker_admit_claim')).toBe(false);
+ });
  it('reserves budget in the real claim transaction and uses the existing fenced runner',async()=>{
   const s=setup();expect(await runManagedDevCase(s.input)).toMatchObject({state:'succeeded',jobId:'saved_job'});
   expect(s.calls.map(c=>c.name)).toEqual(['managed_worker_scope','managed_worker_admit_claim','managed_worker_note']);
