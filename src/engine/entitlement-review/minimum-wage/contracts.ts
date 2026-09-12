@@ -1,10 +1,17 @@
 import {z} from 'zod';
 import {documentReviewCalculationInputSchema} from '../../document-review/calculations.ts';
 import {minimumWagePersonalFactsSchema} from './product-facts.ts';
+import {aiReleaseDecisionMethodSchema} from '../../ai-release-decisions/contracts.ts';
+import {canonicalSha256} from '../../rule-runtime/canonical.ts';
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
 const source=operand.shape.source;
 const period=z.object({from:z.iso.date(),to:z.iso.date()}).strict();
-export const minimumWageFactSchema=<T extends z.ZodType>(value:T)=>z.object({state:z.enum(['observed','declared','missing','unknown','conflict','stale','expired','unreadable']),value:value.nullable(),source:source.nullable()}).strict();
+const hash=z.string().regex(/^[a-f0-9]{64}$/u);
+export const minimumWageFactSchema=<T extends z.ZodType>(value:T)=>z.object({state:z.enum(['observed','declared','derived','missing','unknown','conflict','stale','expired','unreadable']),value:value.nullable(),source:source.nullable(),
+ derivation:z.object({schema_version:z.literal('minimum-wage-derived-fact-v1'),binding_sha256:hash,inputs_sha256:hash}).strict().optional(),
+}).strict().refine(f=>f.state==='derived'?'value'in f&&f.value!==null&&f.source?.reading==='source_research'&&f.derivation!==undefined:f.derivation===undefined,'MINIMUM_WAGE_DERIVED_FACT_CONTRACT');
+export const minimumWageCaseRecipeBindingSchema=z.object({schema_version:z.literal('minimum-wage-case-recipe-binding-v1'),method:aiReleaseDecisionMethodSchema,
+ evaluated_at:z.iso.datetime(),binding_sha256:hash}).strict().refine(value=>{const {binding_sha256,...body}=value;return binding_sha256===canonicalSha256(body);},'MINIMUM_WAGE_CASE_BINDING_HASH');
 export const minimumWageMethodSchema=z.enum(['published_hourly_182','monthly_exact_div182','full_monthly']);
 export const minimumWageComponentKindSchema=z.enum(['base_salary','cost_of_living','fixed_work_supplement','seniority','family','shift_premium','productivity_premium','thirteenth_salary','annual_bonus','expense_reimbursement','overtime','weekly_rest','paid_absence','unknown']);
 export const minimumWageEntitlementInputSchema=z.object({schema_version:z.literal('minimum-wage-entitlement-input-v1'),catalog_version:z.literal('1.0.0'),
@@ -18,6 +25,7 @@ export const minimumWageEntitlementInputSchema=z.object({schema_version:z.litera
  monthly_coverage:minimumWageFactSchema(z.enum(['full_month_full_time','partial','unknown'])),
  eligible_pay_inventory:minimumWageFactSchema(z.enum(['complete','partial','unknown'])),
  product_facts:minimumWagePersonalFactsSchema.optional(),
+ case_recipe_bindings:z.array(minimumWageCaseRecipeBindingSchema).max(4).optional(),
  components:z.array(z.object({id:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),amount:operand,period:minimumWageFactSchema(period),classification:minimumWageFactSchema(minimumWageComponentKindSchema)}).strict()).max(32),
  applicability:z.array(z.object({decision_id:z.string().regex(/^[a-z][a-z0-9._:-]{2,100}$/u),state:z.enum(['accepted','missing','unknown','conflict','stale','expired']),
   basis:z.enum(['ai_source_assessment','customer_declaration','verified_rule_source']),explanation:z.string().min(1).max(1000),sources:z.array(source).max(16),valid_until:z.iso.datetime({offset:true}).nullable()}).strict()).max(16),

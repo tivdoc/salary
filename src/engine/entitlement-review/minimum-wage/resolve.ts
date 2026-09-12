@@ -15,7 +15,7 @@ export const MINIMUM_WAGE_APPLICABILITY=deepFreeze({
 });
 const included=new Set(['base_salary','cost_of_living','fixed_work_supplement']);
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
-const usable=(f:Fact)=>['observed','declared'].includes(f.state)&&f.value!==null&&f.source!==null;
+const usable=(f:Fact)=>['observed','declared','derived'].includes(f.state)&&f.value!==null&&f.source!==null;
 const state=(f:{state:string}):MinimumWageMissing['state']=>['missing','unknown','conflict','stale','expired','unreadable'].includes(f.state)?f.state as MinimumWageMissing['state']:'unknown';
 function numeric(o:DocumentReviewOperand,kind:'money'|'hours'){
  if(kind==='money'&&(o.representation!=='money_ils'||o.quantity_unit!==null)||kind==='hours'&&(!['hours_minutes','decimal_quantity'].includes(o.representation)||o.quantity_unit!=='hours'))throw Error('MINIMUM_WAGE_INPUT_UNIT');
@@ -107,6 +107,7 @@ export function resolveMinimumWageEntitlement(raw:unknown){
   return d;
  });
  const evidence={method:input.method,population:input.population,employment:input.employment,inventory:input.eligible_pay_inventory,
+  ...(input.case_recipe_bindings?.length?{product_facts:input.product_facts}:{}),
   components:input.components.map(c=>({id:c.id,classification:c.classification,...(included.has(c.classification.value??'')?{period:c.period}:{} )})),
   coverage:method==='full_monthly'?input.monthly_coverage:input.ordinary_hours_period};
  const evidenceSources=sourcesOf(evidence);for(let i=0;i<Math.max(1,evidenceSources.length);i+=16)decisions.push({decision_id:'mw.evidence.'+i,state:'accepted',basis:'ai_source_assessment',

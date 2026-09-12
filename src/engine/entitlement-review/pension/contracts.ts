@@ -1,12 +1,14 @@
 import {z} from 'zod';
 import {documentReviewCalculationInputSchema,type DocumentReviewCalculationInput} from '../../document-review/calculations.ts';
+import {pensionProductFactsSchema,pensionCaseRecipeBindingSchema,pensionDerivedFactSchema} from './product-facts.ts';
 
 const source=documentReviewCalculationInputSchema.shape.operands.element.shape.source;
 const operand=documentReviewCalculationInputSchema.shape.operands.element;
-const state=z.enum(['known','missing','unknown','conflict','stale','expired','unreadable']);
+const state=z.enum(['known','derived','missing','unknown','conflict','stale','expired','unreadable']);
 const fact=<T extends z.ZodType>(value:T)=>z.object({state,value:value.nullable(),source:source.nullable(),
- basis:z.enum(['identified_document_reading','customer_declaration','ai_source_assessment'])}).strict()
- .refine(f=>f.state!=='known'||'value' in f&&f.value!==null&&f.source!==null,'PENSION_KNOWN_FACT_SOURCE');
+ basis:z.enum(['identified_document_reading','customer_declaration','ai_source_assessment']),derivation:pensionDerivedFactSchema.optional()}).strict()
+ .refine(f=>!['known','derived'].includes(f.state)||'value' in f&&f.value!==null&&f.source!==null,'PENSION_KNOWN_FACT_SOURCE')
+ .refine(f=>f.state==='derived'?f.basis==='ai_source_assessment'&&f.source?.reading==='source_research'&&f.derivation!==undefined:f.derivation===undefined,'PENSION_DERIVED_FACT_CONTRACT');
 export const pensionFactSchemas={date:fact(z.iso.date()),boolean:fact(z.boolean()),
  employmentEnd:fact(z.union([z.iso.date(),z.literal('ongoing')]))};
 const decision=z.object({decision_id:z.string().min(1),state:z.enum(['accepted','missing','unknown','conflict','stale','expired']),
@@ -23,6 +25,8 @@ export const pensionEntitlementInputSchema=z.object({schema_version:z.literal('p
  pensionable_wage:operand.nullable(),
  eligible_interval_wage:z.object({period,operand}).strict().nullable(),
  applicability:z.array(decision).max(12),
+ product_facts:pensionProductFactsSchema.optional(),
+ case_recipe_bindings:z.array(pensionCaseRecipeBindingSchema).max(6).optional(),
  conditional_assumptions:z.array(z.object({decision_id:z.literal('pension.pensionable_wage'),explanation:z.string().min(1).max(1000)}).strict()).max(1).optional(),
  recorded:z.array(z.object({share:z.enum(['employee','employer','severance','combined_employer']),
   relationship_check:documentReviewCalculationInputSchema}).strict()).max(4),

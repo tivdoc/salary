@@ -6,6 +6,10 @@ import {parseReviewCompletionInput,resolveReviewCompletion,reviewDeclaredAnswerV
 import {entitlementEvidenceSchema,type EntitlementEvidence} from './contracts.ts';
 import {assertTypedPeriodDerivation} from './typed-product-facts.ts';
 import {isDeclaredPeriodSource} from './convalescence/product-facts.ts';
+import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
+import {materializeMinimumWageCaseFacts} from '../ai-release-decisions/minimum-wage-case.ts';
+import {pensionEntitlementInputSchema} from './pension/contracts.ts';
+import {replayPensionProductFacts} from './pension/product-facts.ts';
 
 /** Inspect source citations rather than treating a caller's 'known' or
  * 'accepted' label as evidence. Legal sources are supplied by the selected
@@ -49,12 +53,34 @@ export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidat
   if(!value||typeof value!=='object')return;
   if(Array.isArray(value)){for(const [i,item]of value.entries())visit(item,depth+1,path+'.'+i);return;}
   const object=value as Record<string,unknown>;
+  if(object.state==='derived'&&path.startsWith('pension.')){
+   const key=path.slice('pension.facts.'.length);
+   if(!['pension.facts.aged_21_or_more','pension.facts.under_60'].includes(path)||!input.entitlement_evidence?.pension||!packet.pension)throw Error('PENSION_DERIVED_FACT_KEY');
+   const raw=pensionEntitlementInputSchema.parse(input.entitlement_evidence.pension),effective=pensionEntitlementInputSchema.parse(packet.pension);
+   const replay=replayPensionProductFacts(effective,raw,input);
+   if(!raw.case_recipe_bindings?.length||canonicalSha256(Reflect.get(replay.facts,key))!==canonicalSha256(object))throw Error('PENSION_DERIVED_FACT_REPLAY');
+  }
+  if(object.state==='derived'&&path.startsWith('minimum_wage.')){
+   const key=path.slice('minimum_wage.'.length);
+   if(!['population','employment','method','eligible_pay_inventory'].includes(key)||!input.entitlement_evidence?.minimum_wage||!packet.minimum_wage)throw Error('MW_CASE_DERIVED_FACT_KEY');
+   const raw=minimumWageEntitlementInputSchema.parse(input.entitlement_evidence.minimum_wage),effective=minimumWageEntitlementInputSchema.parse(packet.minimum_wage);
+   const replay=materializeMinimumWageCaseFacts(effective,raw,input);
+   if(!raw.case_recipe_bindings?.length||canonicalSha256(Reflect.get(replay,key))!==canonicalSha256(object))throw Error('MW_CASE_DERIVED_FACT_REPLAY');
+  }
   // A source pointer is not permission to replace the receipt's answer value.
   const boundSource=object.source as DocumentReviewSource|undefined;
   if(boundSource?.reading==='questionnaire_declaration')assertQuestionnaireSource(input,boundSource,object.value);
   if(boundSource?.reading==='customer_declaration'&&('value' in object||'printed_value' in object)){
    const h=input.answer_history.find(h=>h.receipt.answer_sha256===boundSource.reading_receipt_sha256);
    const supplied='printed_value' in object?object.printed_value:object.value;
+   const personal=/^(minimum_wage|pension)\.(product_facts\.[a-z_]+)$/u.exec(path);
+   if(personal){
+    const branch=personal[1]==='pension'?pensionEntitlementInputSchema.parse(packet.pension):minimumWageEntitlementInputSchema.parse(packet.minimum_wage);
+    const pins=input.documents.filter(d=>branch.source_manifest.some(m=>m.kind==='case_document'&&m.document_id===d.document_id)).map(d=>({case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256}));
+    const key=personal[1]==='pension'?`entitlement.pension.${canonicalSha256({period:input.period,pins,path:personal[2]}).slice(0,32)}`
+     :`entitlement.minimum_wage.${canonicalSha256({period:input.period,pins,path:personal[2],key:'personal.'+personal[2]}).slice(0,28)}`;
+    if(!h||h.request.target.fact_key!==key)throw Error('ENTITLEMENT_PERSONAL_ANSWER_TARGET');
+   }
    if(isDeclaredPeriodSource(boundSource)){
     if(!h||!assertTypedPeriodDerivation(packet,path,object))throw Error('ENTITLEMENT_DECLARED_PERIOD_CHANGED');
    }else if(!h||(h.receipt.state==='provided'?String(supplied)!==String(reviewDeclaredAnswerValue(h.request.target,h.receipt.value))&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');

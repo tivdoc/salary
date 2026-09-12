@@ -6,6 +6,7 @@
     "src/engine/ai-release-decisions/catalog.ts",
     "src/engine/ai-release-decisions/contracts.ts",
     "src/engine/ai-release-decisions/index.ts",
+    "src/engine/ai-release-decisions/minimum-wage-case.ts",
     "src/engine/ai-release-runtime/automatic-assessment.ts",
     "src/engine/ai-release-runtime/index.ts",
     "src/engine/case-analysis/service.ts",
@@ -31,11 +32,11 @@
     },
     {
       "path": "src/engine/ai-release-decisions/apply.ts",
-      "sha256": "83175a6f18f0822265e994bf4057b139d22d113bb02adf85599ce24dfc9bc90a"
+      "sha256": "3a6eaf4dbfbe5487d132c11716907b4665e19ca77dfab314786262895d9e96fc"
     },
     {
       "path": "src/engine/ai-release-decisions/catalog.ts",
-      "sha256": "f9190e4253db63b46dfdcf1cce4bdc11f12c1a9c1831e7310ffae13373246ad4"
+      "sha256": "4fa11aed308d345e8a6226804c5128ed11932dfcc6faf38c5357b144dc52d820"
     },
     {
       "path": "src/engine/ai-release-decisions/contracts.ts",
@@ -44,6 +45,10 @@
     {
       "path": "src/engine/ai-release-decisions/index.ts",
       "sha256": "47d1d3736002902079627ae77b78f06aafaa82c9ba2b5ede7f23b9aa75bd02c2"
+    },
+    {
+      "path": "src/engine/ai-release-decisions/minimum-wage-case.ts",
+      "sha256": "8ddb45e44b7a6c6edfa72e2299bbceea3f36cf3e6e0bded6eb568f5a3bb582ac"
     },
     {
       "path": "src/engine/ai-release-runtime/automatic-assessment.ts",
@@ -171,7 +176,7 @@
     },
     {
       "path": "src/engine/entitlement-review/compose.ts",
-      "sha256": "90999ab67198a6ee3358624ae137c093001ee8f18b0f94c52805ba14f61b2aca"
+      "sha256": "0700de187a0b86fb6dc367720bc07627e2831238d2db029ae09059710fec8421"
     },
     {
       "path": "src/engine/entitlement-review/contracts.ts",
@@ -211,7 +216,7 @@
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/contracts.ts",
-      "sha256": "b73d1e21b896d84da0a1dd67f33589406b1d9a364fcd6cedfa0da8e107ea211c"
+      "sha256": "7ebd119db496dda38d5cb5e1bc10e38762d7a1b964728b569799dbbfcff842a6"
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/index.ts",
@@ -219,11 +224,11 @@
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/product-facts.ts",
-      "sha256": "a8898443f5098c6ec0b084037c10ea51ae2f5e24e9bde6eb5f0f5ba666527711"
+      "sha256": "6df5cf57550c2f5dead286efafdcb73743e93af857cba9d1073c83004d09f121"
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/resolve.ts",
-      "sha256": "dd22ccb40316403fae4367cdac2b794a04c75767e7afde0d050f1145574a86f8"
+      "sha256": "933039603ae19e4d349474450bbdc407db882bfcc77f75dc556eecfe87b4bebf"
     },
     {
       "path": "src/engine/entitlement-review/minimum-wage/source-policy.ts",
@@ -247,19 +252,23 @@
     },
     {
       "path": "src/engine/entitlement-review/pension-product.ts",
-      "sha256": "046f55855ec2b273a2eb2d502dd6e7814f1a7237994a59957abbff0325b77b1b"
+      "sha256": "75e803143b9d38370c08ef30e3fba602108f440c33899b3bc7c135cf5555c888"
     },
     {
       "path": "src/engine/entitlement-review/pension/contracts.ts",
-      "sha256": "acc828d68f945f42e4dd99d9df09e17bcb963a6b04d6a8348a38377420caa170"
+      "sha256": "5d5f88c27a867fb177a4b7369ef74f16d96934375ca5d63d947eb30e730d33e3"
     },
     {
       "path": "src/engine/entitlement-review/pension/eligibility.ts",
-      "sha256": "8dbec08569a0f563a0cd8f7ab9c0b548b71d02f10c4dfb0fa79eabcfc116cc58"
+      "sha256": "63ace92f80c546a6d2d9e8d30159af2c643a593d31abeb938592a6fa564b324e"
     },
     {
       "path": "src/engine/entitlement-review/pension/index.ts",
-      "sha256": "b04e0b3800cfade33e7b98fe87aab08d70f66ad11fa893f4a87a2565b6b085ec"
+      "sha256": "a54de0403e7bbb6496b4ed226c44f48b5ee14b62ee8a89b1fc9bbaa7577a2d27"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/product-facts.ts",
+      "sha256": "1b1058f82dc26238a70e2e1905f530623874930aa9f01848efbc37c4044446c0"
     },
     {
       "path": "src/engine/entitlement-review/pension/sources.ts",
@@ -271,7 +280,7 @@
     },
     {
       "path": "src/engine/entitlement-review/source-admission.ts",
-      "sha256": "5c8d987b4c63dd72153b8e00824ffd0ac8fee10a0c170f0847a628c43168f7b8"
+      "sha256": "170d0ca40f8f2e743eda314f337a0e4d5835cc8c3302f9f702778b955db9c3a0"
     },
     {
       "path": "src/engine/entitlement-review/travel/contracts.ts",
@@ -295,7 +304,7 @@
     },
     {
       "path": "src/engine/entitlement-review/typed-product-facts.ts",
-      "sha256": "8ed0cb4da86137790dd93dd6f20aa59835849a6bf2b42908fd7657d53fe41588"
+      "sha256": "574837b269cced0d97e34cd44be530323bb27ef19d879231c0d66be09fe7ce09"
     },
     {
       "path": "src/engine/entitlement-review/vacation/contracts.ts",
@@ -674,6 +683,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "737c3511edd2cac0b8e44cd67c200bd21d596dc74c2c3b581e7344854660b297",
-  "sha256": "4f6fe14390e4d2ae8f95ca11217f20b4dee561b0516dd8ecc521f760fc00caab"
+  "source_graph_sha256": "8b8b4f86196b98be2ec7f6e987c64903f9fce0df7cd5a86b1829820e326a34c1",
+  "sha256": "722c7700e4de68f1544c3f4a5546379bf7a952e17fdcac86b7f0dcee1fa352ed"
 }

@@ -35,10 +35,11 @@ function answeredEvidence(input:DocumentReviewInput,original:EntitlementEvidence
   if(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==r.answer_sha256)continue;
   const decoded=r.state==='provided'?reviewDeclaredAnswerValue(h.request.target,r.value):null;
   const fact=factAt(packet,target),known=r.state==='provided'&&!admitted.blocked&&decoded!==null;
-  fact.state=known?(['working_time','minimum_wage','convalescence'].includes(target.branch)?'declared':'known'):r.state==='conflicted'||admitted.state==='provided'&&admitted.blocked?'conflict':'unknown';
+  const personalPension=target.branch==='pension'&&target.input_path.startsWith('product_facts.');
+  fact.state=known?(['working_time','minimum_wage','convalescence'].includes(target.branch)||personalPension?'declared':'known'):r.state==='conflicted'||admitted.state==='provided'&&admitted.blocked?'conflict':'unknown';
   fact.value=known?(target.value_kind==='date_or_ongoing'&&decoded==='העבודה נמשכת'?'ongoing':decoded):null;
   fact.source={document_id:r.request_id,version_id:`${r.request_id}:${r.answer_revision}`,file_sha256:r.answer_sha256,page:1,locator:target.fact_key,label:h.request.target.question,reading:'customer_declaration',reading_receipt_sha256:r.answer_sha256};
-  if(!['working_time','minimum_wage','convalescence'].includes(target.branch))fact.basis='customer_declaration';
+  if(!['working_time','minimum_wage','convalescence'].includes(target.branch)&&!personalPension)fact.basis='customer_declaration';
   const branch=(target.branch==='working_time'?(packet.working_time as unknown[])[target.index!]:packet[target.branch]) as {source_manifest:{document_id:string;version_id:string;file_sha256:string;page_count:number;kind:string;case_id:string|null}[]};
   branch.source_manifest=branch.source_manifest.filter(s=>s.document_id!==r.request_id);
   branch.source_manifest.push({document_id:r.request_id,version_id:`${r.request_id}:${r.answer_revision}`,file_sha256:r.answer_sha256,page_count:1,kind:'customer_answer',case_id:input.case_id});
@@ -67,13 +68,13 @@ export function composeEntitlementReview(candidate:DocumentReviewInput):Document
  // survive a count correction through a previously materialized result.
  const targets=new Map(baseline.answer_targets.map(t=>[t.fact_key,t]));
  for(let step=0;step<4;step++){
-  const staged=materializeTypedEntitlementFacts(effective);
+  const staged=materializeTypedEntitlementFacts(effective,packet,withNeeds);
   if(canonicalSha256(staged)===canonicalSha256(effective)&&step===0)break;
   const expanded=resolve(base,staged),oldNeeds=parseReviewCompletionInput(withNeeds.completion_input).needs;
   const needs=[...oldNeeds];for(const n of expanded.needs)if(!needs.some(old=>old.fact_key===n.fact_key))needs.push(n);
   for(const target of expanded.answer_targets)targets.set(target.fact_key,target);
   withNeeds=documentReviewInputSchema.parse({...withNeeds,completion_input:{...parseReviewCompletionInput(withNeeds.completion_input),needs}});
-  const next=materializeTypedEntitlementFacts(answeredEvidence(withNeeds,staged,[...targets.values()]));
+  const next=materializeTypedEntitlementFacts(answeredEvidence(withNeeds,staged,[...targets.values()]),packet,withNeeds);
   if(canonicalSha256(next)===canonicalSha256(effective)){effective=next;break;}effective=next;
   if(step===3)throw Error('ENTITLEMENT_FACT_MATERIALIZATION_DID_NOT_SETTLE');
  }

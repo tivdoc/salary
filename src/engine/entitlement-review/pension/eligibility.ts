@@ -17,7 +17,7 @@ export function pensionOrdinaryWaitingElapsed(input:PensionEntitlementInput){
 export function resolvePensionEligibility(input:PensionEntitlementInput):{eligibility:PensionEligibility;gaps:PensionGap[]}{
  const gaps:PensionGap[]=[],ids=pensionCheckIds(input.check_prefix);
  const priorNotNeeded=pensionOrdinaryWaitingElapsed(input);
- for(const [key,f]of Object.entries(input.facts))if(f.state!=='known'&&!(key==='prior_coverage_at_start'&&priorNotNeeded))gaps.push({dependency_id:`pension.${key}`,state:f.state,kind:'missing_fact',
+ for(const [key,f]of Object.entries(input.facts))if(!(f.state==='known'||f.state==='derived'&&['aged_21_or_more','under_60'].includes(key))&&!(key==='prior_coverage_at_start'&&priorNotNeeded))gaps.push({dependency_id:`pension.${key}`,state:f.state,kind:'missing_fact',
   question:question[key as keyof typeof question],answer_kind:key==='employment_start'?'date':key==='employment_end'?'text':'choice',
   ...(key==='employment_start'||key==='employment_end'?{value_validation:{schema_version:'document-review-value-validation-v1' as const,format:key==='employment_start'?'iso_date' as const:'iso_date_or_ongoing' as const}}:{}),
   ...(['prior_coverage_at_start','continuous_employment','aged_21_or_more','under_60'].includes(key)?{options:['כן','לא','לא ידוע']}:{}),

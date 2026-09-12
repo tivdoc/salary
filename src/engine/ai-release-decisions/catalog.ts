@@ -21,6 +21,19 @@ function recipe(branch:DecisionBranch,decision_id:string,method:string,paths:str
   supported_period:{from:'2026-05-01',to:'2026-07-31'},actor_kind:'ai_reviewer' as const,human_attestation:null};
  return deepFreeze({...body,recipe_sha256:canonicalSha256(body)});
 }
+function minimumCaseRecipe(decision_id:string,method:string,paths:string[],page:number,locator:string){
+ const ordinary=recipe('minimum_wage',decision_id,method,paths,MINIMUM_WAGE_SOURCE_REVIEW_SHA256,[minimumWageLegalSource(0,page,locator),minimumWageLegalSource(1,3,'שבוע העבודה 42 שעות; בחירת ענף מוצר מפורש')]);
+ const {recipe_sha256:prior,...body}=ordinary;void prior;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'minimum-wage-case-facts-v1' as const,
+  source_context_paths:['documents','checks']};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
+function pensionCaseRecipe(decision_id:string,method:string,paths:string[],locator:string){
+ const ordinary=recipe('pension',decision_id,method,paths,PENSION_SOURCE_REVIEW_SHA256,[pensionLegalSource('order2011',3,locator)]);
+ const {recipe_sha256:prior,...body}=ordinary;void prior;
+ const candidate={...body,recipe_id:'ai-case.'+decision_id,case_predicate:'pension-case-facts-v1' as const};
+ return deepFreeze({...candidate,recipe_sha256:canonicalSha256(candidate)});
+}
 export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  recipe('pension','pension.rounding','half_up_per_component_per_month',['period','facts.aged_21_or_more','facts.under_60','pensionable_wage'],PENSION_SOURCE_REVIEW_SHA256,[pensionLegalSource('order2011',4,'סעיף 6; שיטת העיגול היא בחירת פרשנות נפרדת')]),
  recipe('travel','travel.rounding','half_up_final_period_agora',['period','commute_days','discounted_daily_fare'],TRAVEL_SOURCE_REVIEW_SHA256,[travelLegalSource(1,'סעיפים 2–3; שיטת העיגול אינה הוראה מפורשת בצו')]),
@@ -33,5 +46,11 @@ export const AI_RELEASE_DECISION_RECIPES=deepFreeze([
  recipe('convalescence','cv.rate_2026','451_50_benefit_year_2026_no_inferred_2025_day_deduction',['period','population','benefit_year'],CONVALESCENCE_SOURCE_REVIEW_SHA256,[convalescenceLegalSource(1,'תחולת תעריף שנת הבראה 2026 לפי פרשנות שנבדקה'),convalescenceLegalSource(2,'הוראות 2025 ותחולת העדכון לשנת 2026')]),
  recipe('convalescence','cv.proration','calendar_service_year_slices_constant_fte',['period','employment_start','qualifying_service','segments'],CONVALESCENCE_SOURCE_REVIEW_SHA256,[convalescenceLegalSource(0,'חלקיות; בחירת יחס ימים קלנדריים היא פרשנות חישוב נפרדת')]),
  recipe('convalescence','cv.rounding','half_up_once_after_all_segments',['period','population','benefit_year','segments'],CONVALESCENCE_SOURCE_REVIEW_SHA256,[convalescenceLegalSource(0,'שיטת עיגול נפרדת לאחר שקלול כל המקטעים')]),
+ minimumCaseRecipe('mw.population','explicit_employee_private_age21_59_no_adapted_or_special_arrangement',['period','product_facts'],1,'תחולת מסגרת השכר הכללית; גיל 21–59 הוא גבול המוצר, לא גיל הזכאות שבחוק'),
+ minimumCaseRecipe('mw.ordinary_scope','explicit_hourly_42_published_182_same_source_ordinary_hours',['period','product_facts','ordinary_hours','ordinary_hours_period'],1,'מסגרת שעתית שנבחרה מראש, בלי פרורציה חודשית או בחירת התוצאה הגבוהה'),
+ minimumCaseRecipe('mw.eligible_components','single_explicit_base_component_printed_inventory_only',['period','components','eligible_pay_inventory'],1,'סעיף 3 — רכיב בסיס מפורש יחיד; שלמות המקור הרשום אינה הוכחת תשלומים מחוץ לתלוש'),
+ minimumCaseRecipe('mw.allocation','single_component_exact_payslip_period_without_reused_payment',['period','components','ordinary_hours','ordinary_hours_period','eligible_pay_inventory'],1,'סעיף 3 — שיוך רכיב ושעות לאותה תקופה; אין צירוף תשלום ממקור אחר'),
+ pensionCaseRecipe('pension.general_coverage','explicit_employee_private_age21_59',['period','product_facts','facts.aged_21_or_more','facts.under_60'],'סעיפים 2–4; גיל 21–59 ומגזר פרטי הם גבול ענף המוצר, לא אישור להסדר מיטיב או לבסיס השכר'),
+ pensionCaseRecipe('pension.pension_fund','identified_source_pension_product_not_customer_classification',['period','product_facts.pension_product','recorded'],'סוג המוצר הפנסיוני מזוהה במקור; אין סיווג קרן מתוך הצהרה בלבד'),
 ]);
 export type AiReleaseDecisionRecipe=(typeof AI_RELEASE_DECISION_RECIPES)[number];

@@ -6,8 +6,10 @@ import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {pensionEntitlementInputSchema,type PensionEntitlementInput,type PensionGap,type PensionDecision,type PensionShare} from './contracts.ts';
 import {resolvePensionEligibility,pensionCheckIds,pensionOrdinaryWaitingElapsed} from './eligibility.ts';
 import {PENSION_CATALOG,PENSION_LEGAL_MANIFEST,PENSION_SOURCE_REVIEW,PENSION_SOURCE_REVIEW_SHA256,pensionLegalSource,isPinnedPensionLegalSource} from './sources.ts';
+import {assertPensionDerivedFacts,pensionCaseDecisionSources} from './product-facts.ts';
 export * from './contracts.ts';
 export * from './sources.ts';
+export * from './product-facts.ts';
 export {pensionCheckIds,resolvePensionEligibility} from './eligibility.ts';
 
 type Candidate=Extract<DocumentReviewCalculationInput['operation'],{kind:'candidate_rule'}>;
@@ -47,8 +49,8 @@ function decisionSet(input:PensionEntitlementInput):PensionDecision[]{
   if(source.reading==='source_research'){if(!isPinnedPensionLegalSource(source))throw Error('PENSION_DECISION_LEGAL_SOURCE');}
   else sourceBound(source,input);
  }
- return Object.entries(PENSION_APPLICABILITY).filter(([id])=>!(id==='pension.prior_coverage_evidence'&&pensionOrdinaryWaitingElapsed(input))&&!(id==='pension.cap_interval'&&!resolvePensionEligibility(input).eligibility.partial_waiting_month)).map(([decision_id,explanation])=>input.applicability.find(d=>d.decision_id===decision_id)??{
-  decision_id,state:'missing',basis:'ai_source_assessment',explanation,sources:[pensionLegalSource('order2011',decision_id==='pension.pensionable_wage'?4:3,decision_id)],valid_until:null});
+ return Object.entries(PENSION_APPLICABILITY).filter(([id])=>!(id==='pension.prior_coverage_evidence'&&pensionOrdinaryWaitingElapsed(input))&&!(id==='pension.cap_interval'&&!resolvePensionEligibility(input).eligibility.partial_waiting_month)).map<PensionDecision>(([decision_id,explanation])=>input.applicability.find(d=>d.decision_id===decision_id)??{
+  decision_id,state:'missing',basis:'ai_source_assessment',explanation,sources:[pensionLegalSource('order2011',decision_id==='pension.pensionable_wage'?4:3,decision_id)],valid_until:null}).map(d=>{const consumed=d.state==='accepted'?pensionCaseDecisionSources(input,d.decision_id):[];return consumed.length?{...d,sources:[...new Map([...d.sources,...consumed].map(s=>[canonicalSha256(s),s])).values()]}:d;});
 }
 function money(operand:DocumentReviewOperand){
  if(operand.representation!=='money_ils'||operand.quantity_unit!==null)throw Error('PENSION_MONEY_UNIT');
@@ -56,18 +58,19 @@ function money(operand:DocumentReviewOperand){
 }
 function factualEligibilityDecision(input:PensionEntitlementInput):PensionDecision{
  const consumed=Object.entries(input.facts).filter(([key])=>key!=='prior_coverage_at_start'||!pensionOrdinaryWaitingElapsed(input));
- const facts=Object.fromEntries(consumed.map(([key,f])=>[key,{state:f.state,value:f.value,basis:f.basis,source_sha256:canonicalSha256(f.source)}]));
+ const facts=Object.fromEntries(consumed.map(([key,f])=>[key,{state:f.state,value:f.value,basis:f.basis,source_sha256:canonicalSha256(f.source),...(f.derivation?{derivation:f.derivation}: {})}]));
  const eligibility=resolvePensionEligibility(input).eligibility;
  if(eligibility.state!=='eligible')throw Error('PENSION_FACTUAL_ELIGIBILITY_NOT_ESTABLISHED');
  const evidence={schema_version:'pension-factual-eligibility-trace-v1',facts,period:input.period,eligible_interval:eligibility.eligible_interval,date_policy:eligibility.date_policy,
   ...(eligibility.partial_waiting_month?{wage_interval:input.eligible_interval_wage?.period??null}:{}),legal_applicability_approved:false};
- const sources=[...new Map(consumed.flatMap(([,f])=>f.source?[[canonicalSha256(f.source),f.source] as const]:[])).values()];
+ const birthday=consumed.some(([,f])=>f.state==='derived')?input.product_facts?.birth_date.source:null;
+ const sources=[...new Map([...consumed.flatMap(([,f])=>f.source?[[canonicalSha256(f.source),f.source] as const]:[]),...(birthday?[[canonicalSha256(birthday),birthday] as const]:[])]).values()];
  // This decision is a deterministic fact-dependency check, separate from all
  // required legal assessments. Answers remain customer declarations in sources.
  return {decision_id:'pension.factual_eligibility',state:'accepted',basis:'ai_source_assessment',
   explanation:JSON.stringify({schema_version:evidence.schema_version,evidence_sha256:canonicalSha256(evidence),
    values:Object.fromEntries(consumed.map(([k,f])=>[k,f.value])),eligible_interval:eligibility.eligible_interval,
-   date_policy:eligibility.date_policy,legal_applicability_approved:false}),sources,valid_until:null};
+   date_policy:eligibility.date_policy,...(consumed.some(([,f])=>f.derivation)?{derivations:Object.fromEntries(consumed.filter(([,f])=>f.derivation).map(([k,f])=>[k,f.derivation]))}:{}),legal_applicability_approved:false}),sources,valid_until:null};
 }
 function calculation(input:PensionEntitlementInput,wage:DocumentReviewOperand,share:PensionShare,rate:string,decisions:PensionDecision[],recorded?:DocumentReviewOperand,relationship?:DocumentReviewCalculationInput):DocumentReviewCalculationInput{
  const check_id=`${input.check_prefix}.${share}.${recorded?'comparison':'expected'}`;
@@ -99,10 +102,11 @@ function calculation(input:PensionEntitlementInput,wage:DocumentReviewOperand,sh
  * Expected contributions do not depend on a transfer receipt or recorded amount. */
 export function resolvePensionEntitlement(candidate:unknown){
  const input=pensionEntitlementInputSchema.parse(candidate),ids=pensionCheckIds(input.check_prefix),checks:ReviewCheck[]=[],comparison_evidence:PensionComparisonEvidence[]=[];
+ assertPensionDerivedFacts(input);
  const lastDay=new Date(Date.UTC(Number(input.period.from.slice(0,4)),Number(input.period.from.slice(5,7)),0)).toISOString().slice(0,10);
  if(input.period.from<PENSION_SOURCE_REVIEW.supported_period.from||input.period.to>PENSION_SOURCE_REVIEW.supported_period.to||input.period.from.slice(8)!=='01'||input.period.to!==lastDay)throw Error('PENSION_SUPPORTED_MONTH_REQUIRED');
  if(new Set(input.recorded.map(r=>r.share)).size!==input.recorded.length)throw Error('PENSION_DUPLICATE_RECORDED_SHARE');
- for(const f of Object.values(input.facts))if(f.source){sourceBound(f.source,input);if(f.basis==='customer_declaration'&&!['customer_declaration','questionnaire_declaration'].includes(f.source.reading))throw Error('PENSION_FACT_BASIS');}
+ for(const f of Object.values(input.facts))if(f.source){if(f.state==='derived'){if(!isPinnedPensionLegalSource(f.source))throw Error('PENSION_DERIVED_LEGAL_SOURCE');}else sourceBound(f.source,input);if(f.basis==='customer_declaration'&&!['customer_declaration','questionnaire_declaration'].includes(f.source.reading))throw Error('PENSION_FACT_BASIS');}
  if(input.pensionable_wage){sourceBound(input.pensionable_wage.source,input);money(input.pensionable_wage);}
  if(input.eligible_interval_wage){sourceBound(input.eligible_interval_wage.operand.source,input);money(input.eligible_interval_wage.operand);}
  const resolved=resolvePensionEligibility(input),gaps=[...resolved.gaps],decisions=decisionSet(input);

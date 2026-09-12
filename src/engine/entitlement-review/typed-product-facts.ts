@@ -3,21 +3,26 @@ import type {ReviewCompletionNeed} from '../document-review/completions.ts';
 import type {DocumentReviewSource} from '../document-review/calculations.ts';
 import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
 import {minimumWagePersonalFacts} from './minimum-wage/product-facts.ts';
+import {materializeMinimumWageCaseFacts} from '../ai-release-decisions/minimum-wage-case.ts';
+import type {DocumentReviewInput} from '../document-review/contracts.ts';
 import {convalescenceEntitlementInputSchema} from './convalescence/contracts.ts';
 import {convalescencePersonalFacts,scaffoldConvalescenceSegments,periodFromDeclarations,unresolvedDeclaredPeriod,isDeclaredPeriodSource} from './convalescence/product-facts.ts';
 import type {EntitlementEvidence} from './contracts.ts';
+import {pensionEntitlementInputSchema} from './pension/contracts.ts';
+import {pensionProductFacts,replayPensionProductFacts} from './pension/product-facts.ts';
 
 type Fact={state:string;value:unknown;source:DocumentReviewSource|null};
 type Choice=Readonly<{label:string;value:string|number|boolean|null}>;
 export type TypedEntitlementQuestion=Readonly<{path:string;question:string;fact:Fact;answer_kind:'text'|'choice';
  format?:NonNullable<ReviewCompletionNeed['value_validation']>['format'];choices?:readonly Choice[]}>;
-const usable=(f:Fact)=>['observed','declared'].includes(f.state)&&f.value!==null&&f.source!==null;
+const usable=(f:Fact)=>['observed','declared','derived'].includes(f.state)&&f.value!==null&&f.source!==null;
 const unknown={label:'לא ידוע',value:null};
 const choices=(entries:Record<string,string|number|boolean>):Choice[]=>[...Object.entries(entries).map(([label,value])=>({label,value})),unknown];
 
 /** Explicit opt-in for new saved source packets. Existing packets are untouched. */
 export function enableTypedEntitlementPersonalFacts(candidate:EntitlementEvidence):EntitlementEvidence{
  const e=structuredClone(candidate);
+ if(e.pension){const p=pensionEntitlementInputSchema.parse(e.pension);e.pension={...p,product_facts:p.product_facts??pensionProductFacts()};}
  if(e.minimum_wage){const p=minimumWageEntitlementInputSchema.parse(e.minimum_wage);e.minimum_wage={...p,product_facts:p.product_facts??minimumWagePersonalFacts()};}
  if(e.convalescence){const p=convalescenceEntitlementInputSchema.parse(e.convalescence);e.convalescence={...p,product_facts:p.product_facts??convalescencePersonalFacts()};}
  return e;
@@ -32,6 +37,20 @@ export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence',r
   const p=minimumWageEntitlementInputSchema.parse(raw);if(!p.product_facts)return result;
   if(!usable(p.population))add('product_facts.birth_date',p.product_facts.birth_date,'מה תאריך הלידה שלך? הנתון ישמש לבדיקת הגיל בתקופה, ואינו אישור לתחולת הסדר שכר מסוים.',undefined,'iso_date');
   if(!usable(p.employment))add('product_facts.salary_basis',p.product_facts.salary_basis,'כיצד נקבע השכר שלך בפועל בתקופה הנבדקת?',choices({'לפי שעות עבודה':'hourly','שכר חודשי':'monthly','לפי שיטה אחרת':'other'}));
+  if(p.product_facts.schema_version==='minimum-wage-personal-facts-v2'){
+   const f=p.product_facts,populationNeeded=!usable(p.population)||p.case_recipe_bindings?.some(b=>b.method.recipe_id==='ai-case.mw.population');
+   if(populationNeeded){
+    add('product_facts.birth_date',f.birth_date,'מה תאריך הלידה שלך? הנתון ישמש לבדיקת הגיל בתקופה, ואינו אישור לתחולת הסדר שכר מסוים.',undefined,'iso_date');
+    add('product_facts.employment_relationship',f.employment_relationship,'איך הועסקת אצל המעסיק בתקופת הבדיקה?',choices({'כשכיר/ה':'employee','כעצמאי/ת כנגד חשבוניות':'self_employed','בדרך אחרת':'other'}));
+    add('product_facts.workplace_sector',f.workplace_sector,'מה סוג מקום העבודה שבו הועסקת בתקופה?',choices({'מעסיק פרטי':'private','מעסיק ציבורי':'public','מפעל מוגן':'protected_workshop','אחר':'other'}));
+    add('product_facts.adapted_wage_approval',f.adapted_wage_approval,'האם נקבע עבורך שכר מותאם באישור רשמי בתקופה הנבדקת?',choices({'כן':true,'לא':false}));
+    add('product_facts.special_wage_arrangement',f.special_wage_arrangement,'האם קיים הסכם אישי מיטיב או הסדר שכר מיוחד, אישי או קיבוצי, שנמסר לך וחל בתקופה הנבדקת?',choices({'כן':true,'לא':false}));
+   }
+   if(!usable(p.employment)||p.case_recipe_bindings?.some(b=>b.method.recipe_id==='ai-case.mw.ordinary_scope')){
+    add('product_facts.salary_basis',f.salary_basis,'כיצד נקבע השכר שלך בפועל בתקופה הנבדקת?',choices({'לפי שעות עבודה':'hourly','שכר חודשי':'monthly','לפי שיטה אחרת':'other'}));
+    add('product_facts.weekly_schedule_hours',f.weekly_schedule_hours,'כמה שעות עבודה רגילות כוללת מתכונת משרה מלאה במקום העבודה לפי ההסדר שנמסר לך?',choices({'42 שעות בשבוע':'42','מתכונת אחרת':'other'}));
+   }
+  }
   if(p.method.value==='full_monthly')add('monthly_coverage',p.monthly_coverage,'האם עבדת במשרה מלאה במשך כל חודש הבדיקה, ללא תקופת עבודה חלקית או היעדרות שמשנה את השכר?',choices({'כן, חודש מלא במשרה מלאה':'full_month_full_time','לא, חודש או היקף חלקי':'partial'}));
   return result;
  }
@@ -62,7 +81,11 @@ export function typedEntitlementQuestions(topic:'minimum_wage'|'convalescence',r
  return result;
 }
 
-export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence):EntitlementEvidence{
+export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence,original?:EntitlementEvidence,source?:DocumentReviewInput):EntitlementEvidence{
+ if(candidate.pension&&original?.pension&&source){const p=pensionEntitlementInputSchema.parse(candidate.pension),raw=pensionEntitlementInputSchema.parse(original.pension);
+  if(raw.case_recipe_bindings?.length)candidate={...candidate,pension:replayPensionProductFacts(p,raw,source)};}
+ if(candidate.minimum_wage&&original?.minimum_wage&&source){const p=minimumWageEntitlementInputSchema.parse(candidate.minimum_wage),raw=minimumWageEntitlementInputSchema.parse(original.minimum_wage);
+  if(raw.case_recipe_bindings?.length)candidate={...candidate,minimum_wage:materializeMinimumWageCaseFacts(p,raw,source)};}
  if(!candidate.convalescence)return candidate;
  const p=convalescenceEntitlementInputSchema.parse(candidate.convalescence);if(!p.product_facts)return candidate;
  p.product_facts=scaffoldConvalescenceSegments(p.product_facts);
